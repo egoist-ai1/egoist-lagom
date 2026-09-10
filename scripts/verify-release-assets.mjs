@@ -13,6 +13,15 @@ if (!verify(null, registryBytes, rootKey, registrySignature)) throw new Error("R
 const registry = JSON.parse(registryBytes.toString("utf8"));
 
 if (metadataOnly) {
+  const fingerprints = JSON.parse(fs.readFileSync(path.join(trustDirectory, "key-fingerprints.json"), "utf8"));
+  const sha256 = bytes => createHash("sha256").update(bytes).digest("hex");
+  if (fingerprints.rootKeySha256 !== sha256(fs.readFileSync(path.join(trustDirectory, "root-public-key.pem")))) {
+    throw new Error("Root key fingerprint does not match the published PEM.");
+  }
+  const releaseFingerprints = new Map(fingerprints.releaseKeys.map(key => [key.id, key.publicKeySha256]));
+  if (fingerprints.releaseKeys.length !== registry.keys.length || registry.keys.some(key => releaseFingerprints.get(key.id) !== sha256(key.publicKeyPem))) {
+    throw new Error("Release key fingerprints do not match the signed registry.");
+  }
   for (const required of ["README.md", "SECURITY.md", "PRIVACY.md", "LICENSE.txt", "THIRD-PARTY-NOTICES.txt"]) {
     if (!fs.existsSync(path.join(root, required))) throw new Error(`Missing ${required}`);
   }

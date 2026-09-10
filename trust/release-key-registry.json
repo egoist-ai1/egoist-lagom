@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-08T23:38:04.436Z",
+  "generatedAt": "2026-09-07T18:22:03.395Z",
   "keys": [
     {
       "id": "release-2026-01",
@@ -9,6 +9,14 @@
       "status": "trusted",
       "notBefore": "2026-01-01T00:00:00.000Z",
       "notAfter": "2036-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "release-2026-09",
+      "algorithm": "Ed25519",
+      "status": "trusted",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEApu6KFPg1QPDTgPTkpADQVAkYtTJhaepF403lHgV0Q+Q=\n-----END PUBLIC KEY-----\n",
+      "notBefore": "2026-09-07T00:00:00.000Z",
+      "notAfter": "2028-09-07T00:00:00.000Z"
     }
   ]
 }

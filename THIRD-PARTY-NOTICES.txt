@@ -1,4 +1,4 @@
-EGOIST SHIELD 3.5.4 — THIRD-PARTY NOTICES
+EGOIST SHIELD 3.6.1 — THIRD-PARTY NOTICES
 
 This product includes third-party software. The Egoist Shield personal-use
 license does not replace or restrict the licenses listed below.
@@ -10,21 +10,27 @@ React / React DOM — MIT — https://github.com/facebook/react
 Motion (Framer Motion) — MIT — https://github.com/motiondivision/motion
 Lucide — ISC, with some Feather-derived icons under MIT —
 https://github.com/lucide-icons/lucide
+Phosphor Icons — MIT — https://github.com/phosphor-icons/core
 Inter font package — SIL Open Font License 1.1 —
 https://github.com/rsms/inter
 
 Bundled network runtimes
 ------------------------
+Wintun 0.14.1 (Windows amd64 prebuilt driver) — WireGuard LLC Prebuilt
+Binaries License — https://www.wintun.net/
+The unmodified signed DLL is used through the Wintun API by Xray.
+Full license: resources/runtime/xray/WINTUN-LICENSE.txt.
+
 Xray Core — Mozilla Public License 2.0 —
 https://github.com/XTLS/Xray-core
 
 sing-box — GNU General Public License version 3 or later, with the additional
 upstream naming/association notice — https://github.com/SagerNet/sing-box
 The bundled version is recorded in resources/runtime/manifest.json.
-Corresponding source for v1.13.12:
-https://github.com/SagerNet/sing-box/tree/v1.13.12
+Corresponding source for v1.14.0:
+https://github.com/SagerNet/sing-box/tree/v1.14.0
 Source archive:
-https://github.com/SagerNet/sing-box/archive/refs/tags/v1.13.12.tar.gz
+https://github.com/SagerNet/sing-box/archive/refs/tags/v1.14.0.tar.gz
 
 dnscrypt-proxy — ISC — https://github.com/DNSCrypt/dnscrypt-proxy
 

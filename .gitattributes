@@ -1,0 +1,4 @@
+# Signed data must retain its exact bytes on Windows checkouts.
+trust/release-key-registry.json -text
+trust/*.sig -text
+trust/*.pem -text

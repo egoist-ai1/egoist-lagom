@@ -1,11 +1,15 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-08T23:38:04.436Z",
-  "rootKeySha256": "7619c2d564e9b9cced2abf31d98b3c9f3a3f8918ed4709778b94e1b91729af4c",
+  "generatedAt": "2026-09-08T19:13:50.474Z",
+  "rootKeySha256": "3c5b24f9247110000f70a77e1e8a60157166f9675f6c59bd021c6e45d4eda592",
   "releaseKeys": [
     {
       "id": "release-2026-01",
       "publicKeySha256": "2d8bed256ece63b26ce8ef07ec53637a742b1f0285bbbba333e57729aa340b8a"
+    },
+    {
+      "id": "release-2026-09",
+      "publicKeySha256": "e703a4cfa75410f16476a25b5bd31e21300d12c0c579922f6dcd62860f71f0e0"
     }
   ]
 }

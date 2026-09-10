@@ -32,7 +32,7 @@ jobs:
       - name: Sign exact manifest bytes
         env:
           EGOISTSHIELD_RELEASE_PRIVATE_KEY_PEM: ${{ secrets.EGOISTSHIELD_RELEASE_PRIVATE_KEY_PEM }}
-          EGOISTSHIELD_RELEASE_KEY_ID: release-2026-01
+          EGOISTSHIELD_RELEASE_KEY_ID: release-2026-09
           RELEASE_TAG: ${{ inputs.tag }}
         run: node scripts/sign-release-candidate.mjs candidate "$RELEASE_TAG"
       - name: Upload immutable signed metadata
