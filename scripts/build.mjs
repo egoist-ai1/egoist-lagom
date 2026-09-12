@@ -18,7 +18,8 @@ const main = ("import { ShieldConnectionController } from './src/shield-connecti
   .replaceAll('EGOIST SHIELD', 'EGOIST LAGOM');
 await build({ stdin: { contents: main, resolveDir: root, sourcefile: 'recovered-main.js' }, outfile: '.vite/build/main.js', platform: 'node', format: 'esm', target: 'node22', bundle: true, external: ['electron', 'electron-log'], banner: { js: esmRequireBanner }, sourcemap: true });
 await fs.copyFile('src/recovered/preload.cjs', '.vite/build/preload.js');
-await fs.cp('recovery/official-code/.vite/renderer', '.vite/renderer', { recursive: true });
+const rendererSeed = await fs.access('recovery/official-code/.vite/renderer').then(() => 'recovery/official-code/.vite/renderer').catch(() => 'public-ui');
+await fs.cp(rendererSeed, '.vite/renderer', { recursive: true });
 await fs.copyFile('src/recovered/renderer.css', '.vite/renderer/main_window/assets/index-Bxx3j0wf.css');
 let rendererSource = await fs.readFile('src/recovered/renderer.js', 'utf8');
 const glyphs = {};
