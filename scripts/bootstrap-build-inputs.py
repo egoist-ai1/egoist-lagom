@@ -20,7 +20,7 @@ setup.parent.mkdir(parents=True, exist_ok=True)
 expected = '97c2f6207176f68e1b63f5052b530a055ee60c15407448052ef4af5dbd478ce8'
 if not setup.exists():
     candidate = setup.with_suffix('.download')
-    urllib.request.urlretrieve('https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.4/' + setup.name, candidate)
+    urllib.request.urlretrieve('https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.4/' + setup.name, candidate)
     if hashlib.file_digest(candidate.open('rb'), 'sha256').hexdigest() != expected:
         raise RuntimeError('Official installer checksum mismatch')
     candidate.replace(setup)

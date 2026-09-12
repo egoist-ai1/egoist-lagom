@@ -6,7 +6,7 @@ const directory=path.resolve('dist');
 const installerName=`EgoistShield-Setup-${pkg.version}.exe`;
 const bytes=await fs.readFile(path.join(directory,installerName));
 const hash=algorithm=>createHash(algorithm).update(bytes).digest('hex');
-const manifest={schemaVersion:2,channel:'stable',version:pkg.version,tag:`v${pkg.version}`,installerName,canonicalDownloadUrl:`https://github.com/egoist-ai1/egoistshield/releases/download/v${pkg.version}/${installerName}`,size:bytes.length,sha256:hash('sha256'),sha512:hash('sha512'),githubDigest:`sha256:${hash('sha256')}`,minimumAppVersion:pkg.version,keyId:'release-2026-09',authenticodeStatus:'not-signed',licenseVersion:'1.0',publishedAt:new Date().toISOString()};
+const manifest={schemaVersion:2,channel:'stable',version:pkg.version,tag:`v${pkg.version}`,installerName,canonicalDownloadUrl:`https://github.com/egoist-ai1/egoist-lagom/releases/download/v${pkg.version}/${installerName}`,size:bytes.length,sha256:hash('sha256'),sha512:hash('sha512'),githubDigest:`sha256:${hash('sha256')}`,minimumAppVersion:pkg.version,keyId:'release-2026-09',authenticodeStatus:'not-signed',licenseVersion:'1.0',publishedAt:new Date().toISOString()};
 const key=createPrivateKey(await fs.readFile('.local/release-secrets/release.private.pem'));
 const manifestBytes=Buffer.from(JSON.stringify(manifest,null,2)+'\n');
 const signature=sign(null,manifestBytes,key).toString('base64')+'\n';

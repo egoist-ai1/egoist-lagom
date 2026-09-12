@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('shield_github_api',ROOT/'scripts/github-api.py')
 api=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(api)
-REPO='/repos/egoist-ai1/egoistshield'
+REPO='/repos/egoist-ai1/egoist-lagom'
 DIST=ROOT/'dist'
 integrity=json.loads((DIST/'package-integrity.json').read_text())
 tag='lagom-final'

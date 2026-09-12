@@ -5,14 +5,14 @@
   <p>Лаконичный чёрно-белый интерфейс, локальные профили соединения, DNS/DoH, Telegram Relay и понятное обслуживание служб.</p>
 
   <p>
-    <a href="https://github.com/egoist-ai1/egoistshield/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/egoist-ai1/egoistshield?display_name=tag&style=for-the-badge&color=111111" /></a>
-    <a href="https://github.com/egoist-ai1/egoistshield/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/egoist-ai1/egoistshield/ci.yml?branch=main&style=for-the-badge&label=checks&color=111111" /></a>
+    <a href="https://github.com/egoist-ai1/egoist-lagom/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/egoist-ai1/egoist-lagom?display_name=tag&style=for-the-badge&color=111111" /></a>
+    <a href="https://github.com/egoist-ai1/egoist-lagom/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/egoist-ai1/egoist-lagom/ci.yml?branch=main&style=for-the-badge&label=checks&color=111111" /></a>
     <img alt="Windows 10 and 11 x64" src="https://img.shields.io/badge/Windows-10%20%7C%2011%20x64-111111?style=for-the-badge&logo=windows11&logoColor=white" />
     <img alt="Monochrome UI" src="https://img.shields.io/badge/interface-monochrome-111111?style=for-the-badge" />
   </p>
 
   <p>
-    <a href="https://github.com/egoist-ai1/egoistshield/releases/latest"><strong>Скачать Egoist Lagom</strong></a>
+    <a href="https://github.com/egoist-ai1/egoist-lagom/releases/latest"><strong>Скачать Egoist Lagom</strong></a>
     · <a href="docs/validation.md">Проверка</a>
     · <a href="docs/troubleshooting.md">Решение проблем</a>
   </p>
@@ -48,7 +48,7 @@ Egoist Lagom создан для людей, которым нужен быст�
 
 ## Установка
 
-1. Откройте [последний релиз](https://github.com/egoist-ai1/egoistshield/releases/latest).
+1. Откройте [последний релиз](https://github.com/egoist-ai1/egoist-lagom/releases/latest).
 2. Скачайте `Egoist-Lagom-Setup.exe` и файл `.sha256` рядом с ним.
 3. Сверьте SHA-256.
 4. Запустите установщик и подтвердите штатный запрос Windows UAC.
