@@ -1,0 +1,14 @@
+EGOIST LAGOM — PERSONAL USE LICENSE 1.0
+
+Copyright (c) 2026 EGOIST
+
+Permission is granted to an individual to install and use this release on
+computers they own or are authorized to administer, for personal and
+non-commercial purposes.
+
+Redistribution, resale, hosting of modified installers and commercial use
+require prior written permission from EGOIST. This license does not replace
+the licenses of third-party components listed in THIRD-PARTY-NOTICES.txt.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. EGOIST IS NOT
+LIABLE FOR LOSS OF DATA, NETWORK ACCESS OR OTHER DAMAGE ARISING FROM USE.

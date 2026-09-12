@@ -1,0 +1,30 @@
+{
+  "main": ".vite/build/main.js",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "productName": "Egoist Lagom",
+  "author": "EGOIST",
+  "description": "Egoist Lagom — спокойное управление сетевыми настройками Windows",
+  "version": "3.7.0",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "package:win": "node scripts/package-windows.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/unbounded": "5.3.0",
+    "electron-log": "5.4.4",
+    "undici": "7.29.0",
+    "yaml": "2.8.3",
+    "zod": "3.25.76"
+  },
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@electron/asar": "3.4.1",
+    "@fontsource-variable/manrope": "5.3.0",
+    "esbuild": "0.25.12",
+    "gsap": "3.15.0",
+    "rcedit": "5.0.2"
+  },
+  "name": "egoist-lagom-desktop"
+}

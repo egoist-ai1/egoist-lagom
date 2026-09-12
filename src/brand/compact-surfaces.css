@@ -1,0 +1,2455 @@
+/* Egoist Shield · Compact Ruby surfaces
+   Non-dashboard screens only. Shell and dashboard styling live beside this file. */
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout,
+    .modal-layer,
+    .activity-hud,
+    .speedtest-overlay,
+    .speedtest-panel,
+    .protection-panel
+  ) {
+  --compact-accent: #ffffff;
+  --compact-accent-hover: #e2e8f0;
+  --compact-accent-soft: rgb(255 255 255 / 10%);
+  --compact-accent-line: rgb(255 255 255 / 35%);
+  --compact-canvas: #000000;
+  --compact-panel: #090909;
+  --compact-raised: #141414;
+  --compact-border: #292929;
+  --compact-border-soft: rgb(255 255 255 / 8%);
+  --compact-text: #f6f6f6;
+  --compact-muted: #a5a5a5;
+  --compact-radius: 10px;
+  color: var(--compact-text);
+  font-family: 'Unbounded', sans-serif !important;
+  font-size: 13.5px;
+}
+
+/* Shared surface and control language */
+
+.screen-stage[data-screen="vpn"] .panel,
+.screen-stage[data-screen="dns"] .panel,
+.screen-stage[data-screen="zapret"] .panel,
+.screen-stage[data-screen="telegram-proxy"] .panel,
+.screen-stage[data-screen="settings"] .panel {
+  background: var(--compact-panel);
+  border: 1px solid var(--compact-border);
+  border-radius: var(--compact-radius);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.screen-stage[data-screen="vpn"] .panel::before,
+.screen-stage[data-screen="dns"] .panel::before,
+.screen-stage[data-screen="zapret"] .panel::before,
+.screen-stage[data-screen="telegram-proxy"] .panel::before,
+.screen-stage[data-screen="settings"] .panel::before {
+  display: none;
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) .section-title {
+  margin: 0;
+  color: var(--compact-text);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) .section-title::before,
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) .section-title::after {
+  content: none;
+  display: none;
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) :is(.btn-primary, .btn-secondary, .btn-danger) {
+  height: 36px;
+  min-width: 0;
+  padding: 0 13px;
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 120ms ease;
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) .ruby-action-button {
+  min-width: 0;
+  gap: 6px;
+  padding-inline: 10px;
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) .btn-primary {
+  color: #000000;
+  background: var(--primary-button);
+  border-color: var(--primary-button);
+  font-weight: 600;
+  text-shadow: none;
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) .btn-primary:hover:not(:disabled) {
+  color: #000000;
+  background: var(--primary-button-hover);
+  border-color: var(--primary-button-hover);
+  box-shadow: none;
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) .btn-secondary {
+  color: var(--compact-text);
+  background: transparent;
+  border-color: #444444;
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) .btn-secondary:hover:not(:disabled) {
+  color: #fff;
+  background: #141414;
+  border-color: #666666;
+  box-shadow: none;
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) .btn-danger {
+  color: var(--compact-accent);
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) .btn-danger:hover:not(:disabled) {
+  color: #fff;
+  background: var(--compact-accent-soft);
+  border-color: var(--compact-accent);
+  box-shadow: none;
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) :is(.btn-primary, .btn-secondary, .btn-danger):active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+:is(
+    .vpn-layout,
+    .dns-layout,
+    .zapret-layout,
+    .telegram-layout,
+    .settings-layout
+  ) :is(.btn-primary, .btn-secondary, .btn-danger, .input, button, summary):focus-visible {
+  outline: 2px solid var(--compact-accent);
+  outline-offset: 2px;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout, .telegram-layout) .compact {
+  height: 32px;
+  padding-inline: 10px;
+}
+
+:is(.dns-layout, .zapret-layout, .telegram-layout) .field-label {
+  gap: 5px;
+  min-width: 0;
+  color: var(--compact-muted);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout, .telegram-layout) .input {
+  height: 36px;
+  min-width: 0;
+  padding: 0 11px;
+  color: var(--compact-text);
+  background: #050505;
+  border: 1px solid #333333;
+  border-radius: 8px;
+  font-size: 13px;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout, .telegram-layout) .input:hover:not(:disabled) {
+  background: #0b0b0b;
+  border-color: #555555;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout, .telegram-layout) .input:focus {
+  background: #0b0b0b;
+  border-color: var(--compact-accent);
+}
+
+:is(.dns-layout, .zapret-layout, .telegram-layout) .input-area {
+  height: 56px;
+  padding-block: 9px;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout) .kv-list {
+  gap: 0;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout) .kv-list > div {
+  min-height: 34px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--compact-border-soft);
+  font-size: 13px;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout) .kv-list > div:last-child {
+  border-bottom: 0;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout) .kv-list span {
+  color: var(--compact-muted);
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout) .kv-list strong {
+  max-width: min(58%, 520px);
+  color: var(--compact-text);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout, .telegram-layout) :is(.dot.good, .good-text) {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout, .telegram-layout) :is(.dot.bad, .bad-text) {
+  color: #888888;
+  font-weight: 500;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout, .telegram-layout) :is(.dot.warn, .warn-text) {
+  color: #aaaaaa;
+  font-weight: 500;
+}
+
+.dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex: none !important;
+}
+.dot.good {
+  background: #ffffff !important;
+  border: 1px solid #ffffff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.75) !important;
+}
+.dot.bad {
+  background: transparent !important;
+  border: 1.5px solid #52525b !important;
+  color: #52525b !important;
+  box-shadow: none !important;
+}
+.dot.warn {
+  background: #71717a !important;
+  border: 1px solid #a1a1aa !important;
+  color: #a1a1aa !important;
+  box-shadow: none !important;
+}
+.dot.idle {
+  background: transparent !important;
+  border: 1.5px solid #3f3f46 !important;
+  color: #3f3f46 !important;
+  box-shadow: none !important;
+}
+
+:is(.vpn-layout, .dns-layout, .zapret-layout, .telegram-layout) {
+  scrollbar-color: #555555 transparent;
+}
+
+/* Unified Master Screen Layouts (Scandinavian Lagom) */
+
+.screen-stage[data-screen="vpn"],
+.screen-stage[data-screen="dns"],
+.screen-stage[data-screen="zapret"],
+.screen-stage[data-screen="telegram-proxy"],
+.screen-stage[data-screen="settings"] {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 14px 24px 20px !important;
+  box-sizing: border-box !important;
+}
+
+/* VPN */
+
+.screen-stage[data-screen="vpn"] .vpn-layout {
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.85fr);
+  gap: 14px;
+  align-items: stretch;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.screen-stage[data-screen="vpn"] :is(.vpn-servers-panel, .vpn-subscription-panel, .vpn-provider-panel) {
+  min-height: 0;
+  padding: 16px 18px;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-servers-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 12px;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-panel-head {
+  align-items: end;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--compact-border-soft);
+  flex: none;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-panel-head > div > span,
+.screen-stage[data-screen="vpn"] .vpn-panel-head label span {
+  color: var(--compact-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-panel-head label {
+  width: 142px;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-head-actions {
+  gap: 8px;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-head-actions .btn-primary {
+  width: 92px;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-list {
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  max-height: none !important;
+  padding-right: 4px;
+  overflow-y: auto;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-row {
+  grid-template-columns: 24px 32px minmax(0, 1fr) 52px 104px;
+  gap: 8px;
+  min-height: 46px;
+  padding: 5px 8px;
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--compact-border-soft);
+  border-radius: 0;
+  transition: background-color 150ms ease;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-row:last-child {
+  border-bottom: 0;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-row:hover {
+  background: rgb(255 255 255 / 3%);
+  border-color: var(--compact-border-soft);
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-row.active {
+  background: var(--compact-accent-soft);
+  border-color: var(--compact-border-soft);
+  border-left: 2px solid var(--compact-accent);
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="vpn"] .favorite-button {
+  width: 28px;
+  height: 28px;
+  color: var(--compact-muted);
+  background: transparent;
+  border-color: transparent;
+  border-radius: 7px;
+}
+
+.screen-stage[data-screen="vpn"] .favorite-button:hover {
+  color: var(--compact-text);
+  background: #141414;
+}
+
+.screen-stage[data-screen="vpn"] .favorite-button.active {
+  color: var(--compact-accent);
+  background: transparent;
+  border-color: transparent;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-country-flag {
+  width: 38px;
+  height: 26px;
+  background: #050505;
+  border-color: var(--compact-border);
+  border-radius: 5px;
+}
+
+.screen-stage[data-screen="vpn"] .country-flag {
+  width: 32px;
+  height: 20px;
+  border: 1px solid #444444;
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-main {
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-main strong {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-main span {
+  font-size: 11px;
+  color: var(--compact-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+.screen-stage[data-screen="vpn"] .country-flag-img {
+  border-radius: 3px;
+  filter: contrast(1.12) saturate(1.2);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-ping {
+  font-size: 10.5px;
+  font-weight: 500;
+  min-width: 52px;
+  padding: 2px 4px;
+  border-radius: 5px;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-ping.good {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-ping.warn {
+  color: #d4d4d8;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-ping.bad {
+  color: #71717a;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #3f3f46;
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-ping.offline {
+  color: #52525b;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid #27272a;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-ping.pending {
+  color: #a1a1aa;
+  background: transparent;
+  border: 1px solid transparent;
+  animation: none;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-row :is(.btn-primary, .btn-secondary) {
+  color: var(--compact-text);
+  background: transparent;
+  border-color: #444444;
+  min-width: 96px;
+  width: 104px;
+  height: 28px;
+  padding: 0 4px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-server-row:hover .btn-primary,
+.screen-stage[data-screen="vpn"] .vpn-server-row.active .btn-primary,
+.screen-stage[data-screen="vpn"] .vpn-server-row .btn-primary:hover:not(:disabled),
+.screen-stage[data-screen="vpn"] .vpn-server-row .btn-primary:focus-visible {
+  color: #000000;
+  background: var(--compact-accent);
+  border-color: var(--compact-accent);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-side-stack {
+  grid-template-rows: none;
+  gap: 12px;
+  height: auto;
+  overflow: visible;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-side-stack > .panel {
+  align-content: start;
+  gap: 10px;
+  overflow: visible;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-side-stack .kv-list > div {
+  grid-template-columns: minmax(92px, 0.85fr) minmax(0, 1.15fr);
+  align-items: start;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-side-stack .kv-list strong {
+  max-width: none;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  overflow: visible;
+}
+
+.screen-stage[data-screen="vpn"] .subscription-status {
+  min-height: 28px;
+  color: var(--compact-text);
+  font-size: 13px;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-subscription-panel .btn-secondary + .btn-danger {
+  margin-top: 0;
+}
+
+.screen-stage[data-screen="vpn"] .vpn-empty {
+  min-height: 160px;
+  background: transparent;
+  border-color: var(--compact-border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+/* DNS */
+
+.screen-stage[data-screen="dns"] .dns-layout {
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.85fr);
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.screen-stage[data-screen="dns"] .dns-form,
+.screen-stage[data-screen="dns"] .side-stack {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  height: 100%;
+}
+
+.screen-stage[data-screen="dns"] .dns-form {
+  gap: 14px;
+  overflow-y: auto;
+  padding: 16px 18px;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+.screen-stage[data-screen="dns"] .side-stack > .panel {
+  padding: 14px 16px;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  height: 100%;
+}
+
+.screen-stage[data-screen="dns"] .preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.screen-stage[data-screen="dns"] .preset-button {
+  min-height: 32px;
+  height: 32px;
+  padding: 4px 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--compact-border);
+  border-radius: 6px;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.screen-stage[data-screen="dns"] .preset-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #52525b;
+}
+
+.screen-stage[data-screen="dns"] .preset-button strong {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.screen-stage[data-screen="dns"] .preset-button span {
+  font-size: 10.5px;
+  color: #a1a1aa;
+  flex-shrink: 0;
+}
+
+.screen-stage[data-screen="dns"] .dns-inputs-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.screen-stage[data-screen="dns"] .dns-inputs-row .field-label {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.screen-stage[data-screen="dns"] .dns-inputs-row input {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  font-size: 12px;
+  height: 32px;
+}
+
+.screen-stage[data-screen="dns"] .dns-form .button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  min-width: 0;
+}
+
+.screen-stage[data-screen="dns"] .dns-form .button-row .btn-primary,
+.screen-stage[data-screen="dns"] .dns-form .button-row .btn-secondary {
+  height: 32px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.screen-stage[data-screen="dns"] .dns-link-card {
+  margin-top: auto !important;
+  border-top: 1px solid var(--compact-border) !important;
+  padding-top: 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.screen-stage[data-screen="dns"] .dns-link-head span {
+  color: var(--compact-muted);
+  font-size: 11.5px;
+}
+
+.screen-stage[data-screen="dns"] .dns-link-input {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  height: 42px;
+  font-size: 12px;
+  resize: none;
+}
+
+.screen-stage[data-screen="dns"] .dns-link-preview {
+  min-height: 30px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--compact-border-soft);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.screen-stage[data-screen="dns"] .dns-link-preview.empty {
+  min-height: 30px;
+  padding: 4px 8px;
+  background: transparent;
+  border-color: var(--compact-border-soft);
+}
+
+.screen-stage[data-screen="dns"] .dns-preview-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.screen-stage[data-screen="dns"] .dns-preview-badge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  background: #27272a;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 500;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.screen-stage[data-screen="dns"] .dns-preview-inline strong {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f4f4f5;
+  white-space: nowrap;
+}
+
+.screen-stage[data-screen="dns"] .dns-preview-endpoint {
+  font-size: 10.5px;
+  color: #71717a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.screen-stage[data-screen="dns"] .dns-link-preview p {
+  font-size: 11px;
+  color: #71717a;
+  margin: 0;
+}
+
+.screen-stage[data-screen="dns"] .side-stack {
+  grid-template-rows: minmax(0, 1.1fr) minmax(0, 0.9fr) !important;
+  gap: 12px !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  display: grid !important;
+}
+
+.screen-stage[data-screen="dns"] .side-stack > .panel {
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 14px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.screen-stage[data-screen="dns"] .side-stack .kv-list > div {
+  grid-template-columns: minmax(88px, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  min-height: 22px;
+  padding-block: 2px;
+  font-size: 10.5px;
+  line-height: 1.25;
+}
+
+.screen-stage[data-screen="dns"] .side-stack .kv-list span {
+  font-size: 10.5px;
+  font-weight: 400;
+  color: #71717a;
+}
+
+.screen-stage[data-screen="dns"] .side-stack .kv-list strong {
+  max-width: none;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  overflow: visible;
+}
+
+.screen-stage[data-screen="dns"] .dns-check-panel {
+  gap: 8px;
+}
+
+.screen-stage[data-screen="dns"] .dns-targets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  align-self: stretch;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  overflow-y: visible;
+}
+
+.screen-stage[data-screen="dns"] .dns-target {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 26px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--compact-border-soft);
+  border-radius: 6px;
+}
+
+.screen-stage[data-screen="dns"] .dns-target:last-child {
+  border-bottom: 1px solid var(--compact-border-soft);
+}
+
+.screen-stage[data-screen="dns"] .dns-target.good {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.screen-stage[data-screen="dns"] .dns-target.bad {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.screen-stage[data-screen="dns"] .dns-target-name {
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--compact-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.screen-stage[data-screen="dns"] .dns-target-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.screen-stage[data-screen="dns"] .dns-target-value strong {
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.screen-stage[data-screen="dns"] .dns-target.good .dns-target-value strong {
+  color: #ffffff;
+}
+
+.screen-stage[data-screen="dns"] .dns-target.bad .dns-target-state {
+  color: #71717a;
+  font-size: 10.5px;
+}
+
+.screen-stage[data-screen="dns"] .dns-target-value em {
+  font-size: 10px;
+  color: var(--compact-muted);
+}
+
+.screen-stage[data-screen="dns"] .dns-target-bar {
+  display: none;
+}
+
+/* Zapret */
+
+.screen-stage[data-screen="zapret"] .zapret-layout {
+  grid-template-columns: minmax(230px, 270px) minmax(0, 1fr);
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.screen-stage[data-screen="zapret"] .config-list,
+.screen-stage[data-screen="zapret"] .zapret-main .panel {
+  padding: 14px;
+}
+
+.screen-stage[data-screen="zapret"] .config-list {
+  grid-template-rows: auto auto minmax(72px, 1fr) auto;
+  gap: 7px;
+}
+
+.screen-stage[data-screen="zapret"] .config-legend {
+  gap: 7px;
+  padding: 0 0 7px;
+  font-size: 11px;
+  border-bottom-color: var(--compact-border-soft);
+}
+
+.screen-stage[data-screen="zapret"] .config-scroll {
+  gap: 0;
+  padding-right: 2px;
+}
+
+.screen-stage[data-screen="zapret"] .config-row {
+  min-height: 42px;
+  padding: 6px 7px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--compact-border-soft);
+  border-radius: 0;
+  transition: background-color 150ms ease;
+}
+
+.screen-stage[data-screen="zapret"] .config-row:hover {
+  background: rgb(255 255 255 / 3%);
+  border-color: var(--compact-border-soft);
+}
+
+.screen-stage[data-screen="zapret"] .config-row.active {
+  background: var(--compact-accent-soft);
+  border-color: var(--compact-border-soft);
+  border-left: 2px solid var(--compact-accent);
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="zapret"] .config-row :is(strong, em) {
+  font-size: 12px;
+}
+
+.screen-stage[data-screen="zapret"] .config-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.screen-stage[data-screen="zapret"] .config-actions > :first-child {
+  grid-column: 1 / -1;
+}
+
+.screen-stage[data-screen="zapret"] .config-actions [data-testid="zapret-reset"] {
+  grid-column: 1 / -1;
+}
+
+.screen-stage[data-screen="zapret"] .config-actions :is(.btn-primary, .btn-secondary, .btn-danger) {
+  min-height: 30px;
+  height: auto;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: normal;
+  text-align: center;
+}
+
+.screen-stage[data-screen="zapret"] .zapret-main {
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+}
+
+.screen-stage[data-screen="zapret"] .zapret-status-panel {
+  gap: 5px;
+}
+
+.screen-stage[data-screen="zapret"] .zapret-status-panel .kv-list > div {
+  grid-template-columns: minmax(130px, 0.8fr) minmax(160px, 1.2fr);
+  min-height: 28px;
+  padding-block: 4px;
+}
+
+.screen-stage[data-screen="zapret"] .zapret-status-panel .kv-list strong {
+  max-width: none;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  overflow: visible;
+}
+
+.screen-stage[data-screen="zapret"] .zapret-best-banner {
+  min-height: 42px;
+  padding: 7px 9px;
+  background: var(--compact-accent-soft);
+  border-color: var(--compact-accent-line);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="zapret"] .zapret-best-banner :is(strong, small) {
+  font-size: 12px;
+}
+
+.screen-stage[data-screen="zapret"] .zapret-workbench {
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  overflow: hidden;
+}
+
+.screen-stage[data-screen="zapret"] .tab-strip {
+  gap: 16px;
+  border-bottom: 1px solid var(--compact-border);
+}
+
+.screen-stage[data-screen="zapret"] .tab-strip button {
+  position: relative;
+  height: 34px;
+  padding: 0 2px;
+  color: var(--compact-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-size: 13px;
+  transition: color 150ms ease;
+}
+
+.screen-stage[data-screen="zapret"] .tab-strip button::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--compact-accent);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 150ms ease;
+}
+
+.screen-stage[data-screen="zapret"] .tab-strip button:hover,
+.screen-stage[data-screen="zapret"] .tab-strip button.active,
+.screen-stage[data-screen="zapret"] .tab-strip button[aria-selected="true"] {
+  color: var(--compact-text);
+  background: transparent;
+  border-color: transparent;
+}
+
+.screen-stage[data-screen="zapret"] .tab-strip button.active::before,
+.screen-stage[data-screen="zapret"] .tab-strip button[aria-selected="true"]::before {
+  transform: scaleX(1);
+}
+
+.screen-stage[data-screen="zapret"] .zapret-history-panel {
+  gap: 6px;
+}
+
+.screen-stage[data-screen="zapret"] :is(.table-head, .table-row-main) {
+  grid-template-columns: minmax(120px, 1.3fr) minmax(100px, 1fr) 64px 44px;
+  column-gap: 10px;
+}
+
+.screen-stage[data-screen="zapret"] .table-head {
+  min-height: 28px;
+  color: var(--compact-muted);
+  border-bottom: 1px solid var(--compact-border);
+  font-size: 11px;
+}
+
+.screen-stage[data-screen="zapret"] .table-row {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--compact-border-soft);
+  border-radius: 0;
+}
+
+.screen-stage[data-screen="zapret"] .table-row:hover,
+.screen-stage[data-screen="zapret"] .table-row.expanded {
+  background: rgb(255 255 255 / 3%);
+}
+
+.screen-stage[data-screen="zapret"] .zapret-target-details {
+  border-top-color: var(--compact-border-soft);
+}
+
+.screen-stage[data-screen="zapret"] .zapret-routes-flowseal {
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.screen-stage[data-screen="zapret"] .zapret-routes-grid.compact-routes-grid {
+  grid-template-rows: repeat(2, minmax(76px, auto)) auto;
+  gap: 8px;
+  overflow: visible;
+}
+
+.screen-stage[data-screen="zapret"] .flowseal-panel {
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--compact-border);
+}
+
+.screen-stage[data-screen="zapret"] .flowseal-panel :is(.btn-primary, .btn-secondary) {
+  font-size: 12px;
+  padding: 0 8px;
+  height: 34px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.screen-stage[data-screen="zapret"] .flowseal-version-line {
+  color: var(--compact-muted);
+  border-top-color: var(--compact-border-soft);
+  font-size: 12px;
+}
+
+.screen-stage[data-screen="zapret"] .empty-table-state {
+  min-height: 72px;
+  background: transparent;
+  border-color: var(--compact-border);
+  border-radius: 8px;
+}
+
+/* Telegram */
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-layout {
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.85fr) !important;
+  gap: 14px !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.screen-stage[data-screen="telegram-proxy"] :is(.telegram-form, .telegram-status) {
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 16px 18px !important;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-form {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  overflow-y: auto !important;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-control-lead {
+  margin: -3px 0 1px;
+  color: var(--compact-muted);
+  font-size: 13px;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .advanced-settings {
+  background: transparent;
+  border-color: var(--compact-border);
+  border-radius: 8px;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .advanced-settings > summary {
+  min-height: 36px;
+  padding: 0 11px;
+  color: var(--compact-muted);
+  font-size: 13px;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .advanced-settings[open] > summary {
+  color: var(--compact-text);
+  border-bottom-color: var(--compact-border-soft);
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-advanced-content {
+  gap: 8px;
+  padding: 10px;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-advanced-content .input {
+  height: 34px;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-advanced-content .input-area {
+  min-height: 56px;
+  max-height: 120px;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-advanced-toggles {
+  gap: 8px;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .toggle-line {
+  min-height: 32px;
+  color: var(--compact-muted);
+  font-size: 12px;
+}
+
+.screen-stage[data-screen="telegram-proxy"] :is(.toggle-line i, .toggle-setting i) {
+  width: 34px;
+  height: 18px;
+  background: #292929;
+  border-color: #444444;
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="telegram-proxy"] :is(.toggle-line.on i, .toggle-setting i.on) {
+  background: #ffffff;
+  border-color: #ffffff;
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="telegram-proxy"] :is(.toggle-line.on i, .toggle-setting i.on)::after {
+  background: #000000;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-primary-actions {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  margin: 10px 0 !important;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-primary-actions :is(.btn-primary, .btn-secondary, .btn-danger) {
+  min-height: 42px !important;
+  height: auto;
+  padding: 6px 10px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px !important;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-update-card {
+  margin-top: auto !important;
+  padding-top: 14px !important;
+  border-top: 1px solid var(--compact-border) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-version-inline {
+  color: var(--compact-muted);
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  overflow: hidden !important;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-runtime-status {
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status-chip {
+  min-height: 36px;
+  padding: 6px 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--compact-border-soft);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status-chip:last-child {
+  border-bottom: 0;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status-chip.active {
+  background: transparent;
+  border-color: var(--compact-border-soft);
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status-chip :is(span, strong) {
+  font-size: 12px;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status-chip strong {
+  white-space: normal;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .log-head {
+  padding-top: 9px;
+  border-top: 1px solid var(--compact-border);
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-list {
+  gap: 0;
+  padding-right: 3px;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line {
+  grid-template-columns: 58px 40px minmax(0, 1fr);
+  gap: 6px;
+  min-height: 26px;
+  max-height: none;
+  padding: 3px 2px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--compact-border-soft);
+  border-radius: 0;
+  align-items: baseline;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line span {
+  font-size: 10px !important;
+  font-weight: 400 !important;
+  color: #71717a !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line strong {
+  font-size: 9.5px !important;
+  font-weight: 500 !important;
+  color: #a1a1aa !important;
+  background: #1e1e22;
+  border: 1px solid #2e2e34;
+  border-radius: 3px;
+  padding: 1px 4px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line p {
+  font-size: 10.5px !important;
+  font-weight: 400 !important;
+  color: #a1a1aa !important;
+  line-height: 1.35;
+  margin: 0;
+  word-break: break-word;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .log-empty {
+  min-height: 72px;
+  background: transparent;
+  border-color: var(--compact-border);
+  border-radius: 8px;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .draft-conflict {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+/* Settings */
+
+.screen-stage[data-screen="settings"] .settings-layout {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) !important;
+  grid-template-rows: 1fr !important;
+  gap: 14px !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+}
+
+.screen-stage[data-screen="settings"] .settings-surface {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 16px 18px !important;
+  background: var(--compact-panel);
+  border-color: var(--compact-border);
+  border-radius: var(--compact-radius);
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+}
+
+.screen-stage[data-screen="settings"] .settings-surface:hover {
+  border-color: var(--compact-border);
+  box-shadow: none;
+  transform: none;
+}
+
+.screen-stage[data-screen="settings"] .settings-surface-head {
+  gap: 3px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--compact-border);
+  flex: none;
+}
+
+.screen-stage[data-screen="settings"] .settings-surface-head h3 {
+  color: var(--compact-text);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.screen-stage[data-screen="settings"] :is(.settings-surface-head p, .settings-section-head p, .settings-panel-hint, .settings-maintenance-note) {
+  display: none !important;
+}
+
+.screen-stage[data-screen="settings"] .settings-preferences-surface .settings-preferences-list {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-around !important;
+  gap: 10px !important;
+}
+
+.screen-stage[data-screen="settings"] .settings-service-surface {
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.screen-stage[data-screen="settings"] .settings-service-surface .settings-service-list {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-around !important;
+  gap: 12px !important;
+}
+
+.screen-stage[data-screen="settings"] .settings-section {
+  gap: 4px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--compact-border-soft);
+}
+
+.screen-stage[data-screen="settings"] .settings-section:last-child {
+  border-bottom: 0;
+}
+
+.screen-stage[data-screen="settings"] .settings-section-head {
+  gap: 2px;
+}
+
+.screen-stage[data-screen="settings"] .settings-section-head h4 {
+  color: var(--compact-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.screen-stage[data-screen="settings"] .settings-section-items {
+  gap: 0;
+}
+
+.screen-stage[data-screen="settings"] .toggle-setting-row {
+  min-width: 0;
+  border-bottom: 1px solid var(--compact-border-soft);
+}
+
+.screen-stage[data-screen="settings"] .toggle-setting-row:last-child {
+  border-bottom: 0;
+}
+
+.screen-stage[data-screen="settings"] .settings-layout .toggle-setting {
+  min-height: 44px !important;
+  padding: 4px 0 !important;
+  color: var(--compact-text);
+  font-size: 14px;
+}
+
+.screen-stage[data-screen="settings"] .settings-layout .toggle-setting:hover,
+.screen-stage[data-screen="settings"] .settings-layout .toggle-setting:focus-visible {
+  color: #fff;
+  background: transparent;
+}
+
+.screen-stage[data-screen="settings"] .toggle-setting-text > span {
+  color: inherit;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.screen-stage[data-screen="settings"] .settings-layout .toggle-setting i {
+  width: 34px;
+  height: 18px;
+  background: #292929;
+  border-color: #444444;
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="settings"] .settings-layout .toggle-setting i.on {
+  background: #ffffff;
+  border-color: #ffffff;
+  box-shadow: none;
+}
+
+.screen-stage[data-screen="settings"] .settings-layout .toggle-setting i.on::after {
+  background: #000000;
+}
+
+.screen-stage[data-screen="settings"] .settings-layout :is(.btn-secondary, .btn-primary) {
+  height: 34px;
+  border-radius: 8px;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 120ms ease;
+}
+
+.screen-stage[data-screen="settings"] :is(.settings-update-status, .settings-status-row) {
+  min-height: 30px;
+  color: var(--compact-muted);
+  font-size: 12px;
+}
+
+.screen-stage[data-screen="settings"] .settings-update-progress {
+  height: 7px;
+  background: #1f1f1f;
+  border-color: var(--compact-border);
+}
+
+.screen-stage[data-screen="settings"] .settings-update-progress > span {
+  background: var(--compact-accent);
+}
+
+.screen-stage[data-screen="settings"] .settings-path {
+  color: var(--compact-muted);
+  font-size: 11px;
+}
+
+.screen-stage[data-screen="settings"] .settings-layout > .app-version {
+  position: absolute !important;
+  bottom: 8px !important;
+  right: 24px !important;
+  font-size: 11px !important;
+  color: var(--compact-muted) !important;
+  opacity: 0.55 !important;
+  pointer-events: none !important;
+}
+
+/* Shared notifications and dialogs */
+
+.activity-hud {
+  grid-template-columns: 22px minmax(0, 1fr) 28px;
+  gap: 9px;
+  width: min(360px, calc(100vw - 32px));
+  max-height: 112px;
+  padding: 9px 10px;
+  color: var(--compact-text);
+  background: #141414;
+  border: 1px solid #333333;
+  border-radius: 10px;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 48%);
+  backdrop-filter: none;
+}
+
+.activity-hud::after {
+  display: none;
+}
+
+.activity-hud > i {
+  width: 18px;
+  height: 18px;
+  border-color: rgba(255, 255, 255, 0.16);
+  border-top-color: var(--compact-accent);
+}
+
+.activity-hud :is(strong, span) {
+  font-size: 12px;
+}
+
+.activity-hud-dismiss {
+  width: 28px;
+  height: 28px;
+  color: var(--compact-muted);
+  background: transparent;
+  border-color: transparent;
+  border-radius: 7px;
+}
+
+.activity-hud-dismiss:hover {
+  color: var(--compact-text);
+  background: #181818;
+}
+
+.modal-layer {
+  padding: 16px;
+  background: rgb(0 0 0 / 78%);
+  backdrop-filter: none;
+}
+
+.modal-layer .modal {
+  width: min(500px, 100%);
+  max-height: calc(100vh - 32px);
+  padding: 20px;
+  color: var(--compact-text);
+  background: #141414;
+  border: 1px solid #333333;
+  border-radius: 12px;
+  box-shadow: 0 24px 72px rgb(0 0 0 / 60%);
+  overflow-y: auto;
+}
+
+.modal-layer .modal-sheen {
+  display: none;
+}
+
+.modal-layer .modal-close {
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  color: var(--compact-muted);
+  background: transparent;
+  border-color: #444444;
+  border-radius: 8px;
+}
+
+.modal-layer .modal-close:hover {
+  color: #fff;
+  background: #181818;
+  border-color: #666666;
+}
+
+.modal-layer .modal-head {
+  gap: 11px;
+  padding-right: 34px;
+}
+
+.modal-layer .modal-icon {
+  color: var(--compact-accent);
+  background: var(--compact-accent-soft);
+  border-color: var(--compact-accent-line);
+  border-radius: 8px;
+}
+
+.modal-layer .modal-kicker {
+  color: var(--compact-accent);
+  font-size: 11px;
+}
+
+.modal-layer .modal-heading h3 {
+  margin: 2px 0 0;
+  color: var(--compact-text);
+  font-size: 18px;
+}
+
+.modal-layer .modal-body {
+  color: var(--compact-muted);
+  font-size: 13px;
+}
+
+.modal-layer .modal-body > p {
+  color: var(--compact-muted);
+  font-size: 13px;
+}
+
+.modal-layer .modal-meta-row {
+  min-height: 32px;
+  padding: 5px 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--compact-border-soft);
+  border-radius: 0;
+}
+
+.modal-layer .modal-meta-row:last-child {
+  border-bottom: 0;
+}
+
+.modal-layer .modal-list {
+  background: transparent;
+  border-color: var(--compact-border);
+  border-radius: 8px;
+}
+
+.modal-layer .modal-list li::before {
+  background: var(--compact-accent);
+}
+
+.modal-layer .modal-actions {
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.modal-layer .modal-actions > button {
+  min-width: 112px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.speedtest-overlay {
+  padding: 16px;
+  background: rgb(0 0 0 / 78%);
+  backdrop-filter: none;
+}
+
+:is(.speedtest-panel, .protection-panel) {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 32px);
+  padding: 20px;
+  color: var(--compact-text);
+  background: #141414;
+  border: 1px solid #333333;
+  border-radius: 12px;
+  box-shadow: 0 24px 72px rgb(0 0 0 / 60%);
+  backdrop-filter: none;
+  overflow-y: auto;
+}
+
+.speedtest-panel::before {
+  display: none;
+}
+
+.speedtest-close {
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  color: var(--compact-muted);
+  background: transparent;
+  border: 1px solid #444444;
+  border-radius: 8px;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.speedtest-close:hover {
+  color: #fff;
+  background: #181818;
+  border-color: #666666;
+}
+
+.speedtest-head {
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 12px;
+  padding-right: 34px;
+}
+
+.speedtest-orb {
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background: #18181b !important;
+  border: 2px solid #3f3f46 !important;
+  box-shadow: none !important;
+}
+
+.speedtest-orb.live {
+  background: conic-gradient(#ffffff var(--speed-angle, 0deg), #27272a 0deg) !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.25) !important;
+}
+
+.speedtest-orb.complete {
+  background: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3) !important;
+}
+
+.speedtest-orb.complete > div {
+  color: #000000 !important;
+  background: #ffffff !important;
+}
+
+.speedtest-orb.complete svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
+  stroke-width: 2.8 !important;
+}
+
+.speedtest-orb.failed,
+.speedtest-orb.error {
+  background: #27272a !important;
+  border: 2px solid #71717a !important;
+}
+
+.speedtest-orb.failed > div,
+.speedtest-orb.error > div {
+  color: #ffffff !important;
+  background: #09090b !important;
+}
+
+.speedtest-orb > div {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  background: #09090b !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  z-index: 2 !important;
+  box-shadow: none !important;
+}
+
+.speedtest-orb::before {
+  display: none !important;
+}
+
+.speedtest-orb strong {
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+
+.speedtest-title span {
+  color: #a1a1aa !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+
+.speedtest-title strong {
+  color: #ffffff !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+}
+
+.speedtest-head .speed-progress {
+  grid-column: 1 / -1;
+  height: 5px;
+  background: #27272a !important;
+  border: 1px solid #3f3f46 !important;
+  border-radius: 999px !important;
+}
+
+.speedtest-head .speed-progress b {
+  background: #ffffff !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.4) !important;
+}
+
+.speedtest-metrics {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin-top: 14px !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.speed-metric {
+  min-height: 84px !important;
+  padding: 12px 14px !important;
+  background: #111113 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 9px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  box-shadow: none !important;
+  transition: border-color 150ms ease !important;
+}
+
+.speed-metric:hover {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+.speed-metric.primary {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: #141417 !important;
+}
+
+.speed-metric > span {
+  color: #a1a1aa !important;
+  font-size: 11px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.03em !important;
+}
+
+.speed-metric > span svg {
+  color: #a1a1aa !important;
+}
+
+.speed-metric > strong,
+.speed-metric.accent > strong {
+  color: #ffffff !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  margin-top: 8px !important;
+  line-height: 1.2 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.speedtest-context {
+  display: none !important;
+}
+
+.speedtest-actions {
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top-color: var(--compact-border);
+}
+
+.speedtest-cancel,
+.protection-check-action {
+  min-height: 34px;
+  padding: 0 12px;
+  color: var(--compact-text);
+  background: transparent;
+  border: 1px solid #444444;
+  border-radius: 8px;
+  font-size: 12px;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+:is(.speedtest-cancel, .protection-check-action):hover {
+  color: #fff;
+  background: #181818;
+  border-color: #666666;
+}
+
+.protection-panel {
+  gap: 14px;
+}
+
+.protection-panel:is(.good, .warn, .bad, .info) {
+  border-color: #333333;
+}
+
+.protection-head {
+  gap: 11px;
+  padding-right: 34px;
+}
+
+.protection-verdict {
+  width: 38px;
+  height: 38px;
+  background: #090909;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.protection-head strong {
+  color: var(--compact-text);
+  font-size: 17px;
+}
+
+.protection-head > div > span,
+.protection-check p,
+.protection-check-hint,
+.protection-empty,
+.protection-foot {
+  color: var(--compact-muted);
+  font-size: 12px;
+}
+
+.protection-panel h4 {
+  color: var(--compact-text);
+  font-size: 13px;
+}
+
+.protection-checks {
+  gap: 0;
+  background: transparent;
+  border: solid var(--compact-border);
+  border-width: 1px 0;
+  border-radius: 0;
+}
+
+.protection-check {
+  padding: 10px 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--compact-border-soft);
+  border-radius: 0;
+}
+
+.protection-check:last-child {
+  border-bottom: 0;
+}
+
+.protection-check:is(.pass, .warn, .fail, .skipped) {
+  background: transparent;
+  border-color: var(--compact-border-soft);
+}
+
+.protection-check strong {
+  color: var(--compact-text);
+  font-size: 13px;
+}
+
+details.protection-check-facts {
+  background: #090909;
+  border-color: var(--compact-border);
+  border-radius: 8px;
+}
+
+details.protection-check-facts > summary {
+  color: var(--compact-muted);
+  font-size: 12px;
+}
+
+.protection-limits {
+  padding: 10px 12px;
+  background: #090909;
+  border-color: var(--compact-border);
+  border-radius: 8px;
+}
+
+/* Compact desktop adjustments */
+
+@media (max-width: 1100px) {
+  .screen-stage[data-screen="vpn"] .vpn-layout,
+  .screen-stage[data-screen="dns"] .dns-layout {
+    grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr);
+  }
+
+  .screen-stage[data-screen="telegram-proxy"] .telegram-layout {
+    grid-template-columns: minmax(390px, 1fr) 260px;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-server-row {
+    grid-template-columns: 24px 32px minmax(0, 1fr) 52px 104px;
+    gap: 8px;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-country-flag {
+    width: 32px;
+  }
+
+  .screen-stage[data-screen="vpn"] .country-flag {
+    width: 30px;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 861px) {
+  .screen-stage[data-screen="vpn"] :is(.vpn-servers-panel, .vpn-subscription-panel, .vpn-provider-panel),
+  .screen-stage[data-screen="dns"] :is(.dns-form, .side-stack > .panel),
+  .screen-stage[data-screen="telegram-proxy"] :is(.telegram-form, .telegram-status),
+  .screen-stage[data-screen="settings"] .settings-surface {
+    padding: 13px 14px;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-server-row {
+    min-height: 46px;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-side-stack {
+    gap: 10px;
+  }
+
+  .screen-stage[data-screen="vpn"] :is(.vpn-subscription-panel, .vpn-provider-panel) {
+    gap: 6px;
+    padding: 12px;
+  }
+
+  .screen-stage[data-screen="vpn"] :is(.vpn-subscription-panel, .vpn-provider-panel) .section-title {
+    font-size: 14px;
+    line-height: 18px;
+  }
+
+  .screen-stage[data-screen="vpn"] .subscription-status {
+    min-height: 24px;
+    font-size: 12px;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-side-stack .kv-list > div {
+    min-height: 28px;
+    padding-block: 3px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-side-stack .kv-list strong {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-subscription-panel :is(.btn-secondary, .btn-danger) {
+    min-width: 0;
+    height: 30px;
+    padding-inline: 10px;
+  }
+
+  .screen-stage[data-screen="zapret"] .config-actions {
+    gap: 5px;
+  }
+
+  .screen-stage[data-screen="zapret"] .config-actions :is(.btn-primary, .btn-secondary, .btn-danger) {
+    height: 30px;
+  }
+
+  .screen-stage[data-screen="settings"] .settings-section {
+    padding-block: 8px;
+  }
+}
+
+/* Narrow windows and 200% zoom: one reachable document flow. */
+
+@media (max-width: 860px) {
+  .screen-stage[data-screen="vpn"],
+  .screen-stage[data-screen="dns"],
+  .screen-stage[data-screen="zapret"],
+  .screen-stage[data-screen="telegram-proxy"],
+  .screen-stage[data-screen="settings"] {
+    overflow: hidden auto;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-layout,
+  .screen-stage[data-screen="dns"] .dns-layout,
+  .screen-stage[data-screen="zapret"] .zapret-layout,
+  .screen-stage[data-screen="telegram-proxy"] .telegram-layout,
+  .screen-stage[data-screen="settings"] .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    align-content: start;
+    height: auto;
+    max-height: none;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-servers-panel,
+  .screen-stage[data-screen="vpn"] .vpn-side-stack,
+  .screen-stage[data-screen="dns"] .dns-form,
+  .screen-stage[data-screen="dns"] .side-stack,
+  .screen-stage[data-screen="zapret"] .config-list,
+  .screen-stage[data-screen="zapret"] .zapret-main,
+  .screen-stage[data-screen="telegram-proxy"] .telegram-form,
+  .screen-stage[data-screen="telegram-proxy"] .telegram-status {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-server-list,
+  .screen-stage[data-screen="zapret"] .config-scroll,
+  .screen-stage[data-screen="telegram-proxy"] .log-list {
+    max-height: min(360px, 48vh);
+    overflow-y: auto;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-side-stack,
+  .screen-stage[data-screen="dns"] .side-stack,
+  .screen-stage[data-screen="zapret"] .zapret-main {
+    grid-template-rows: none;
+  }
+
+  .screen-stage[data-screen="zapret"] .config-list {
+    grid-template-rows: auto auto auto auto;
+    align-self: start;
+  }
+
+  .screen-stage[data-screen="zapret"] .config-scroll {
+    min-height: 72px;
+  }
+
+  .screen-stage[data-screen="zapret"] .zapret-workbench,
+  .screen-stage[data-screen="zapret"] .zapret-routes-flowseal {
+    overflow: visible;
+  }
+
+  .screen-stage[data-screen="telegram-proxy"] .telegram-advanced-toggles .toggle-line {
+    height: auto;
+    min-height: 42px;
+    padding-block: 5px;
+  }
+
+}
+
+@media (max-width: 600px) {
+  .screen-stage[data-screen="vpn"] .vpn-panel-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-head-actions,
+  .screen-stage[data-screen="vpn"] .vpn-panel-head label {
+    width: 100%;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-head-actions .btn-primary {
+    width: 92px;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-head-actions label {
+    flex: 1;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-server-row {
+    grid-template-columns: 28px 36px minmax(0, 1fr) auto;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-server-ping {
+    grid-column: 3;
+    grid-row: 2;
+    text-align: left;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-server-row .btn-primary {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+    width: 130px;
+  }
+
+  .screen-stage[data-screen="dns"] .preset-grid,
+  .screen-stage[data-screen="dns"] .dns-link-preview,
+  .screen-stage[data-screen="zapret"] .zapret-routes-grid.compact-routes-grid,
+  .screen-stage[data-screen="telegram-proxy"] .telegram-runtime-grid,
+  .screen-stage[data-screen="telegram-proxy"] .telegram-advanced-toggles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .screen-stage[data-screen="dns"] .button-row,
+  .screen-stage[data-screen="telegram-proxy"] .telegram-primary-actions {
+    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
+    display: grid;
+  }
+
+  .screen-stage[data-screen="dns"] .button-row > *,
+  .screen-stage[data-screen="telegram-proxy"] .telegram-primary-actions > * {
+    width: 100%;
+  }
+
+  .screen-stage[data-screen="telegram-proxy"] .telegram-address-grid {
+    grid-template-columns: minmax(0, 1fr) 108px;
+  }
+
+  .screen-stage[data-screen="zapret"] :is(.table-head, .table-row-main) {
+    grid-template-columns: minmax(100px, 1fr) minmax(82px, 0.8fr) 52px 32px;
+    column-gap: 6px;
+  }
+
+  .modal-layer .modal-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .modal-layer .modal-actions > button {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .screen-stage[data-screen="vpn"] .vpn-server-row {
+    grid-template-columns: 26px 34px minmax(0, 1fr);
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-server-row .btn-primary {
+    grid-column: 2 / -1;
+    grid-row: auto;
+    width: 100%;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-server-ping {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .screen-stage[data-screen="dns"] .preset-grid,
+  .screen-stage[data-screen="dns"] .dns-link-preview,
+  .screen-stage[data-screen="telegram-proxy"] .telegram-address-grid,
+  .screen-stage[data-screen="telegram-proxy"] .telegram-runtime-grid,
+  .screen-stage[data-screen="telegram-proxy"] .telegram-advanced-toggles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .screen-stage[data-screen="zapret"] .config-legend {
+    flex-wrap: wrap;
+  }
+
+  .screen-stage[data-screen="zapret"] .table-head {
+    display: none;
+  }
+
+  .screen-stage[data-screen="zapret"] .table-row-main {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .screen-stage[data-screen="zapret"] .table-row-main > :nth-child(3),
+  .screen-stage[data-screen="zapret"] .table-row-main > :nth-child(4) {
+    justify-self: end;
+  }
+
+  .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line p {
+    grid-column: 1 / -1;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(
+      .vpn-layout,
+      .dns-layout,
+      .zapret-layout,
+      .telegram-layout,
+      .settings-layout,
+      .modal-layer,
+      .activity-hud
+    ),
+  :is(
+      .vpn-layout,
+      .dns-layout,
+      .zapret-layout,
+      .telegram-layout,
+      .settings-layout,
+      .modal-layer,
+      .activity-hud
+    ) *,
+  :is(
+      .vpn-layout,
+      .dns-layout,
+      .zapret-layout,
+      .telegram-layout,
+      .settings-layout,
+      .modal-layer,
+      .activity-hud
+    )::before,
+  :is(
+      .vpn-layout,
+      .dns-layout,
+      .zapret-layout,
+      .telegram-layout,
+      .settings-layout,
+      .modal-layer,
+      .activity-hud
+    )::after {
+    scroll-behavior: auto;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
+
+  :is(.speedtest-overlay, .speedtest-panel, .protection-panel),
+  :is(.speedtest-overlay, .speedtest-panel, .protection-panel) *,
+  :is(.speedtest-overlay, .speedtest-panel, .protection-panel)::before,
+  :is(.speedtest-overlay, .speedtest-panel, .protection-panel)::after {
+    scroll-behavior: auto;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
+}

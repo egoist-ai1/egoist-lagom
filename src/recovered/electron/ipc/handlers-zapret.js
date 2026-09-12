@@ -1,0 +1,155 @@
+//#region src/electron/ipc/handlers-zapret.ts
+function getZapretProfile(rawProfile, fallbackProfile) {
+	if (typeof rawProfile === "undefined" || rawProfile === null || rawProfile === "") return fallbackProfile;
+	return ZapretProfileInputSchema.parse(rawProfile);
+}
+async function assertVpnDisconnected(runtimeManager, message) {
+	if ((await runtimeManager.status()).connected) throw new Error(message);
+}
+async function prepareZapretProbeDns(systemDohManager) {
+	if (!systemDohManager?.status || typeof systemDohManager.stopAndRemove !== "function") return;
+	const current = await systemDohManager.status({ force: true });
+	if (current?.running === true && current?.verified === true) return;
+	const restored = await systemDohManager.stopAndRemove();
+	if (restored?.ok === false) throw new Error(restored.message || restored.error || "Не удалось подготовить DNS для автоподбора профилей Zapret.");
+	const after = await systemDohManager.status({ force: true });
+	if (!after || typeof after !== "object") throw new Error("Не удалось проверить DNS перед автоподбором профилей Zapret.");
+	if (after?.lastError) throw new Error(after.lastError);
+	if (after.running === true && after.verified !== true) throw new Error("DNS не прошёл проверку перед автоподбором профилей Zapret.");
+}
+function registerZapretHandlers({ stateStore, runtimeManager, systemDohManager, zapretManager, networkCombinatorManager }) {
+	const mutate = (action, operation, guardMessage, requiredLocks = ["packet-interception", "windivert"]) => {
+		const guardedOperation = async () => {
+			// The VPN check must run after the combinator grants the mutation lock.
+			// Checking before queueing leaves a TOCTOU window in which VPN can
+			// connect while a Zapret operation is waiting for packet-interception.
+			if (guardMessage) await assertVpnDisconnected(runtimeManager, guardMessage);
+			return operation();
+		};
+		return networkCombinatorManager ? networkCombinatorManager.runCoordinatedMutation({
+			module: "zapret",
+			action,
+			requiredLocks,
+			conflictsWith: ["traffic-route", "zapret-suspend"]
+		}, guardedOperation) : guardedOperation();
+	};
+	let autoSelectPending = false;
+	let autoSelectCancelQueued = false;
+	ipcMain.handle("zapret:status", async () => {
+		return zapretManager.status();
+	});
+	ipcMain.handle("zapret:list-profiles", async () => {
+		return zapretManager.listProfiles();
+	});
+	ipcMain.handle("zapret:dry-run-profile", async (_event, rawProfile) => {
+		const fallbackProfile = stateStore.get().settings.zapretProfile;
+		const profile = getZapretProfile(rawProfile, fallbackProfile);
+		return zapretManager.dryRunProfile(profile);
+	});
+	ipcMain.handle("zapret:get-user-lists", async () => {
+		return zapretManager.getUserLists();
+	});
+	ipcMain.handle("zapret:save-user-lists", async (_event, rawLists) => {
+		return mutate("save-user-lists", () => zapretManager.saveUserLists(ZapretUserListsInputSchema.parse(rawLists)), "Сначала отключите VPN внутри EgoistShield, затем меняйте пользовательские списки Zapret.");
+	});
+	ipcMain.handle("zapret:install-service", async (_event, rawProfile) => {
+		const fallbackProfile = stateStore.get().settings.zapretProfile;
+		const profile = getZapretProfile(rawProfile, fallbackProfile);
+		return mutate("install-service", () => zapretManager.installService(profile), "Нельзя устанавливать или переустанавливать службу Zapret при активном VPN.");
+	});
+	ipcMain.handle("zapret:set-service-profile", async (_event, rawProfile) => {
+		const fallbackProfile = stateStore.get().settings.zapretProfile;
+		const profile = getZapretProfile(rawProfile, fallbackProfile);
+		return mutate("set-service-profile", () => zapretManager.setServiceProfile(profile), "Сначала отключите VPN внутри EgoistShield, затем меняйте профиль службы Zapret.");
+	});
+	ipcMain.handle("zapret:start-service", async () => {
+		return mutate("start-service", () => zapretManager.startService(), "Сначала отключите VPN внутри EgoistShield, затем запускайте службу Zapret.");
+	});
+	ipcMain.handle("zapret:stop-service", async () => {
+		return mutate("stop-service", () => zapretManager.stopService());
+	});
+	ipcMain.handle("zapret:remove-service", async () => {
+		return mutate("remove-service", () => zapretManager.removeService());
+	});
+	ipcMain.handle("zapret:start-standalone", async (_event, rawProfile) => {
+		const fallbackProfile = stateStore.get().settings.zapretProfile;
+		const profile = getZapretProfile(rawProfile, fallbackProfile);
+		return mutate("start-standalone", () => zapretManager.startStandalone(profile), "Сначала отключите VPN внутри EgoistShield, затем запускайте standalone Zapret.");
+	});
+	ipcMain.handle("zapret:restart-standalone", async (_event, rawProfile) => {
+		const fallbackProfile = stateStore.get().settings.zapretProfile;
+		const profile = getZapretProfile(rawProfile, fallbackProfile);
+		return mutate("restart-standalone", () => zapretManager.restartStandalone(profile), "Сначала отключите VPN внутри EgoistShield, затем перезапускайте standalone Zapret.");
+	});
+	ipcMain.handle("zapret:stop-standalone", async () => {
+		return mutate("stop-standalone", () => zapretManager.stopStandalone());
+	});
+	ipcMain.handle("zapret:set-game-filter-mode", async (_event, rawMode) => {
+		return mutate("set-game-filter-mode", () => zapretManager.setGameFilterMode(ZapretGameFilterModeSchema.parse(rawMode)));
+	});
+	ipcMain.handle("zapret:set-ipset-mode", async (_event, rawMode) => {
+		return mutate("set-ipset-mode", () => zapretManager.setIpsetMode(ZapretIpsetModeSchema.parse(rawMode)));
+	});
+	ipcMain.handle("zapret:update-ipset-list", async () => {
+		return mutate("update-ipset-list", () => zapretManager.updateIpsetList());
+	});
+	ipcMain.handle("zapret:set-update-checks-enabled", async (_event, rawEnabled) => {
+		return mutate("set-update-checks", () => zapretManager.setUpdateChecksEnabled(ZapretUpdateChecksInputSchema.parse(rawEnabled)));
+	});
+	ipcMain.handle("zapret:check-updates", async () => {
+		return zapretManager.checkForUpdates();
+	});
+	ipcMain.handle("zapret:install-core-update", async () => {
+		return mutate("install-core-update", () => zapretManager.installCoreUpdate(), "Сначала отключите VPN внутри EgoistShield, затем обновляйте Flowseal Core.");
+	});
+	ipcMain.handle("zapret:install-core-version", async (_event, rawVersion) => {
+		return mutate("install-core-version", () => zapretManager.installCoreVersion(ZapretCoreVersionInputSchema.parse(rawVersion)), "Сначала отключите VPN внутри EgoistShield, затем меняйте версию Flowseal Core.");
+	});
+	ipcMain.handle("zapret:run-core-updater", async () => {
+		return mutate("run-core-updater", () => zapretManager.runCoreUpdater());
+	});
+	ipcMain.handle("zapret:reset-network-state", async () => {
+		return mutate("reset-network-state", () => zapretManager.resetNetworkState(), "Сначала отключите VPN внутри EgoistShield, затем сбрасывайте состояние Zapret.");
+	});
+	ipcMain.handle("zapret:diagnostics", async () => {
+		return zapretManager.runDiagnostics();
+	});
+	ipcMain.handle("zapret:auto-select", async (event) => {
+		autoSelectPending = true;
+		try {
+			return await mutate("auto-select", async () => {
+				if (autoSelectCancelQueued) {
+					autoSelectCancelQueued = false;
+					if (!event.sender.isDestroyed()) event.sender.send("zapret:auto-select-progress", { phase: "cancelled" });
+					return { completed: false, cancelled: true, bestProfile: null, goodProfiles: [], badProfiles: [], testedProfiles: [], results: [], testResults: [] };
+				}
+				await prepareZapretProbeDns(systemDohManager);
+				if (autoSelectCancelQueued) {
+					autoSelectCancelQueued = false;
+					if (!event.sender.isDestroyed()) event.sender.send("zapret:auto-select-progress", { phase: "cancelled" });
+					return { completed: false, cancelled: true, bestProfile: null, goodProfiles: [], badProfiles: [], testedProfiles: [], results: [], testResults: [] };
+				}
+				return zapretManager.autoSelectBestProfile((progress) => {
+					if (!event.sender.isDestroyed()) event.sender.send("zapret:auto-select-progress", progress);
+				});
+			}, "Сначала отключите VPN внутри EgoistShield, затем запускайте автоподбор профилей Zapret.", ["packet-interception", "windivert", "dns", "dns-verify"]);
+		} finally {
+			autoSelectPending = false;
+			autoSelectCancelQueued = false;
+		}
+	});
+	ipcMain.handle("zapret:cancel-auto-select", async () => {
+		if (autoSelectPending) autoSelectCancelQueued = true;
+		return zapretManager.cancelAutoSelect();
+	});
+	ipcMain.handle("zapret:open-service-menu", async () => {
+		return zapretManager.openServiceMenu();
+	});
+	ipcMain.handle("zapret:run-flowseal-tests", async () => {
+		return mutate("run-flowseal-tests", () => zapretManager.runFlowsealTests(), "Сначала отключите VPN внутри EgoistShield, затем запускайте Flowseal tests.");
+	});
+	ipcMain.handle("zapret:clean-discord-cache", async (_event, rawTarget) => {
+		return mutate("clean-discord-cache", () => zapretManager.cleanDiscordCache(ZapretDiscordCacheTargetSchema.parse(rawTarget)));
+	});
+}
+//#endregion

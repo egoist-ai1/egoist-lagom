@@ -1,0 +1,128 @@
+/* Final compact layout guardrails. Keep narrow panels readable without changing
+   the existing component hierarchy or interaction model. */
+.settings-release-actions {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 6px !important;
+  min-width: 0;
+}
+
+.settings-release-actions > button {
+  flex: 1 1 180px;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-release-actions > button::before,
+.settings-release-actions > button::after {
+  content: none !important;
+  display: none !important;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-list {
+  display: flex !important;
+  flex: 1 1 0 !important;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line {
+  display: grid !important;
+  flex: 0 0 42px !important;
+  grid-template-columns: 58px 40px minmax(0, 1fr) !important;
+  align-items: start !important;
+  min-height: 42px !important;
+  height: 42px !important;
+  max-height: 42px !important;
+  min-width: 0;
+  padding: 5px 2px !important;
+  overflow: hidden !important;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line span,
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line strong,
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line p {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line p {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  margin: 0 !important;
+  line-height: 1.25 !important;
+  max-height: 26px !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .screen-stage[data-screen="settings"] .settings-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: none !important;
+    align-content: start !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    gap: 10px !important;
+  }
+
+  .screen-stage[data-screen="settings"] .settings-surface {
+    height: auto !important;
+    min-height: max-content !important;
+  }
+
+  .screen-stage[data-screen="settings"] .settings-preferences-surface .settings-preferences-list,
+  .screen-stage[data-screen="settings"] .settings-service-surface .settings-service-list {
+    flex: 0 0 auto !important;
+    min-height: max-content !important;
+  }
+
+  .screen-stage[data-screen="settings"] .settings-layout > .app-version {
+    display: none !important;
+  }
+
+  .settings-release-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .settings-release-actions > button {
+    width: 100% !important;
+    flex-basis: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line {
+    flex-basis: 40px !important;
+    grid-template-columns: 52px 40px minmax(0, 1fr) !important;
+    min-height: 40px !important;
+    height: 40px !important;
+    max-height: 40px !important;
+    padding: 4px 2px !important;
+  }
+
+  .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line p {
+    grid-column: auto !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-release-actions > button {
+    transition: none !important;
+  }
+}

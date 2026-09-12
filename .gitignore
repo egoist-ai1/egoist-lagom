@@ -1,0 +1,20 @@
+node_modules/
+.tools/
+recovery/
+references/
+.local/
+dist/
+out/
+.vite/
+**/bin/
+**/obj/
+*.private.pem
+*.key
+
+# Local agent/project instructions are not part of the public repository.
+AGENTS.md
+AI_INSTRUCTIONS_AND_ARCHITECTURE.md
+LAGOM_AUDIT_REPORT.md
+
+*.log
+__pycache__/
