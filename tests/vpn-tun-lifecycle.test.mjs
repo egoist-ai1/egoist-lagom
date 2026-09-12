@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { promisify } from 'node:util';
-import { loadRecovered } from './load-recovered.mjs';
+import { loadRecovered, officialBaselineAvailable } from './load-recovered.mjs';
 
 class RuntimeInstaller {
   constructor() {}
@@ -103,11 +103,13 @@ async function runReplacement(VpnRuntimeManager, options = {}) {
 }
 
 test('serializes a previous TUN session before preparing its replacement (baseline fails)', async () => {
-  const BaselineVpnRuntimeManager = loadVpnRuntimeManager({ baseline: true });
-  await assert.rejects(
-    runReplacement(BaselineVpnRuntimeManager, { requireNoActiveBeforePrepare: true }),
-    /old active TUN was still present during preparation/
-  );
+  if (officialBaselineAvailable()) {
+    const BaselineVpnRuntimeManager = loadVpnRuntimeManager({ baseline: true });
+    await assert.rejects(
+      runReplacement(BaselineVpnRuntimeManager, { requireNoActiveBeforePrepare: true }),
+      /old active TUN was still present during preparation/
+    );
+  }
 
   const VpnRuntimeManager = loadVpnRuntimeManager();
   const { events, previousSession } = await runReplacement(VpnRuntimeManager, { requireNoActiveBeforePrepare: true });
@@ -151,11 +153,13 @@ test('failed serial TUN replacement releases dead proxy ownership', async () => 
 });
 
 test('retries the recorded Windows Xray TUN route failure once after serial cleanup (baseline fails)', async () => {
-  const BaselineVpnRuntimeManager = loadVpnRuntimeManager({ baseline: true });
-  await assert.rejects(
-    runReplacement(BaselineVpnRuntimeManager, { retryableTunRouteFailure: true }),
-    /route initialization failure was not retried/
-  );
+  if (officialBaselineAvailable()) {
+    const BaselineVpnRuntimeManager = loadVpnRuntimeManager({ baseline: true });
+    await assert.rejects(
+      runReplacement(BaselineVpnRuntimeManager, { retryableTunRouteFailure: true }),
+      /route initialization failure was not retried/
+    );
+  }
 
   const VpnRuntimeManager = loadVpnRuntimeManager();
   const { events, previousSession } = await runReplacement(VpnRuntimeManager, { retryableTunRouteFailure: true });
