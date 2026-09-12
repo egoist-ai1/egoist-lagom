@@ -83,6 +83,14 @@ NSIS           exit 0
 Core self-test passed
 ```
 
+Быстрый контур снимает состояние DNS, прокси, служб и процессов до запуска, выполняет проверки во временном каталоге и сравнивает состояние после завершения:
+
+```powershell
+.\scripts\run-fast-validation.ps1 -EvidenceDirectory (Join-Path $env:TEMP 'egoist-lagom-validation')
+```
+
+Для UI-проверок передайте абсолютный путь к установленному `playwright/index.mjs` через `-PlaywrightModule`.
+
 Подробности и границы подтверждения находятся в [docs/validation.md](docs/validation.md). Живые сетевые результаты зависят от конкретной конфигурации Windows и внешних серверов.
 
 ## Приватность и лицензия
