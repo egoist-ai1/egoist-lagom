@@ -41,7 +41,7 @@ function formatComponentName(name) {
 	return {
 		xray: "Xray",
 		"sing-box": "sing-box",
-		zapret: "Zapret",
+		zapret: "Профили",
 		"tg-ws-proxy": "Прокси Telegram"
 	}[name] ?? name;
 }
@@ -150,7 +150,7 @@ async function buildHealthReport(ctx) {
 	const components = [
 		{
 			id: "app",
-			title: "EgoistShield",
+			title: "Egoist Lagom",
 			state: "ok",
 			details: `Версия приложения ${app.getVersion()} работает через ${formatReleaseChannel(channel)}.`,
 			version: app.getVersion()
@@ -187,9 +187,9 @@ async function buildHealthReport(ctx) {
 		},
 		{
 			id: "zapret",
-			title: "Zapret / Flowseal",
+			title: "Профили / Lagom Core",
 			state: zapretStatus.available ? zapretStatus.lastError ? "warn" : "ok" : "error",
-			details: zapretStatus.available ? `Версия ядра: ${zapretStatus.coreVersion ?? "неизвестно"}, служба: ${zapretStatus.serviceRunning ? "работает" : "остановлена"}.` : "Компонент Zapret недоступен.",
+			details: zapretStatus.available ? `Версия ядра: ${zapretStatus.coreVersion ?? "неизвестно"}, служба: ${zapretStatus.serviceRunning ? "работает" : "остановлена"}.` : "Компонент профилей недоступен.",
 			path: zapretStatus.workDir,
 			lastError: zapretStatus.lastError
 		},

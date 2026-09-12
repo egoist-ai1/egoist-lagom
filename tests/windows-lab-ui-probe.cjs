@@ -139,7 +139,7 @@ const readinessExpression = `(() => {
 const domExpression = `(() => {
   const widget = document.querySelector('.shield-widget-container');
   const rect = widget?.getBoundingClientRect();
-  const button = document.querySelector('.shield-widget-main-btn');
+  const button = document.querySelector('.shield-interactive-trigger');
   const footer = document.querySelector('.shield-widget-footer')?.getBoundingClientRect();
   return {
     readyState: document.readyState,
@@ -147,8 +147,8 @@ const domExpression = `(() => {
     visibility: document.visibilityState,
     widgetPresent: !!widget,
     phase: widget?.dataset.phase || null,
-    brandText: document.querySelector('.shield-widget-brand')?.innerText?.replace(/\s+/g, ' ').trim() || '',
-    mainActionText: button?.innerText?.trim() || '',
+    brandText: document.querySelector('.shield-widget-brand')?.innerText?.replace(/\\s+/g, ' ').trim() || '',
+    mainActionText: button?.getAttribute('aria-label') || button?.innerText?.trim() || '',
     mainActionEnabled: !!button && !button.disabled,
     dnsSwitchPresent: !!document.querySelector('.shield-switch-toggle[role="switch"]'),
     settingsPresent: !!document.querySelector('.shield-settings-open-btn[aria-label="Настройки"]'),
@@ -174,6 +174,19 @@ function windowExpression(windowId, body) {
 
 function rendererExpression(windowId, expression) {
   return windowExpression(windowId, `return w.webContents.executeJavaScript(${JSON.stringify(expression)});`);
+}
+
+async function readNativeWidgetGeometry(windowId) {
+  return evaluate(windowExpression(windowId, 'return { outer: w.getBounds(), content: w.getContentBounds(), zoom: w.webContents.getZoomFactor() };'), wholeDeadline);
+}
+
+function compactViewportMatches(viewport, geometry) {
+  if (!viewport || !geometry?.content || Math.abs(geometry.zoom - 1) > 0.0001) return false;
+  const content = geometry.content;
+  return content.width >= 280 && content.width <= 360
+    && content.height >= 340 && content.height <= 440
+    && Math.abs(viewport.width - content.width) <= 1
+    && Math.abs(viewport.height - content.height) <= 1;
 }
 
 async function metrics(deadline) {
@@ -242,8 +255,12 @@ async function inspectWidgetAndDashboard(windowId) {
       viewport: { width: innerWidth, height: innerHeight },
       overflow: document.documentElement.scrollWidth > innerWidth + 1 || document.documentElement.scrollHeight > innerHeight + 1
     }))()`), wholeDeadline);
-    if (returned?.widgetPresent && returned.viewport.width === 296 && returned.viewport.height === 340 && !returned.overflow) {
-      await publish('widget-roundtrip-complete', { widgetRoundtrip: returned });
+    const geometry = await readNativeWidgetGeometry(windowId);
+    if (returned?.widgetPresent && compactViewportMatches(returned.viewport, geometry) && !returned.overflow) {
+      const stable = Math.abs(geometry.content.width - state.widgetGeometry.content.width) <= 1
+        && Math.abs(geometry.content.height - state.widgetGeometry.content.height) <= 1;
+      if (!stable) throw failure('widget-roundtrip-size-changed');
+      await publish('widget-roundtrip-complete', { widgetRoundtrip: { ...returned, geometry }, widgetGeometryStable: true });
       return;
     }
     await new Promise(resolve => setTimeout(resolve, remaining(wholeDeadline, 250)));
@@ -280,7 +297,7 @@ function installCloseLifecycleProbe(expectedPid, logPath) {
 }
 
 async function inspectScreens(windowId) {
-  for (const [id, label] of [['dashboard', 'Обзор'], ['vpn', 'VPN'], ['dns', 'DNS'], ['zapret', 'Запрет'], ['telegram-proxy', 'Telegram'], ['settings', 'Настройки'], ['dashboard', 'Обзор']]) {
+  for (const [id, label] of [['dashboard', 'Обзор'], ['vpn', 'Соединение'], ['dns', 'DNS'], ['zapret', 'Профили'], ['telegram-proxy', 'Telegram'], ['settings', 'Настройки'], ['dashboard', 'Обзор']]) {
     await evaluate(rendererExpression(windowId, `(() => {
       const button = [...document.querySelectorAll('.ruby-sidebar nav button')].find(button => button.getAttribute('aria-label') === ${JSON.stringify(label)});
       if (!button) throw new Error('screen-navigation-missing'); button.click(); return true;
@@ -362,9 +379,13 @@ async function main() {
   await publish('waiting-for-dom', { windowId });
   while (true) {
     const dom = await evaluate(rendererExpression(windowId, domExpression), readinessDeadline, 300_000);
-    await publish('waiting-for-dom', { dom });
+    const geometry = await readNativeWidgetGeometry(windowId);
+    await publish('waiting-for-dom', { dom, widgetGeometry: geometry });
     if (dom?.readyState === 'complete' && dom.retiredWindowsControlAbsent !== true) throw failure('retired-windows-control-api-present');
-    if (dom?.readyState === 'complete' && dom.visibility === 'visible' && dom.widgetPresent && dom.phase === 'idle' && dom.brandText === 'egoist / shield' && dom.mainActionText === 'Подключить' && dom.mainActionEnabled && dom.dnsSwitchPresent && dom.settingsPresent && dom.windowButtonCount === 2 && dom.generatedIconCount > 5 && dom.widgetInViewport && dom.footerInViewport && !dom.horizontalOverflow && !dom.verticalOverflow && dom.viewport.width === 296 && dom.viewport.height === 340) break;
+    if (dom?.readyState === 'complete' && dom.visibility === 'visible' && dom.widgetPresent && dom.phase === 'idle' && dom.brandText.replace(/\s+/g, '') === 'egoist/lagom' && dom.mainActionText === 'Подключить защиту' && dom.mainActionEnabled && dom.dnsSwitchPresent && dom.settingsPresent && dom.windowButtonCount === 2 && dom.generatedIconCount > 5 && dom.widgetInViewport && dom.footerInViewport && !dom.horizontalOverflow && !dom.verticalOverflow && compactViewportMatches(dom.viewport, geometry)) {
+      state.widgetGeometry = geometry;
+      break;
+    }
     await new Promise(resolve => setTimeout(resolve, remaining(readinessDeadline, 2_000)));
   }
   const metricsBefore = await metrics(wholeDeadline);

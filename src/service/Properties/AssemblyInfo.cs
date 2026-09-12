@@ -7,10 +7,10 @@ using System.Security.Permissions;
 
 [assembly: AssemblyCompany("EgoistShield.Service")]
 [assembly: AssemblyConfiguration("Release")]
-[assembly: AssemblyFileVersion("3.7.0.0")]
-[assembly: AssemblyInformationalVersion("3.7.0-recovered")]
+[assembly: AssemblyFileVersion("3.7.1.0")]
+[assembly: AssemblyInformationalVersion("3.7.1-recovered")]
 [assembly: AssemblyProduct("EgoistShield.Service")]
 [assembly: AssemblyTitle("EgoistShield.Service")]
 [assembly: TargetPlatform("Windows7.0")]
 [assembly: SupportedOSPlatform("Windows7.0")]
-[assembly: AssemblyVersion("3.7.0.0")]
+[assembly: AssemblyVersion("3.7.1.0")]

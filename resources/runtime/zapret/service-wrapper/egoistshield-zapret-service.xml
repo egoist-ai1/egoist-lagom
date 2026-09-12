@@ -1,7 +1,7 @@
 <service>
   <id>EgoistShieldZapret</id>
-  <name>EgoistShield Zapret</name>
-  <description>Integrated Zapret DPI bypass managed by EgoistShield. Profile: general (ALT4)</description>
+  <name>Egoist Lagom Profiles</name>
+  <description>Integrated profile service managed by Egoist Lagom. Profile: general (ALT4)</description>
   <startmode>Automatic</startmode>
   <delayedAutoStart>false</delayedAutoStart>
   <executable>C:\ProgramData\EgoistShield\Runtime\Zapret\core\bin\winws.exe</executable>

@@ -64,10 +64,10 @@ function validateManifest(value) {
 	if (manifest.channel !== "stable") throw new Error("Разрешён только stable release channel.");
 	if (typeof manifest.version !== "string" || !/^\d+\.\d+\.\d+$/.test(manifest.version)) throw new Error("Версия release manifest некорректна.");
 	if (manifest.tag !== `v${manifest.version}`) throw new Error("Tag и version release manifest не совпадают.");
-	if (manifest.installerName !== `EgoistShield-Setup-${manifest.version}.exe`) throw new Error("Имя Setup в release manifest некорректно.");
+	if (manifest.installerName !== "Egoist-Lagom-Setup.exe" && manifest.installerName !== `EgoistShield-Setup-${manifest.version}.exe`) throw new Error("Имя Setup в release manifest некорректно.");
 	if (typeof manifest.canonicalDownloadUrl !== "string") throw new Error("Отсутствует canonicalDownloadUrl.");
 	const canonicalUrl = new URL(manifest.canonicalDownloadUrl);
-	if (canonicalUrl.protocol !== "https:" || canonicalUrl.hostname.toLowerCase() !== "github.com" || canonicalUrl.pathname !== `/egoist-ai1/egoistshield/releases/download/${manifest.tag}/${manifest.installerName}` || canonicalUrl.search || canonicalUrl.hash) throw new Error("Canonical download URL не принадлежит release channel Egoist Shield.");
+	if (canonicalUrl.protocol !== "https:" || canonicalUrl.hostname.toLowerCase() !== "github.com" || canonicalUrl.pathname !== `/egoist-ai1/egoist-lagom/releases/download/${manifest.tag}/${manifest.installerName}` || canonicalUrl.search || canonicalUrl.hash) throw new Error("Canonical download URL не принадлежит release channel Egoist Lagom.");
 	if (!Number.isSafeInteger(manifest.size) || Number(manifest.size) <= 0 || Number(manifest.size) > 1024 * 1024 * 1024) throw new Error("Размер Setup в release manifest некорректен.");
 	manifest.sha256 = assertDigest(manifest.sha256, "sha256", "sha256");
 	manifest.sha512 = assertDigest(manifest.sha512, "sha512", "sha512");

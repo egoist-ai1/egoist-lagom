@@ -22,6 +22,7 @@ export async function prepareComponents(out, version) {
     }
     await fs.writeFile(path.join(target,'VERSION.txt'), update.version + '\n');
   }
+  await fs.copyFile('resources/runtime/zapret/service-wrapper/egoistshield-zapret-service.xml', path.join(runtime, 'zapret/service-wrapper/egoistshield-zapret-service.xml'));
   const manifestPath = path.join(runtime,'manifest.json');
   const wintunArchive = await fs.readFile(path.join(candidates, 'wintun-0.14.1.zip'));
   if (createHash('sha256').update(wintunArchive).digest('hex') !== '07c256185d6ee3652e09fa55c0b673e2624b565e02c4b9091c79ca7d2f24ef51') throw new Error('Official Wintun checksum mismatch');

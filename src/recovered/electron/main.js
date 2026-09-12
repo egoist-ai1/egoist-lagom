@@ -8,7 +8,7 @@ var runtimeEnvironment = detectRuntimeEnvironment({
 	nodeEnv: process.env.NODE_ENV
 });
 var appPathConfig = buildAppPathConfig({
-	defaultUserDataDir: app.getPath("userData"),
+	defaultUserDataDir: path.join(app.getPath("appData"), "Egoist Shield"),
 	environment: runtimeEnvironment,
 	pid: process.pid
 });
@@ -73,7 +73,7 @@ async function runBackgroundUpdateCheck() {
 	const result = toPublicUpdateResult(await desktopUpdater.check());
 	emitUpdateResult(result);
 	if (result.phase === "available" && result.latestVersion && Notification.isSupported() && globalStateStore?.get()?.settings?.notifications !== false) new Notification({
-		title: "Egoist Shield: обновление",
+		title: "Egoist Lagom: обновление",
 		body: `Доступна доверенная версия ${result.latestVersion}. Установите её одной кнопкой в настройках.`,
 		silent: true
 	}).show();
@@ -161,7 +161,7 @@ async function checkManagedComponentUpdates() {
 				if (info.updateAvailable && info.latestVersion && notifiedComponentVersions.get("zapret-core") !== info.latestVersion) {
 					notifiedComponentVersions.set("zapret-core", info.latestVersion);
 					if (Notification.isSupported() && globalStateStore?.get()?.settings?.notifications !== false) new Notification({
-						title: "Egoist Shield: Flowseal Core",
+						title: "Egoist Lagom: Flowseal Core",
 						body: `Доступно обновление ${info.latestVersion}`,
 						silent: true
 					}).show();
@@ -174,7 +174,7 @@ async function checkManagedComponentUpdates() {
 				notifiedComponentVersions.set("telegram-proxy", info.latestVersion);
 				logger.info(`[updates] Доступно обновление Telegram Proxy ${info.latestVersion} (ожидает ручной установки)`);
 				if (Notification.isSupported() && globalStateStore?.get()?.settings?.notifications !== false) new Notification({
-					title: "Egoist Shield: Telegram Proxy",
+					title: "Egoist Lagom: Telegram Proxy",
 					body: `Доступно обновление ${info.latestVersion}. Установите его на вкладке Telegram Proxy.`,
 					silent: true
 				}).show();
@@ -537,7 +537,7 @@ function parseXrayProxyStats(stdout) {
 }
 app.commandLine.appendSwitch("high-dpi-support", "1");
 var APP_USER_MODEL_ID = "egoist.shield.app.v3.7";
-app.setName("Egoist Shield");
+app.setName("Egoist Lagom");
 if (process.platform === "win32") app.setAppUserModelId(APP_USER_MODEL_ID);
 function getIconPath() {
 	const candidates = [
@@ -580,20 +580,24 @@ function getTrayAssetPath(filename) {
 * загрузки интерфейса, а внутри неё живут `netsh`, `sc.exe` и PowerShell. На
 * зависшем сетевом стеке любой из них не возвращается никогда, и приложение
 * навсегда останавливалось до появления обработчиков: окно открыто, но не
-* отвечает ни одна кнопка. Просроченный шаг теперь пропускается, а его работу
-* доделывает восстановление после загрузки renderer.
+* отвечает ни одна кнопка. Дедлайн ограничивает ожидание интерфейса, но не
+* отменяет системную операцию. Новые сетевые изменения ждут её завершения.
 */
+var pendingBootRecovery = new Set();
 async function withBootDeadline(label, budgetMs, work) {
 	let timer = null;
+	const pending = Promise.resolve().then(work);
+	pendingBootRecovery.add(pending);
+	pending.then(() => pendingBootRecovery.delete(pending), () => pendingBootRecovery.delete(pending));
 	const deadline = new Promise((resolve) => {
 		timer = setTimeout(() => {
-			logger.error(`[boot] ${label} exceeded ${Math.round(budgetMs / 1e3)} s and was skipped; the app continues to start.`);
+			logger.error(`[boot] ${label} exceeded ${Math.round(budgetMs / 1e3)} s; recovery continues while the interface starts.`);
 			resolve(null);
 		}, budgetMs);
 		timer.unref?.();
 	});
 	try {
-		return await Promise.race([work(), deadline]);
+		return await Promise.race([pending, deadline]);
 	} catch (error) {
 		logger.warn(`[boot] ${label} failed:`, error);
 		return null;
@@ -729,6 +733,7 @@ function stopDnsWatchdog() {
 	dnsWatchdogConsecutiveFailures = 0;
 }
 async function recoverBackgroundFeaturesAfterRendererLoad(loadedState) {
+	await Promise.allSettled([...pendingBootRecovery]);
 	logger.info("[boot] background recovery:start");
 	const usesLoopbackDns = isGravitylessLoopbackDnsRequest(String(loadedState.settings.systemDnsServers ?? ""));
 	const recoverDns = async () => {
@@ -850,7 +855,7 @@ async function createMainWindow() {
 		minHeight: WIDGET_WINDOW_HEIGHT,
 		useContentSize: true,
 		resizable: false,
-		title: "Egoist Shield",
+		title: "Egoist Lagom",
 		titleBarStyle: "hidden",
 		autoHideMenuBar: true,
 		show: false,
@@ -930,7 +935,7 @@ async function createMainWindow() {
 	if (!globalTelegramProxyManager) globalTelegramProxyManager = useComponentService(new TelegramProxyManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "TelegramProxy"), coreService), "TelegramProxy", coreService);
 	await reconcileOwnedSystemStateBeforeUi();
 	logger.info("[boot] registering IPC handlers");
-	globalNetworkCombinatorManager = await registerIpcHandlers(mainWindow, stateStore, globalRuntimeManager, globalGravitylessDnsManager, globalSystemDohManager, globalZapretManager, globalTelegramProxyManager);
+	globalNetworkCombinatorManager = await registerIpcHandlers(mainWindow, stateStore, globalRuntimeManager, globalGravitylessDnsManager, globalSystemDohManager, globalZapretManager, globalTelegramProxyManager, () => pendingBootRecovery.size === 0);
 	logger.info("[boot] IPC handlers registered");
 	logger.info("[boot] loading persisted state");
 	const loadedState = await stateStore.load();
@@ -1042,7 +1047,7 @@ function createTray() {
 		if (!iconPath) return;
 		tray = new Tray(nativeImage.createFromPath(iconPath));
 	}
-	tray.setToolTip("Egoist Shield");
+	tray.setToolTip("Egoist Lagom");
 	tray.on("click", () => {
 		if (mainWindow) {
 			if (!mainWindow.isVisible() || mainWindow.isMinimized()) {
@@ -1068,7 +1073,7 @@ else {
 	});
 	app.whenReady().then(async () => {
 		try {
-			app.setName("Egoist Shield");
+			app.setName("Egoist Lagom");
 			app.setAppUserModelId(APP_USER_MODEL_ID);
 			logger.info(`[paths] Runtime=${runtimeEnvironment}, userData=${USER_DATA_DIR}`);
 			await createMainWindow();
@@ -1082,7 +1087,7 @@ else {
 		} catch (error) {
 			const message = error instanceof Error ? error.stack ?? error.message : String(error);
 			logger.error("[boot] app startup failed:", message);
-			dialog.showErrorBox("Egoist Shield startup failed", message);
+			dialog.showErrorBox("Egoist Lagom startup failed", message);
 			app.quit();
 		}
 	});

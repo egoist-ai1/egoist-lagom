@@ -64,7 +64,7 @@ internal sealed class ClientAuthorizer
 			}
 			if (!string.Equals(text, fullPath2, StringComparison.OrdinalIgnoreCase))
 			{
-				throw new UnauthorizedAccessException("Named-pipe client is not the installed Egoist Shield executable.");
+				throw new UnauthorizedAccessException("Named-pipe client is not the installed Egoist Lagom executable.");
 			}
 			throw new UnauthorizedAccessException("Named-pipe client identity could not be classified.");
 		}

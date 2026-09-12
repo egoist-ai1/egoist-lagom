@@ -161,7 +161,7 @@ internal static class Program
 			{
 				WindowsDnsController dns = new WindowsDnsController();
 				await new WindowsNativeDohController(stateRoot).RemoveForUninstallAsync(dns);
-				Console.WriteLine("Egoist Shield native DoH ownership was removed safely.");
+				Console.WriteLine("Egoist Lagom native DoH ownership was removed safely.");
 				return 0;
 			}
 			if (parsed.ConfigureInstallRoot != null)

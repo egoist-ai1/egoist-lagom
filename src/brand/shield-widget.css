@@ -280,11 +280,11 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
 .shield-progress-track>span{
   display:block;
   height:100%;
+  width:100%;
   border-radius:inherit;
-  background:linear-gradient(90deg, #52525b, #ffffff, #52525b);
-  background-size:200% 100%;
-  animation:shimmer 1.8s linear infinite;
-  transition:width 0.4s ease-out;
+  background:linear-gradient(90deg, #71717a, #ffffff);
+  transform-origin:left center;
+  transition:transform 0.22s ease-out;
 }
 :is([data-phase='preparing'],[data-phase='selecting'],[data-phase='service'],[data-phase='dns'],[data-phase='telegram'],[data-phase='disconnecting']) .shield-progress-track{
   opacity:1;
@@ -476,12 +476,17 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
     transform:scale(1.03);
   }
 }
-@keyframes shimmer{
-  0%{
-    background-position:200% 0;
-  }
-  100%{
-    background-position:-200% 0;
-  }
+.shield-widget-container[data-hidden='true'] *,
+.shield-widget-container[data-hidden='true'] *::before,
+.shield-widget-container[data-hidden='true'] *::after{
+  animation-play-state:paused !important;
 }
 
+@media (prefers-reduced-motion:reduce){
+  .shield-widget-container *,
+  .shield-widget-container *::before,
+  .shield-widget-container *::after{
+    animation:none !important;
+    transition:none !important;
+  }
+}

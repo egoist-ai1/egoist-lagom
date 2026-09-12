@@ -549,7 +549,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		if (!status.connected) return {
 			reachable: false,
 			ip: null,
-			error: "VPN не подключён"
+			error: "Соединение не подключено"
 		};
 		if (IS_TEST_MOCK_RUNTIME) return {
 			reachable: true,
@@ -585,7 +585,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			return {
 				reachable: false,
 				ip: null,
-				error: "Внешний маршрут через VPN не подтвердился"
+				error: "Внешний маршрут соединения не подтвердился"
 			};
 		} finally {
 			await dispatcher.close().catch(() => void 0);
@@ -614,7 +614,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		if (!IS_TEST_MOCK_RUNTIME) try {
 			await zapretManager.prepareForVpn(state.settings.zapretSuspendDuringVpn);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Не удалось безопасно приостановить Zapret перед запуском VPN.";
+			const message = error instanceof Error ? error.message : "Не удалось безопасно приостановить профиль перед запуском соединения.";
 			logger.warn("[vpn:connect] Zapret suspend failed:", error);
 			return {
 				...await runtimeManager.status(),
@@ -635,7 +635,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			if (egress.reachable) {
 				result = await runtimeManager.markEgressVerified(egress.ip);
 			} else {
-				const details = egress.error ?? `Локальный VPN runtime для ${activeNode.name} запущен, но внешний маршрут не подтвердился.`;
+				const details = egress.error ?? `Локальный runtime для ${activeNode.name} запущен, но внешний маршрут не подтвердился.`;
 				const fallbackCandidates = (state.nodes || []).filter((node) => node.id !== activeNode.id);
 				fallbackCandidates.sort((a, b) => {
 					const aIsAuto = (a.name || "").toLowerCase().includes("auto");
@@ -667,11 +667,11 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 					}
 				}
 				if (!fallbackConnected) {
-					logger.warn("[vpn:connect] Rejecting unverified VPN session:", details);
+					logger.warn("[vpn:connect] Rejecting unverified connection session:", details);
 					result = await runtimeManager.rejectActiveConnection("server_unreachable", details);
 					if (result.connected && result.activeNodeId !== activeNode.id) {
 						const restoredEgress = await probeProxyEgress();
-						result = restoredEgress.reachable ? await runtimeManager.markEgressVerified(restoredEgress.ip) : await runtimeManager.rejectActiveConnection("server_unreachable", restoredEgress.error ?? "Предыдущее VPN-соединение также не прошло проверку внешнего маршрута.");
+						result = restoredEgress.reachable ? await runtimeManager.markEgressVerified(restoredEgress.ip) : await runtimeManager.rejectActiveConnection("server_unreachable", restoredEgress.error ?? "Предыдущее соединение также не прошло проверку внешнего маршрута.");
 					}
 				}
 			}
@@ -688,17 +688,17 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			const connectedNode = currentState.nodes.find((node) => node.id === result.activeNodeId) ?? currentState.nodes.find((node) => node.id === activeNode.id) ?? activeNode;
 			if (notificationsEnabled) {
 				if (result.connected && result.activeNodeId === activeNode.id) new Notification({
-					title: source === "watchdog" ? "Egoist Shield: VPN восстановлен" : "Egoist Shield: Защита включена",
+					title: source === "watchdog" ? "Egoist Lagom: Маршрут восстановлен" : "Egoist Lagom: Защита включена",
 					body: `Подключено к: ${activeNode.name}`,
 					silent: true
 				}).show();
 				else if (source === "user" && result.connected && connectedNode) new Notification({
-					title: "Egoist Shield: Переключение отменено",
+					title: "Egoist Lagom: Переключение отменено",
 					body: `Сохранено текущее соединение: ${connectedNode.name}`,
 					silent: true
 				}).show();
 				else if (source === "user" && result.lastError) new Notification({
-					title: "Egoist Shield: Ошибка",
+					title: "Egoist Lagom: Ошибка",
 					body: `${activeNode.name}: ${result.lastError}`
 				}).show();
 			}
@@ -748,8 +748,8 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		}
 		if (Notification.isSupported()) {
 			if (stateStore.get().settings.notifications !== false) new Notification({
-				title: "Egoist Shield: Отключено",
-				body: "VPN отключён. Трафик не защищён.",
+				title: "Egoist Lagom: Отключено",
+				body: "Соединение отключено. Трафик не защищён.",
 				silent: true
 			}).show();
 		}
@@ -798,7 +798,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			}
 			egressConsecutiveFailures += 1;
 			if (egressConsecutiveFailures >= EGRESS_WATCHDOG_FAILURE_THRESHOLD && status.egressVerified) {
-				const details = egress.error ?? "Внешний маршрут через VPN перестал отвечать: соединение больше не подтверждено.";
+				const details = egress.error ?? "Внешний маршрут перестал отвечать: соединение больше не подтверждено.";
 				logger.warn("[vpn:egress-watchdog] Dropping egress verification:", details);
 				await runtimeManager.markEgressUnverified(details);
 			}
@@ -845,7 +845,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		const egress = localResult.ok ? await probeProxyEgress() : {
 			reachable: false,
 			ip: null,
-			error: "Локальный VPN runtime недоступен"
+			error: "Локальный runtime недоступен"
 		};
 		const result = {
 			...localResult,
@@ -853,7 +853,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			egressReachable: egress.reachable,
 			egressIp: egress.ip,
 			egressError: egress.error,
-			message: localResult.ok && !egress.reachable ? "Локальный VPN runtime отвечает, но внешний маршрут не подтверждён. Проверьте сервер или маршрут." : localResult.message
+			message: localResult.ok && !egress.reachable ? "Локальный runtime отвечает, но внешний маршрут не подтверждён. Проверьте сервер или маршрут." : localResult.message
 		};
 		logger.debug(formatRuntimeLogEvent({
 			timestamp: (/* @__PURE__ */ new Date()).toISOString(),
@@ -892,7 +892,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 	const handleRouteProbe = async () => {
 		try {
 			const status = await runtimeManager.status();
-			if (!status.connected) return buildNotApplicableProtectionReport("Проверка защиты доступна после подключения VPN.");
+			if (!status.connected) return buildNotApplicableProtectionReport("Проверка защиты доступна после подключения.");
 			const proxyPort = status.proxyPort;
 			if (!proxyPort) return buildInconclusiveProtectionReport("Порт локального прокси неизвестен.");
 			const mode = stateStore.get().settings.useTunMode ? "tun" : "system_proxy";

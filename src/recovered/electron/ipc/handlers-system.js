@@ -20,9 +20,9 @@ async function coordinateShieldAction(action, operation, { manager, vpn, supervi
 			const before = await vpn.status();
 			if (before?.connected || before?.running || before?.pid) {
 				const result = await vpn.disconnect();
-				if (result?.ok === false) throw new Error(result.message || "Не удалось отключить VPN.");
+				if (result?.ok === false) throw new Error(result.message || "Не удалось отключить соединение.");
 				const after = await vpn.status();
-				if (after?.connected || after?.running || after?.pid) throw new Error("VPN ещё работает. Дождитесь отключения.");
+				if (after?.connected || after?.running || after?.pid) throw new Error("Соединение ещё работает. Дождитесь отключения.");
 			}
 		}
 		return operation();
@@ -145,7 +145,7 @@ async function setSystemDnsThroughCurrentOwner(rawInput, mock, probeHosts = []) 
 		const result = await coreServiceClient.applyDns(servers, { probeHosts: [...probeHosts] });
 		return {
 			ok: true,
-			message: `DNS обновлён через EgoistShieldCore: ${result.servers.join(", ")}`,
+			message: `DNS обновлён через Egoist Lagom Core: ${result.servers.join(", ")}`,
 			servers: result.servers
 		};
 	} catch (error) {
@@ -162,7 +162,7 @@ async function resetSystemDnsThroughCurrentOwner(mock) {
 		await coreServiceClient.resetDns();
 		return {
 			ok: true,
-			message: "DNS Windows возвращён к настройкам по умолчанию через EgoistShieldCore.",
+			message: "DNS Windows возвращён к настройкам по умолчанию через Egoist Lagom Core.",
 			servers: []
 		};
 	} catch (error) {
@@ -851,7 +851,7 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 		const terminateOwned = async () => {
 			const results = [];
 			for (const [name, stop] of [
-				["VPN", () => runtimeManager.disconnect()],
+				["Соединение", () => runtimeManager.disconnect()],
 				["DNS", () => systemDohManager.stopAndRemove()],
 				["Telegram", () => telegramProxyManager.stop()],
 				["Zapret standalone", () => zapretManager.stopStandalone()],
@@ -880,7 +880,7 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 	* результате Discord-обход оставался остановленным без объяснения.
 	*
 	* Новый контракт: стандартное состояние — это последний подтверждённый
-	* снимок Windows ДО изменений Egoist Shield плюс любые более новые внешние
+	* снимок Windows ДО изменений Egoist Lagom плюс любые более новые внешние
 	* настройки, которые приложение не создавало. Меняется только доказанно
 	* своё; всё чужое сохраняется и перечисляется явно. Итог подтверждается
 	* пост-проверкой, а не фактом «команда выполнилась».
@@ -893,7 +893,7 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			fixed: [],
 			preserved: [],
 			verified: [],
-			message: "Для восстановления интернета запустите Egoist Shield от имени администратора."
+			message: "Для восстановления интернета запустите Egoist Lagom от имени администратора."
 		};
 		try {
 			globalThis.reconnectSupervisor?.cancel();
@@ -1053,7 +1053,7 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 				host: "127.0.0.1",
 				port: 53,
 				available: port53Available,
-				owner: port53Available ? ownedResolverRunning ? "Egoist Shield owned resolver" : null : "unknown local DNS service"
+				owner: port53Available ? ownedResolverRunning ? "Egoist Lagom owned resolver" : null : "unknown local DNS service"
 			},
 			leakStatus: {
 				checked: false,
@@ -1426,11 +1426,12 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 	});
 	const shield = new ShieldConnectionController({
 		zapret: zapretManager,
+		onSelection: result => recordZapretSelectionHistory(result),
 		dns: systemDohManager,
 		vpn: runtimeManager,
 		telegramProxy: telegramProxyManager,
 		applyDns: async () => {
-			const targetUrl = stateStore.get().settings.systemDohUrl || "https://de-prem.aeternia.space:8443/dns-query/c8570320b4bdb1d651eb938e178c272d";
+			const targetUrl = stateStore.get().settings.systemDohUrl || "https://cloudflare-dns.com/dns-query";
 			const persistedState = stateStore.get();
 			await systemDohManager.stopAndRemove();
 			const startedStatus = await systemDohManager.apply(targetUrl, persistedState.settings.systemDohLocalAddress);
@@ -1507,7 +1508,7 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			proxyPort: status.proxyPort
 		}));
 		if (Notification.isSupported() && stateStore.get().settings.notifications !== false) new Notification({
-			title: "Egoist Shield: Соединение потеряно",
+			title: "Egoist Lagom: Соединение потеряно",
 			body: lastError || "VPN-соединение разорвано."
 		}).show();
 		updateTrayMenu(false);

@@ -79,7 +79,7 @@ async function dialogKeyboard(page,dialog,opener){
   await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});await expectFocused(opener);
 }
 async function check(id,screen,fn,viewport={width:1440,height:940}){
-  const context=await browser.newContext({viewport,reducedMotion:'reduce',serviceWorkers:'block'});
+  const context=await browser.newContext({viewport,deviceScaleFactor:2,reducedMotion:'reduce',serviceWorkers:'block'});
   await context.route('**/*',route=>{
     const url=new URL(route.request().url());
     if(url.origin===origin || url.protocol==='data:')return route.continue();
@@ -172,6 +172,11 @@ try{
     assert.ok(!geometry.versionVisible||!geometry.service||!geometry.version||geometry.version.top>=geometry.service.bottom-0.5,'App version must not overlap service settings');
     assert.match(layout[0].label,/Открыть релиз/);assert.match(layout[1].label,/Проверить/);
   },{width:550,height:728});
+  await check('settings-version-is-not-duplicated','settings',async page=>{
+    const duplicate=page.locator('.settings-layout > .app-version');
+    assert.equal(await duplicate.evaluate(element=>getComputedStyle(element).display),'none');
+    await page.locator('.ruby-sidebar footer small').filter({hasText:'Версия Lagom'}).waitFor();
+  });
   await check('dns-presets-and-confirmed-apply','dns',async page=>{
     for(const [name,primary,secondary] of [['Cloudflare','1.1.1.1','1.0.0.1'],['Google DNS','8.8.8.8','8.8.4.4'],['Quad9','9.9.9.9','149.112.112.112'],['AdGuard','94.140.14.14','94.140.15.15']]){
       await page.getByRole('button',{name:new RegExp('^'+name)}).click();assert.equal(await page.getByLabel('Основной DNS',{exact:true}).inputValue(),primary);assert.equal(await page.getByLabel('Дополнительный DNS',{exact:true}).inputValue(),secondary);
@@ -261,7 +266,7 @@ finally{
   for(const entry of manifest){const data=await fs.readFile(path.join(build,entry.name.slice(1))).catch(()=>null);if(!data||hash(data)!==entry.sha256)current.push(entry.name)}
   report.buildChangedDuringRun=current;
   report.finishedAt=new Date().toISOString();
-  report.passed=!report.fatal&&report.checks.length===21&&report.checks.every(c=>c.status==='passed')&&current.length===0;
+  report.passed=!report.fatal&&report.checks.length===22&&report.checks.every(c=>c.status==='passed')&&current.length===0;
   await fs.writeFile(path.join(evidence,'compact-ui-report.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify({passed:report.passed,checks:report.checks.length,failed:report.checks.filter(c=>c.status!=='passed').map(c=>c.id),buildChanged:current,evidence}));
   if(!report.passed)process.exitCode=1;

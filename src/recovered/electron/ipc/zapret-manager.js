@@ -1,8 +1,8 @@
 //#region src/electron/ipc/zapret-manager.ts
 var execFileAsync$1 = promisify(execFile);
 var SERVICE_NAME = "EgoistShieldZapret";
-var SERVICE_DISPLAY_NAME = "EgoistShield Zapret";
-var SERVICE_DESCRIPTION = "Integrated Zapret DPI bypass managed by EgoistShield";
+var SERVICE_DISPLAY_NAME = "Egoist Lagom Profiles";
+var SERVICE_DESCRIPTION = "Integrated profile service managed by Egoist Lagom";
 var SERVICE_WRAPPER_DIR = "service-wrapper";
 var SERVICE_WRAPPER_EXE = "egoistshield-zapret-service.exe";
 var SERVICE_WRAPPER_XML = "egoistshield-zapret-service.xml";
@@ -77,7 +77,7 @@ chcp 65001 >nul
 title EgoistShield - обновление Zapret Core
 
 echo.
-echo  Этот консольный апдейтер отключён Egoist Shield ${APP_RELEASE_VERSION}.
+echo  Этот консольный апдейтер отключён Egoist Lagom ${APP_RELEASE_VERSION}.
 echo.
 echo  Он скачивал архив Flowseal без проверки контрольной суммы и подменял
 echo  файлы core\\ напрямую, поэтому повреждённый или подменённый архив
@@ -226,26 +226,22 @@ var DISCORD_CACHE_TARGETS = {
 	discord: {
 		label: "Discord",
 		directoryNames: ["discord", "Discord"],
-		processNames: ["Discord.exe", "Update.exe"]
+		processNames: ["Discord.exe"]
 	},
 	"discord-ptb": {
 		label: "Discord PTB",
 		directoryNames: ["discordptb", "DiscordPTB"],
-		processNames: ["DiscordPTB.exe", "Update.exe"]
+		processNames: ["DiscordPTB.exe"]
 	},
 	"discord-canary": {
 		label: "Discord Canary",
 		directoryNames: ["discordcanary", "DiscordCanary"],
-		processNames: ["DiscordCanary.exe", "Update.exe"]
+		processNames: ["DiscordCanary.exe"]
 	},
 	vesktop: {
 		label: "Vesktop",
 		directoryNames: ["vesktop", "Vesktop"],
-		processNames: [
-			"vesktop.exe",
-			"Vesktop.exe",
-			"Update.exe"
-		]
+		processNames: ["Vesktop.exe"]
 	}
 };
 var ZapretAutoSelectCancelledError = class extends Error {
@@ -400,7 +396,7 @@ function summarizeZapretAutoSelect(input) {
 	};
 	if (!input.bestProfile) return {
 		headline: "Рабочий профиль не найден",
-		detail: `${scope} Ни один профиль не открыл одновременно Discord и YouTube. Обновите ядро Flowseal, отключите сторонние обходы (GoodbyeDPI, второй Zapret, AdGuard) и повторите автоподбор.`,
+		detail: `${scope} Ни один профиль не открыл одновременно Discord и YouTube. Обновите ядро Flowseal, проверьте конфликтующие сетевые компоненты и повторите автоподбор.`,
 		confidence: "none"
 	};
 	const groups = `Discord ${input.discordPassed}/${input.discordTotal}, YouTube ${input.youTubePassed}/${input.youTubeTotal}`;
@@ -952,7 +948,7 @@ var ZapretManager = class {
 				}
 				await this.waitForServiceState(SERVICE_NAME, ["RUNNING"], SERVICE_START_TIMEOUT_MS);
 			}
-			if (!await this.waitForIntegratedWinwsStart(null, ZAPRET_PROBE_START_TIMEOUT_MS)) throw new Error("Служба запущена, но принадлежащий Egoist Shield winws.exe не работает.");
+			if (!await this.waitForIntegratedWinwsStart(null, ZAPRET_PROBE_START_TIMEOUT_MS)) throw new Error("Служба запущена, но принадлежащий Egoist Lagom winws.exe не работает.");
 			this.lastError = null;
 			this.invalidateStatusCache();
 			return this.status({ force: true });
@@ -1464,15 +1460,15 @@ var ZapretManager = class {
 			},
 			{
 				key: "bypass",
-				title: "Активный bypass",
+				title: "Активный профиль",
 				state: winwsRunning || service.running ? "ok" : "warn",
 				details: service.running ? `Служба ${SERVICE_NAME} активна.` : winwsRunning ? "Обнаружен активный standalone winws.exe." : "Активный winws.exe не обнаружен."
 			},
 			{
 				key: "conflicts",
-				title: "Известные конфликтующие bypass-сервисы",
+				title: "Известные конфликтующие сетевые службы",
 				state: conflictingServices.length > 0 ? "warn" : "ok",
-				details: conflictingServices.length > 0 ? `Найдены: ${conflictingServices.join(", ")}.` : "Известных конфликтующих bypass-сервисов не найдено."
+				details: conflictingServices.length > 0 ? `Найдены: ${conflictingServices.join(", ")}.` : "Известных конфликтующих сетевых служб не найдено."
 			}
 		];
 		const errorCount = items.filter((item) => item.state === "error").length;
@@ -1606,7 +1602,7 @@ var ZapretManager = class {
 		await this.stopServiceInternal(true);
 		await this.stopStandaloneInternal(true);
 		if ((await this.queryService(SERVICE_NAME)).running) throw new Error("Служба EgoistShieldZapret ещё работает. Автоподбор остановлен.");
-		if ((await this.listIntegratedWinwsProcesses()).length) throw new Error("Процесс Egoist Shield winws.exe ещё работает. Автоподбор остановлен.");
+		if ((await this.listIntegratedWinwsProcesses()).length) throw new Error("Процесс Egoist Lagom winws.exe ещё работает. Автоподбор остановлен.");
 		this.clearVpnSuspension();
 		this.lastError = null;
 	}
@@ -1649,14 +1645,14 @@ var ZapretManager = class {
 		const owned = await this.listIntegratedWinwsProcesses();
 		for (const info of owned) {
 			// Revalidate the executable at the point of mutation; saved PIDs can be recycled.
-			await this.execPowerShell(`$p = Get-CimInstance Win32_Process -Filter "ProcessId=${info.pid}" -ErrorAction Stop; if ($p -and $p.ExecutablePath -ieq ${psQuote(path.join(this.workDir, "core", "bin", "winws.exe"))}) { Stop-Process -Id $p.ProcessId -Force -ErrorAction Stop }`, 8e3);
+			await this.execPowerShell(`$p = Get-Process -Id ${info.pid} -ErrorAction SilentlyContinue; if ($p) { $image = ''; try { $image = [string]$p.Path } catch {}; if ($image -ieq ${psQuote(path.join(this.workDir, "core", "bin", "winws.exe"))}) { Stop-Process -Id $p.Id -Force -ErrorAction Stop } }`, 8e3);
 		}
 		const deadline = Date.now() + timeoutMs;
 		do {
 			if (!(await this.listIntegratedWinwsProcesses()).length) return;
 			await sleep(120);
 		} while (Date.now() < deadline);
-		throw new Error("Не удалось остановить принадлежащий Egoist Shield winws.exe. Новый кандидат не запущен.");
+		throw new Error("Не удалось остановить принадлежащий Egoist Lagom winws.exe. Новый кандидат не запущен.");
 	}
 	isPidAlive(pid) {
 		if (!Number.isInteger(pid) || pid <= 0) return false;
@@ -2196,10 +2192,10 @@ var ZapretManager = class {
 		return this.pathExists(path.join(this.workDir, "core", "utils", "check_updates.enabled"));
 	}
 	async assertNoExternalConflict() {
-		for (const serviceName of LEGACY_ZAPRET_RESET_SERVICES) if ((await this.queryService(serviceName).catch(() => ({ running: false }))).running) throw new Error(`Работает сторонняя служба ${serviceName}. Остановите её перед запуском Egoist Shield.`);
+		for (const serviceName of LEGACY_ZAPRET_RESET_SERVICES) if ((await this.queryService(serviceName).catch(() => ({ running: false }))).running) throw new Error(`Работает сторонняя служба ${serviceName}. Остановите её перед запуском Egoist Lagom.`);
 		const serviceRunning = (await this.queryService(SERVICE_NAME).catch(() => ({ running: false }))).running;
 		const external = (await this.listWinwsProcesses()).filter((info) => !this.isOwnedWinwsProcess(info, serviceRunning));
-		if (external.length) throw new Error("Работает сторонний winws.exe. Остановите его перед запуском Egoist Shield.");
+		if (external.length) throw new Error("Работает сторонний winws.exe. Остановите его перед запуском Egoist Lagom.");
 	}
 	async cleanupDriverServicesIfSafe() {
 		// WinDivert driver services are shared system resources, not owned services.
@@ -2210,14 +2206,14 @@ var ZapretManager = class {
 	}
 	async listWinwsProcesses() {
 		try {
-			const trimmed = (await this.execPowerShell("$ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter \"Name='winws.exe'\" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }", 12e3)).trim();
+			const trimmed = (await this.execPowerShell("$ErrorActionPreference = 'Stop'; $procs = @(Get-Process -Name 'winws' -ErrorAction SilentlyContinue | ForEach-Object { $image = ''; $started = $null; try { $image = [string]$_.Path } catch {}; try { $started = $_.StartTime.ToUniversalTime().ToString('o') } catch {}; [pscustomobject]@{ ProcessId = [int]$_.Id; ExecutablePath = $image; StartedAt = $started } }); if ($procs.Count -eq 0) { '[]' } else { $procs | ConvertTo-Json -Compress }", 12e3)).trim();
 			if (!trimmed) throw new Error("Пустой ответ проверки процессов.");
 			const parsed = JSON.parse(trimmed);
 			return (Array.isArray(parsed) ? parsed : [parsed]).map((entry) => ({
 				pid: Number(entry.ProcessId ?? 0),
-				commandLine: String(entry.CommandLine ?? ""),
+				commandLine: "",
 				executablePath: String(entry.ExecutablePath ?? ""),
-				startedAt: parseWmiDateToIso(entry.CreationDate)
+				startedAt: Number.isFinite(Date.parse(String(entry.StartedAt ?? ""))) ? new Date(entry.StartedAt).toISOString() : null
 			})).filter((entry) => entry.pid > 0);
 		} catch (error) {
 			throw new Error(`Не удалось проверить процессы winws.exe: ${error instanceof Error ? error.message : String(error)}`);
@@ -2311,9 +2307,9 @@ var ZapretManager = class {
 		const successfulTargets = targets.filter((target) => target.ok);
 		return ["DiscordMain", "DiscordGateway", "YouTubeWeb", "YouTubeImage"].every((key) => successfulTargets.some((target) => target.key === key));
 	}
-	async probeCurlHeadUrl(url, timeoutMs, label, tlsArgs, signal) {
+	async probeCurlHeadUrl(url, timeoutMs, label, tlsArgs, signal, getFallback = false) {
 		const startedAt = Date.now();
-		const timeoutSeconds = Math.max(2, Math.ceil(timeoutMs / 1e3));
+		const timeoutSeconds = Math.max(0.1, timeoutMs / 1e3);
 		try {
 			throwIfAutoSelectCancelled(signal);
 			const { stdout, stderr } = await execFileAsync$1(resolveWindowsExecutable("curl.exe"), [
@@ -2325,8 +2321,7 @@ var ZapretManager = class {
 				"--location",
 				"--max-redirs",
 				"3",
-				"--max-filesize",
-				"2097152",
+				...(getFallback ? ["--range", "0-65535", "--max-filesize", "2097152"] : ["--head"]),
 				"-s",
 				"-m",
 				String(timeoutSeconds),
@@ -2344,6 +2339,11 @@ var ZapretManager = class {
 			});
 			const status = parseCurlStatusCode(stdout);
 			const pingMs = Math.max(1, Date.now() - startedAt);
+			const remainingMs = timeoutMs - pingMs;
+			if (!getFallback && (status === 405 || status === 501) && remainingMs >= 100) {
+				const fallback = await this.probeCurlHeadUrl(url, remainingMs, label, tlsArgs, signal, true);
+				return { ...fallback, pingMs: Math.max(1, Date.now() - startedAt) };
+			}
 			return {
 				url: `${url} [${label}]`,
 				ok: status !== null && status >= 200 && status < 400,

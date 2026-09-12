@@ -18,7 +18,7 @@
   </p>
 </div>
 
-![Главный экран Egoist Lagom](docs/screenshots/dashboard-settings.png)
+![Главный экран Egoist Lagom](docs/screenshots/settings.png)
 
 Egoist Lagom создан для людей, которым нужен быстрый и аккуратный контроль локальных сетевых настроек. Все необязательные компоненты выключены после чистой установки и включаются только по действию пользователя.
 
@@ -32,6 +32,12 @@ Egoist Lagom создан для людей, которым нужен быст�
 - **Диагностика.** Локальные журналы, компактные результаты проверок и нейтральные сообщения об ошибках.
 
 ## Интерфейс
+
+<p align="center"><img src="docs/screenshots/widget.png" width="296" alt="Компактный виджет Egoist Lagom" /></p>
+
+![Профили и история проверок](docs/screenshots/profiles.png)
+
+Скриншоты сняты с текущего интерфейса в изолированной тестовой среде.
 
 Все экраны используют одну систему: чёрный фон, белая типографика, тонкие серые границы и короткие анимации на `opacity`/`transform`. Узкие окна, клавиатурный фокус, Escape, reduced motion и масштаб 200% входят в проверочный набор.
 
@@ -71,7 +77,7 @@ npm run package:win
 ## Проверка
 
 ```text
-npm test       304/304
+npm test       335/335
 npm audit      0 production vulnerabilities
 NSIS           exit 0
 Core self-test passed

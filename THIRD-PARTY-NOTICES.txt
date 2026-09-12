@@ -9,6 +9,8 @@ React / React DOM — MIT — https://github.com/facebook/react
 Motion — MIT — https://github.com/motiondivision/motion
 Lucide — ISC / MIT-derived icons — https://github.com/lucide-icons/lucide
 Inter font package — SIL Open Font License 1.1 — https://github.com/rsms/inter
+Unbounded font — SIL Open Font License 1.1 — https://github.com/googlefonts/unbounded
+GSAP — standard no-charge license — https://gsap.com/standard-license
 
 Bundled runtime components
 --------------------------
@@ -19,4 +21,4 @@ dnscrypt-proxy — ISC — https://github.com/DNSCrypt/dnscrypt-proxy
 Telegram WS Proxy — MIT — see the bundled component license file
 WinDivert — LGPLv3 library / GPLv2 driver, subject to upstream terms — https://github.com/basil00/WinDivert
 
-The complete package inventory and corresponding license files are shipped with the release payload.
+The release includes an inventory of known dependencies and bundled component license files.

@@ -37,29 +37,29 @@ function buildRouteProbeResult(snapshot) {
 	if (mode === "system_proxy") limitations.unshift(PROXY_MODE_LIMITATION);
 	if (vpnIp) checks.push({
 		id: "vpn-egress",
-		title: "Выход через VPN доступен",
+		title: "Внешний маршрут доступен",
 		status: "pass",
 		observed: vpnIp,
 		expected: "внешний адрес получен через управляемый рантайм",
-		explanation: "HTTPS-запрос через локальный прокси VPN завершился успешно.",
+		explanation: "HTTPS-запрос через локальный прокси завершился успешно.",
 		recommendedAction: null
 	});
 	else checks.push({
 		id: "vpn-egress",
-		title: "Выход через VPN доступен",
+		title: "Внешний маршрут недоступен",
 		status: "fail",
 		observed: null,
 		expected: "внешний адрес через управляемый рантайм",
-		explanation: "Не удалось получить внешний адрес через VPN: рантайм или узел недоступны.",
-		recommendedAction: "Переподключить VPN"
+		explanation: "Не удалось получить внешний адрес через соединение: runtime или узел недоступны.",
+		recommendedAction: "Переподключить соединение"
 	});
 	if (!vpnIp) checks.push({
 		id: "egress-changed",
 		title: "Внешний адрес изменён",
 		status: "skipped",
 		observed: null,
-		expected: "адрес через VPN отличается от прямого",
-		explanation: "Проверка невозможна, пока выход через VPN не подтверждён.",
+		expected: "адрес внешнего маршрута отличается от прямого",
+		explanation: "Проверка невозможна, пока внешний маршрут не подтверждён.",
 		recommendedAction: null
 	});
 	else if (!directIp) checks.push({
@@ -75,9 +75,9 @@ function buildRouteProbeResult(snapshot) {
 		id: "egress-changed",
 		title: "Внешний адрес изменён",
 		status: "fail",
-		observed: `direct и VPN совпадают: ${vpnIp}`,
-		expected: "адрес через VPN отличается от прямого",
-		explanation: "Точка выхода не изменилась: трафик через VPN покидает сеть с того же адреса, что и прямой. Защиты внешнего маршрута нет.",
+		observed: `direct и внешний маршрут совпадают: ${vpnIp}`,
+		expected: "адрес внешнего маршрута отличается от прямого",
+		explanation: "Точка выхода не изменилась: трафик покидает сеть с того же адреса, что и прямой. Защита внешнего маршрута не подтверждена.",
 		recommendedAction: "Выбрать другой сервер"
 	});
 	else checks.push({
@@ -85,8 +85,8 @@ function buildRouteProbeResult(snapshot) {
 		title: "Внешний адрес изменён",
 		status: "pass",
 		observed: `${directIp} -> ${vpnIp}`,
-		expected: "адрес через VPN отличается от прямого",
-		explanation: "Трафик через VPN выходит с другого внешнего адреса — точка выхода изменена.",
+		expected: "адрес внешнего маршрута отличается от прямого",
+		explanation: "Трафик выходит с другого внешнего адреса — точка выхода изменена.",
 		recommendedAction: null
 	});
 	const systemProxy = snapshot.systemProxy ?? null;
@@ -114,7 +114,7 @@ function buildRouteProbeResult(snapshot) {
 		status: "fail",
 		observed: "системный прокси Windows выключен",
 		expected: snapshot.expectedEndpoint ?? "managed endpoint текущей сессии",
-		explanation: "Windows не использует прокси приложения, поэтому обычные программы идут мимо VPN, несмотря на работающий рантайм.",
+		explanation: "Windows не использует прокси приложения, поэтому обычные программы идут напрямую, несмотря на работающий runtime.",
 		recommendedAction: "Применить маршрут заново"
 	});
 	else if (snapshot.expectedEndpoint && systemProxy.proxyServer !== snapshot.expectedEndpoint) checks.push({
@@ -123,7 +123,7 @@ function buildRouteProbeResult(snapshot) {
 		status: "fail",
 		observed: systemProxy.proxyServer,
 		expected: snapshot.expectedEndpoint,
-		explanation: "Windows направлен на другой прокси, а не на локальный порт активной сессии. Часть трафика идёт мимо VPN.",
+		explanation: "Windows направлен на другой прокси, а не на локальный порт активной сессии. Часть трафика идёт напрямую.",
 		recommendedAction: "Применить маршрут заново"
 	});
 	else if (!systemProxy.ownedByApp) checks.push({
@@ -131,7 +131,7 @@ function buildRouteProbeResult(snapshot) {
 		title: "Системный прокси применён",
 		status: "warn",
 		observed: systemProxy.proxyServer,
-		expected: "endpoint активной сессии Egoist Shield",
+		expected: "endpoint активной сессии Egoist Lagom",
 		explanation: "Системный прокси включён, но он не принадлежит текущей сессии приложения. Настройка не изменена намеренно.",
 		recommendedAction: null
 	});
@@ -167,7 +167,7 @@ function buildRouteProbeResult(snapshot) {
 		bypassDetected: failedRoute
 	};
 }
-/** Вердикт для случая, когда проверять нечего: VPN не подключён. */
+/** Вердикт для случая, когда проверять нечего: соединение не подключено. */
 function buildNotApplicableProtectionReport(reason) {
 	return {
 		verdict: "not_applicable",

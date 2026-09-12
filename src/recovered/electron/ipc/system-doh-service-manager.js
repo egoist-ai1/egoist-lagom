@@ -1,7 +1,7 @@
 //#region src/electron/ipc/system-doh-service-manager.ts
 var execFileAsync$4 = promisify(execFile);
 var SYSTEM_DOH_SERVICE_NAME = "EgoistShieldSystemDoH";
-var SYSTEM_DOH_SERVICE_DISPLAY_NAME = "Egoist Shield System DoH";
+var SYSTEM_DOH_SERVICE_DISPLAY_NAME = "Egoist Lagom System DoH";
 var SYSTEM_DOH_SERVICE_EXE_NAME = "egoistshield-system-doh-service.exe";
 var SYSTEM_DOH_EXE_NAME = "xray-system-doh.exe";
 var XRAY_SOURCE_EXE_NAME = "xray.exe";
@@ -120,7 +120,7 @@ function buildSystemDohServiceXml(options) {
 		"<service>",
 		`  <id>${SYSTEM_DOH_SERVICE_NAME}</id>`,
 		`  <name>${SYSTEM_DOH_SERVICE_DISPLAY_NAME}</name>`,
-		"  <description>Фоновая Windows-служба Egoist Shield для локального защищённого DNS-over-HTTPS.</description>",
+		"  <description>Фоновая Windows-служба Egoist Lagom для локального защищённого DNS-over-HTTPS.</description>",
 		"  <startmode>Automatic</startmode>",
 		"  <delayedAutoStart>false</delayedAutoStart>",
 		"  <hidewindow>true</hidewindow>",

@@ -1142,11 +1142,11 @@ function Install-CoreService {
       "create", $serviceName,
       "binPath=", "`"$serviceExe`"",
       "start=", "auto",
-      "DisplayName=", "Egoist Shield Core Service"
+      "DisplayName=", "Egoist Lagom Core Service"
     ) "core-create")
     [void](Invoke-CheckedExternal $scExe @(
       "description", $serviceName,
-      "Transactional control of Egoist Shield DNS and owned background services"
+      "Transactional control of Egoist Lagom network settings and background services"
     ) "core-description")
     [void](Invoke-CheckedExternal $scExe @(
       "failure", $serviceName,
@@ -3457,7 +3457,7 @@ switch ($Phase) {
         Invoke-CoreOwnedDnsCleanup
         Remove-OptionalOwnedServices
         # Every successful install requires a new explicit connection choice.
-        Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.0" } | ConvertTo-Json -Compress)
+        Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.1" } | ConvertTo-Json -Compress)
         Write-Journal "optional-components-left-off" @{}
         Assert-InstalledCandidateRuntime -BeforeCommit
         Discard-OwnedNetworkArtifacts
@@ -3616,7 +3616,7 @@ switch ($Phase) {
       Remove-OptionalOwnedServices
       Write-Journal "optional-components-left-off" @{}
       Discard-OwnedNetworkArtifacts
-      Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.0" } | ConvertTo-Json -Compress)
+      Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.1" } | ConvertTo-Json -Compress)
       Complete-UpgradeQuarantine
       Write-Output "RECOVER: committed"
       exit 0

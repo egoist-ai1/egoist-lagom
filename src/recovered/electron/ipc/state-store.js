@@ -24,7 +24,7 @@ var DEFAULT_STATE = {
 		systemDnsServers: "",
 		customDnsUrl: "",
 		systemDohEnabled: false,
-		systemDohUrl: "https://de-prem.aeternia.space:8443/dns-query/c8570320b4bdb1d651eb938e178c272d",
+		systemDohUrl: "https://cloudflare-dns.com/dns-query",
 		systemDohLocalAddress: "",
 		subscriptionUserAgent: "auto",
 		sendSubscriptionHwid: false,
@@ -58,7 +58,7 @@ function sanitizeState(state) {
 			systemDnsServers: state.settings.systemDnsServers ?? "",
 			customDnsUrl: normalizeCustomDnsUrl(state.settings.customDnsUrl, ""),
 			systemDohEnabled: state.settings.systemDohEnabled ?? false,
-			systemDohUrl: normalizeSystemDohUrl(state.settings.systemDohUrl, "https://de-prem.aeternia.space:8443/dns-query/c8570320b4bdb1d651eb938e178c272d"),
+			systemDohUrl: normalizeSystemDohUrl(state.settings.systemDohUrl, "https://cloudflare-dns.com/dns-query"),
 			systemDohLocalAddress: normalizeSystemDohLocalAddress(state.settings.systemDohLocalAddress, ""),
 			soundNotifications: state.settings.soundNotifications ?? false,
 			allowExternalGeoLookups: state.settings.allowExternalGeoLookups === true,
@@ -164,7 +164,7 @@ var StateStore = class {
 		let previous;
 		try { previous = JSON.parse(await promises.readFile(this.activationMarkerPath, "utf8")); } catch { previous = null; }
 		if (previous?.id === installation.id) return;
-		this.state.settings = { ...this.state.settings, autoStart: false, autoConnect: false, systemDohEnabled: false, systemDnsServers: "", systemDohUrl: "https://de-prem.aeternia.space:8443/dns-query/c8570320b4bdb1d651eb938e178c272d", systemDohLocalAddress: "", customDnsUrl: "", useTunMode: false, killSwitch: false };
+		this.state.settings = { ...this.state.settings, autoStart: false, autoConnect: false, systemDohEnabled: false, systemDnsServers: "", systemDohLocalAddress: "", useTunMode: false, killSwitch: false };
 		await this.save();
 		await promises.writeFile(this.activationMarkerPath, JSON.stringify({ id: installation.id }), "utf8");
 	}

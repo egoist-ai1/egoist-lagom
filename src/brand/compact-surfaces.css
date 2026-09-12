@@ -1,4 +1,4 @@
-/* Egoist Shield · Compact Ruby surfaces
+/* Egoist Lagom · Compact Ruby surfaces
    Non-dashboard screens only. Shell and dashboard styling live beside this file. */
 
 :is(
@@ -995,6 +995,7 @@
 }
 
 .screen-stage[data-screen="zapret"] .config-legend {
+  flex-wrap: wrap;
   gap: 7px;
   padding: 0 0 7px;
   font-size: 11px;
@@ -1092,12 +1093,46 @@
 
 .screen-stage[data-screen="zapret"] .zapret-best-banner :is(strong, small) {
   font-size: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+.screen-stage[data-screen="zapret"] .zapret-best-banner > .btn-primary {
+  width: auto;
+  min-width: max-content;
+  min-height: 36px;
+  height: auto;
+  padding: 8px 14px;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .screen-stage[data-screen="zapret"] .zapret-best-banner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .screen-stage[data-screen="zapret"] .zapret-best-banner > .btn-primary {
+    width: 100%;
+    min-width: 0;
+    justify-self: stretch;
+  }
 }
 
 .screen-stage[data-screen="zapret"] .zapret-workbench {
   grid-template-rows: auto minmax(0, 1fr);
   gap: 10px;
   overflow: hidden;
+}
+
+.zapret-target-details[data-preview-note]::before {
+  content: attr(data-preview-note);
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .screen-stage[data-screen="zapret"] .tab-strip {
@@ -1629,13 +1664,7 @@
 }
 
 .screen-stage[data-screen="settings"] .settings-layout > .app-version {
-  position: absolute !important;
-  bottom: 8px !important;
-  right: 24px !important;
-  font-size: 11px !important;
-  color: var(--compact-muted) !important;
-  opacity: 0.55 !important;
-  pointer-events: none !important;
+  display: none !important;
 }
 
 /* Shared notifications and dialogs */

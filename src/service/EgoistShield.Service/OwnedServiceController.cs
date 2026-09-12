@@ -19,7 +19,7 @@ internal sealed class OwnedServiceController
 
 	private static readonly IReadOnlyDictionary<string, OwnedServiceDefinition> OwnedServices = new Dictionary<string, OwnedServiceDefinition>(StringComparer.OrdinalIgnoreCase)
 	{
-		["EgoistShieldSystemDoH"] = new OwnedServiceDefinition(new string[1] { "egoistshield-system-doh-service.exe" }, Path.Combine("Runtime", "SystemDoH", "service-wrapper", "egoistshield-system-doh-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Локальный системный DNS-over-HTTPS Egoist Shield"),
+		["EgoistShieldSystemDoH"] = new OwnedServiceDefinition(new string[1] { "egoistshield-system-doh-service.exe" }, Path.Combine("Runtime", "SystemDoH", "service-wrapper", "egoistshield-system-doh-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Локальный системный DNS-over-HTTPS Egoist Lagom"),
 		["EgoistShieldGravitylessDNS"] = new OwnedServiceDefinition(new string[1] { "dnscrypt-proxy.exe" }, Path.Combine("GravitylessDNS", "dnscrypt-proxy.exe"), new string[7]
 		{
 			"-config",
@@ -29,7 +29,7 @@ internal sealed class OwnedServiceController
 			"-logfile-truncate",
 			"-service",
 			"install"
-		}, new string[2] { "-service", "uninstall" }, "Локальный Gravityless DNS resolver Egoist Shield", SupportsInstall: false),
+		}, new string[2] { "-service", "uninstall" }, "Локальный Gravityless DNS resolver Egoist Lagom", SupportsInstall: false),
 		["dnscrypt-proxy"] = new OwnedServiceDefinition(new string[1] { "dnscrypt-proxy.exe" }, Path.Combine("GravitylessDNS", "dnscrypt-proxy.exe"), new string[7]
 		{
 			"-config",
@@ -39,9 +39,9 @@ internal sealed class OwnedServiceController
 			"-logfile-truncate",
 			"-service",
 			"install"
-		}, new string[2] { "-service", "uninstall" }, "Локальный Gravityless DNS resolver Egoist Shield"),
-		["EgoistShieldZapret"] = new OwnedServiceDefinition(new string[1] { "egoistshield-zapret-service.exe" }, Path.Combine("Runtime", "Zapret", "service-wrapper", "egoistshield-zapret-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Discord и YouTube DPI bypass, управляемый Egoist Shield"),
-		["EgoistShieldTelegramProxy"] = new OwnedServiceDefinition(new string[1] { "egoistshield-telegram-proxy-service.exe" }, Path.Combine("Runtime", "TelegramProxy", "service-wrapper", "egoistshield-telegram-proxy-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Локальный Telegram Proxy, управляемый Egoist Shield")
+		}, new string[2] { "-service", "uninstall" }, "Локальный Gravityless DNS resolver Egoist Lagom"),
+		["EgoistShieldZapret"] = new OwnedServiceDefinition(new string[1] { "egoistshield-zapret-service.exe" }, Path.Combine("Runtime", "Zapret", "service-wrapper", "egoistshield-zapret-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Профильная служба Discord и YouTube, управляемая Egoist Lagom"),
+		["EgoistShieldTelegramProxy"] = new OwnedServiceDefinition(new string[1] { "egoistshield-telegram-proxy-service.exe" }, Path.Combine("Runtime", "TelegramProxy", "service-wrapper", "egoistshield-telegram-proxy-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Локальный Telegram Proxy, управляемый Egoist Lagom")
 	};
 
 	private readonly string _installRoot;
@@ -446,7 +446,7 @@ internal sealed class OwnedServiceController
 	{
 		if (!_productDataRootVerified)
 		{
-			throw new ServiceOperationException("PROTECTED_ROOT_UNVERIFIED", "Права на защищённый каталог Egoist Shield не подтверждены, поэтому запуск его исполняемых файлов заблокирован. Выполните «Восстановить интернет» или переустановите приложение.");
+			throw new ServiceOperationException("PROTECTED_ROOT_UNVERIFIED", "Права на защищённый каталог Egoist Lagom не подтверждены, поэтому запуск его исполняемых файлов заблокирован. Выполните «Восстановить интернет» или переустановите приложение.");
 		}
 		return ProcessRunner.RunAsync(executablePath, arguments, ServiceContract.CommandTimeout, cancellationToken, Path.GetDirectoryName(executablePath));
 	}

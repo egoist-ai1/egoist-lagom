@@ -115,7 +115,7 @@ function buildNetworkCombinatorPlan(inspection, intent) {
 	const approvalRequired = intent.mutatesSystem;
 	if (approvalRequired && !inspection.admin.canApplyMutations) blockers.push({
 		code: "elevation-required",
-		message: "System mutation requires an elevated Egoist Shield process."
+		message: "System mutation requires an elevated Egoist Lagom process."
 	});
 	const status = blockers.some((blocker) => blocker.code === "lock-conflict" || blocker.code === "rollback-required") ? "blocked" : "ready";
 	const operation = {

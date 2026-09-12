@@ -138,8 +138,8 @@
         },
         {
           "path": "zapret/service-wrapper/egoistshield-zapret-service.xml",
-          "size": 7258,
-          "sha256": "6c4837c5b20eadf0eb98956355ea8d74c5110e85763621f04f2245e976b73b6e"
+          "size": 7032,
+          "sha256": "799f6b72a26dd928d7f7cebc0f0ea72768de77b1489addef169ff1916b656336"
         },
         {
           "path": "zapret/core/general (ALT).bat",

@@ -1,24 +1,35 @@
-# Egoist Lagom — validation record
+# Egoist Lagom — проверка кандидата 3.7.1
 
-This release was built from the maintained workspace on Windows 11 Pro x64, build 26200.
+Сборка выполнена на Windows 11 Pro x64, build 26200. Документ отделяет завершённые проверки от ограничений тестовой среды.
 
-| Check | Result |
+| Проверка | Подтверждено |
 | --- | --- |
-| JavaScript test suite | 304 / 304 passed |
-| Production dependency audit | 0 vulnerabilities |
-| Core release build | passed |
-| Packaged Core self-test | passed |
-| DNS ownership and mixed-address restore | passed |
-| JSON locking regression | passed |
-| Installer PowerShell self-test | passed |
-| NSIS installer execution checks | 5 / 5 passed |
-| UI layout and keyboard checks | passed |
-| Package integrity | 9 required payload files, 183 ASAR entries |
-| NSIS build | exit code 0 |
+| Автоматические тесты исходников и интеграций | 335/335, без пропусков |
+| Сборка приложения | успешно |
+| Сборка NSIS | код 0 |
+| Самопроверка упакованной службы | 10 проверок DNS и 3 проверки ответа worker |
+| Состав пакета | 12 обязательных файлов, 183 записи ASAR |
+| Код main, worker и renderer внутри ASAR | совпадает с локальной сборкой побайтно |
+| Компоновка и клавиатура | 22 проверки |
+| Виджет | 10 сценариев, включая контракт нативной проверки |
+| Действия интерфейса | 10 сценариев |
+| История и кнопки профилей | 3 размера окна; 17/17 сохраняется при сокращённом списке подробностей |
+| Подготовка подписанных релизных метаданных | 7 тестов с временными тестовыми ключами |
+| Гостевая Windows 10, build 19044 | 4/4 HTTP-регрессии и промежуточное обновление прошли; сбой WMI воспроизведён |
+| Гостевая Windows 11 | загрузка до экрана входа; установка финального файла не завершена |
 
-The installer uses the normal administrator elevation requested by Windows. It releases only application-owned processes, services and files under its canonical paths. The release asset is distributed with a SHA-256 file.
+Тесты интерфейса используют изолированные ответы API. Локальные HTTP-регрессии запускают настоящий системный curl; другие проверки включают модели отказов и конфигураций. Это не заменяет выполнение приложения внутри каждой гостевой ОС и не доказывает работоспособность всех внешних серверов.
 
-Final public asset: `Egoist-Lagom-Setup.exe`  
-SHA-256: `E44DD4454132ADB51AE858FBBA724ED99B6E1A02932C353F13AEE697F72A7843`
+Кандидат: `Egoist-Lagom-Setup.exe`, 194178840 байт.
 
-The local host was not replaced or altered during these checks. A disposable Windows 10 acceptance image was not available, so Windows 10 compatibility is covered by API, path, service, localized-output and configuration tests rather than a guest install receipt. The local EXE is unsigned Authenticode; SmartScreen publisher trust therefore needs a signing certificate for public distribution.
+SHA-256: `9B6A6131A073727727B25559869A108D7FC7E6BA93B449F625BD073A01B3B6EB`
+
+Исправлены ложный отказ проверки большой HTTP-страницы, совместимость с серверами без HEAD, отмена проверки, пересечение восстановления сети при старте и зависимость операций `winws.exe` от WMI. Подробнее: [разбор отзыва Windows 10](windows10-feedback-validation.md).
+
+Установщик запрашивает обычное повышение прав администратора Windows. Core регистрируется как автоматическая служба `LocalSystem` с тремя попытками перезапуска. Полный цикл финального файла в гостевых Windows 10 и 11 не завершён: просроченная Windows 10 запустила неудачное системное обновление, а процесс Windows 11 завершился на экране входа. Эти ограничения не считаются успешными тестами приложения.
+
+Authenticode-подпись отсутствует. Прежний закрытый ключ не найден; создан новый канал lagom-2026-09. Переход с прежних версий выполняется вручную. Подпись новых метаданных проверена локально; см. [канал обновлений](update-channel.md).
+
+Подтверждён промежуточный гостевой прогон Windows 10 Enterprise LTSC, build 19044: системный curl 7.55.1 прошёл 4/4 HTTP-регрессии; обновление кандидатом E385… завершилось кодом 0, Core работает в Automatic, DNS и системный прокси сохранены. Затем эта система воспроизвела реальный отказ запроса процессов через WMI. Финальная сборка заменяет оба запроса WMI на `Get-Process`, повторно сверяет путь перед завершением PID и прошла адресный тест с отдельным одноразовым процессом. Посторонний одноимённый процесс в этом тесте продолжил работу.
+
+История автоподбора сохраняется в профиле пользователя атомарной записью, включая запуск из виджета. Новый запуск и отмена сохраняют последний завершённый результат. Итоговые счётчики независимы от сокращённого списка подробностей; непроверенные профили не подменяют историю. Проверены сохранение пользовательского DNS при обновлении и игнорирование запоздавшего прогресса завершённой операции. Очистка кэша завершает только конкретные процессы Discord, Discord PTB, Discord Canary и Vesktop; общее имя `Update.exe` исключено.

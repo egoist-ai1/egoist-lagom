@@ -13,9 +13,7 @@ const esmRequireBanner = "import { createRequire } from 'node:module';\nconst re
 await fs.rm('.vite/build', { recursive: true, force: true });
 await fs.rm('.vite/renderer', { recursive: true, force: true });
 await fs.mkdir('.vite/build', { recursive: true });
-const main = ("import { ShieldConnectionController } from './src/shield-connection-controller.js';\n" + modules.slice(0, -1).join('\n') + '\n' + protocol + '\n' + facade + '\n' + modules.at(-1))
-  .replaceAll('Egoist Shield', 'Egoist Lagom')
-  .replaceAll('EGOIST SHIELD', 'EGOIST LAGOM');
+const main = "import { ShieldConnectionController } from './src/shield-connection-controller.js';\n" + modules.slice(0, -1).join('\n') + '\n' + protocol + '\n' + facade + '\n' + modules.at(-1);
 await build({ stdin: { contents: main, resolveDir: root, sourcefile: 'recovered-main.js' }, outfile: '.vite/build/main.js', platform: 'node', format: 'esm', target: 'node22', bundle: true, external: ['electron', 'electron-log'], banner: { js: esmRequireBanner }, sourcemap: true });
 await fs.copyFile('src/recovered/preload.cjs', '.vite/build/preload.js');
 const rendererSeed = await fs.access('recovery/official-code/.vite/renderer').then(() => 'recovery/official-code/.vite/renderer').catch(() => 'public-ui');
@@ -66,27 +64,11 @@ rendererSource = rendererSource.replace(qfRegex, `function qf(e2) {
   let t2 = Array.isArray(e2?.results) ? e2.results : Array.isArray(e2?.testResults) ? e2.testResults : [];
   return t2.length > 0;
 }`);
-rendererSource=rendererSource.replaceAll('3.5.4','3.7.0');
-// Public UI copy uses the neutral Egoist Lagom vocabulary while internal
-// operation IDs remain unchanged for compatibility with existing state.
-rendererSource = rendererSource
-  .replaceAll('Egoist Shield', 'Egoist Lagom')
-  .replaceAll('EGOIST SHIELD', 'EGOIST LAGOM')
-  .replaceAll('VPN подключён', 'Маршрут подключён')
-  .replaceAll('VPN подключается', 'Маршрут подключается')
-  .replaceAll('VPN отключён', 'Маршрут отключён')
-  .replaceAll('VPN не подключён', 'Маршрут не подключён')
-  .replaceAll('Подключение VPN', 'Подключение')
-  .replaceAll('Подключить VPN', 'Подключить')
-  .replaceAll('Отключить VPN', 'Отключить')
-  .replaceAll('Автоподключение VPN', 'Автоподключение маршрута')
-  .replaceAll('Маршрут через VPN', 'Маршрут подтверждён')
-  .replaceAll('Профили обхода', 'Профили маршрутов')
-  .replaceAll('Автоподбор обхода', 'Автоподбор профилей')
-  .replaceAll('Активный обход', 'Активный маршрут')
-  .replaceAll('Обход ограничений DPI', 'Правила маршрутизации')
-  .replaceAll('Обход ограничений', 'Правила маршрутизации')
-  .replaceAll('Запрет', 'Профили');
+const packageVersion = JSON.parse(await fs.readFile('package.json', 'utf8')).version;
+const rendererVersionPattern = /, Qf = `\d+\.\d+\.\d+`, \$f =/;
+if (!rendererVersionPattern.test(rendererSource)) throw new Error('Renderer fallback version boundary missing');
+rendererSource = rendererSource.replace(rendererVersionPattern, `, Qf = \`${packageVersion}\`, $f =`);
+rendererSource=rendererSource.replaceAll('3.5.4',packageVersion);
 rendererSource = rendererSource.replace('Версия приложения ${t3}', 'Версия приложения Lagom');
 rendererSource = rendererSource.replace('className: `app-version`, children: [`Версия приложения `, e2]', 'className: `app-version`, children: [`Версия Lagom`]');
 await fs.writeFile('.vite/renderer/main_window/assets/index-Eaqlb9_F.js', (await transform(rendererSource, { loader: 'js', minify: true, charset: 'utf8' })).code);
@@ -100,7 +82,7 @@ await fs.mkdir('recovery/official-app/resources/installer', { recursive: true })
 await fs.copyFile('scratch/Unbounded.ttf', 'recovery/official-app/resources/installer/Unbounded.ttf');
 await build({ stdin: { contents: "export { gsap } from 'gsap';", resolveDir: root }, outfile: '.vite/renderer/main_window/assets/shield-motion.js', platform: 'browser', format: 'iife', globalName: 'ShieldMotion', bundle: true, minify: true });
 const rendererHtml = '.vite/renderer/main_window/index.html';
-await fs.writeFile(rendererHtml, (await fs.readFile(rendererHtml, 'utf8')).replace('</head>', '<link rel="stylesheet" href="./assets/brand.css">\n<script src="./assets/shield-motion.js"></script>\n  </head>'));
+await fs.writeFile(rendererHtml, (await fs.readFile(rendererHtml, 'utf8')).replace(/<title>.*?<\/title>/, '<title>Egoist Lagom</title>').replace(/<link[^>]+href="\.\/assets\/brand\.css"[^>]*>\s*/g, '').replace(/<script[^>]+src="\.\/assets\/shield-motion\.js"[^>]*><\/script>\s*/g, '').replace('</head>', '<link rel="stylesheet" href="./assets/brand.css">\n<script src="./assets/shield-motion.js"></script>\n  </head>'));
 
 const electronStub = `const app = { isPackaged: true, getPath: () => { throw new Error('Desktop path unavailable in Core worker'); } }; const shell = { openExternal: () => { throw new Error('Desktop action unavailable in Core worker'); }, showItemInFolder: () => { throw new Error('Desktop action unavailable in Core worker'); } }; const ipcMain = {};`;
 const logStub = `const log = { hooks: [], transports: { file: {}, console: {} } }; for (const level of ['info','warn','error','debug']) log[level] = (...data) => { let message = { data }; for (const hook of log.hooks) message = hook(message); process.stderr.write(JSON.stringify({level,data:message.data})+'\\n'); };`;

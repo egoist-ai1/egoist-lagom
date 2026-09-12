@@ -1,11 +1,28 @@
-# Egoist Lagom — final release
+# Egoist Lagom 3.7.1
 
-Egoist Lagom is the compact black-and-white Windows workspace for local network settings, connection profiles, encrypted DNS, Telegram Relay and service maintenance.
+Egoist Lagom 3.7.1 улучшает подбор профилей, восстановление служб, установку и чёрно-белый интерфейс. Новых режимов в этой версии нет.
 
-This release includes the polished Lagom interface, neutral public copy, corrected narrow layouts, readable event rows, hidden background PowerShell tasks and the transactional installer fixes validated in the project test suite.
+## Что изменилось
 
-The installer requests normal administrator elevation because Windows service and adapter configuration require it. It releases only application-owned paths and preserves external user settings. Optional components remain off after a clean install until the user enables them.
+- История подбора сохраняется после перезапуска, отмены и последующей ошибки подключения
+- Итоговые счётчики учитывают полный прогон, даже если интерфейс показывает сокращённый список целей
+- HTTP-проверки не скачивают большие ответы и поддерживают серверы, которые отклоняют `HEAD`
+- Поиск и завершение процесса по точному пути больше не зависят от Windows Management Instrumentation (WMI)
+- Очистка кэша закрывает только Discord, Discord PTB, Discord Canary и Vesktop
+- Установщик восстанавливает прерванное обновление, сохраняет DNS и прокси, а этапы PowerShell выполняет без видимых консольных окон
+- Служба Core работает как `LocalSystem`, запускается автоматически и использует три попытки перезапуска после сбоя
+- Кнопки, легенды статусов, журнал, настройки и компактный виджет не перекрывают текст в проверенных размерах окна
 
-Validation: 304/304 project tests passed, production dependency audit reported no vulnerabilities, the packaged Core self-test passed, and the NSIS execution suite passed 5/5.
+## Проверка
 
-The local installer is unsigned Authenticode. Verify the SHA-256 asset before running it. Use Egoist Lagom only on computers and services you own or are authorized to administer.
+- 335 автоматических тестов прошли без пропусков
+- 22 проверки компоновки и клавиатуры прошли
+- 10 сценариев виджета и 10 сценариев действий интерфейса прошли
+- Упакованный Core прошёл 10 DNS-проверок и 3 проверки ответов worker
+- Манифест релиза и stable-канал прошли проверку подписи Ed25519
+
+Полный цикл финального файла в гостевых Windows 10 и 11 не завершён из-за состояния тестовых VM. Завершённые проверки и ограничения перечислены в `Egoist-Lagom-validation.md`.
+
+Установщик запрашивает повышение прав, потому что службы и параметры сетевых адаптеров требуют доступа администратора. После чистой установки дополнительные компоненты остаются выключенными до вашего действия.
+
+Установщик не имеет подписи Authenticode. Перед запуском сравните `Egoist-Lagom-Setup.exe` с опубликованным файлом SHA-256.

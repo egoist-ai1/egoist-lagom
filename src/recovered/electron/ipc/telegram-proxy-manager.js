@@ -410,7 +410,7 @@ var TelegramProxyManager = class {
 	}
 	async shutdownApplicationRuntime() {
 		if ((await this.queryServiceStatus()).installed) {
-			await this.appendProxyLog("INFO", "Egoist Shield закрывается; установленная фоновая служба TG Proxy остаётся под управлением Windows SCM.");
+			await this.appendProxyLog("INFO", "Egoist Lagom закрывается; установленная фоновая служба TG Proxy остаётся под управлением Windows SCM.");
 			this.invalidateStatusCache();
 			return this.status({ force: true });
 		}

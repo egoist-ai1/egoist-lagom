@@ -18,6 +18,8 @@ VIAddVersionKey "ProductName" "Egoist Lagom"
 VIAddVersionKey "FileDescription" "Egoist Lagom Setup"
 VIAddVersionKey "ProductVersion" "${PRODUCT_VERSION}.0"
 VIAddVersionKey "FileVersion" "${PRODUCT_VERSION}.0"
+VIAddVersionKey "CompanyName" "EGOIST"
+VIAddVersionKey "OriginalFilename" "Egoist-Lagom-Setup.exe"
 VIAddVersionKey "LegalCopyright" "EGOIST"
 
 AutoCloseWindow true

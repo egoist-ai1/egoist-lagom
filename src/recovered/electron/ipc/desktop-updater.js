@@ -1,6 +1,6 @@
 //#region src/electron/ipc/desktop-updater.ts
 var APP_RELEASE_OWNER = "egoist-ai1";
-var APP_RELEASE_REPOSITORY = "egoistshield";
+var APP_RELEASE_REPOSITORY = "egoist-lagom";
 var APP_RELEASE_API_URL = `https://api.github.com/repos/${APP_RELEASE_OWNER}/${APP_RELEASE_REPOSITORY}/releases/latest`;
 var APP_RELEASE_PAGE_URL = `https://github.com/${APP_RELEASE_OWNER}/${APP_RELEASE_REPOSITORY}/releases/latest`;
 var STABLE_CHANNEL_URL = `https://github.com/${APP_RELEASE_OWNER}/${APP_RELEASE_REPOSITORY}/releases/latest/download/stable-channel.json`;
@@ -164,7 +164,7 @@ var DesktopUpdater = class {
 			if (!version || !release.tag_name) throw new UpdaterError("release-not-found", "Stable-релиз не содержит корректную версию.");
 			const tag = `v${version}`;
 			if (release.tag_name !== tag || release.draft || release.prerelease) throw new UpdaterError("unsupported-channel", "Latest release не является stable-кандидатом.");
-			const assetName = `EgoistShield-Setup-${version}.exe`;
+			const assetName = release.assets?.some(item => item.name === "Egoist-Lagom-Setup.exe") ? "Egoist-Lagom-Setup.exe" : `EgoistShield-Setup-${version}.exe`;
 			const asset = release.assets?.find((item) => item.name === assetName);
 			if (!asset) throw new UpdaterError("release-not-found", `Stable-релиз ${tag} не содержит Setup.`);
 			const canonicalUrl = `https://github.com/${APP_RELEASE_OWNER}/${APP_RELEASE_REPOSITORY}/releases/download/${tag}/${assetName}`;
@@ -316,7 +316,7 @@ var DesktopUpdater = class {
 			child.unref();
 			emit(this.options, {
 				phase: "restarting",
-				message: "Мастер запущен. Egoist Shield перезапустится после обновления.",
+				message: "Мастер запущен. Egoist Lagom перезапустится после обновления.",
 				version: candidate.version,
 				percent: 100
 			});

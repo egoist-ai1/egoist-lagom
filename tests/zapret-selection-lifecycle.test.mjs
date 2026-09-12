@@ -18,10 +18,24 @@ function fixture(bindings = {}) {
     parseCurlStatusCode: stdout => Number(stdout) || null,
     normalizeCurlProbeError: error => error || 'No response',
     ...bindings,
-  }, ['ZapretManager', 'runWithBoundedConcurrency', 'orderZapretProfilesForAutoSelect']);
+  }, ['ZapretManager', 'runWithBoundedConcurrency', 'orderZapretProfilesForAutoSelect', 'buildDiscordCacheCleanupPlan']);
   const manager = new api.ZapretManager('resources', 'app', 'user', 'C:\\Shield\\zapret');
   return { ...api, manager };
 }
+
+test('Discord cache cleanup closes only named clients and targets only their cache folders', () => {
+  const { buildDiscordCacheCleanupPlan } = fixture();
+  const plan = buildDiscordCacheCleanupPlan('all', {
+    APPDATA: 'C:\\Users\\Test\\AppData\\Roaming',
+    LOCALAPPDATA: 'C:\\Users\\Test\\AppData\\Local',
+  });
+  assert.deepEqual([...plan.processNames].sort(), ['Discord.exe', 'DiscordCanary.exe', 'DiscordPTB.exe', 'Vesktop.exe']);
+  assert.equal(plan.processNames.includes('Update.exe'), false, 'A generic updater name could terminate another application');
+  assert.ok(plan.directories.length > 0);
+  assert.ok(plan.directories.every(directory => /\\(?:discord|discordptb|discordcanary|vesktop)\\/i.test(directory)));
+  assert.ok(plan.directories.every(directory => /\\(?:Cache|Code Cache|GPUCache|DawnCache|Network\\Cache|Service Worker\\(?:CacheStorage|ScriptCache)|Partitions\\discord_voice\\(?:Cache|Code Cache|GPUCache))$/i.test(directory)));
+  assert.ok(plan.directories.every(directory => !/\\Local Storage(?:\\|$)/i.test(directory)));
+});
 
 function sweepFixture() {
   const { manager } = fixture();
@@ -70,6 +84,45 @@ test('image/CDN and DNS reachability alone cannot produce a usable profile', () 
   for (const absent of keys) assert.equal(manager.isZapretProbeHealthy(keys.filter(key => key !== absent).map(key => ({ key, ok: true }))), false);
 });
 
+test('Windows 10 feedback: six reachable auxiliaries across 22 profiles never become a successful selection', async () => {
+  const { manager, events } = sweepFixture();
+  manager.listProfiles = async () => Array.from({ length: 22 }, (_, i) => ({ name: `ALT${i}`, fileName: `ALT${i}.bat` }));
+  manager.probeZapretTargets = async () => {
+    const keys = ['DiscordMain', 'DiscordGateway', 'YouTubeWeb', 'YouTubeImage', 'DiscordCDN', 'YouTubeShort', 'GoogleMain', 'GoogleGstatic', 'CloudflareWeb', 'CloudflareCDN', 'CloudflareDNS1111', 'CloudflareDNS1001', 'GoogleDNS8888', 'GoogleDNS8844', 'Quad9DNS9999', 'AuxiliaryA', 'AuxiliaryB'];
+    const targets = keys.map((key, i) => ({ key, ok: i >= 11, pingMs: i >= 11 ? 10 : null, error: i < 11 ? 'TLS connection failed' : null }));
+    return { targets, healthy: manager.isZapretProbeHealthy(targets), confident: false, averagePingMs: 10 };
+  };
+  const result = await manager.autoSelectBestProfile();
+  assert.equal(result.testedProfiles.length, 22);
+  assert.equal(result.bestProfile, null);
+  assert.equal(result.goodProfiles.length, 0);
+  assert.equal(result.results.every(row => row.passedTargets === 6 && row.totalTargets === 17), true);
+  assert.equal(events.includes('remember'), false);
+  assert.equal(events.filter(event => event.startsWith('start:')).length, 22);
+  assert.equal(events.at(-1).startsWith('stop:'), true);
+});
+
+test('manual and automatic starts use identical profile arguments and working directory', async () => {
+  const spawned = [];
+  const child = () => Object.assign(new EventEmitter(), { pid: 42, unref() {} });
+  const { manager } = fixture({
+    spawn: (exe, args, options) => { spawned.push({ exe, args, cwd: options.cwd, hidden: options.windowsHide }); return child(); },
+    splitWindowsCommandLine: args => [args],
+  });
+  manager.ensureProvisioned = async () => {};
+  manager.assertNoExternalConflict = async () => {};
+  manager.queryService = async () => ({ running: false });
+  manager.stopStandaloneInternal = async () => {};
+  manager.listIntegratedWinwsProcesses = async () => [];
+  manager.buildServiceCommand = async name => ({ profile: { name }, args: '--hostlist="C:\\Профили [QA]\\list.txt"', winwsPath: 'C:\\Профили [QA]\\winws.exe' });
+  manager.writeStandaloneState = async () => {};
+  manager.waitForIntegratedWinwsStart = async () => true;
+  manager.status = async () => ({ standaloneRunning: true });
+  await manager.startStandalone('general (ALT4)');
+  await manager.startProbeStandalone('general (ALT4)');
+  assert.deepEqual(spawned[0], spawned[1]);
+});
+
 test('ownership requires exact executable identity, not a command-line reference or neighbouring folder', async () => {
   const { manager } = fixture();
   const own = { pid: 10, executablePath: 'c:\\shield\\ZAPRET\\core\\bin\\winws.exe' };
@@ -99,7 +152,9 @@ test('an unkillable owned process aborts cleanup without clearing recovery state
   const commands = [];
   manager.execPowerShell = async command => commands.push(command);
   await assert.rejects(manager.stopOwnedWinwsProcesses(0), /Новый кандидат не запущен/);
-  assert.match(commands[0], /ExecutablePath -ieq/);
+  assert.match(commands[0], /Get-Process -Id 123/);
+  assert.match(commands[0], /\$image -ieq/);
+  assert.doesNotMatch(commands[0], /Get-CimInstance|Win32_Process/);
   assert.doesNotMatch(commands[0], /taskkill|\/IM|\/T/);
 });
 
@@ -115,6 +170,18 @@ test('unavailable process inventory is a failure, not evidence that all processe
   const { manager } = fixture();
   manager.execPowerShell = async () => { throw new Error('CIM access denied'); };
   await assert.rejects(manager.listWinwsProcesses(), /CIM access denied/);
+});
+
+test('winws inventory avoids WMI and preserves path identity with a bounded process query', async () => {
+  const { manager } = fixture();
+  manager.execPowerShell = async (command, timeout) => {
+    assert.match(command, /Get-Process -Name 'winws'/);
+    assert.doesNotMatch(command, /Get-CimInstance|Win32_Process/);
+    assert.equal(timeout, 12_000);
+    return JSON.stringify({ ProcessId: 4321, ExecutablePath: 'C:\\Shield\\zapret\\core\\bin\\winws.exe', StartedAt: '2026-09-12T17:00:00.000Z' });
+  };
+  const processes = Array.from(await manager.listWinwsProcesses());
+  assert.deepEqual(JSON.parse(JSON.stringify(processes)), [{ pid: 4321, commandLine: '', executablePath: 'C:\\Shield\\zapret\\core\\bin\\winws.exe', startedAt: '2026-09-12T17:00:00.000Z' }]);
 });
 
 test('auto-select stops its candidate before completion and reports a truthful early exit', async () => {

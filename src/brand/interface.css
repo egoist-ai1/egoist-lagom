@@ -1,4 +1,4 @@
-/* Egoist Shield 3.6. Component states retain their original semantic classes. */
+/* Egoist Lagom 3.6. Component states retain their original semantic classes. */
 body { background: var(--bg-0); color: var(--text-main); }
 .app-shell { background: var(--bg-0); grid-template-columns: 208px minmax(0, 1fr); border-radius: 12px; }
 .sidebar { background: #15181d; padding: 22px 14px 20px; border-right-color: var(--border-soft); }

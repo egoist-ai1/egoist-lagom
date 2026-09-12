@@ -50,6 +50,22 @@ test('a new installation disables old automatic connections in each user profile
   assert.equal(reopened.get().settings.autoConnect, true, 'later explicit user choice must persist');
 });
 
+test('installation preserves the user-selected resolver while leaving DNS disabled', async t => {
+  const { root } = await fixture(t);
+  const installationPath = path.join(root, 'installation.json');
+  await fs.writeFile(installationPath, JSON.stringify({ id: randomUUID() }));
+  const state = structuredClone(DEFAULT_STATE);
+  state.settings.systemDohUrl = 'https://resolver.example.test/custom?key=user-choice';
+  state.settings.customDnsUrl = state.settings.systemDohUrl;
+  state.settings.systemDohEnabled = true;
+  await fs.writeFile(path.join(root, 'egoistshield-state.json'), JSON.stringify(state));
+  const store = new StateStore(root, installationPath);
+  await store.load();
+  assert.ok(store.get().settings.systemDohUrl === state.settings.systemDohUrl, 'Resolver selection must survive installation');
+  assert.ok(store.get().settings.customDnsUrl === state.settings.customDnsUrl, 'Custom resolver selection must survive installation');
+  assert.equal(store.get().settings.systemDohEnabled, false);
+});
+
 test('two concurrent settings changes with one revision cannot both commit', async t => {
   const { store } = await fixture(t);
   await store.load();

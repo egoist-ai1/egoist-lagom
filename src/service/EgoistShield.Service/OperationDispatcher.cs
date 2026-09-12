@@ -769,7 +769,7 @@ internal sealed class OperationDispatcher : IDisposable
 					{
 						repaired = true,
 						resource = "native-doh",
-						reason = "The committed Egoist Shield DoH state was incomplete and was reset safely.",
+						reason = "The committed Egoist Lagom DoH state was incomplete and was reset safely.",
 						removed = removed,
 						preserved = preserved,
 						resetOwnedDns = health.DnsOwned,
@@ -790,7 +790,7 @@ internal sealed class OperationDispatcher : IDisposable
 			return new
 			{
 				repaired = false,
-				message = (((object)health.State == null) ? "No unfinished Egoist Shield system transaction was found; DNS cache was refreshed." : "Egoist Shield native DoH is healthy; DNS cache was refreshed without changing it."),
+				message = (((object)health.State == null) ? "No unfinished Egoist Lagom system transaction was found; DNS cache was refreshed." : "Egoist Lagom native DoH is healthy; DNS cache was refreshed without changing it."),
 				preservedExternalDns = true,
 				preservedRunningBypassServices = true
 			};

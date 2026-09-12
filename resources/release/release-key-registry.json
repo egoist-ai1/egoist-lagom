@@ -1,22 +1,14 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-07T18:22:03.395Z",
+  "generatedAt": "2026-09-12T14:31:33.192Z",
   "keys": [
     {
-      "id": "release-2026-01",
-      "algorithm": "Ed25519",
-      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA8HiE6pK6WUn+nokG+9dMRJ+RaEXMhcq8hLrxQX4/BJQ=\n-----END PUBLIC KEY-----\n",
-      "status": "trusted",
-      "notBefore": "2026-01-01T00:00:00.000Z",
-      "notAfter": "2036-01-01T00:00:00.000Z"
-    },
-    {
-      "id": "release-2026-09",
+      "id": "lagom-2026-09",
       "algorithm": "Ed25519",
       "status": "trusted",
-      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEApu6KFPg1QPDTgPTkpADQVAkYtTJhaepF403lHgV0Q+Q=\n-----END PUBLIC KEY-----\n",
-      "notBefore": "2026-09-07T00:00:00.000Z",
-      "notAfter": "2028-09-07T00:00:00.000Z"
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEARkClz1otYTfTMgfFXYXd+CdBoJp5hNo5PAA4HFFoalI=\n-----END PUBLIC KEY-----\n",
+      "notBefore": "2026-09-12T00:00:00.000Z",
+      "notAfter": "2028-09-12T00:00:00.000Z"
     }
   ]
 }

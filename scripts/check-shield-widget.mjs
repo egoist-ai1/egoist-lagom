@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import { pathToFileURL } from 'node:url';
 
 const evidence = process.argv[2];
@@ -66,6 +67,16 @@ try {
   await page.goto(origin, {waitUntil:'networkidle'});
   await page.getByRole('button',{name:'Подключить защиту',exact:true}).waitFor();
   await page.waitForFunction(()=>!document.querySelector('.shield-interactive-trigger').disabled);
+  const nativeProbeSource = await fs.readFile(path.resolve(import.meta.dirname, '../tests/windows-lab-ui-probe.cjs'), 'utf8');
+  const probeStart = nativeProbeSource.indexOf('const domExpression =');
+  const probeEnd = nativeProbeSource.indexOf('\nfunction windowExpression', probeStart);
+  const nativeExpression = vm.runInNewContext(nativeProbeSource.slice(probeStart, probeEnd) + '\ndomExpression;');
+  const nativeDom = await page.evaluate(nativeExpression);
+  assert.equal(nativeDom.brandText.replace(/\s+/g, ''), 'egoist/lagom');
+  assert.equal(nativeDom.mainActionText, 'Подключить защиту');
+  assert.ok(nativeDom.mainActionEnabled && nativeDom.settingsPresent && nativeDom.dnsSwitchPresent);
+  assert.ok(nativeDom.widgetInViewport && nativeDom.footerInViewport && nativeDom.generatedIconCount > 5);
+  report.checks.push('Native guest readiness probe matches the current widget DOM');
   const overflow = await page.evaluate(()=>({width:document.documentElement.scrollWidth,height:document.querySelector('.shield-widget-container').getBoundingClientRect().height}));
   assert.ok(overflow.width<=296 && overflow.height<=340, JSON.stringify(overflow));
   await page.screenshot({path:path.join(evidence,'widget-idle.png')});
@@ -106,6 +117,7 @@ try {
   assert.ok(await page.getByRole('button',{name:'Подключить защиту',exact:true}).evaluate(el=>el===document.activeElement));
   assert.equal(await page.locator('.shield-live-dot').evaluate(el=>getComputedStyle(el).animationName),'none');
   report.checks.push('Keyboard focus and reduced motion');
+  assert.equal(await page.locator('.shield-widget-container').evaluate(el=>el.getAnimations({subtree:true}).length),0,'Reduced motion disables CSS loops as well as GSAP');
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.reload({waitUntil:'networkidle'});
   await page.getByRole('button',{name:'Подключить защиту',exact:true}).click();
@@ -114,6 +126,17 @@ try {
   await page.waitForTimeout(180);
   const after=await page.locator('.shield-travel-edge').evaluate(el=>getComputedStyle(el).strokeDashoffset);
   assert.notEqual(before,after,'GSAP contour moves during selection');
+  await page.evaluate(()=>{
+    Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.equal(await page.locator('.shield-travel-edge').evaluate(el=>getComputedStyle(el).animationPlayState),'paused');
+  const paused=await page.locator('.shield-travel-edge').evaluate(el=>getComputedStyle(el).strokeDashoffset);
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('.shield-travel-edge').evaluate(el=>getComputedStyle(el).strokeDashoffset),paused,'Hidden widget stops CSS motion');
+  await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});
+  report.checks.push('Hidden widget pauses its continuous motion');
   await page.evaluate(()=>shieldLab.finish());
   await page.getByRole('heading',{name:'Подключено',exact:true}).waitFor();
   await page.waitForTimeout(600);

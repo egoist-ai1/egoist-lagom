@@ -173,7 +173,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
 
 .ruby-connection-panel:before,.ruby-connection-panel:after,.ruby-component-list:before,.ruby-component-list:after,.ruby-traffic:before,.ruby-traffic:after{display:none}.ruby-sidebar,.ruby-titlebar,.ruby-brand{background-image:none;box-shadow:none}.ruby-page-heading h1,.ruby-page-heading p{text-shadow:none}@media(max-width:720px){.ruby-page-heading:not(.ruby-dashboard-heading){align-items:flex-start;flex-direction:column;gap:4px}}
 
-/* Egoist Shield · Compact Ruby surfaces
+/* Egoist Lagom · Compact Ruby surfaces
    Non-dashboard screens only. Shell and dashboard styling live beside this file. */
 
 :is(

@@ -18,6 +18,15 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
   const stateRevision = O.useRef(0);
 
   O.useEffect(() => {
+    const syncVisibility = () => {
+      if (surface.current) surface.current.dataset.hidden = String(document.hidden);
+    };
+    syncVisibility();
+    document.addEventListener('visibilitychange', syncVisibility);
+    return () => document.removeEventListener('visibilitychange', syncVisibility);
+  }, []);
+
+  O.useEffect(() => {
     mounted.current = true;
     let timer;
     const refresh = async () => {
@@ -167,7 +176,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
     <div className="shield-widget-container" data-phase={phase} ref={surface}>
       <header className="shield-widget-header">
         <div className="shield-widget-brand">
-          <span>egoist<span className="shield-brand-separator"> / </span><b>shield</b></span>
+          <span>egoist<span className="shield-brand-separator"> / </span><b>lagom</b></span>
         </div>
         <div className="shield-widget-window-btns">
           <button aria-label="Свернуть" title="Свернуть" onClick={() => api?.window?.minimize?.()}>
@@ -218,7 +227,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
             aria-valuemax="100"
             aria-valuenow={busy ? progress : running ? 100 : 0}
           >
-            <span style={{ width: `${busy ? progress : running ? 100 : 0}%` }}/>
+            <span style={{ transform: `scaleX(${(busy ? progress : running ? 100 : 0) / 100})` }}/>
           </div>
         </div>
 
