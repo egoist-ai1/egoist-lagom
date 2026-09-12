@@ -22,5 +22,12 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Build generated bundles
+        run: npm run build
+      - name: Install NSIS for installer regressions
+        shell: pwsh
+        run: choco install nsis --no-progress --yes
       - name: Run tests
+        env:
+          SHIELD_MAKENSIS: C:\\Program Files (x86)\\NSIS\\makensis.exe
         run: npm test
