@@ -126,6 +126,7 @@ export class ShieldConnectionController {
             const progress = Math.min(68, 8 + Math.round(60 * index / total));
             this.publish({ phase: 'selecting', progress: Math.max(this.state.progress, progress), message: event.profile ? `Проверяем ${event.profile.replace(/\.bat$/i, '')}` : 'Проверяем доступность сайтов', tested: index, total });
           });
+          this.deps.onSelection?.(result);
           this.checkCancelled();
           if (!result?.completed || result.cancelled || !result.bestProfile) throw new Error(result?.detail || result?.summary || 'Рабочая стратегия не найдена. Проверьте интернет и повторите попытку.');
           profile = result.bestProfile;

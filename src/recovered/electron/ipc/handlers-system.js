@@ -1424,6 +1424,7 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 	});
 	const shield = new ShieldConnectionController({
 		zapret: zapretManager,
+		onSelection: result => recordZapretSelectionHistory(result),
 		dns: systemDohManager,
 		vpn: runtimeManager,
 		telegramProxy: telegramProxyManager,

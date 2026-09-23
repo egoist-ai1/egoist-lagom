@@ -633,17 +633,21 @@ function getTrayAssetPath(filename) {
 * отвечает ни одна кнопка. Просроченный шаг теперь пропускается, а его работу
 * доделывает восстановление после загрузки renderer.
 */
+var pendingBootRecovery = new Set();
 async function withBootDeadline(label, budgetMs, work) {
 	let timer = null;
+	const pending = Promise.resolve().then(work);
+	pendingBootRecovery.add(pending);
+	pending.then(() => pendingBootRecovery.delete(pending), () => pendingBootRecovery.delete(pending));
 	const deadline = new Promise((resolve) => {
 		timer = setTimeout(() => {
-			logger.error(`[boot] ${label} exceeded ${Math.round(budgetMs / 1e3)} s and was skipped; the app continues to start.`);
+			logger.error(`[boot] ${label} exceeded ${Math.round(budgetMs / 1e3)} s; recovery continues while the interface starts.`);
 			resolve(null);
 		}, budgetMs);
 		timer.unref?.();
 	});
 	try {
-		return await Promise.race([work(), deadline]);
+		return await Promise.race([pending, deadline]);
 	} catch (error) {
 		logger.warn(`[boot] ${label} failed:`, error);
 		return null;
@@ -779,6 +783,7 @@ function stopDnsWatchdog() {
 	dnsWatchdogConsecutiveFailures = 0;
 }
 async function recoverBackgroundFeaturesAfterRendererLoad(loadedState) {
+	await Promise.allSettled([...pendingBootRecovery]);
 	logger.info("[boot] background recovery:start");
 	const usesLoopbackDns = isGravitylessLoopbackDnsRequest(String(loadedState.settings.systemDnsServers ?? ""));
 	const recoverDns = async () => {
@@ -980,7 +985,7 @@ async function createMainWindow() {
 	if (!globalTelegramProxyManager) globalTelegramProxyManager = useComponentService(new TelegramProxyManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "TelegramProxy"), coreService), "TelegramProxy", coreService);
 	await reconcileOwnedSystemStateBeforeUi();
 	logger.info("[boot] registering IPC handlers");
-	globalNetworkCombinatorManager = await registerIpcHandlers(mainWindow, stateStore, globalRuntimeManager, globalGravitylessDnsManager, globalSystemDohManager, globalZapretManager, globalTelegramProxyManager);
+	globalNetworkCombinatorManager = await registerIpcHandlers(mainWindow, stateStore, globalRuntimeManager, globalGravitylessDnsManager, globalSystemDohManager, globalZapretManager, globalTelegramProxyManager, () => pendingBootRecovery.size === 0);
 	logger.info("[boot] IPC handlers registered");
 	logger.info("[boot] loading persisted state");
 	const loadedState = await stateStore.load();

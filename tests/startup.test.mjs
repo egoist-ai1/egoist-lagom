@@ -11,6 +11,7 @@ test('opening the app does not start deliberately stopped background services', 
   const start = source.indexOf('async function recoverBackgroundFeaturesAfterRendererLoad');
   const end = source.indexOf('\n/**', start);
   const context = vm.createContext({
+    pendingBootRecovery: new Set(),
     logger: { info() {}, warn() {}, error() {} },
     isGravitylessLoopbackDnsRequest: () => false,
     globalSystemDohManager: null, globalGravitylessDnsManager: null,

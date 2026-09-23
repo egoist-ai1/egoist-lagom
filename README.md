@@ -72,7 +72,7 @@ npm run package:win
 ## Проверка
 
 ```text
-npm test       345/345
+npm test       365/365
 UI checks      25/25
 NSIS           exit 0
 ```

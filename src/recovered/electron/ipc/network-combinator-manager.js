@@ -54,6 +54,7 @@ var DEFAULT_MODULES = [
 var INSPECTION_CACHE_TTL_MS = 3e3;
 var MUTATION_WAIT_TIMEOUT_MS = 3e4;
 var NetworkCombinatorManager = class {
+	isNetworkReady;
 	isElevated;
 	moduleInspectors;
 	plans = /* @__PURE__ */ new Map();
@@ -65,6 +66,7 @@ var NetworkCombinatorManager = class {
 	mutationReleaseWaiters = /* @__PURE__ */ new Set();
 	mutationSequence = 0;
 	constructor(options) {
+		this.isNetworkReady = options.isNetworkReady ?? (() => true);
 		this.isElevated = options.isElevated;
 		this.moduleInspectors = options.moduleInspectors ?? {};
 	}
@@ -161,6 +163,7 @@ var NetworkCombinatorManager = class {
 		};
 	}
 	async runCoordinatedMutation(intent, operation) {
+		if (!this.isNetworkReady()) throw new Error("Завершается восстановление сети после запуска. Повторите действие через несколько секунд.");
 		const normalized = {
 			module: intent.module,
 			action: intent.action,

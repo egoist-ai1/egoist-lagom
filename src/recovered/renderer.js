@@ -10649,10 +10649,21 @@ function Rf(e2) {
 var zf = { manualPrimary: `1.1.1.1`, manualSecondary: `8.8.8.8`, provider: `Gravityless DNS`, localAddress: `127.0.0.1`, localPort: 53, upstreamEndpoint: `dns.gravityless.space:8443`, dohUrl: `https://dns.gravityless.space:8443/dns-query/734f3c05`, stamp: `sdns://AgcAAAAAAAAAAAAaZG5zLmdyYXZpdHlsZXNzLnNwYWNlOjg0NDMTL2Rucy1xdWVyeS83MzRmM2MwNQ` }, Bf = { host: `127.0.0.1`, port: 1443, secret: ``, dcIp: [], verbose: false, bufKb: 256, poolSize: 8, logMaxMb: 5, checkUpdates: true }, Vf = [{ id: `cloudflare`, name: `Cloudflare`, note: `Быстро`, servers: [`1.1.1.1`, `1.0.0.1`] }, { id: `google`, name: `Google DNS`, note: `Совместимо`, servers: [`8.8.8.8`, `8.8.4.4`] }, { id: `quad9`, name: `Quad9`, note: `Безопасно`, servers: [`9.9.9.9`, `149.112.112.112`] }, { id: `adguard`, name: `AdGuard`, note: `Фильтрация`, servers: [`94.140.14.14`, `94.140.15.15`] }], Hf = [{ host: `api.openai.com`, label: `OpenAI` }, { host: `api.anthropic.com`, label: `Claude` }, { host: `gemini.google.com`, label: `Gemini` }], Uf = { generalDomains: ``, includedCidrs: ``, excludedDomains: ``, excludedCidrs: `` }, Wf = `egoistshield.zapret.autoSelect`, Gf = 2, Kf = 17;
 function qf(e2) {
   let t2 = Array.isArray(e2?.results) ? e2.results : Array.isArray(e2?.testResults) ? e2.testResults : [];
-  return t2.length ? t2.some((e3) => {
-    let t3 = Array.isArray(e3?.targets) ? e3.targets : [];
-    return t3.length >= Kf && t3.some((e4) => String(e4?.key ?? ``).startsWith(`Discord`)) && t3.some((e4) => String(e4?.key ?? ``).startsWith(`YouTube`));
-  }) : false;
+  return t2.length > 0;
+}
+function zapretHistoryResult(result, previous = null) {
+  if (!qf(result) || (result.cancelled === true || result.completed === false) && previous && previous.completed !== false && !previous.cancelled) return previous;
+  const rows = Array.isArray(result.results) ? result.results : result.testResults;
+  const testedAt = result.testedAt || new Date().toISOString();
+  if (previous?.testedAt && Date.parse(previous.testedAt) > Date.parse(testedAt)) return previous;
+  return { ...result, results: rows, testedProfiles: rows.map(row => Q(row?.configName, row?.name, row?.configId, row?.id)).filter(Boolean), testedAt };
+}
+function zapretHistoryRows(result) {
+  const rows = Array.isArray(result?.results) ? result.results : Array.isArray(result?.testResults) ? result.testResults : [];
+  return zm(null, rows, result);
+}
+function zapretProfileKey(value) {
+  return String(value ?? ``).trim().replace(/\.bat$/i, ``).toLowerCase();
 }
 function Jf() {
   try {
@@ -10664,6 +10675,7 @@ function Jf() {
 }
 function Yf(e2) {
   try {
+    if (!e2) return;
     let t2 = typeof e2 == `object` && e2 ? { ...e2, schemaVersion: Gf, targetCount: Kf } : e2;
     window.localStorage.setItem(Wf, JSON.stringify(t2));
   } catch {
@@ -10704,13 +10716,13 @@ function np() {
     let e3 = window.egoistAPI, t3 = await Promise.allSettled([e3?.state?.get?.(), e3?.app?.isAdmin?.(), e3?.vpn?.status?.(), e3?.system?.dnsControllerStatus?.(), e3?.system?.systemDohStatus?.(), e3?.zapret?.status?.(), e3?.zapret?.listProfiles?.(), e3?.telegramProxy?.status?.(), e3?.health?.getReport?.(), e3?.network?.inspect?.(), e3?.system?.getMyIp?.(), e3?.logs?.getRuntimeSummary?.(40), e3?.telegramProxy?.tailLogs?.(40)]);
     r2((e4) => {
       let n3 = im(t3[2]), r3 = $(n3?.pingMs, e4.vpn?.pingMs);
-      return { ...e4, state: im(t3[0]), isAdmin: typeof im(t3[1]) == `boolean` ? im(t3[1]) : null, vpn: n3 && r3 != null ? { ...n3, pingMs: r3 } : n3, dns: im(t3[3]), systemDoh: im(t3[4]), zapret: im(t3[5]), zapretProfiles: im(t3[6]) ?? [], telegram: im(t3[7]), health: im(t3[8]), network: im(t3[9]), myIp: im(t3[10]), runtimeLogs: [...am(im(t3[11]), `RUNTIME`), ...am(im(t3[12]), `TG`)] };
+      return { ...e4, state: im(t3[0]), isAdmin: typeof im(t3[1]) == `boolean` ? im(t3[1]) : null, vpn: n3 && r3 != null ? { ...n3, pingMs: r3 } : n3, dns: im(t3[3]), systemDoh: im(t3[4]), zapret: im(t3[5]), zapretAutoSelect: zapretHistoryResult(im(t3[5])?.autoSelectHistory, e4.zapretAutoSelect), zapretProfiles: im(t3[6]) ?? [], telegram: im(t3[7]), health: im(t3[8]), network: im(t3[9]), myIp: im(t3[10]), runtimeLogs: [...am(im(t3[11]), `RUNTIME`), ...am(im(t3[12]), `TG`)] };
     });
   }, []), y2 = O.useCallback(async () => {
     let e3 = window.egoistAPI, t3 = await Promise.allSettled([e3?.state?.get?.(), e3?.vpn?.status?.(), e3?.system?.dnsControllerStatus?.(), e3?.system?.systemDohStatus?.(), e3?.zapret?.status?.(), e3?.telegramProxy?.status?.()]);
     r2((e4) => {
       let n3 = im(t3[1]), r3 = $(n3?.pingMs, e4.vpn?.pingMs);
-      return { ...e4, state: im(t3[0]) ?? e4.state, vpn: n3 ? r3 == null ? n3 : { ...n3, pingMs: r3 } : e4.vpn, dns: im(t3[2]) ?? e4.dns, systemDoh: im(t3[3]) ?? e4.systemDoh, zapret: im(t3[4]) ?? e4.zapret, telegram: im(t3[5]) ?? e4.telegram };
+      return { ...e4, state: im(t3[0]) ?? e4.state, vpn: n3 ? r3 == null ? n3 : { ...n3, pingMs: r3 } : e4.vpn, dns: im(t3[2]) ?? e4.dns, systemDoh: im(t3[3]) ?? e4.systemDoh, zapret: im(t3[4]) ?? e4.zapret, zapretAutoSelect: zapretHistoryResult(im(t3[4])?.autoSelectHistory, e4.zapretAutoSelect), telegram: im(t3[5]) ?? e4.telegram };
     });
   }, []);
   O.useEffect(() => {
@@ -10778,7 +10790,7 @@ function np() {
     let a3 = d2.current + 1;
     d2.current = a3;
     let o3 = () => d2.current === a3, c3 = Zf[e3] ?? { title: `Выполняется действие`, detail: n3 }, u3 = Date.now();
-    s2({ id: e3, tone: `info`, title: c3.title, detail: c3.detail, startedAt: u3 }), e3 === `zapret-auto` && Xf(), e3 === `speedtest` && l2(true), r2((t4) => ({ ...t4, busy: e3, busyActions: t4.busyActions.includes(e3) ? t4.busyActions : [...t4.busyActions, e3], ...e3 === `zapret-auto` ? { zapretProgress: { phase: `start`, startedAt: (/* @__PURE__ */ new Date()).toISOString() }, zapretAutoSelect: null } : {}, ...e3 === `speedtest` ? { speedtest: null, speedProgress: null } : {} }));
+    s2({ id: e3, tone: `info`, title: c3.title, detail: c3.detail, startedAt: u3 }), e3 === `speedtest` && l2(true), r2((t4) => ({ ...t4, busy: e3, busyActions: t4.busyActions.includes(e3) ? t4.busyActions : [...t4.busyActions, e3], ...e3 === `zapret-auto` ? { zapretProgress: { phase: `start`, startedAt: (/* @__PURE__ */ new Date()).toISOString() } } : {}, ...e3 === `speedtest` ? { speedtest: null, speedProgress: null } : {} }));
     try {
       let i4 = await t3();
       if (e3 === `speedtest` && r2((e4) => ({ ...e4, speedtest: i4 })), e3 === `update-check` && r2((e4) => ({ ...e4, update: i4 })), i4 && typeof i4 == `object` && `ok` in i4 && i4.ok === false) throw Error(sm(i4, `Backend rejected ${e3}.`));
@@ -10789,8 +10801,11 @@ function np() {
       e3 === `dns-check` && r2((e4) => ({ ...e4, dnsCheck: i4 })), e3 === `admin-check` && r2((e4) => ({ ...e4, isAdmin: !!i4?.isAdmin })), e3 === `diagnostics-export` && r2((e4) => ({ ...e4, diagnosticsExport: i4 }));
       let l3 = e3 === `zapret-auto` && i4?.cancelled === true;
       if (e3 === `zapret-auto`) {
-        let e4 = i4, t4 = Array.isArray(e4?.results) ? e4.results : Array.isArray(e4?.testResults) ? e4.testResults : [], n4 = e4?.cancelled === true ? t4.filter((e5) => Array.isArray(e5?.targets) && e5.targets.length > 0) : t4, a5 = { ...i4, results: n4, testResults: n4, testedProfiles: n4.map((e5) => Q(e5?.configName, e5?.name, e5?.id)).filter(Boolean), bestProfile: e4?.cancelled === true ? null : Q(e4?.bestProfile), testedAt: (/* @__PURE__ */ new Date()).toISOString() };
-        Yf(a5), r2((t5) => ({ ...t5, zapretAutoSelect: a5, zapretProgress: { phase: e4?.cancelled === true ? `cancelled` : `complete`, bestProfile: Q(a5?.bestProfile), testedAt: a5.testedAt } }));
+        r2((previous) => {
+          const history = zapretHistoryResult(i4, previous.zapretAutoSelect);
+          Yf(history);
+          return { ...previous, zapretAutoSelect: history, zapretProgress: { phase: i4?.cancelled === true ? `cancelled` : `complete`, bestProfile: Q(history?.bestProfile), testedAt: history?.testedAt } };
+        });
       }
       if (o3()) {
         let t4 = l3 ? `warn` : a4?.tone ?? `good`;
@@ -10799,6 +10814,7 @@ function np() {
       return Rf(e3) && await y2(), true;
     } catch (t4) {
       let n4 = cm(t4, e3);
+      e3 === `zapret-auto` && r2((previous) => ({ ...previous, zapretProgress: null }));
       return o3() && (s2({ id: e3, tone: `bad`, title: n4.title, detail: n4.detail, startedAt: Date.now() }), p2.current && tp(`bad`)), false;
     } finally {
       f2.current.get(i3) === e3 && f2.current.delete(i3), r2((t4) => {
@@ -11232,7 +11248,7 @@ function Tp({ activity: e2, confirmAction: t2, runAction: n2, snapshot: r2 }) {
       e3 = false;
     };
   }, []);
-  let E2 = i2 || l2, fe2 = c2.length > 0, D2 = typeof r2.busy == `string` && r2.busy.startsWith(`zapret`), pe2 = Q(oe2?.profile), me2 = Tm(oe2), he2 = ue2 ? Q(r2.zapret?.serviceProfile, r2.zapret?.standaloneProfile, r2.zapret?.currentProfile, E2) : `—`, ge2 = T2 ? me2.detail : D2 ? `Запускается` : ue2 ? `Работает` : `Не работает`, _e2 = T2 ? Im(oe2?.startedAt, ne2) : ue2 ? Im(de2 ?? ie2 ?? r2.zapret?.uptimeMs ?? r2.zapret?.runtimeMs, ne2) : `—`, ve2 = r2.zapretAutoSelect?.cancelled === true ? c2.filter((e3) => e3.targets.length > 0 || !/Не проверен/i.test(e3.result)) : c2;
+  let E2 = i2 || l2, fe2 = c2.length > 0, D2 = typeof r2.busy == `string` && r2.busy.startsWith(`zapret`), pe2 = Q(oe2?.profile), me2 = Tm(oe2), he2 = ue2 ? Q(r2.zapret?.serviceProfile, r2.zapret?.standaloneProfile, r2.zapret?.currentProfile, E2) : `—`, ge2 = T2 ? me2.detail : D2 ? `Запускается` : ue2 ? `Работает` : `Не работает`, _e2 = T2 ? Im(oe2?.startedAt, ne2) : ue2 ? Im(de2 ?? ie2 ?? r2.zapret?.uptimeMs ?? r2.zapret?.runtimeMs, ne2) : `—`, ve2 = zapretHistoryRows(r2.zapretAutoSelect);
   const recommendedResult = le2 ? r2.zapretAutoSelect?.results?.find((row) => row.configName === le2) : null;
   return (0, V.jsxs)(`div`, { className: `zapret-layout`, children: [(0, V.jsxs)(Mp, { className: `config-list`, children: [(0, V.jsx)(Np, { children: `Профили` }), (0, V.jsxs)(`div`, { "aria-label": `Статусы проверки профилей`, className: `config-legend`, role: `group`, children: [(0, V.jsxs)(`span`, { children: [(0, V.jsx)(Fp, { tone: `good` }), `Успешно`] }), (0, V.jsxs)(`span`, { children: [(0, V.jsx)(Fp, { tone: `bad` }), `Ошибка`] }), (0, V.jsxs)(`span`, { children: [(0, V.jsx)(Fp, { tone: `idle` }), `Не проверен`] })] }), (0, V.jsx)(`div`, { className: `config-scroll`, children: fe2 ? c2.map((e3) => (0, V.jsxs)(`button`, { className: E2 === e3.name ? `config-row active` : `config-row`, onClick: () => a2(e3.name), type: `button`, children: [(0, V.jsxs)(`span`, { children: [(0, V.jsx)(`strong`, { children: e3.name }), (0, V.jsx)(`em`, { children: e3.detail })] }), (0, V.jsxs)(`span`, { className: `config-row-status`, title: Ip(e3.tone), children: [(0, V.jsx)(Fp, { tone: e3.tone }), (0, V.jsx)(`span`, { className: `sr-only`, children: Ip(e3.tone) })] })] }, e3.name)) : (0, V.jsxs)(`div`, { className: `empty-table-state compact-empty`, children: [(0, V.jsx)(bd, { size: 17 }), (0, V.jsx)(`span`, { children: `Профили маршрутов ещё не загружены` })] }) }), (0, V.jsxs)(`div`, { className: `config-actions`, children: [(0, V.jsx)(`button`, { className: `btn-primary full`, "data-testid": `zapret-auto`, type: `button`, onClick: () => {
     C2(true), n2(`zapret-auto`, () => Z(`zapret.autoSelect`, window.egoistAPI?.zapret?.autoSelect), `Автоподбор завершен`).finally(() => C2(false));
@@ -11764,18 +11780,22 @@ function Rm(e2) {
   for (; n2 >= 1e3 && r2 < t2.length - 1; ) n2 /= 1e3, r2 += 1;
   return `${Lm(n2, +(r2 >= 2))} ${t2[r2]}`;
 }
-function zm(e2, t2, n2) {
-  let r2 = Array.isArray(n2?.results) ? n2.results : Array.isArray(n2?.testResults) ? n2.testResults : [], i2 = Array.isArray(n2?.testedProfiles) ? n2.testedProfiles.map((e3) => ({ name: e3 })) : [], a2 = Array.isArray(t2) && t2.length ? t2 : Array.isArray(e2?.profiles) && e2.profiles.length ? e2.profiles : Array.isArray(e2?.availableProfiles) && e2.availableProfiles.length ? e2.availableProfiles : r2.length ? r2 : i2, o2 = new Set(Array.isArray(n2?.goodProfiles) ? n2.goodProfiles.map(String) : []), s2 = new Set(Array.isArray(n2?.badProfiles) ? n2.badProfiles.map(String) : []), c2 = new Set(Array.isArray(n2?.testedProfiles) ? n2.testedProfiles.map(String) : []), l2 = /* @__PURE__ */ new Map();
-  for (let e3 of r2) {
-    let t3 = String(e3?.configName ?? e3?.name ?? e3?.configId ?? e3?.id ?? ``).toLowerCase();
-    t3 && l2.set(t3, e3);
-  }
-  return a2.slice(0, 40).map((e3, t3) => {
-    let n3 = String(e3?.name ?? e3?.configName ?? e3?.id ?? `Профиль ${t3 + 1}`), r3 = l2.get(n3.toLowerCase()), i3 = $(r3?.pingMs, r3?.averagePingMs, e3?.lastPingMs, e3?.pingMs, e3?.latencyMs), a3 = Array.isArray(r3?.targets) ? r3.targets : [], u2 = a3.map((e4, t4) => {
-      let n4 = Q(e4?.label, e4?.name, e4?.service) ?? `Сервис ${t4 + 1}`, r4 = Q(e4?.host, e4?.domain, e4?.url, e4?.endpoint) ?? `unknown`, i4 = $(e4?.pingMs, e4?.tcpMs, e4?.latencyMs, e4?.responseMs);
-      return { label: n4, host: r4, ok: e4?.ok === true, ping: i4 == null ? `—` : `${i4} мс` };
-    }), d2 = a3.length, f2 = a3.filter((e4) => e4?.ok === true).length, p2 = o2.has(n3) ? `Успех` : s2.has(n3) ? `Ошибка` : String(r3?.result ?? e3?.lastResult ?? e3?.result ?? e3?.status ?? (c2.has(n3) ? `Проверен` : `Не проверен`)), m2 = o2.has(n3) || /success|ok|успех/i.test(p2) || d2 > 0 && f2 === d2 ? `good` : s2.has(n3) || /timeout|error|fail|ошибка|таймаут/i.test(p2) || d2 > 0 && f2 < d2 ? `bad` : `idle`;
-    return { name: n3, detail: Bm(e3, n3), tone: m2, result: m2 === `good` ? d2 > 0 ? `Успех ${f2}/${d2}` : `Успех` : m2 === `bad` ? d2 > 0 ? `Ошибка ${f2}/${d2}` : p2 : c2.has(n3) || r3 ? `Проверен` : `Не проверен`, ping: i3 == null ? `—` : `${i3} мс`, targets: u2 };
+function zm(status, profiles, history) {
+  const results = Array.isArray(history?.results) ? history.results : Array.isArray(history?.testResults) ? history.testResults : [];
+  const available = Array.isArray(profiles) && profiles.length ? profiles : Array.isArray(status?.profiles) && status.profiles.length ? status.profiles : Array.isArray(status?.availableProfiles) && status.availableProfiles.length ? status.availableProfiles : results;
+  const nameOf = (row) => typeof row === `string` ? row : Q(row?.configName, row?.name, row?.configId, row?.id);
+  const byName = new Map(results.map(row => [zapretProfileKey(nameOf(row)), row]));
+  const good = new Set((Array.isArray(history?.goodProfiles) ? history.goodProfiles : []).map(zapretProfileKey));
+  const bad = new Set((Array.isArray(history?.badProfiles) ? history.badProfiles : []).map(zapretProfileKey));
+  return available.slice(0, 64).map((profile, index) => {
+    const name = nameOf(profile) || `Профиль ${index + 1}`, key = zapretProfileKey(name), row = byName.get(key);
+    const targets = Array.isArray(row?.targets) ? row.targets : [];
+    const total = Number.isFinite(row?.totalTargets) ? row.totalTargets : targets.length;
+    const passed = Number.isFinite(row?.passedTargets) ? row.passedTargets : targets.filter(target => target?.ok === true).length;
+    const result = String(row?.result ?? ``);
+    const tone = /error|fail|timeout|ошибка/i.test(result) || bad.has(key) ? `bad` : /success|^ok$|успех/i.test(result) || good.has(key) ? `good` : row && total > 0 ? passed === total ? `good` : `bad` : `idle`;
+    const ping = $(row?.pingMs, row?.averagePingMs);
+    return { name, detail: Bm(profile, name), tone, result: row ? tone === `good` ? `Успех${total ? ` ${passed}/${total}` : ``}` : tone === `bad` ? `Ошибка${total ? ` ${passed}/${total}` : ``}` : `Проверен` : `Не проверен`, ping: ping == null ? `—` : `${ping} мс`, passedTargets: passed, totalTargets: total, targets: targets.map((target, i) => ({ label: Q(target?.label, target?.name, target?.service, target?.key) ?? `Сервис ${i + 1}`, host: Q(target?.host, target?.domain, target?.url, target?.endpoint) ?? `unknown`, ok: target?.ok === true, ping: $(target?.pingMs, target?.tcpMs, target?.latencyMs, target?.responseMs) == null ? `—` : `${$(target?.pingMs, target?.tcpMs, target?.latencyMs, target?.responseMs)} мс` })) };
   });
 }
 function Bm(e2, t2) {

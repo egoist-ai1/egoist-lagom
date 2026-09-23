@@ -2357,9 +2357,9 @@ var ZapretManager = class {
 		if (targets.some((target) => target.key === "DiscordVoiceControl")) required.push("DiscordVoiceControl");
 		return required.every((key) => successfulTargets.some((target) => target.key === key));
 	}
-	async probeCurlHeadUrl(url, timeoutMs, label, tlsArgs, signal, acceptVoiceHttpStatus = false) {
+	async probeCurlHeadUrl(url, timeoutMs, label, tlsArgs, signal, acceptVoiceHttpStatus = false, getFallback = false) {
 		const startedAt = Date.now();
-		const timeoutSeconds = Math.max(2, Math.ceil(timeoutMs / 1e3));
+		const timeoutSeconds = Math.max(0.1, timeoutMs / 1e3);
 		try {
 			throwIfAutoSelectCancelled(signal);
 			const { stdout, stderr } = await execFileAsync$1(resolveWindowsExecutable("curl.exe"), [
@@ -2371,8 +2371,7 @@ var ZapretManager = class {
 				"--location",
 				"--max-redirs",
 				"3",
-				"--max-filesize",
-				"2097152",
+				...(getFallback ? ["--range", "0-65535", "--max-filesize", "2097152"] : ["--head"]),
 				"-s",
 				"-m",
 				String(timeoutSeconds),
@@ -2390,6 +2389,11 @@ var ZapretManager = class {
 			});
 			const status = parseCurlStatusCode(stdout);
 			const pingMs = Math.max(1, Date.now() - startedAt);
+			const remainingMs = timeoutMs - pingMs;
+			if (!getFallback && (status === 405 || status === 501) && remainingMs >= 100) {
+				const fallback = await this.probeCurlHeadUrl(url, remainingMs, label, tlsArgs, signal, acceptVoiceHttpStatus, true);
+				return { ...fallback, pingMs: Math.max(1, Date.now() - startedAt) };
+			}
 			return {
 				url: `${url} [${label}]`,
 				ok: status !== null && status >= 200 && (acceptVoiceHttpStatus ? status < 500 : status < 400),

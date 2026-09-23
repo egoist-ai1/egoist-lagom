@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -10,9 +11,11 @@ const execFileAsync = promisify(execFile);
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const script = path.join(root, 'scripts', 'invoke-final-silent-reinstall.ps1');
 const manifest = path.join(root, 'dist', 'package-integrity.json');
+const releaseVersion = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')).version;
+const artifactReady = existsSync(manifest) && existsSync(path.join(root, 'dist', `EgoistShield-Setup-${releaseVersion}.exe`));
 const powershell = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
 
-test('deferred reinstall plan validates the exact release without touching services', { skip: process.platform !== 'win32' }, async () => {
+test('deferred reinstall plan validates the exact release without touching services', { skip: process.platform !== 'win32' || !artifactReady }, async () => {
   const integrity = JSON.parse(await fs.readFile(manifest, 'utf8'));
   const installer = path.join(root, 'dist', `EgoistShield-Setup-${integrity.version}.exe`);
   const { stdout, stderr } = await execFileAsync(powershell, [
@@ -32,7 +35,7 @@ test('deferred reinstall plan validates the exact release without touching servi
   assert.equal(plan.dnsStopOrder, 'last');
 });
 
-test('deferred reinstall rejects a checksum mismatch before dispatch', { skip: process.platform !== 'win32' }, async () => {
+test('deferred reinstall rejects a checksum mismatch before dispatch', { skip: process.platform !== 'win32' || !artifactReady }, async () => {
   const integrity = JSON.parse(await fs.readFile(manifest, 'utf8'));
   const installer = path.join(root, 'dist', `EgoistShield-Setup-${integrity.version}.exe`);
   await assert.rejects(execFileAsync(powershell, [
@@ -46,7 +49,7 @@ test('deferred reinstall rejects a checksum mismatch before dispatch', { skip: p
   ], { cwd: root, windowsHide: true, timeout: 30_000 }), /Expected SHA-256 does not match/);
 });
 
-test('embedded installer dispatch validates itself without an external manifest', { skip: process.platform !== 'win32' }, async () => {
+test('embedded installer dispatch validates itself without an external manifest', { skip: process.platform !== 'win32' || !artifactReady }, async () => {
   const integrity = JSON.parse(await fs.readFile(manifest, 'utf8'));
   const installer = path.join(root, 'dist', `EgoistShield-Setup-${integrity.version}.exe`);
   const { stdout, stderr } = await execFileAsync(powershell, [
