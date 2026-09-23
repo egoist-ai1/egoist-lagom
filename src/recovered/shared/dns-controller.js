@@ -77,8 +77,8 @@ function buildAdapterExclusionReport(adapters) {
 		excluded
 	};
 }
-/** Дата сборки текущего релиза (обновляется вместе с версией пакета). */
-var EGOIST_SHIELD_BUILD_DATE = "10.08.2026";
+/** Replaced with the actual date when scripts/build.mjs creates the release. */
+var EGOIST_SHIELD_BUILD_DATE = "__EGOIST_BUILD_DATE__";
 function buildNetworkCombinatorInspection(input) {
 	const modules = input.modules.map((module) => ({
 		id: module.id,

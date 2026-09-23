@@ -14,7 +14,7 @@ async function executeWorkerRequest(request) {
   if (value.method === 'autoSelectProgress') return workerProgress;
   if (value.method === 'autoSelectBestProfile') {
     workerProgress = null;
-    return workerManagers.Zapret.autoSelectBestProfile(progress => { workerProgress = progress; });
+    return workerManagers.Zapret.autoSelectBestProfile(progress => { workerProgress = progress; }, value.args[0]);
   }
   return workerManagers[value.component][value.method](...value.args);
 }

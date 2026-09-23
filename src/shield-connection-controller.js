@@ -56,6 +56,9 @@ export class ShieldConnectionController {
     // loopback address. Restore only the component's own DNS transaction so
     // curl can resolve probe hosts; external static DNS remains untouched.
     if (dnsBefore?.running === true && dnsBefore?.verified === true) return dnsBefore;
+    if (dnsBefore?.serviceRunning === true) {
+      throw new Error('Служба DNS работает, но проверка не прошла. Автоподбор не будет останавливать единственный локальный DNS.');
+    }
     this.publish({ phase: 'dns', progress: 4, message: 'Готовим DNS для проверки профилей' });
     this.requireSuccess(await this.deps.dns.stopAndRemove(), 'Не удалось подготовить DNS для автоподбора.');
     const after = await this.deps.dns.status({ force: true });
@@ -123,8 +126,6 @@ export class ShieldConnectionController {
             const progress = Math.min(68, 8 + Math.round(60 * index / total));
             this.publish({ phase: 'selecting', progress: Math.max(this.state.progress, progress), message: event.profile ? `Проверяем ${event.profile.replace(/\.bat$/i, '')}` : 'Проверяем доступность сайтов', tested: index, total });
           });
-          // Save probe evidence even when a later service/DNS step fails.
-          this.deps.onSelection?.(result);
           this.checkCancelled();
           if (!result?.completed || result.cancelled || !result.bestProfile) throw new Error(result?.detail || result?.summary || 'Рабочая стратегия не найдена. Проверьте интернет и повторите попытку.');
           profile = result.bestProfile;

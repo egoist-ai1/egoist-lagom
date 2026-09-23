@@ -164,7 +164,7 @@ var StateStore = class {
 		let previous;
 		try { previous = JSON.parse(await promises.readFile(this.activationMarkerPath, "utf8")); } catch { previous = null; }
 		if (previous?.id === installation.id) return;
-		this.state.settings = { ...this.state.settings, autoStart: false, autoConnect: false, systemDohEnabled: false, systemDnsServers: "", systemDohLocalAddress: "", useTunMode: false, killSwitch: false };
+		this.state.settings = { ...this.state.settings, autoStart: false, autoConnect: false, systemDohEnabled: false, systemDnsServers: "", systemDohUrl: "https://cloudflare-dns.com/dns-query", systemDohLocalAddress: "", customDnsUrl: "", useTunMode: false, killSwitch: false };
 		await this.save();
 		await promises.writeFile(this.activationMarkerPath, JSON.stringify({ id: installation.id }), "utf8");
 	}

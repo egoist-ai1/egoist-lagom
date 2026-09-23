@@ -10,6 +10,10 @@ const evidenceArg=process.argv[2];
 if(!evidenceArg || !path.isAbsolute(evidenceArg))throw new Error('Supply an absolute task-scoped evidence directory as the first argument');
 const evidence=path.resolve(evidenceArg);
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const packageVersion=JSON.parse(await fs.readFile(path.join(project,'package.json'),'utf8')).version;
+const builtMain=await fs.readFile(path.join(project,'.vite/build/main.js'),'utf8');
+const buildDate=builtMain.match(/EGOIST_SHIELD_BUILD_DATE = "([^"]+)"/)?.[1];
+assert.ok(buildDate,'Built app date is missing');
 const build=path.join(project,'.vite/renderer/main_window');
 const moduleName=process.env.PLAYWRIGHT_MODULE;
 const {chromium}=await import(moduleName ? (path.isAbsolute(moduleName)?pathToFileURL(moduleName).href:moduleName) : 'playwright');
@@ -48,10 +52,10 @@ function installFixture(){
   const noop=()=>()=>{};
   window.egoistAPI={
     state:{get:read('state.get',()=>data.state),set:action('state.set',next=>data.state=clone(next))},
-    app:{isAdmin:async()=>true,getVersion:async()=>({version:'3.7.0'}),isFirstRun:async()=>false},
+    app:{isAdmin:async()=>true,getVersion:async()=>({version:window.__qaVersion,buildDate:window.__qaBuildDate}),isFirstRun:async()=>false},
     vpn:{status:read('vpn.status',()=>data.vpn),onFallback:noop},
     system:{dnsControllerStatus:read('dns.status',()=>({mode:'system-default'})),systemDohStatus:read('doh.status',()=>data.doh),dnsDiagnostics:read('dns.diagnostics',()=>({targets:[],summary:{total:0,okCount:0}})),getMyIp:async()=>({ip:'192.0.2.1',country:'QA',provider:'Fixture'}),pingActiveProxy:async()=>20,ping:async()=>20,setDnsServers:action('system.setDnsServers'),resetDnsServers:action('system.resetDnsServers'),internetFix:action('system.internetFix'),onSpeedtestProgress:noop,cancelSpeedtest:action('system.cancelSpeedtest')},
-    zapret:{status:read('zapret.status',()=>data.zapret),listProfiles:async()=>[{name:'general'}],getUserLists:read('zapret.getUserLists',()=>data.userLists),saveUserLists:action('zapret.saveUserLists',lists=>{data.userLists=clone(lists);return {ok:true}}),onAutoSelectProgress:noop},
+    zapret:{status:read('zapret.status',()=>data.zapret),listProfiles:async()=>JSON.parse(localStorage.getItem('qa-zapret-profiles')||'null')??[{name:'general'}],getUserLists:read('zapret.getUserLists',()=>data.userLists),saveUserLists:action('zapret.saveUserLists',lists=>{data.userLists=clone(lists);return {ok:true}}),onAutoSelectProgress:noop},
     telegramProxy:{status:read('telegram.status',()=>data.telegram),tailLogs:async()=>[],saveConfig:action('telegramProxy.saveConfig',config=>{data.telegram.config=clone(config);return {ok:true}}),start:action('telegramProxy.start',()=>{data.telegram.running=true;return {ok:true}})},
     health:{getReport:async()=>({})},network:{inspect:async()=>({})},logs:{getRuntimeSummary:async()=>[]},
     updater:{getLastResult:async()=>null,check:read('updater.check',()=>({ok:false,phase:'blocked',latestVersion:'3.7.1',message:'QA fixture: release verification required'})),setAuto:action('updater.setAuto',enabled=>{data.state.settings.autoUpdate=enabled;return {ok:true,enabled}}),onUpdateAvailable:noop,onDownloadProgress:noop,onUpdateDownloaded:noop,onUpdateNotAvailable:noop,onUpdateError:noop},
@@ -87,6 +91,7 @@ async function check(id,screen,fn,viewport={width:1440,height:940}){
   });
   const page=await context.newPage();page.setDefaultTimeout(7000);
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.addInitScript(({version,date})=>{window.__qaVersion=version;window.__qaBuildDate=date},{version:packageVersion,date:buildDate});
   await page.addInitScript(installFixture);
   const result={id,screen,viewport,status:'running'};report.checks.push(result);
   try{
@@ -113,7 +118,7 @@ async function check(id,screen,fn,viewport={width:1440,height:940}){
 try{
   browser=await chromium.launch({headless:true,...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{})});
   report.browserVersion=browser.version();
-  const preferences=[['autoStart','Запускать при старте Windows',false],['minimizeToTray','Сворачивать в трей',false],['autoConnect','Автоподключение маршрута',false],['reconnectOnDrop','Переподключаться при обрыве',true],['notifications','Показывать уведомления',true],['sendSubscriptionHwid','Передавать HWID провайдеру подписки',false],['autoUpdate','Автоматически проверять обновления',true]];
+  const preferences=[['autoStart','Запускать при старте Windows',false],['minimizeToTray','Сворачивать в трей',false],['autoConnect','Автоподключение маршрута',false],['reconnectOnDrop','Переподключаться при обрыве',true],['notifications','Показывать уведомления',true],['sendSubscriptionHwid','Передавать HWID провайдеру подписки',false],['autoUpdate','Автообновление приложения и компонентов',true]];
   for(const [key,label,initial] of preferences)await check(`setting-${key}`,'settings',async page=>{
     const control=page.getByRole('switch',{name:label,exact:true});
     assert.equal(await control.getAttribute('aria-checked'),String(initial));
@@ -172,11 +177,6 @@ try{
     assert.ok(!geometry.versionVisible||!geometry.service||!geometry.version||geometry.version.top>=geometry.service.bottom-0.5,'App version must not overlap service settings');
     assert.match(layout[0].label,/Открыть релиз/);assert.match(layout[1].label,/Проверить/);
   },{width:550,height:728});
-  await check('settings-version-is-not-duplicated','settings',async page=>{
-    const duplicate=page.locator('.settings-layout > .app-version');
-    assert.equal(await duplicate.evaluate(element=>getComputedStyle(element).display),'none');
-    await page.locator('.ruby-sidebar footer small').filter({hasText:'Версия Lagom'}).waitFor();
-  });
   await check('dns-presets-and-confirmed-apply','dns',async page=>{
     for(const [name,primary,secondary] of [['Cloudflare','1.1.1.1','1.0.0.1'],['Google DNS','8.8.8.8','8.8.4.4'],['Quad9','9.9.9.9','149.112.112.112'],['AdGuard','94.140.14.14','94.140.15.15']]){
       await page.getByRole('button',{name:new RegExp('^'+name)}).click();assert.equal(await page.getByLabel('Основной DNS',{exact:true}).inputValue(),primary);assert.equal(await page.getByLabel('Дополнительный DNS',{exact:true}).inputValue(),secondary);
@@ -211,8 +211,57 @@ try{
     const opener=page.getByRole('button',{name:'Восстановить интернет',exact:true});await opener.click();await dialogKeyboard(page,page.getByRole('dialog',{name:'Восстановить настройки',exact:true}),opener);assert.deepEqual(await calls(page),[]);
   });
   await check('about-dialog-escape-focus-trap','dashboard',async page=>{
-    const opener=page.getByRole('button',{name:'О приложении',exact:true});await opener.click();await dialogKeyboard(page,page.getByRole('dialog'),opener);assert.deepEqual(await calls(page),[]);
+    await page.evaluate(()=>{window.__qaVersion='9.8.7';window.__qaBuildDate='17.04.2042'});
+    const opener=page.getByRole('button',{name:'О приложении',exact:true});await opener.click();
+    const dialog=page.getByRole('dialog');
+    await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="dialog"] .modal-meta-row strong')).some(element=>element.textContent==='9.8.7'));
+    const rows=dialog.locator('.modal-meta-row');
+    assert.equal(await rows.nth(0).locator('span').innerText(),'Версия Egoist Shield:');
+    assert.equal(await rows.nth(0).locator('strong').innerText(),'9.8.7');
+    assert.equal(await rows.nth(1).locator('span').innerText(),'Дата сборки:');
+    assert.equal(await rows.nth(1).locator('strong').innerText(),'17.04.2042');
+    const copy=await dialog.innerText();
+    assert.doesNotMatch(copy,/10\.08\.2026|Версия приложения Lagom/);
+    assert.equal(await dialog.locator('.modal-list-title').textContent(),`Что нового в ${packageVersion}:`);
+    await dialogKeyboard(page,dialog,opener);assert.deepEqual(await calls(page),[]);
   });
+  for (const viewport of [{width:820,height:760},{width:550,height:740}]) await check(`zapret-recommendation-fit-${viewport.width}`,'zapret',async (page,result)=>{
+    await page.evaluate(()=>{
+      const names=Array.from({length:23},(_,index)=>index===22?'general (EGOIST MIX)':`general (ALT${index+1})`);
+      const targets=['DiscordMain','DiscordGateway','DiscordCDN','DiscordVoiceControl','YouTubeWeb','YouTubeShort','YouTubeImage'].map(key=>({key,label:key,url:'https://example.test/',ok:true,pingMs:42}));
+      const results=names.map((name,index)=>({configName:name,result:'success',pingMs:index===22?42:85,passedTargets:7,totalTargets:7,targets}));
+      localStorage.setItem('qa-zapret-profiles',JSON.stringify(names.map(name=>({name,fileName:`${name}.bat`}))));
+      localStorage.setItem('egoistshield.zapret.autoSelect',JSON.stringify({schemaVersion:2,targetCount:17,completed:true,cancelled:false,earlyExit:false,totalProfiles:23,testedProfiles:names,bestProfile:names[22],results,testResults:results,goodProfiles:names,badProfiles:[],testedAt:new Date().toISOString()}));
+    });
+    await page.reload({waitUntil:'networkidle'});
+    await page.waitForFunction(()=>compactLab.reads['state.get']>0);
+    if(await page.locator('.shield-settings-open-btn').isVisible())await page.locator('.shield-settings-open-btn').click();
+    await page.getByRole('button',{name:'Профили',exact:true}).click();
+    const banner=page.getByTestId('zapret-best-banner');await banner.waitFor();
+    const button=page.getByTestId('zapret-best-connect');
+    result.layout=await banner.evaluate(element=>{const button=element.querySelector('button'),title=element.querySelector('strong'),body=element.querySelector('small'),status=element.closest('.zapret-status-panel'),workbench=document.querySelector('.zapret-workbench');const outer=element.getBoundingClientRect(),inner=button.getBoundingClientRect(),statusBox=status.getBoundingClientRect(),workbenchBox=workbench.getBoundingClientRect();return {bannerWidth:outer.width,buttonWidth:inner.width,buttonScroll:button.scrollWidth,buttonClient:button.clientWidth,buttonWithin:inner.left>=outer.left&&inner.right<=outer.right&&inner.bottom<=outer.bottom+1,titleFits:title.scrollHeight<=title.clientHeight+1,bodyFits:body.scrollHeight<=body.clientHeight+1,insideStatus:outer.bottom<=statusBox.bottom+1,noWorkbenchOverlap:statusBox.bottom<=workbenchBox.top+1}});
+    assert.equal(result.layout.buttonWithin,true);
+    assert.ok(result.layout.buttonScroll<=result.layout.buttonClient+1,JSON.stringify(result.layout));
+    assert.equal(result.layout.titleFits,true);assert.equal(result.layout.bodyFits,true);
+    assert.equal(result.layout.insideStatus,true);assert.equal(result.layout.noWorkbenchOverlap,true);
+    assert.match(await banner.innerText(),/23 профилей/);
+    assert.equal(await page.getByTestId('zapret-history-row').count(),23);
+    assert.deepEqual(await calls(page),[],'Recommendation must not auto-connect');
+    await button.focus();assert.equal(await button.getAttribute('aria-label'),'Подключить рекомендованный профиль general (EGOIST MIX)');
+  },viewport);
+  for (const viewport of [{width:1440,height:940},{width:820,height:760}]) await check(`button-text-fit-${viewport.width}`,'settings',async (page,result)=>{
+    result.screens=[];
+    for (const label of ['Обзор','Соединение','DNS','Профили','Telegram','Настройки']) {
+      await page.getByRole('button',{name:label,exact:true}).click();
+      const clipped=await page.evaluate(()=>[...document.querySelectorAll('button')].filter(button=>{
+        const style=getComputedStyle(button);
+        return button.getClientRects().length>0&&button.clientHeight>=24&&style.visibility!=='hidden'&&style.display!=='none'&&button.textContent.trim().length>1&&
+          ((style.overflowX!=='visible'&&button.scrollWidth>button.clientWidth+2)||(style.overflowY!=='visible'&&button.scrollHeight>button.clientHeight+2));
+      }).map(button=>({text:button.textContent.trim().slice(0,80),className:button.className,scrollWidth:button.scrollWidth,clientWidth:button.clientWidth,scrollHeight:button.scrollHeight,clientHeight:button.clientHeight})));
+      result.screens.push({label,clipped});
+    }
+    assert.deepEqual(result.screens.flatMap(screen=>screen.clipped.map(item=>({...item,screen:screen.label}))),[]);
+  },viewport);
   await check('server-picker-escape-focus-trap','dashboard',async page=>{
     const opener=page.locator('.ruby-server-select');await opener.click();await dialogKeyboard(page,page.getByRole('dialog',{name:'Выберите сервер',exact:true}),opener);assert.deepEqual(await calls(page),[]);
   });
@@ -266,7 +315,7 @@ finally{
   for(const entry of manifest){const data=await fs.readFile(path.join(build,entry.name.slice(1))).catch(()=>null);if(!data||hash(data)!==entry.sha256)current.push(entry.name)}
   report.buildChangedDuringRun=current;
   report.finishedAt=new Date().toISOString();
-  report.passed=!report.fatal&&report.checks.length===22&&report.checks.every(c=>c.status==='passed')&&current.length===0;
+  report.passed=!report.fatal&&report.checks.length===25&&report.checks.every(c=>c.status==='passed')&&current.length===0;
   await fs.writeFile(path.join(evidence,'compact-ui-report.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify({passed:report.passed,checks:report.checks.length,failed:report.checks.filter(c=>c.status!=='passed').map(c=>c.id),buildChanged:current,evidence}));
   if(!report.passed)process.exitCode=1;

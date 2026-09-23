@@ -1,65 +1,4 @@
 //#region src/electron/ipc/handlers-zapret.ts
-var ZAPRET_HISTORY_MAX_BYTES = 48 * 1024;
-var zapretSelectionHistoryStore = null;
-function compactZapretSelectionHistory(result) {
-	if (!result || typeof result !== "object" || result.completed !== true && result.cancelled !== true) return null;
-	const sourceRows = Array.isArray(result.results) ? result.results : Array.isArray(result.testResults) ? result.testResults : [];
-	const text = (value, max = 128) => {
-		if (typeof value !== "string") return "";
-		let clipped = value.slice(0, max);
-		while (Buffer.byteLength(JSON.stringify(clipped), "utf8") > max) clipped = clipped.slice(0, -1);
-		return clipped;
-	};
-	const count = value => Number.isFinite(value) && value >= 0 ? value : null;
-	const rows = sourceRows.slice(0, 64).filter(row => row && typeof row === "object" && typeof (row.configName ?? row.name ?? row.configId ?? row.id) === "string" && ["success", "error"].includes(row.result)).map(row => {
-		const targets = Array.isArray(row.targets) ? row.targets : [];
-		return { configName: text(row.configName ?? row.name ?? row.configId ?? row.id), result: row.result, pingMs: count(row.pingMs), testedAt: text(row.testedAt, 32), error: text(row.error, 256), passedTargets: count(row.passedTargets) ?? targets.filter(target => target?.ok === true).length, totalTargets: count(row.totalTargets) ?? targets.length, targets: targets.slice(0, 8).filter(target => target && typeof target === "object").map(target => ({ label: text(target.label ?? target.key ?? target.name, 96), host: text(target.host ?? target.url, 256), ok: target.ok === true, pingMs: count(target.pingMs) })) };
-	});
-	if (!rows.length) return null;
-	const history = { schemaVersion: 2, completed: result.completed === true && result.cancelled !== true, cancelled: result.cancelled === true, testedAt: text(result.testedAt, 32) || new Date().toISOString(), bestProfile: result.cancelled === true ? null : text(result.bestProfile) || null, results: rows, totalProfiles: count(result.totalProfiles), summary: text(result.summary, 256), detail: text(result.detail, 512) };
-	if (!Number.isFinite(Date.parse(history.testedAt))) return null;
-	for (const previewLimit of [8, 4, 2, 1, 0]) {
-		for (const row of rows) { row.targets = row.targets.slice(0, previewLimit); row.targetsOmitted = Math.max(0, row.totalTargets - row.targets.length); }
-		if (Buffer.byteLength(JSON.stringify(history), "utf8") <= ZAPRET_HISTORY_MAX_BYTES) return history;
-	}
-	return null;
-}
-function createZapretSelectionHistoryStore(userData) {
-	const file = path.join(userData, "zapret-selection-history.json");
-	let latest = null;
-	try {
-		if (fs.statSync(file).size <= ZAPRET_HISTORY_MAX_BYTES) {
-			const stored = JSON.parse(fs.readFileSync(file, "utf8"));
-			if (stored?.schemaVersion === 2) latest = compactZapretSelectionHistory(stored);
-		}
-	} catch {}
-	return {
-		read: () => latest,
-		record(result) {
-			const next = compactZapretSelectionHistory(result);
-			if (!next || (next.cancelled || !next.completed) && latest?.completed) return latest;
-			const temporary = `${file}.tmp`;
-			try {
-				fs.mkdirSync(userData, { recursive: true });
-				fs.writeFileSync(temporary, JSON.stringify(next), "utf8");
-				fs.renameSync(temporary, file);
-				latest = next;
-			} catch (error) {
-				latest = next;
-				logger.warn("[zapret] Could not persist selection history:", error);
-			}
-			return latest;
-		}
-	};
-}
-function getZapretSelectionHistoryStore() {
-	if (!zapretSelectionHistoryStore) zapretSelectionHistoryStore = createZapretSelectionHistoryStore(app.getPath("userData"));
-	return zapretSelectionHistoryStore;
-}
-function recordZapretSelectionHistory(result) {
-	try { return getZapretSelectionHistoryStore().record(result); }
-	catch (error) { logger.warn("[zapret] Selection history unavailable:", error); return null; }
-}
 function getZapretProfile(rawProfile, fallbackProfile) {
 	if (typeof rawProfile === "undefined" || rawProfile === null || rawProfile === "") return fallbackProfile;
 	return ZapretProfileInputSchema.parse(rawProfile);
@@ -97,10 +36,7 @@ function registerZapretHandlers({ stateStore, runtimeManager, systemDohManager, 
 	let autoSelectPending = false;
 	let autoSelectCancelQueued = false;
 	ipcMain.handle("zapret:status", async () => {
-		const status = await zapretManager.status();
-		let autoSelectHistory = null;
-		try { autoSelectHistory = getZapretSelectionHistoryStore().read(); } catch {}
-		return { ...status, autoSelectHistory };
+		return zapretManager.status();
 	});
 	ipcMain.handle("zapret:list-profiles", async () => {
 		return zapretManager.listProfiles();
@@ -193,11 +129,9 @@ function registerZapretHandlers({ stateStore, runtimeManager, systemDohManager, 
 					if (!event.sender.isDestroyed()) event.sender.send("zapret:auto-select-progress", { phase: "cancelled" });
 					return { completed: false, cancelled: true, bestProfile: null, goodProfiles: [], badProfiles: [], testedProfiles: [], results: [], testResults: [] };
 				}
-				const result = await zapretManager.autoSelectBestProfile((progress) => {
+				return zapretManager.autoSelectBestProfile((progress) => {
 					if (!event.sender.isDestroyed()) event.sender.send("zapret:auto-select-progress", progress);
 				});
-				recordZapretSelectionHistory(result);
-				return result;
 			}, "Сначала отключите соединение в Egoist Lagom, затем запускайте автоподбор профилей.", ["packet-interception", "windivert", "dns", "dns-verify"]);
 		} finally {
 			autoSelectPending = false;

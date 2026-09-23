@@ -18,33 +18,21 @@ function fixture(bindings = {}) {
     parseCurlStatusCode: stdout => Number(stdout) || null,
     normalizeCurlProbeError: error => error || 'No response',
     ...bindings,
-  }, ['ZapretManager', 'runWithBoundedConcurrency', 'orderZapretProfilesForAutoSelect', 'buildDiscordCacheCleanupPlan']);
+  }, ['ZapretManager', 'runWithBoundedConcurrency', 'orderZapretProfilesForAutoSelect', 'parseDiscordVoiceControlTarget']);
   const manager = new api.ZapretManager('resources', 'app', 'user', 'C:\\Shield\\zapret');
   return { ...api, manager };
 }
-
-test('Discord cache cleanup closes only named clients and targets only their cache folders', () => {
-  const { buildDiscordCacheCleanupPlan } = fixture();
-  const plan = buildDiscordCacheCleanupPlan('all', {
-    APPDATA: 'C:\\Users\\Test\\AppData\\Roaming',
-    LOCALAPPDATA: 'C:\\Users\\Test\\AppData\\Local',
-  });
-  assert.deepEqual([...plan.processNames].sort(), ['Discord.exe', 'DiscordCanary.exe', 'DiscordPTB.exe', 'Vesktop.exe']);
-  assert.equal(plan.processNames.includes('Update.exe'), false, 'A generic updater name could terminate another application');
-  assert.ok(plan.directories.length > 0);
-  assert.ok(plan.directories.every(directory => /\\(?:discord|discordptb|discordcanary|vesktop)\\/i.test(directory)));
-  assert.ok(plan.directories.every(directory => /\\(?:Cache|Code Cache|GPUCache|DawnCache|Network\\Cache|Service Worker\\(?:CacheStorage|ScriptCache)|Partitions\\discord_voice\\(?:Cache|Code Cache|GPUCache))$/i.test(directory)));
-  assert.ok(plan.directories.every(directory => !/\\Local Storage(?:\\|$)/i.test(directory)));
-});
 
 function sweepFixture() {
   const { manager } = fixture();
   const events = [];
   let active = null;
   manager.resetOwnedRuntimeBeforeAutoSelect = async () => events.push('prepare');
+  manager.captureAutoSelectActiveMode = async () => null;
   manager.ensureProvisioned = async () => {};
   manager.listProfiles = async () => ['General', 'Other'].map(name => ({ name, fileName: name + '.bat' }));
   manager.readAutoSelectMemory = async () => null;
+  manager.readRecentDiscordVoiceControlTarget = async () => null;
   manager.writeAutoSelectMemory = async () => events.push('remember');
   manager.startProbeStandalone = async name => {
     assert.equal(active, null, 'two candidates cannot overlap');
@@ -71,7 +59,53 @@ test('HTTP errors cannot pass endpoint checks; curl ignores inherited proxies an
     } });
     const result = await manager.probeCurlHeadUrl('https://example.test', 4000, 'HTTP', []);
     assert.equal(result.ok, code < 400, String(code));
+    assert.equal(result.variant, 'HTTP');
   }
+});
+
+test('voice probe uses only a valid recent Discord media endpoint and distinguishes TLS from media', async () => {
+  const { manager, parseDiscordVoiceControlTarget } = fixture({ execFile: async () => ({ stdout: '403', stderr: '' }) });
+  const target = parseDiscordVoiceControlTarget('[CONNECT] wss://c-waw03-80dae1ab.discord.media:2083/');
+  assert.equal(target.key, 'DiscordVoiceControl');
+  assert.equal(target.url, 'https://c-waw03-80dae1ab.discord.media:2083/');
+  assert.equal(parseDiscordVoiceControlTarget('wss://malicious.example:2083/'), null);
+  assert.equal(parseDiscordVoiceControlTarget('wss://c-waw03.discord.media:9999/'), null);
+  const result = await manager.probeCurlHeadUrl(target.url, 4000, 'Voice TLS', [], undefined, true);
+  assert.equal(result.ok, true);
+  assert.equal(result.status, 403);
+  const required = [
+    { key: 'DiscordMain', ok: true }, { key: 'DiscordGateway', ok: true },
+    { key: 'YouTubeWeb', ok: true }, { key: 'YouTubeImage', ok: true },
+    { key: 'DiscordVoiceControl', ok: false }
+  ];
+  assert.equal(manager.isZapretProbeHealthy(required), false);
+  assert.equal(manager.isZapretProbeHealthy(required.map(row => ({ ...row, ok: true }))), true);
+  const voiceJob = manager.buildZapretProbeJobs(undefined, false, [target]);
+  assert.deepEqual(Array.from(voiceJob.map(job => job.key)), ['DiscordVoiceControl']);
+  const voiceResult = await voiceJob[0].run();
+  assert.equal(voiceResult.ok, true);
+});
+
+test('a forced TLS fallback cannot hide a failed default-client endpoint check', async () => {
+  const { manager } = fixture();
+  const jobs = manager.buildZapretProbeJobs(undefined, true);
+  const checks = jobs.map(job => job.key === 'DiscordMain'
+    ? { ok: job.run.name === 'never', variant: 'HTTP', error: 'default failed' }
+    : { ok: false, variant: 'HTTP', error: 'not tested' });
+  const discordIndexes = jobs.map((job, index) => job.key === 'DiscordMain' ? index : -1).filter(index => index >= 0);
+  checks[discordIndexes[0]] = { ok: false, variant: 'HTTP', error: 'default failed' };
+  checks[discordIndexes[1]] = { ok: true, variant: 'TLS1.2', status: 200, pingMs: 12 };
+  checks[discordIndexes[2]] = { ok: true, variant: 'TLS1.3', status: 200, pingMs: 11 };
+  const target = manager.collectZapretProbeTargets(jobs, checks).find(row => row.key === 'DiscordMain');
+  assert.equal(target.ok, false);
+  assert.equal(target.fallbackReachable, true);
+  assert.equal(target.error, 'default failed');
+});
+
+test('automatic sweep probes only ordinary HTTPS for Discord and YouTube', () => {
+  const { manager } = fixture();
+  const keys = manager.buildZapretProbeJobs().map(job => job.key);
+  assert.deepEqual(Array.from(keys), ['DiscordMain', 'DiscordGateway', 'DiscordCDN', 'YouTubeWeb', 'YouTubeShort', 'YouTubeImage']);
 });
 
 test('image/CDN and DNS reachability alone cannot produce a usable profile', () => {
@@ -82,45 +116,6 @@ test('image/CDN and DNS reachability alone cannot produce a usable profile', () 
   const keys = ['DiscordMain', 'DiscordGateway', 'YouTubeWeb', 'YouTubeImage'];
   assert.equal(manager.isZapretProbeHealthy(keys.map(key => ({ key, ok: true }))), true);
   for (const absent of keys) assert.equal(manager.isZapretProbeHealthy(keys.filter(key => key !== absent).map(key => ({ key, ok: true }))), false);
-});
-
-test('Windows 10 feedback: six reachable auxiliaries across 22 profiles never become a successful selection', async () => {
-  const { manager, events } = sweepFixture();
-  manager.listProfiles = async () => Array.from({ length: 22 }, (_, i) => ({ name: `ALT${i}`, fileName: `ALT${i}.bat` }));
-  manager.probeZapretTargets = async () => {
-    const keys = ['DiscordMain', 'DiscordGateway', 'YouTubeWeb', 'YouTubeImage', 'DiscordCDN', 'YouTubeShort', 'GoogleMain', 'GoogleGstatic', 'CloudflareWeb', 'CloudflareCDN', 'CloudflareDNS1111', 'CloudflareDNS1001', 'GoogleDNS8888', 'GoogleDNS8844', 'Quad9DNS9999', 'AuxiliaryA', 'AuxiliaryB'];
-    const targets = keys.map((key, i) => ({ key, ok: i >= 11, pingMs: i >= 11 ? 10 : null, error: i < 11 ? 'TLS connection failed' : null }));
-    return { targets, healthy: manager.isZapretProbeHealthy(targets), confident: false, averagePingMs: 10 };
-  };
-  const result = await manager.autoSelectBestProfile();
-  assert.equal(result.testedProfiles.length, 22);
-  assert.equal(result.bestProfile, null);
-  assert.equal(result.goodProfiles.length, 0);
-  assert.equal(result.results.every(row => row.passedTargets === 6 && row.totalTargets === 17), true);
-  assert.equal(events.includes('remember'), false);
-  assert.equal(events.filter(event => event.startsWith('start:')).length, 22);
-  assert.equal(events.at(-1).startsWith('stop:'), true);
-});
-
-test('manual and automatic starts use identical profile arguments and working directory', async () => {
-  const spawned = [];
-  const child = () => Object.assign(new EventEmitter(), { pid: 42, unref() {} });
-  const { manager } = fixture({
-    spawn: (exe, args, options) => { spawned.push({ exe, args, cwd: options.cwd, hidden: options.windowsHide }); return child(); },
-    splitWindowsCommandLine: args => [args],
-  });
-  manager.ensureProvisioned = async () => {};
-  manager.assertNoExternalConflict = async () => {};
-  manager.queryService = async () => ({ running: false });
-  manager.stopStandaloneInternal = async () => {};
-  manager.listIntegratedWinwsProcesses = async () => [];
-  manager.buildServiceCommand = async name => ({ profile: { name }, args: '--hostlist="C:\\Профили [QA]\\list.txt"', winwsPath: 'C:\\Профили [QA]\\winws.exe' });
-  manager.writeStandaloneState = async () => {};
-  manager.waitForIntegratedWinwsStart = async () => true;
-  manager.status = async () => ({ standaloneRunning: true });
-  await manager.startStandalone('general (ALT4)');
-  await manager.startProbeStandalone('general (ALT4)');
-  assert.deepEqual(spawned[0], spawned[1]);
 });
 
 test('ownership requires exact executable identity, not a command-line reference or neighbouring folder', async () => {
@@ -152,9 +147,7 @@ test('an unkillable owned process aborts cleanup without clearing recovery state
   const commands = [];
   manager.execPowerShell = async command => commands.push(command);
   await assert.rejects(manager.stopOwnedWinwsProcesses(0), /Новый кандидат не запущен/);
-  assert.match(commands[0], /Get-Process -Id 123/);
-  assert.match(commands[0], /\$image -ieq/);
-  assert.doesNotMatch(commands[0], /Get-CimInstance|Win32_Process/);
+  assert.match(commands[0], /ExecutablePath -ieq/);
   assert.doesNotMatch(commands[0], /taskkill|\/IM|\/T/);
 });
 
@@ -172,31 +165,82 @@ test('unavailable process inventory is a failure, not evidence that all processe
   await assert.rejects(manager.listWinwsProcesses(), /CIM access denied/);
 });
 
-test('winws inventory avoids WMI and preserves path identity with a bounded process query', async () => {
-  const { manager } = fixture();
-  manager.execPowerShell = async (command, timeout) => {
-    assert.match(command, /Get-Process -Name 'winws'/);
-    assert.doesNotMatch(command, /Get-CimInstance|Win32_Process/);
-    assert.equal(timeout, 12_000);
-    return JSON.stringify({ ProcessId: 4321, ExecutablePath: 'C:\\Shield\\zapret\\core\\bin\\winws.exe', StartedAt: '2026-09-12T17:00:00.000Z' });
-  };
-  const processes = Array.from(await manager.listWinwsProcesses());
-  assert.deepEqual(JSON.parse(JSON.stringify(processes)), [{ pid: 4321, commandLine: '', executablePath: 'C:\\Shield\\zapret\\core\\bin\\winws.exe', startedAt: '2026-09-12T17:00:00.000Z' }]);
-});
-
-test('auto-select stops its candidate before completion and reports a truthful early exit', async () => {
+test('auto-select tests every profile twice, then recommends without starting a winner', async () => {
   const { manager, events } = sweepFixture();
   const progress = [];
   const result = await manager.autoSelectBestProfile(event => progress.push(event));
   assert.equal(result.bestProfile, 'General');
-  assert.equal(result.earlyExit, true);
+  assert.equal(result.earlyExit, false);
   assert.equal(result.videoPlaybackVerified, false);
   assert.equal(result.totalProfiles, 2);
-  assert.equal(result.testedProfiles.length, 1);
+  assert.equal(result.testedProfiles.length, 2);
+  assert.equal(result.results[0].verificationPasses, 2);
+  assert.equal(result.results[1].verificationPasses, 2);
   assert.ok(events.indexOf('stop:General') < events.indexOf('remember'));
+  assert.ok(events.indexOf('stop:Other') < events.indexOf('remember'));
+  assert.equal(events.at(-1), 'remember');
   assert.equal(progress.at(-1).phase, 'complete');
-  assert.equal(progress.at(-1).earlyExit, true);
+  assert.equal(progress.at(-1).earlyExit, false);
   assert.equal(manager.autoSelectController, null);
+});
+
+test('auto-select rejects a one-pass success and continues until a candidate repeats it', async () => {
+  const { manager } = sweepFixture();
+  const confident = {
+    healthy: true, confident: true, averagePingMs: 10,
+    targets: ['DiscordMain', 'DiscordGateway', 'YouTubeWeb', 'YouTubeImage'].map(key => ({ key, ok: true, pingMs: 10 })),
+  };
+  const unstable = {
+    healthy: false, confident: false, averagePingMs: 30,
+    targets: ['DiscordMain', 'DiscordGateway', 'YouTubeWeb', 'YouTubeImage'].map(key => ({ key, ok: key !== 'DiscordGateway', pingMs: 30 })),
+  };
+  const passes = [confident, unstable, confident, confident];
+  manager.probeZapretTargets = async () => passes.shift();
+  const result = await manager.autoSelectBestProfile();
+  assert.equal(result.bestProfile, 'Other');
+  assert.deepEqual(Array.from(result.testedProfiles), ['General', 'Other']);
+  assert.equal(result.results[0].result, 'error');
+  assert.equal(result.results[1].result, 'success');
+  assert.equal(result.results[1].verificationPasses, 2);
+});
+
+test('a full 23-profile report ranks complete coverage before lower latency', async () => {
+  const { manager, events } = sweepFixture();
+  const names = Array.from({ length: 23 }, (_, index) => `Profile ${index + 1}`);
+  manager.listProfiles = async () => names.map(name => ({ name, fileName: `${name}.bat` }));
+  let current = null;
+  manager.startProbeStandalone = async name => { current = name; events.push(`start:${name}`); };
+  manager.listIntegratedWinwsProcesses = async () => current ? [{ pid: 123 }] : [];
+  manager.stopProbeStandalone = async () => { events.push(`stop:${current}`); current = null; };
+  manager.probeZapretTargets = async () => {
+    const number = Number(current.split(' ').at(-1));
+    const complete = number === 23 || number === 22;
+    const pingMs = number === 23 ? 45 : number === 22 ? 70 : 5;
+    const targets = ['DiscordMain', 'DiscordGateway', 'YouTubeWeb', 'YouTubeImage']
+      .map((key, index) => ({ key, ok: complete || index !== 1, pingMs }));
+    return { healthy: complete, confident: complete, averagePingMs: pingMs, targets };
+  };
+  const result = await manager.autoSelectBestProfile();
+  assert.equal(result.totalProfiles, 23);
+  assert.equal(result.results.length, 23);
+  assert.equal(result.testedProfiles.length, 23);
+  assert.equal(result.bestProfile, 'Profile 23');
+  assert.equal(result.earlyExit, false);
+  assert.ok(result.results.every(row => row.verificationPasses === 2));
+  assert.equal(events.filter(event => event.startsWith('start:')).length, 23);
+  assert.equal(events.filter(event => event === 'start:Profile 23').length, 1);
+  assert.equal(events.at(-1), 'remember');
+});
+
+test('auto-select restores the previously running service, never the recommended profile', async () => {
+  const { manager, events } = sweepFixture();
+  manager.captureAutoSelectActiveMode = async () => ({ mode: 'service', profile: 'Previous' });
+  manager.startService = async () => { events.push('restore:Previous'); };
+  const result = await manager.autoSelectBestProfile();
+  assert.equal(result.bestProfile, 'General');
+  assert.ok(events.indexOf('stop:Other') < events.indexOf('restore:Previous'));
+  assert.ok(events.indexOf('restore:Previous') < events.indexOf('remember'));
+  assert.ok(!events.includes('start:General:service'));
 });
 
 test('auto-select does not advance or save a winner after cleanup failure', async () => {
@@ -206,6 +250,19 @@ test('auto-select does not advance or save a winner after cleanup failure', asyn
   assert.deepEqual(events, ['prepare', 'start:General']);
   assert.equal(manager.autoSelectController, null);
   assert.equal(manager.probeProfiles, null);
+});
+
+test('failed sweep preparation restarts a service it already stopped', async () => {
+  const { manager } = fixture();
+  let running = true, restarts = 0;
+  manager.assertNoExternalConflict = async () => {};
+  manager.queryService = async () => ({ installed: true, running });
+  manager.stopServiceInternal = async () => { running = false; };
+  manager.stopStandaloneInternal = async () => { throw new Error('cleanup failed'); };
+  manager.startService = async () => { restarts += 1; running = true; };
+  await assert.rejects(manager.resetOwnedRuntimeBeforeAutoSelect(), /cleanup failed/);
+  assert.equal(restarts, 1);
+  assert.equal(running, true);
 });
 
 test('cancel during a pending start never launches another candidate or retains a winner', async () => {

@@ -1,9 +1,9 @@
 //#region src/shared/system-doh.ts
 var SYSTEM_DOH_DEFAULT_LOCAL_ADDRESS = "127.0.0.1";
 var SYSTEM_DOH_VERIFICATION_DOMAINS = [
-	"api.openai.com",
-	"api.anthropic.com",
-	"gemini.google.com"
+	"example.com",
+	"www.microsoft.com",
+	"github.com"
 ];
 function isIpv4Octet(value) {
 	const parsed = Number.parseInt(value, 10);

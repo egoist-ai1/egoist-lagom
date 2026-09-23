@@ -1,15 +1,35 @@
 //#region src/shared/telegram-proxy-control.ts
 var TELEGRAM_PROXY_TARGET_VERSION = "1.7.0";
-function summarizeTelegramProxyRouteHealth(logTail) {
+function countRecentTelegramProxyFailures(logTail, now = Date.now()) {
+	const windowMs = 10 * 60 * 1e3;
+	const today = new Date(now);
+	let handshakeFailures = 0;
+	let fallbackAttempts = 0;
+	for (const line of logTail) {
+		const match = /^(\d{2}):(\d{2}):(\d{2})\b/.exec(line);
+		if (!match) continue;
+		const when = new Date(today);
+		when.setHours(Number(match[1]), Number(match[2]), Number(match[3]), 0);
+		if (when.getTime() > now + 60 * 1e3) when.setDate(when.getDate() - 1);
+		if (now - when.getTime() < 0 || now - when.getTime() > windowMs) continue;
+		if (/\b(?:CF proxy failed|WsHandshakeError|HTTP 503)\b/i.test(line)) handshakeFailures += 1;
+		if (/\bnot in config\s*->\s*fallback\b/i.test(line)) fallbackAttempts += 1;
+	}
+	return { handshakeFailures, fallbackAttempts };
+}
+function summarizeTelegramProxyRouteHealth(logTail, now = Date.now()) {
+	const recent = countRecentTelegramProxyFailures(logTail, now);
 	const statsLine = [...logTail].reverse().find((line) => /\bstats:\s/i.test(line));
 	if (!statsLine) return {
-		state: "unknown",
+		state: recent.handshakeFailures > 0 ? "degraded" : "unknown",
 		mode: "unknown",
 		totalConnections: 0,
 		activeConnections: 0,
 		successfulFallbackConnections: 0,
-		errors: 0,
-		visibleReason: "Upstream route has not emitted a traffic sample yet."
+		errors: recent.handshakeFailures,
+		recentHandshakeFailures: recent.handshakeFailures,
+		recentFallbackAttempts: recent.fallbackAttempts,
+		visibleReason: recent.handshakeFailures > 0 ? `Telegram upstream failed ${recent.handshakeFailures} handshakes in the last 10 minutes.` : "Upstream route has not emitted a traffic sample yet."
 	};
 	const read = (name) => {
 		const match = new RegExp(`\\b${name}=(\\d+)`, "i").exec(statsLine);
@@ -19,9 +39,9 @@ function summarizeTelegramProxyRouteHealth(logTail) {
 	const activeConnections = read("active");
 	const cloudflareConnections = read("cf");
 	const directConnections = read("ws") + read("tcp_fb");
-	const errors = read("err") + read("bad");
+	const errors = read("err") + read("bad") + recent.handshakeFailures;
 	const mode = cloudflareConnections > 0 && directConnections > 0 ? "mixed" : cloudflareConnections > 0 ? "cloudflare" : directConnections > 0 ? "direct" : "unknown";
-	const state = errors > 0 && activeConnections === 0 ? "error" : cloudflareConnections + directConnections > 0 ? "active" : "idle";
+	const state = errors > 0 && activeConnections === 0 ? "error" : recent.handshakeFailures > 0 ? "degraded" : cloudflareConnections + directConnections > 0 ? "active" : "idle";
 	return {
 		state,
 		mode,
@@ -29,7 +49,9 @@ function summarizeTelegramProxyRouteHealth(logTail) {
 		activeConnections,
 		successfulFallbackConnections: cloudflareConnections,
 		errors,
-		visibleReason: state === "active" ? `Upstream route is carrying traffic (${mode}, ${totalConnections} sessions, ${errors} errors).` : state === "error" ? `Upstream route has ${errors} errors and no active sessions.` : "Local proxy is ready and waiting for Telegram traffic."
+		recentHandshakeFailures: recent.handshakeFailures,
+		recentFallbackAttempts: recent.fallbackAttempts,
+		visibleReason: state === "degraded" ? `Telegram upstream has ${recent.handshakeFailures} failed handshakes in the last 10 minutes; ${activeConnections} sessions remain active.` : state === "active" ? `Upstream route is carrying traffic (${mode}, ${totalConnections} sessions, ${errors} errors).` : state === "error" ? `Upstream route has ${errors} errors and no active sessions.` : "Local proxy is ready and waiting for Telegram traffic."
 	};
 }
 function buildTelegramProxyLinks(config) {

@@ -4,8 +4,20 @@ import { build, transform } from 'esbuild';
 
 const root = path.resolve(import.meta.dirname, '..');
 process.chdir(root);
+const packageVersion = JSON.parse(await fs.readFile('package.json', 'utf8')).version;
+const buildInstant = process.env.SOURCE_DATE_EPOCH
+  ? new Date(Number(process.env.SOURCE_DATE_EPOCH) * 1000)
+  : new Date();
+if (Number.isNaN(buildInstant.getTime())) throw new Error('Invalid SOURCE_DATE_EPOCH.');
+const dateParts = Object.fromEntries(new Intl.DateTimeFormat('ru-RU', {
+  timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: 'numeric'
+}).formatToParts(buildInstant).map(({ type, value }) => [type, value]));
+const buildDate = `${dateParts.day}.${dateParts.month}.${dateParts.year}`;
 const order = JSON.parse(await fs.readFile('src/recovered/order.json', 'utf8'));
-const modules = await Promise.all(order.map(name => fs.readFile(`src/recovered/${name}`, 'utf8')));
+const sourceModules = await Promise.all(order.map(name => fs.readFile(`src/recovered/${name}`, 'utf8')));
+const buildDateMarker = 'var EGOIST_SHIELD_BUILD_DATE = "__EGOIST_BUILD_DATE__";';
+if (sourceModules.filter(module => module.includes(buildDateMarker)).length !== 1) throw new Error('Build date marker missing or duplicated.');
+const modules = sourceModules.map(module => module.replace(buildDateMarker, `var EGOIST_SHIELD_BUILD_DATE = ${JSON.stringify(buildDate)};`));
 const protocol = await fs.readFile('src/component-protocol.js', 'utf8');
 const componentResponse = (await fs.readFile('src/component-response.js', 'utf8')).replace('export function compactAutoSelectResult', 'function compactAutoSelectResult');
 const facade = await fs.readFile('src/component-facade.js', 'utf8');
@@ -64,13 +76,16 @@ rendererSource = rendererSource.replace(qfRegex, `function qf(e2) {
   let t2 = Array.isArray(e2?.results) ? e2.results : Array.isArray(e2?.testResults) ? e2.testResults : [];
   return t2.length > 0;
 }`);
-const packageVersion = JSON.parse(await fs.readFile('package.json', 'utf8')).version;
-const rendererVersionPattern = /, Qf = `\d+\.\d+\.\d+`, \$f =/;
-if (!rendererVersionPattern.test(rendererSource)) throw new Error('Renderer fallback version boundary missing');
-rendererSource = rendererSource.replace(rendererVersionPattern, `, Qf = \`${packageVersion}\`, $f =`);
 rendererSource=rendererSource.replaceAll('3.5.4',packageVersion);
-rendererSource = rendererSource.replace('Версия приложения ${t3}', 'Версия приложения Lagom');
-rendererSource = rendererSource.replace('className: `app-version`, children: [`Версия приложения `, e2]', 'className: `app-version`, children: [`Версия Lagom`]');
+const aboutFallback = /Qf = `[^`]*`, \$f = `[^`]*`, ep = \[\[[^\n]*\]\];/;
+if (!aboutFallback.test(rendererSource)) throw new Error('About dialog version/date fallback boundary missing.');
+const releaseNotes = [
+  'Автоподбор проверяет все 23 профиля дважды и рекомендует вариант по покрытию и отклику.',
+  'Проверка голосового TCP Discord учитывает свежий адрес сервера; профиль EGOIST MIX использует исправленную стратегию.',
+  'Кнопка рекомендации и отчёт по профилям адаптированы для узких окон.'
+];
+rendererSource = rendererSource.replace(aboutFallback,
+  `Qf = ${JSON.stringify(packageVersion)}, $f = ${JSON.stringify(buildDate)}, ep = ${JSON.stringify([[packageVersion, buildDate, releaseNotes]])};`);
 await fs.writeFile('.vite/renderer/main_window/assets/index-Eaqlb9_F.js', (await transform(rendererSource, { loader: 'js', minify: true, charset: 'utf8' })).code);
 const branding = (await Promise.all(['tokens.css','compact-ruby.css','compact-surfaces.css','shield-widget.css','final-polish.css'].map(name=>fs.readFile(`src/brand/${name}`, 'utf8')))).join('\n');
 await fs.writeFile('.vite/renderer/main_window/assets/brand.css', branding);

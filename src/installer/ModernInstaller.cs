@@ -18,8 +18,10 @@ namespace EgoistShield.Installer
         public static void Main(string[] args)
         {
             string exchangeDir = args.Length > 0 ? args[0] : System.IO.Path.GetTempPath();
+            bool monitorMode = Array.Exists(args, value => string.Equals(value, "--monitor", StringComparison.OrdinalIgnoreCase));
+            bool busyMode = Array.Exists(args, value => string.Equals(value, "--busy", StringComparison.OrdinalIgnoreCase));
             ModernInstallerApp app = new ModernInstallerApp();
-            InstallerWindow window = new InstallerWindow(exchangeDir);
+            InstallerWindow window = new InstallerWindow(exchangeDir, monitorMode, busyMode);
             app.Run(window);
         }
     }
@@ -103,6 +105,7 @@ namespace EgoistShield.Installer
         private ModernToggle _toggleDesktopShortcut;
 
         private TextBlock _lblStatus;
+        private TextBlock _lblProgressTitle;
         private TextBlock _lblPercent;
         private Border _progressBarTrack;
         private Border _progressBarFill;
@@ -116,15 +119,22 @@ namespace EgoistShield.Installer
         private bool _runAfter = true;
         private bool _desktopShortcut = true;
         private bool _installing;
+        private bool _monitorMode;
+        private bool _busyMode;
+        private bool _closingForHandoff;
+        private bool _launchedAfterInstall;
         private Button _closeButton;
+        private Button _finishButton;
 
         [System.Runtime.InteropServices.DllImport("gdi32.dll", SetLastError = true)]
         private static extern int AddFontResourceEx(string lpszFilename, uint fl, IntPtr pdv);
         private const uint FR_PRIVATE = 0x10;
 
-        public InstallerWindow(string exchangeDir)
+        public InstallerWindow(string exchangeDir, bool monitorMode, bool busyMode)
         {
             _exchangeDir = exchangeDir;
+            _monitorMode = monitorMode;
+            _busyMode = busyMode;
             Title = "Egoist Lagom Setup";
             Width = 480;
             Height = 320;
@@ -161,6 +171,19 @@ namespace EgoistShield.Installer
             if (logo != null) Icon = logo;
 
             BuildUI();
+
+            if (_monitorMode)
+            {
+                _chosenDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "EgoistShield");
+                _runAfter = ReadRunAfterPreference();
+                if (_finishButton != null && _runAfter) _finishButton.Content = "Закрыть";
+                BeginProgressMonitoring();
+                ContentRendered += (s, e) => WriteSignal("ui-ready.flag");
+            }
+            else if (_busyMode)
+            {
+                ShowBusyView();
+            }
         }
 
         private void BuildUI()
@@ -524,7 +547,7 @@ namespace EgoistShield.Installer
             UIElement emblemBorder = CreateHermesImage(70, new Thickness(0, 0, 0, 16));
             centerStack.Children.Add(emblemBorder);
 
-            centerStack.Children.Add(new TextBlock
+            _lblProgressTitle = new TextBlock
             {
                 Text = "Установка компонентов...",
                 Foreground = Brushes.White,
@@ -532,7 +555,8 @@ namespace EgoistShield.Installer
                 FontWeight = FontWeights.Bold,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 0, 0, 4)
-            });
+            };
+            centerStack.Children.Add(_lblProgressTitle);
 
             _lblStatus = new TextBlock
             {
@@ -651,6 +675,7 @@ namespace EgoistShield.Installer
             });
 
             Button btnFinish = CreateActionButton("Запустить Egoist Lagom", true);
+            _finishButton = btnFinish;
             btnFinish.Width = 260;
             btnFinish.Height = 40;
             btnFinish.Click += (s, e) => FinishAndLaunch();
@@ -698,6 +723,16 @@ namespace EgoistShield.Installer
             if (_pollTimer != null) _pollTimer.Stop();
             _mainContainer.Children.Clear();
             _mainContainer.Children.Add(_completeView);
+            if (_runAfter) LaunchInstalledDesktop();
+        }
+
+        private bool ReadRunAfterPreference()
+        {
+            try
+            {
+                return File.ReadAllText(System.IO.Path.Combine(_exchangeDir, "run_after.txt")).Trim() != "0";
+            }
+            catch { return true; }
         }
 
         private void StartInstallation()
@@ -718,10 +753,15 @@ namespace EgoistShield.Installer
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка записи параметров: " + ex.Message, "Egoist Lagom", MessageBoxButton.OK, MessageBoxImage.None);
+                ShowFailure("Не удалось сохранить параметры установки: " + ex.Message);
                 return;
             }
 
+            BeginProgressMonitoring();
+        }
+
+        private void BeginProgressMonitoring()
+        {
             ShowProgressView();
             _installing = true;
             if (_closeButton != null) _closeButton.IsEnabled = false;
@@ -732,6 +772,16 @@ namespace EgoistShield.Installer
             {
                 try
                 {
+                    if (!_monitorMode && File.Exists(System.IO.Path.Combine(_exchangeDir, "handoff-started.flag")))
+                    {
+                        WriteSignal("handoff-ack.flag");
+                        _closingForHandoff = true;
+                        _installing = false;
+                        if (_shimmerTimer != null) _shimmerTimer.Stop();
+                        _pollTimer.Stop();
+                        Close();
+                        return;
+                    }
                     if (File.Exists(statusPath))
                     {
                         string line = File.ReadAllText(statusPath).Trim();
@@ -748,13 +798,8 @@ namespace EgoistShield.Installer
                                 string msg = parts[1];
                                 if (pct <= 0 && (msg.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase) || msg.StartsWith("Ошибка", StringComparison.OrdinalIgnoreCase)))
                                 {
-                                    _installing = false;
-                                    if (_shimmerTimer != null) _shimmerTimer.Stop();
                                     _pollTimer.Stop();
-                                    _lblStatus.Text = msg.Replace("ERROR:", "").Trim();
-                                    _lblPercent.Text = "Ошибка";
-                                    MessageBox.Show(_lblStatus.Text, "Egoist Lagom", MessageBoxButton.OK, MessageBoxImage.None);
-                                    CloseInstaller();
+                                    ShowFailure(msg.Replace("ERROR:", "").Trim());
                                     return;
                                 }
                                 if (msg == "DONE")
@@ -778,6 +823,43 @@ namespace EgoistShield.Installer
             _pollTimer.Start();
         }
 
+        private void ShowBusyView()
+        {
+            ShowProgressView();
+            if (_shimmerTimer != null) _shimmerTimer.Stop();
+            _lblProgressTitle.Text = "Установка уже выполняется";
+            _lblStatus.Text = "Дождитесь завершения текущей установки Egoist Lagom.";
+            _lblPercent.Text = "Идёт установка";
+            _progressBarFill.Width = 0;
+            _installing = false;
+            if (_closeButton != null) _closeButton.IsEnabled = true;
+        }
+
+        private void ShowFailure(string message)
+        {
+            if (_progressView.Parent == null) ShowProgressView();
+            _installing = false;
+            if (_shimmerTimer != null) _shimmerTimer.Stop();
+            if (_pollTimer != null) _pollTimer.Stop();
+            _lblProgressTitle.Text = "Установка не завершена";
+            _lblStatus.Text = message;
+            _lblStatus.TextWrapping = TextWrapping.Wrap;
+            _lblStatus.MaxWidth = 400;
+            _lblPercent.Text = "Изменения отменены";
+            _progressBarFill.Width = 0;
+            if (_closeButton != null) _closeButton.IsEnabled = true;
+        }
+
+        private void WriteSignal(string fileName)
+        {
+            try
+            {
+                Directory.CreateDirectory(_exchangeDir);
+                File.WriteAllText(System.IO.Path.Combine(_exchangeDir, fileName), "1", new System.Text.UTF8Encoding(false));
+            }
+            catch { }
+        }
+
         private void UpdateProgressBar(double percent)
         {
             double trackWidth = _progressBarTrack.ActualWidth;
@@ -794,46 +876,49 @@ namespace EgoistShield.Installer
             }
             catch { }
 
-            if (_runAfter && !string.IsNullOrEmpty(_chosenDir))
+            if (!_launchedAfterInstall) LaunchInstalledDesktop();
+
+            Close();
+        }
+
+        private void LaunchInstalledDesktop()
+        {
+            if (_launchedAfterInstall || string.IsNullOrEmpty(_chosenDir)) return;
+            string exePath = System.IO.Path.Combine(_chosenDir, "EgoistShield.exe");
+            if (File.Exists(exePath))
             {
-                string exePath = System.IO.Path.Combine(_chosenDir, "EgoistShield.exe");
-                if (File.Exists(exePath))
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = exePath,
+                        UseShellExecute = true,
+                        Verb = "runas"
+                    });
+                    _launchedAfterInstall = true;
+                    if (_finishButton != null) _finishButton.Content = "Закрыть";
+                }
+                catch
                 {
                     try
                     {
                         Process.Start(new ProcessStartInfo
                         {
                             FileName = exePath,
-                            UseShellExecute = true,
-                            Verb = "runas"
+                            UseShellExecute = true
                         });
+                        _launchedAfterInstall = true;
+                        if (_finishButton != null) _finishButton.Content = "Закрыть";
                     }
-                    catch
-                    {
-                        try
-                        {
-                            Process.Start(new ProcessStartInfo
-                            {
-                                FileName = exePath,
-                                UseShellExecute = true
-                            });
-                        }
-                        catch { }
-                    }
+                    catch { }
                 }
             }
-
-            Close();
         }
 
         private void CloseInstaller()
         {
             if (_installing) return;
-            try
-            {
-                File.WriteAllText(System.IO.Path.Combine(_exchangeDir, "cancel.flag"), "1");
-            }
-            catch { }
+            if (!_closingForHandoff) WriteSignal("cancel.flag");
             Close();
         }
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)

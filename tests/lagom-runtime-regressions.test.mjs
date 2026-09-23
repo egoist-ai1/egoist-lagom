@@ -284,7 +284,7 @@ test('Installer uses one canonical path and never kills network processes by ima
   assert.match(nsi,/Ошибка подготовки установки \(код \$PhaseResult\)/);
   assert.doesNotMatch(ui,/GetProcessesByName|KillConflictingProcesses|SuppressBackgroundInstallerWindows|FolderBrowserDialog/);
   assert.doesNotMatch(ui,/MessageBoxIcon\.Error/);
-  assert.match(ui,/MessageBoxImage\.None/);
+  assert.doesNotMatch(ui,/MessageBox\.Show/);
   assert.doesNotMatch(cleanup,/S-1-5-32-545:\(OI\)\(CI\)M/);
 });
 

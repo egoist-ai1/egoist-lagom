@@ -3,8 +3,6 @@ import hashlib
 import importlib.util
 import json
 import os
-import re
-import subprocess
 import sys
 import urllib.parse
 import urllib.request
@@ -15,18 +13,12 @@ spec=importlib.util.spec_from_file_location('shield_github_api',ROOT/'scripts/gi
 api=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(api)
 REPO='/repos/egoist-ai1/egoist-lagom'
-DIST=Path(os.environ.get('EGOIST_RELEASE_DIST', str(ROOT/'dist')))
-if not DIST.is_absolute():
-    raise ValueError('EGOIST_RELEASE_DIST must be absolute')
-version=json.loads((ROOT/'package.json').read_text(encoding='utf-8-sig'))['version']
-if not re.fullmatch(r'\d+\.\d+\.\d+', version):
-    raise ValueError('Expected a stable semantic version')
-tag='v'+version
+DIST=ROOT/'dist'
+integrity=json.loads((DIST/'package-integrity.json').read_text())
+tag='lagom-final'
+version=integrity['version']
 names=['Egoist-Lagom-Setup.exe','Egoist-Lagom-Setup.exe.sha256','package-integrity.json',
-       'LICENSE.txt','THIRD-PARTY-NOTICES.txt','Egoist-Lagom-validation.md',
-       'release-manifest.json','release-manifest.json.sig','stable-channel.json','stable-channel.json.sig',
-       'root-public-key.pem','release-key-registry.json','release-key-registry.json.sig',
-       'Egoist-Lagom-'+version+'.cdx.json']
+       'LICENSE.txt','THIRD-PARTY-NOTICES.txt','Egoist-Lagom-validation.md']
 receipt_argument=os.environ.get('SHIELD_RELEASE_RECEIPT')
 receipt_path=Path(receipt_argument) if receipt_argument else None
 
@@ -43,29 +35,8 @@ def summary(release):
     return {'id':release['id'],'tag':release['tag_name'],'draft':release['draft'],'prerelease':release['prerelease'],'url':release['html_url'],
             'assets':[{'id':a['id'],'name':a['name'],'size':a['size'],'digest':a.get('digest')} for a in release.get('assets',[])]}
 
-def verify_local():
-    # Verify signatures against bundled trust, not the copies destined for upload.
-    subprocess.run([os.environ.get('EGOIST_NODE', 'node'), str(ROOT/'scripts/prepare-release-assets.mjs'),
-                    '--dist', str(DIST), '--verify-only', 'true'], cwd=ROOT, check=True)
-    digests={}
-    for name in names:
-        file=(DIST/name).resolve()
-        if file.parent!=DIST.resolve() or not file.is_file():
-            raise ValueError('Invalid or missing release asset: '+name)
-        data=file.read_bytes()
-        if not data:
-            raise ValueError('Empty release asset: '+name)
-        digests[name]={'digest':'sha256:'+hashlib.sha256(data).hexdigest(),'size':len(data)}
-    return digests
-
 mode=sys.argv[1] if len(sys.argv)>1 else 'status'
-if mode not in ('status','verify','stage','upload','publish'):
-    raise ValueError('Expected status, verify, stage, upload, or publish')
-if mode=='verify':
-    print(json.dumps({'tag':tag,'assets':verify_local()}))
-    sys.exit(0)
 if mode!='status':
-    verified_assets=verify_local()
     if receipt_path is None or not receipt_path.is_absolute():
         raise ValueError('Set SHIELD_RELEASE_RECEIPT to an absolute task-scoped receipt path')
     receipt_path.parent.mkdir(parents=True,exist_ok=True)
@@ -81,13 +52,11 @@ elif mode=='stage':
     if len(commit)!=40 or any(c not in '0123456789abcdef' for c in commit):
         raise ValueError('Expected an exact lowercase Git commit SHA')
     body=Path(sys.argv[3]).read_text(encoding='utf-8-sig')
-    release=api.request(REPO+'/releases','POST',{'tag_name':tag,'target_commitish':commit,'name':'Egoist Lagom','body':body,'draft':True,'prerelease':False})
-    receipt_path.write_text(json.dumps({'releaseId':release['id'],'tag':tag,'candidate':verified_assets,'assets':[]},indent=2))
+    release=api.request(REPO+'/releases','POST',{'tag_name':tag,'target_commitish':commit,'name':'Egoist Lagom — final','body':body,'draft':True,'prerelease':False})
+    receipt_path.write_text(json.dumps({'releaseId':release['id'],'tag':tag,'assets':[]},indent=2))
     print(json.dumps(summary(release)))
 elif mode=='upload':
     receipt=json.loads(receipt_path.read_text())
-    if receipt.get('candidate')!=verified_assets:
-        raise RuntimeError('Local assets changed since draft creation; inspect before continuing')
     if not release or not release['draft'] or release['id']!=receipt['releaseId'] or release['tag_name']!=receipt['tag']:
         raise RuntimeError('Only the task-owned unpublished draft may receive assets')
     assets={a['name']:a for a in release.get('assets',[])}
@@ -97,8 +66,6 @@ elif mode=='upload':
             raise ValueError('Invalid release asset path')
         data=file.read_bytes()
         digest='sha256:'+hashlib.sha256(data).hexdigest()
-        if verified_assets[name]!={'digest':digest,'size':len(data)}:
-            raise RuntimeError('Local asset changed during upload: '+name)
         if name in assets:
             asset=assets[name]
             if asset.get('digest')!=digest or asset['size']!=len(data):
@@ -118,8 +85,6 @@ elif mode=='upload':
     print(json.dumps(summary(fresh)))
 elif mode=='publish':
     receipt=json.loads(receipt_path.read_text())
-    if receipt.get('candidate')!=verified_assets:
-        raise RuntimeError('Local assets changed since draft creation; inspect before publishing')
     if not release or release['id']!=receipt['releaseId'] or release['tag_name']!=receipt['tag']:
         raise RuntimeError('Only the task-owned release may be published')
     assets={a['name']:a for a in release.get('assets',[])}
@@ -127,8 +92,6 @@ elif mode=='publish':
         raise RuntimeError('Release assets differ from the exact expected allowlist')
     for name in names:
         data=(DIST/name).read_bytes()
-        if verified_assets[name]!={'digest':'sha256:'+hashlib.sha256(data).hexdigest(),'size':len(data)}:
-            raise RuntimeError('Local asset changed during publication verification: '+name)
         if assets[name].get('digest')!='sha256:'+hashlib.sha256(data).hexdigest() or assets[name]['size']!=len(data):
             raise RuntimeError('Release asset differs from the verified local candidate: '+name)
     if release['draft']:

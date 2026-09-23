@@ -196,6 +196,11 @@ var SystemDohManager = class {
 		const normalizedUrl = normalizeSystemDohUrl(url, "");
 		if (!normalizedUrl) throw new Error("Укажите DoH URL.");
 		const parsed = parseSystemDohUrl(normalizedUrl);
+		const current = await this.status({ force: true });
+		if ((current.serviceRunning || current.nativeManaged && current.running) && current.currentUrl === normalizedUrl) return current;
+		if (current.serviceRunning || current.nativeManaged && current.running) {
+			throw new Error("Текущий DNS работает. Переключение DoH требует отдельного безопасного переноса; действующее подключение сохранено.");
+		}
 		const hasCustomPort = parsed.serverPort && parsed.serverPort !== 443;
 		if (this.coreService && !hasCustomPort) {
 			const servers = await resolveSystemDohNativeServers(normalizedUrl);
@@ -205,8 +210,6 @@ var SystemDohManager = class {
 			this.invalidateStatusCache();
 			return this.mapNativeStatus(native);
 		}
-		const current = await this.status({ force: true });
-		if (current.running && current.serviceInstalled && current.currentUrl === normalizedUrl && current.localAddress === "127.0.0.1") return current;
 		const runtime = await this.ensureManagedRuntimeInstalled();
 		await this.ensureServiceWrapperInstalled();
 		await this.stopAndRemove();
@@ -247,7 +250,7 @@ var SystemDohManager = class {
 					continue;
 				}
 				this.lastError = diagnostic;
-				throw new Error(`System DoH не прошёл проверку: ${SYSTEM_DOH_VERIFICATION_DOMAINS.join(", ")} не резолвятся через локальный канал. Детали сохранены в журнале System DoH.`);
+				throw new Error(`System DoH не прошёл проверку: контрольные домены не резолвятся через локальный канал. Детали сохранены в журнале System DoH.`);
 			}
 		}
 		this.lastError = lastBindError ?? "Не удалось найти свободный loopback-адрес для System DoH.";
@@ -262,6 +265,9 @@ var SystemDohManager = class {
 		return this.status({ force: true });
 	}
 	async restart() {
+		const currentStatus = await this.status({ force: true });
+		if (currentStatus.running && currentStatus.verified) return currentStatus;
+		if (currentStatus.serviceRunning) throw new Error("Служба DNS работает, но проверка не прошла. Перезапуск без резервного DNS заблокирован.");
 		const managedState = await this.readManagedState();
 		if (this.coreService && !managedState) {
 			const current = await this.coreService.nativeDohStatus();

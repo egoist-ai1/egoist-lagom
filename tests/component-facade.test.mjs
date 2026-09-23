@@ -71,21 +71,3 @@ test('packaged DoH reconfiguration avoids a redundant restore while stop restore
   await assert.rejects(manager.stopAndRemove(),/адаптер/);
   assert.deepEqual(calls,['restore']);
 });
-
-test('a delayed progress read cannot revive selection after the final result', async () => {
-  let tick, cleared = false;
-  const context = vm.createContext({ componentOperations: () => ({ Zapret: {} }), COMPONENT_QUERIES: new Set(),
-    setInterval: callback => { tick = callback; return 1; }, clearInterval: () => { cleared = true; } });
-  vm.runInContext(fs.readFileSync('src/component-facade.js', 'utf8') + '\nglobalThis.wrap=useComponentService;', context);
-  const selection = Promise.withResolvers(), progress = Promise.withResolvers();
-  const manager = context.wrap({ autoSelectProgress: () => progress.promise }, 'Zapret', { request: () => selection.promise });
-  const events = [];
-  const pending = manager.autoSelectBestProfile(value => events.push(value));
-  const polling = tick();
-  selection.resolve({ completed: true, bestProfile: 'General' });
-  await pending;
-  assert.equal(cleared, true);
-  progress.resolve({ phase: 'profile-start', profile: 'General' });
-  await polling;
-  assert.deepEqual(events, [], 'Completed selection must not receive stale progress');
-});

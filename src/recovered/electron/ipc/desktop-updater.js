@@ -94,6 +94,27 @@ function assertCanonicalCandidateUrl(candidate) {
 	const expectedPath = `/${APP_RELEASE_OWNER}/${APP_RELEASE_REPOSITORY}/releases/download/${candidate.tag}/${candidate.assetName}`;
 	if (url.protocol !== "https:" || url.hostname !== "github.com" || url.pathname !== expectedPath || url.search || url.hash) throw new UpdaterError("candidate-mismatch", "Адрес Setup не совпадает с доверенным release channel.");
 }
+function buildProtectedUpdaterLaunch(candidate, options, finalPath) {
+	const updatesDir = path.dirname(finalPath);
+	const installerResources = path.join(options.resourcesPath, "installer");
+	return {
+		manifestPath: path.join(updatesDir, "package-integrity.json"),
+		manifest: {
+			schemaVersion: 1,
+			product: "Egoist Lagom",
+			version: candidate.version,
+			installer: {
+				path: `updates/${candidate.assetName}`,
+				bytes: candidate.size,
+				sha256: candidate.sha256.toUpperCase()
+			}
+		},
+		helperPath: path.join(installerResources, "invoke-final-silent-reinstall.ps1"),
+		uiPath: path.join(installerResources, "ModernInstaller.exe"),
+		fontPath: path.join(installerResources, "Unbounded.ttf"),
+		signalPath: path.join(updatesDir, "handoff-started.flag")
+	};
+}
 async function readJsonFile(filePath) {
 	try {
 		return JSON.parse(await promises.readFile(filePath, "utf8"));
@@ -164,7 +185,13 @@ var DesktopUpdater = class {
 			if (!version || !release.tag_name) throw new UpdaterError("release-not-found", "Stable-релиз не содержит корректную версию.");
 			const tag = `v${version}`;
 			if (release.tag_name !== tag || release.draft || release.prerelease) throw new UpdaterError("unsupported-channel", "Latest release не является stable-кандидатом.");
-			const assetName = release.assets?.some(item => item.name === "Egoist-Lagom-Setup.exe") ? "Egoist-Lagom-Setup.exe" : `EgoistShield-Setup-${version}.exe`;
+			if (compareLooseVersions(version, this.options.currentVersion) <= 0) return {
+				candidate: null,
+				publicVersion: version,
+				release,
+				warnings: []
+			};
+			const assetName = `EgoistShield-Setup-${version}.exe`;
 			const asset = release.assets?.find((item) => item.name === assetName);
 			if (!asset) throw new UpdaterError("release-not-found", `Stable-релиз ${tag} не содержит Setup.`);
 			const canonicalUrl = `https://github.com/${APP_RELEASE_OWNER}/${APP_RELEASE_REPOSITORY}/releases/download/${tag}/${assetName}`;
@@ -214,6 +241,12 @@ var DesktopUpdater = class {
 		try {
 			const resolution = await this.resolveTrustedCandidate();
 			const { candidate } = resolution;
+			if (!candidate) {
+				const message = `Публичный релиз ${resolution.publicVersion} не новее установленной версии ${this.options.currentVersion}.`;
+				emit(this.options, { phase: "up-to-date", message, version: resolution.publicVersion, percent: 100 });
+				return { ok: true, phase: "up-to-date", currentVersion: this.options.currentVersion,
+					latestVersion: resolution.publicVersion, releaseHistory: await this.fetchReleaseHistory(), message };
+			}
 			const compared = compareLooseVersions(candidate.version, this.options.currentVersion);
 			if (compared <= 0) {
 				const message = compared === 0 ? `Установлена последняя версия ${this.options.currentVersion}.` : `Локальная версия ${this.options.currentVersion} новее stable-канала.`;
@@ -294,26 +327,28 @@ var DesktopUpdater = class {
 				manifestDigest: candidate.manifestDigest,
 				updatedAt: (/* @__PURE__ */ new Date()).toISOString()
 			});
+			const launch = buildProtectedUpdaterLaunch(candidate, this.options, finalPath);
+			for (const required of [launch.helperPath, launch.uiPath, launch.fontPath]) {
+				if (!(await promises.stat(required).catch(() => null))?.isFile()) throw new UpdaterError("installer-launch-failed", "В установленной версии отсутствует компонент защищённого обновления.", true);
+			}
+			await writeJsonAtomic(launch.manifestPath, launch.manifest);
 			emit(this.options, {
 				phase: "installing",
-				message: "Запускаем проверенный мастер обновления…",
+				message: "Запускаем защищённое обновление с видимым ходом установки…",
 				version: candidate.version,
 				percent: 100
 			});
-			const child = spawn(finalPath, [
-				"/S",
-				"--updater-mode",
-				`--from-version=${this.options.currentVersion}`
-			], {
-				detached: true,
-				stdio: "ignore",
-				windowsHide: true
+			const powershell = path.join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+			const args = ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", launch.helperPath,
+				"-InstallerPath", finalPath, "-IntegrityManifestPath", launch.manifestPath, "-ExpectedVersion", candidate.version,
+				"-ExpectedSha256", candidate.sha256, "-InstallerUiPath", launch.uiPath, "-InstallerFontPath", launch.fontPath,
+				"-HandoffSignalPath", launch.signalPath, "-FromVersion", this.options.currentVersion, "-DelaySeconds", "8"];
+			const child = spawn(powershell, args, { stdio: "ignore", windowsHide: true });
+			const exitCode = await new Promise((resolve, reject) => {
+				child.once("error", () => reject(new UpdaterError("installer-launch-failed", "Не удалось запустить защищённое обновление.", true)));
+				child.once("close", resolve);
 			});
-			await new Promise((resolve, reject) => {
-				child.once("spawn", resolve);
-				child.once("error", () => reject(new UpdaterError("installer-launch-failed", "Не удалось запустить мастер обновления. Повторите попытку или откройте журнал.", true)));
-			});
-			child.unref();
+			if (exitCode !== 0) throw new UpdaterError("installer-launch-failed", "Защищённое обновление не запустилось. Приложение и службы сохранены; подробности в журнале.", true);
 			emit(this.options, {
 				phase: "restarting",
 				message: "Мастер запущен. Egoist Lagom перезапустится после обновления.",

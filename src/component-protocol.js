@@ -20,7 +20,12 @@ function componentOperations() {
       tailLogs: z.tuple([z.number().int().min(1).max(300).optional()]),
     },
     Zapret: {
-      ...entries(['listProfiles', 'getUserLists', 'startService', 'stopService', 'removeService', 'stopStandalone', 'updateIpsetList', 'checkForUpdates', 'installCoreUpdate', 'installDiscordRescueCore', 'resetNetworkState', 'runDiagnostics', 'cancelAutoSelect', 'autoSelectBestProfile', 'autoSelectProgress', 'clearVpnSuspension']),
+      ...entries(['listProfiles', 'getUserLists', 'startService', 'stopService', 'removeService', 'stopStandalone', 'updateIpsetList', 'checkForUpdates', 'installCoreUpdate', 'installDiscordRescueCore', 'resetNetworkState', 'runDiagnostics', 'cancelAutoSelect', 'autoSelectProgress', 'clearVpnSuspension']),
+      autoSelectBestProfile: z.tuple([z.object({
+        key: z.literal('DiscordVoiceControl'), label: z.literal('Discord Voice TCP'),
+        url: z.string().max(256).regex(/^https:\/\/[a-z0-9-]+\.discord\.media:(?:2053|2083|2087|2096|8443)\/$/i),
+        voiceControl: z.literal(true)
+      }).strict().optional()]),
       status,
       ...entries(['dryRunProfile', 'installService', 'setServiceProfile', 'startStandalone', 'restartStandalone'], z.tuple([profile.optional()])),
       saveUserLists: z.tuple([ZapretUserListsInputSchema]),

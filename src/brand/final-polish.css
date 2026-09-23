@@ -9,13 +9,35 @@
 }
 
 .settings-release-actions > button {
-  flex: 1 1 180px;
+  flex: 1 1 max-content;
   width: auto !important;
-  min-width: 0 !important;
+  min-width: max-content !important;
   max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-height: 42px;
+  height: auto;
+  padding-block: 6px;
+  line-height: 1.25;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.screen-stage[data-screen="settings"] .settings-maintenance-panel .btn-secondary.full {
+  min-height: 42px;
+  height: auto;
+  padding-block: 6px;
+  line-height: 1.25;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .log-head .btn-secondary.compact {
+  flex: 0 0 auto;
+  min-width: 100px;
+  width: auto;
+  padding-inline: 12px;
+  overflow: visible;
 }
 
 .settings-release-actions > button::before,

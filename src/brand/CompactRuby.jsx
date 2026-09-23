@@ -1,7 +1,5 @@
 // Shares the recovered renderer's React runtime and verified action bindings.
 const ShieldSpeedPanel=up, ShieldProtectionPanel=bp;
-$f='11.09.2026';
-ep[0]=['Lagom',$f,['Скандинавская концепция баланса Lagom: гармоничное заполнение пространства каждого экрана.','Идеальный баланс Обзора, DNS, Telegram, Настроек и сетевых профилей без пустот и перегруженности.','60 FPS отклик, выверенная типографика и чистая геометрия без интерфейсных артефактов.']];
 const rubyScreenCopy={dashboard:['Обзор','Подключения и состояние сети'],vpn:['Соединение','Серверы, подписка и подключение'],dns:['DNS','Адреса, шифрование и проверка соединения'],zapret:['Профили','Профили маршрутов и настройки'], 'telegram-proxy':['Telegram','Локальный прокси и подключение'],settings:['Настройки','Поведение приложения и обслуживание']};
 const rubyNavIcons={dashboard:'overview',vpn:'vpn',dns:'dns',zapret:'zapret','telegram-proxy':'telegram',settings:'settings'};
 const rubyLegacyIconNames={activity:'activity',check:'check','circle-help':'help',clipboard:'copy','clock-3':'activity',download:'download',earth:'vpn','external-link':'external-link',gauge:'speedtest','key-round':'privacy','layout-dashboard':'overview','list-restart':'restore','map-pin':'location','maximize-2':'maximize',minus:'minimize',network:'dns',power:'power',radar:'route','refresh-ccw':'refresh',send:'telegram',settings:'settings','shield-alert':'warning','shield-check':'check','shield-off':'shield-off',star:'star','triangle-alert':'warning',upload:'upload',wrench:'system',x:'close'};

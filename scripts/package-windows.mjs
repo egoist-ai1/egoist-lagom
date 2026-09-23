@@ -53,6 +53,11 @@ await fs.copyFile('.vite/build/component-worker.cjs', path.join(out, 'resources/
 const cleanupScript=await fs.readFile('src/installer/owned-cleanup.ps1');
 if(!cleanupScript.subarray(0,3).equals(Buffer.from([0xef,0xbb,0xbf])))throw new Error('Installer PowerShell script requires its UTF-8 BOM for Windows PowerShell 5.1.');
 await fs.writeFile(path.join(out, 'resources/installer/owned-cleanup.ps1'),cleanupScript);
+const reinstallScript = await fs.readFile('scripts/invoke-final-silent-reinstall.ps1');
+const reinstallScriptWithBom = reinstallScript.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))
+  ? reinstallScript
+  : Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), reinstallScript]);
+await fs.writeFile(path.join(out, 'resources/installer/invoke-final-silent-reinstall.ps1'), reinstallScriptWithBom);
 await fs.copyFile('scratch/Unbounded.ttf', path.join(out, 'resources/installer/Unbounded.ttf'));
 const csc = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe';
 const wpfLib = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\WPF';
@@ -81,7 +86,7 @@ if (cscResult.status !== 0) throw new Error('Failed to compile ModernInstaller.e
 console.log('Publishing Core service...');
 const dotnet = process.env.SHIELD_DOTNET || path.join(root, '.tools/dotnet/dotnet.exe');
 const publish = spawnSync(dotnet, ['publish', 'src/service/EgoistShield.Service.csproj', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:PublishSingleFile=true', '-p:EnableCompressionInSingleFile=true', '-o', path.join(out, 'resources/core-service/win-x64'), '-v', 'quiet'], { windowsHide: true, env: { ...process.env, DOTNET_ROOT: path.dirname(dotnet), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' }, encoding: 'utf8' });
-await fs.writeFile(path.join(evidence, 'core-publish.txt'), publish.stdout + publish.stderr);
+await fs.writeFile(path.join(evidence, 'core-publish.txt'), [publish.stdout ?? '', publish.stderr ?? '', publish.error?.message ?? ''].join(''));
 if (publish.status !== 0) throw new Error('Core publish failed; see ' + path.join(evidence, 'core-publish.txt'));
 console.log('Configuring NSIS...');
 const makensis = process.env.SHIELD_MAKENSIS || path.join(process.env.LOCALAPPDATA, 'electron-builder/Cache/nsis-3.0.4.1/nsis-3.0.4.1-1mx3n/Bin/makensis.exe');
@@ -90,8 +95,12 @@ const setupCandidate=path.join(root,'dist',`EgoistShield-Setup-${pkg.version}.bu
 await fs.rm(path.join(root, 'dist', 'EgoistShield-Setup-Lagom.exe'), { force: true });
 await retryWindowsFileOperation(() => fs.rm(setupCandidate, { force: true }));
 console.log('Running makensis compression...');
+const setupSource = await fs.readFile('src/installer/setup.nsi', 'utf8');
+const setupSourceWithBom = '\uFEFF' + setupSource.replace(/^\uFEFF/, '');
+const generatedSetup = path.join(evidence, 'setup.utf8.nsi');
+await fs.writeFile(generatedSetup, setupSourceWithBom, 'utf8');
 const installerCode = await new Promise((resolve, reject) => {
-  const child = spawn(makensis, ['/V2', `/DPRODUCT_VERSION=${pkg.version}`, `/DPAYLOAD=${out}`, `/DOUTPUT=${setupCandidate}`, 'src/installer/setup.nsi'], { stdio: 'inherit' });
+  const child = spawn(makensis, ['/V2', '/INPUTCHARSET', 'UTF8', `/DPRODUCT_VERSION=${pkg.version}`, `/DPAYLOAD=${out}`, `/DOUTPUT=${setupCandidate}`, generatedSetup], { stdio: 'inherit' });
   child.on('error', reject);
   child.on('close', resolve);
 });
@@ -150,12 +159,10 @@ const requiredPayloadFiles = [
   'resources/component-worker.cjs',
   'resources/core-service/win-x64/EgoistShield.Service.exe',
   'resources/runtime/manifest.json',
-  'resources/release/root-public-key.pem',
-  'resources/release/release-key-registry.json',
-  'resources/release/release-key-registry.json.sig',
   'resources/gravityless-dns/dnscrypt-proxy.exe',
   'resources/gravityless-dns/dnscrypt-proxy.toml',
   'resources/installer/owned-cleanup.ps1',
+  'resources/installer/invoke-final-silent-reinstall.ps1',
   'resources/installer/ModernInstaller.exe'
 ];
 const payload = [];

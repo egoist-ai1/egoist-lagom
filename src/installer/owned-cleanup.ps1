@@ -1,5 +1,5 @@
 ﻿param(
-  [ValidateSet("PreInstall", "PostInstall", "VerifyInstall", "Uninstall", "RollbackUpgrade", "Recover", "FreeFiles", "GuardFiles", "StartServices", "InstallCoreService", "RegistrationSelfTest", "QuarantineRetrySelfTest", "SelfTest")]
+  [ValidateSet("CheckInstallSafety", "PreInstall", "PostInstall", "VerifyInstall", "Uninstall", "RollbackUpgrade", "Recover", "FreeFiles", "GuardFiles", "StartServices", "InstallCoreService", "RegistrationSelfTest", "QuarantineRetrySelfTest", "SelfTest")]
   [string]$Phase = "PreInstall",
   [string]$InstallRoot = "",
   # Для фазы StartServices: имена служб, которые работали до установки.
@@ -583,6 +583,76 @@ function Stop-AllServicesFromOwnedRoots {
   }
 }
 
+function Test-OnlyLoopbackDnsServers {
+  param([object[]]$ServerAddresses)
+
+  $parsed = @()
+  foreach ($address in @($ServerAddresses)) {
+    if ($null -eq $address) { continue }
+    $candidate = ([string]$address).Trim().TrimStart("[").TrimEnd("]")
+    if (-not $candidate) { continue }
+    $scopeSeparator = $candidate.IndexOf("%")
+    if ($scopeSeparator -ge 0) { $candidate = $candidate.Substring(0, $scopeSeparator) }
+    $ip = $null
+    if ([Net.IPAddress]::TryParse($candidate, [ref]$ip)) { $parsed += $ip }
+  }
+
+  if ($parsed.Count -eq 0) { return $false }
+  foreach ($ip in $parsed) {
+    if (-not [Net.IPAddress]::IsLoopback($ip)) { return $false }
+  }
+  return $true
+}
+
+function Test-RunningOwnedSystemDoh {
+  try {
+    $service = Get-CimInstance Win32_Service -Filter "Name='EgoistShieldSystemDoH'" -ErrorAction Stop
+    return ($null -ne $service -and [string]$service.State -eq "Running")
+  } catch {
+    throw "Cannot verify the EgoistShieldSystemDoH service state: $($_.Exception.Message)"
+  }
+}
+
+function Get-CriticalLoopbackDnsInterfaces {
+  $activeAdapters = @(Get-NetAdapter -IncludeHidden -ErrorAction Stop |
+    Where-Object { [string]$_.Status -eq "Up" })
+  if ($activeAdapters.Count -eq 0) { return @() }
+
+  $dnsRecords = @(Get-DnsClientServerAddress -ErrorAction Stop)
+  $critical = @()
+  foreach ($adapter in $activeAdapters) {
+    $interfaceIndex = [int]$adapter.ifIndex
+    if ($interfaceIndex -le 0) { continue }
+    $servers = @($dnsRecords |
+      Where-Object { [int]$_.InterfaceIndex -eq $interfaceIndex } |
+      ForEach-Object { @($_.ServerAddresses) })
+    if (Test-OnlyLoopbackDnsServers $servers) {
+      $critical += [pscustomobject]@{
+        interfaceIndex = $interfaceIndex
+        interfaceAlias = [string]$adapter.Name
+      }
+    }
+  }
+  return @($critical)
+}
+
+function Test-InstallMayStopOwnedRuntimes {
+  try {
+    if (-not (Test-RunningOwnedSystemDoh)) { return $true }
+    $criticalInterfaces = @(Get-CriticalLoopbackDnsInterfaces)
+  } catch {
+    Write-Error "LOCAL_DNS_SAFETY_CHECK_FAILED: $($_.Exception.Message)" -ErrorAction Continue
+    return $false
+  }
+
+  if ($criticalInterfaces.Count -eq 0) { return $true }
+  $labels = @($criticalInterfaces | ForEach-Object {
+    if ($_.interfaceAlias) { "$($_.interfaceAlias) [$($_.interfaceIndex)]" } else { "interface $($_.interfaceIndex)" }
+  })
+  Write-Error ("LOCAL_DNS_DEPENDENCY: Windows depends exclusively on the running Egoist Shield local DNS resolver on " + ($labels -join ", ") + ". The installer stopped before changing services, DNS, files, or settings.") -ErrorAction Continue
+  return $false
+}
+
 function Stop-AllOwnedRuntimes {
   foreach ($service in $legacyOwnedServices) { Stop-OwnedService $service $true }
   foreach ($service in $sharedNameServices) { Stop-OwnedService $service $true }
@@ -1142,11 +1212,11 @@ function Install-CoreService {
       "create", $serviceName,
       "binPath=", "`"$serviceExe`"",
       "start=", "auto",
-      "DisplayName=", "Egoist Lagom Core Service"
+      "DisplayName=", "Egoist Shield Core Service"
     ) "core-create")
     [void](Invoke-CheckedExternal $scExe @(
       "description", $serviceName,
-      "Transactional control of Egoist Lagom network settings and background services"
+      "Transactional control of Egoist Shield DNS and owned background services"
     ) "core-description")
     [void](Invoke-CheckedExternal $scExe @(
       "failure", $serviceName,
@@ -3335,11 +3405,20 @@ switch ($Phase) {
   "SelfTest" {
     Invoke-SelfTest
   }
+  "CheckInstallSafety" {
+    if (-not (Test-InstallMayStopOwnedRuntimes)) { exit 54 }
+    Write-Output "INSTALL-SAFETY: PASSED"
+    exit 0
+  }
   "PreInstall" {
     if (-not (Test-InstallRootUnderProgramFiles $installRoot)) {
       Write-Error "Install root must be a dedicated non-system directory: $installRoot"
       exit 45
     }
+    # Direct and silent NSIS runs do not pass through the branded wrapper.
+    # Refuse before recovery, snapshots, service stops, or network writes when
+    # the active Windows DNS path would disappear with SystemDoH.
+    if (-not (Test-InstallMayStopOwnedRuntimes)) { exit 54 }
     # Незавершённое предыдущее обновление доводится до конца ДО нового:
     # иначе маркер карантина заблокировал бы установку, а старая версия
     # осталась бы лежать в стороне.
@@ -3457,7 +3536,7 @@ switch ($Phase) {
         Invoke-CoreOwnedDnsCleanup
         Remove-OptionalOwnedServices
         # Every successful install requires a new explicit connection choice.
-        Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.1" } | ConvertTo-Json -Compress)
+        Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.7" } | ConvertTo-Json -Compress)
         Write-Journal "optional-components-left-off" @{}
         Assert-InstalledCandidateRuntime -BeforeCommit
         Discard-OwnedNetworkArtifacts
@@ -3497,6 +3576,9 @@ switch ($Phase) {
     # дублировала эту логику своим inline-скриптом, который глушил процессы и
     # удалял драйверы WinDivert по одному имени. Теперь оболочка и NSIS
     # используют один и тот же ownership-aware код.
+    # ModernInstaller calls this phase before NSIS. Keep the same fail-closed
+    # guard here so an older or alternate wrapper cannot create a DNS outage.
+    if (-not (Test-InstallMayStopOwnedRuntimes)) { exit 54 }
     $running = Get-RunningOwnedServiceNames
     Stop-AllOwnedRuntimes
     Unload-OwnedWinDivertDriver
@@ -3616,7 +3698,7 @@ switch ($Phase) {
       Remove-OptionalOwnedServices
       Write-Journal "optional-components-left-off" @{}
       Discard-OwnedNetworkArtifacts
-      Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.1" } | ConvertTo-Json -Compress)
+      Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.7" } | ConvertTo-Json -Compress)
       Complete-UpgradeQuarantine
       Write-Output "RECOVER: committed"
       exit 0

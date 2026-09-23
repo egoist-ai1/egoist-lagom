@@ -21,6 +21,10 @@ var KNOWN_NATIVE_DOH_SERVERS = {
 	"dns.adguard-dns.com": ["94.140.14.14", "94.140.15.15"],
 	"dns.adguard.com": ["94.140.14.14", "94.140.15.15"]
 };
+var SYSTEM_DOH_FALLBACKS = [
+	{ url: "https://cloudflare-dns.com/dns-query", host: "cloudflare-dns.com", addresses: ["1.1.1.1", "1.0.0.1"] },
+	{ url: "https://dns.google/dns-query", host: "dns.google", addresses: ["8.8.8.8", "8.8.4.4"] }
+];
 /**
 * Node's DNS resolver can inherit a long OS-level timeout when a new network
 * profile has no reachable resolver yet. System DoH bootstrap must fail over
@@ -109,11 +113,16 @@ async function resolveSystemDohNativeServers(url) {
 function buildSystemDohXrayConfig(options) {
 
 	const localPort = options.localPort ?? 53;
-	const bootstrapHosts = Object.fromEntries(Object.entries(options.bootstrapHosts ?? {}).filter(([host, addresses]) => host && Array.isArray(addresses) && addresses.length > 0));
+	const primary = buildXrayLocalDohServerUrl(options.url);
+	const fallbacks = SYSTEM_DOH_FALLBACKS.filter((item) => item.url !== primary);
+	const bootstrapHosts = Object.fromEntries([
+		...Object.entries(options.bootstrapHosts ?? {}),
+		...fallbacks.map((item) => [item.host, item.addresses])
+	].filter(([host, addresses]) => host && Array.isArray(addresses) && addresses.length > 0));
 	const hasBootstrapHosts = Object.keys(bootstrapHosts).length > 0;
 	return `${JSON.stringify({
 		log: {
-			loglevel: "info",
+			loglevel: "warning",
 			error: options.logPath
 		},
 		inbounds: [options.localAddress, ...(options.localAddress === "127.0.0.1" ? ["::1"] : [])].map((address, index) => ({
@@ -150,8 +159,8 @@ function buildSystemDohXrayConfig(options) {
 		dns: {
 			tag: "doh-upstream",
 			...hasBootstrapHosts ? { hosts: bootstrapHosts } : {},
-			servers: [buildXrayLocalDohServerUrl(options.url)],
-			disableFallback: true,
+			servers: [primary, ...fallbacks.map((item) => item.url)].map((address) => ({ address, timeoutMs: 2500 })),
+			disableFallback: false,
 			queryStrategy: "UseIP"
 		}
 	}, null, 2)}\n`;

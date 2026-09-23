@@ -23,17 +23,17 @@ function useComponentService(manager, component, coreService) {
   }
   if (component === 'Zapret') {
     manager.autoSelectBestProfile = async onProgress => {
+      const voiceTarget = await manager.readRecentDiscordVoiceControlTarget();
       let polling = false;
-      let active = true;
       const timer = setInterval(async () => {
         if (polling) return;
         polling = true;
-        try { const value = await manager.autoSelectProgress(); if (active && value) onProgress?.(value); }
+        try { const value = await manager.autoSelectProgress(); if (value) onProgress?.(value); }
         catch { /* The mutation itself reports connection errors. */ }
         finally { polling = false; }
       }, 600);
-      try { return await coreService.request('component.execute', { component, method: 'autoSelectBestProfile', args: [] }); }
-      finally { active = false; clearInterval(timer); }
+      try { return await coreService.request('component.execute', { component, method: 'autoSelectBestProfile', args: [voiceTarget] }); }
+      finally { clearInterval(timer); }
     };
   }
   return manager;

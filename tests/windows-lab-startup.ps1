@@ -6,7 +6,7 @@ $key='HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'
 $beforeProxy=Get-ItemProperty $key | Select-Object ProxyEnable,ProxyServer,ProxyOverride,AutoConfigURL
 $beforeDns=@(Get-DnsClientServerAddress | Select-Object InterfaceIndex,AddressFamily,ServerAddresses)
 # Electron 41.10.4 loads package.json productName before user main.js runs.
-# Window branding is Egoist Lagom; the existing AppData directory is retained for upgrade compatibility.
+# The verified productName is `Egoist Shield`; package name remains diagnostic-only.
 $statePath=Join-Path $env:APPDATA 'Egoist Shield\egoistshield-state.json'
 # configureLoggerPaths() routes the packaged main process to this exact file.
 $bootLogPath=Join-Path $env:APPDATA 'Egoist Shield\logs\main.log'
@@ -166,7 +166,7 @@ function Get-StartupDiagnostics {
   }
 }
 
-$existingUi=@(Get-InstalledUiProcesses | Where-Object {$_.MainWindowHandle -ne 0 -and $_.MainWindowTitle -in @('Egoist Lagom','Error')})
+$existingUi=@(Get-InstalledUiProcesses | Where-Object {$_.MainWindowHandle -ne 0 -and $_.MainWindowTitle -in @('Egoist Shield','Error')})
 if($existingUi.Count -gt 0){throw 'Installed UI is already running; refusing a stale-log startup result'}
 # Compile the harness helper before launch so it does not compete with cold app startup.
 Initialize-WindowCapture
@@ -215,7 +215,7 @@ try {
     $logReady=Get-BootReadiness $script:launchStartedLocal
     $stateReady=Test-Path -LiteralPath $statePath -PathType Leaf
     $current=Get-Process -Id $process.Id -ErrorAction SilentlyContinue
-    $windowReady=($current -and [Int64]$current.MainWindowHandle -ne 0 -and $current.MainWindowTitle -eq 'Egoist Lagom')
+    $windowReady=($current -and [Int64]$current.MainWindowHandle -ne 0 -and $current.MainWindowTitle -eq 'Egoist Shield')
     if($windowReady -and -not $guestForeground){
       # Target only the installed app inside this disposable guest, never the host desktop.
       [void][ShieldLab.WindowCapture]::ShowWindowAsync($current.MainWindowHandle,9)

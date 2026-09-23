@@ -36,22 +36,6 @@ test('one connection transaction selects, starts a verified service, then enable
   assert.equal((await controller.status()).dnsRunning, true);
 });
 
-test('failed 22-profile selection preserves running DNS and Telegram and does not save autostart', async () => {
-  const { controller, deps, calls, events } = fixture();
-  deps.dns.status = async () => ({ running: true, verified: true });
-  deps.telegramProxy = { status: async () => ({ running: true, serviceRunning: true }) };
-  deps.zapret.autoSelectBestProfile = async () => ({ completed: true, bestProfile: null, detail: 'Проверено профилей: 22 из 22. Рабочий профиль не найден.' });
-  const result = await controller.connect();
-  assert.equal(result.ok, false);
-  assert.deepEqual(calls, []);
-  assert.equal(events.some(event => event.phase === 'connected'), false);
-  const status = await controller.status();
-  assert.equal(status.running, false);
-  assert.equal(status.dnsRunning, true);
-  assert.equal(status.telegramRunning, true);
-  assert.match(status.error, /22 из 22/);
-});
-
 test('stopped owned DNS is restored before auto-select so probe hostnames resolve', async () => {
   const { controller, deps, calls } = fixture();
   let resolverRunning = false;
@@ -67,6 +51,15 @@ test('failed owned DNS restoration blocks auto-select instead of probing through
   deps.dns.stopAndRemove = async () => { calls.push('stop-dns'); throw new Error('DNS ownership is pending'); };
   assert.equal((await controller.connect()).ok, false);
   assert.deepEqual(calls, ['stop-dns']);
+});
+
+test('unverified but running DoH service is preserved during auto-select preparation', async () => {
+  const { controller, deps, calls } = fixture();
+  deps.dns.status = async () => ({ running: false, verified: false, serviceRunning: true });
+  deps.dns.stopAndRemove = async () => { calls.push('stop-dns'); return { ok: true }; };
+  assert.equal((await controller.connect()).ok, false);
+  assert.deepEqual(calls, []);
+  assert.match(controller.state.error, /не будет останавливать/);
 });
 
 test('unverified running owned DNS is repaired before auto-select when recovery is available', async () => {

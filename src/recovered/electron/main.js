@@ -33,6 +33,7 @@ function toPublicUpdateResult(result) {
 var desktopUpdater = new DesktopUpdater({
 	currentVersion: app.getVersion(),
 	userDataDir: USER_DATA_DIR,
+	resourcesPath: process.resourcesPath,
 	onProgress: (progress) => {
 		mainWindow?.webContents.send("update-progress", progress);
 	}
@@ -72,11 +73,21 @@ async function runBackgroundUpdateCheck() {
 	if (!autoUpdateEnabled) return;
 	const result = toPublicUpdateResult(await desktopUpdater.check());
 	emitUpdateResult(result);
-	if (result.phase === "available" && result.latestVersion && Notification.isSupported() && globalStateStore?.get()?.settings?.notifications !== false) new Notification({
-		title: "Egoist Lagom: обновление",
-		body: `Доступна доверенная версия ${result.latestVersion}. Установите её одной кнопкой в настройках.`,
-		silent: true
-	}).show();
+	if (result.phase === "available" && result.latestVersion && autoUpdateEnabled && !desktopUpdater.installPromise) {
+		if (Notification.isSupported() && globalStateStore?.get()?.settings?.notifications !== false) new Notification({
+			title: "Egoist Lagom: обновление",
+			body: `Доверенная версия ${result.latestVersion} загружается и будет установлена с сохранением сетевых настроек.`,
+			silent: true
+		}).show();
+		const installed = toPublicUpdateResult(await desktopUpdater.checkAndInstall());
+		emitUpdateResult(installed);
+		if (installed.phase === "restarting") scheduleDeferredStartup(() => {
+			isQuitting = true;
+			app.quit();
+		}, 750);
+		else if (!installed.ok) logger.warn(`[updater] Automatic installation failed: ${installed.failureCode ?? "unknown"}`);
+		return;
+	}
 	if (result.phase === "failed" || result.phase === "blocked") logger.warn(`[updater] Background check ${result.phase}: ${result.failureCode ?? "unknown"}`);
 	else logger.info(`[updater] Background check: ${result.phase}, latest=${result.latestVersion ?? "none"}`);
 }
@@ -90,7 +101,7 @@ function setupAutoUpdater() {
 	}, 1e4);
 	updateCheckInterval = setInterval(() => {
 		runBackgroundUpdateCheck();
-	}, 14400 * 1e3);
+	}, 86400 * 1e3);
 	logger.info(`[updater] Signed stable channel configured, current=${app.getVersion()}`);
 }
 ipcMain.handle("updater:check", async (event) => {
@@ -148,40 +159,79 @@ ipcMain.handle("updater:set-auto", async (event, enabled) => {
 	} else if (enabled && !updateCheckInterval && app.isPackaged) {
 		updateCheckInterval = setInterval(() => {
 			runBackgroundUpdateCheck();
-		}, 14400 * 1e3);
+		}, 86400 * 1e3);
 		runBackgroundUpdateCheck();
+		scheduleDeferredStartup(() => checkManagedComponentUpdates(), 2e4);
 	}
 	return enabled;
 });
+var componentUpdateInFlight = false;
+function reportComponentUpdate(message, phase, percent) {
+	mainWindow?.webContents.send("update-progress", { phase, message, percent });
+	if (["up-to-date", "failed"].includes(phase) && Notification.isSupported() && globalStateStore?.get()?.settings?.notifications !== false) new Notification({
+		title: phase === "failed" ? "Egoist Lagom: обновление не завершено" : "Egoist Lagom: компонент обновлён",
+		body: message,
+		silent: true
+	}).show();
+}
 async function checkManagedComponentUpdates() {
+	if (!autoUpdateEnabled || componentUpdateInFlight || desktopUpdater.installPromise) return;
+	componentUpdateInFlight = true;
+	const results = [];
+	let failures = 0;
 	try {
-		if (globalZapretManager) {
-			if ((await globalZapretManager.status()).updateChecksEnabled) {
-				const info = await globalZapretManager.checkForUpdates();
-				if (info.updateAvailable && info.latestVersion && notifiedComponentVersions.get("zapret-core") !== info.latestVersion) {
-					notifiedComponentVersions.set("zapret-core", info.latestVersion);
-					if (Notification.isSupported() && globalStateStore?.get()?.settings?.notifications !== false) new Notification({
-						title: "Egoist Lagom: Flowseal Core",
-						body: `Доступно обновление ${info.latestVersion}`,
-						silent: true
-					}).show();
+		if (globalZapretManager && (await globalZapretManager.status()).updateChecksEnabled) {
+			const info = await globalZapretManager.checkForUpdates();
+			if (info.updateAvailable && info.latestVersion && info.releaseVerified === true) {
+				const vpnConnected = Boolean((await globalRuntimeManager?.status())?.connected);
+				if (vpnConnected) logger.info(`[updates] Flowseal Core ${info.latestVersion} deferred until the VPN disconnects.`);
+				else {
+					reportComponentUpdate(`Обновляем Flowseal Core до ${info.latestVersion}…`, "installing", 0);
+					let lastProgressPercent = -5;
+					try {
+						const updated = await globalNetworkCombinatorManager.runCoordinatedMutation({
+							module: "zapret", action: "install-core-update", requiredLocks: ["packet-interception", "windivert"], conflictsWith: ["traffic-route", "zapret-suspend"]
+						}, async () => {
+							if ((await globalRuntimeManager?.status())?.connected) throw new Error("VPN подключён; обновление Flowseal отложено.");
+							return globalZapretManager.installCoreUpdate(({ percent }) => {
+								if (percent >= lastProgressPercent + 5 || percent === 100) {
+									lastProgressPercent = percent;
+									reportComponentUpdate(`Загружаем проверенный Flowseal Core ${info.latestVersion}…`, "downloading", percent);
+								}
+							});
+						});
+						results.push(`Flowseal Core ${updated.coreVersion ?? info.latestVersion}: обновлён и проверен`);
+					} catch (error) {
+						results.push(`Flowseal Core: не обновлён (${error.message})`);
+						failures += 1;
+						logger.warn("[updates] Flowseal Core automatic update failed:", error);
+					}
 				}
 			}
 		}
-		if (globalTelegramProxyManager && await globalTelegramProxyManager.shouldCheckUpdates()) {
+		if (globalTelegramProxyManager && await globalTelegramProxyManager.shouldCheckUpdates() && !desktopUpdater.installPromise) {
 			const info = await globalTelegramProxyManager.checkForUpdates();
-			if (info.updateAvailable && info.latestVersion && notifiedComponentVersions.get("telegram-proxy") !== info.latestVersion) {
-				notifiedComponentVersions.set("telegram-proxy", info.latestVersion);
-				logger.info(`[updates] Доступно обновление Telegram Proxy ${info.latestVersion} (ожидает ручной установки)`);
-				if (Notification.isSupported() && globalStateStore?.get()?.settings?.notifications !== false) new Notification({
-					title: "Egoist Lagom: Telegram Proxy",
-					body: `Доступно обновление ${info.latestVersion}. Установите его на вкладке Telegram Proxy.`,
-					silent: true
-				}).show();
+			if (info.updateAvailable && info.controlledInstallAllowed && info.latestVersion) {
+				reportComponentUpdate(`Обновляем совместимый Telegram Proxy до ${info.latestVersion}…`, "installing", 0);
+				try {
+					const updated = await globalNetworkCombinatorManager.runCoordinatedMutation({
+						module: "telegram-proxy", action: "install-update", requiredLocks: ["telegram-proxy-port"]
+					}, () => globalTelegramProxyManager.installUpdate());
+					results.push(`Telegram Proxy ${updated.currentVersion ?? info.latestVersion}: обновлён и проверен`);
+				} catch (error) {
+					results.push(`Telegram Proxy: не обновлён (${error.message})`);
+					failures += 1;
+					logger.warn("[updates] Telegram Proxy automatic update failed:", error);
+				}
 			}
 		}
 	} catch (error) {
+		results.push(`Проверка компонентов: не завершена (${error.message})`);
+		failures += 1;
 		logger.warn("[updates] Managed component check failed:", error);
+	} finally {
+		if (results.length > 0) reportComponentUpdate(results.join(" · "), failures > 0 ? "failed" : "up-to-date", failures > 0 ? 0 : 100);
+		componentUpdateInFlight = false;
 	}
 }
 function setupManagedComponentUpdateChecks() {
@@ -580,24 +630,20 @@ function getTrayAssetPath(filename) {
 * загрузки интерфейса, а внутри неё живут `netsh`, `sc.exe` и PowerShell. На
 * зависшем сетевом стеке любой из них не возвращается никогда, и приложение
 * навсегда останавливалось до появления обработчиков: окно открыто, но не
-* отвечает ни одна кнопка. Дедлайн ограничивает ожидание интерфейса, но не
-* отменяет системную операцию. Новые сетевые изменения ждут её завершения.
+* отвечает ни одна кнопка. Просроченный шаг теперь пропускается, а его работу
+* доделывает восстановление после загрузки renderer.
 */
-var pendingBootRecovery = new Set();
 async function withBootDeadline(label, budgetMs, work) {
 	let timer = null;
-	const pending = Promise.resolve().then(work);
-	pendingBootRecovery.add(pending);
-	pending.then(() => pendingBootRecovery.delete(pending), () => pendingBootRecovery.delete(pending));
 	const deadline = new Promise((resolve) => {
 		timer = setTimeout(() => {
-			logger.error(`[boot] ${label} exceeded ${Math.round(budgetMs / 1e3)} s; recovery continues while the interface starts.`);
+			logger.error(`[boot] ${label} exceeded ${Math.round(budgetMs / 1e3)} s and was skipped; the app continues to start.`);
 			resolve(null);
 		}, budgetMs);
 		timer.unref?.();
 	});
 	try {
-		return await Promise.race([pending, deadline]);
+		return await Promise.race([work(), deadline]);
 	} catch (error) {
 		logger.warn(`[boot] ${label} failed:`, error);
 		return null;
@@ -733,7 +779,6 @@ function stopDnsWatchdog() {
 	dnsWatchdogConsecutiveFailures = 0;
 }
 async function recoverBackgroundFeaturesAfterRendererLoad(loadedState) {
-	await Promise.allSettled([...pendingBootRecovery]);
 	logger.info("[boot] background recovery:start");
 	const usesLoopbackDns = isGravitylessLoopbackDnsRequest(String(loadedState.settings.systemDnsServers ?? ""));
 	const recoverDns = async () => {
@@ -935,7 +980,7 @@ async function createMainWindow() {
 	if (!globalTelegramProxyManager) globalTelegramProxyManager = useComponentService(new TelegramProxyManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "TelegramProxy"), coreService), "TelegramProxy", coreService);
 	await reconcileOwnedSystemStateBeforeUi();
 	logger.info("[boot] registering IPC handlers");
-	globalNetworkCombinatorManager = await registerIpcHandlers(mainWindow, stateStore, globalRuntimeManager, globalGravitylessDnsManager, globalSystemDohManager, globalZapretManager, globalTelegramProxyManager, () => pendingBootRecovery.size === 0);
+	globalNetworkCombinatorManager = await registerIpcHandlers(mainWindow, stateStore, globalRuntimeManager, globalGravitylessDnsManager, globalSystemDohManager, globalZapretManager, globalTelegramProxyManager);
 	logger.info("[boot] IPC handlers registered");
 	logger.info("[boot] loading persisted state");
 	const loadedState = await stateStore.load();

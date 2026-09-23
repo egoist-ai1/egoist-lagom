@@ -26,6 +26,27 @@ test('DoH accepts HTTPS and loopback addresses only', () => {
   assert.throws(() => request('SystemDoH', 'apply', ['http://dns.google/dns-query']));
   assert.throws(() => request('SystemDoH', 'apply', ['https://dns.google/dns-query', '0.0.0.0']));
 });
+test('auto-select accepts only a Discord voice endpoint from the interactive desktop', () => {
+  const target = { key: 'DiscordVoiceControl', label: 'Discord Voice TCP', url: 'https://c-waw03-80dae1ab.discord.media:2083/', voiceControl: true };
+  assert.equal(request('Zapret', 'autoSelectBestProfile', [target]).args[0].url, target.url);
+  assert.equal(request('Zapret', 'autoSelectBestProfile', [null]).args[0], undefined);
+  for (const url of ['https://example.com:2083/', 'http://c-waw03.discord.media:2083/', 'https://c-waw03.discord.media:443/', 'https://c-waw03.discord.media:2083/a']) {
+    assert.throws(() => request('Zapret', 'autoSelectBestProfile', [{ ...target, url }]));
+  }
+});
+test('desktop facade passes its fresh Discord voice target to the Core worker', async () => {
+  const calls = [];
+  const target = { key: 'DiscordVoiceControl', label: 'Discord Voice TCP', url: 'https://c-waw03.discord.media:2083/', voiceControl: true };
+  const sandbox = vm.createContext({ componentOperations: () => ({ Zapret: { autoSelectBestProfile: true } }), COMPONENT_QUERIES: new Set(), setInterval, clearInterval });
+  vm.runInContext(fs.readFileSync('src/component-facade.js', 'utf8') + '\nglobalThis.wrap = useComponentService;', sandbox);
+  const manager = { async readRecentDiscordVoiceControlTarget() { return target; } };
+  const coreService = { async request(action, request) { calls.push({ action, request }); return { completed: true }; } };
+  const facade = sandbox.wrap(manager, 'Zapret', coreService);
+  await facade.autoSelectBestProfile(() => {});
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].action, 'component.execute');
+  assert.equal(calls[0].request.args[0].url, target.url);
+});
 test('built worker rejects malformed requests without performing system operations', async () => {
   const child = spawn(process.execPath, ['.vite/build/component-worker.cjs'], { windowsHide: true, stdio: ['pipe','pipe','pipe'] });
   let stdout = '', stderr = '';

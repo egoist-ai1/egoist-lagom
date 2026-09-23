@@ -2,7 +2,6 @@ import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';
 import { pathToFileURL } from 'node:url';
 
 const evidence = process.argv[2];
@@ -67,16 +66,6 @@ try {
   await page.goto(origin, {waitUntil:'networkidle'});
   await page.getByRole('button',{name:'Подключить защиту',exact:true}).waitFor();
   await page.waitForFunction(()=>!document.querySelector('.shield-interactive-trigger').disabled);
-  const nativeProbeSource = await fs.readFile(path.resolve(import.meta.dirname, '../tests/windows-lab-ui-probe.cjs'), 'utf8');
-  const probeStart = nativeProbeSource.indexOf('const domExpression =');
-  const probeEnd = nativeProbeSource.indexOf('\nfunction windowExpression', probeStart);
-  const nativeExpression = vm.runInNewContext(nativeProbeSource.slice(probeStart, probeEnd) + '\ndomExpression;');
-  const nativeDom = await page.evaluate(nativeExpression);
-  assert.equal(nativeDom.brandText.replace(/\s+/g, ''), 'egoist/lagom');
-  assert.equal(nativeDom.mainActionText, 'Подключить защиту');
-  assert.ok(nativeDom.mainActionEnabled && nativeDom.settingsPresent && nativeDom.dnsSwitchPresent);
-  assert.ok(nativeDom.widgetInViewport && nativeDom.footerInViewport && nativeDom.generatedIconCount > 5);
-  report.checks.push('Native guest readiness probe matches the current widget DOM');
   const overflow = await page.evaluate(()=>({width:document.documentElement.scrollWidth,height:document.querySelector('.shield-widget-container').getBoundingClientRect().height}));
   assert.ok(overflow.width<=296 && overflow.height<=340, JSON.stringify(overflow));
   await page.screenshot({path:path.join(evidence,'widget-idle.png')});

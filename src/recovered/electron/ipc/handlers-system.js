@@ -1268,7 +1268,8 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			}
 			try {
 				const rollbackSnapshot = await createDnsMutationRollbackSnapshot("system-doh-apply");
-				if (!mock) await systemDohManager.stopAndRemove();
+				// The manager keeps an already active resolver online and rejects an
+				// unsafe upstream switch before changing service or adapter state.
 				if (!mock && gravitylessDnsManager && switchingFromGravityless) {
 					const gravitylessBefore = await gravitylessDnsManager.status({ force: true });
 					gravitylessWasRunning = gravitylessBefore.running;
@@ -1283,9 +1284,6 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 				if (!mock && startedStatus.nativeManaged !== true) try {
 					await setSystemDnsThroughCurrentOwner(startedStatus.localAddress, false, SYSTEM_DOH_VERIFICATION_DOMAINS);
 				} catch (error) {
-					await systemDohManager.stopAndRemove().catch((stopError) => {
-						logger.warn("[system-doh] Failed to stop runtime after DNS apply error:", stopError);
-					});
 					if (gravitylessWasRunning && gravitylessDnsManager) await gravitylessDnsManager.ensureRunning().catch((restoreError) => {
 						logger.warn("[system-doh] Failed to restore Gravityless after DNS apply error:", restoreError);
 					});
@@ -1426,14 +1424,12 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 	});
 	const shield = new ShieldConnectionController({
 		zapret: zapretManager,
-		onSelection: result => recordZapretSelectionHistory(result),
 		dns: systemDohManager,
 		vpn: runtimeManager,
 		telegramProxy: telegramProxyManager,
 		applyDns: async () => {
 			const targetUrl = stateStore.get().settings.systemDohUrl || "https://cloudflare-dns.com/dns-query";
 			const persistedState = stateStore.get();
-			await systemDohManager.stopAndRemove();
 			const startedStatus = await systemDohManager.apply(targetUrl, persistedState.settings.systemDohLocalAddress);
 			if (startedStatus?.localAddress && startedStatus.nativeManaged !== true) {
 				await setSystemDnsThroughCurrentOwner(startedStatus.localAddress, false, SYSTEM_DOH_VERIFICATION_DOMAINS);

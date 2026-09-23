@@ -65,7 +65,6 @@ var NetworkCombinatorManager = class {
 	mutationReleaseWaiters = /* @__PURE__ */ new Set();
 	mutationSequence = 0;
 	constructor(options) {
-		this.isNetworkReady = options.isNetworkReady ?? (() => true);
 		this.isElevated = options.isElevated;
 		this.moduleInspectors = options.moduleInspectors ?? {};
 	}
@@ -162,7 +161,6 @@ var NetworkCombinatorManager = class {
 		};
 	}
 	async runCoordinatedMutation(intent, operation) {
-		if (!this.isNetworkReady()) throw new Error("Завершается восстановление сети после запуска. Повторите действие через несколько секунд.");
 		const normalized = {
 			module: intent.module,
 			action: intent.action,

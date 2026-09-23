@@ -6,7 +6,7 @@ export async function prepareComponents(out, version) {
   const candidates = path.resolve('recovery/component-candidates');
   const updates = [
     { name: 'sing-box', version: 'v1.14.0', archive: 'sing-box-1.14.0-windows-amd64', sha256: '3ffb56267da14e287be48bd10cf7e6505260125bad940b75101fbb4d5d58e5d6' },
-    { name: 'zapret', version: '1.10.2', archive: 'zapret-discord-youtube-1.10.2', sha256: '5eaac9fb2e4b1abd693487452a3ff3f4dfe9578a45f9ddddfa4bc1f5a6bb62d5' },
+    { name: 'zapret', version: '1.10.3', archive: 'zapret-discord-youtube-1.10.3', sha256: '244314ae1c24538a0d751601da8e0c925c843371eec4456eb15f14c4fd6b7058' },
   ];
   for (const update of updates) {
     const bytes = await fs.readFile(path.join(candidates, update.archive + '.zip'));
@@ -19,6 +19,8 @@ export async function prepareComponents(out, version) {
       if (!core.startsWith(runtime + path.sep)) throw new Error('Unexpected runtime destination');
       await fs.rm(core, { recursive: true, force: true });
       await fs.cp(source, core, { recursive: true });
+      await fs.copyFile('src/zapret/general (EGOIST MIX).bat', path.join(core, 'general (EGOIST MIX).bat'));
+      await fs.copyFile('src/zapret/list-egoist-discord.txt', path.join(core, 'lists/list-egoist-discord.txt'));
     }
     await fs.writeFile(path.join(target,'VERSION.txt'), update.version + '\n');
   }

@@ -2,7 +2,7 @@
   <img src="docs/brand/lagom-mark.svg" width="76" alt="Egoist Lagom" />
   <h1>Egoist Lagom</h1>
   <p><strong>Спокойный командный центр сетевых настроек Windows.</strong></p>
-  <p>Лаконичный чёрно-белый интерфейс, локальные профили соединения, DNS/DoH, Telegram Relay и понятное обслуживание служб.</p>
+  <p>Лаконичный чёрно-белый интерфейс, локальные профили соединения, DNS/DoH, Telegram Proxy и понятное обслуживание служб.</p>
 
   <p>
     <a href="https://github.com/egoist-ai1/egoist-lagom/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/egoist-ai1/egoist-lagom?display_name=tag&style=for-the-badge&color=111111" /></a>
@@ -13,12 +13,13 @@
 
   <p>
     <a href="https://github.com/egoist-ai1/egoist-lagom/releases/latest"><strong>Скачать Egoist Lagom</strong></a>
-    · <a href="docs/validation.md">Проверка</a>
+    · <a href="docs/validation-3.7.7.md">Проверка 3.7.7</a>
+    · <a href="docs/release-notes-3.7.7.md">Что нового</a>
     · <a href="docs/troubleshooting.md">Решение проблем</a>
   </p>
 </div>
 
-![Главный экран Egoist Lagom](docs/screenshots/settings.png)
+![Главный экран Egoist Lagom](docs/screenshots/dashboard-settings.png)
 
 Egoist Lagom создан для людей, которым нужен быстрый и аккуратный контроль локальных сетевых настроек. Все необязательные компоненты выключены после чистой установки и включаются только по действию пользователя.
 
@@ -26,18 +27,12 @@ Egoist Lagom создан для людей, которым нужен быст�
 
 - **Профили соединения.** Импорт, выбор и проверка сохранённых конфигураций.
 - **DNS и DoH.** Применение выбранных адресов, проверка readback и восстановление исходных параметров адаптера.
-- **Telegram Relay.** Локальная служба для Telegram с проверкой порта, состояния и журнала.
+- **Telegram Proxy.** Локальная служба для Telegram с проверкой порта, состояния и журнала.
 - **Службы Windows.** Установка, запуск, остановка и удаление собственных служб через один транзакционный Core.
 - **Восстановление.** Возврат только изменений Egoist Lagom с сохранением внешних пользовательских настроек.
 - **Диагностика.** Локальные журналы, компактные результаты проверок и нейтральные сообщения об ошибках.
 
 ## Интерфейс
-
-<p align="center"><img src="docs/screenshots/widget.png" width="296" alt="Компактный виджет Egoist Lagom" /></p>
-
-![Профили и история проверок](docs/screenshots/profiles.png)
-
-Скриншоты сняты с текущего интерфейса в изолированной тестовой среде.
 
 Все экраны используют одну систему: чёрный фон, белая типографика, тонкие серые границы и короткие анимации на `opacity`/`transform`. Узкие окна, клавиатурный фокус, Escape, reduced motion и масштаб 200% входят в проверочный набор.
 
@@ -48,14 +43,14 @@ Egoist Lagom создан для людей, которым нужен быст�
   </tr>
   <tr>
     <td align="center">DNS и проверка соединения</td>
-    <td align="center">Telegram Relay и журнал</td>
+    <td align="center">Telegram Proxy и журнал</td>
   </tr>
 </table>
 
 ## Установка
 
 1. Откройте [последний релиз](https://github.com/egoist-ai1/egoist-lagom/releases/latest).
-2. Скачайте `Egoist-Lagom-Setup.exe` и файл `.sha256` рядом с ним.
+2. Скачайте версионированный `EgoistShield-Setup-3.7.7.exe` и одноимённый файл `.sha256`.
 3. Сверьте SHA-256.
 4. Запустите установщик и подтвердите штатный запрос Windows UAC.
 
@@ -72,26 +67,17 @@ npm test
 npm run package:win
 ```
 
-`npm run package:win` создаёт EXE в `dist/`, автоматически публикует SHA-256 и `package-integrity.json`. Большие generated-папки и локальные ключи исключены из Git.
+`npm run package:win` создаёт EXE, SHA-256 и `package-integrity.json` локально в `dist/`. Большие generated-папки и локальные ключи исключены из Git.
 
 ## Проверка
 
 ```text
-npm test       335/335
-npm audit      0 production vulnerabilities
+npm test       345/345
+UI checks      25/25
 NSIS           exit 0
-Core self-test passed
 ```
 
-Быстрый контур снимает состояние DNS, прокси, служб и процессов до запуска, выполняет проверки во временном каталоге и сравнивает состояние после завершения:
-
-```powershell
-.\scripts\run-fast-validation.ps1 -EvidenceDirectory (Join-Path $env:TEMP 'egoist-lagom-validation')
-```
-
-Для UI-проверок передайте абсолютный путь к установленному `playwright/index.mjs` через `-PlaywrightModule`.
-
-Подробности и границы подтверждения находятся в [docs/validation.md](docs/validation.md). Живые сетевые результаты зависят от конкретной конфигурации Windows и внешних серверов.
+Подробности и границы подтверждения находятся в [проверке 3.7.7](docs/validation-3.7.7.md). Живые сетевые результаты зависят от конкретной конфигурации Windows и внешних серверов.
 
 ## Приватность и лицензия
 

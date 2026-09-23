@@ -4,7 +4,7 @@
   "productName": "Egoist Lagom",
   "author": "EGOIST",
   "description": "Egoist Lagom — спокойное управление сетевыми настройками Windows",
-  "version": "3.7.1",
+  "version": "3.7.7",
   "scripts": {
     "build": "node scripts/build.mjs",
     "package:win": "node scripts/package-windows.mjs",

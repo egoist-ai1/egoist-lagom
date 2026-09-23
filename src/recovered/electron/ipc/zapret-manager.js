@@ -57,7 +57,8 @@ var FLOWSEAL_TRUSTED_RELEASE_ZIP_SHA256 = {
 	"1.9.8c": "49c2901d329c9ef3747c48a9999e73c3fa2fb050aed126b91cac02c6bbea8618",
 	"1.9.9a": "52fba9d0b47c9e8ac89e9714ae344c0c3ba3c4f89a03910d10a75824f0adb3d3",
 	"1.10.0": "6b7c5a66cfd055b8e361f8b5fb00f00b167260f21b1c03d589f6008417fb94a2",
-	"1.10.2": "5eaac9fb2e4b1abd693487452a3ff3f4dfe9578a45f9ddddfa4bc1f5a6bb62d5"
+	"1.10.2": "5eaac9fb2e4b1abd693487452a3ff3f4dfe9578a45f9ddddfa4bc1f5a6bb62d5",
+	"1.10.3": "244314ae1c24538a0d751601da8e0c925c843371eec4456eb15f14c4fd6b7058"
 };
 var FLOWSEAL_TRUSTED_SOURCE_ZIP_SHA256 = { "1.9.9c": "a9834bc30d01f3c682d99ecbb88e305f451ec43b151c8149a13f3d6e81bacbf0" };
 var FLOWSEAL_IPSET_URL = "https://raw.githubusercontent.com/Flowseal/zapret-discord-youtube/refs/heads/main/.service/ipset-service.txt";
@@ -123,53 +124,19 @@ var AUTO_SELECT_TARGETS = [
 		key: "YouTubeImage",
 		label: "YouTube Image",
 		url: "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg"
-	},
-	{
-		key: "GoogleMain",
-		label: "Google Main",
-		url: "https://www.google.com"
-	},
-	{
-		key: "GoogleGstatic",
-		label: "Google Gstatic",
-		url: "https://www.gstatic.com"
-	},
-	{
-		key: "CloudflareWeb",
-		label: "Cloudflare Web",
-		url: "https://www.cloudflare.com"
-	},
-	{
-		key: "CloudflareCDN",
-		label: "Cloudflare CDN",
-		url: "https://cdnjs.cloudflare.com"
-	},
-	{
-		key: "CloudflareDNS1111",
-		label: "Cloudflare DNS 1.1.1.1",
-		pingTarget: "1.1.1.1"
-	},
-	{
-		key: "CloudflareDNS1001",
-		label: "Cloudflare DNS 1.0.0.1",
-		pingTarget: "1.0.0.1"
-	},
-	{
-		key: "GoogleDNS8888",
-		label: "Google DNS 8.8.8.8",
-		pingTarget: "8.8.8.8"
-	},
-	{
-		key: "GoogleDNS8844",
-		label: "Google DNS 8.8.4.4",
-		pingTarget: "8.8.4.4"
-	},
-	{
-		key: "Quad9DNS9999",
-		label: "Quad9 DNS 9.9.9.9",
-		pingTarget: "9.9.9.9"
 	}
 ];
+function parseDiscordVoiceControlTarget(logTail) {
+	const matches = [...String(logTail ?? "").matchAll(/wss:\/\/([a-z0-9-]+\.discord\.media):(2053|2083|2087|2096|8443)\//gi)];
+	const latest = matches.at(-1);
+	if (!latest) return null;
+	return {
+		key: "DiscordVoiceControl",
+		label: "Discord Voice TCP",
+		url: `https://${latest[1].toLowerCase()}:${latest[2]}/`,
+		voiceControl: true
+	};
+}
 var ZAPRET_CURL_FALLBACK_VARIANTS = [
 	{
 		label: "HTTP",
@@ -192,19 +159,13 @@ var ZAPRET_CURL_FALLBACK_VARIANTS = [
 		]
 	}
 ];
-/**
-* Auto-select tuning. The 5.4.0 loop ran the three curl variants strictly one
-* after another (up to 3 x 5 s per target) and pinged every hostname with
-* `-n 3`, so a single dead profile cost ~15-20 s. Running the variants in
-* parallel under a bounded process pool keeps the same evidence (every variant
-* is still recorded in `checks`) while bounding a profile probe by the slowest
-* single request instead of their sum.
-*/
+/* A candidate is judged by ordinary HTTPS to Discord and YouTube only. */
 var ZAPRET_PROBE_HTTP_TIMEOUT_MS = 4e3;
 var ZAPRET_PROBE_PING_COUNT = 2;
 var ZAPRET_PROBE_PING_TIMEOUT_MS = 1500;
 var ZAPRET_PROBE_MAX_PARALLEL = 8;
 var ZAPRET_PROBE_SETTLE_MS = 600;
+var ZAPRET_PROBE_CONFIRM_DELAY_MS = 300;
 var ZAPRET_PROBE_START_TIMEOUT_MS = 15e3;
 var ZAPRET_PROBE_STOP_TIMEOUT_MS = 4e3;
 var ZAPRET_AUTO_SELECT_MEMORY_FILE = ".egoistshield-autoselect.json";
@@ -226,22 +187,26 @@ var DISCORD_CACHE_TARGETS = {
 	discord: {
 		label: "Discord",
 		directoryNames: ["discord", "Discord"],
-		processNames: ["Discord.exe"]
+		processNames: ["Discord.exe", "Update.exe"]
 	},
 	"discord-ptb": {
 		label: "Discord PTB",
 		directoryNames: ["discordptb", "DiscordPTB"],
-		processNames: ["DiscordPTB.exe"]
+		processNames: ["DiscordPTB.exe", "Update.exe"]
 	},
 	"discord-canary": {
 		label: "Discord Canary",
 		directoryNames: ["discordcanary", "DiscordCanary"],
-		processNames: ["DiscordCanary.exe"]
+		processNames: ["DiscordCanary.exe", "Update.exe"]
 	},
 	vesktop: {
 		label: "Vesktop",
 		directoryNames: ["vesktop", "Vesktop"],
-		processNames: ["Vesktop.exe"]
+		processNames: [
+			"vesktop.exe",
+			"Vesktop.exe",
+			"Update.exe"
+		]
 	}
 };
 var ZapretAutoSelectCancelledError = class extends Error {
@@ -333,6 +298,7 @@ function computeZapretNetworkFingerprint(interfaces = os.networkInterfaces()) {
 	return createHash("sha256").update(Array.from(new Set(parts)).sort().join(";")).digest("hex").slice(0, 16);
 }
 var TOP_MODERN_PROFILES = [
+	"general (EGOIST MIX)",
 	"general (FAKE TLS AUTO)",
 	"General",
 	"general (ALT4)",
@@ -377,11 +343,7 @@ function countZapretProbeGroup(targets, prefix) {
 		total: group.length
 	};
 }
-/**
-* "Confident" means every Discord and every YouTube target answered, not just
-* one of each. This permits an early exit: the result is the first fully reachable
-* candidate, not a claim that every strategy or video playback was measured.
-*/
+/** "Confident" means every measured Discord and YouTube target answered. */
 function isConfidentZapretProbe(targets) {
 	const discord = countZapretProbeGroup(targets, "Discord");
 	const youtube = countZapretProbeGroup(targets, "YouTube");
@@ -717,6 +679,7 @@ var ZapretManager = class {
 	autoSelectController = null;
 	/** Non-null only while an auto-select sweep is running. */
 	probeProfiles = null;
+	probeTargets = null;
 	constructor(resourcesPath, appPath, userDataDir, protectedComponentRoot, coreService) {
 		this.resourcesPath = resourcesPath;
 		this.appPath = appPath;
@@ -1145,8 +1108,8 @@ var ZapretManager = class {
 			message: updateAvailable ? `Доступно обновление Flowseal Core: ${latestVersion}. ${integrity.note}` : `Используется актуальная версия Core${currentVersion ? `: ${currentVersion}` : ""}`
 		};
 	}
-	async installCoreUpdate() {
-		return this.installFlowsealCoreVersion({ mode: "latest" });
+	async installCoreUpdate(onProgress) {
+		return this.installFlowsealCoreVersion({ mode: "latest", onProgress });
 	}
 	async installCoreVersion(version) {
 		return this.installFlowsealCoreVersion({
@@ -1189,7 +1152,7 @@ var ZapretManager = class {
 			const archiveName = useTrustedSourceArchive ? buildFlowsealSourceArchiveName(target.version) : releaseAsset?.name ?? buildFlowsealReleaseAssetName(target.version);
 			await promises.mkdir(tempRoot, { recursive: true });
 			logger.info(`[zapret] Downloading Flowseal Core ${target.version}: ${archiveUrl}`);
-			await downloadFileWithProgress(archiveUrl, zipPath, void 0, {
+			await downloadFileWithProgress(archiveUrl, zipPath, request.onProgress, {
 				"User-Agent": FLOWSEAL_SCRIPT_USER_AGENT,
 				Accept: "application/octet-stream"
 			});
@@ -1484,15 +1447,15 @@ var ZapretManager = class {
 		this.autoSelectController?.abort();
 		return { ok: true, message: "Остановка автоподбора запрошена." };
 	}
-	async autoSelectBestProfile(onProgress) {
+	async autoSelectBestProfile(onProgress, suppliedVoiceTarget = null) {
 		if (this.autoSelectController) throw new Error("Автоподбор уже выполняется.");
 		const controller = new AbortController();
 		this.autoSelectController = controller;
 		const signal = controller.signal;
 		const startedAt = new Date().toISOString();
 		const results = [], testedProfiles = [], goodProfiles = [], badProfiles = [];
-		let orderedProfiles = [], rememberedProfile = null, fingerprint = null, cancelled = false;
-		let runtimePrepared = false;
+		let orderedProfiles = [], rememberedProfile = null, fingerprint = null, cancelled = false, voiceTarget = null;
+		let runtimePrepared = false, previousActiveMode = null;
 		const emit = (event) => {
 			// A closed renderer must not interrupt process cleanup or invalidate measurements.
 			try { onProgress?.({ startedAt, testedAt: new Date().toISOString(), ...event }); }
@@ -1500,6 +1463,8 @@ var ZapretManager = class {
 		};
 		try {
 			emit({ phase: "preparing" });
+			throwIfAutoSelectCancelled(signal);
+			previousActiveMode = await this.captureAutoSelectActiveMode();
 			throwIfAutoSelectCancelled(signal);
 			await this.resetOwnedRuntimeBeforeAutoSelect();
 			runtimePrepared = true;
@@ -1511,7 +1476,9 @@ var ZapretManager = class {
 			fingerprint = computeZapretNetworkFingerprint();
 			rememberedProfile = (await this.readAutoSelectMemory(fingerprint))?.profile ?? null;
 			orderedProfiles = orderZapretProfilesForAutoSelect(profiles, rememberedProfile);
-			emit({ phase: "start", total: orderedProfiles.length });
+			voiceTarget = suppliedVoiceTarget ?? await this.readRecentDiscordVoiceControlTarget();
+			this.probeTargets = voiceTarget ? [...AUTO_SELECT_TARGETS, voiceTarget] : AUTO_SELECT_TARGETS;
+			emit({ phase: "start", total: orderedProfiles.length, voiceControlTargetAvailable: Boolean(voiceTarget) });
 			for (const [index, profile] of orderedProfiles.entries()) {
 				throwIfAutoSelectCancelled(signal);
 				emit({ phase: "profile-start", profile: profile.name, index: index + 1, total: orderedProfiles.length });
@@ -1519,7 +1486,12 @@ var ZapretManager = class {
 				try {
 					await this.startProbeStandalone(profile.name, signal);
 					throwIfAutoSelectCancelled(signal);
-					const probe = await this.probeZapretTargets(signal);
+					let probe = await this.probeZapretTargets(signal);
+					emit({ phase: "profile-confirm", profile: profile.name, index: index + 1, total: orderedProfiles.length });
+					await sleep(ZAPRET_PROBE_CONFIRM_DELAY_MS);
+					throwIfAutoSelectCancelled(signal);
+					probe = this.combineZapretProbePasses(probe, await this.probeZapretTargets(signal));
+					const verificationPasses = 2;
 					throwIfAutoSelectCancelled(signal);
 					if (!(await this.listIntegratedWinwsProcesses()).length) throw new Error("winws.exe завершился во время проверки.");
 					result = {
@@ -1527,7 +1499,7 @@ var ZapretManager = class {
 						result: probe.healthy ? "success" : "error", pingMs: probe.averagePingMs,
 						testedAt: new Date().toISOString(), passedTargets: probe.targets.filter((target) => target.ok).length,
 						totalTargets: probe.targets.length, confident: probe.confident, targets: probe.targets,
-						verification: "https-endpoints", videoPlaybackVerified: false
+						verification: "https-endpoints", verificationPasses, videoPlaybackVerified: false
 					};
 				} catch (error) {
 					throwIfAutoSelectCancelled(signal);
@@ -1535,7 +1507,7 @@ var ZapretManager = class {
 					result = {
 						id: profile.name, configId: profile.name, configName: profile.name, result: "error",
 						pingMs: null, testedAt: new Date().toISOString(), passedTargets: 0,
-						totalTargets: AUTO_SELECT_TARGETS.length, confident: false, targets: [],
+						totalTargets: this.probeTargets.length, confident: false, targets: [],
 						error: error instanceof Error ? error.message : String(error),
 						verification: "https-endpoints", videoPlaybackVerified: false
 					};
@@ -1550,7 +1522,6 @@ var ZapretManager = class {
 				emit({ phase: "profile-result", profile: profile.name, index: index + 1, total: orderedProfiles.length,
 					result: result.result, pingMs: result.pingMs, targets: result.targets, error: result.error,
 					confidence: result.confident ? "high" : result.result === "success" ? "medium" : "none" });
-				if (result.confident) break;
 			}
 		} catch (error) {
 			if (error instanceof ZapretAutoSelectCancelledError) cancelled = true;
@@ -1561,9 +1532,14 @@ var ZapretManager = class {
 			}
 		} finally {
 			try {
-				if (runtimePrepared) await this.stopProbeStandalone();
+				if (runtimePrepared) {
+					await this.stopProbeStandalone();
+					if (previousActiveMode?.mode === "service") await this.startService();
+					else if (previousActiveMode?.mode === "standalone") await this.startStandalone(previousActiveMode.profile);
+				}
 			} finally {
 				this.probeProfiles = null;
+				this.probeTargets = null;
 				this.invalidateStatusCache();
 				if (this.autoSelectController === controller) this.autoSelectController = null;
 			}
@@ -1573,7 +1549,7 @@ var ZapretManager = class {
 		const discord = countZapretProbeGroup(bestResult?.targets ?? [], "Discord");
 		const youtube = countZapretProbeGroup(bestResult?.targets ?? [], "YouTube");
 		const usedRememberedProfile = Boolean(rememberedProfile && bestResult?.configName === rememberedProfile);
-		const earlyExit = !cancelled && Boolean(bestResult?.confident) && testedProfiles.length < orderedProfiles.length;
+		const earlyExit = false;
 		const summary = summarizeZapretAutoSelect({
 			cancelled, bestProfile: bestResult?.configName ?? null, bestPassedTargets: bestResult?.passedTargets ?? 0,
 			bestTotalTargets: bestResult?.totalTargets ?? AUTO_SELECT_TARGETS.length, bestPingMs: bestResult?.pingMs ?? null,
@@ -1581,30 +1557,46 @@ var ZapretManager = class {
 			confident: bestResult?.confident === true, testedProfiles: testedProfiles.length,
 			totalProfiles: orderedProfiles.length, usedRememberedProfile
 		});
-		const detail = summary.detail + " Проверена доступность HTTPS-узлов; воспроизведение видео, 4K и голос Discord не проверялись.";
+		const voiceDetail = voiceTarget ? " Голосовой TCP-сервер Discord проверен по последнему локальному адресу; UDP-медиа и вход в канал требуют проверки в Discord." : " Адрес голосового сервера не найден в свежем журнале Discord; голос не проверен.";
+		const detail = summary.detail + " Каждый профиль прошёл две проверки доступности." + voiceDetail + " Воспроизведение видео и 4K не проверялись. Рекомендация не включает автоматическое подключение.";
 		if (!cancelled && bestResult) await this.writeAutoSelectMemory(fingerprint, {
 			profile: bestResult.configName, savedAt: new Date().toISOString(), passedTargets: bestResult.passedTargets,
 			totalTargets: bestResult.totalTargets, pingMs: bestResult.pingMs, confident: bestResult.confident
 		});
 		emit({ phase: cancelled ? "cancelled" : "complete", bestProfile: bestResult?.configName ?? null,
 			total: orderedProfiles.length, testedProfiles: testedProfiles.length, summary: summary.headline,
-			detail, confidence: summary.confidence, earlyExit, verification: "https-endpoints", videoPlaybackVerified: false });
+			detail, confidence: summary.confidence, earlyExit, verification: "https-endpoints", voiceControlTested: Boolean(voiceTarget), voiceMediaVerified: false, videoPlaybackVerified: false });
 		return {
 			completed: !cancelled, cancelled, bestProfile: bestResult?.configName ?? null,
 			goodProfiles, badProfiles, testedProfiles, results, testResults: results,
 			summary: summary.headline, detail, confidence: summary.confidence, earlyExit,
 			totalProfiles: orderedProfiles.length, rememberedProfile, usedRememberedProfile,
-			verification: "https-endpoints", videoPlaybackVerified: false
+			verification: "https-endpoints", voiceControlTested: Boolean(voiceTarget), voiceMediaVerified: false, videoPlaybackVerified: false
 		};
+	}
+	async captureAutoSelectActiveMode() {
+		const current = await this.status({ force: true });
+		if (current.serviceRunning) return { mode: "service", profile: current.serviceProfile ?? current.currentProfile };
+		if (current.standaloneRunning) return { mode: "standalone", profile: current.standaloneProfile ?? current.currentProfile };
+		return null;
 	}
 	async resetOwnedRuntimeBeforeAutoSelect() {
 		await this.assertNoExternalConflict();
-		await this.stopServiceInternal(true);
-		await this.stopStandaloneInternal(true);
-		if ((await this.queryService(SERVICE_NAME)).running) throw new Error("Служба EgoistShieldZapret ещё работает. Автоподбор остановлен.");
-		if ((await this.listIntegratedWinwsProcesses()).length) throw new Error("Процесс Egoist Lagom winws.exe ещё работает. Автоподбор остановлен.");
-		this.clearVpnSuspension();
-		this.lastError = null;
+		const serviceWasRunning = (await this.queryService(SERVICE_NAME)).running;
+		try {
+			await this.stopServiceInternal(true);
+			await this.stopStandaloneInternal(true);
+			if ((await this.queryService(SERVICE_NAME)).running) throw new Error("Служба EgoistShieldZapret ещё работает. Автоподбор остановлен.");
+			if ((await this.listIntegratedWinwsProcesses()).length) throw new Error("Процесс Egoist Lagom winws.exe ещё работает. Автоподбор остановлен.");
+			this.clearVpnSuspension();
+			this.lastError = null;
+		} catch (error) {
+			if (serviceWasRunning && !(await this.queryService(SERVICE_NAME)).running) {
+				try { await this.startService(); }
+				catch (restoreError) { throw new Error(`${error.message} Не удалось восстановить прежнюю службу: ${restoreError.message}`); }
+			}
+			throw error;
+		}
 	}
 	/**
 	* Lean per-profile start used only by auto-select. `startStandalone()` also
@@ -1645,7 +1637,7 @@ var ZapretManager = class {
 		const owned = await this.listIntegratedWinwsProcesses();
 		for (const info of owned) {
 			// Revalidate the executable at the point of mutation; saved PIDs can be recycled.
-			await this.execPowerShell(`$p = Get-Process -Id ${info.pid} -ErrorAction SilentlyContinue; if ($p) { $image = ''; try { $image = [string]$p.Path } catch {}; if ($image -ieq ${psQuote(path.join(this.workDir, "core", "bin", "winws.exe"))}) { Stop-Process -Id $p.Id -Force -ErrorAction Stop } }`, 8e3);
+			await this.execPowerShell(`$p = Get-CimInstance Win32_Process -Filter "ProcessId=${info.pid}" -ErrorAction Stop; if ($p -and $p.ExecutablePath -ieq ${psQuote(path.join(this.workDir, "core", "bin", "winws.exe"))}) { Stop-Process -Id $p.ProcessId -Force -ErrorAction Stop }`, 8e3);
 		}
 		const deadline = Date.now() + timeoutMs;
 		do {
@@ -1936,6 +1928,14 @@ var ZapretManager = class {
 		await promises.mkdir(this.workDir, { recursive: true });
 		if (!hasProvisionedCore) await this.copyRuntimeTree(runtime.sourceDir, this.workDir);
 		else if (!hasServiceWrapper) await this.copyRuntimeTree(path.join(runtime.sourceDir, SERVICE_WRAPPER_DIR), path.join(this.workDir, SERVICE_WRAPPER_DIR));
+		for (const relative of ["core/general (EGOIST MIX).bat", "core/lists/list-egoist-discord.txt"]) {
+			const source = path.join(runtime.sourceDir, relative);
+			const destination = path.join(this.workDir, relative);
+			if (await this.pathExists(source) && !await this.pathExists(destination)) {
+				await promises.mkdir(path.dirname(destination), { recursive: true });
+				await promises.copyFile(source, destination);
+			}
+		}
 		await this.ensureUserLists();
 		await this.applyFlowsealScriptFixes(path.join(this.workDir, "core"));
 		await this.writeEffectiveIpsetList();
@@ -2177,7 +2177,7 @@ var ZapretManager = class {
 	async readGameFilterMode() {
 		const flagPath = path.join(this.workDir, "core", "utils", "game_filter.enabled");
 		const raw = await promises.readFile(flagPath, "utf8").catch(() => null);
-		if (raw == null) return "all";
+		if (raw == null) return "disabled";
 		const mode = raw.trim().toLowerCase();
 		if (mode === "all" || mode === "tcp" || mode === "udp") return mode;
 		return "disabled";
@@ -2206,14 +2206,14 @@ var ZapretManager = class {
 	}
 	async listWinwsProcesses() {
 		try {
-			const trimmed = (await this.execPowerShell("$ErrorActionPreference = 'Stop'; $procs = @(Get-Process -Name 'winws' -ErrorAction SilentlyContinue | ForEach-Object { $image = ''; $started = $null; try { $image = [string]$_.Path } catch {}; try { $started = $_.StartTime.ToUniversalTime().ToString('o') } catch {}; [pscustomobject]@{ ProcessId = [int]$_.Id; ExecutablePath = $image; StartedAt = $started } }); if ($procs.Count -eq 0) { '[]' } else { $procs | ConvertTo-Json -Compress }", 12e3)).trim();
+			const trimmed = (await this.execPowerShell("$ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter \"Name='winws.exe'\" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }", 12e3)).trim();
 			if (!trimmed) throw new Error("Пустой ответ проверки процессов.");
 			const parsed = JSON.parse(trimmed);
 			return (Array.isArray(parsed) ? parsed : [parsed]).map((entry) => ({
 				pid: Number(entry.ProcessId ?? 0),
-				commandLine: "",
+				commandLine: String(entry.CommandLine ?? ""),
 				executablePath: String(entry.ExecutablePath ?? ""),
-				startedAt: Number.isFinite(Date.parse(String(entry.StartedAt ?? ""))) ? new Date(entry.StartedAt).toISOString() : null
+				startedAt: parseWmiDateToIso(entry.CreationDate)
 			})).filter((entry) => entry.pid > 0);
 		} catch (error) {
 			throw new Error(`Не удалось проверить процессы winws.exe: ${error instanceof Error ? error.message : String(error)}`);
@@ -2244,11 +2244,32 @@ var ZapretManager = class {
 		}
 		return false;
 	}
+	async readRecentDiscordVoiceControlTarget() {
+		const appData = process.env.APPDATA;
+		if (!appData) return null;
+		const logPath = path.join(appData, "discord", "logs", "discord-webrtc_0");
+		try {
+			const stat = await promises.stat(logPath);
+			if (!stat.isFile() || stat.size < 1 || Date.now() - stat.mtimeMs > 24 * 60 * 60 * 1e3) return null;
+			const handle = await promises.open(logPath, "r");
+			try {
+				const length = Math.min(stat.size, 128 * 1024);
+				const bytes = Buffer.alloc(length);
+				const { bytesRead } = await handle.read(bytes, 0, length, stat.size - length);
+				return parseDiscordVoiceControlTarget(bytes.subarray(0, bytesRead).toString("utf8"));
+			} finally {
+				await handle.close();
+			}
+		} catch {
+			return null;
+		}
+	}
 	async probeZapretTargets(signal) {
 		throwIfAutoSelectCancelled(signal);
-		const jobs = this.buildZapretProbeJobs(signal);
+		const targetsForSweep = this.probeTargets ?? AUTO_SELECT_TARGETS;
+		const jobs = this.buildZapretProbeJobs(signal, false, targetsForSweep);
 		const checks = await runWithBoundedConcurrency(jobs, ZAPRET_PROBE_MAX_PARALLEL, (job) => job.run());
-		const targets = this.collectZapretProbeTargets(jobs, checks);
+		const targets = this.collectZapretProbeTargets(jobs, checks, targetsForSweep);
 		const reachableTargets = targets.filter((target) => target.ok);
 		return {
 			healthy: this.isZapretProbeHealthy(targets),
@@ -2257,9 +2278,30 @@ var ZapretManager = class {
 			targets
 		};
 	}
-	buildZapretProbeJobs(signal) {
+	combineZapretProbePasses(primary, confirmation) {
+		const confirmationByKey = new Map((confirmation?.targets ?? []).map((target) => [target.key, target]));
+		const targets = (primary?.targets ?? []).map((target) => {
+			const confirmed = confirmationByKey.get(target.key);
+			const ok = target.ok === true && confirmed?.ok === true;
+			return {
+				...target,
+				ok,
+				pingMs: averageProbePing([target.pingMs, confirmed?.pingMs]),
+				error: ok ? null : [target.error, confirmed?.error, target.ok && confirmed && !confirmed.ok ? "Подтверждающая проверка не пройдена." : null].filter(Boolean).join("; ") || "endpoint confirmation failed",
+				checks: [...target.checks ?? [], ...confirmed?.checks ?? []]
+			};
+		});
+		const reachableTargets = targets.filter((target) => target.ok);
+		return {
+			healthy: this.isZapretProbeHealthy(targets),
+			confident: isConfidentZapretProbe(targets),
+			averagePingMs: averageProbePing(reachableTargets.map((target) => target.pingMs)),
+			targets
+		};
+	}
+	buildZapretProbeJobs(signal, includeTlsVariants = false, targets = AUTO_SELECT_TARGETS) {
 		const jobs = [];
-		for (const target of AUTO_SELECT_TARGETS) {
+		for (const target of targets) {
 			if ("pingTarget" in target) {
 				jobs.push({
 					key: target.key,
@@ -2267,19 +2309,24 @@ var ZapretManager = class {
 				});
 				continue;
 			}
-			for (const variant of ZAPRET_CURL_FALLBACK_VARIANTS) jobs.push({
+			if (target.voiceControl) {
+				jobs.push({ key: target.key, run: () => this.probeCurlHeadUrl(target.url, ZAPRET_PROBE_HTTP_TIMEOUT_MS, "Voice TLS", [], signal, true) });
+				continue;
+			}
+			for (const variant of includeTlsVariants ? ZAPRET_CURL_FALLBACK_VARIANTS : ZAPRET_CURL_FALLBACK_VARIANTS.slice(0, 1)) jobs.push({
 				key: target.key,
 				run: () => this.probeCurlHeadUrl(target.url, ZAPRET_PROBE_HTTP_TIMEOUT_MS, variant.label, [...variant.args], signal)
 			});
 		}
 		return jobs;
 	}
-	collectZapretProbeTargets(jobs, checks) {
-		return AUTO_SELECT_TARGETS.map((target) => {
+	collectZapretProbeTargets(jobs, checks, targets = AUTO_SELECT_TARGETS) {
+		return targets.map((target) => {
 			const targetChecks = checks.filter((_check, index) => jobs[index]?.key === target.key);
 			const okCheck = targetChecks.find((check) => check.ok);
-			const primaryCheck = okCheck ?? targetChecks[0] ?? null;
-			const ok = Boolean(okCheck);
+			const defaultCheck = targetChecks.find((check) => check.variant === "HTTP") ?? targetChecks[0] ?? null;
+			const primaryCheck = "pingTarget" in target ? okCheck ?? targetChecks[0] ?? null : defaultCheck;
+			const ok = "pingTarget" in target ? Boolean(okCheck) : defaultCheck?.ok === true;
 			if ("pingTarget" in target) return {
 				key: target.key,
 				label: target.label,
@@ -2298,6 +2345,7 @@ var ZapretManager = class {
 				ok,
 				pingMs: primaryCheck?.pingMs ?? null,
 				status: primaryCheck?.status ?? null,
+				fallbackReachable: !ok && Boolean(okCheck),
 				error: ok ? null : targetChecks.map((check) => check.error).filter(Boolean).join("; ") || "curl checks failed",
 				checks: targetChecks
 			};
@@ -2305,11 +2353,13 @@ var ZapretManager = class {
 	}
 	isZapretProbeHealthy(targets) {
 		const successfulTargets = targets.filter((target) => target.ok);
-		return ["DiscordMain", "DiscordGateway", "YouTubeWeb", "YouTubeImage"].every((key) => successfulTargets.some((target) => target.key === key));
+		const required = ["DiscordMain", "DiscordGateway", "YouTubeWeb", "YouTubeImage"];
+		if (targets.some((target) => target.key === "DiscordVoiceControl")) required.push("DiscordVoiceControl");
+		return required.every((key) => successfulTargets.some((target) => target.key === key));
 	}
-	async probeCurlHeadUrl(url, timeoutMs, label, tlsArgs, signal, getFallback = false) {
+	async probeCurlHeadUrl(url, timeoutMs, label, tlsArgs, signal, acceptVoiceHttpStatus = false) {
 		const startedAt = Date.now();
-		const timeoutSeconds = Math.max(0.1, timeoutMs / 1e3);
+		const timeoutSeconds = Math.max(2, Math.ceil(timeoutMs / 1e3));
 		try {
 			throwIfAutoSelectCancelled(signal);
 			const { stdout, stderr } = await execFileAsync$1(resolveWindowsExecutable("curl.exe"), [
@@ -2321,7 +2371,8 @@ var ZapretManager = class {
 				"--location",
 				"--max-redirs",
 				"3",
-				...(getFallback ? ["--range", "0-65535", "--max-filesize", "2097152"] : ["--head"]),
+				"--max-filesize",
+				"2097152",
 				"-s",
 				"-m",
 				String(timeoutSeconds),
@@ -2339,18 +2390,14 @@ var ZapretManager = class {
 			});
 			const status = parseCurlStatusCode(stdout);
 			const pingMs = Math.max(1, Date.now() - startedAt);
-			const remainingMs = timeoutMs - pingMs;
-			if (!getFallback && (status === 405 || status === 501) && remainingMs >= 100) {
-				const fallback = await this.probeCurlHeadUrl(url, remainingMs, label, tlsArgs, signal, true);
-				return { ...fallback, pingMs: Math.max(1, Date.now() - startedAt) };
-			}
 			return {
 				url: `${url} [${label}]`,
-				ok: status !== null && status >= 200 && status < 400,
+				ok: status !== null && status >= 200 && (acceptVoiceHttpStatus ? status < 500 : status < 400),
 				pingMs,
 				status,
 				method: "http",
-				error: status === null ? normalizeCurlProbeError(stderr) : status >= 400 ? `HTTP ${status}` : null
+				variant: label,
+				error: status === null ? normalizeCurlProbeError(stderr) : status >= (acceptVoiceHttpStatus ? 500 : 400) ? `HTTP ${status}` : null
 			};
 		} catch (error) {
 			throwIfAutoSelectCancelled(signal);
@@ -2363,6 +2410,7 @@ var ZapretManager = class {
 				pingMs: status !== null ? Math.max(1, Date.now() - startedAt) : null,
 				status,
 				method: "http",
+				variant: label,
 				error: normalizeCurlProbeError(stderr || (error instanceof Error ? error.message : String(error)))
 			};
 		}

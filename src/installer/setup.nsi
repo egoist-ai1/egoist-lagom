@@ -18,8 +18,6 @@ VIAddVersionKey "ProductName" "Egoist Lagom"
 VIAddVersionKey "FileDescription" "Egoist Lagom Setup"
 VIAddVersionKey "ProductVersion" "${PRODUCT_VERSION}.0"
 VIAddVersionKey "FileVersion" "${PRODUCT_VERSION}.0"
-VIAddVersionKey "CompanyName" "EGOIST"
-VIAddVersionKey "OriginalFilename" "Egoist-Lagom-Setup.exe"
 VIAddVersionKey "LegalCopyright" "EGOIST"
 
 AutoCloseWindow true
@@ -39,8 +37,9 @@ Var RollbackNeeded
 Var WaitTicks
 Var FailureMessage
 Var InstallerMutex
+Var HandoffResult
 
-!macro AcquireInstallerMutex
+!macro AcquireInstallerMutex SHOWBRANDED
   System::Call 'kernel32::CreateMutexW(p 0, i 0, w "Global\EgoistShield.Installation") p .r0 ?e'
   Pop $1
   StrCpy $InstallerMutex $0
@@ -48,9 +47,30 @@ Var InstallerMutex
   ${OrIf} $1 == 183
     SetErrorLevel 48
     ${IfNot} ${Silent}
-      MessageBox MB_OK "Установка или удаление Egoist Lagom уже выполняется. Дождитесь завершения."
+!if "${SHOWBRANDED}" == "1"
+      ExecWait '"$PLUGINSDIR\ModernInstaller.exe" "$PLUGINSDIR" --busy'
+!endif
     ${EndIf}
     Abort
+  ${EndIf}
+!macroend
+
+!macro RejectRunningDeferredInstall
+  ; The interactive installer releases its own mutex after handing off to the
+  ; elevated worker. A second launch must still show the branded busy state.
+  System::Call 'kernel32::OpenMutexW(i 0x00100001, i 0, w "Global\EgoistShield.DeferredReinstall") p .r0'
+  ${If} $0 != 0
+    System::Call 'kernel32::WaitForSingleObject(p r0, i 0) i .r1'
+    ${If} $1 == 258
+      System::Call 'kernel32::CloseHandle(p r0)'
+      ExecWait '"$PLUGINSDIR\ModernInstaller.exe" "$PLUGINSDIR" --busy'
+      SetErrorLevel 48
+      Abort
+    ${EndIf}
+    ${If} $1 == 0
+      System::Call 'kernel32::ReleaseMutex(p r0)'
+    ${EndIf}
+    System::Call 'kernel32::CloseHandle(p r0)'
   ${EndIf}
 !macroend
 
@@ -68,8 +88,14 @@ FunctionEnd
   ${EnableX64FSRedirection}
 !macroend
 
+!macro RunProtectedReinstallHandoff
+  ${DisableX64FSRedirection}
+  nsExec::Exec '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "$PLUGINSDIR\invoke-final-silent-reinstall.ps1" -InstallerPath "$EXEPATH" -ExpectedVersion "${PRODUCT_VERSION}" -EmbeddedRelease -InstallerUiPath "$PLUGINSDIR\ModernInstaller.exe" -InstallerFontPath "$PLUGINSDIR\Unbounded.ttf" -HandoffSignalPath "$PLUGINSDIR\handoff-started.flag" -RunAfterPath "$PLUGINSDIR\run_after.txt" -DelaySeconds 8'
+  Pop $HandoffResult
+  ${EnableX64FSRedirection}
+!macroend
+
 Function .onInit
-  !insertmacro AcquireInstallerMutex
   ${IfNot} ${RunningX64}
     MessageBox MB_ICONSTOP "Эта сборка требует Windows x64."
     Abort
@@ -83,10 +109,16 @@ Function .onInit
   StrCpy $INSTDIR "$PROGRAMFILES64\EgoistShield"
   InitPluginsDir
   File /oname=$PLUGINSDIR\owned-cleanup.ps1 "${PAYLOAD}\resources\installer\owned-cleanup.ps1"
+  File /oname=$PLUGINSDIR\invoke-final-silent-reinstall.ps1 "${PAYLOAD}\resources\installer\invoke-final-silent-reinstall.ps1"
   File /oname=$PLUGINSDIR\ModernInstaller.exe "${PAYLOAD}\resources\installer\ModernInstaller.exe"
   File /oname=$PLUGINSDIR\Unbounded.ttf "${PAYLOAD}\resources\installer\Unbounded.ttf"
 
+  ; The branded UI is already available when a second launch is rejected, so
+  ; users never fall through to an unstyled NSIS mutex dialog.
+  !insertmacro AcquireInstallerMutex 1
+
   ${IfNot} ${Silent}
+    !insertmacro RejectRunningDeferredInstall
     ; Launch Modern Next.js-style installer UI
     Exec '"$PLUGINSDIR\ModernInstaller.exe" "$PLUGINSDIR"'
 
@@ -98,7 +130,7 @@ Function .onInit
       IfFileExists "$PLUGINSDIR\cancel.flag" UserCancelled 0
       IfFileExists "$PLUGINSDIR\start_install.flag" UserStarted 0
       ${If} $WaitTicks >= 3000
-        MessageBox MB_ICONSTOP "Не удалось запустить окно установки. Повторите запуск установщика."
+        SetErrorLevel 56
         Abort
       ${EndIf}
       Goto WaitLoop
@@ -110,11 +142,57 @@ Function .onInit
       ; The Core service and uninstaller use one canonical location. Keeping it
       ; fixed avoids path-dependent service and upgrade failures.
       StrCpy $INSTDIR "$PROGRAMFILES64\EgoistShield"
+      FileOpen $0 "$PLUGINSDIR\status.txt" w
+      FileWriteUTF16LE /BOM $0 "5|Проверяем готовность системы к обновлению..."
+      FileClose $0
+  ${EndIf}
+
+  ; The installed SystemDoH service can be the machine's only DNS path. The
+  ; check runs after the user enters the branded progress screen, but before
+  ; any service, network, registration, or install-root mutation.
+  !insertmacro RunPhase CheckInstallSafety
+  ${If} $PhaseResult != "0"
+    ; A normal double-click on an installed machine enters the protected
+    ; autonomous handoff. The worker stages this exact EXE, creates its own
+    ; integrity manifest, backs up state, and stops SystemDoH last. The /S
+    ; worker remains fail-closed here, preventing recursive dispatch.
+    ${If} $PhaseResult == "54"
+    ${AndIfNot} ${Silent}
+      !insertmacro RunProtectedReinstallHandoff
+      ${If} $HandoffResult == "0"
+        ; The staged branded monitor is visible before the handoff signal.
+        ; Wait for the initial window to acknowledge it, then release the
+        ; mutex so the delayed /S worker can start.
+        StrCpy $WaitTicks 0
+        HandoffAckLoop:
+          IfFileExists "$PLUGINSDIR\handoff-ack.flag" HandoffAcknowledged 0
+          Sleep 100
+          IntOp $WaitTicks $WaitTicks + 1
+          ${If} $WaitTicks < 30
+            Goto HandoffAckLoop
+          ${EndIf}
+        HandoffAcknowledged:
+        SetErrorLevel 0
+        Quit
+      ${EndIf}
+      StrCpy $FailureMessage "Не удалось запустить защищённую переустановку (код $HandoffResult). Службы, DNS, файлы и настройки не изменены."
+      StrCpy $RollbackNeeded "0"
+      Call RollbackFailedInstall
+      SetErrorLevel 55
+      Abort
+    ${EndIf}
+    ${IfNot} ${Silent}
+      StrCpy $FailureMessage "Проверка безопасности установки не завершилась. Службы, DNS, файлы и настройки не изменены."
+      StrCpy $RollbackNeeded "0"
+      Call RollbackFailedInstall
+    ${EndIf}
+    SetErrorLevel 54
+    Abort
   ${EndIf}
 FunctionEnd
 
 Function un.onInit
-  !insertmacro AcquireInstallerMutex
+  !insertmacro AcquireInstallerMutex 0
 FunctionEnd
 
 Function RollbackFailedInstall
@@ -127,7 +205,7 @@ Function RollbackFailedInstall
   ${EndIf}
   ${IfNot} ${Silent}
     FileOpen $0 "$PLUGINSDIR\status.txt" w
-    FileWrite $0 "0|ERROR: $FailureMessage Журнал: $APPDATA\EgoistShield\Installer\upgrade-journal.json"
+    FileWriteUTF16LE /BOM $0 "0|ERROR: $FailureMessage Журнал: $APPDATA\EgoistShield\Installer\upgrade-journal.json"
     FileClose $0
     StrCpy $WaitTicks 0
     FailureWait:
@@ -153,7 +231,7 @@ Section "Egoist Lagom"
 
   ${IfNot} ${Silent}
     FileOpen $0 "$PLUGINSDIR\status.txt" w
-    FileWrite $0 "10|Подготовка сетевых компонентов..."
+    FileWriteUTF16LE /BOM $0 "10|Подготовка сетевых компонентов..."
     FileClose $0
   ${EndIf}
 
@@ -167,7 +245,7 @@ Section "Egoist Lagom"
 
   ${IfNot} ${Silent}
     FileOpen $0 "$PLUGINSDIR\status.txt" w
-    FileWrite $0 "30|Распаковка файлов программы..."
+    FileWriteUTF16LE /BOM $0 "30|Распаковка файлов программы..."
     FileClose $0
   ${EndIf}
 
@@ -200,7 +278,7 @@ Section "Egoist Lagom"
 
   ${IfNot} ${Silent}
     FileOpen $0 "$PLUGINSDIR\status.txt" w
-    FileWrite $0 "75|Регистрация системной службы безопасности..."
+    FileWriteUTF16LE /BOM $0 "75|Регистрация системной службы безопасности..."
     FileClose $0
   ${EndIf}
 
@@ -214,7 +292,7 @@ Section "Egoist Lagom"
 
   ${IfNot} ${Silent}
     FileOpen $0 "$PLUGINSDIR\status.txt" w
-    FileWrite $0 "88|Настройка параметров и проверка..."
+    FileWriteUTF16LE /BOM $0 "88|Настройка параметров и проверка..."
     FileClose $0
   ${EndIf}
 
@@ -231,7 +309,7 @@ Section "Egoist Lagom"
 
   ${IfNot} ${Silent}
     FileOpen $0 "$PLUGINSDIR\status.txt" w
-    FileWrite $0 "95|Создание ярлыков и обновление кэша иконок..."
+    FileWriteUTF16LE /BOM $0 "95|Создание ярлыков и обновление кэша иконок..."
     FileClose $0
   ${EndIf}
 
@@ -259,7 +337,7 @@ DoneDesktopShortcut:
   ${IfNot} ${Silent}
     ; Signal DONE to ModernInstaller
     FileOpen $0 "$PLUGINSDIR\status.txt" w
-    FileWrite $0 "100|DONE"
+    FileWriteUTF16LE /BOM $0 "100|DONE"
     FileClose $0
 
     ; Wait for ModernInstaller to finish/close
