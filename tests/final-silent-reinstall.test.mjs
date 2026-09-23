@@ -81,7 +81,7 @@ test('embedded installer dispatch rejects a PE with the wrong product identity',
 
 test('worker starts watchdog before service stops and stops SystemDoH last', async () => {
   const source = await fs.readFile(script, 'utf8');
-  const worker = source.match(/function Invoke-WorkerMode[\s\S]*?\n}\n\nif \(\$Watchdog\)/)?.[0] ?? '';
+  const worker = source.match(/function Invoke-WorkerMode[\s\S]*?\r?\n}\r?\n\r?\nif \(\$Watchdog\)/)?.[0] ?? '';
   const watchdogStart = worker.indexOf('Start-Process -FilePath $powerShell');
   const runtimeBackup = worker.indexOf('Invoke-RobocopyDirectory -Source $script:RuntimeRoot');
   const dnsBackup = worker.indexOf('Backup-CriticalDnsState');
