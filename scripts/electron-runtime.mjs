@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 
-const productResourceNames = ['brand', 'gravityless-dns', 'installer', 'release', 'runtime', 'scripts', 'elevate.exe'];
+const productResourceNames = ['brand', 'gravityless-dns', 'installer', 'release', 'runtime', 'scripts'];
 const retiredScripts = 'scripts/system-control';
 const templateAsar = 'resources/default_app.asar';
 

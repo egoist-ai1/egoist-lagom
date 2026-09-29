@@ -56,6 +56,7 @@ var MUTATION_WAIT_TIMEOUT_MS = 3e4;
 var NetworkCombinatorManager = class {
 	isNetworkReady;
 	isElevated;
+	getProductVersion;
 	moduleInspectors;
 	plans = /* @__PURE__ */ new Map();
 	lastInspection = null;
@@ -69,6 +70,7 @@ var NetworkCombinatorManager = class {
 	constructor(options) {
 		this.isNetworkReady = options.isNetworkReady ?? (() => true);
 		this.isElevated = options.isElevated;
+		this.getProductVersion = options.getProductVersion ?? (() => void 0);
 		this.moduleInspectors = options.moduleInspectors ?? {};
 	}
 	async inspect() {
@@ -95,6 +97,7 @@ var NetworkCombinatorManager = class {
 		}));
 		const inspection = buildNetworkCombinatorInspection({
 			modules,
+			productVersion: this.getProductVersion(),
 			admin: {
 				isElevated: await this.isElevated(),
 				strategy: "admin-default-app-boundary"

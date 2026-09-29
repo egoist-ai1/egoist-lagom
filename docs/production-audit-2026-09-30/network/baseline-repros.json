@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+  "fixtureOnly": true,
+  "productionStateMutated": false,
+  "results": [
+    {
+      "id": "N01",
+      "transport": "real localhost HTTP response with flushed headers and stalled body",
+      "timeoutMs": 40,
+      "elapsedMs": 211,
+      "settled": false
+    },
+    {
+      "id": "N02",
+      "input": {
+        "ip": "not-an-ip"
+      },
+      "extracted": "not-an-ip",
+      "validIp": false
+    },
+    {
+      "id": "N02",
+      "input": {
+        "ip": "999.999.999.999"
+      },
+      "extracted": "999.999.999.999",
+      "validIp": false
+    },
+    {
+      "id": "N02",
+      "input": "ip=999.999.999.999\n",
+      "extracted": "999.999.999.999",
+      "validIp": false
+    },
+    {
+      "id": "N02",
+      "input": {
+        "ip": "203.0.113.1",
+        "success": false
+      },
+      "extracted": "203.0.113.1",
+      "validIp": true
+    },
+    {
+      "id": "N02",
+      "input": {
+        "ip": "::1"
+      },
+      "extracted": "::1",
+      "validIp": true
+    },
+    {
+      "id": "N03",
+      "trigger": "coordinator rejects before runtime connect",
+      "error": "Network slot timeout fixture",
+      "supervisor": {
+        "armed": false,
+        "phase": "reconnecting",
+        "attempt": 0,
+        "nextAttemptAt": null,
+        "lastAttemptAt": null,
+        "lastReason": null,
+        "failureClass": "unknown",
+        "circuitOpen": false,
+        "requiredAction": null
+      },
+      "attemptInFlight": true
+    },
+    {
+      "id": "N04",
+      "trigger": "caller cancels during Retry-After backoff",
+      "elapsedMs": 1012,
+      "attempts": 2,
+      "error": "AbortError"
+    },
+    {
+      "id": "N05",
+      "trigger": "retryOnStatuses=[] with HTTP503",
+      "actualRequests": 2,
+      "expectedRequests": 1
+    }
+  ]
+}

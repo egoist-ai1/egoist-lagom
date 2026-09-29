@@ -1,0 +1,371 @@
+{
+  "schemaVersion": 1,
+  "checkedAtUtc": "2026-09-29T22:33:11.889057+00:00",
+  "scope": "Read-only upstream/project triage; own scratch log writes only; never-installed native fixture status only; no private keys, live profile, DNS, ACL, SCM registration or service state mutation",
+  "sourceArchive": {
+    "url": "https://codeload.github.com/winsw/winsw/zip/v2.12.0",
+    "bytes": 142576,
+    "sha256": "27db1b130123ee6d6e53014ba13445aada4153d5205c821b533777fbfdb5ad92",
+    "pinMatched": true
+  },
+  "officialBinary": {
+    "url": "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW.NET461.exe",
+    "bytes": 655872,
+    "sha256": "b5066b7bbdfba1293e5d15cda3caaea88fbeab35bd5b38c41c913d492aadfc4f",
+    "pinMatched": true,
+    "independentUpstreamChecksumVerified": false,
+    "reproducibleBinarySourceBuildVerified": false
+  },
+  "dependencies": [
+    {
+      "package": "log4net",
+      "version": "2.0.12",
+      "support": "2.x EOL 2024-09-12"
+    },
+    {
+      "package": "YamlDotNet",
+      "version": "8.1.2",
+      "support": "No maintainer supported-version policy found; unknown"
+    }
+  ],
+  "sourceChecks": {
+    "productionFilesInspected": 48,
+    "fixedPatternLayout": true,
+    "xmlPreferredBeforeYaml": true,
+    "absentTokensAcrossProductionSource": [
+      "XmlLayout",
+      "XmlLayoutSchemaLog4J",
+      "XmlConfigurator",
+      "ConfigureAndWatch",
+      "wrapperLogging",
+      "wrapperlogging"
+    ],
+    "embeddedDependencyMerge": true,
+    "wrapperLogAppender": "FileAppender",
+    "wrapperLogLevel": "Debug (fixed)",
+    "wrapperLogPath": "config.LogDirectory/<basename>.wrapper.log",
+    "wrapperLogRotationByChildXmlLogMode": false,
+    "minimalLockSharingWhileWriting": "FileShare.Read",
+    "minimalLockClosesAfterEvent": true,
+    "coreSupervisorPollsInvokeWrapper": false,
+    "desktopStatusPollsInvokeWrapper": false
+  },
+  "upstreamSourceFiles": [
+    {
+      "path": "src/WinSW.Core/Configuration/Log.cs",
+      "sha256": "ab8ca4ad364036fcd094506729dd9f23377c56e47276687cab49efa3984c3e65",
+      "hashEncoding": "UTF-8 decoded source"
+    },
+    {
+      "path": "src/WinSW.Core/Configuration/XmlServiceConfig.cs",
+      "sha256": "52b95c1c6d5cab67fbecd3970fdf8a88098038611e8e5f5551287ca911a51a81",
+      "hashEncoding": "UTF-8 decoded source"
+    },
+    {
+      "path": "src/WinSW.Core/Configuration/YamlServiceConfig.cs",
+      "sha256": "844cd68d8d9a223ef87037e24bff4b4c3e32be033d58a714c124fb4dc0642727",
+      "hashEncoding": "UTF-8 decoded source"
+    },
+    {
+      "path": "src/WinSW/Program.cs",
+      "sha256": "fd329cc30800af4e9286c31942e963c44788e96c2a048c66234d5abf8496fbc3",
+      "hashEncoding": "UTF-8 decoded source"
+    }
+  ],
+  "lockingSource": {
+    "url": "https://raw.githubusercontent.com/apache/logging-log4net/rel/2.0.12/src/log4net/Appender/FileAppender.cs",
+    "bytes": 42524,
+    "sha256": "dae4edadf8c6b0eda684fc0d286b3dea9a6c13a4ebdd48c69d7f219126986fd8"
+  },
+  "localSourceSnapshot": [
+    {
+      "path": "scripts/component-inputs.json",
+      "sha256": "ee7bb70f4e7dcee317bedeffcde2281b53ba62374066a74a87f8c3a7bc7146c1"
+    },
+    {
+      "path": "resources/licenses/source-inputs.json",
+      "sha256": "5d52c7eb2e1c4f6994be65d0316721893040a5b67ee478a6fc43758943244ddd"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ProtectedProductRoot.cs",
+      "sha256": "f490bf316bc49752cd730cf81ec313a9ec92e45c5863329f17ace81acc5e0343"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceController.cs",
+      "sha256": "c45250f096a69dfad5a83323e4835cf9c0a656cef0a07247770bfdee90dcfb22"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceSupervisor.cs",
+      "sha256": "1d20965724a09fa3c2d009968b398c7fa90efd5512c6411837fc0889572eb878"
+    },
+    {
+      "path": "src/recovered/electron/ipc/system-doh-service-manager.js",
+      "sha256": "5197b43d1e6e7388b5eb73352b282660e4895d4b1f1faeff5f273d5ec3f37a98"
+    },
+    {
+      "path": "src/recovered/electron/ipc/telegram-proxy-manager.js",
+      "sha256": "fe4d8c49ff791d1c4c5f05db29b1735e1ef241ef45a8193ed66bc89c5affe39c"
+    },
+    {
+      "path": "src/recovered/electron/ipc/zapret-manager.js",
+      "sha256": "ffc62cdd5103045620cabba6c0c90b8890e38688dbd61cc0531a7830fd942d73"
+    }
+  ],
+  "applicability": [
+    {
+      "id": "CVE-2026-40021",
+      "vendorUrl": "https://logging.apache.org/security.html",
+      "affectedRange": "[0,3.3.0)",
+      "versionMatch": true,
+      "vulnerablePathObserved": false,
+      "basis": "Fixed PatternLayout; no XML logging layout or external log4net configuration call found",
+      "vendorFixedVersion": "3.3.0"
+    },
+    {
+      "id": "CVE-2018-1285",
+      "vendorUrl": "https://logging.apache.org/security.html",
+      "affectedRange": "[0,2.0.10)",
+      "versionMatch": false,
+      "vulnerablePathObserved": false,
+      "vendorFixedVersion": "2.0.10"
+    }
+  ],
+  "feedEnrichment": {
+    "checkedAtUtc": "2026-09-29T22:28:12.809279+00:00",
+    "results": [
+      {
+        "name": "github-yaml-advisories",
+        "url": "https://api.github.com/advisories?ecosystem=nuget&affects=YamlDotNet%408.1.2&per_page=100",
+        "status": 200,
+        "bytes": 2,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "summary": {
+          "advisoryCount": 0,
+          "advisories": []
+        }
+      },
+      {
+        "name": "cisa-kev",
+        "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+        "status": 200,
+        "bytes": 1758918,
+        "sha256": "62c798bffe1334f5ad43853a7ee9d6eb6969e5b98b6755a6e1c901a1b1ae8f5c",
+        "summary": {
+          "catalogVersion": "2026.09.29",
+          "dateReleased": "2026-09-29T13:51:33.3852Z",
+          "count": 1729,
+          "matches": []
+        }
+      }
+    ]
+  },
+  "coverageLimits": [
+    "NVD web enrichment unavailable/partial",
+    "No exploit executed",
+    "KEV absence does not establish no exploitation",
+    "No installed ACL/runtime security-patch readback",
+    "No child engine start/crash recovery/reboot or multi-month uptime test"
+  ],
+  "nativeFixture": {
+    "checkedAtUtc": "2026-09-29T22:27:22.256569+00:00",
+    "officialWrapperSha256": "b5066b7bbdfba1293e5d15cda3caaea88fbeab35bd5b38c41c913d492aadfc4f",
+    "scope": "isolated not-installed service alias; status only; no install/start/stop or live profile/SCM mutation",
+    "childLogSizeThresholdKb": 1,
+    "childKeepFiles": 1,
+    "runs": [
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 0,
+        "bytesAfter": 64,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 64,
+        "bytesAfter": 128,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 128,
+        "bytesAfter": 192,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 192,
+        "bytesAfter": 256,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 256,
+        "bytesAfter": 320,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 320,
+        "bytesAfter": 384,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 384,
+        "bytesAfter": 448,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 448,
+        "bytesAfter": 512,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 512,
+        "bytesAfter": 576,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 576,
+        "bytesAfter": 640,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 640,
+        "bytesAfter": 704,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 704,
+        "bytesAfter": 768,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 768,
+        "bytesAfter": 832,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 832,
+        "bytesAfter": 896,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 896,
+        "bytesAfter": 960,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 960,
+        "bytesAfter": 1024,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 1024,
+        "bytesAfter": 1088,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 1088,
+        "bytesAfter": 1152,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 1152,
+        "bytesAfter": 1216,
+        "delta": 64
+      },
+      {
+        "command": "status",
+        "exitCode": 0,
+        "stdout": "NonExistent",
+        "stderr": "",
+        "bytesBefore": 1216,
+        "bytesAfter": 1280,
+        "delta": 64
+      }
+    ],
+    "wrapperLogDebugEntryCount": 20,
+    "logModeDoesNotRotateWrapperLog": "Source-confirmed plain FileAppender; 20 real status invocations exceeded the 1 KiB child threshold without wrapper rotation.",
+    "wrapperLogBytes": 1280,
+    "wrapperLogFiles": [
+      "lagom-wrapper-contract-fixture.wrapper.log"
+    ],
+    "exceedsConfiguredChildLogThreshold": true
+  },
+  "releaseGate": {
+    "wrapperLogRetention": "Open at examined source snapshot; parent implementation required",
+    "log4netMaintenance": "Unresolved EOL dependency; explicit policy decision or maintained whole-wrapper replacement required",
+    "reachableVendorCveConfirmed": false,
+    "allDependenciesSupported": false
+  }
+}

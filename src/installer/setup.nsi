@@ -105,6 +105,16 @@ Function .onInit
     Abort
   ${EndIf}
   SetRegView 64
+  ClearErrors
+  ReadRegDWORD $0 HKLM "SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" "Release"
+  ${If} ${Errors}
+  ${OrIf} $0 < 528040
+    SetErrorLevel 57
+    ${IfNot} ${Silent}
+      MessageBox MB_ICONSTOP "Требуется .NET Framework 4.8 или новее. Установите обновления Windows и повторите установку."
+    ${EndIf}
+    Abort
+  ${EndIf}
   SetShellVarContext all
   StrCpy $INSTDIR "$PROGRAMFILES64\EgoistShield"
   InitPluginsDir
@@ -152,10 +162,10 @@ Function .onInit
   ; any service, network, registration, or install-root mutation.
   !insertmacro RunPhase CheckInstallSafety
   ${If} $PhaseResult != "0"
-    ; A normal double-click on an installed machine enters the protected
-    ; autonomous handoff. The worker stages this exact EXE, creates its own
-    ; integrity manifest, backs up state, and stops SystemDoH last. The /S
-    ; worker remains fail-closed here, preventing recursive dispatch.
+    ; Code 54 identifies a verified existing canonical installation requiring
+    ; the protected handoff, including installations without active local DNS.
+    ; Unsafe identity/DNS checks use a different code and cannot dispatch.
+    ; The worker /S path remains fail-closed, preventing recursive dispatch.
     ${If} $PhaseResult == "54"
     ${AndIfNot} ${Silent}
       !insertmacro RunProtectedReinstallHandoff
@@ -186,7 +196,11 @@ Function .onInit
       StrCpy $RollbackNeeded "0"
       Call RollbackFailedInstall
     ${EndIf}
-    SetErrorLevel 54
+    ${If} $PhaseResult == "58"
+      SetErrorLevel 58
+    ${Else}
+      SetErrorLevel 54
+    ${EndIf}
     Abort
   ${EndIf}
 FunctionEnd

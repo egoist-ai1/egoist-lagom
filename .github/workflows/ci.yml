@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      package_candidate:
+        description: Build and upload an unsigned Windows candidate after checks
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -13,9 +19,23 @@ jobs:
   test:
     runs-on: windows-latest
     timeout-minutes: 25
+    env:
+      DOTNET_MULTILEVEL_LOOKUP: '0'
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Read the pinned SDK
+        id: sdk
+        shell: pwsh
+        run: |
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($sdkPin -notmatch '^\d+\.\d+\.\d+$') { throw 'global.json must select an exact stable SDK' }
+          "version=$sdkPin" >> $env:GITHUB_OUTPUT
+          "DOTNET_INSTALL_DIR=$(Join-Path $env:RUNNER_TEMP 'lagom-checks-dotnet')" >> $env:GITHUB_ENV
       - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
@@ -26,7 +46,7 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
-            10.0.x
+            ${{ steps.sdk.outputs.version }}
       - name: Use Python for offline release preflight
         uses: actions/setup-python@v5
         with:
@@ -36,7 +56,20 @@ jobs:
         run: |
           $testWork = Join-Path $env:RUNNER_TEMP 'lagom-tests'
           New-Item -ItemType Directory -Path $testWork -Force | Out-Null
+          $dotnetPath = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'
+          $actualSdk = & $dotnetPath --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($actualSdk.Trim() -ne $sdkPin) { throw "SDK mismatch: expected $sdkPin, received $actualSdk" }
+          $gitPath = (Get-Command git -CommandType Application -ErrorAction Stop).Source
+          $gitRoot = Split-Path (Split-Path $gitPath -Parent) -Parent
+          $opensslPath = Join-Path $gitRoot 'usr\bin\openssl.exe'
+          if (-not (Test-Path -LiteralPath $opensslPath -PathType Leaf)) { throw 'Git OpenSSL is required for the local TLS fixture' }
+          & $opensslPath version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "LAGOM_TEST_TEMP=$testWork" >> $env:GITHUB_ENV
+          "LAGOM_DNS_TEST_WORK=$testWork" >> $env:GITHUB_ENV
+          "LAGOM_DNS_TEST_OPENSSL=$opensslPath" >> $env:GITHUB_ENV
           "EGOIST_RELEASE_TEST_DIR=$testWork" >> $env:GITHUB_ENV
           "EGOIST_RELEASE_PYTHON=$env:pythonLocation\python.exe" >> $env:GITHUB_ENV
           "EGOIST_PACKAGING_TEST_DIR=$testWork" >> $env:GITHUB_ENV
@@ -44,16 +77,27 @@ jobs:
           "TEMP=$testWork" >> $env:GITHUB_ENV
           "TMP=$testWork" >> $env:GITHUB_ENV
       - name: Install dependencies
-        run: npm ci
+        shell: pwsh
+        run: |
+          npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build generated bundles
-        run: npm run build
+        shell: pwsh
+        run: |
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Install NSIS for installer regressions
         shell: pwsh
-        run: choco install nsis --no-progress --yes
+        run: |
+          choco install nsis --no-progress --yes
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run tests
         env:
           SHIELD_MAKENSIS: C:\\Program Files (x86)\\NSIS\\makensis.exe
-        run: npm test
+        shell: pwsh
+        run: |
+          npm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run Core fault and recovery regressions
         shell: pwsh
         run: |
@@ -63,6 +107,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet run --project tests/NativeDohConfigurationRegression -c Release -- --self-test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run owned wrapper log filesystem and Core integration regressions
+        shell: pwsh
+        run: |
+          $env:LAGOM_TEST_POWERSHELL = Join-Path $PSHOME 'pwsh.exe'
+          if (-not (Test-Path -LiteralPath $env:LAGOM_TEST_POWERSHELL -PathType Leaf)) { throw 'PowerShell 7 is required for native long-path junction fixtures' }
+          $coreIntermediate = (Join-Path $env:LAGOM_TEST_TEMP 'wrapper-core-obj') + '\'
+          $coreOutput = (Join-Path $env:LAGOM_TEST_TEMP 'wrapper-core-bin') + '\'
+          dotnet build src/service/EgoistShield.Service.csproj -c Release -p:RestoreLockedMode=true -p:PublishSingleFile=true -p:SelfContained=true "-p:BaseIntermediateOutputPath=$coreIntermediate" "-p:MSBuildProjectExtensionsPath=$coreIntermediate" "-p:OutputPath=$coreOutput" '-p:DefaultItemExcludes=obj\**\*.cs' -v quiet
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $coreAssembly = Join-Path $coreOutput 'EgoistShield.Service.dll'
+          if (-not (Test-Path -LiteralPath $coreAssembly -PathType Leaf)) { throw 'Actual Core assembly for the log guard regression is missing' }
+          dotnet run --project tests/OwnedWrapperLogMaintenanceRegression -c Release -- --work $env:LAGOM_TEST_TEMP --core $coreAssembly
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run Windows PowerShell installer safety regressions
         shell: pwsh
         run: |
@@ -71,3 +128,160 @@ jobs:
             & $nativeShell -NoProfile -ExecutionPolicy Bypass -File (Join-Path 'tests' $test)
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
+
+  candidate:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.package_candidate }}
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      DOTNET_MULTILEVEL_LOOKUP: '0'
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Read pinned candidate metadata
+        id: metadata
+        run: |
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
+          if ($sdkPin -notmatch '^\d+\.\d+\.\d+$' -or $version -notmatch '^\d+\.\d+\.\d+$') { throw 'Candidate metadata must use stable exact versions' }
+          "sdk=$sdkPin" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "DOTNET_INSTALL_DIR=$(Join-Path $env:RUNNER_TEMP 'lagom-candidate-dotnet')" >> $env:GITHUB_ENV
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Use the exact packaging SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ steps.metadata.outputs.sdk }}
+      - name: Use Python for verified input recovery
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install packaging tools
+        run: |
+          choco install nsis 7zip --no-progress --yes
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Prepare runner-owned work and tool paths
+        id: prepare
+        run: |
+          $candidateWork = Join-Path $env:RUNNER_TEMP 'lagom-candidate'
+          $evidence = Join-Path $candidateWork 'evidence'
+          $temporary = Join-Path $candidateWork 'temp'
+          New-Item -ItemType Directory -Path $candidateWork, $evidence, $temporary -Force | Out-Null
+          $dotnetPath = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'
+          $sevenZipPath = Join-Path $env:ProgramFiles '7-Zip\7z.exe'
+          $makensisPath = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
+          foreach ($tool in @($dotnetPath, $sevenZipPath, $makensisPath)) {
+            if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) { throw "Required tool is missing: $tool" }
+          }
+          $actualSdk = & $dotnetPath --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($actualSdk.Trim() -ne $sdkPin) { throw "SDK mismatch: expected $sdkPin, received $actualSdk" }
+          $sourceEpoch = git log -1 --format=%ct
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($sourceEpoch -notmatch '^\d+$') { throw 'Invalid source commit timestamp' }
+          "SHIELD_DOTNET=$dotnetPath" >> $env:GITHUB_ENV
+          "SHIELD_MAKENSIS=$makensisPath" >> $env:GITHUB_ENV
+          "SHIELD_SEVEN_ZIP=$sevenZipPath" >> $env:GITHUB_ENV
+          "SHIELD_EVIDENCE_DIR=$evidence" >> $env:GITHUB_ENV
+          "LAGOM_CANDIDATE_WORK=$candidateWork" >> $env:GITHUB_ENV
+          "SOURCE_DATE_EPOCH=$sourceEpoch" >> $env:GITHUB_ENV
+          "TEMP=$temporary" >> $env:GITHUB_ENV
+          "TMP=$temporary" >> $env:GITHUB_ENV
+          @{ sdk = $actualSdk.Trim(); sevenZip = $sevenZipPath; makensis = $makensisPath; sourceEpoch = $sourceEpoch } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'candidate-tools.json') -Encoding utf8
+      - name: Install locked JavaScript dependencies
+        run: |
+          npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Recover checksum-verified build inputs
+        run: |
+          python scripts/bootstrap-build-inputs.py --seven-zip $env:SHIELD_SEVEN_ZIP --work-dir $env:LAGOM_CANDIDATE_WORK
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build generated bundles
+        run: |
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Package unsigned Windows candidate
+        run: |
+          npm run package:win
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $integrity = Get-Content -LiteralPath 'dist/package-integrity.json' -Raw | ConvertFrom-Json
+          $installer = Join-Path $env:GITHUB_WORKSPACE $integrity.installer.path
+          $actualHash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
+          if ($actualHash -ne $integrity.installer.sha256 -or (Get-Item -LiteralPath $installer).Length -ne $integrity.installer.bytes) { throw 'Candidate installer does not match package integrity' }
+      - name: Test the packaged candidate and actual DNS runtime
+        run: |
+          $testWork = Join-Path $env:LAGOM_CANDIDATE_WORK 'tests'
+          $trustWork = Join-Path $testWork 'trust'
+          New-Item -ItemType Directory -Path $testWork, $trustWork -Force | Out-Null
+          $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
+          $integrity = Get-Content -LiteralPath 'dist/package-integrity.json' -Raw | ConvertFrom-Json
+          if ($integrity.version -ne $version) { throw 'Packaged test candidate version does not match the source' }
+          $installer = Join-Path $env:GITHUB_WORKSPACE "dist\EgoistShield-Setup-$version.exe"
+          $nativeSourcesPath = Join-Path $env:GITHUB_WORKSPACE "dist\Egoist-Lagom-$version-native-sources.zip"
+          if ($integrity.nativeSources.path -ne "dist/Egoist-Lagom-$version-native-sources.zip") { throw 'Mandatory native source companion is missing from package integrity' }
+          $xrayPath = Join-Path $env:GITHUB_WORKSPACE "out\EgoistShield-$version-win-x64\resources\runtime\xray\xray.exe"
+          $pythonPath = Join-Path $env:pythonLocation 'python.exe'
+          $gitPath = (Get-Command git -CommandType Application -ErrorAction Stop).Source
+          $gitRoot = Split-Path (Split-Path $gitPath -Parent) -Parent
+          $opensslPath = Join-Path $gitRoot 'usr\bin\openssl.exe'
+          foreach ($required in @($installer, $nativeSourcesPath, "$nativeSourcesPath.sha256", $xrayPath, $pythonPath, $opensslPath)) {
+            if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { throw "Candidate test input is missing: $required" }
+          }
+          & $opensslPath version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $xrayVersion = & $xrayPath version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:LAGOM_TEST_TEMP = $testWork
+          $env:LAGOM_DNS_TEST_WORK = $testWork
+          $env:LAGOM_DNS_TEST_OPENSSL = $opensslPath
+          $env:LAGOM_XRAY_TEST_BINARY = $xrayPath
+          $env:LAGOM_TRUST_TEST_WORK = $trustWork
+          $env:EGOIST_RELEASE_TEST_DIR = $testWork
+          $env:EGOIST_RELEASE_PYTHON = $pythonPath
+          $env:EGOIST_PACKAGING_TEST_DIR = $testWork
+          $env:SHIELD_PYTHON = $pythonPath
+          $env:TEMP = $testWork
+          $env:TMP = $testWork
+          @{ xray = $xrayPath; xraySha256 = (Get-FileHash -LiteralPath $xrayPath -Algorithm SHA256).Hash; xrayVersion = $xrayVersion; openssl = $opensslPath; fixtureWork = $testWork } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $env:SHIELD_EVIDENCE_DIR 'candidate-test-inputs.json') -Encoding utf8
+          npm test 2>&1 | Tee-Object -FilePath (Join-Path $env:SHIELD_EVIDENCE_DIR 'candidate-node-tests.txt')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $actualHash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
+          if ($actualHash -ne $integrity.installer.sha256 -or (Get-Item -LiteralPath $installer).Length -ne $integrity.installer.bytes) { throw 'Candidate installer changed during tests' }
+          $actualSourcesHash = (Get-FileHash -LiteralPath $nativeSourcesPath -Algorithm SHA256).Hash
+          if ($actualSourcesHash -ne $integrity.nativeSources.sha256 -or (Get-Item -LiteralPath $nativeSourcesPath).Length -ne $integrity.nativeSources.bytes) { throw 'Native source companion does not match package integrity after tests' }
+      - name: Upload unsigned candidate only
+        uses: actions/upload-artifact@v4
+        with:
+          name: lagom-unsigned-candidate-${{ steps.metadata.outputs.version }}-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            dist/EgoistShield-Setup-${{ steps.metadata.outputs.version }}.exe
+            dist/EgoistShield-Setup-${{ steps.metadata.outputs.version }}.exe.sha256
+            dist/Egoist-Lagom-${{ steps.metadata.outputs.version }}-native-sources.zip
+            dist/Egoist-Lagom-${{ steps.metadata.outputs.version }}-native-sources.zip.sha256
+            dist/package-integrity.json
+      - name: Upload candidate build evidence
+        if: ${{ always() && steps.prepare.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lagom-candidate-build-evidence-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: error
+          path: ${{ runner.temp }}/lagom-candidate/evidence

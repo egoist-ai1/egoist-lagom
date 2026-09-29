@@ -25,7 +25,7 @@ const esmRequireBanner = "import { createRequire } from 'node:module';\nconst re
 await fs.rm('.vite/build', { recursive: true, force: true });
 await fs.rm('.vite/renderer', { recursive: true, force: true });
 await fs.mkdir('.vite/build', { recursive: true });
-const main = "import { ShieldConnectionController } from './src/shield-connection-controller.js';\n" + modules.slice(0, -1).join('\n') + '\n' + protocol + '\n' + facade + '\n' + modules.at(-1);
+const main = "import { ShieldConnectionController } from './src/shield-connection-controller.js';\nimport { RendererRecoveryController } from './src/renderer-recovery-controller.js';\n" + modules.slice(0, -1).join('\n') + '\n' + protocol + '\n' + facade + '\n' + modules.at(-1);
 await build({ stdin: { contents: main, resolveDir: root, sourcefile: 'recovered-main.js' }, outfile: '.vite/build/main.js', platform: 'node', format: 'esm', target: 'node22', bundle: true, external: ['electron', 'electron-log'], banner: { js: esmRequireBanner }, sourcemap: true });
 await fs.copyFile('src/recovered/preload.cjs', '.vite/build/preload.js');
 const rendererSeed = await fs.access('recovery/official-code/.vite/renderer').then(() => 'recovery/official-code/.vite/renderer').catch(() => 'public-ui');
@@ -93,6 +93,8 @@ await fs.cp('src/brand/icons','.vite/renderer/main_window/assets/icons',{recursi
 await fs.mkdir('.vite/renderer/main_window/assets/fonts', { recursive: true });
 for (const subset of ['latin', 'cyrillic', 'cyrillic-ext']) await fs.copyFile(`node_modules/@fontsource-variable/unbounded/files/unbounded-${subset}-wght-normal.woff2`, `.vite/renderer/main_window/assets/fonts/unbounded-${subset}.woff2`);
 await fs.copyFile('node_modules/@fontsource-variable/unbounded/LICENSE', '.vite/renderer/main_window/assets/fonts/Unbounded-OFL.txt');
+for (const subset of ['latin', 'cyrillic', 'cyrillic-ext']) await fs.copyFile(`node_modules/@fontsource-variable/manrope/files/manrope-${subset}-wght-normal.woff2`, `.vite/renderer/main_window/assets/fonts/manrope-${subset}.woff2`);
+await fs.copyFile('node_modules/@fontsource-variable/manrope/LICENSE', '.vite/renderer/main_window/assets/fonts/Manrope-OFL.txt');
 await fs.mkdir('recovery/official-app/resources/installer', { recursive: true });
 await fs.copyFile('resources/installer/Unbounded.ttf', 'recovery/official-app/resources/installer/Unbounded.ttf');
 await build({ stdin: { contents: "export { gsap } from 'gsap';", resolveDir: root }, outfile: '.vite/renderer/main_window/assets/shield-motion.js', platform: 'browser', format: 'iife', globalName: 'ShieldMotion', bundle: true, minify: true });

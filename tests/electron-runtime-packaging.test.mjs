@@ -152,7 +152,7 @@ test('staging uses all new runtime files and product resources without old runti
     assert.equal(await fs.readFile(path.join(out, 'LICENSE'), 'utf8'), 'fresh-runtime:LICENSE');
     assert.equal(await fs.readFile(path.join(out, 'version'), 'utf8'), '44.4.5');
     assert.equal(await fs.readFile(path.join(out, 'resources/brand/icon.ico'), 'utf8'), 'product icon');
-    for (const relative of ['electron.exe', 'libEGL.dll', 'resources/default_app.asar', 'resources/app.asar', 'resources/core-service/old.dll', 'resources/scripts/system-control/old.ps1']) assert.equal(await fs.stat(path.join(out, ...relative.split('/'))).catch(() => null), null, relative);
+    for (const relative of ['electron.exe', 'libEGL.dll', 'resources/default_app.asar', 'resources/app.asar', 'resources/core-service/old.dll', 'resources/scripts/system-control/old.ps1', 'resources/elevate.exe']) assert.equal(await fs.stat(path.join(out, ...relative.split('/'))).catch(() => null), null, relative);
     assert.equal(await fs.readFile(path.join(out, 'resources/scripts/product-script.ps1'), 'utf8'), 'retained script');
     await fs.appendFile(path.join(out, 'EgoistShield.exe'), '-product-branding');
     const receipt = await addElectronToRuntimeManifest(out, staged);

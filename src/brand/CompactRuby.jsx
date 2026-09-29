@@ -15,6 +15,29 @@ function rubyButtonText(children){return O.Children.toArray(children).map(child=
 function rubyButtonHasIcon(children){return O.Children.toArray(children).some(child=>O.isValidElement(child)&&(child.type===RubyIcon||child.type==='svg'||child.type?.displayName in rubyLegacyIconNames||rubyButtonHasIcon(child.props.children)))}
 function rubyRequireOk(result,fallback){if(result?.ok===false)throw new Error(result.message||result.error||fallback);return result}
 function rubyBusy(snapshot,...actions){return actions.some(id=>snapshot.busy===id||snapshot.busyActions?.includes(id))}
+function rubyComponentStatus(status,active,pending){
+  if(pending)return {tone:'pending',label:'Переключаем…',detail:''};
+  if(!status)return {tone:'unknown',label:'Проверяем состояние…',detail:''};
+  if(active)return {tone:'ready',label:'Работает',detail:''};
+  const error=status.lastError?.message||status.lastError||status.statusError||status.error;
+  if(error)return {tone:'error',label:'Ошибка',detail:typeof error==='string'?error:'Служба сообщила об ошибке.'};
+  if(status.serviceRunning||status.standaloneRunning||status.running)return {tone:'degraded',label:'Служба не готова',detail:'Процесс запущен, но рабочее состояние не подтверждено.'};
+  return {tone:'off',label:'Выключен',detail:''};
+}
+function rubyTrafficSample(verified,received,value){
+  return verified&&received&&Number.isFinite(value)?Math.max(0,value):null;
+}
+function rubyTabKey(event,items,current,onSelect){
+  const index=items.indexOf(current);
+  const next=event.key==='Home'?0:event.key==='End'?items.length-1:event.key==='ArrowRight'?(index+1)%items.length:event.key==='ArrowLeft'?(index-1+items.length)%items.length:null;
+  if(next===null||!items.length)return;
+  event.preventDefault();
+  onSelect(items[next]);
+  event.currentTarget.closest('[role="tablist"]')?.querySelector('[data-tab-id="'+items[next]+'"]')?.focus();
+}
+function RubyLogEntry({line}){
+  return <details className={'log-line log-disclosure '+Xp(line)}><summary><span>{Yp(line)}</span><strong>{Zp(line)}</strong><span className="log-message-preview">{Qp(line)}</span><RubyIcon name="chevron-down" size={12}/></summary><p className="log-full-message">{Qp(line)}</p></details>;
+}
 function rubyActionIcon(label,role){
   if(role==='switch'){
     if(/старт.*Windows/i.test(label))return 'startup';
@@ -35,17 +58,18 @@ const RubyButton=O.forwardRef(({children,className='',...props},ref)=>{
   const icon=!rubyButtonHasIcon(children)&&!isCompact?rubyActionIcon(label,props.role):null;
   return <button {...props} ref={ref} className={className+(icon?' ruby-action-button':'')}>{icon&&<RubyIcon name={icon} size={16} className="ruby-action-glyph"/>}{children}</button>;
 });
-function sp({activeScreen,onAppInfo,onNavigate,onSwitchToWidget}){
+function sp({activeScreen,onAppInfo,onNavigate,onSwitchToWidget,snapshot}){
   const windowApi=window.egoistAPI?.window;
+  const closeLabel=snapshot?.state?.settings?.minimizeToTray?'Скрыть в трей':'Закрыть приложение';
   return <>
     <header className="ruby-titlebar">
       <button className="ruby-brand" onClick={()=>onNavigate('dashboard')} aria-label="Egoist Lagom: обзор"><img src="./assets/icons/brand-shield.svg" alt=""/><span>EGOIST <b>LAGOM</b></span></button>
       <div className="ruby-drag-region"/>
       <div className="ruby-window-controls">
-        <button className="ruby-widget-switch-btn" aria-label="Виджет" title="Свернуть в мини-щит" onClick={onSwitchToWidget}><RubyIcon name="brand-shield" size={20}/><span>Щит</span></button>
+        <button className="ruby-widget-switch-btn" aria-label="Перейти в мини-щит" title="Перейти в мини-щит" onClick={onSwitchToWidget}><RubyIcon name="brand-shield" size={20}/><span>Мини-щит</span></button>
         <button aria-label="Свернуть" title="Свернуть" onClick={()=>windowApi?.minimize?.()}><RubyIcon name="minimize" size={15}/></button>
-        <button aria-label="Развернуть" title="Развернуть" onClick={()=>windowApi?.toggleMaximize?.()}><RubyIcon name="maximize" size={14}/></button>
-        <button aria-label="Закрыть" title="Вернуться в виджет" onClick={onSwitchToWidget}><RubyIcon name="close" size={15}/></button>
+        <button aria-label="Развернуть или восстановить окно" title="Развернуть или восстановить окно" onClick={()=>windowApi?.toggleMaximize?.()}><RubyIcon name="maximize" size={14}/></button>
+        <button aria-label={closeLabel} title={closeLabel} onClick={()=>windowApi?.close?.()}><RubyIcon name="close" size={15}/></button>
       </div>
     </header>
     <aside className="ruby-sidebar">
@@ -67,6 +91,8 @@ function lp({confirmAction,onCloseSpeedPanel,onNavigate,runAction,snapshot,speed
   const vpnRunning=!!(snapshot.vpn?.connected||snapshot.vpn?.running);
   const vpnFailed=/failed|error/i.test(String(snapshot.vpn?.lifecycle??''));
   const vpnBusy=rubyBusy(snapshot,'vpn-toggle','vpn-disconnect','vpn-connect-node');
+  const rx=rubyTrafficSample(vpnVerified,snapshot.trafficSampleReceived,snapshot.traffic?.rx);
+  const tx=rubyTrafficSample(vpnVerified,snapshot.trafficSampleReceived,snapshot.traffic?.tx);
   const dnsActive=rubyDnsReady(snapshot.systemDoh);
   const zapretActive=rubyZapretReady(snapshot.zapret);
   const telegramActive=rubyTelegramReady(snapshot.telegram);
@@ -113,8 +139,11 @@ function lp({confirmAction,onCloseSpeedPanel,onNavigate,runAction,snapshot,speed
       <div className="ruby-connect"><img className="ruby-connection-mark" src="./assets/icons/brand-shield.svg" alt="" aria-hidden="true"/><div className="ruby-connect-body"><h2>{snapshot.busy==='vpn-disconnect'?'Отключение…':vpnBusy?'Подключение…':vpnVerified?'Маршрут подключён':vpnRunning?'Проверяем маршрут':vpnFailed?'Маршрут не подключён':'Маршрут отключён'}</h2><p>{vpnVerified?'Маршрут подтверждён':vpnRunning?'Проверяем внешний адрес и маршрут':vpnFailed?'Повторите попытку или выберите другой сервер':'Выберите сервер для подключения'}</p><button className="ruby-server-select" onClick={()=>nodes.length?setServersOpen(true):onNavigate('vpn')}><RubyIcon name="vpn"/><span>{activeNode?dm(snapshot.vpn,snapshot.state):'Выбрать сервер'}</span><RubyIcon name="chevron-down" size={16}/></button><button className="btn-primary ruby-connect-button" disabled={vpnBusy} aria-busy={vpnBusy} onClick={connect}><RubyIcon name="power" size={19}/>{vpnBusy?'Пожалуйста, подождите':vpnRunning?'Отключить':'Подключить'}</button>{vpnVerified&&<small className="ruby-uptime">Подключено {Im(snapshot.vpn?.uptimeMs??snapshot.vpn?.startedAt)}</small>}</div></div>
       <aside className="ruby-network"><dl>{[['Ваш IP',ip],['Провайдер',provider],['Регион',region],['Протокол',activeNode?.protocol?.toUpperCase()]].map(([label,value])=><div key={label}><dt>{label}</dt><dd title={value??''}>{value??'Не определено'}</dd></div>)}</dl><div className="ruby-route-status"><RubyIcon name={vpnVerified?'check':'zapret'} size={22}/><div><h3>{vpnVerified?'Выход подтверждён':snapshot.busy==='route-probe'?'Проверяем выход…':route?'Результат проверки':'Выход не проверен'}</h3><p>{vpnVerified?'Внешний маршрут прошёл проверку':'Проверьте точку выхода в интернет'}</p></div></div><button className="btn-secondary" disabled={snapshot.busy==='route-probe'} onClick={probe}>Проверить</button></aside>
     </section>
-    <section className="ruby-components" aria-label="Сетевые компоненты"><h2>Компоненты</h2><div className="ruby-component-list">{components.map(({id,title,description,icon,active,status,pending,toggle})=><article key={id}><RubyIcon name={icon} size={24}/><div className="ruby-component-copy"><h3>{title}</h3><p title={status?.lastError || ''}>{pending?'Переключаем…':!status?'Проверяем состояние…':!active&&(status.serviceRunning||status.standaloneRunning)?'Служба не готова':description}</p></div><button className="btn-secondary ruby-configure" aria-label={'Настроить '+title} onClick={()=>onNavigate(id)}>Настроить</button><button role="switch" aria-label={title} aria-checked={active} aria-busy={pending} className={'ruby-toggle'+(active?' active':'')} disabled={!status||!!snapshot.busy} onClick={toggle}><span className="ruby-toggle-track"><i/></span><span>{pending?'…':active?'Вкл':'Выкл'}</span></button></article>)}</div></section>
-    <section className="ruby-traffic" aria-label="Трафик"><div className="ruby-traffic-heading"><RubyIcon name="activity"/><h2>Трафик</h2></div><div className="ruby-metric"><span>Входящий</span><strong><RubyIcon name="download" size={17}/>{vpnVerified?Gm(snapshot.traffic?.rx??0):'0 Б'}/с</strong></div><div className="ruby-metric"><span>Исходящий</span><strong><RubyIcon name="upload" size={17}/>{vpnVerified?Gm(snapshot.traffic?.tx??0):'0 Б'}/с</strong></div><button className="btn-secondary" disabled={snapshot.busy==='speedtest'} onClick={()=>runAction('speedtest',()=>Z('system.speedtest',api?.system?.speedtest),'Замер скорости выполнен')}><RubyIcon name="speedtest"/>{snapshot.busy==='speedtest'?'Измеряем…':'Speedtest'}</button></section>
+    <section className="ruby-components" aria-label="Сетевые компоненты"><h2>Компоненты</h2><div className="ruby-component-list">{components.map(({id,title,description,icon,active,status,pending,toggle})=>{
+      const display=rubyComponentStatus(status,active,pending);
+      return <article key={id} data-state={display.tone}><RubyIcon name={icon} size={24}/><div className="ruby-component-copy"><div className="ruby-component-heading"><h3>{title}</h3><span className={'ruby-component-status '+display.tone}>{['error','degraded'].includes(display.tone)&&<RubyIcon name="warning" size={13}/>}<span>{display.label}</span></span></div><p>{description}</p>{display.detail&&<details className="ruby-component-details"><summary>Подробности</summary><p>{display.detail}</p></details>}</div><button className="btn-secondary ruby-configure" aria-label={'Настроить '+title} onClick={()=>onNavigate(id)}>Настроить</button><button role="switch" aria-label={title} aria-checked={active} aria-busy={pending} className={'ruby-toggle'+(active?' active':'')} disabled={!status||!!snapshot.busy} onClick={toggle}><span className="ruby-toggle-track"><i/></span><span>{pending?'…':active?'Вкл':'Выкл'}</span></button></article>;
+    })}</div></section>
+    <section className="ruby-traffic" aria-label="Трафик"><div className="ruby-traffic-heading"><RubyIcon name="activity"/><div><h2>Трафик</h2><small>{vpnVerified?'Трафик маршрута':'Соединение отключено'}</small></div></div><div className="ruby-metric"><span>Входящий</span><strong><RubyIcon name="download" size={17}/>{rx===null?(vpnVerified?'Нет данных':'—'):Gm(rx)+'/с'}</strong></div><div className="ruby-metric"><span>Исходящий</span><strong><RubyIcon name="upload" size={17}/>{tx===null?(vpnVerified?'Нет данных':'—'):Gm(tx)+'/с'}</strong></div><button className="btn-secondary" disabled={snapshot.busy==='speedtest'} onClick={()=>runAction('speedtest',()=>Z('system.speedtest',api?.system?.speedtest),'Замер скорости выполнен')}><RubyIcon name="speedtest"/>{snapshot.busy==='speedtest'?'Измеряем…':'Измерить скорость'}</button></section>
     <button className="ruby-recovery" disabled={snapshot.busy==='internet-fix'} onClick={restore}><RubyIcon name="restore"/>Восстановить интернет</button>
     <ShieldSpeedPanel onClose={onCloseSpeedPanel} open={speedPanelVisible&&(snapshot.busy==='speedtest'||!!snapshot.speedtest)} progress={snapshot.speedProgress} result={snapshot.speedtest}/>
     <ShieldProtectionPanel dns={routeDns??null} route={route??null} open={protectionOpen&&(snapshot.busy==='route-probe'||!!snapshot.routeProbe)} onClose={()=>setProtectionOpen(false)} onProtectionAction={action=>{const key=pp(action);if(key==='повторить проверку')return probe();setProtectionOpen(false);if(key==='восстановить интернет')return restore();if(key==='применить маршрут заново')return runAction('vpn-reapply-route',()=>Z('system.reapplyRoute',api?.system?.reapplyRoute),'Маршрут применён повторно');onNavigate(key.includes('dns')?'dns':'vpn')}}/>

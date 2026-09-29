@@ -1,0 +1,17 @@
+{
+  "path": "Egoist-Lagom-3.8.0-native-sources.zip",
+  "bytes": 220548158,
+  "sha256": "5e6e0e652d494e3a56eb454cb2340e80c73416b249d06b6278d4bbd030f49ff4",
+  "sourceArchives": 144,
+  "coverage": {
+    "primarySources": "Nine exact upstream source archives including Cronet native builder and its pinned naiveproxy source, notices, build metadata and shipped sing-box module archives.",
+    "singBoxModules": "All dependency modules recorded in the authenticated shipped sing-box executable, each verified against embedded Go h1 checksum.",
+    "limits": [
+      "Build-to-binary reproducibility is not established.",
+      "The Telegram CLI executable is inherited from the authenticated recovery payload; official source v1.7.0 is included, but its exact build correspondence is not established.",
+      "Cronet native builder and pinned naiveproxy/Chromium subset source are included. Toolchain/sysroot/Chromium build fetches and exact rebuild verification remain unperformed.",
+      "Other native/renderer/Python transitive dependencies are not asserted complete by this inventory.",
+      "No assertion of complete GPL corresponding-source or other license compliance is made: exact native rebuild and external source/build inputs still require acceptance review."
+    ]
+  }
+}

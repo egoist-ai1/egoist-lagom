@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "baselineVersion": "3.7.9",
+  "scope": "Pinned native inputs retained by the new candidate except explicitly replaced service wrapper. Manifest regenerates final runtime file hashes at packaging.",
+  "baselineFiles": [
+    {
+      "path": "resources/runtime/xray/xray.exe",
+      "bytes": 35819008,
+      "sha256": "47f612eff0a553c982a3e2806e54f94bee0639d0f3f0fa11116a11bbd6abda3f"
+    },
+    {
+      "path": "resources/runtime/sing-box/sing-box.exe",
+      "bytes": 81819136,
+      "sha256": "aad0ede010eafa7b277e520464f3a66fde820103d737eff739f40f3cc9451dcc"
+    },
+    {
+      "path": "resources/gravityless-dns/dnscrypt-proxy.exe",
+      "bytes": 11823104,
+      "sha256": "23d1895bcfa8573605e811056d12b2bf5f13b0633758fbeda3ded79c5a6ea19d"
+    },
+    {
+      "path": "resources/runtime/zapret/core/bin/winws.exe",
+      "bytes": 203776,
+      "sha256": "affb4f69d2ea302a7abccd5325d81826e140ddae014f1e070bc4a6c0dd555188"
+    },
+    {
+      "path": "resources/runtime/zapret/core/bin/WinDivert.dll",
+      "bytes": 47616,
+      "sha256": "c1e060ee19444a259b2162f8af0f3fe8c4428a1c6f694dce20de194ac8d7d9a2"
+    },
+    {
+      "path": "resources/runtime/zapret/core/bin/WinDivert64.sys",
+      "bytes": 94144,
+      "sha256": "8da085332782708d8767bcace5327a6ec7283c17cfb85e40b03cd2323a90ddc2"
+    },
+    {
+      "path": "resources/runtime/xray/wintun.dll",
+      "bytes": 427552,
+      "sha256": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+    },
+    {
+      "path": "resources/runtime/tg-ws-proxy/egoistshield-tg-ws-proxy.exe",
+      "bytes": 12478791,
+      "sha256": "f4c06a47258986030c2e6ce51e28a9a1e75a9b66c9b217aa73af7d64ffc40fed"
+    }
+  ],
+  "replacedWrapper": {
+    "name": "winsw",
+    "version": "2.12.0",
+    "file": "WinSW.NET461.exe",
+    "packagedPath": "resources/runtime/zapret/service-wrapper/egoistshield-zapret-service.exe",
+    "bytes": 655872,
+    "sha256": "b5066b7bbdfba1293e5d15cda3caaea88fbeab35bd5b38c41c913d492aadfc4f",
+    "runtime": ".NET Framework",
+    "minimumFrameworkRelease": 528040
+  },
+  "licenseFiles": "sources.json",
+  "sourcePins": "source-inputs.json",
+  "sourceCoverage": {
+    "primarySources": "Nine exact upstream source archives including Cronet native builder and its pinned naiveproxy source, notices, build metadata and shipped sing-box module archives.",
+    "singBoxModules": "All dependency modules recorded in the authenticated shipped sing-box executable, each verified against embedded Go h1 checksum.",
+    "limits": [
+      "Build-to-binary reproducibility is not established.",
+      "The Telegram CLI executable is inherited from the authenticated recovery payload; official source v1.7.0 is included, but its exact build correspondence is not established.",
+      "Cronet native builder and pinned naiveproxy/Chromium subset source are included. Toolchain/sysroot/Chromium build fetches and exact rebuild verification remain unperformed.",
+      "Other native/renderer/Python transitive dependencies are not asserted complete by this inventory.",
+      "No assertion of complete GPL corresponding-source or other license compliance is made: exact native rebuild and external source/build inputs still require acceptance review."
+    ]
+  }
+}

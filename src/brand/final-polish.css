@@ -47,27 +47,55 @@
 }
 
 .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-list {
-  display: flex !important;
-  flex: 1 1 0 !important;
+  display: flex;
+  flex: 1 1 0;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px !important;
+  gap: 4px;
   min-height: 0 !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
 }
 
 .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line {
-  display: grid !important;
-  flex: 0 0 42px !important;
-  grid-template-columns: 58px 40px minmax(0, 1fr) !important;
-  align-items: start !important;
-  min-height: 42px !important;
-  height: 42px !important;
-  max-height: 42px !important;
+  display: block;
+  flex: 0 0 auto;
+  min-height: 42px;
+  height: auto;
+  max-height: none;
   min-width: 0;
-  padding: 5px 2px !important;
-  overflow: hidden !important;
+  padding: 5px 2px;
+  overflow: visible;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line summary {
+  display: grid;
+  grid-template-columns: 62px 48px minmax(0, 1fr) 12px;
+  align-items: start;
+  gap: 6px;
+  min-height: 32px;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 4px;
+}
+
+.log-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.log-disclosure summary:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.log-disclosure summary > .ruby-icon {
+  margin-top: 3px;
+  color: var(--dim);
+  transition: transform 120ms ease-out;
+}
+
+.log-disclosure[open] summary > .ruby-icon {
+  transform: rotate(180deg);
 }
 
 .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line span,
@@ -77,40 +105,48 @@
   max-width: 100%;
 }
 
-.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line p {
-  display: -webkit-box !important;
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line .log-message-preview {
+  display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  margin: 0 !important;
-  line-height: 1.25 !important;
-  max-height: 26px !important;
-  white-space: normal !important;
-  overflow: hidden !important;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+  white-space: normal;
+  overflow: hidden;
   overflow-wrap: anywhere;
-  word-break: break-word;
+}
+
+.screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line .log-full-message {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  max-height: none;
+  margin: 8px 0 4px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-raised);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: visible;
+  text-overflow: clip;
+  user-select: text;
+  line-height: 1.5;
+}
+
+@media (max-width: 860px) {
+  .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-list {
+    flex: none;
+  }
 }
 
 @media (max-width: 720px) {
   .screen-stage[data-screen="settings"] .settings-layout {
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: none !important;
-    align-content: start !important;
-    height: auto !important;
-    min-height: 100% !important;
-    overflow: visible !important;
     gap: 10px !important;
-  }
-
-  .screen-stage[data-screen="settings"] .settings-surface {
-    height: auto !important;
-    min-height: max-content !important;
-  }
-
-  .screen-stage[data-screen="settings"] .settings-preferences-surface .settings-preferences-list,
-  .screen-stage[data-screen="settings"] .settings-service-surface .settings-service-list {
-    flex: 0 0 auto !important;
-    min-height: max-content !important;
   }
 
   .screen-stage[data-screen="settings"] .settings-layout > .app-version {
@@ -129,17 +165,18 @@
 }
 
 @media (max-width: 520px) {
-  .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line {
-    flex-basis: 40px !important;
-    grid-template-columns: 52px 40px minmax(0, 1fr) !important;
-    min-height: 40px !important;
-    height: 40px !important;
-    max-height: 40px !important;
-    padding: 4px 2px !important;
+  .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line summary {
+    grid-template-columns: 62px 48px minmax(0, 1fr) 12px;
   }
 
-  .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line p {
-    grid-column: auto !important;
+  .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line .log-message-preview {
+    grid-column: 1 / 4;
+    grid-row: 2;
+  }
+
+  .log-disclosure summary > .ruby-icon {
+    grid-column: 4;
+    grid-row: 1;
   }
 }
 

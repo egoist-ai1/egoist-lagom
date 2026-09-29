@@ -10,10 +10,14 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+sys.dont_write_bytecode = True
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('shield_github_api',ROOT/'scripts/github-api.py')
 api=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(api)
+source_spec=importlib.util.spec_from_file_location('release_source',ROOT/'scripts/release-source.py')
+source_api=importlib.util.module_from_spec(source_spec)
+source_spec.loader.exec_module(source_api)
 REPO='/repos/egoist-ai1/egoist-lagom'
 DIST=Path(os.environ.get('EGOIST_RELEASE_DIST', str(ROOT/'dist')))
 if not DIST.is_absolute():
@@ -29,6 +33,10 @@ names=['Egoist-Lagom-Setup.exe','Egoist-Lagom-Setup.exe.sha256','package-integri
        'Egoist-Lagom-'+version+'.cdx.json']
 if version != '3.7.1':
     names[:0] = ['EgoistShield-Setup-'+version+'.exe', 'EgoistShield-Setup-'+version+'.exe.sha256']
+source_bundle_name='Egoist-Lagom-'+version+'-native-sources.zip'
+requires_native_sources=tuple(int(value) for value in version.split('.')) >= (3,8,0)
+if requires_native_sources:
+    names.extend([source_bundle_name,source_bundle_name+'.sha256'])
 receipt_argument=os.environ.get('SHIELD_RELEASE_RECEIPT')
 receipt_path=Path(receipt_argument) if receipt_argument else None
 
@@ -58,6 +66,14 @@ def verify_local():
         if not data:
             raise ValueError('Empty release asset: '+name)
         digests[name]={'digest':'sha256:'+hashlib.sha256(data).hexdigest(),'size':len(data)}
+    if requires_native_sources:
+        integrity=json.loads((DIST/'package-integrity.json').read_text(encoding='utf-8-sig'))
+        source_bundle=integrity.get('nativeSources')
+        actual=digests[source_bundle_name]
+        if not isinstance(source_bundle,dict) or Path(source_bundle.get('path','')).name != source_bundle_name or source_bundle.get('bytes') != actual['size'] or source_bundle.get('sha256') != actual['digest'][7:]:
+            raise RuntimeError('Native-source companion differs from package-integrity.json')
+        if (DIST/(source_bundle_name+'.sha256')).read_text(encoding='utf-8-sig').strip() != actual['digest'][7:]+'  '+source_bundle_name:
+            raise RuntimeError('Native-source companion checksum file differs')
     return digests
 
 mode=sys.argv[1] if len(sys.argv)>1 else 'status'
@@ -68,6 +84,8 @@ if mode=='verify':
     sys.exit(0)
 if mode!='status':
     verified_assets=verify_local()
+    if mode != 'verify':
+        packaged_source=source_api.verify_artifact_source(json.loads((DIST/'package-integrity.json').read_text(encoding='utf-8-sig')))
     if receipt_path is None or not receipt_path.is_absolute():
         raise ValueError('Set SHIELD_RELEASE_RECEIPT to an absolute task-scoped receipt path')
     receipt_path.parent.mkdir(parents=True,exist_ok=True)
@@ -83,15 +101,22 @@ elif mode=='stage':
     if len(commit)!=40 or any(c not in '0123456789abcdef' for c in commit):
         raise ValueError('Expected an exact lowercase Git commit SHA')
     body=Path(sys.argv[3]).read_text(encoding='utf-8-sig')
+    source=source_api.source_binding(api.request,REPO,commit)
+    if source != packaged_source:
+        raise RuntimeError('Packaged source differs from the requested release commit/tree')
+    source_api.verify_release_source(api.request,REPO,{'tag_name':tag,'target_commitish':commit},source,allow_missing_tag=True)
     release=api.request(REPO+'/releases','POST',{'tag_name':tag,'target_commitish':commit,'name':'Egoist Lagom','body':body,'draft':True,'prerelease':False})
-    receipt_path.write_text(json.dumps({'releaseId':release['id'],'tag':tag,'candidate':verified_assets,'assets':[]},indent=2))
+    receipt_path.write_text(json.dumps({'schemaVersion':2,'releaseId':release['id'],'tag':tag,'source':source,'candidate':verified_assets,'assets':[]},indent=2))
     print(json.dumps(summary(release)))
 elif mode=='upload':
     receipt=json.loads(receipt_path.read_text())
+    if packaged_source != receipt.get('source'):
+        raise RuntimeError('Packaged source differs from the staged release commit/tree')
     if receipt.get('candidate')!=verified_assets:
         raise RuntimeError('Local assets changed since draft creation; inspect before continuing')
     if not release or not release['draft'] or release['id']!=receipt['releaseId'] or release['tag_name']!=receipt['tag']:
         raise RuntimeError('Only the task-owned unpublished draft may receive assets')
+    source_api.verify_release_source(api.request,REPO,release,receipt.get('source'),allow_missing_tag=True)
     assets={a['name']:a for a in release.get('assets',[])}
     for name in names:
         file=(DIST/name).resolve()
@@ -120,10 +145,13 @@ elif mode=='upload':
     print(json.dumps(summary(fresh)))
 elif mode=='publish':
     receipt=json.loads(receipt_path.read_text())
+    if packaged_source != receipt.get('source'):
+        raise RuntimeError('Packaged source differs from the staged release commit/tree')
     if receipt.get('candidate')!=verified_assets:
         raise RuntimeError('Local assets changed since draft creation; inspect before publishing')
     if not release or release['id']!=receipt['releaseId'] or release['tag_name']!=receipt['tag']:
         raise RuntimeError('Only the task-owned release may be published')
+    source_api.verify_release_source(api.request,REPO,release,receipt.get('source'),allow_missing_tag=release['draft'])
     assets={a['name']:a for a in release.get('assets',[])}
     if set(assets)!=set(names):
         raise RuntimeError('Release assets differ from the exact expected allowlist')
@@ -139,6 +167,7 @@ elif mode=='publish':
     latest=api.request(REPO+'/releases/latest')
     if fresh['draft'] or fresh['prerelease'] or latest['id']!=fresh['id']:
         raise RuntimeError('Published release/latest readback did not match the task-owned candidate')
+    receipt['publishedSource']=source_api.verify_release_source(api.request,REPO,fresh,receipt['source'])
     receipt['published']=True
     receipt_path.write_text(json.dumps(receipt,indent=2))
     print(json.dumps(summary(fresh)))

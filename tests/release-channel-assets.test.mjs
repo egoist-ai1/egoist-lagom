@@ -122,7 +122,7 @@ test('GitHub preflight verifies offline and rejects changed inputs before any AP
   await fs.writeFile(path.join(f.dist, 'Egoist-Lagom-validation.md'), 'Fixture validation evidence');
   const scripts = path.join(f.base, 'scripts');
   await fs.mkdir(scripts);
-  for (const name of ['prepare-release-assets.mjs', 'release-github.py']) await fs.copyFile(fileURLToPath(new URL(`../scripts/${name}`, import.meta.url)), path.join(scripts, name));
+  for (const name of ['prepare-release-assets.mjs', 'release-github.py', 'release-source.py']) await fs.copyFile(fileURLToPath(new URL(`../scripts/${name}`, import.meta.url)), path.join(scripts, name));
   await fs.writeFile(path.join(scripts, 'github-api.py'), 'def request(*args, **kwargs):\n    raise RuntimeError("UNEXPECTED_API_REQUEST")\n');
   const run = mode => spawnSync(process.env.EGOIST_RELEASE_PYTHON, [path.join(scripts, 'release-github.py'), mode], { encoding: 'utf8', env: { ...process.env, EGOIST_NODE: process.execPath, EGOIST_RELEASE_DIST: f.dist, SHIELD_RELEASE_RECEIPT: path.join(f.base, 'release-receipt.json'), PYTHONDONTWRITEBYTECODE: '1' } });
   const verified = run('verify');

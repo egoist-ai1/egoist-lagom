@@ -36,6 +36,8 @@ internal static class Program
             await Check("boot bootstrap rotation uses a verified worker result and durable transaction", BootstrapRefreshAsync);
             await Check("bootstrap failure cooldown and external adapter state prevent blind changes", BootstrapDeferralAsync);
             await Check("central DNS mode guards reject cross-mode mutations", ModeGuardsAsync);
+            await Check("probe scope is enforced before memory, durable and in-flight responses", IdentityProbeScopeAsync);
+            await Check("unverified runtime root blocks SCM execution and automatic startup before metadata access", UnverifiedRuntimeRootAsync);
             await Check("optional log locking does not fail network operations", LogLockAsync);
             await Check("generated listener ownership snapshot is bounded and stable in PowerShell5.1", ListenerSnapshotScriptAsync);
             await Check("read-only CLI reports the actual foreign owner across mixed endpoint families", ListenerSnapshotContractAsync);
@@ -309,6 +311,51 @@ internal static class Program
             var expected = mode switch { "owned" => TcpListenerOwnership.Owned, "foreign" => TcpListenerOwnership.Foreign, "missing" => TcpListenerOwnership.Missing, _ => TcpListenerOwnership.Unknown };
             Assert(ownership == expected && snapshot.Processes.Length <= 3, "PowerShell snapshot lost stable SCM identity, process ancestry or listener address: " + mode + ": " + ownership);
         }
+    }
+
+    private static async Task IdentityProbeScopeAsync()
+    {
+        using var model = new Model();
+        var normal = new ClientIdentity(Environment.ProcessId, Environment.ProcessPath!, true, "test");
+        var probe = normal with { IdentityProbe = true };
+        var request = new ServiceRequest(1, "scope:cached-status", "service.status", JsonDefaults.ToElement(new { }));
+        Assert((await model.Dispatcher.DispatchAsync(request, normal)).Ok, "Normal status request failed.");
+        Assert((await model.Dispatcher.DispatchAsync(request, probe)).Error?.Code == "IDENTITY_PROBE_SCOPE", "Probe received a cached forbidden response.");
+        Assert((await model.Dispatcher.DispatchAsync(request with { RequestId = "scope:fresh-status" }, probe)).Error?.Code == "IDENTITY_PROBE_SCOPE", "Probe scope permits fresh non-hello execution.");
+        var mutation = new ServiceRequest(1, "scope:durable", "test.delay-mutation", JsonDefaults.ToElement(new { delayMs = 1 }));
+        Assert((await model.Dispatcher.DispatchAsync(mutation, normal)).Ok, "Test-only durable mutation failed.");
+        using var restarted = new OperationDispatcher(new ServiceOptions("test-no-pipe", model.Root, true, true, null), new WindowsDnsController((_, _) => throw new InvalidOperationException("Unexpected OS DNS call")), model.Native, null, model.Journal, new ServiceLog(model.Root));
+        Assert((await restarted.DispatchAsync(mutation, probe)).Error?.Code == "IDENTITY_PROBE_SCOPE", "Probe received a forbidden durable response after restart.");
+        var pending = mutation with { RequestId = "scope:in-flight", Payload = JsonDefaults.ToElement(new { delayMs = 300 }) };
+        var running = model.Dispatcher.DispatchAsync(pending, normal);
+        Assert((await model.Dispatcher.DispatchAsync(pending, probe)).Error?.Code == "IDENTITY_PROBE_SCOPE", "In-flight request lookup bypassed scope validation.");
+        Assert((await running).Ok, "Scoped rejection interrupted the authorized request.");
+        var rejectedFirst = request with { RequestId = "scope:rejected-first" };
+        Assert((await model.Dispatcher.DispatchAsync(rejectedFirst, probe)).Error?.Code == "IDENTITY_PROBE_SCOPE" && (await model.Dispatcher.DispatchAsync(rejectedFirst, normal)).Ok, "Scope denial contaminated the authorized caller cache.");
+        Assert((await model.Dispatcher.DispatchAsync(new ServiceRequest(1, "scope:hello", "hello", JsonDefaults.ToElement(new { })), probe)).Ok, "Probe lost its permitted hello operation.");
+    }
+
+    private static async Task UnverifiedRuntimeRootAsync()
+    {
+        string root = Path.Combine(_work, "unverified-runtime"); Directory.CreateDirectory(root);
+        var controller = new OwnedServiceController(root, root, false);
+        foreach (string name in OwnedServiceIntentStore.ServiceNames)
+        {
+            var calls = new Func<Task>[] {
+                async () => { await controller.StartAsync(name); },
+                async () => { await controller.InstallAsync(name); },
+                () => controller.RepairRecoveryAsync(name, default),
+                () => controller.RestoreStartTypeAsync(name, "auto")
+            };
+            foreach (var call in calls)
+            {
+                try { await call(); throw new InvalidOperationException("Unverified runtime execution was permitted."); }
+                catch (ServiceOperationException error) when (error.Code == "PROTECTED_ROOT_UNVERIFIED") { }
+            }
+        }
+        Assert(!Directory.EnumerateFileSystemEntries(root).Any(), "The blocked calls wrote runtime files before validation.");
+        // A no-op rollback must remain available even while execution is blocked.
+        await controller.RestoreStartTypeAsync(OwnedServiceIntentStore.ServiceNames[0], null);
     }
 
     private static Task ListenerSnapshotContractAsync()

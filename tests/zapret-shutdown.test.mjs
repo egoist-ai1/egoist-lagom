@@ -50,6 +50,7 @@ test('shutdown skips the idle worker status scan through the real facade and pro
   const start = main.indexOf('async function performGracefulShutdown()');
   const end = main.indexOf('\napp.on("before-quit"', start);
   const context = vm.createContext({
+    runtimeEnvironment: 'production',
     globalStateStore: { get: () => ({ settings: { zapretSuspendDuringVpn: true, zapretProfile: 'General' } }) },
     globalRuntimeManager: null, globalZapretManager: f.desktop, globalTelegramProxyManager: null,
     logger: { info() {}, warn() {} }, setTimeout, clearTimeout,

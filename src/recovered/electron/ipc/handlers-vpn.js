@@ -38,6 +38,7 @@ var speedtestInFlight = null;
 * работы, поэтому трафик действительно прекращается.
 */
 var speedtestCancelled = false;
+var speedtestAbortController = null;
 function speedtestUserAgentHeader() {
 	return `User-Agent: EgoistShield/${app.getVersion().replace(/[^0-9A-Za-z.+-]/g, "") || "unknown"} speed-test\r\n`;
 }
@@ -47,8 +48,14 @@ var SpeedtestCancelledError = class extends Error {
 		this.name = "SpeedtestCancelledError";
 	}
 };
-function throwIfSpeedtestCancelled() {
-	if (speedtestCancelled) throw new SpeedtestCancelledError();
+function throwIfSpeedtestCancelled(signal) {
+	if (speedtestCancelled || signal?.aborted) throw new SpeedtestCancelledError();
+}
+function listenForSpeedtestCancellation(signal, cancel) {
+	if (!signal) return () => {};
+	const onAbort = () => cancel(new SpeedtestCancelledError());
+	signal.addEventListener("abort", onAbort, { once: true });
+	return () => signal.removeEventListener("abort", onAbort);
 }
 var ROUTE_SPEED_DOWNLOAD_ENDPOINTS = [
 	{
@@ -106,70 +113,59 @@ var ROUTE_SPEED_UPLOAD_ENDPOINTS = [
 	}
 ];
 function normalizeVpnHost(host) {
-	const lower = String(host || "").trim();
-	if (lower.endsWith(".cloudpath.live")) {
-		return `${lower.slice(0, -".cloudpath.live".length)}.claudpath.com`;
-	}
-	if (lower === "cloudpath.live") return "claudpath.com";
-	return lower;
+	return String(host || "").trim();
 }
-async function resolveHostDoh(host) {
+async function resolveHostDoh(host, signal) {
 	try {
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), 2e3);
-		const res = await fetch(`https://1.1.1.1/dns-query?name=${encodeURIComponent(host)}&type=A`, {
+		const { text } = await fetchTextWithRetry(`https://1.1.1.1/dns-query?name=${encodeURIComponent(host)}&type=A`, {
 			headers: { accept: "application/dns-json" },
-			signal: controller.signal
+			timeoutMs: 2e3,
+			retries: 0,
+			maxBytes: 64 * 1024,
+			signal
 		});
-		clearTimeout(timer);
-		if (res.ok) {
-			const json = await res.json();
-			const ip = json?.Answer?.find((a) => a.type === 1)?.data;
-			if (ip && isIP(ip)) return ip;
-		}
+		const json = JSON.parse(text);
+		const ip = json?.Answer?.find((a) => a.type === 1)?.data;
+		if (json?.Status === 0 && typeof ip === "string" && isIP(ip) === 4) return ip;
 	} catch {}
 	return null;
 }
-function measureTcpLatency(rawHost, port, timeoutMs) {
+function measureTcpLatency(rawHost, port, timeoutMs, signal) {
 	const host = normalizeVpnHost(rawHost);
 	return new Promise((resolve) => {
+		if (signal?.aborted) { resolve(-1); return; }
 		let settled = false;
+		let fallbackSocket = null;
+		let fallbackTimeout = null;
 		const start = performance.now();
 		const socket = new Socket();
-		const timeout = setTimeout(() => {
-			if (settled) return;
-			settled = true;
-			socket.destroy();
-			resolve(-1);
-		}, timeoutMs);
+		const timeout = setTimeout(() => finish(-1), timeoutMs);
 		const finish = (val) => {
 			if (settled) return;
 			settled = true;
 			clearTimeout(timeout);
+			if (fallbackTimeout) clearTimeout(fallbackTimeout);
+			removeCancellation();
 			socket.destroy();
+			fallbackSocket?.destroy();
 			resolve(val);
 		};
+		const removeCancellation = listenForSpeedtestCancellation(signal, () => finish(-1));
 		socket.on("connect", () => {
 			finish(Math.round(performance.now() - start));
 		});
 		socket.on("error", async () => {
 			if (settled) return;
 			if (!isIP(host)) {
-				const fallbackIp = await resolveHostDoh(host);
+				const fallbackIp = await resolveHostDoh(host, signal);
 				if (fallbackIp && !settled) {
-					const fallbackSocket = new Socket();
-					const remaining = Math.max(800, timeoutMs - Math.round(performance.now() - start));
-					const fbTimeout = setTimeout(() => {
-						fallbackSocket.destroy();
-						finish(-1);
-					}, remaining);
+					fallbackSocket = new Socket();
+					const remaining = Math.max(1, timeoutMs - Math.round(performance.now() - start));
+					fallbackTimeout = setTimeout(() => finish(-1), remaining);
 					fallbackSocket.on("connect", () => {
-						clearTimeout(fbTimeout);
 						finish(Math.round(performance.now() - start));
 					});
 					fallbackSocket.on("error", () => {
-						clearTimeout(fbTimeout);
-						fallbackSocket.destroy();
 						finish(-1);
 					});
 					fallbackSocket.connect(port, fallbackIp);
@@ -219,30 +215,47 @@ function endpointFromUrl(url, fallbackName, bytes) {
 		port: url.port ? Number.parseInt(url.port, 10) : 443
 	};
 }
-function openRouteProbeTls(endpoint, proxyPort, timeoutMs) {
+function openRouteProbeTls(endpoint, proxyPort, timeoutMs, signal) {
+	if (signal?.aborted) return Promise.reject(new SpeedtestCancelledError());
 	const port = endpoint.port ?? 443;
 	if (!proxyPort) return new Promise((resolve, reject) => {
+		let settled = false;
+		const finish = (error) => {
+			if (settled) return;
+			settled = true;
+			removeCancellation();
+			tlsSocket.setTimeout(0);
+			if (error) { tlsSocket.destroy(); reject(error); }
+			else resolve(tlsSocket);
+		};
 		const tlsSocket = tls.connect({
 			host: endpoint.host,
 			port,
 			servername: endpoint.host,
 			rejectUnauthorized: true
 		}, () => {
-			tlsSocket.setTimeout(0);
-			resolve(tlsSocket);
+			finish();
 		});
+		const removeCancellation = listenForSpeedtestCancellation(signal, finish);
 		tlsSocket.setTimeout(timeoutMs, () => {
-			tlsSocket.destroy();
-			reject(/* @__PURE__ */ new Error(`Маршрут: ${endpoint.name} не ответил напрямую`));
+			finish(/* @__PURE__ */ new Error(`Маршрут: ${endpoint.name} не ответил напрямую`));
 		});
-		tlsSocket.on("error", reject);
+		tlsSocket.on("error", finish);
 	});
 	return new Promise((resolve, reject) => {
 		let settled = false;
+		let tlsSocket = null;
+		let tunnelSocket = null;
+		let handshakeTimer = null;
 		const finish = (error, socket) => {
 			if (settled) return;
 			settled = true;
+			removeCancellation();
+			if (handshakeTimer) clearTimeout(handshakeTimer);
 			if (error) {
+				proxyReq.destroy();
+				tlsSocket?.destroy();
+				tunnelSocket?.destroy();
 				reject(error);
 				return;
 			}
@@ -255,34 +268,29 @@ function openRouteProbeTls(endpoint, proxyPort, timeoutMs) {
 			path: `${endpoint.host}:${port}`,
 			timeout: timeoutMs
 		});
-		proxyReq.on("connect", (_res, socket) => {
-			let handshakeTimer = null;
-			const complete = (error, tlsSocket) => {
-				if (handshakeTimer) {
-					clearTimeout(handshakeTimer);
-					handshakeTimer = null;
-				}
-				finish(error, tlsSocket);
-			};
-			const tlsSocket = tls.connect({
+		const removeCancellation = listenForSpeedtestCancellation(signal, finish);
+		proxyReq.on("connect", (response, socket) => {
+			if (settled) { socket.destroy(); return; }
+			tunnelSocket = socket;
+			if (response.statusCode !== 200) { finish(new Error(`Маршрут: CONNECT к ${endpoint.name} вернул HTTP ${response.statusCode}`)); return; }
+			tlsSocket = tls.connect({
 				socket,
 				servername: endpoint.host,
 				rejectUnauthorized: true
 			}, () => {
 				tlsSocket.setTimeout(0);
-				complete(null, tlsSocket);
+				finish(null, tlsSocket);
 			});
 			tlsSocket.on("error", () => {
-				complete(/* @__PURE__ */ new Error(`Маршрут: TLS к ${endpoint.name} не согласован`));
+				finish(/* @__PURE__ */ new Error(`Маршрут: TLS к ${endpoint.name} не согласован`));
 			});
 			handshakeTimer = setTimeout(() => {
 				if (!tlsSocket.destroyed) tlsSocket.destroy();
-				complete(/* @__PURE__ */ new Error(`Маршрут: TLS к ${endpoint.name} не ответил`));
+				finish(/* @__PURE__ */ new Error(`Маршрут: TLS к ${endpoint.name} не ответил`));
 			}, timeoutMs);
 		});
 		proxyReq.on("error", (error) => finish(error instanceof Error ? error : /* @__PURE__ */ new Error(`Маршрут: прокси не открыл ${endpoint.name}`)));
 		proxyReq.on("timeout", () => {
-			proxyReq.destroy();
 			finish(/* @__PURE__ */ new Error(`Маршрут: прокси не ответил для ${endpoint.name}`));
 		});
 		proxyReq.end();
@@ -308,39 +316,45 @@ function materializeUploadEndpoint(endpoint, bytes) {
 		bytes: endpoint.host === "speed.cloudflare.com" ? bytes : Math.min(bytes, endpoint.bytes)
 	};
 }
-async function measureRouteLatency(endpoint, proxyPort) {
+async function measureRouteLatency(endpoint, proxyPort, signal) {
 	const startedAt = performance.now();
 	const latencyEndpoint = materializeDownloadEndpoint(endpoint, 0);
-	const tlsSocket = await openRouteProbeTls(latencyEndpoint, proxyPort, 6e3);
+	const tlsSocket = await openRouteProbeTls(latencyEndpoint, proxyPort, 6e3, signal);
 	return await new Promise((resolve, reject) => {
 		let settled = false;
+		let timer = null;
 		const finish = (error, value) => {
 			if (settled) return;
 			settled = true;
+			if (timer) clearTimeout(timer);
+			removeCancellation();
 			if (!tlsSocket.destroyed) tlsSocket.destroy();
 			if (error) reject(error);
 			else resolve(Math.max(.1, value ?? performance.now() - startedAt));
 		};
+		const removeCancellation = listenForSpeedtestCancellation(signal, finish);
+		if (signal?.aborted) { finish(new SpeedtestCancelledError()); return; }
 		const requestPath = latencyEndpoint.host === "speed.cloudflare.com" ? latencyEndpoint.path : latencyEndpoint.path;
 		tlsSocket.write(`GET ${requestPath} HTTP/1.1\r\nHost: ${latencyEndpoint.host}\r\n` + (latencyEndpoint.host === "speed.cloudflare.com" ? "" : "Range: bytes=0-0\r\n") + "Cache-Control: no-cache\r\n" + speedtestUserAgentHeader() + "Connection: close\r\n\r\n");
 		tlsSocket.once("data", () => finish(null, performance.now() - startedAt));
 		tlsSocket.once("error", (error) => finish(error));
 		tlsSocket.once("end", () => finish(/* @__PURE__ */ new Error(`${endpoint.name} закрыл соединение до ответа.`)));
-		setTimeout(() => finish(/* @__PURE__ */ new Error(`${endpoint.name} не ответил на latency probe.`)), 7e3);
+		timer = setTimeout(() => finish(/* @__PURE__ */ new Error(`${endpoint.name} не ответил на latency probe.`)), 7e3);
 	});
 }
-async function measureLatencySeries(endpoint, proxyPort, attempts, pauseMs = 90) {
+async function measureLatencySeries(endpoint, proxyPort, attempts, pauseMs = 90, signal) {
 	const samples = [];
 	for (let index = 0; index < attempts; index += 1) {
+		if (signal?.aborted) throw new SpeedtestCancelledError();
 		try {
-			samples.push(await measureRouteLatency(endpoint, proxyPort));
-		} catch {}
-		if (index < attempts - 1 && pauseMs > 0) await new Promise((resolve) => setTimeout(resolve, pauseMs));
+			samples.push(await measureRouteLatency(endpoint, proxyPort, signal));
+		} catch (error) { if (signal?.aborted) throw error; }
+		if (index < attempts - 1 && pauseMs > 0) await delay$2(pauseMs, signal);
 	}
 	return summarizeLatency(samples, attempts);
 }
-async function measureDownloadEndpoint(endpoint, proxyPort, redirectDepth = 0) {
-	const tlsSocket = await openRouteProbeTls(endpoint, proxyPort, 8e3);
+async function measureDownloadEndpoint(endpoint, proxyPort, redirectDepth = 0, signal) {
+	const tlsSocket = await openRouteProbeTls(endpoint, proxyPort, 8e3, signal);
 	return new Promise((resolve, reject) => {
 		const start = performance.now();
 		let dataStartedAt = null;
@@ -350,9 +364,12 @@ async function measureDownloadEndpoint(endpoint, proxyPort, redirectDepth = 0) {
 		let responseHeaders = {};
 		let buf = Buffer.alloc(0);
 		let settled = false;
+		let timer = null;
 		const finish = async (error = null) => {
 			if (settled) return;
 			settled = true;
+			if (timer) clearTimeout(timer);
+			removeCancellation();
 			if (!tlsSocket.destroyed) tlsSocket.destroy();
 			if (error) {
 				reject(error);
@@ -366,7 +383,7 @@ async function measureDownloadEndpoint(endpoint, proxyPort, redirectDepth = 0) {
 						reject(/* @__PURE__ */ new Error(`Маршрут: ${endpoint.name} вернул неподдерживаемый redirect`));
 						return;
 					}
-					resolve(await measureDownloadEndpoint(redirectedEndpoint, proxyPort, redirectDepth + 1));
+					resolve(await measureDownloadEndpoint(redirectedEndpoint, proxyPort, redirectDepth + 1, signal));
 				} catch (redirectError) {
 					reject(redirectError instanceof Error ? redirectError : new Error(String(redirectError)));
 				}
@@ -388,6 +405,8 @@ async function measureDownloadEndpoint(endpoint, proxyPort, redirectDepth = 0) {
 				endpoint
 			});
 		};
+		const removeCancellation = listenForSpeedtestCancellation(signal, finish);
+		if (signal?.aborted) { finish(new SpeedtestCancelledError()); return; }
 		tlsSocket.write(`GET ${endpoint.path} HTTP/1.1\r\nHost: ${endpoint.host}\r\nRange: bytes=0-${Math.max(0, endpoint.bytes - 1)}\r\nCache-Control: no-cache\r
 Pragma: no-cache\r
 ` + speedtestUserAgentHeader() + "Connection: close\r\n\r\n");
@@ -396,6 +415,7 @@ Pragma: no-cache\r
 			if (!headersParsed) {
 				buf = Buffer.concat([buf, chunk]);
 				const idx = buf.indexOf("\r\n\r\n");
+				if (idx < 0 && buf.length > 64 * 1024 || idx > 64 * 1024) { finish(new Error("Ответ замера содержит слишком большие HTTP-заголовки.")); return; }
 				if (idx >= 0) {
 					headersParsed = true;
 					dataStartedAt = performance.now();
@@ -416,30 +436,35 @@ Pragma: no-cache\r
 		});
 		tlsSocket.on("end", () => void finish());
 		tlsSocket.on("error", (error) => void finish(error));
-		setTimeout(() => void finish(totalBytes > 0 ? null : /* @__PURE__ */ new Error(`Маршрут: ${endpoint.name} не завершил скачивание`)), 25e3);
+		timer = setTimeout(() => void finish(totalBytes > 0 ? null : /* @__PURE__ */ new Error(`Маршрут: ${endpoint.name} не завершил скачивание`)), 25e3);
 	});
 }
-async function measureDownload(proxyPort, bytes = ROUTE_SPEED_DOWNLOAD_BYTES, preferredEndpoint) {
+async function measureDownload(proxyPort, bytes = ROUTE_SPEED_DOWNLOAD_BYTES, preferredEndpoint, signal) {
 	const errors = [];
 	const endpoints = preferredEndpoint ? [preferredEndpoint, ...ROUTE_SPEED_DOWNLOAD_ENDPOINTS.filter((endpoint) => endpoint.host !== preferredEndpoint.host)] : ROUTE_SPEED_DOWNLOAD_ENDPOINTS;
 	for (const endpoint of endpoints) try {
-		return await measureDownloadEndpoint(materializeDownloadEndpoint(endpoint, bytes), proxyPort);
+		return await measureDownloadEndpoint(materializeDownloadEndpoint(endpoint, bytes), proxyPort, 0, signal);
 	} catch (error) {
+		if (signal?.aborted) throw error;
 		errors.push(`${endpoint.name}: ${truncateProbeError(error instanceof Error ? error.message : String(error))}`);
 	}
 	throw new Error(`Скачивание недоступно: ${errors.slice(0, 3).join("; ")}`);
 }
-async function measureUploadEndpoint(endpoint, proxyPort) {
+async function measureUploadEndpoint(endpoint, proxyPort, signal) {
+	if (signal?.aborted) throw new SpeedtestCancelledError();
 	const payload = Buffer.alloc(endpoint.bytes, 97);
-	const tlsSocket = await openRouteProbeTls(endpoint, proxyPort, 8e3);
+	const tlsSocket = await openRouteProbeTls(endpoint, proxyPort, 8e3, signal);
 	return await new Promise((resolve, reject) => {
 		const start = performance.now();
 		let settled = false;
 		let responseBuffer = "";
 		let statusCode = null;
+		let timer = null;
 		const finish = (error = null) => {
 			if (settled) return;
 			settled = true;
+			if (timer) clearTimeout(timer);
+			removeCancellation();
 			if (!tlsSocket.destroyed) tlsSocket.destroy();
 			if (error) {
 				reject(error);
@@ -457,6 +482,8 @@ async function measureUploadEndpoint(endpoint, proxyPort) {
 				endpoint
 			});
 		};
+		const removeCancellation = listenForSpeedtestCancellation(signal, finish);
+		if (signal?.aborted) { finish(new SpeedtestCancelledError()); return; }
 		tlsSocket.write(`POST ${endpoint.path} HTTP/1.1\r\nHost: ${endpoint.host}\r\nContent-Type: application/octet-stream\r
 Content-Length: ${payload.length}\r\n` + speedtestUserAgentHeader() + "Connection: close\r\n\r\n");
 		tlsSocket.write(payload);
@@ -465,19 +492,21 @@ Content-Length: ${payload.length}\r\n` + speedtestUserAgentHeader() + "Connectio
 			if (statusCode !== null) return;
 			responseBuffer += chunk.toString("utf8");
 			const idx = responseBuffer.indexOf("\r\n\r\n");
+			if (idx < 0 && responseBuffer.length > 64 * 1024 || idx > 64 * 1024) { finish(new Error("Ответ замера содержит слишком большие HTTP-заголовки.")); return; }
 			if (idx >= 0) statusCode = parseHttpStatusFromHeader(responseBuffer.slice(0, idx));
 		});
 		tlsSocket.on("end", () => finish());
 		tlsSocket.on("error", (error) => finish(error));
-		setTimeout(() => finish(/* @__PURE__ */ new Error(`Отдача: ${endpoint.name} не завершила проверку`)), 12e3);
+		timer = setTimeout(() => finish(/* @__PURE__ */ new Error(`Отдача: ${endpoint.name} не завершила проверку`)), 12e3);
 	});
 }
-async function measureUpload(proxyPort, bytes = ROUTE_SPEED_UPLOAD_BYTES, preferredEndpoint) {
+async function measureUpload(proxyPort, bytes = ROUTE_SPEED_UPLOAD_BYTES, preferredEndpoint, signal) {
 	const errors = [];
 	const endpoints = preferredEndpoint ? [preferredEndpoint, ...ROUTE_SPEED_UPLOAD_ENDPOINTS.filter((endpoint) => endpoint.host !== preferredEndpoint.host)] : ROUTE_SPEED_UPLOAD_ENDPOINTS;
 	for (const endpoint of endpoints) try {
-		return await measureUploadEndpoint(materializeUploadEndpoint(endpoint, bytes), proxyPort);
+		return await measureUploadEndpoint(materializeUploadEndpoint(endpoint, bytes), proxyPort, signal);
 	} catch (error) {
+		if (signal?.aborted) throw error;
 		errors.push(`${endpoint.name}: ${truncateProbeError(error instanceof Error ? error.message : String(error))}`);
 	}
 	throw new Error(`Отдача недоступна: ${errors.slice(0, 3).join("; ")}`);
@@ -521,17 +550,12 @@ function resolveExpectedDnsResolvers(settings, mode) {
 }
 async function fetchRouteProbeIp(label, request) {
 	try {
-		const response = await request();
-		if (!response.ok) {
-			logger.debug(`[vpn:route-probe] ${label} probe returned HTTP ${response.status ?? "unknown"}`);
-			return null;
-		}
-		const contentType = (response.headers && typeof response.headers.get === "function") ? (response.headers.get("content-type") || "") : "";
-		if (contentType.includes("json")) {
-			return extractRouteProbeIp(await response.json());
-		}
-		const text = await response.text();
-		return extractRouteProbeIp(text);
+		const { ip } = await request(async (response) => {
+			const text = await readResponseTextWithLimit(response, 64 * 1024);
+			const contentType = (response.headers.get("content-type") || "").toLowerCase();
+			return { ip: extractRouteProbeIp(contentType.includes("json") ? JSON.parse(text) : text) };
+		});
+		return ip;
 	} catch (error) {
 		if (!isFirstSuccessfulCancellation(error)) logger.debug(`[vpn:route-probe] ${label} probe failed:`, error);
 		return null;
@@ -568,14 +592,14 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			return {
 				reachable: true,
 				ip: await firstSuccessful(ROUTE_PROBE_ENDPOINTS.map((endpoint) => async (signal) => {
-					const probedIp = await fetchRouteProbeIp("proxy", () => fetchWithRetry(endpoint, {
+					const probedIp = await fetchRouteProbeIp("proxy", (consume) => fetchWithRetry(endpoint, {
 						fetchImpl: proxyFetch,
 						dispatcher,
 						signal,
 						timeoutMs,
 						retries: 0,
 						retryBaseDelayMs: 200
-					}).then(({ response }) => response));
+					}, consume));
 					if (typeof probedIp !== "string" || probedIp.length === 0) throw new Error(`Route probe ${endpoint} did not return an egress IP.`);
 					return probedIp;
 				})),
@@ -592,9 +616,10 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		}
 	};
 	const connectVpnUncoordinated = async (requestedNodeId, source = "user") => {
+		if (requestedNodeId !== void 0 && requestedNodeId !== null && (typeof requestedNodeId !== "string" || !requestedNodeId.trim())) throw new Error("Неверный ID сервера. Выберите сервер заново.");
 		const state = stateStore.get();
 		const targetNodeId = requestedNodeId || state.activeNodeId || state.nodes[0]?.id;
-		let activeNode = state.nodes.find((node) => node.id === targetNodeId) ?? state.nodes[0] ?? null;
+		let activeNode = state.nodes.find((node) => node.id === targetNodeId) ?? (requestedNodeId ? null : state.nodes[0] ?? null);
 		if (!activeNode) {
 			logger.error("[vpn:connect] Node not found. targetNodeId:", targetNodeId, "requestedNodeId:", requestedNodeId, "stateActiveNodeId:", state.activeNodeId);
 			return {
@@ -728,14 +753,17 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 	reconnectSupervisor.start();
 	globalThis.reconnectSupervisor = reconnectSupervisor;
 	app.once("before-quit", () => reconnectSupervisor.stop());
+	app.once("before-quit", () => speedtestAbortController?.abort());
 	ipcMain.handle("vpn:connect", async (_event, requestedNodeId) => {
-		reconnectSupervisor.beginManualConnect();
-		const result = await connectVpn(requestedNodeId, "user");
-		reconnectSupervisor.recordConnectionResult(result);
-		return {
-			...result,
-			reconnect: reconnectSupervisor.snapshot()
-		};
+		const generation = reconnectSupervisor.beginManualConnect();
+		try {
+			const result = await connectVpn(requestedNodeId, "user");
+			reconnectSupervisor.recordConnectionResult(result, generation);
+			return { ...result, reconnect: reconnectSupervisor.snapshot() };
+		} catch (error) {
+			reconnectSupervisor.recordConnectionResult({ connected: false, lastError: error instanceof Error ? error.message : String(error) }, generation);
+			throw error;
+		}
 	});
 	const disconnectVpn = async () => {
 		reconnectSupervisor.cancel();
@@ -900,18 +928,18 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			const dispatcher = new ProxyAgent(`http://127.0.0.1:${proxyPort}`);
 			try {
 				const [directIp, vpnIp, systemProxy] = await Promise.all([
-					fetchRouteProbeIp("direct", () => fetchWithRetry(ROUTE_PROBE_ENDPOINT, {
+					fetchRouteProbeIp("direct", (consume) => fetchWithRetry(ROUTE_PROBE_ENDPOINT, {
 						timeoutMs: 5e3,
 						retries: 1,
 						retryBaseDelayMs: 350
-					}).then(({ response }) => response)),
-					fetchRouteProbeIp("proxy", () => fetchWithRetry(ROUTE_PROBE_ENDPOINT, {
+					}, consume)),
+					fetchRouteProbeIp("proxy", (consume) => fetchWithRetry(ROUTE_PROBE_ENDPOINT, {
 						fetchImpl: proxyFetch,
 						dispatcher,
 						timeoutMs: 8e3,
 						retries: 1,
 						retryBaseDelayMs: 350
-					}).then(({ response }) => response)),
+					}, consume)),
 					IS_TEST_MOCK_RUNTIME ? Promise.resolve(null) : readSystemProxyState().catch((error) => {
 						logger.debug("[vpn:route-probe] system proxy read failed:", error);
 						return null;
@@ -1190,13 +1218,13 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 	* тот, у которого реально ниже задержка. Если ни один не ответил, возвращается
 	* null и дальше работает прежний фолбэк по порядку.
 	*/
-	const selectMeasurementEndpoint = async (proxyPort) => {
+	const selectMeasurementEndpoint = async (proxyPort, signal) => {
 		const measurementGrade = ROUTE_SPEED_DOWNLOAD_ENDPOINTS.filter((endpoint) => endpoint.measurementGrade);
 		if (measurementGrade.length === 0) return null;
 		if (measurementGrade.length === 1) return measurementGrade[0];
 		const reachable = (await Promise.allSettled(measurementGrade.map(async (endpoint) => ({
 			endpoint,
-			latencyMs: await measureRouteLatency(endpoint, proxyPort)
+			latencyMs: await measureRouteLatency(endpoint, proxyPort, signal)
 		})))).filter((probe) => probe.status === "fulfilled" && Number.isFinite(probe.value.latencyMs)).map((probe) => probe.value).sort((a, b) => a.latencyMs - b.latencyMs);
 		if (reachable.length === 0) return measurementGrade[0];
 		logger.debug(`[vpn:speedtest] measurement endpoint: ${reachable[0].endpoint.name} (${Math.round(reachable[0].latencyMs)} ms, measurement-grade)`);
@@ -1217,9 +1245,10 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 	* запрашивается с запасом, чтобы окно измерения определялось временем, а не
 	* тем, что файл кончился.
 	*/
-	const measureDownloadParallel = async (proxyPort, endpoint, streams, bytesPerStream) => {
+	const measureDownloadParallel = async (proxyPort, endpoint, streams, bytesPerStream, signal) => {
 		const started = performance.now();
-		const results = await Promise.allSettled(Array.from({ length: streams }, () => measureDownloadEndpoint(materializeDownloadEndpoint(endpoint, bytesPerStream), proxyPort)));
+		const results = await Promise.allSettled(Array.from({ length: streams }, () => measureDownloadEndpoint(materializeDownloadEndpoint(endpoint, bytesPerStream), proxyPort, 0, signal)));
+		if (signal?.aborted) throw new SpeedtestCancelledError();
 		const ok = results.filter((item) => item.status === "fulfilled" && item.value.bytes > 0);
 		if (ok.length === 0) {
 			const reason = results.map((item) => item.status === "rejected" ? truncateProbeError(String(item.reason)) : "").filter(Boolean).slice(0, 2).join("; ");
@@ -1237,7 +1266,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			endpoint: ok[0].value.endpoint
 		};
 	};
-	const runSpeedtest = async () => {
+	const runSpeedtest = async (signal) => {
 		const startedAt = performance.now();
 		const totalSteps = 19;
 		let completed = 0;
@@ -1255,11 +1284,11 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			const proxyPort = status.connected && status.proxyPort ? status.proxyPort : null;
 			const state = stateStore.get();
 			const activeNode = state.nodes.find((node) => node.id === state.activeNodeId) ?? null;
-			const selectedEndpoint = await selectMeasurementEndpoint(proxyPort);
-			throwIfSpeedtestCancelled();
-			const warmup = await measureDownload(proxyPort, ROUTE_SPEED_WARMUP_BYTES, selectedEndpoint ?? void 0);
+			const selectedEndpoint = await selectMeasurementEndpoint(proxyPort, signal);
+			throwIfSpeedtestCancelled(signal);
+			const warmup = await measureDownload(proxyPort, ROUTE_SPEED_WARMUP_BYTES, selectedEndpoint ?? void 0, signal);
 			completed += 1;
-			throwIfSpeedtestCancelled();
+			throwIfSpeedtestCancelled(signal);
 			warmup.timeMs;
 			const uploadBytes = warmup.downloadMbps >= 80 ? ROUTE_SPEED_FAST_UPLOAD_BYTES : ROUTE_SPEED_UPLOAD_BYTES;
 			/**
@@ -1280,23 +1309,23 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			const measurementStartedAt = performance.now();
 			const idleLatencySamples = [];
 			for (let index = 0; index < SPEEDTEST_LATENCY_ATTEMPTS; index += 1) {
-				throwIfSpeedtestCancelled();
+				throwIfSpeedtestCancelled(signal);
 				try {
-					idleLatencySamples.push(await measureRouteLatency(warmup.endpoint, proxyPort));
-				} catch {}
+					idleLatencySamples.push(await measureRouteLatency(warmup.endpoint, proxyPort, signal));
+				} catch (error) { if (signal?.aborted) throw error; }
 				completed += 1;
 				const partialLatency = summarizeLatency(idleLatencySamples, index + 1);
 				emit("latency", 8 + (index + 1) / SPEEDTEST_LATENCY_ATTEMPTS * 20, `Latency probe ${index + 1}/${SPEEDTEST_LATENCY_ATTEMPTS}.`, { latencyMs: partialLatency.latencyMs });
-				if (index < SPEEDTEST_LATENCY_ATTEMPTS - 1) await new Promise((resolve) => setTimeout(resolve, 90));
+				if (index < SPEEDTEST_LATENCY_ATTEMPTS - 1) await delay$2(90, signal);
 			}
 			const idleLatency = summarizeLatency(idleLatencySamples, SPEEDTEST_LATENCY_ATTEMPTS);
 			const downloadSamples = [];
 			let downloadLoadedLatency = null;
 			for (let index = 0; index < SPEEDTEST_BANDWIDTH_SAMPLES; index += 1) {
-				throwIfSpeedtestCancelled();
+				throwIfSpeedtestCancelled(signal);
 				emit(index === 0 ? "download-loaded-latency" : "download", 30 + index / SPEEDTEST_BANDWIDTH_SAMPLES * 28, `Скачивание ${index + 1}/${SPEEDTEST_BANDWIDTH_SAMPLES}: ${downloadStreams} потока по ${Math.round(bytesPerStream / 1e6)} МБ через активный маршрут.`);
-				const downloadPromise = measureDownloadParallel(proxyPort, warmup.endpoint, downloadStreams, bytesPerStream);
-				const [download, loadedLatency] = index === 0 ? await Promise.all([downloadPromise, measureLatencySeries(warmup.endpoint, proxyPort, 5, 240)]) : [await downloadPromise, null];
+				const downloadPromise = measureDownloadParallel(proxyPort, warmup.endpoint, downloadStreams, bytesPerStream, signal);
+				const [download, loadedLatency] = index === 0 ? await Promise.all([downloadPromise, measureLatencySeries(warmup.endpoint, proxyPort, 5, 240, signal)]) : [await downloadPromise, null];
 				downloadSamples.push({
 					mbps: download.downloadMbps,
 					bytes: download.bytes,
@@ -1315,11 +1344,11 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			let uploadProvider = null;
 			let uploadError = null;
 			for (let index = 0; index < SPEEDTEST_BANDWIDTH_SAMPLES; index += 1) {
-				throwIfSpeedtestCancelled();
+				throwIfSpeedtestCancelled(signal);
 				emit(index === 0 ? "upload-loaded-latency" : "upload", 60 + index / SPEEDTEST_BANDWIDTH_SAMPLES * 30, `Отдача ${index + 1}/${SPEEDTEST_BANDWIDTH_SAMPLES}: ${Math.round(uploadBytes / 1e6)} МБ через активный маршрут.`, { liveDownloadMbps: download.mbps });
 				try {
-					const uploadPromise = measureUpload(proxyPort, uploadBytes);
-					const [uploadSample, loadedLatency] = index === 0 ? await Promise.all([uploadPromise, measureLatencySeries(warmup.endpoint, proxyPort, 5, 240)]) : [await uploadPromise, null];
+					const uploadPromise = measureUpload(proxyPort, uploadBytes, void 0, signal);
+					const [uploadSample, loadedLatency] = index === 0 ? await Promise.all([uploadPromise, measureLatencySeries(warmup.endpoint, proxyPort, 5, 240, signal)]) : [await uploadPromise, null];
 					uploadSamples.push({
 						mbps: uploadSample.uploadMbps,
 						bytes: uploadSample.uploadBytes,
@@ -1333,6 +1362,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 						latencyMs: uploadLoadedLatency?.latencyMs ?? idleLatency.latencyMs
 					});
 				} catch (error) {
+					if (signal?.aborted) throw error;
 					uploadError = truncateProbeError(error instanceof Error ? error.message : String(error));
 				}
 				completed += 1;
@@ -1349,7 +1379,8 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 				measurementDurationMs: performance.now() - measurementStartedAt,
 				providerCount: new Set([warmup.endpoint.name, uploadProvider].filter((value) => Boolean(value))).size
 			});
-			const serverTcpLatency = await measureTcpLatency(proxyPort && activeNode ? activeNode.server : warmup.endpoint.host, proxyPort && activeNode ? activeNode.port : warmup.endpoint.port ?? 443, 1800).catch(() => -1);
+			const serverTcpLatency = await measureTcpLatency(proxyPort && activeNode ? activeNode.server : warmup.endpoint.host, proxyPort && activeNode ? activeNode.port : warmup.endpoint.port ?? 443, 1800, signal).catch(() => -1);
+			throwIfSpeedtestCancelled(signal);
 			completed += 1;
 			emit("finalizing", 96, "Проверяю статистику и формирую устойчивый итог без случайных всплесков.", {
 				liveDownloadMbps: download.mbps,
@@ -1427,7 +1458,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			});
 			return result;
 		} catch (e) {
-			if (e instanceof SpeedtestCancelledError) {
+			if (e instanceof SpeedtestCancelledError || signal?.aborted) {
 				emit("error", 100, "Замер отменён.");
 				return {
 					speed: 0,
@@ -1446,9 +1477,12 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 	ipcMain.handle("vpn:speedtest", async () => {
 		if (!speedtestInFlight) {
 			speedtestCancelled = false;
-			speedtestInFlight = runSpeedtest().finally(() => {
+			speedtestAbortController = new AbortController();
+			speedtestInFlight = runSpeedtest(speedtestAbortController.signal).finally(() => {
+				speedtestAbortController?.abort();
 				speedtestInFlight = null;
 				speedtestCancelled = false;
+				speedtestAbortController = null;
 			});
 		}
 		return speedtestInFlight;
@@ -1466,6 +1500,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			cancelled: false
 		};
 		speedtestCancelled = true;
+		speedtestAbortController?.abort();
 		logger.info("[vpn:speedtest] cancellation requested by the user");
 		return {
 			ok: true,

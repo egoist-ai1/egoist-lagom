@@ -68,6 +68,9 @@ function getCompatibilityHwid() {
 function redactSubscriptionUrl(rawUrl) {
 	return redactUrlForLog(rawUrl);
 }
+function redactSubscriptionErrorText(value) {
+	return String(value).replace(/\bhttps?:\/\/[^\s"'<>]+/gi, redactSubscriptionUrl);
+}
 /**
 * Разбирает сырой дамп заголовков `curl -D`. При `-L` там лежит по блоку на
 * каждый redirect-хоп; значимы заголовки последнего ответа.
@@ -179,11 +182,11 @@ function countSupportedNodes(payload) {
 function describeSubscriptionFetchError(url, error) {
 	const details = getNetworkErrorDetails(error);
 	const source = redactSubscriptionUrl(url);
-	const raw = error instanceof Error ? error.message : String(error ?? "");
+	const raw = redactSubscriptionErrorText(error instanceof Error ? error.message : String(error ?? ""));
 	if (details.kind === "timeout") return `SUBSCRIPTION-TIMEOUT: подписка ${source} не ответила за отведенное время. Проверьте интернет, DNS или доступность провайдера.`;
 	if (details.kind === "http") return `SUBSCRIPTION-HTTP-${details.status ?? "ERROR"}: провайдер подписки ${source} вернул ${details.message}. Проверьте ссылку и срок подписки.`;
 	if (details.kind === "too-large") return `SUBSCRIPTION-SIZE: ответ подписки ${source} больше 5 МБ, импорт остановлен.`;
-	if (details.kind === "network") return `SUBSCRIPTION-NETWORK: не удалось подключиться к ${source}. Проверьте DNS, VPN, прокси или блокировку провайдера. Причина: ${details.message}${raw && raw !== details.message ? ` (${raw})` : ""}`;
+	if (details.kind === "network") return `SUBSCRIPTION-NETWORK: не удалось подключиться к ${source}. Проверьте DNS, VPN, прокси или блокировку провайдера. Причина: ${redactSubscriptionErrorText(details.message)}${raw && raw !== details.message ? ` (${raw})` : ""}`;
 	return `SUBSCRIPTION-ERROR: не удалось загрузить подписку ${source}.${raw ? ` Причина: ${raw}` : ""}`;
 }
 async function readUrlTextWithProfile(url, profileKey, hwid = null, context = { curlFallbackUsed: false }) {
@@ -200,7 +203,8 @@ async function readUrlTextWithProfile(url, profileKey, hwid = null, context = { 
 			timeoutMs: 1e4,
 			retries: 2,
 			retryBaseDelayMs: 500,
-			maxBytes: MAX_SUBSCRIPTION_RESPONSE_BYTES
+			maxBytes: MAX_SUBSCRIPTION_RESPONSE_BYTES,
+			signal: context.signal
 		});
 		log.info(`[readUrlText] Response: ${text.length} bytes after ${attempts} attempt(s), ${elapsedMs}ms`);
 		if (!text.trim()) throw new Error("Сервер вернул пустой ответ");
@@ -210,22 +214,24 @@ async function readUrlTextWithProfile(url, profileKey, hwid = null, context = { 
 			name: extractSubscriptionName(response)
 		};
 	} catch (error) {
+		if (context.signal?.aborted) throw context.signal.reason ?? error;
 		const details = getNetworkErrorDetails(error);
-		log.warn(`[readUrlText] Failed ${redactSubscriptionUrl(url)}: ${details.kind} ${details.message}`);
+		log.warn(`[readUrlText] Failed ${redactSubscriptionUrl(url)}: ${details.kind} ${redactSubscriptionErrorText(details.message)}`);
 		if (context.curlFallbackUsed) throw error;
 		context.curlFallbackUsed = true;
 		try {
-			const fallback = await readUrlTextWithCurl(url, headers);
+			const fallback = await readUrlTextWithCurl(url, headers, context);
 			log.info(`[readUrlText] curl fallback succeeded: ${fallback.text.length} bytes for ${redactSubscriptionUrl(url)}`);
 			return fallback;
 		} catch (fallbackError) {
+			if (context.signal?.aborted) throw context.signal.reason ?? fallbackError;
 			const fallbackDetails = getNetworkErrorDetails(fallbackError);
-			log.warn(`[readUrlText] curl fallback failed ${redactSubscriptionUrl(url)}: ${fallbackDetails.kind} ${fallbackDetails.message}`);
+			log.warn(`[readUrlText] curl fallback failed ${redactSubscriptionUrl(url)}: ${fallbackDetails.kind} ${redactSubscriptionErrorText(fallbackDetails.message)}`);
 			throw error;
 		}
 	}
 }
-async function readUrlTextWithCurl(url, headers) {
+async function readUrlTextWithCurl(url, headers, context = {}) {
 	const outputPath = path.join(tmpdir(), `egoistshield-subscription-${Date.now()}-${randomUUID()}.txt`);
 	const headerPath = `${outputPath}.headers`;
 	const args = [
@@ -250,7 +256,8 @@ async function readUrlTextWithCurl(url, headers) {
 		await execFileAsync$13(resolveWindowsExecutable("curl.exe"), args, {
 			windowsHide: true,
 			timeout: 3e4,
-			maxBuffer: 1024 * 1024
+			maxBuffer: 1024 * 1024,
+			signal: context.signal
 		});
 		if ((await promises.stat(outputPath)).size > MAX_SUBSCRIPTION_RESPONSE_BYTES) throw new Error("Ответ подписки слишком большой. Максимальный размер: 5 МБ.");
 		const text = await promises.readFile(outputPath, "utf8");
@@ -276,11 +283,23 @@ function isProfileIndependentFailure(error) {
 	const kind = getNetworkErrorDetails(error).kind;
 	return kind === "timeout" || kind === "network" || kind === "offline" || kind === "too-large";
 }
-async function readUrlText(url, profile, sendHwid = false) {
+async function readUrlText(url, profile, sendHwid = false, options = {}) {
 	const profiles = getRequestProfiles(profile);
 	const hwidAttempts = sendHwid ? [getDeviceHwid(), getCompatibilityHwid()] : [null];
 	const context = { curlFallbackUsed: false };
-	const deadline = Date.now() + SUBSCRIPTION_AUTO_BUDGET_MS;
+	const budgetMs = Number.isSafeInteger(options.budgetMs) && options.budgetMs > 0 ? Math.min(options.budgetMs, SUBSCRIPTION_AUTO_BUDGET_MS) : SUBSCRIPTION_AUTO_BUDGET_MS;
+	const deadline = Date.now() + budgetMs;
+	let budgetTimer = null;
+	if (profile === "auto") {
+		const controller = new AbortController();
+		context.signal = controller.signal;
+		budgetTimer = setTimeout(() => {
+			const error = new Error("Subscription request budget exceeded.");
+			error.name = "TimeoutError";
+			controller.abort(error);
+		}, budgetMs);
+	}
+	try {
 	let fallback = null;
 	let bestEmptyResponse = null;
 	let lastError = null;
@@ -312,5 +331,8 @@ async function readUrlText(url, profile, sendHwid = false) {
 	}
 	if (fallback) return bestEmptyResponse ?? fallback;
 	throw new Error(describeSubscriptionFetchError(url, lastError ?? /* @__PURE__ */ new Error("Subscription fetch failed")));
+	} finally {
+		if (budgetTimer) clearTimeout(budgetTimer);
+	}
 }
 //#endregion

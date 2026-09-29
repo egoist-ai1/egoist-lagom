@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-09-29T21:40:09.9114208+00:00",
+  "sourceLabel": "after",
+  "runtime": ".NET 10.0.12",
+  "cases": [
+    {
+      "id": "SVC-01",
+      "regression": "WorkerBootstrapQueryAsync",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "SVC-02",
+      "regression": "IdentityProbeScopeAsync",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "SVC-03",
+      "regression": "RecoveryClockRollbackAsync",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "SVC-04",
+      "regression": "BootstrapClockRollbackAsync",
+      "passed": true,
+      "error": null
+    },
+    {
+      "id": "SVC-05",
+      "regression": "UnverifiedRuntimeRootAsync",
+      "passed": true,
+      "error": null
+    }
+  ],
+  "passed": 5,
+  "failed": 0
+}

@@ -192,13 +192,10 @@ var ConfigBuilder;
 		return JSON.stringify(config, null, 2);
 	}
 	_ConfigBuilder.buildSingBox = buildSingBox;
-	function normalizeNodeServer(server) {
-		return (server || '').replace(/(^|\.)cloudpath\.live$/i, '$1claudpath.com');
-	}
 	function buildOutbound(node) {
 		const m = node.metadata ?? {};
 		const profile = getProtocolProfile(node);
-		const serverAddress = normalizeNodeServer(node.server);
+		const serverAddress = node.server;
 		if (node.protocol === "vless") return {
 			protocol: "vless",
 			settings: { vnext: [{
@@ -214,12 +211,12 @@ var ConfigBuilder;
 				network: m.type ?? "tcp",
 				security: m.security ?? "none",
 				tlsSettings: m.security === "tls" ? {
-					serverName: m.sni ? normalizeNodeServer(m.sni) : serverAddress,
+					serverName: m.sni || serverAddress,
 					fingerprint: m.fp ?? "chrome",
 					alpn: profile.xrayTlsAlpn
 				} : void 0,
 				realitySettings: m.security === "reality" ? {
-					serverName: m.sni ? normalizeNodeServer(m.sni) : serverAddress,
+					serverName: m.sni || serverAddress,
 					fingerprint: m.fp ?? "chrome",
 					publicKey: m.pbk ?? "",
 					shortId: m.sid ?? "",
@@ -379,7 +376,7 @@ var ConfigBuilder;
 	function buildSingBoxOutbound(node) {
 		const m = node.metadata ?? {};
 		const profile = getProtocolProfile(node);
-		const serverAddress = normalizeNodeServer(node.server);
+		const serverAddress = node.server;
 		if (node.protocol === "vless") {
 			const transport = buildSingBoxTransport(m);
 			const tls = buildSingBoxTls(m, serverAddress);

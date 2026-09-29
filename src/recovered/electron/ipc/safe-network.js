@@ -79,19 +79,12 @@ var ResponseTooLargeError = class extends Error {
 	}
 };
 async function fetchWithRetry(url, options = {}, consumeResponse) {
-	const { timeoutMs = DEFAULT_TIMEOUT_MS, retries = DEFAULT_RETRIES, retryBaseDelayMs = DEFAULT_RETRY_BASE_DELAY_MS, retryOnStatuses = [
-		408,
-		425,
-		429,
-		500,
-		502,
-		503,
-		504
-	], fetchImpl = fetch, signal, ...requestOptions } = options;
+	const { timeoutMs = DEFAULT_TIMEOUT_MS, retries = DEFAULT_RETRIES, retryBaseDelayMs = DEFAULT_RETRY_BASE_DELAY_MS, retryOnStatuses, fetchImpl = fetch, signal, ...requestOptions } = options;
 	const startedAt = Date.now();
 	let lastError = null;
 	const maxAttempts = Math.max(1, retries + 1);
 	for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+		if (signal?.aborted) throw signal.reason ?? createRequestAbortError();
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), timeoutMs);
 		const abortFromCaller = () => controller.abort(signal?.reason);
@@ -105,11 +98,7 @@ async function fetchWithRetry(url, options = {}, consumeResponse) {
 			if (!response.ok) {
 				const httpError = new SafeHttpError(response.status, response.statusText);
 				await response.body?.cancel().catch(() => void 0);
-				if (attempt < maxAttempts && retryOnStatuses.includes(response.status)) {
-					lastError = httpError;
-					await delay$2(getRetryDelayMs(attempt, retryBaseDelayMs, response.headers.get("retry-after")));
-					continue;
-				}
+				httpError.retryAfter = response.headers.get("retry-after");
 				throw httpError;
 			}
 			// Whole-response helpers consume inside the attempt: headers alone must
@@ -124,9 +113,9 @@ async function fetchWithRetry(url, options = {}, consumeResponse) {
 		} catch (error) {
 			lastError = error;
 			if (signal?.aborted) throw error;
-			const details = getNetworkErrorDetails(error);
-			if (attempt >= maxAttempts || !details.retryable) throw error;
-			await delay$2(getRetryDelayMs(attempt, retryBaseDelayMs));
+			const retryable = error instanceof SafeHttpError ? retryOnStatuses === void 0 ? isRetryableStatus(error.status) : retryOnStatuses.includes(error.status) : getNetworkErrorDetails(error).retryable;
+			if (attempt >= maxAttempts || !retryable) throw error;
+			await delay$2(getRetryDelayMs(attempt, retryBaseDelayMs, error instanceof SafeHttpError ? error.retryAfter : void 0), signal);
 		} finally {
 			signal?.removeEventListener("abort", abortFromCaller);
 			clearTimeout(timeout);
@@ -208,9 +197,26 @@ function parseRetryAfterMs(value) {
 	if (Number.isFinite(dateMs)) return Math.max(0, dateMs - Date.now());
 	return null;
 }
-function delay$2(ms) {
-	return new Promise((resolve) => {
-		setTimeout(resolve, ms);
+function createRequestAbortError() {
+	const error = new Error("Request cancelled.");
+	error.name = "AbortError";
+	return error;
+}
+function delay$2(ms, signal) {
+	return new Promise((resolve, reject) => {
+		if (signal?.aborted) {
+			reject(signal.reason ?? createRequestAbortError());
+			return;
+		}
+		const finish = (error) => {
+			clearTimeout(timer);
+			signal?.removeEventListener("abort", onAbort);
+			if (error) reject(error);
+			else resolve();
+		};
+		const onAbort = () => finish(signal.reason ?? createRequestAbortError());
+		const timer = setTimeout(() => finish(), ms);
+		signal?.addEventListener("abort", onAbort, { once: true });
 	});
 }
 //#endregion

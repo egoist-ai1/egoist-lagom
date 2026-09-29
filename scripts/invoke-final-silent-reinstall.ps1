@@ -102,6 +102,30 @@ function Get-FileSha256 {
   }
 }
 
+function Get-ServiceFrameworkRelease {
+  $view = if ([Environment]::Is64BitOperatingSystem) { [Microsoft.Win32.RegistryView]::Registry64 } else { [Microsoft.Win32.RegistryView]::Registry32 }
+  $registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, $view)
+  try {
+    $key = $registry.OpenSubKey('SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full', $false)
+    if (-not $key) { return 0 }
+    try { return [int]$key.GetValue('Release', 0) } finally { $key.Dispose() }
+  } finally { $registry.Dispose() }
+}
+
+function Assert-SupportedServiceFramework {
+  if ((Get-ServiceFrameworkRelease) -lt 528040) {
+    throw '.NET Framework 4.8 or newer is required before updating the service wrappers. Install Windows updates and retry; services have not been stopped.'
+  }
+}
+
+function Get-PreservedWrapperDefinitions {
+  return @{
+    EgoistShieldSystemDoH = @('SystemDoH', 'egoistshield-system-doh-service')
+    EgoistShieldTelegramProxy = @('TelegramProxy', 'egoistshield-telegram-proxy-service')
+    EgoistShieldZapret = @('Zapret', 'egoistshield-zapret-service')
+  }
+}
+
 function Protect-StageDirectory {
   param([string]$Path)
   $item = Get-Item -LiteralPath $Path -ErrorAction Stop
@@ -317,12 +341,21 @@ function Get-OwnedServiceSnapshot {
     $regFile = Join-Path $registryDirectory "$name.reg"
     & reg.exe export "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\$name" $regFile /y | Out-Null
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $regFile -PathType Leaf)) { throw "Could not export $name service registration." }
+    $wrapperHash = ''
+    $definitions = Get-PreservedWrapperDefinitions
+    if ($definitions.ContainsKey($name)) {
+      $definition = $definitions[$name]
+      $wrapper = Assert-OwnedRuntimeMigrationPath (Join-Path $script:RuntimeRoot ($definition[0] + '\service-wrapper\' + $definition[1] + '.exe'))
+      if ([IO.Path]::GetFullPath(([string]$service.PathName).Trim().Trim('"')) -ne $wrapper) { throw "Runtime migration service ownership mismatch for $name." }
+      $wrapperHash = Get-FileSha256 $wrapper
+    }
     $records += [pscustomobject]@{
       name = $name
       pathName = [string]$service.PathName
       wasRunning = ([string]$service.State -eq "Running")
       startMode = [string]$service.StartMode
       registryFile = [IO.Path]::GetFileName($regFile)
+      wrapperSha256 = $wrapperHash
     }
   }
   return @($records)
@@ -544,6 +577,104 @@ function Write-OwnedRuntimeMigrationFile {
     [IO.File]::Replace($temporary, $target, [NullString]::Value)
   } finally {
     if (Test-Path -LiteralPath $temporary -PathType Leaf) { Remove-Item -LiteralPath $temporary -Force -ErrorAction Stop }
+  }
+}
+
+function Assert-PlainWrapperMigrationPath {
+  param([string]$Path, [string]$Root)
+  $candidate = [IO.Path]::GetFullPath($Path)
+  $ownedRoot = [IO.Path]::GetFullPath($Root).TrimEnd('\')
+  if (-not $candidate.StartsWith($ownedRoot + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Wrapper migration path is outside its owned root.' }
+  $current = $candidate
+  while ($current) {
+    if (Test-Path -LiteralPath $current) {
+      $item = Get-Item -LiteralPath $current -Force -ErrorAction Stop
+      if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Wrapper migration refuses reparse points.' }
+    }
+    $current = [IO.Path]::GetDirectoryName($current)
+  }
+  return $candidate
+}
+
+function Get-VerifiedPackagedServiceWrapper {
+  param([string]$Version)
+  $expectedHash = 'B5066B7BBDFBA1293E5D15CDA3CAAEA88FBEAB35BD5B38C41C913D492AADFC4F'
+  $expectedBytes = 655872
+  $relative = 'zapret/service-wrapper/egoistshield-zapret-service.exe'
+  $manifestPath = Assert-PlainWrapperMigrationPath -Path (Join-Path $script:OwnedInstallRoot 'resources\runtime\manifest.json') -Root $script:OwnedInstallRoot
+  if ((Get-Item -LiteralPath $manifestPath -ErrorAction Stop).Length -gt 4194304) { throw 'Wrapper payload manifest exceeds its migration limit.' }
+  $manifest = Get-Content -LiteralPath $manifestPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  if ([int]$manifest.schemaVersion -ne 1 -or [string]$manifest.packageVersion -ne $Version) { throw 'Wrapper payload manifest version is not the installed release.' }
+  $components = @($manifest.components | Where-Object { $_.name -eq 'zapret' -and $_.present -eq $true })
+  if ($components.Count -ne 1) { throw 'Wrapper payload component inventory is missing or ambiguous.' }
+  $files = @($components[0].files | Where-Object { [string]$_.path -eq $relative })
+  if ($files.Count -ne 1 -or [string]$files[0].sha256 -ne $expectedHash -or [int64]$files[0].size -ne $expectedBytes) { throw 'Wrapper payload inventory does not match the pinned WinSW release.' }
+  $source = Assert-PlainWrapperMigrationPath -Path (Join-Path (Split-Path -Parent $manifestPath) $relative) -Root $script:OwnedInstallRoot
+  if ((Get-Item -LiteralPath $source -ErrorAction Stop).Length -ne $expectedBytes -or (Get-FileSha256 $source) -ne $expectedHash) { throw 'Packaged service wrapper failed pinned checksum validation.' }
+  return [pscustomobject]@{ path = $source; sha256 = $expectedHash; bytes = $expectedBytes }
+}
+
+function Assert-PreservedWrapperStopped {
+  param([string]$Name, [string]$Wrapper)
+  $service = Get-Service -Name $Name -ErrorAction Stop
+  if ($service.Status -ne 'Stopped') { throw "Wrapper migration requires stopped service $Name." }
+  $registration = Get-CimInstance Win32_Service -Filter "Name='$Name'" -ErrorAction Stop
+  if (-not $registration -or [IO.Path]::GetFullPath(([string]$registration.PathName).Trim().Trim('"')) -ne $Wrapper) { throw "Wrapper migration current service ownership mismatch for $Name." }
+}
+
+function Update-PreservedServiceWrappers {
+  param([object]$State)
+  $definitions = Get-PreservedWrapperDefinitions
+  $records = @($State.services | Where-Object { $definitions.ContainsKey([string]$_.name) })
+  if ($records.Count -eq 0) { return }
+  $payload = Get-VerifiedPackagedServiceWrapper -Version ([string]$State.version)
+  $plans = @()
+  foreach ($record in $records) {
+    $name = [string]$record.name
+    if (@($records | Where-Object { $_.name -eq $name }).Count -ne 1) { throw 'Wrapper migration service snapshot is ambiguous.' }
+    $definition = $definitions[$name]
+    $relative = $definition[0] + '\service-wrapper\' + $definition[1] + '.exe'
+    $wrapper = Assert-PlainWrapperMigrationPath -Path (Join-Path $script:RuntimeRoot $relative) -Root $script:RuntimeRoot
+    if ([IO.Path]::GetFullPath(([string]$record.pathName).Trim().Trim('"')) -ne $wrapper) { throw "Wrapper migration saved service ownership mismatch for $name." }
+    Assert-PreservedWrapperStopped -Name $name -Wrapper $wrapper
+    $backupRoot = Join-Path $StageDirectory 'runtime-backup'
+    $backup = Assert-PlainWrapperMigrationPath -Path (Join-Path $backupRoot $relative) -Root $backupRoot
+    if ([string]$record.wrapperSha256 -notmatch '^[A-Fa-f0-9]{64}$' -or (Get-FileSha256 $backup) -ne [string]$record.wrapperSha256) { throw 'Preserved service wrapper failed original checksum validation.' }
+    $currentHash = Get-FileSha256 $wrapper
+    if ($currentHash -ne [string]$record.wrapperSha256 -and $currentHash -ne $payload.sha256) { throw 'Runtime service wrapper is not the preserved or new verified binary.' }
+    $plans += [pscustomobject]@{ name = $name; path = $wrapper; replace = ($currentHash -ne $payload.sha256) }
+  }
+  if (-not ($plans | Where-Object { $_.replace })) { return }
+  # Persist before the first replacement: watchdog recovery must stop every
+  # migrated wrapper before restoring the original runtime backup.
+  $State | Add-Member -NotePropertyName wrapperMigrationPending -NotePropertyValue $true -Force
+  Write-JsonAtomic -Path (Join-Path $StageDirectory 'state.json') -Value $State
+  foreach ($plan in @($plans | Where-Object { $_.replace })) {
+    Assert-PreservedWrapperStopped -Name $plan.name -Wrapper $plan.path
+    $temporary = Assert-PlainWrapperMigrationPath -Path ($plan.path + '.migration-' + [Guid]::NewGuid().ToString('N')) -Root $script:RuntimeRoot
+    try {
+      [IO.File]::Copy($payload.path, $temporary, $false)
+      if ((Get-Item -LiteralPath $temporary).Length -ne $payload.bytes -or (Get-FileSha256 $temporary) -ne $payload.sha256) { throw 'Staged service wrapper failed checksum readback.' }
+      [IO.File]::Replace($temporary, $plan.path, [NullString]::Value)
+      if ((Get-FileSha256 $plan.path) -ne $payload.sha256) { throw 'Migrated service wrapper failed checksum readback.' }
+    } finally {
+      if (Test-Path -LiteralPath $temporary -PathType Leaf) { Remove-Item -LiteralPath $temporary -Force -ErrorAction Stop }
+    }
+  }
+}
+
+function Stop-PreservedWrappersForRecovery {
+  param([object]$State)
+  if (-not $State.PSObject.Properties['wrapperMigrationPending'] -or $State.wrapperMigrationPending -ne $true) { return }
+  $definitions = Get-PreservedWrapperDefinitions
+  foreach ($record in @($State.services)) {
+    $name = [string]$record.name
+    if (-not $definitions.ContainsKey($name)) { continue }
+    $definition = $definitions[$name]
+    $wrapper = Assert-PlainWrapperMigrationPath -Path (Join-Path $script:RuntimeRoot ($definition[0] + '\service-wrapper\' + $definition[1] + '.exe')) -Root $script:RuntimeRoot
+    $registration = Get-CimInstance Win32_Service -Filter "Name='$Name'" -ErrorAction Stop
+    if ($registration -and ([IO.Path]::GetFullPath(([string]$registration.PathName).Trim().Trim('"')) -ne $wrapper -or [IO.Path]::GetFullPath(([string]$record.pathName).Trim().Trim('"')) -ne $wrapper)) { throw "Wrapper rollback service ownership mismatch for $name." }
+    Stop-OwnedServiceForInstall -Name $name
   }
 }
 
@@ -806,10 +937,17 @@ function Test-PayloadRollbackPending {
 
 function Invoke-Recovery {
   param([object]$State, [string]$Reason)
+  if ($State.PSObject.Properties['handoffStarted'] -and $State.handoffStarted -ne $true) {
+    Add-ReceiptEvent -Stage 'recovery' -Status 'recovery-not-needed' -Message 'Update failed before service handoff; no services or DNS were stopped.'
+    return
+  }
   Add-ReceiptEvent -Stage "recovery" -Status "recovering" -Message $Reason
   $recoveryErrors = @()
   try { Stop-OwnedServiceForInstall -Name "EgoistShieldCore" } catch { $recoveryErrors += "stop-core: $($_.Exception.Message)" }
-  try { Restore-PreservedState -State $State } catch { $recoveryErrors += "restore: $($_.Exception.Message)" }
+  try {
+    Stop-PreservedWrappersForRecovery -State $State
+    Restore-PreservedState -State $State
+  } catch { $recoveryErrors += "restore: $($_.Exception.Message)" }
   try { Reconcile-PreservedZapretProfile -State $State } catch { $recoveryErrors += "zapret-profile: $($_.Exception.Message)" }
   try { Restore-InstalledIdentity -State $State } catch { $recoveryErrors += "identity: $($_.Exception.Message)" }
   $payloadRollbackPending = Test-PayloadRollbackPending
@@ -865,13 +1003,16 @@ function Invoke-WatchdogMode {
       }
     } catch { Write-Verbose "Watchdog could not terminate the exact installer process: $($_.Exception.Message)" }
   }
-  Invoke-Recovery -State $state -Reason "Watchdog recovered an interrupted or timed-out silent reinstall."
+  if (-not $state.PSObject.Properties['handoffStarted'] -or $state.handoffStarted -eq $true) {
+    Invoke-Recovery -State $state -Reason "Watchdog recovered an interrupted or timed-out silent reinstall."
+  }
   Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление прервалось. Результат восстановления служб и DNS сохранён в журнале установки."
   Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "watchdog-recovered" -Encoding ASCII -Force
 }
 
 function Invoke-WorkerMode {
   if (-not (Test-IsAdministrator)) { throw "Deferred reinstall worker requires an elevated administrator token." }
+  Assert-SupportedServiceFramework
   $statePath = Join-Path $StageDirectory "state.json"
   $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   $release = Get-ValidatedRelease -Installer ([string]$state.installer) -Manifest ([string]$state.manifest) -Version ([string]$state.version) -Sha256 ([string]$state.sha256) -AllowStagedPair
@@ -898,6 +1039,8 @@ function Invoke-WorkerMode {
     $powerShell = Get-NativePowerShellPath
     Start-Process -FilePath $powerShell -ArgumentList @("-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", (Join-Path $StageDirectory "invoke-final-silent-reinstall.ps1"), "-Watchdog", "-StageDirectory", $StageDirectory) -WindowStyle Hidden | Out-Null
 
+    $state.handoffStarted = $true
+    Write-JsonAtomic -Path $statePath -Value $state
     Stop-OwnedProcesses
     foreach ($name in @("EgoistShieldTelegramProxy", "EgoistShieldZapret", "EgoistShieldGravitylessDNS", "EgoistShieldCore")) {
       Stop-OwnedServiceForInstall -Name $name
@@ -928,6 +1071,7 @@ function Invoke-WorkerMode {
     Stop-OwnedServiceForInstall -Name "EgoistShieldCore"
     Restore-PreservedState -State $state
     Update-PreservedRuntimeReliability -State $state
+    Update-PreservedServiceWrappers -State $state
     Reconcile-PreservedZapretProfile -State $state
     Restore-InstalledIdentity -State $state
     Start-PreservedServices -State $state
@@ -945,7 +1089,9 @@ function Invoke-WorkerMode {
   } catch {
     try {
       $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
-      Invoke-Recovery -State $state -Reason $_.Exception.Message
+      if ($state.handoffStarted -eq $true) {
+        Invoke-Recovery -State $state -Reason $_.Exception.Message
+      }
       Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление не завершилось. Результат восстановления служб и DNS сохранён в журнале установки."
     } catch {
       Add-ReceiptEvent -Stage "fatal" -Status "failed" -Message $_.Exception.Message
@@ -996,6 +1142,7 @@ if ($EmbeddedRelease) {
   if (-not $IntegrityManifestPath -or -not $ExpectedSha256) { throw "IntegrityManifestPath and ExpectedSha256 are required for release dispatch." }
   $release = Get-ValidatedRelease -Installer $InstallerPath -Manifest $IntegrityManifestPath -Version $ExpectedVersion -Sha256 $ExpectedSha256
 }
+Assert-SupportedServiceFramework
 if ($PlanOnly) {
   [pscustomobject]@{
     ready = $true
@@ -1098,6 +1245,8 @@ $state = [ordered]@{
   criticalDns = @()
   installationId = ""
   zapretProfile = ""
+  wrapperMigrationPending = $false
+  handoffStarted = $false
 }
 Write-JsonAtomic -Path (Join-Path $StageDirectory "state.json") -Value $state
 Add-ReceiptEvent -Stage "dispatch" -Status "dispatched" -Message "Installer was validated and staged; elevated worker will perform the final handoff." -Data @{ version = $release.version; sha256 = $release.sha256 }

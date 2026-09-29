@@ -22,6 +22,7 @@ foreach ($name in @(
 
 $script:serviceRunning = $false
 function Test-InstallRootIdentified { param($Root) return $false }
+function Test-CanonicalInstallerTarget { param($Root) return $true }
 $script:queryFailure = $false
 $script:adapterRows = @()
 $script:dnsRows = @()

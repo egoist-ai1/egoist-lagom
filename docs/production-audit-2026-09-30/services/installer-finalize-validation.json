@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+  "baseline": {
+    "versionPublication": "Actual PostInstall publication writes3.7.8 with real PE/runtime3.8.0; exit1",
+    "unsafeHandoffPhaseExit": 54,
+    "validInactiveDoHProtectionAlreadyExisted": true
+  },
+  "candidate": {
+    "passedPEFileCases": 13,
+    "actualPhaseExits": {
+      "Existing": 54,
+      "Unsafe": 58,
+      "Fresh": 0,
+      "Protected": 0
+    },
+    "checks": [
+      "PASS: actual PostInstall identity publication uses matching real PE/runtime version",
+      "PASS: actual Recover identity publication uses matching real PE/runtime version",
+      "PASS: verified existing install without active DoH requires protected handoff",
+      "PASS: authenticated silent worker keeps direct installation without recursive handoff",
+      "PASS: foreign real PE product fails closed before handoff or identity writes",
+      "PASS: PE/runtime version disagreement preserves installation identity and rejects handoff",
+      "PASS: missing manifest version fails before identity publication",
+      "PASS: corrupt runtime inventory cannot approve preservation handoff",
+      "PASS: noncanonical target fails before direct installation or handoff",
+      "PASS: absent and empty canonical targets retain the first-install path",
+      "PASS: unidentified nonempty target is refused without dispatch",
+      "PASS: DNS preflight failure remains an unsafe refusal",
+      "PASS: real reparse install target is rejected"
+    ]
+  },
+  "runtimeCommitGate": {
+    "exitCode": 0,
+    "passed": 3
+  },
+  "nsis": {
+    "compiler": "NSIS3.0.4.1",
+    "compileExitCode": 0,
+    "readonlyEmbeddedPlanExitCode": 0,
+    "version": "3.8.0",
+    "bytes": 804182,
+    "sha256": "78abdc84f3daad3dadf84b7d2dcb88b8c0f08733dc28712a1939da029efad690",
+    "boundary": "Production setup.nsi compiled unchanged apart from required UTF8 BOM, with a tiny isolated payload. Fixture EXE was never executed; readonly helper PlanOnly validates resulting PE identity/version."
+  },
+  "sourceSha256": {
+    "src/installer/owned-cleanup.ps1": "eee3c5f526d87b3c3b525e0d9ce8ce6593a3bbeafdb36f2f9e0ab4dd576293dd",
+    "src/installer/setup.nsi": "5bbb20a4569f8bcd6f9c89a93aba865c996906b9db1009962c59709e0138e479",
+    "tests/installer-finalize-regressions.ps1": "b3ccccf1676a67b47f8cec816857cf984b94a263f7f788c495c0dbba2474c29f",
+    "tests/installer-version-handoff.ps1": "3036b98ac8a4dbe079ad6671350fceb162f4ca9c49baa6817fab9d3767792d6b",
+    "tests/installer-version-handoff.test.mjs": "ef59f54090a676845c88201d6aa2445d4fa7e653e2091b14a9aad0d2af54f8ae",
+    "tests/installer-dns-safety.ps1": "490cbfeca19d2a5627fae3e198891842fd49c05d86835faaf268ee2d540797fc",
+    "tests/installer-protected-upgrade.ps1": "d7b433db768e06e10374a34e029fe28e7baca7906711710fda6854853d08e60b",
+    "tests/installer-execution.test.mjs": "d8290d0242596f4caeec32d781e4d9a2eb717c85620a4ebca0ee231c9b247da5"
+  },
+  "limits": [
+    "SCM, network and registry mutation functions are not invoked by PE/file fixtures.",
+    "Compiled NSIS fixture is a syntax/control-contract witness; full packaged installation, real service restart and rollback require separate acceptance."
+  ]
+}

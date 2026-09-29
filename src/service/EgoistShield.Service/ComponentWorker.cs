@@ -74,7 +74,7 @@ internal sealed class ComponentWorker : IDisposable
         string component = payload.GetProperty("component").GetString() ?? "";
         string method = payload.GetProperty("method").GetString() ?? "";
         if (component is not ("SystemDoH" or "Zapret" or "TelegramProxy")) throw new ArgumentException("Unknown component.");
-        if (query && method is not ("status" or "listProfiles" or "getUserLists" or "dryRunProfile" or "checkForUpdates" or "shouldCheckUpdates" or "tailLogs" or "cancelAutoSelect" or "autoSelectProgress"))
+        if (query && method is not ("status" or "listProfiles" or "getUserLists" or "dryRunProfile" or "checkForUpdates" or "shouldCheckUpdates" or "tailLogs" or "cancelAutoSelect" or "autoSelectProgress" or "bootstrapServers"))
             throw new ArgumentException("A mutation cannot use the component query endpoint.");
         if (!payload.TryGetProperty("args", out JsonElement args) || args.ValueKind != JsonValueKind.Array || args.GetArrayLength() > 4)
             throw new ArgumentException("Invalid component arguments.");

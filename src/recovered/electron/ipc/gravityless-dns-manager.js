@@ -36,6 +36,7 @@ var GravitylessDnsManager = class {
 	lastError = null;
 	statusCache = null;
 	statusInFlight = null;
+	statusGeneration = 0;
 	constructor(resourcesPath, coreService) {
 		this.resourcesPath = resourcesPath;
 		this.coreService = coreService;
@@ -43,21 +44,25 @@ var GravitylessDnsManager = class {
 	}
 	async status(options = {}) {
 		const now = Date.now();
+		const generation = this.statusGeneration;
 		if (!options.force && this.statusCache && this.statusCache.expiresAt > now) return this.statusCache.value;
-		if (!options.force && this.statusInFlight) return this.statusInFlight;
-		this.statusInFlight = this.readStatus().then((value) => {
-			this.statusCache = {
+		if (!options.force && this.statusInFlight?.generation === generation) return this.statusInFlight.promise;
+		const inFlight = { generation, promise: null };
+		inFlight.promise = this.readStatus().then((value) => {
+			if (generation === this.statusGeneration && this.statusInFlight === inFlight) this.statusCache = {
 				value,
 				expiresAt: Date.now() + GRAVITYLESS_STATUS_CACHE_TTL_MS
 			};
 			return value;
 		}).finally(() => {
-			this.statusInFlight = null;
+			if (this.statusInFlight === inFlight) this.statusInFlight = null;
 		});
-		return this.statusInFlight;
+		this.statusInFlight = inFlight;
+		return inFlight.promise;
 	}
 	invalidateStatusCache() {
 		this.statusCache = null;
+		this.statusGeneration += 1;
 	}
 	async readStatus() {
 		const service = await this.queryService();
@@ -361,7 +366,8 @@ var GravitylessDnsManager = class {
 	}
 	async queryServiceViaCim() {
 		const script = [
-			`$svc = Get-CimInstance Win32_Service -Filter "Name='${GRAVITYLESS_DNS_SERVICE_NAME}'" -ErrorAction SilentlyContinue`,
+			"$ErrorActionPreference = 'Stop'",
+			`$svc = Get-CimInstance Win32_Service -Filter "Name='${GRAVITYLESS_DNS_SERVICE_NAME}'" -ErrorAction Stop`,
 			"if (-not $svc) { Write-Output 'STATE=NOT_INSTALLED'; exit 0 }",
 			"Write-Output (\"STATE=\" + $svc.State)",
 			"Write-Output (\"PID=\" + $svc.ProcessId)"
@@ -389,7 +395,7 @@ var GravitylessDnsManager = class {
 		} catch {
 			return {
 				serviceName: GRAVITYLESS_DNS_SERVICE_NAME,
-				state: "not-installed",
+				state: "unknown",
 				pid: null,
 				rawState: null
 			};

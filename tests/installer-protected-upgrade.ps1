@@ -17,11 +17,14 @@ foreach ($name in @('Get-FileSha256','Test-InstallRootIdentified','Test-Verified
   . ([scriptblock]::Create($fn.Extent.Text))
 }
 function Test-RunningOwnedSystemDoh { return $false }
+function Test-CanonicalInstallerTarget { param($Root) return $true }
+function Test-EmptyPlainDirectory { param($Root) return $false }
+function Test-VerifiedCanonicalInstalledApplication { param($Root) return (Test-InstallRootIdentified $Root) }
 function Require {param([bool]$Value,[string]$Message)if(-not $Value){throw $Message}}
 $previousStage=$env:EGOIST_PROTECTED_REINSTALL_STAGE
 try {
   $env:EGOIST_PROTECTED_REINSTALL_STAGE=''
-  Require (-not (Test-InstallMayStopOwnedRuntimes)) 'Unprotected upgrade without active DoH was allowed.'
+  Require (-not (Test-InstallMayStopOwnedRuntimes 2>$null)) 'Unprotected upgrade without active DoH was allowed.'
   Write-Output 'PASS: installed upgrade requires protected handoff even when DoH is inactive'
   $savedRoot=$installRoot;$installRoot=Join-Path $fixtureRoot 'fresh'
   Require (Test-InstallMayStopOwnedRuntimes) 'Fresh installation was blocked.'

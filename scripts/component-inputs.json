@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "components": [
+    {
+      "name": "sing-box",
+      "version": "v1.14.0",
+      "repository": "SagerNet/sing-box",
+      "tag": "v1.14.0",
+      "archive": "sing-box-1.14.0-windows-amd64.zip",
+      "rootDirectory": "sing-box-1.14.0-windows-amd64",
+      "sha256": "3ffb56267da14e287be48bd10cf7e6505260125bad940b75101fbb4d5d58e5d6",
+      "url": "https://github.com/SagerNet/sing-box/releases/download/v1.14.0/sing-box-1.14.0-windows-amd64.zip"
+    },
+    {
+      "name": "zapret",
+      "version": "1.10.3",
+      "repository": "Flowseal/zapret-discord-youtube",
+      "tag": "1.10.3",
+      "archive": "zapret-discord-youtube-1.10.3.zip",
+      "rootDirectory": "zapret-discord-youtube-1.10.3",
+      "sha256": "244314ae1c24538a0d751601da8e0c925c843371eec4456eb15f14c4fd6b7058",
+      "url": "https://github.com/Flowseal/zapret-discord-youtube/releases/download/1.10.3/zapret-discord-youtube-1.10.3.zip"
+    },
+    {
+      "name": "wintun",
+      "version": "0.14.1",
+      "archive": "wintun-0.14.1.zip",
+      "rootDirectory": "wintun",
+      "sha256": "07c256185d6ee3652e09fa55c0b673e2624b565e02c4b9091c79ca7d2f24ef51",
+      "url": "https://www.wintun.net/builds/wintun-0.14.1.zip"
+    }
+  ],
+  "binaries": [
+    {
+      "name": "winsw",
+      "version": "2.12.0",
+      "repository": "winsw/winsw",
+      "tag": "v2.12.0",
+      "file": "WinSW.NET461.exe",
+      "assetId": 93386826,
+      "bytes": 655872,
+      "sha256": "b5066b7bbdfba1293e5d15cda3caaea88fbeab35bd5b38c41c913d492aadfc4f",
+      "url": "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW.NET461.exe",
+      "githubDigest": null,
+      "runtime": ".NET Framework",
+      "minimumFrameworkRelease": 528040,
+      "integritySource": "Pinned SHA-256 measured from the exact official HTTPS release asset. Historical GitHub asset has no independently published digest."
+    }
+  ]
+}

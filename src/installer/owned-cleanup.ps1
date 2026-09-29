@@ -662,10 +662,23 @@ function Test-VerifiedProtectedReinstall {
 }
 
 function Test-InstallMayStopOwnedRuntimes {
+  $script:installSafetyHandoffAllowed = $false
   try {
-    if ((Test-InstallRootIdentified $installRoot) -and -not (Test-VerifiedProtectedReinstall)) {
-      Write-Error 'PROTECTED_UPGRADE_REQUIRED: The existing installation requires the protected handoff to preserve services and settings.' -ErrorAction Continue
+    if (-not (Test-CanonicalInstallerTarget $installRoot)) {
+      Write-Error 'INSTALL_TARGET_UNVERIFIED: The installer requires the canonical ordinary EgoistShield directory.' -ErrorAction Continue
       return $false
+    }
+    $existing = $installRoot -and (Test-Path -LiteralPath $installRoot -PathType Container) -and -not (Test-EmptyPlainDirectory $installRoot)
+    if ($existing) {
+      if (-not (Test-VerifiedCanonicalInstalledApplication $installRoot)) {
+        Write-Error 'INSTALL_IDENTITY_UNVERIFIED: The existing target did not pass the installed product and runtime inventory checks.' -ErrorAction Continue
+        return $false
+      }
+      if (-not (Test-VerifiedProtectedReinstall)) {
+        $script:installSafetyHandoffAllowed = $true
+        Write-Error 'PROTECTED_UPGRADE_REQUIRED: The existing installation requires the protected handoff to preserve services and settings.' -ErrorAction Continue
+        return $false
+      }
     }
     if (-not (Test-RunningOwnedSystemDoh)) { return $true }
     $criticalInterfaces = @(Get-CriticalLoopbackDnsInterfaces)
@@ -2406,6 +2419,70 @@ function Test-InstallRootHealthy {
   return $true
 }
 
+function Get-CanonicalInstallerRoot {
+  $nativeProgramFiles = if ([Environment]::Is64BitOperatingSystem -and $env:ProgramW6432) { $env:ProgramW6432 } else { [Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles) }
+  if (-not $nativeProgramFiles) { throw 'Cannot resolve the native Program Files directory.' }
+  return [IO.Path]::GetFullPath((Join-Path $nativeProgramFiles 'EgoistShield')).TrimEnd('\')
+}
+
+function Assert-PlainInstallerCandidatePath {
+  param([string]$Path, [string]$Root)
+  $candidate = [IO.Path]::GetFullPath($Path)
+  $ownedRoot = [IO.Path]::GetFullPath($Root).TrimEnd('\')
+  if (-not $candidate.Equals($ownedRoot, [StringComparison]::OrdinalIgnoreCase) -and -not $candidate.StartsWith($ownedRoot + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Installer candidate path escapes its root.' }
+  $current = $candidate
+  while ($current) {
+    if (Test-Path -LiteralPath $current) {
+      $item = Get-Item -LiteralPath $current -Force -ErrorAction Stop
+      if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Installer candidate refuses reparse points.' }
+    }
+    $current = [IO.Path]::GetDirectoryName($current)
+  }
+  return $candidate
+}
+
+function Test-CanonicalInstallerTarget {
+  param([string]$Root)
+  try {
+    $canonical = Get-CanonicalInstallerRoot
+    if (-not [IO.Path]::GetFullPath($Root).TrimEnd('\').Equals($canonical, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+    [void](Assert-PlainInstallerCandidatePath -Path $Root -Root $canonical)
+    return $true
+  } catch { return $false }
+}
+
+function Get-ValidatedInstalledProductVersion {
+  param([string]$Root)
+  $manifestPath = Assert-PlainInstallerCandidatePath -Path (Join-Path $Root 'resources\runtime\manifest.json') -Root $Root
+  if ((Get-Item -LiteralPath $manifestPath -ErrorAction Stop).Length -gt 4194304) { throw 'Installed runtime manifest exceeds the version validation limit.' }
+  $manifest = Get-Content -LiteralPath $manifestPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $version = [string]$manifest.packageVersion
+  if ([int]$manifest.schemaVersion -ne 1 -or $version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { throw 'Installed runtime manifest has no valid release version.' }
+  $exe = Assert-PlainInstallerCandidatePath -Path (Join-Path $Root 'EgoistShield.exe') -Root $Root
+  $info = (Get-Item -LiteralPath $exe -ErrorAction Stop).VersionInfo
+  if ([string]$info.ProductName -notin @('Egoist Lagom', 'Egoist Shield')) { throw 'Installed executable product identity is invalid.' }
+  foreach ($field in @([string]$info.ProductVersion, [string]$info.FileVersion)) {
+    if ($field -ne $version -and $field -ne ($version + '.0')) { throw 'Installed executable version does not match the runtime manifest.' }
+  }
+  return $version
+}
+
+function Test-VerifiedCanonicalInstalledApplication {
+  param([string]$Root)
+  try {
+    if (-not (Test-CanonicalInstallerTarget $Root) -or -not (Test-InstallRootHealthy $Root)) { return $false }
+    [void](Get-ValidatedInstalledProductVersion $Root)
+    return $true
+  } catch { return $false }
+}
+
+function Write-ValidatedInstallationIdentity {
+  param([string]$Root)
+  $version = Get-ValidatedInstalledProductVersion $Root
+  $identityPath = Assert-PlainInstallerCandidatePath -Path (Join-Path $Root 'resources\installation.json') -Root $Root
+  Write-Utf8NoBomFile -Path $identityPath -Content (@{ id = [Guid]::NewGuid().ToString(); version = $version } | ConvertTo-Json -Compress)
+}
+
 function Test-EmptyPlainDirectory {
   param([string]$Root)
   if (-not $Root -or -not (Test-Path -LiteralPath $Root -PathType Container)) { return $false }
@@ -3478,7 +3555,10 @@ switch ($Phase) {
     Invoke-SelfTest
   }
   "CheckInstallSafety" {
-    if (-not (Test-InstallMayStopOwnedRuntimes)) { exit 54 }
+    if (-not (Test-InstallMayStopOwnedRuntimes)) {
+      if ($script:installSafetyHandoffAllowed) { exit 54 }
+      exit 58
+    }
     Write-Output "INSTALL-SAFETY: PASSED"
     exit 0
   }
@@ -3602,13 +3682,14 @@ switch ($Phase) {
     # систему без рабочей версии.
     if (Test-InstallRootHealthy $installRoot) {
       try {
+        [void](Get-ValidatedInstalledProductVersion $installRoot)
         # New Core is now present, so native DoH cleanup no longer depends on
         # the potentially incompatible binary from the previous release.
         Invoke-CoreNativeDohCleanup
         Invoke-CoreOwnedDnsCleanup
         Remove-OptionalOwnedServices
         # Every successful install requires a new explicit connection choice.
-        Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.8" } | ConvertTo-Json -Compress)
+        Write-ValidatedInstallationIdentity -Root $installRoot
         Write-Journal "optional-components-left-off" @{}
         Assert-InstalledCandidateRuntime -BeforeCommit
         Discard-OwnedNetworkArtifacts
@@ -3764,13 +3845,14 @@ switch ($Phase) {
         Write-Output "RECOVER: committed"
         exit 0
       }
+      [void](Get-ValidatedInstalledProductVersion $installRoot)
       Install-CoreService
       Invoke-CoreNativeDohCleanup
       Invoke-CoreOwnedDnsCleanup
       Remove-OptionalOwnedServices
       Write-Journal "optional-components-left-off" @{}
       Discard-OwnedNetworkArtifacts
-      Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.8" } | ConvertTo-Json -Compress)
+      Write-ValidatedInstallationIdentity -Root $installRoot
       Complete-UpgradeQuarantine
       Write-Output "RECOVER: committed"
       exit 0

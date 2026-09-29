@@ -13,20 +13,20 @@
     .speedtest-panel,
     .protection-panel
   ) {
-  --compact-accent: #ffffff;
-  --compact-accent-hover: #e2e8f0;
+  --compact-accent: var(--action);
+  --compact-accent-hover: var(--action-hover);
   --compact-accent-soft: rgb(255 255 255 / 10%);
   --compact-accent-line: rgb(255 255 255 / 35%);
-  --compact-canvas: #000000;
-  --compact-panel: #090909;
-  --compact-raised: #141414;
-  --compact-border: #292929;
+  --compact-canvas: var(--canvas);
+  --compact-panel: var(--panel);
+  --compact-raised: var(--panel-raised);
+  --compact-border: var(--line);
   --compact-border-soft: rgb(255 255 255 / 8%);
-  --compact-text: #f6f6f6;
-  --compact-muted: #a5a5a5;
+  --compact-text: var(--ink);
+  --compact-muted: var(--muted);
   --compact-radius: 10px;
   color: var(--compact-text);
-  font-family: 'Unbounded', sans-serif !important;
+  font-family: var(--font-sans);
   font-size: 13.5px;
 }
 
@@ -92,14 +92,15 @@
     .telegram-layout,
     .settings-layout
   ) :is(.btn-primary, .btn-secondary, .btn-danger) {
-  height: 36px;
+  min-height: 40px;
+  height: auto;
   min-width: 0;
-  padding: 0 13px;
+  padding: 8px 13px;
   border-radius: 8px;
   box-shadow: none;
   font-size: 13px;
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.35;
   transition:
     background-color 150ms ease,
     border-color 150ms ease,
@@ -155,7 +156,7 @@
   ) .btn-secondary {
   color: var(--compact-text);
   background: transparent;
-  border-color: #444444;
+  border-color: var(--control-line);
 }
 
 :is(
@@ -231,12 +232,13 @@
 }
 
 :is(.vpn-layout, .dns-layout, .zapret-layout, .telegram-layout) .input {
-  height: 36px;
+  height: 40px;
   min-width: 0;
   padding: 0 11px;
+  font-family: var(--font-mono);
   color: var(--compact-text);
   background: #050505;
-  border: 1px solid #333333;
+  border: 1px solid var(--control-line);
   border-radius: 8px;
   font-size: 13px;
   transition:
@@ -350,7 +352,7 @@
   flex-direction: column !important;
   height: 100% !important;
   min-height: 0 !important;
-  overflow: hidden !important;
+  overflow: hidden;
   padding: 14px 24px 20px !important;
   box-sizing: border-box !important;
 }
@@ -411,7 +413,7 @@
   gap: 0;
   flex: 1;
   min-height: 0;
-  max-height: none !important;
+  max-height: none;
   padding-right: 4px;
   overflow-y: auto;
 }
@@ -851,18 +853,18 @@
 }
 
 .screen-stage[data-screen="dns"] .side-stack {
-  grid-template-rows: minmax(0, 1.1fr) minmax(0, 0.9fr) !important;
+  grid-template-rows: minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 12px !important;
-  min-height: 0 !important;
-  height: 100% !important;
-  overflow: hidden !important;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
   display: grid !important;
 }
 
 .screen-stage[data-screen="dns"] .side-stack > .panel {
-  min-height: 0 !important;
-  height: 100% !important;
-  overflow-y: auto !important;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
   padding: 14px 16px !important;
   display: flex !important;
   flex-direction: column !important;
@@ -1220,16 +1222,16 @@
 /* Telegram */
 
 .screen-stage[data-screen="telegram-proxy"] .telegram-layout {
-  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.85fr) !important;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.85fr);
   gap: 14px !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .screen-stage[data-screen="telegram-proxy"] :is(.telegram-form, .telegram-status) {
-  height: 100% !important;
-  min-height: 0 !important;
+  height: 100%;
+  min-height: 0;
   padding: 16px 18px !important;
 }
 
@@ -1238,7 +1240,7 @@
   flex-direction: column !important;
   justify-content: space-between !important;
   gap: 12px !important;
-  overflow-y: auto !important;
+  overflow-y: auto;
 }
 
 .screen-stage[data-screen="telegram-proxy"] .telegram-control-lead {
@@ -1309,19 +1311,22 @@
 
 .screen-stage[data-screen="telegram-proxy"] .telegram-primary-actions {
   display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px !important;
   margin: 10px 0 !important;
 }
 
 .screen-stage[data-screen="telegram-proxy"] .telegram-primary-actions :is(.btn-primary, .btn-secondary, .btn-danger) {
   min-height: 42px !important;
+  min-width: 0;
+  max-width: 100%;
   height: auto;
   padding: 6px 10px !important;
   font-size: 12.5px !important;
   font-weight: 600 !important;
   line-height: 1.25;
   white-space: normal;
+  overflow-wrap: anywhere;
   text-align: center;
   display: flex;
   align-items: center;
@@ -1349,7 +1354,7 @@
   display: flex !important;
   flex-direction: column !important;
   gap: 12px !important;
-  overflow: hidden !important;
+  overflow: hidden;
 }
 
 .screen-stage[data-screen="telegram-proxy"] .telegram-runtime-status {
@@ -1398,7 +1403,7 @@
 .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-list {
   gap: 0;
   padding-right: 3px;
-  flex: 1 1 0 !important;
+  flex: 1 1 0;
   min-height: 0 !important;
   overflow-y: auto !important;
 }
@@ -1417,16 +1422,18 @@
 }
 
 .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line span {
-  font-size: 10px !important;
-  font-weight: 400 !important;
-  color: #71717a !important;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--dim);
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
 .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line strong {
-  font-size: 9.5px !important;
-  font-weight: 500 !important;
-  color: #a1a1aa !important;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  font-family: var(--font-mono);
   background: #1e1e22;
   border: 1px solid #2e2e34;
   border-radius: 3px;
@@ -1436,9 +1443,10 @@
 }
 
 .screen-stage[data-screen="telegram-proxy"] .telegram-status .log-line p {
-  font-size: 10.5px !important;
-  font-weight: 400 !important;
-  color: #a1a1aa !important;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink);
+  font-family: var(--font-mono);
   line-height: 1.35;
   margin: 0;
   word-break: break-word;
@@ -1460,27 +1468,31 @@
 
 /* Settings */
 
+.screen-stage[data-screen="settings"] {
+  overflow: hidden auto;
+}
+
 .screen-stage[data-screen="settings"] .settings-layout {
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) !important;
-  grid-template-rows: 1fr !important;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  grid-template-rows: 1fr;
   gap: 14px !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
   position: relative !important;
   box-sizing: border-box !important;
 }
 
 .screen-stage[data-screen="settings"] .settings-surface {
-  height: 100% !important;
-  min-height: 0 !important;
+  height: auto;
+  min-height: 0;
   display: flex !important;
   flex-direction: column !important;
   padding: 16px 18px !important;
   background: var(--compact-panel);
   border-color: var(--compact-border);
   border-radius: var(--compact-radius);
-  overflow-y: auto !important;
+  overflow-y: visible;
   box-sizing: border-box !important;
 }
 
@@ -1504,16 +1516,20 @@
 }
 
 .screen-stage[data-screen="settings"] :is(.settings-surface-head p, .settings-section-head p, .settings-panel-hint, .settings-maintenance-note) {
-  display: none !important;
+  display: block;
+  margin: 4px 0 0;
+  color: var(--compact-muted);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .screen-stage[data-screen="settings"] .settings-preferences-surface .settings-preferences-list {
-  flex: 1 1 0 !important;
-  min-height: 0 !important;
+  flex: 1 1 0;
+  min-height: 0;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: space-around !important;
-  gap: 10px !important;
+  justify-content: flex-start !important;
+  gap: 16px !important;
 }
 
 .screen-stage[data-screen="settings"] .settings-service-surface {
@@ -1522,12 +1538,12 @@
 }
 
 .screen-stage[data-screen="settings"] .settings-service-surface .settings-service-list {
-  flex: 1 1 0 !important;
-  min-height: 0 !important;
+  flex: 1 1 0;
+  min-height: 0;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: space-around !important;
-  gap: 12px !important;
+  justify-content: flex-start !important;
+  gap: 16px !important;
 }
 
 .screen-stage[data-screen="settings"] .settings-section {
@@ -1561,6 +1577,22 @@
 
 .screen-stage[data-screen="settings"] .toggle-setting-row:last-child {
   border-bottom: 0;
+}
+
+.screen-stage[data-screen="settings"] .toggle-setting-row > .toggle-setting-description {
+  grid-column: 1 / -1;
+  position: static;
+  clip-path: none;
+  width: auto;
+  height: auto;
+  margin: -2px 0 0;
+  padding: 0 0 8px;
+  color: var(--compact-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
 }
 
 .screen-stage[data-screen="settings"] .settings-layout .toggle-setting {
@@ -1601,7 +1633,8 @@
 }
 
 .screen-stage[data-screen="settings"] .settings-layout :is(.btn-secondary, .btn-primary) {
-  height: 34px;
+  min-height: 40px;
+  height: auto;
   border-radius: 8px;
   transition:
     background-color 150ms ease,
@@ -1628,16 +1661,20 @@
 
 .screen-stage[data-screen="settings"] .settings-path {
   color: var(--compact-muted);
-  font-size: 11px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  user-select: text;
 }
 
 .screen-stage[data-screen="settings"] .settings-layout > .app-version {
-  position: absolute !important;
-  bottom: 8px !important;
-  right: 24px !important;
-  font-size: 11px !important;
-  color: var(--compact-muted) !important;
-  opacity: 0.55 !important;
+  grid-column: 1 / -1;
+  position: static;
+  text-align: right;
+  font-size: 12px;
+  color: var(--dim);
+  opacity: 1;
   pointer-events: none !important;
 }
 
@@ -2221,26 +2258,51 @@ details.protection-check-facts > summary {
   .screen-stage[data-screen="zapret"] .zapret-layout,
   .screen-stage[data-screen="telegram-proxy"] .telegram-layout,
   .screen-stage[data-screen="settings"] .settings-layout {
+    flex: none;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
+    grid-auto-rows: minmax(min-content, max-content);
     align-content: start;
+    align-items: start;
     height: auto;
     max-height: none;
-    min-height: 100%;
+    min-height: 0;
     overflow: visible;
   }
 
   .screen-stage[data-screen="vpn"] .vpn-servers-panel,
   .screen-stage[data-screen="vpn"] .vpn-side-stack,
+  .screen-stage[data-screen="vpn"] .vpn-side-stack > .panel,
   .screen-stage[data-screen="dns"] .dns-form,
   .screen-stage[data-screen="dns"] .side-stack,
+  .screen-stage[data-screen="dns"] .side-stack > .panel,
   .screen-stage[data-screen="zapret"] .config-list,
   .screen-stage[data-screen="zapret"] .zapret-main,
+  .screen-stage[data-screen="zapret"] .zapret-main > .panel,
   .screen-stage[data-screen="telegram-proxy"] .telegram-form,
-  .screen-stage[data-screen="telegram-proxy"] .telegram-status {
+  .screen-stage[data-screen="telegram-proxy"] .telegram-status,
+  .screen-stage[data-screen="settings"] .settings-surface {
+    flex: none;
     height: auto;
-    min-height: 0;
+    min-height: min-content;
     overflow: visible;
+  }
+
+  .screen-stage[data-screen="settings"] .settings-preferences-surface .settings-preferences-list,
+  .screen-stage[data-screen="settings"] .settings-service-surface .settings-service-list {
+    flex: none;
+    min-height: min-content;
+  }
+
+  .screen-stage[data-screen="vpn"] .vpn-servers-panel > *,
+  .screen-stage[data-screen="vpn"] .vpn-side-stack > .panel > *,
+  .screen-stage[data-screen="dns"] .dns-form > *,
+  .screen-stage[data-screen="dns"] .side-stack > .panel > *,
+  .screen-stage[data-screen="zapret"] .zapret-main > .panel > *,
+  .screen-stage[data-screen="telegram-proxy"] .telegram-form > *,
+  .screen-stage[data-screen="settings"] .settings-surface > *,
+  .screen-stage[data-screen="settings"] .settings-section-list > * {
+    flex-shrink: 0;
   }
 
   .screen-stage[data-screen="zapret"] .zapret-main {
@@ -2257,6 +2319,8 @@ details.protection-check-facts > summary {
   .screen-stage[data-screen="vpn"] .vpn-server-list,
   .screen-stage[data-screen="zapret"] .config-scroll,
   .screen-stage[data-screen="telegram-proxy"] .log-list {
+    flex: none;
+    height: auto;
     max-height: min(360px, 48vh);
     overflow-y: auto;
   }
@@ -2265,6 +2329,7 @@ details.protection-check-facts > summary {
   .screen-stage[data-screen="dns"] .side-stack,
   .screen-stage[data-screen="zapret"] .zapret-main {
     grid-template-rows: none;
+    grid-auto-rows: minmax(min-content, max-content);
   }
 
   .screen-stage[data-screen="zapret"] .config-list {
@@ -2278,6 +2343,8 @@ details.protection-check-facts > summary {
 
   .screen-stage[data-screen="zapret"] .zapret-workbench,
   .screen-stage[data-screen="zapret"] .zapret-routes-flowseal {
+    grid-template-rows: auto auto;
+    grid-auto-rows: minmax(min-content, max-content);
     overflow: visible;
   }
 

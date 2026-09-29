@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+  "boundary": "Actual old/new render-process-gone callbacks executed in a VM with a fake window, bounded crash-event producer and injected monotonic timer. No Electron process or user GUI was created, crashed, reloaded or modified.",
+  "assertion": "At most three reloads during the first 59,999ms of a continuing crash loop",
+  "before": {
+    "passed": false,
+    "reloads": 10,
+    "timeMs": 59999,
+    "oomReloadsAfter5000Ms": 0
+  },
+  "after": {
+    "passed": true,
+    "reloads": 3,
+    "timeMs": 59999,
+    "oomReloadsAfter5000Ms": 1
+  },
+  "sourceSha256": {
+    "baselineMain": "e94b51c618d1b78005e0b284656dec9bfb25394e5a916cb2b346224a907c28c9",
+    "candidateMain": "e0c97f01e7bc391dd5721ec7fcd606beb796f9b33b778270990886223dfcde49",
+    "controller": "713f1ba38a0bf5d088eecf0775d157bd7f84658d642459510e86571bea87170e"
+  },
+  "limits": [
+    "This verifies the callback and bounded controller behavior, not actual renderer crash frequency or Electron recovery success.",
+    "Only a controlled host check can verify window recovery on the packaged Electron runtime."
+  ]
+}

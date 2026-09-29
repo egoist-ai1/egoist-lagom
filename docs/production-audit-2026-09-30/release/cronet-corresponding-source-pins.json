@@ -1,0 +1,69 @@
+{
+  "builderCommit": "d9872d6dd0d39cc7e042d1199d736f16fc40cf8c",
+  "nativeSourceGitlink": {
+    "path": "naiveproxy",
+    "mode": "160000",
+    "type": "commit",
+    "sha": "c823360c60cf54aab2ee2ac1644f69cc611d94d5"
+  },
+  "sourcePins": [
+    {
+      "name": "cronet-go-native-builder",
+      "version": "d9872d6dd0d3",
+      "repository": "SagerNet/cronet-go",
+      "ref": "d9872d6dd0d39cc7e042d1199d736f16fc40cf8c",
+      "url": "https://codeload.github.com/SagerNet/cronet-go/zip/d9872d6dd0d39cc7e042d1199d736f16fc40cf8c",
+      "file": "cronet-go-native-builder-d9872d6dd0d3-source.zip",
+      "bytes": 195067,
+      "sha256": "e719cd8f5b5011ed12ea261a79dae229b6ee3f0fa9ef0620fc47a9ad0a1dd336",
+      "integritySource": "Official exact commit archive; native source commit linked by library build commit and gitlink.",
+      "extractedBytes": 648939,
+      "topnames": [
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/.github/",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/.github/workflows/",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/.github/workflows/naive-build.yml",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/.gitignore",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/.gitmodules",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/.golangci.yml",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/LICENSE",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/Makefile",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/README.md",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/bidirectional_conn.go",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/bidirectional_stream_cgo.go",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/bidirectional_stream_impl_cgo.go",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/bidirectional_stream_impl_purego.go",
+        "cronet-go-d9872d6dd0d39cc7e042d1199d736f16fc40cf8c/bidirectional_stream_map.go"
+      ]
+    },
+    {
+      "name": "cronet-naiveproxy",
+      "version": "c823360c60cf",
+      "repository": "SagerNet/naiveproxy",
+      "ref": "c823360c60cf54aab2ee2ac1644f69cc611d94d5",
+      "url": "https://codeload.github.com/SagerNet/naiveproxy/zip/c823360c60cf54aab2ee2ac1644f69cc611d94d5",
+      "file": "cronet-naiveproxy-c823360c60cf-source.zip",
+      "bytes": 79573095,
+      "sha256": "e6e4952d27e03f16fd3c17c2ebe3a39f405016804a4c2e1ceb77cf055baac9b9",
+      "integritySource": "Official exact commit archive; native source commit linked by library build commit and gitlink.",
+      "extractedBytes": 255217109,
+      "topnames": [
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/.github/",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/.github/workflows/",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/.github/workflows/build.yml",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/.gitignore",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/CHROMIUM_VERSION",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/LICENSE",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/README.md",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/USAGE.txt",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/apk/",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/apk/.gitignore",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/apk/app/",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/apk/app/build.gradle.kts",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/apk/app/src/",
+        "naiveproxy-c823360c60cf54aab2ee2ac1644f69cc611d94d5/apk/app/src/main/"
+      ]
+    }
+  ]
+}

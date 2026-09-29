@@ -12,6 +12,7 @@ async function registerIpcHandlers(window, stateStore, runtimeManager, gravityle
 	};
 	const networkCombinatorManager = new NetworkCombinatorManager({
 		isNetworkReady,
+		getProductVersion: () => app.getVersion(),
 		isElevated: async () => runtimeManager.isAdmin(),
 		moduleInspectors: buildNetworkModuleInspectors({
 			stateStore,

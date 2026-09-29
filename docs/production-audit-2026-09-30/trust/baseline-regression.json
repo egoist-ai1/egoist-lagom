@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-09-29T22:04:16.701Z",
+  "commit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+  "scope": "Logical regression with ephemeral in-memory keys; no installed data or live signing keys",
+  "test": "root-signed remote revocation blocks both release manifest and stable fallback",
+  "result": "failed-as-expected",
+  "actual": "trusted",
+  "expected": "untrusted",
+  "capturedOutputSha256": "e12d5b4eeba9f9c49074b4b3fa7c02f021d618ab18bf518075c4822f0da74b76"
+}

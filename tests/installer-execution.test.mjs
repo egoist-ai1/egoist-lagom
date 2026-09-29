@@ -22,7 +22,7 @@ test('direct interactive install hands a sole-local-DNS upgrade to the protected
   assert.match(source,/-EmbeddedRelease -InstallerUiDirectory "\$PLUGINSDIR" -DelaySeconds 8/);
   assert.match(init,/\$PhaseResult == "54"[\s\S]*?\$\{AndIfNot\} \$\{Silent\}[\s\S]*?!insertmacro RunProtectedReinstallHandoff/);
   assert.equal((init.match(/!insertmacro RunProtectedReinstallHandoff/g) ?? []).length,1);
-  assert.match(init,/The \/S[\s\S]*?preventing recursive dispatch/);
+  assert.match(init,/\$\{If\} \$PhaseResult == "58"[\s\S]*?SetErrorLevel 58[\s\S]*?\$\{Else\}[\s\S]*?SetErrorLevel 54/);
   assert.match(init,/handoff-ack\.flag[\s\S]*?SetErrorLevel 0[\s\S]*?Quit/);
   assert.match(init,/IntOp \$WaitTicks \$WaitTicks \+ 1[\s\S]*?\$WaitTicks < 30/);
   assert.match(init,/SetErrorLevel 54[\s\S]*?Abort/);

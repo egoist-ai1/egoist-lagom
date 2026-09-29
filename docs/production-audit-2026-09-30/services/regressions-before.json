@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-09-29T21:40:07.664363+00:00",
+  "sourceLabel": "before",
+  "runtime": ".NET 10.0.12",
+  "cases": [
+    {
+      "id": "SVC-01",
+      "regression": "WorkerBootstrapQueryAsync",
+      "passed": false,
+      "error": "A mutation cannot use the component query endpoint."
+    },
+    {
+      "id": "SVC-02",
+      "regression": "IdentityProbeScopeAsync",
+      "passed": false,
+      "error": "Probe received a cached forbidden response."
+    },
+    {
+      "id": "SVC-03",
+      "regression": "RecoveryClockRollbackAsync",
+      "passed": false,
+      "error": "A future durable recovery timestamp suppressed recovery after clock correction."
+    },
+    {
+      "id": "SVC-04",
+      "regression": "BootstrapClockRollbackAsync",
+      "passed": false,
+      "error": "Refresh was not due."
+    },
+    {
+      "id": "SVC-05",
+      "regression": "UnverifiedRuntimeRootAsync",
+      "passed": false,
+      "error": "Path is outside the allowlisted trusted roots."
+    }
+  ],
+  "passed": 0,
+  "failed": 5
+}

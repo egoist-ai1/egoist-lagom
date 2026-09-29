@@ -147,8 +147,10 @@ var VpnReconnectSupervisor = class {
 			circuitOpen: false,
 			requiredAction: null
 		};
+		return this.generation;
 	}
-	recordConnectionResult(status) {
+	recordConnectionResult(status, generation = this.generation) {
+		if (generation !== this.generation) return;
 		this.attemptInFlight = false;
 		if (isVerifiedConnection(status)) {
 			this.armHealthyConnection();

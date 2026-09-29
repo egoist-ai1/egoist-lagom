@@ -218,7 +218,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
           <button aria-label="Свернуть" title="Свернуть" onClick={() => api?.window?.minimize?.()}>
             <RubyIcon name="minimize" size={14}/>
           </button>
-          <button aria-label="Закрыть" title="Скрыть в трей" onClick={() => api?.window?.close?.()}>
+          <button aria-label={snapshot?.state?.settings?.minimizeToTray ? 'Скрыть в трей' : 'Закрыть приложение'} title={snapshot?.state?.settings?.minimizeToTray ? 'Скрыть в трей' : 'Закрыть приложение'} onClick={() => api?.window?.close?.()}>
             <RubyIcon name="close" size={14}/>
           </button>
         </div>

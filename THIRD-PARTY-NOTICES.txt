@@ -1,24 +1,75 @@
 EGOIST LAGOM — THIRD-PARTY NOTICES
 
-This product includes third-party software. Their original license terms remain applicable.
+Third-party software retains its original license terms. The product license
+does not replace those terms. Native full texts, upstream routes, exact input
+hashes and source directions are installed under resources/licenses/.
+sources.json inventories supplied notice bytes; native-components.json records
+the audited inputs. The release also provides a native-sources ZIP alongside
+Setup. Read resources/licenses/SOURCE-DIRECTIONS.txt for precise coverage.
 
 Desktop dependencies
 --------------------
 Electron — MIT — https://github.com/electron/electron
+Electron's LICENSE and Chromium LICENSES.chromium.html remain in the payload.
 React / React DOM — MIT — https://github.com/facebook/react
 Motion — MIT — https://github.com/motiondivision/motion
 Lucide — ISC / MIT-derived icons — https://github.com/lucide-icons/lucide
 Inter font package — SIL Open Font License 1.1 — https://github.com/rsms/inter
-Unbounded font — SIL Open Font License 1.1 — see resources/installer/Unbounded-OFL.txt
+Unbounded font — SIL Open Font License 1.1 — resources/installer/Unbounded-OFL.txt
 Undici — MIT — https://github.com/nodejs/undici
+The CycloneDX SBOM identifies the current npm lock and runtime manifest. Its
+declared scope does not cover every dependency in the recovered renderer.
 
-Bundled runtime components
---------------------------
-Wintun — WireGuard LLC prebuilt binaries license — https://www.wintun.net/
-Xray Core — Mozilla Public License 2.0 — https://github.com/XTLS/Xray-core
-sing-box — GNU General Public License v3 or later — https://github.com/SagerNet/sing-box
-dnscrypt-proxy — ISC — https://github.com/DNSCrypt/dnscrypt-proxy
-Telegram WS Proxy — MIT — see the bundled component license file
-WinDivert — LGPLv3 library / GPLv2 driver, subject to upstream terms — https://github.com/basil00/WinDivert
+Bundled native components
+-------------------------
+sing-box 1.14.0 — GPL-3.0-or-later with upstream naming/association notice.
+Full text: GPL-3.0.txt and sing-box-1.14.0-COPYRIGHT.txt. Exact source commit,
+135 linked Go module archives and their named notices are supplied. Cronet's
+native builder and pinned naiveproxy/Chromium subset source are also supplied.
+https://github.com/SagerNet/sing-box
 
-The complete package inventory and corresponding license files are shipped with the release payload.
+Xray Core v26.5.3 — MPL-2.0. Full text: Xray-core-v26.5.3-MPL-2.0.txt.
+Exact upstream source archive accompanies the release.
+https://github.com/XTLS/Xray-core
+
+Wintun 0.14.1 — WireGuard LLC Prebuilt Binaries License. Unmodified signed DLL.
+Full text: Wintun-0.14.1-LICENSE.txt and runtime/xray/WINTUN-LICENSE.txt.
+https://www.wintun.net/
+
+dnscrypt-proxy 2.1.16 — ISC. Full text: dnscrypt-proxy-2.1.16-ISC.txt.
+https://github.com/DNSCrypt/dnscrypt-proxy
+
+Telegram WS Proxy v1.7.0 — MIT. Full text: tg-ws-proxy-v1.7.0-MIT.txt.
+The recovered CLI's exact correspondence to the public source build is not
+established; the public GUI executable is not silently substituted.
+https://github.com/Flowseal/tg-ws-proxy
+
+Flowseal zapret bundle 1.10.3 / bol-van winws — MIT.
+Full text: Flowseal-zapret-1.10.3-LICENSE.txt.
+https://github.com/Flowseal/zapret-discord-youtube
+
+WinDivert v2.2.2 — dual licensed under the recipient's choice of LGPL-3.0 or
+GPL-2.0, as stated in the original WinDivert-v2.2.2-LICENSE.txt. Full LGPL/GPL
+texts and exact source are supplied. This notice does not divide library and
+driver into different mandatory licenses.
+https://github.com/basil00/WinDivert
+
+WinSW 2.12.0, official NET461 variant — MIT. Full text: winsw-2.12.0-MIT.txt.
+The variant uses installed Windows .NET Framework 4.8 or newer. It merges
+log4net 2.0.12 (Apache-2.0 and NOTICE) and YamlDotNet 8.1.2 (MIT); their full
+notices are supplied. The old embedded .NET 6 variant is replaced.
+https://github.com/winsw/winsw
+
+Core self-contained .NET runtime 10.0.12 — MIT and upstream third-party terms.
+Full texts: dotnet-runtime-10.0.12-MIT.txt and
+dotnet-runtime-10.0.12-THIRD-PARTY-NOTICES.txt.
+https://github.com/dotnet/runtime
+
+Go runtime 1.26.7 used by the pinned sing-box — BSD-3-Clause.
+Full text: go1.26.7-BSD.txt. Dependency notices are supplied under go-modules/.
+https://github.com/golang/go
+
+Source archives and notices materially improve distribution evidence. They do
+not assert byte-identical upstream rebuilds, complete transitive native/Python
+inventory, or a legal certification. SOURCE-DIRECTIONS.txt records remaining
+build provenance and toolchain limits.

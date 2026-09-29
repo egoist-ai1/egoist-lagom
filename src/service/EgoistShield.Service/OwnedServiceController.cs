@@ -82,6 +82,7 @@ internal sealed class OwnedServiceController
 	public async Task<OwnedServiceStatus> StartAsync(string serviceName, CancellationToken cancellationToken = default(CancellationToken))
 	{
 		serviceName = NormalizeServiceName(serviceName);
+		EnsureProductDataRootVerified();
 		await AssertOwnedImagePathAsync(serviceName, cancellationToken);
 		return await OwnedServiceTransition.ChangeAsync(serviceName, true,
 			token => StatusAsync(serviceName, token),
@@ -92,6 +93,7 @@ internal sealed class OwnedServiceController
 	public async Task<OwnedServiceStatus> InstallAsync(string serviceName, CancellationToken cancellationToken = default(CancellationToken))
 	{
 		serviceName = NormalizeServiceName(serviceName);
+		EnsureProductDataRootVerified();
 		OwnedServiceDefinition definition = OwnedServices[serviceName];
 		if (!definition.SupportsInstall)
 		{
@@ -261,6 +263,7 @@ internal sealed class OwnedServiceController
 		string normalizedStartType = NormalizeRestorableStartType(desiredStartType);
 		if (normalizedStartType != null)
 		{
+			if (normalizedStartType == "auto") EnsureProductDataRootVerified();
 			await AssertOwnedImagePathAsync(serviceName, cancellationToken);
 			await SetStartTypeAsync(serviceName, normalizedStartType, await StatusAsync(serviceName, cancellationToken), cancellationToken);
 			OwnedServiceStatus ownedServiceStatus = await StatusAsync(serviceName, cancellationToken);
@@ -381,12 +384,14 @@ internal sealed class OwnedServiceController
 	internal async Task RepairRecoveryAsync(string serviceName, CancellationToken cancellationToken)
 	{
 		serviceName = NormalizeServiceName(serviceName);
+		EnsureProductDataRootVerified();
 		await AssertOwnedImagePathAsync(serviceName, cancellationToken);
 		await ConfigureRecoveryAsync(serviceName, OwnedServices[serviceName].Description, cancellationToken);
 	}
 
 	private async Task ConfigureRecoveryAsync(string serviceName, string description, CancellationToken cancellationToken)
 	{
+		EnsureProductDataRootVerified();
 		string[][] array = new string[4][]
 		{
 			new string[4] { "config", serviceName, "start=", "auto" },
@@ -437,11 +442,16 @@ internal sealed class OwnedServiceController
 
 	private Task<ProcessResult> RunOwnedExecutableAsync(string executablePath, string[] arguments, CancellationToken cancellationToken)
 	{
+		EnsureProductDataRootVerified();
+		return ProcessRunner.RunAsync(executablePath, arguments, ServiceContract.CommandTimeout, cancellationToken, Path.GetDirectoryName(executablePath));
+	}
+
+	private void EnsureProductDataRootVerified()
+	{
 		if (!_productDataRootVerified)
 		{
 			throw new ServiceOperationException("PROTECTED_ROOT_UNVERIFIED", "Права на защищённый каталог Egoist Lagom не подтверждены, поэтому запуск его исполняемых файлов заблокирован. Выполните «Восстановить интернет» или переустановите приложение.");
 		}
-		return ProcessRunner.RunAsync(executablePath, arguments, ServiceContract.CommandTimeout, cancellationToken, Path.GetDirectoryName(executablePath));
 	}
 
 	private Task<ProcessResult> RunRegAsync(IEnumerable<string> arguments, CancellationToken cancellationToken)

@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-09-29T22:04:16.647Z",
+  "scope": "Read-only production source verification in an isolated task profile. No installed state, application, private key or release changed.",
+  "registry": {
+    "source": "remote",
+    "freshness": "checked",
+    "generatedAt": "2026-09-29T12:02:01.705Z",
+    "keyCount": 3,
+    "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+    "pinnedRootFingerprint": "c5afc36a97cc4c27f60cdda41d33e1e460e8697f1ff641438ab915c6d259307d",
+    "warnings": []
+  },
+  "stableChannel": {
+    "trustStatus": "trusted",
+    "manifestVerified": true,
+    "version": "3.7.9",
+    "keyId": "release-2026-09-recovery",
+    "registrySource": "remote",
+    "registryFreshness": "checked",
+    "installerSha256": "eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+    "warnings": [
+      "GitHub REST API временно недоступен; использован подписанный stable channel.",
+      "Setup не имеет Authenticode-подписи; Windows может показать SmartScreen/UAC."
+    ]
+  },
+  "requestedUrls": [
+    "https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/release-key-registry.json",
+    "https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/release-key-registry.json.sig",
+    "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/release-key-registry.json.sig",
+    "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/release-key-registry.json",
+    "https://release-assets.githubusercontent.com/github-production-release-asset/1180735239/bc0eebc0-cf5d-4916-8a03-86b7fe65d85b",
+    "https://release-assets.githubusercontent.com/github-production-release-asset/1180735239/df9150a5-7c2b-437f-a4fd-fbdc2e357196",
+    "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/stable-channel.json",
+    "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/stable-channel.json.sig",
+    "https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/release-key-registry.json",
+    "https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/release-key-registry.json.sig",
+    "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/release-key-registry.json",
+    "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/release-key-registry.json.sig",
+    "https://release-assets.githubusercontent.com/github-production-release-asset/1180735239/df9150a5-7c2b-437f-a4fd-fbdc2e357196",
+    "https://release-assets.githubusercontent.com/github-production-release-asset/1180735239/bc0eebc0-cf5d-4916-8a03-86b7fe65d85b"
+  ],
+  "sourceSha256": "213e71798e93eb9c27bbc8d80e6016d09765a753d791a5197137f89700080d43",
+  "limitations": [
+    "The currently published registry contains no newly revoked key. Actual remote revocation is demonstrated only with ephemeral-key logical fixtures.",
+    "A checked response authenticates the received registry; it does not prove the server is serving the newest root-signed generation.",
+    "verifyStableChannelTrust was invoked directly for cryptographic validation; its fixed REST fallback warning is not evidence of an actual REST outage."
+  ]
+}

@@ -6,14 +6,18 @@ import { createPackage, listPackage } from '@electron/asar';
 import { rcedit } from 'rcedit';
 import { prepareComponents } from './prepare-components.mjs';
 import { verifyPinnedElectronRuntime, stageElectronPayload, addElectronToRuntimeManifest, verifyPackagedInstallHealth } from './electron-runtime.mjs';
+import { packageSource, assertPackageSource } from './package-source.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 process.chdir(root);
 const pkg = JSON.parse(await fs.readFile('package.json', 'utf8'));
 if (!/^\d+\.\d+\.\d+$/.test(pkg.version)) throw new Error('Packaging requires a stable numeric version.');
+const buildSource = await packageSource(root);
 const patchedDotnet = path.join(root, '.tools/dotnet-10.0.401/dotnet.exe');
 const dotnet = process.env.SHIELD_DOTNET || (await fs.access(patchedDotnet).then(() => patchedDotnet).catch(() => path.join(root, '.tools/dotnet/dotnet.exe')));
 const sdkCheck = spawnSync(dotnet, ['--version'], { windowsHide: true, encoding: 'utf8' });
 if (sdkCheck.status !== 0) throw new Error('Required .NET SDK is unavailable; install the version selected by global.json or set SHIELD_DOTNET.');
+const requiredSdk = JSON.parse(await fs.readFile('global.json', 'utf8')).sdk.version;
+if (sdkCheck.stdout.trim() !== requiredSdk) throw new Error(`Packaging requires the pinned .NET SDK ${requiredSdk}; received ${sdkCheck.stdout.trim()}.`);
 const retryWindowsFileOperation = async operation => {
   let lastError;
   for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -30,6 +34,10 @@ const retryWindowsFileOperation = async operation => {
 const evidence = process.env.SHIELD_EVIDENCE_DIR;
 if (!evidence || !path.isAbsolute(evidence)) throw new Error('Set SHIELD_EVIDENCE_DIR to an absolute task-scoped directory.');
 await fs.mkdir(evidence, { recursive: true });
+await fs.writeFile(path.join(evidence, 'package-source.json'), JSON.stringify(buildSource, null, 2) + '\n');
+const rendererBuild = spawnSync(process.execPath, [path.join(root, 'scripts/build.mjs')], { windowsHide: true, encoding: 'utf8' });
+await fs.writeFile(path.join(evidence, 'desktop-build.txt'), [rendererBuild.stdout ?? '', rendererBuild.stderr ?? '', rendererBuild.error?.message ?? ''].join(''));
+if (rendererBuild.status !== 0) throw new Error('Desktop build failed; see ' + path.join(evidence, 'desktop-build.txt'));
 const out = path.join(root, 'out', `EgoistShield-${pkg.version}-win-x64`);
 const appRoot = path.join(root, 'out', `app-${pkg.version}`);
 const assertOwnedOutputDirectory = async target => {
@@ -46,6 +54,18 @@ const assertOwnedOutputDirectory = async target => {
 await assertOwnedOutputDirectory(out);
 await assertOwnedOutputDirectory(appRoot);
 await fs.mkdir('dist', { recursive: true });
+const nativeSourceFile = path.join(root, 'dist', `Egoist-Lagom-${pkg.version}-native-sources.zip`);
+const sourcePython = process.env.EGOIST_RELEASE_PYTHON || process.env.SHIELD_PYTHON || 'python';
+const nativeSourceBuild = spawnSync(sourcePython, [
+  path.join(root, 'scripts/prepare-native-sources.py'), '--work-dir', evidence, '--output', nativeSourceFile,
+  ...(process.env.SHIELD_NATIVE_SOURCES_OFFLINE === '1' ? ['--offline'] : [])
+], { windowsHide: true, encoding: 'utf8', timeout: 15 * 60 * 1000, maxBuffer: 1024 * 1024 });
+await fs.writeFile(path.join(evidence, 'native-source-build.txt'), [nativeSourceBuild.stdout ?? '', nativeSourceBuild.stderr ?? '', nativeSourceBuild.error?.message ?? ''].join(''));
+if (nativeSourceBuild.status !== 0) throw new Error('Pinned native source companion failed; see ' + path.join(evidence, 'native-source-build.txt'));
+const nativeSourceResult = JSON.parse(nativeSourceBuild.stdout);
+const nativeSourceStat = await fs.lstat(nativeSourceFile);
+if (nativeSourceResult.path !== nativeSourceFile || !nativeSourceStat.isFile() || nativeSourceStat.isSymbolicLink() || nativeSourceResult.bytes !== nativeSourceStat.size || !/^[a-f0-9]{64}$/.test(nativeSourceResult.sha256)) throw new Error('Invalid native source companion receipt.');
+const nativeSources = { path: path.relative(root, nativeSourceFile).split(path.sep).join('/'), bytes: nativeSourceStat.size, sha256: nativeSourceResult.sha256.toUpperCase(), sourceArchives: nativeSourceResult.sourceArchives, coverage: nativeSourceResult.coverage };
 const recoveredApp = path.resolve('recovery/official-app');
 const electronRuntime = await verifyPinnedElectronRuntime(root);
 await fs.writeFile(path.join(evidence, 'electron-runtime-input.json'), JSON.stringify(electronRuntime, null, 2) + '\n');
@@ -98,7 +118,13 @@ const cscResult = spawnSync(csc, [
 ], { encoding: 'utf8' });
 if (cscResult.status !== 0) throw new Error('Failed to compile ModernInstaller.exe:\n' + (cscResult.stderr || '') + (cscResult.stdout || ''));
 console.log('Publishing Core service...');
-const publish = spawnSync(dotnet, ['publish', 'src/service/EgoistShield.Service.csproj', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:PublishSingleFile=true', '-p:EnableCompressionInSingleFile=true', '-o', path.join(out, 'resources/core-service/win-x64'), '-v', 'quiet'], { windowsHide: true, env: { ...process.env, DOTNET_ROOT: path.dirname(dotnet), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' }, encoding: 'utf8' });
+const dotnetEnvironment = { ...process.env, DOTNET_ROOT: path.dirname(dotnet), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' };
+const coreIntermediate = path.join(evidence, 'core-obj') + path.sep;
+const coreBuildProperties = ['-p:PublishSingleFile=true', '-p:SelfContained=true', `-p:BaseIntermediateOutputPath=${coreIntermediate}`, `-p:MSBuildProjectExtensionsPath=${coreIntermediate}`, '-p:DefaultItemExcludes=obj\\**\\*.cs'];
+const restore = spawnSync(dotnet, ['restore', 'src/service/EgoistShield.Service.csproj', '--locked-mode', '-r', 'win-x64', ...coreBuildProperties, '-v', 'quiet'], { windowsHide: true, env: dotnetEnvironment, encoding: 'utf8' });
+await fs.writeFile(path.join(evidence, 'core-locked-restore.txt'), [restore.stdout ?? '', restore.stderr ?? '', restore.error?.message ?? ''].join(''));
+if (restore.status !== 0) throw new Error('Core locked restore failed; see ' + path.join(evidence, 'core-locked-restore.txt'));
+const publish = spawnSync(dotnet, ['publish', 'src/service/EgoistShield.Service.csproj', '--no-restore', '-c', 'Release', '-r', 'win-x64', ...coreBuildProperties, '-p:EnableCompressionInSingleFile=true', '-o', path.join(out, 'resources/core-service/win-x64'), '-v', 'quiet'], { windowsHide: true, env: dotnetEnvironment, encoding: 'utf8' });
 await fs.writeFile(path.join(evidence, 'core-publish.txt'), [publish.stdout ?? '', publish.stderr ?? '', publish.error?.message ?? ''].join(''));
 if (publish.status !== 0) throw new Error('Core publish failed; see ' + path.join(evidence, 'core-publish.txt'));
 const installHealth = await verifyPackagedInstallHealth(out);
@@ -122,6 +148,7 @@ const installerCode = await new Promise((resolve, reject) => {
 console.log('NSIS finished with exit code:', installerCode);
 await fs.writeFile(path.join(evidence, 'nsis-build.txt'), `status=${installerCode}\n`);
 if (installerCode !== 0) throw new Error('NSIS failed with exit code ' + installerCode);
+await assertPackageSource(root, buildSource);
 const setupPrevious = setupFinal + '.previous';
 await fs.rm(setupPrevious, { force: true });
 let previousMoved = false;
@@ -150,6 +177,7 @@ try {
 }
 if (previousMoved) await fs.rm(setupPrevious, { force: true });
 const sha256 = async file => crypto.createHash('sha256').update(await fs.readFile(file)).digest('hex').toUpperCase();
+if (await sha256(nativeSourceFile) !== nativeSources.sha256 || (await fs.stat(nativeSourceFile)).size !== nativeSources.bytes) throw new Error('Native source companion changed during packaging.');
 const installerStat = await fs.stat(setupFinal);
 const installerSha256 = await sha256(setupFinal);
 const publicSetup = path.join(root, 'dist', 'Egoist-Lagom-Setup.exe');
@@ -195,6 +223,9 @@ const integrity = {
   generatedAt: new Date().toISOString(),
   product: pkg.productName,
   version: pkg.version,
+  source: buildSource.source,
+  sourceFilesSha256: buildSource.sha256,
+  nativeSources,
   electronRuntime: packagedElectron,
   installer: { path: path.relative(root, setupFinal).split(path.sep).join('/'), bytes: installerStat.size, sha256: installerSha256 },
   publicInstaller: { path: path.relative(root, publicSetup).split(path.sep).join('/'), bytes: installerStat.size, sha256: publicSetupSha256 },

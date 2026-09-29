@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-09-30",
+  "candidateVersion": "3.8.0",
+  "productionStateMutated": false,
+  "officialWinSWReproduction": {
+    "report": "../wrapper-risk.md",
+    "actualCommands": 20,
+    "bytesPerStatusCommand": 64,
+    "wrapperBytes": 1280,
+    "childThresholdBytes": 1024,
+    "engineStarted": false
+  },
+  "baselineFileControl": {
+    "beforeGuard": true,
+    "retainedBytes": 5244160,
+    "nativeAppendedBytes": 1280,
+    "expectedAssertionFailed": true,
+    "oldCoreExecuted": false
+  },
+  "policy": {
+    "exactOwnedLogs": 3,
+    "rotationThresholdBytes": 5242880,
+    "checkIntervalSeconds": 300,
+    "warningIntervalSeconds": 3600,
+    "retainedPreviousBackupsPerLog": 1,
+    "sizeLimit": "soft",
+    "clock": "Stopwatch",
+    "rotation": "same-directory rename; no truncation/service control"
+  },
+  "regression": {
+    "groups": 10,
+    "pass": 10,
+    "fail": 0,
+    "skip": 0,
+    "durationSeconds": 1.59,
+    "rotations": 144,
+    "transientNativeDeferralsFinalRun": 0,
+    "scheduledChecksFinalRun": 48,
+    "cases": [
+      "three exact paths rotate at 5 MiB and resume native appends",
+      "one previous backup is replaced across 48 rotation cycles",
+      "missing and small files are untouched; lookalikes are excluded",
+      "five-minute monotonic deadline and cancellation",
+      "busy source is deferred without truncation or blocking another wrapper",
+      "busy previous backup is preserved and retried",
+      "native ACL denial preserves the log and resumes after permission repair",
+      "foreign product root and production state root are rejected",
+      "native junction ancestors and backup leaves are rejected",
+      "actual Core warning is hourly and maintenance failures permit continuation"
+    ]
+  },
+  "nativeFixtures": [
+    "NTFS files and append handles",
+    "held source without delete sharing",
+    "held previous backup",
+    "temporary explicit rename ACL denial, original DACL restored",
+    "directory junction ancestor and backup leaf",
+    "out-of-anchor root"
+  ],
+  "compiledCoreIntegration": [
+    "hourly aggregate warning",
+    "unexpected guard exception contained",
+    "busy diagnostic log contained",
+    "shutdown cancellation propagated"
+  ],
+  "coreBuild": {
+    "configuration": "Release",
+    "runtimeIdentifier": "win-x64",
+    "sdkVersion": "10.0.401",
+    "runtimeVersion": "10.0.12",
+    "lockedRestore": true,
+    "publishSingleFile": true,
+    "selfContained": true,
+    "errors": 0,
+    "warnings": 141,
+    "newGuardWarnings": 0,
+    "sha256": "fbc56f38b1995f9d03b253c780d6887409dcbbd2995bf04905008fcc945ac6b6"
+  },
+  "sourceSha256": {
+    "src/service/EgoistShield.Service/OwnedWrapperLogMaintenance.cs": "a24b54ae947058c238eabf52f71edeb80bfeaf4996ecd5497c1a9e191ae1bc38",
+    "src/service/EgoistShield.Service/OperationDispatcher.cs": "113186fa323da22eea05dd3de18e8f4c70413a5b655de2720fab9e5bc92916b9",
+    "tests/OwnedWrapperLogMaintenanceRegression/Program.cs": "3112c04cff1ea7e26813026ef607ba886c3b67e50a1adf08b0c9d3080d715f85",
+    "tests/OwnedWrapperLogMaintenanceRegression/OwnedWrapperLogMaintenanceRegression.csproj": "37eab899fc51e06b5eac352692ffdb495b9617d25c9dd11b1d434d30c0af6485"
+  },
+  "limits": [
+    "Core helper was called in isolated reflection fixtures; no live DNS operation was invoked.",
+    "No real reboot, elapsed-month soak, live service installation or publication.",
+    "Persistent locks, sustained growth, long transactions and busy mutation scheduling can exceed the soft threshold.",
+    "Atomic rename does not guarantee zero diagnostic event loss under arbitrary external interference.",
+    "The guard does not patch EOL embedded log4net."
+  ],
+  "longPathFixture": {
+    "before": {
+      "powershellMajorVersion": 5,
+      "groupsPassedBeforeJunctionFailure": 8,
+      "failureReproduced": true
+    },
+    "after": {
+      "configuredPowerShell7": true,
+      "environmentVariable": "LAGOM_TEST_POWERSHELL",
+      "groups": 10,
+      "pass": 10,
+      "fail": 0,
+      "skip": 0,
+      "durationSeconds": 2.12,
+      "nativeRotations": 144,
+      "junctions": [
+        {
+          "linkCharacters": 336,
+          "targetCharacters": 325,
+          "nativeReparsePoint": true
+        },
+        {
+          "linkCharacters": 402,
+          "targetCharacters": 332,
+          "nativeReparsePoint": true
+        }
+      ],
+      "pathsShortened": false,
+      "currentCompiledCoreUsed": true
+    },
+    "helperBounds": {
+      "combinedDeadlineSeconds": 15,
+      "outputCharactersPerStream": 8192,
+      "parallelStreamReads": true,
+      "ownedChildCleanupOnFailure": true
+    },
+    "productCodeChanged": false
+  }
+}

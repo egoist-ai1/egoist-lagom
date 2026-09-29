@@ -53,11 +53,13 @@ internal sealed class OperationDispatcher : IDisposable
 	private readonly OwnedServiceIntentStore _serviceIntents;
 	private readonly OwnedServiceSupervisor? _serviceSupervisor;
 	private readonly DnsBootstrapRefreshScheduler _bootstrapRefresh;
+	private readonly OwnedWrapperLogMaintenance? _wrapperLogMaintenance;
 	private WindowsServiceListenerSnapshot? _telegramListenerSnapshot;
 	private readonly Stopwatch _maintenanceClock = Stopwatch.StartNew();
 	private TimeSpan _nextDnsMaintenance;
 	private TimeSpan _nextDnsAudit;
 	private int _dnsMaintenanceRequested = 1;
+	private TimeSpan _nextWrapperLogWarning;
 
 	public OperationDispatcher(ServiceOptions options, WindowsDnsController dns, WindowsNativeDohController nativeDoh, OwnedServiceController? services, TransactionJournal journal, ServiceLog log,
 		Func<JsonElement, bool, CancellationToken, Task<JsonElement>>? componentExecutor = null)
@@ -75,6 +77,8 @@ internal sealed class OperationDispatcher : IDisposable
 		_bootstrapRefresh = new DnsBootstrapRefreshScheduler(options.StateRoot);
 		if (services != null && options.InstallRoot != null && !options.ConsoleMode)
 		{
+			if (ProtectedProductRoot.IsProductionShape(options.StateRoot))
+				_wrapperLogMaintenance = OwnedWrapperLogMaintenance.ForVerifiedProductionRoot(options.StateRoot);
 			_serviceSupervisor = new OwnedServiceSupervisor(_serviceIntents, services.StatusAsync,
 				services.AssertOwnedImagePathAsync, ProbeOwnedServiceAsync,
 				async (name, running, token) =>
@@ -100,8 +104,9 @@ internal sealed class OperationDispatcher : IDisposable
 				// A crash marker is recovered by the transaction path, never bypassed
 				// by an independent health repair during partial network mutation.
 				if (await _journal.ReadActiveAsync(cancellationToken) != null) continue;
-				await _serviceSupervisor.CheckAsync(cancellationToken);
 				TimeSpan now = _maintenanceClock.Elapsed;
+				await MaintainOwnedWrapperLogsAsync(now, cancellationToken);
+				await _serviceSupervisor.CheckAsync(cancellationToken);
 				if (now >= TimeSpan.FromSeconds(60)) await RefreshOwnedDnsBootstrapAsync(cancellationToken);
 				if (now >= TimeSpan.FromSeconds(60) && now >= _nextDnsMaintenance &&
 					(Volatile.Read(ref _dnsMaintenanceRequested) != 0 || now >= _nextDnsAudit))
@@ -123,6 +128,29 @@ internal sealed class OperationDispatcher : IDisposable
 				}
 			}
 			finally { _mutationLock.Release(); }
+		}
+	}
+
+	private async Task MaintainOwnedWrapperLogsAsync(TimeSpan now, CancellationToken cancellationToken)
+	{
+		if (_wrapperLogMaintenance == null) return;
+		try
+		{
+			var result = _wrapperLogMaintenance.RunIfDue(now, cancellationToken);
+			if (result.Deferred == 0 && result.Rejected == 0) return;
+			if (now < _nextWrapperLogWarning) return;
+			_nextWrapperLogWarning = now + TimeSpan.FromHours(1);
+			await _log.WarnAsync($"Owned wrapper log maintenance deferred: busy/unavailable={result.Deferred}; untrusted={result.Rejected}. Services continue without interruption.", cancellationToken);
+		}
+		catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+		catch (Exception)
+		{
+			// Log maintenance must not prevent independent service/DNS checks.
+			if (now < _nextWrapperLogWarning) return;
+			_nextWrapperLogWarning = now + TimeSpan.FromHours(1);
+			try { await _log.WarnAsync("Owned wrapper log maintenance is temporarily unavailable; service/DNS checks continue.", cancellationToken); }
+			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+			catch (Exception) { }
 		}
 	}
 
@@ -314,6 +342,10 @@ internal sealed class OperationDispatcher : IDisposable
 	public async Task<ServiceResponse> DispatchAsync(ServiceRequest request, ClientIdentity identity, CancellationToken cancellationToken = default(CancellationToken))
 	{
 		long sequence = Interlocked.Increment(ref _sequence);
+		if (identity.IdentityProbe && request.Operation != "hello")
+		{
+			return ServiceResponse.Failure(request.RequestId, sequence, "IDENTITY_PROBE_SCOPE", "The Core identity probe may call hello only.");
+		}
 		string fingerprint = Fingerprint(request);
 		bool mutation = MutationOperations.Contains(request.Operation);
 		if (_responses.TryGetValue(request.RequestId, out CachedResponse value))
@@ -549,10 +581,6 @@ internal sealed class OperationDispatcher : IDisposable
 	{
 		try
 		{
-			if (identity.IdentityProbe && request.Operation != "hello")
-			{
-				return ServiceResponse.Failure(request.RequestId, sequence, "IDENTITY_PROBE_SCOPE", "The Core identity probe may call hello only.");
-			}
 			object obj;
 			switch (request.Operation)
 			{

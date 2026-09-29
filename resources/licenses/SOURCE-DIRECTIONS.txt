@@ -1,0 +1,105 @@
+Egoist Lagom native component source directions
+=============================================
+
+The release provides Egoist-Lagom-<version>-native-sources.zip alongside Setup.
+It contains pinned original source ZIPs, full license notices, this document,
+the exact sing-box build metadata, Go module input hashes and a reproduction
+tool. source-inputs.json records exact public routes and hashes. sources.json
+records the notice bytes and their upstream origins. native-components.json
+records the audited binary baseline and the replacement WinSW variant.
+
+sing-box 1.14.0
+--------------
+The binary is unmodified from the authenticated official Windows-amd64 asset.
+Source commit: 0b8995879f29a9b98ee027bc17b75e101445b238.
+Source: https://github.com/SagerNet/sing-box/tree/0b8995879f29a9b98ee027bc17b75e101445b238
+License: GPL-3.0-or-later, with upstream naming/association notice. Read
+sing-box-1.14.0-COPYRIGHT.txt and GPL-3.0.txt. All 135 modules recorded in this
+binary are provided as original module ZIPs and authenticated against its
+embedded Go h1 checksums. Their complete named notices are included under
+go-modules/. Their versioned proxy routes are recorded in source-inputs.json.
+
+The embedded build uses Go 1.26.7, Windows amd64, CGO_ENABLED=0, GOAMD64=v1,
+trimpath and the exact build tags in sing-box-1.14.0-build-info.txt. The source
+archive includes go.mod/go.sum, Makefile, release/ and cmd/internal/build.
+For a development rebuild, use that exact source, Go 1.26.7 and those recorded
+tags; use the upstream release scripts to reconstruct release flags. The
+Makefile's @latest tooling must be pinned before claiming reproducibility.
+No byte-identical rebuild is claimed by this release.
+
+Cronet/naiveproxy source used by sing-box
+---------------------------------------
+Library module commit: f80ef37265e5ae43b62021553a3bfc763414656d.
+That official commit states "Build from d9872d6d". Its native builder source is
+d9872d6dd0d39cc7e042d1199d736f16fc40cf8c; its naiveproxy gitlink is
+c823360c60cf54aab2ee2ac1644f69cc611d94d5. Both exact source archives are provided.
+The builder includes cmd/build-naive and .github/workflows/naive-build.yml.
+The naiveproxy source includes the Chromium subset, CHROMIUM_VERSION, src/DEPS,
+build recipes and its original notices. Its external compiler/toolchain,
+sysroot and Chromium build downloads are not hydrated or executed here.
+Read https://github.com/SagerNet/cronet-go/tree/d9872d6dd0d39cc7e042d1199d736f16fc40cf8c
+and https://github.com/SagerNet/naiveproxy/tree/c823360c60cf54aab2ee2ac1644f69cc611d94d5
+for the preserved upstream recipes. Complete build-to-library verification
+remains an explicit limitation, rather than a claimed legal certification.
+
+Xray Core v26.5.3
+-----------------
+The exact upstream source archive is included; license MPL-2.0.
+Source: https://github.com/XTLS/Xray-core/tree/v26.5.3
+Build directions: upstream README and .github/workflows in that archive.
+
+WinDivert v2.2.2 and Flowseal zapret 1.10.3
+---------------------------------------
+WinDivert is dual licensed under LGPL-3.0 or GPL-2.0, as stated in the original
+WinDivert-v2.2.2-LICENSE.txt. Both full texts are shipped. Exact source archive:
+https://github.com/basil00/WinDivert/tree/v2.2.2
+The upstream source archive includes library/driver code and build scripts.
+The original signed WinDivert binaries are retained. A recipient may obtain
+and build the source separately; rebuilding a signed Windows driver requires
+the recipient's own appropriate driver signing process.
+Flowseal's 1.10.3 MIT license covers its scripts and bol-van winws attribution:
+https://github.com/Flowseal/zapret-discord-youtube/tree/1.10.3
+Its original source/bundle archive and notice are included. The exact winws
+upstream compiler environment and source-to-binary match are not reproduced.
+
+WinSW 2.12.0
+------------
+This candidate uses the official WinSW.NET461.exe variant with installed
+Windows .NET Framework 4.8 or newer. It does not embed the old .NET 6 runtime.
+Source: https://github.com/winsw/winsw/tree/v2.12.0
+MIT text and exact source archive are included. The framework variant merges
+log4net 2.0.12 (Apache-2.0 plus NOTICE) and YamlDotNet 8.1.2 (MIT), as recorded
+in its source project files. Their full license notices are included. The
+official release is old; this does not claim all merged dependencies are
+currently maintained. The historical GitHub asset has no published digest;
+the pinned SHA-256 was measured from its exact official HTTPS asset.
+
+dnscrypt-proxy 2.1.16 / Telegram WS Proxy v1.7.0
+---------------------------------------------
+Their official source archives and ISC/MIT notices are included:
+https://github.com/DNSCrypt/dnscrypt-proxy/tree/2.1.16
+https://github.com/Flowseal/tg-ws-proxy/tree/v1.7.0
+The Telegram CLI is inherited from the authenticated recovery payload and
+differs from the public GUI release executable. Its exact build correspondence
+is not established, and the candidate does not silently substitute that GUI.
+
+Wintun 0.14.1 / .NET Runtime 10.0.12
+-----------------------------------
+The unmodified Wintun prebuilt DLL and its original prebuilt-binaries license
+are packaged together. Read Wintun-0.14.1-LICENSE.txt and
+https://www.wintun.net/ for terms and source references.
+The self-contained Core runtime's full Microsoft MIT and third-party notices
+are included. Source: https://github.com/dotnet/runtime/tree/v10.0.12
+Windows .NET Framework used by WinSW is a separately installed Windows
+component, rather than redistributed by this installer.
+
+Rebuilding the source companion
+------------------------------
+From the project source tree, run Python scripts/prepare-native-sources.py
+--work-dir <existing absolute task work directory>. --offline verifies and
+uses recovery/native-sources without network access. Fetches are bounded to
+128 MiB per archive and 512 MiB total; source contents are not executed.
+Source ZIP entries use fixed timestamps, so unchanged validated inputs yield
+the same companion bytes. The script includes all recorded source archives
+and notices; this is not a claim of complete transitive native/Python license
+coverage or byte-identical upstream binaries.

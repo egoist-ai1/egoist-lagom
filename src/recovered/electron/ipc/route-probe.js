@@ -1,12 +1,16 @@
 function extractRouteProbeIp(payload) {
 	if (!payload) return null;
 	if (typeof payload === "string") {
-		const match = payload.match(/(?:ip=|\b)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/);
-		return match ? match[1] : null;
+		const text = payload.trim();
+		if (isIP(text)) return text;
+		const match = text.match(/(?:^|\r?\n)ip=([^\r\n]+)(?:\r?\n|$)/);
+		const value = match?.[1]?.trim();
+		return value && isIP(value) ? value : null;
 	}
 	if (typeof payload === "object") {
+		if (payload.success === false) return null;
 		const candidate = payload.ip || payload.query || payload.clientIp;
-		if (typeof candidate === "string") return candidate.trim() || null;
+		if (typeof candidate === "string" && isIP(candidate.trim())) return candidate.trim();
 	}
 	return null;
 }

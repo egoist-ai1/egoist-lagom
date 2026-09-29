@@ -4,8 +4,9 @@ function detectRuntimeEnvironment({ isPackaged, nodeEnv }) {
 	if (!isPackaged) return "development";
 	return "production";
 }
-function buildAppPathConfig({ defaultUserDataDir, environment, pid }) {
-	const userDataDir = environment === "test" ? `${defaultUserDataDir}-test-${pid}` : environment === "development" ? `${defaultUserDataDir}-dev` : defaultUserDataDir;
+function buildAppPathConfig({ defaultUserDataDir, environment, pid, testUserDataDir }) {
+	if (environment === "test" && testUserDataDir && !path.isAbsolute(testUserDataDir)) throw new Error("Test user data path must be absolute.");
+	const userDataDir = environment === "test" ? testUserDataDir || `${defaultUserDataDir}-test-${pid}` : environment === "development" ? `${defaultUserDataDir}-dev` : defaultUserDataDir;
 	return {
 		environment,
 		userDataDir,

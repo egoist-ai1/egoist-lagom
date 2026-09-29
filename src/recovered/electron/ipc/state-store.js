@@ -38,17 +38,9 @@ var DEFAULT_STATE = {
 };
 function sanitizeState(state) {
 	const hasCurrentPrivacyConsent = state.settings.privacyConsentVersion === 1;
-	const sanitizedNodes = (state.nodes ?? []).map((node) => {
-		if (typeof node.server === "string" && /\.cloudpath\.live$/i.test(node.server)) {
-			const server = node.server.replace(/(^|\.)cloudpath\.live$/i, "$1claudpath.com");
-			const uri = typeof node.uri === "string" ? node.uri.replace(/(^|@|\.)cloudpath\.live/gi, "$1claudpath.com") : node.uri;
-			return { ...node, server, uri };
-		}
-		return node;
-	});
 	return normalizePersistedDisplayText({
 		...state,
-		nodes: sanitizedNodes,
+		nodes: state.nodes ?? [],
 		processRules: state.processRules ?? [],
 		settings: {
 			...state.settings,
