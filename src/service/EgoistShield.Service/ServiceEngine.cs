@@ -80,13 +80,22 @@ internal sealed class ServiceEngine
 	public async Task RunAsync(CancellationToken cancellationToken)
 	{
 		await _log.InfoAsync($"Starting {"EgoistShieldCore"} {BuildInfo.Version}; pipe={_options.PipeName}.", cancellationToken);
+		using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+		Task? supervision = null;
 		try
 		{
-			await _dispatcher.RecoverOnStartupAsync(cancellationToken);
-			await _pipeServer.RunAsync(cancellationToken);
+			await _dispatcher.RecoverOnStartupAsync(lifetime.Token);
+			supervision = _dispatcher.RunSupervisionAsync(lifetime.Token);
+			await _pipeServer.RunAsync(lifetime.Token);
 		}
 		finally
 		{
+			lifetime.Cancel();
+			if (supervision != null)
+			{
+				try { await supervision; }
+				catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+			}
 			_dispatcher.Dispose();
 			await _log.InfoAsync("Service stopped.", CancellationToken.None);
 		}

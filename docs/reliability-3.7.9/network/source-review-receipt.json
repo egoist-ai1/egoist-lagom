@@ -1,0 +1,55 @@
+{
+  "recordedAt": "2026-09-29T13:43:02.4030793+00:00",
+  "candidateVersion": "3.7.9",
+  "method": "Independent source review plus isolated scheduler/download behavioral tests; not actual installed3.7.9 or updater-install proof",
+  "command": "node --test tests/background-update-scheduler.test.mjs tests/desktop-updater-retry.test.mjs tests/updater-stream-reliability.test.mjs",
+  "exitCode": 0,
+  "counts": {
+    "tests": 14,
+    "pass": 14,
+    "fail": 0,
+    "skipped": 0,
+    "duration_ms": 1147.2095
+  },
+  "sourceFiles": [
+    {
+      "path": "src/recovered/electron/main.js",
+      "sha256": "d68ca7ca9776b8c78159659f604be8f8ed3d4f08ee942cb4e1260c0430a02c49"
+    },
+    {
+      "path": "src/recovered/electron/ipc/desktop-updater.js",
+      "sha256": "ba148c5ab4049936fd1408919e7c0c0f64f673834b9f266a8277996631192cf6"
+    },
+    {
+      "path": "src/recovered/electron/ipc/network-combinator-manager.js",
+      "sha256": "c9fe290354ab7f3364a8c6c6de0ab2ffd9eea896bdc0cd9ef3f84cd5299aef82"
+    },
+    {
+      "path": "tests/background-update-scheduler.test.mjs",
+      "sha256": "b3f67da18354847f64546f4a1cfb467ac90d7182b1f02d4c0f1551208e5c66f2"
+    },
+    {
+      "path": "tests/desktop-updater-retry.test.mjs",
+      "sha256": "9e0eec2c81987343b3e2370961e6a25043530d973c367f8bff4f1f40ed5a6747"
+    },
+    {
+      "path": "tests/updater-stream-reliability.test.mjs",
+      "sha256": "4f0ab6ba6c62375e5df65d1b70c6add1ec6a47531e16e7b8a22264c4bbf6d9c9"
+    },
+    {
+      "path": "tests/network-mutation-idle.test.mjs",
+      "sha256": "a629a891be016d235a65b3f2e2ab069afaddbca7eb3fa7b1bcb88e6e54e97bfb"
+    }
+  ],
+  "coordinatorRegression": "mutation-idle-regression.json",
+  "sourceOnly": {
+    "preservesExplicitFalse": true,
+    "persistFirstPreference": true,
+    "enabledOnlySingleNextTimeout": true,
+    "beforeAndAfterVpnIdleGuard": true,
+    "pendingBootRecoveryGuard": true,
+    "entireOutstandingMutationGuard": true,
+    "minimumAppVersionEnforcedInNewClient": true,
+    "oldClientsUnchanged": true
+  }
+}

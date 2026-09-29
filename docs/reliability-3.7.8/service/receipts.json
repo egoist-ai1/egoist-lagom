@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "product": "Egoist Lagom",
+  "candidateVersion": "3.7.8",
+  "baselineCommit": "b8662d3",
+  "observedAtUtc": "2026-09-29T12:50:45.0651331+00:00",
+  "compiler": {
+    "errors": 0,
+    "project": "tests/NativeDohConfigurationRegression/NativeDohConfigurationRegression.csproj",
+    "warnings": 141,
+    "sdk": "10.0.401",
+    "productionSources": true,
+    "isolatedOutput": true,
+    "runtimeUsedByFullSourceTests": "10.0.12"
+  },
+  "coreRegression": {
+    "realOwnedChildProcesses": true,
+    "stress": {
+      "recoveries": 14,
+      "warnings": 14,
+      "stateBytesLessThan": 2048,
+      "virtualHours": 6,
+      "virtualChecks": 1440
+    },
+    "realLoopbackDnsTransports": true,
+    "exitCode": 0,
+    "groups": 22,
+    "runtime": "8.0.30",
+    "telegramCollisionStress": {
+      "recoveries": 0,
+      "virtualHoursPerScenario": 6,
+      "runningChecks": 1440,
+      "liveScmMutation": false,
+      "warnings": 0,
+      "stoppedChecks": 1440
+    }
+  },
+  "nativeRegression": {
+    "realOsMutations": false,
+    "generatedScriptExecutedInWindowsPowerShell51": true,
+    "exitCode": 0,
+    "includesBootBootstrapTransaction": true,
+    "groups": 12,
+    "runtime": "10.0.12",
+    "generatedListenerSnapshotPs51": [
+      "owned",
+      "foreign",
+      "missing",
+      "unstable"
+    ]
+  },
+  "existingSelfTest": {
+    "baselineChecks": 10,
+    "version": "3.7.8",
+    "protocol": 1,
+    "exitCode": 0,
+    "runtime": "10.0.12"
+  },
+  "baselineWorkerReproduction": {
+    "trigger": "child fixture receives mutation then never replies",
+    "exitCode": 1,
+    "observation": "external request timeout followed by child exit wait timeout; old worker remains alive",
+    "fixedObservation": "owned process exits on deadline; subsequent query starts fresh worker; mutation logged once and never replayed",
+    "expectedFailure": true,
+    "commit": "b8662d3"
+  },
+  "liveInstalledSettingsChanged": false,
+  "caveats": [
+    "Virtual stress is not a months-long real service soak",
+    "Telegram local listener does not prove remote relay health",
+    "Zapret SCM state does not prove per-site bypass",
+    "Core mutations serialize supervision; long update operations postpone checks",
+    "Physically absent recorded NIC and missing managed IP family defer native rotation",
+    "Local Xray address refresh needs a restart gap",
+    "Core foreign listener suppression is separate from built-in WinSW/SCM failure restart policy"
+  ],
+  "sourceSha256": {
+    "src/service/EgoistShield.Service/ComponentWorker.cs": "5c613ce8d00f8840cd6df3b2cf0beed624b53a2464bb97cf61f24e4809c21263",
+    "src/service/EgoistShield.Service/DnsBootstrapRefreshScheduler.cs": "25512281437e14bafb634eec56fc1a62afdd137051ed5f2422615edbbc70c551",
+    "src/service/EgoistShield.Service/DnsMaintenancePolicy.cs": "61e06310cd2b8dcea738ff18b3f60271b6c1817abefa24a037ffd3eb1890e36f",
+    "src/service/EgoistShield.Service/EgoistShieldWindowsService.cs": "3a28d790d370c08f352ab18b7a8ca6df1b3a597c9198a4f62e0680219ea3df5b",
+    "src/service/EgoistShield.Service/LocalServiceHealthProbe.cs": "79f11fae5d8b3fce7b9d2d05662b887014d72d167fe7c88acf384b1403f5fa3d",
+    "src/service/EgoistShield.Service/OperationDispatcher.cs": "305da470b861284ad941913df8583a36511487849663b998617994f1bc4bf36b",
+    "src/service/EgoistShield.Service/OwnedServiceController.cs": "3955ea797d7f53bf9793e068f159d49a7b69df66e02721883abfa012f9991849",
+    "src/service/EgoistShield.Service/OwnedServiceIntentStore.cs": "266d4b10c505f3716239268b07ed38babc2e71f5cd90ae4e2241cb792b299f18",
+    "src/service/EgoistShield.Service/OwnedServiceSupervisor.cs": "3e1ba8b73881e5dd4d23f7327598458b7f72ec473cbb6770f0ef07f1162c4e1d",
+    "src/service/EgoistShield.Service/OwnedServiceTransition.cs": "45dc82db9a44dd0851f6f55faffbe8a6713c53a6be6a214c803f5707685cdb88",
+    "src/service/EgoistShield.Service/ServiceEngine.cs": "8c4aafd99dd2e2a3783686c49f1d7bb141fd5e03f63a65cd2bbf1fb7926a568c",
+    "src/service/EgoistShield.Service/ServiceLog.cs": "952a0b7910656b89541dbd9b1326f385ddc31c6bc7ad9d504a9152abc971398e",
+    "src/service/EgoistShield.Service/WindowsDnsController.cs": "f3cc36c702e66f7a64e03df74e2001f4cb57ff16eee33201257da9de97a7ee3a",
+    "src/service/EgoistShield.Service/WindowsNativeDohController.cs": "a104eb6feb16dffbc826af823d65107283dce1487fb3057b18ee8b42dc08a6bb",
+    "src/service/EgoistShield.Service/OwnedTcpListenerProbe.cs": "87ebef70dfc4edeaa4ab578fb8527092c9247cf4e19c3cf86ad02f6880a3532b"
+  }
+}

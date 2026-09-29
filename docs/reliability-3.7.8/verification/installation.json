@@ -1,0 +1,64 @@
+{
+    "checkedAt":  "2026-09-29T12:56:34.6923913Z",
+    "status":  "succeeded",
+    "runId":  "4ee598df4a1c442991ccd4a11f377e6f",
+    "protectedReceipt":  "C:\\ProgramData\\EgoistShieldInstaller\\DeferredRuns\\4ee598df4a1c442991ccd4a11f377e6f\\receipt.json",
+    "versionBefore":  "3.7.8",
+    "versionAfter":  "3.7.8",
+    "installationIdentityPreserved":  true,
+    "desktopRunning":  0,
+    "services":  [
+                     {
+                         "name":  "EgoistShieldCore",
+                         "state":  "Running",
+                         "startMode":  "Auto"
+                     },
+                     {
+                         "name":  "EgoistShieldSystemDoH",
+                         "state":  "Running",
+                         "startMode":  "Auto"
+                     },
+                     {
+                         "name":  "EgoistShieldZapret",
+                         "state":  "Running",
+                         "startMode":  "Auto"
+                     },
+                     {
+                         "name":  "EgoistShieldTelegramProxy",
+                         "state":  "Running",
+                         "startMode":  "Auto"
+                     }
+                 ],
+    "events":  [
+                   {
+                       "at":  "2026-09-29T12:55:32.1216160Z",
+                       "stage":  "dispatch",
+                       "status":  "dispatched",
+                       "message":  "Installer was validated and staged; elevated worker will perform the final handoff."
+                   },
+                   {
+                       "at":  "2026-09-29T12:55:32.8450808Z",
+                       "stage":  "worker",
+                       "status":  "waiting",
+                       "message":  "Validated elevated worker is waiting before the final handoff."
+                   },
+                   {
+                       "at":  "2026-09-29T12:55:39.2294998Z",
+                       "stage":  "handoff",
+                       "status":  "dns-stopped",
+                       "message":  "SystemDoH was stopped last; silent installation is starting."
+                   },
+                   {
+                       "at":  "2026-09-29T12:56:18.6100385Z",
+                       "stage":  "installer",
+                       "status":  "installer-exited",
+                       "message":  "Silent installer exited."
+                   },
+                   {
+                       "at":  "2026-09-29T12:56:32.4874402Z",
+                       "stage":  "verify",
+                       "status":  "succeeded",
+                       "message":  "Installer, version, Core, preserved services and DNS passed readback."
+                   }
+               ]
+}

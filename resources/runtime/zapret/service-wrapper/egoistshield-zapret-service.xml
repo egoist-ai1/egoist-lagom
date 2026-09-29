@@ -11,9 +11,11 @@
   <stopparentprocessfirst>false</stopparentprocessfirst>
   <logpath>C:\ProgramData\EgoistShield\Runtime\Zapret\logs\zapret-service</logpath>
   <log mode="roll-by-size">
-    <sizeThreshold>10485760</sizeThreshold>
+    <sizeThreshold>10240</sizeThreshold>
     <keepFiles>5</keepFiles>
   </log>
   <onfailure action="restart" delay="5 sec" />
   <onfailure action="restart" delay="10 sec" />
+  <onfailure action="restart" delay="60 sec" />
+  <resetfailure>1 hour</resetfailure>
 </service>

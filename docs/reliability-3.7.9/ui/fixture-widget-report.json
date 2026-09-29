@@ -1,0 +1,69 @@
+{
+  "checks": [
+    "296×340 layout has no horizontal or vertical overflow",
+    "Idle and busy glyphs keep their existing power symbol and hidden check",
+    "Dashboard round-trip retains a single active connection",
+    "Connected hover has exclusive glyph visibility on entry and leave (reduced motion; 50 frame samples)",
+    "Connected DNS switch dispatches the reset action to the fixture API",
+    "Failure remains readable with a retry action",
+    "Keyboard focus and reduced motion",
+    "Hidden widget pauses its continuous motion",
+    "CSS selection contour moves; connected widget has no repeating CSS or GSAP animation",
+    "Connected hover has exclusive glyph visibility on entry and leave (normal motion; 50 frame samples)",
+    "Running DNS is shown and reset even when the saved connect preference is off",
+    "A successful status refresh clears a transient IPC error",
+    "Same-turn double connect and cancel dispatch one action; polling preserves the local action lock",
+    "Newer progress supersedes an obsolete status-read failure",
+    "Unresolved initial status disables mutations instead of advertising an idle connection",
+    "A successful DNS IPC result cannot replace a contradictory observed state",
+    "SCM running without a ready Telegram listener cannot be shown as active",
+    "300 same-turn component clicks dispatch one DNS and one Telegram action with no conflict",
+    "Full error details scroll with keyboard focus, 24px targets and 200 percent equivalent layout"
+  ],
+  "errors": [],
+  "limitations": [
+    "Headless renderer fixtures; native DWM, installation and network behavior require separate checks."
+  ],
+  "hoverObservations": [
+    {
+      "mode": "reduced motion",
+      "initial": {
+        "powerVisible": "hidden",
+        "checkVisible": "visible",
+        "powerOpacity": "0",
+        "checkOpacity": "1",
+        "powerStroke": "rgb(255, 255, 255)",
+        "fill": "rgb(255, 255, 255)"
+      },
+      "entered": {
+        "powerVisible": "visible",
+        "checkVisible": "hidden",
+        "powerOpacity": "1",
+        "checkOpacity": "0",
+        "powerStroke": "rgb(255, 255, 255)",
+        "fill": "rgb(39, 39, 42)"
+      }
+    },
+    {
+      "mode": "normal motion",
+      "initial": {
+        "powerVisible": "hidden",
+        "checkVisible": "visible",
+        "powerOpacity": "0",
+        "checkOpacity": "1",
+        "powerStroke": "rgb(255, 255, 255)",
+        "fill": "rgb(255, 255, 255)"
+      },
+      "entered": {
+        "powerVisible": "visible",
+        "checkVisible": "hidden",
+        "powerOpacity": "0",
+        "checkOpacity": "1",
+        "powerStroke": "rgb(255, 255, 255)",
+        "fill": "rgb(255, 255, 255)"
+      }
+    }
+  ],
+  "ok": true,
+  "testEnvironment": "Headless renderer with fixture/mocked egoistAPI; no production IPC or real network reset."
+}

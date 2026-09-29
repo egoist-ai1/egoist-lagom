@@ -1,10 +1,24 @@
+function rubyTelegramReady(status) {
+  if (status?.runtimeReady === false || status?.listenerReady === false) return false;
+  return status?.runtimeReady === true || status?.running === true || status?.serviceRunning === true;
+}
+
+function rubyZapretReady(status) {
+  if (status?.runtimeReady === false) return false;
+  return status?.runtimeReady === true || status?.serviceReady === true || status?.serviceRunning === true || status?.standaloneRunning === true;
+}
+
+function rubyDnsReady(status) {
+  return status?.running === true && status?.verified !== false;
+}
+
 function ShieldWidget({ snapshot, onOpenSettings }) {
   const api = window.egoistAPI;
   const [connection, setConnection] = O.useState(null);
   const [actionError, setActionError] = O.useState('');
   const [statusError, setStatusError] = O.useState('');
-  const [dnsBusy, setDnsBusy] = O.useState(false);
-  const [tgBusy, setTgBusy] = O.useState(false);
+  const [localAction, setLocalAction] = O.useState(null);
+  const [cancelBusy, setCancelBusy] = O.useState(false);
 
   const [dnsEnabled, setDnsEnabled] = O.useState(() => {
     try { return localStorage.getItem('shield_dns_on_connect') !== 'false'; } catch { return true; }
@@ -16,6 +30,24 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
   const mounted = O.useRef(true);
   const surface = O.useRef(null);
   const stateRevision = O.useRef(0);
+  const readSequence = O.useRef(0);
+  const operation = O.useRef(null);
+  const cancellation = O.useRef(false);
+
+  async function refreshNow(duringAction = false) {
+    const revision = stateRevision.current;
+    const sequence = ++readSequence.current;
+    const current = () => mounted.current && revision === stateRevision.current && sequence === readSequence.current && (duringAction || !operation.current);
+    try {
+      const status = await Z('shield.status', api?.shield?.status);
+      if (!status || typeof status !== 'object') throw new Error('Служба не вернула состояние подключения');
+      if (current()) { setConnection(status); setStatusError(''); }
+      return status;
+    } catch (failure) {
+      if (current()) setStatusError(failure.message || 'Не удалось прочитать состояние службы');
+      throw failure;
+    }
+  }
 
   O.useEffect(() => {
     const syncVisibility = () => {
@@ -29,17 +61,14 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
   O.useEffect(() => {
     mounted.current = true;
     let timer;
+    let polling = false;
     const refresh = async () => {
-      const revision = stateRevision.current;
+      if (polling) return;
+      clearTimeout(timer);
+      polling = true;
       try {
-        const status = await Z('shield.status', api?.shield?.status);
-        if (mounted.current && revision === stateRevision.current) {
-          setConnection(status);
-          setStatusError('');
-        }
-      } catch (failure) {
-        if (mounted.current) setStatusError(failure.message || 'Не удалось прочитать состояние службы');
-      }
+        if (!operation.current) await refreshNow();
+      } catch {} finally { polling = false; }
       if (mounted.current) timer = setTimeout(refresh, document.hidden ? 10000 : 4000);
     };
     const unsubscribe = api?.shield?.onProgress?.(status => {
@@ -49,16 +78,24 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
         setConnection(previous => ({ ...previous, ...status }));
       }
     });
+    const visible = () => { if (!document.hidden) refresh(); };
+    document.addEventListener('visibilitychange', visible);
     refresh();
-    return () => { mounted.current = false; clearTimeout(timer); unsubscribe?.(); };
+    return () => { mounted.current = false; clearTimeout(timer); unsubscribe?.(); document.removeEventListener('visibilitychange', visible); };
   }, []);
 
-  const busy = connection?.busy === true;
-  const running = connection?.running ?? !!(snapshot?.zapret?.serviceRunning || snapshot?.zapret?.standaloneRunning);
-  const dnsRunning = connection?.dnsRunning ?? snapshot?.systemDoh?.running === true;
-  const telegramRunning = connection?.telegramRunning ?? snapshot?.telegram?.running === true;
-  const failure = actionError || statusError || connection?.error;
-  const phase = busy ? connection.phase : failure ? 'error' : running ? 'connected' : 'idle';
+  const busy = connection?.busy === true || localAction === 'connect' || localAction === 'disconnect';
+  const dnsBusy = localAction === 'dns';
+  const tgBusy = localAction === 'telegram';
+  const statusKnown = connection !== null;
+  const stateError = statusError || connection?.statusError;
+  const unavailable = !statusKnown || !!stateError;
+  const running = connection?.running ?? rubyZapretReady(snapshot?.zapret);
+  const dnsRunning = connection?.dnsRunning ?? rubyDnsReady(snapshot?.systemDoh);
+  const telegramRunning = connection?.telegramRunning ?? rubyTelegramReady(snapshot?.telegram);
+  const failure = actionError || stateError || connection?.error;
+  const liveFailure = stateError || connection?.error || (!running && actionError);
+  const phase = busy ? (localAction === 'disconnect' ? 'disconnecting' : connection?.phase || 'preparing') : liveFailure ? 'error' : !statusKnown ? 'loading' : running ? 'connected' : 'idle';
   const progress = Math.max(0, Math.min(100, Number(connection?.progress) || 0));
 
   O.useLayoutEffect(() => {
@@ -66,9 +103,11 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
     if (!gsap) return;
     const media = gsap.matchMedia(surface.current);
     media.add('(prefers-reduced-motion: no-preference)', () => {
+      // Hidden windows retain the complete status glyph, without a paused entrance frame.
+      if (document.hidden) return;
       const timeline = gsap.timeline();
-      timeline.fromTo('.shield-widget-status-group', { y: 3, opacity: .6 }, { y: 0, opacity: 1, duration: .32, ease: 'power2.out' });
-      if (phase === 'connected') timeline.fromTo('.shield-connected-check', { strokeDashoffset: 44 }, { strokeDashoffset: 0, duration: .46, ease: 'power2.out' }, 0);
+      timeline.fromTo('.shield-widget-status-group', { y: 2, opacity: .8 }, { y: 0, opacity: 1, duration: .18, ease: 'power2.out' });
+      if (phase === 'connected') timeline.fromTo('.shield-connected-check', { strokeDashoffset: 44 }, { strokeDashoffset: 0, duration: .28, ease: 'power2.out' }, 0);
       const visibility = () => document.hidden ? timeline.pause() : timeline.resume();
       visibility();
       document.addEventListener('visibilitychange', visibility);
@@ -77,19 +116,23 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
     return () => media.revert();
   }, [phase, busy]);
 
-  async function refreshNow() {
-    const revision = stateRevision.current;
-    const status = await Z('shield.status', api?.shield?.status);
-    if (mounted.current && revision === stateRevision.current) {
-      setConnection(status);
-      setStatusError('');
-    }
+  function begin(kind) {
+    if (operation.current || busy || unavailable) return false;
+    operation.current = kind;
+    stateRevision.current += 1;
+    setLocalAction(kind);
+    setActionError('');
+    return true;
+  }
+
+  function finish() {
+    operation.current = null;
+    stateRevision.current += 1;
+    if (mounted.current) setLocalAction(null);
   }
 
   async function toggleConnection() {
-    if (busy || dnsBusy || tgBusy) return;
-    stateRevision.current += 1;
-    setActionError('');
+    if (!begin(running ? 'disconnect' : 'connect')) return;
     setConnection(previous => ({
       ...previous,
       busy: true,
@@ -103,77 +146,70 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
         ? await Z('shield.disconnect', api?.shield?.disconnect)
         : await Z('shield.connect', api?.shield?.connect, { dnsEnabled, telegramEnabled });
       if (result?.ok !== true && !result?.cancelled) throw new Error(result?.message || 'Подключение не подтверждено');
-      await refreshNow();
+      await refreshNow(true);
       if (mounted.current) setActionError('');
     } catch (failure) {
       if (mounted.current) {
         setActionError(failure.message);
         setConnection(previous => ({ ...previous, busy: false }));
       }
-      await refreshNow().catch(() => {});
-    }
+      await refreshNow(true).catch(() => {});
+    } finally { finish(); }
   }
 
   async function toggleDns() {
-    if (busy || dnsBusy) return;
+    if (!begin('dns')) return;
     const next = !(dnsRunning || (!running && dnsEnabled));
-    setActionError('');
-    if (running || dnsRunning) {
-      setDnsBusy(true);
-      try {
+    try {
+      if (running || dnsRunning) {
         const result = next
           ? await Z('system.applySystemDoh', api?.system?.applySystemDoh, snapshot?.state?.settings?.systemDohUrl)
           : await Z('system.resetSystemDoh', api?.system?.resetSystemDoh);
-        if (result?.ok === false || (next ? result?.running === false || result?.verified === false : result?.running === true)) throw new Error(result?.message || result?.lastError || 'Не удалось изменить DNS');
-        await refreshNow();
-        if (mounted.current) setActionError('');
-      } catch (failure) {
-        setActionError(failure.message);
-        return;
-      } finally {
-        if (mounted.current) setDnsBusy(false);
+        if (!result || result.ok === false || (next ? result.running === false || result.verified === false : result.running === true)) throw new Error(result?.message || result?.lastError || 'Не удалось изменить DNS');
+        const status = await refreshNow(true);
+        if (status.dnsRunning !== next) throw new Error('Служба не подтвердила изменение DNS. Повторите проверку состояния.');
       }
-    }
-    setDnsEnabled(next);
-    try { localStorage.setItem('shield_dns_on_connect', String(next)); } catch {}
+      if (mounted.current) setDnsEnabled(next);
+      try { localStorage.setItem('shield_dns_on_connect', String(next)); } catch {}
+    } catch (failure) {
+      if (mounted.current) setActionError(failure.message);
+    } finally { finish(); }
   }
 
   async function toggleTelegram() {
-    if (busy || tgBusy) return;
+    if (!begin('telegram')) return;
     const next = !(telegramRunning || (!running && telegramEnabled));
-    setActionError('');
-    if (running || telegramRunning) {
-      setTgBusy(true);
-      try {
+    try {
+      if (running || telegramRunning) {
         const result = next
           ? await Z('telegramProxy.start', api?.telegramProxy?.start)
           : await Z('telegramProxy.stop', api?.telegramProxy?.stop);
-        const activeAfter = result?.running === true || result?.serviceRunning === true;
-        if (result?.ok === false || (next ? !activeAfter : activeAfter)) throw new Error(result?.message || result?.lastError || 'Не удалось изменить Telegram Proxy');
-        await refreshNow();
-        if (mounted.current) setActionError('');
-      } catch (failure) {
-        setActionError(failure.message);
-        return;
-      } finally {
-        if (mounted.current) setTgBusy(false);
+        const activeAfter = rubyTelegramReady(result);
+        if (!result || result.ok === false || (next ? !activeAfter : activeAfter || result.serviceRunning === true)) throw new Error(result?.message || result?.lastError || 'Не удалось изменить Telegram Proxy');
+        const status = await refreshNow(true);
+        if (status.telegramRunning !== next) throw new Error('Служба не подтвердила изменение Telegram Proxy. Повторите проверку состояния.');
       }
-    }
-    setTelegramEnabled(next);
-    try { localStorage.setItem('shield_telegram_on_connect', String(next)); } catch {}
+      if (mounted.current) setTelegramEnabled(next);
+      try { localStorage.setItem('shield_telegram_on_connect', String(next)); } catch {}
+    } catch (failure) {
+      if (mounted.current) setActionError(failure.message);
+    } finally { finish(); }
   }
 
   async function cancel() {
+    if (cancellation.current) return;
+    cancellation.current = true;
+    setCancelBusy(true);
     try {
       const result = await Z('shield.cancel', api?.shield?.cancel);
-      if (result?.ok === false) setActionError(result.message);
+      if (mounted.current && result?.ok === false) setActionError(result.message);
     } catch (failure) {
-      setActionError(failure.message);
-    }
+      if (mounted.current) setActionError(failure.message);
+    } finally { cancellation.current = false; if (mounted.current) setCancelBusy(false); }
   }
 
   return (
-    <div className="shield-widget-container" data-phase={phase} ref={surface}>
+    <div className="shield-widget-container" data-phase={phase} data-error={!!failure} ref={surface}>
       <header className="shield-widget-header">
         <div className="shield-widget-brand">
           <span>egoist<span className="shield-brand-separator"> / </span><b>lagom</b></span>
@@ -192,8 +228,9 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
         <button
           className="shield-interactive-trigger"
           onClick={toggleConnection}
-          disabled={busy || dnsBusy || tgBusy}
-          aria-label={busy ? 'Выполняется операция' : running ? 'Отключить защиту' : 'Подключить защиту'}
+          disabled={busy || dnsBusy || tgBusy || unavailable}
+          aria-busy={busy || dnsBusy || tgBusy || !statusKnown}
+          aria-label={!statusKnown ? 'Проверяем состояние службы' : busy ? 'Выполняется операция' : running ? 'Отключить защиту' : 'Подключить защиту'}
           title={busy ? 'Операция выполняется...' : running ? 'Нажмите для отключения' : 'Нажмите для подключения'}
         >
           <div className="shield-widget-emblem" aria-hidden="true">
@@ -211,10 +248,10 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
         <div className="shield-widget-status-group" role="status" aria-live="polite" aria-atomic="true">
           <h1>
             <i className="shield-live-dot"/>
-            {busy ? (phase === 'disconnecting' ? 'Отключение...' : 'Подключение...') : failure ? 'Нужна проверка' : running ? 'Подключено' : 'Готов к подключению'}
+            {busy ? (phase === 'disconnecting' ? 'Отключение…' : 'Подключение…') : liveFailure ? 'Нужна проверка' : !statusKnown ? 'Проверяем состояние…' : running ? 'Подключено' : 'Готов к подключению'}
           </h1>
-          {(busy || failure) && (
-            <p>{busy ? (connection?.message || 'Оптимизация соединения...') : 'Подробности ниже'}</p>
+          {(busy || failure || dnsBusy || tgBusy) && (
+            <p>{busy ? (connection?.message || 'Проверяем подключение…') : dnsBusy ? 'Переключаем DNS…' : tgBusy ? 'Переключаем Telegram…' : 'Подробности ниже'}</p>
           )}
         </div>
 
@@ -233,7 +270,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
 
         {busy && phase !== 'disconnecting' && (
           <div className="shield-widget-caption">
-            <button className="shield-cancel" onClick={cancel}>Отменить</button>
+            <button className="shield-cancel" onClick={cancel} disabled={cancelBusy} aria-busy={cancelBusy}>{cancelBusy ? 'Отменяем…' : 'Отменить'}</button>
           </div>
         )}
       </section>
@@ -241,7 +278,8 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
       {failure && (
         <details className="shield-widget-error" open>
           <summary><RubyIcon name="warning" size={14}/>Не удалось завершить действие</summary>
-          <p role="alert">{failure}</p>
+          <p role="alert" tabIndex={0} aria-label="Подробности ошибки">{failure}</p>
+          {stateError && <button className="shield-status-retry" onClick={() => refreshNow().catch(() => {})}>Повторить проверку</button>}
         </details>
       )}
 
@@ -253,7 +291,8 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
               role="switch"
               aria-label="Зашифрованный DNS"
               aria-checked={dnsRunning || (!running && dnsEnabled)}
-              disabled={busy || dnsBusy}
+              disabled={busy || dnsBusy || tgBusy || unavailable}
+              aria-busy={dnsBusy}
               className="shield-switch-toggle"
               onClick={toggleDns}
             >
@@ -267,7 +306,8 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
               role="switch"
               aria-label="Telegram Proxy"
               aria-checked={telegramRunning || (!running && telegramEnabled)}
-              disabled={busy || tgBusy}
+              disabled={busy || dnsBusy || tgBusy || unavailable}
+              aria-busy={tgBusy}
               className="shield-switch-toggle"
               onClick={toggleTelegram}
             >

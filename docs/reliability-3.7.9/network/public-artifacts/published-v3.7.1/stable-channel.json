@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "channel": "stable",
+  "version": "3.7.1",
+  "tag": "v3.7.1",
+  "installerName": "Egoist-Lagom-Setup.exe",
+  "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.1/Egoist-Lagom-Setup.exe",
+  "size": 194178840,
+  "sha256": "9b6a6131a073727727b25559869a108d7fc7e6ba93b449f625bd073a01b3b6eb",
+  "sha512": "6f3a9acba43faecf65c819a38cbd37c3423b765bfba2a638137450f4fb1f17383d9f3aa8b3d6dcac38008b2c272d0aac214f1a6cee4ba9199db61aa4b6d0f79c",
+  "githubDigest": "sha256:9b6a6131a073727727b25559869a108d7fc7e6ba93b449f625bd073a01b3b6eb",
+  "minimumAppVersion": "3.7.1",
+  "keyId": "lagom-2026-09",
+  "authenticodeStatus": "not-signed",
+  "licenseVersion": "1.0",
+  "publishedAt": "2026-09-12T17:51:28.824Z"
+}

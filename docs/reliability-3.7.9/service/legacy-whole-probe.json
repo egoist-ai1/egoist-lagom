@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "capturedAtUtc": "2026-09-29T13:54:45.8918719+00:00",
+  "mode": "read-only-real-Windows-SCM-TCP-process-metadata",
+  "backend": "powershell",
+  "port": 1445,
+  "wholeProbeDeadlineSeconds": 8,
+  "runtime": ".NET 10.0.12",
+  "assemblyVersion": "3.7.9.0",
+  "mutationPerformed": false,
+  "trials": [
+    {
+      "trial": 1,
+      "health": "Responsive",
+      "elapsedMs": 5123.17,
+      "captures": [
+        {
+          "elapsedMs": 2574.34,
+          "stderrCharacters": 0,
+          "snapshotAvailable": true,
+          "ownership": "Owned",
+          "stable": true,
+          "serviceProcessId": 26520,
+          "serviceState": "Running",
+          "rootProcess": {
+            "ProcessId": 26520,
+            "ParentProcessId": 1696,
+            "CreatedAt": "2026-09-29T15:56:23.995869+03:00",
+            "ExecutablePath": "C:\\ProgramData\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe"
+          },
+          "listeners": [
+            {
+              "LocalAddress": "127.0.0.1",
+              "LocalPort": 1445,
+              "OwningProcess": 37948
+            }
+          ]
+        },
+        {
+          "elapsedMs": 2518.57,
+          "stderrCharacters": 0,
+          "snapshotAvailable": true,
+          "ownership": "Owned",
+          "stable": true,
+          "serviceProcessId": 26520,
+          "serviceState": "Running",
+          "rootProcess": {
+            "ProcessId": 26520,
+            "ParentProcessId": 1696,
+            "CreatedAt": "2026-09-29T15:56:23.995869+03:00",
+            "ExecutablePath": "C:\\ProgramData\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe"
+          },
+          "listeners": [
+            {
+              "LocalAddress": "127.0.0.1",
+              "LocalPort": 1445,
+              "OwningProcess": 37948
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "health": "Responsive",
+      "elapsedMs": 5078.64,
+      "captures": [
+        {
+          "elapsedMs": 2584.13,
+          "stderrCharacters": 0,
+          "snapshotAvailable": true,
+          "ownership": "Owned",
+          "stable": true,
+          "serviceProcessId": 26520,
+          "serviceState": "Running",
+          "rootProcess": {
+            "ProcessId": 26520,
+            "ParentProcessId": 1696,
+            "CreatedAt": "2026-09-29T15:56:23.995869+03:00",
+            "ExecutablePath": "C:\\ProgramData\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe"
+          },
+          "listeners": [
+            {
+              "LocalAddress": "127.0.0.1",
+              "LocalPort": 1445,
+              "OwningProcess": 37948
+            }
+          ]
+        },
+        {
+          "elapsedMs": 2492.54,
+          "stderrCharacters": 0,
+          "snapshotAvailable": true,
+          "ownership": "Owned",
+          "stable": true,
+          "serviceProcessId": 26520,
+          "serviceState": "Running",
+          "rootProcess": {
+            "ProcessId": 26520,
+            "ParentProcessId": 1696,
+            "CreatedAt": "2026-09-29T15:56:23.995869+03:00",
+            "ExecutablePath": "C:\\ProgramData\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe"
+          },
+          "listeners": [
+            {
+              "LocalAddress": "127.0.0.1",
+              "LocalPort": 1445,
+              "OwningProcess": 37948
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "health": "Responsive",
+      "elapsedMs": 5015.8,
+      "captures": [
+        {
+          "elapsedMs": 2583.52,
+          "stderrCharacters": 0,
+          "snapshotAvailable": true,
+          "ownership": "Owned",
+          "stable": true,
+          "serviceProcessId": 26520,
+          "serviceState": "Running",
+          "rootProcess": {
+            "ProcessId": 26520,
+            "ParentProcessId": 1696,
+            "CreatedAt": "2026-09-29T15:56:23.995869+03:00",
+            "ExecutablePath": "C:\\ProgramData\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe"
+          },
+          "listeners": [
+            {
+              "LocalAddress": "127.0.0.1",
+              "LocalPort": 1445,
+              "OwningProcess": 37948
+            }
+          ]
+        },
+        {
+          "elapsedMs": 2431.63,
+          "stderrCharacters": 0,
+          "snapshotAvailable": true,
+          "ownership": "Owned",
+          "stable": true,
+          "serviceProcessId": 26520,
+          "serviceState": "Running",
+          "rootProcess": {
+            "ProcessId": 26520,
+            "ParentProcessId": 1696,
+            "CreatedAt": "2026-09-29T15:56:23.995869+03:00",
+            "ExecutablePath": "C:\\ProgramData\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe"
+          },
+          "listeners": [
+            {
+              "LocalAddress": "127.0.0.1",
+              "LocalPort": 1445,
+              "OwningProcess": 37948
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

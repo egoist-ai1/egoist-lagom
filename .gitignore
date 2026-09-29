@@ -18,3 +18,12 @@ LAGOM_AUDIT_REPORT.md
 
 *.log
 __pycache__/
+
+# Preserved legacy material and machine-specific investigation stay local.
+imports/consolidated-shield/
+imports/legacy-windows/
+docs/consolidation-2026-09-29.json
+CHAT_HISTORY_AND_CONTEXT.md
+design-prototype/
+scratch/
+EgoistShield-Setup-Lagom.exe

@@ -1,0 +1,16 @@
+PASS: generated PowerShell adds and verifies a new registration
+PASS: owned overlapping template changes in place
+PASS: foreign and externally weakened templates are preserved
+PASS: same-template readback rejects wrong encryption flags
+PASS: provider switch preserves old registration until adapter readback
+PASS: failed provider switch rolls back DNS, templates and saved ownership
+PASS: native removal restores each owned family and preserves external peers
+PASS: boot bootstrap rotation uses a verified worker result and durable transaction
+PASS: bootstrap failure cooldown and external adapter state prevent blind changes
+PASS: central DNS mode guards reject cross-mode mutations
+PASS: optional log locking does not fail network operations
+PASS: generated listener ownership snapshot is bounded and stable in PowerShell5.1
+PASS: read-only CLI reports the actual foreign owner across mixed endpoint families
+PASS: read-only CLI rejects invalid or mixed service arguments before startup
+PASS: read-only CLI emits a bounded native snapshot from the actual Windows host
+Native DoH/Core regression passed: 15 groups; runtime=.NET 10.0.12; elapsed=3,05s; work=[task-work]\native-doh-585a96e0bf7e42a4b1f44808375b9466

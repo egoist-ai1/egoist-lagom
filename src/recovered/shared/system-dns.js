@@ -64,4 +64,11 @@ function splitDnsServersByFamily(servers) {
 		ipv6Servers
 	};
 }
+function shouldRestoreOwnedDnsForUnavailableResolvers(statuses) {
+	return statuses.length > 0 && statuses.every(status => {
+		if (!status || status.running || status.serviceRunning || status.verified) return false;
+		const state = String(status.serviceState ?? status.service?.state ?? "unknown").toLowerCase();
+		return state === "stopped" || state === "not-installed";
+	});
+}
 //#endregion

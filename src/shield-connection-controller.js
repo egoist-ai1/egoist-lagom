@@ -6,6 +6,9 @@ export class ShieldConnectionController {
     this.componentStatus = { zapret: null, dns: null, telegram: null };
     this.pending = null;
     this.cancelled = false;
+    this.operationGeneration = 0;
+    this.lastConnectOptions = null;
+    this.lastActionError = null;
   }
 
   publish(patch) {
@@ -14,6 +17,7 @@ export class ShieldConnectionController {
   }
 
   async status() {
+    const generation = this.operationGeneration;
     const [zapretResult, dnsResult, telegramResult] = await Promise.allSettled([
       Promise.resolve().then(() => this.deps.zapret?.status()),
       Promise.resolve().then(() => this.deps.dns?.status()),
@@ -31,9 +35,17 @@ export class ShieldConnectionController {
     const dns = this.componentStatus.dns;
     const telegram = this.componentStatus.telegram;
     const statusError = errors.length ? errors.join('; ') : null;
-    const running = zapret ? !!(zapret.serviceRunning || zapret.standaloneRunning) : null;
-    const dnsRunning = dns ? dns.running === true : null;
-    const telegramRunning = telegram ? !!(telegram.running || telegram.serviceRunning) : null;
+    const running = zapret ? zapret.runtimeReady !== false && !!(zapret.serviceRunning || zapret.standaloneRunning) : null;
+    const dnsRunning = dns ? dns.running === true && dns.verified !== false : null;
+    const telegramRunning = telegram ? telegram.runtimeReady !== false && telegram.listenerReady !== false && !!(telegram.running || telegram.serviceRunning) : null;
+    const targetObserved = this.state.action === 'connect'
+      ? this.lastConnectOptions && running === true && (!this.lastConnectOptions.dnsEnabled || dnsRunning === true) && (!this.lastConnectOptions.telegramEnabled || telegramRunning === true)
+      : this.state.action === 'disconnect' && running === false && dnsRunning === false && (!this.deps.telegramProxy || telegramRunning === false);
+    if (generation === this.operationGeneration && this.state.phase === 'error' && !this.state.busy && !statusError && targetObserved) {
+      const connected = this.state.action === 'connect';
+      this.publish({ phase: connected ? 'connected' : 'idle', error: null, progress: connected ? 100 : 0,
+        message: connected ? 'Защита и службы работают в фоне' : 'Подключение отключено' });
+    }
     return {
       ...this.state,
       running,
@@ -41,7 +53,8 @@ export class ShieldConnectionController {
       telegramRunning,
       profile: zapret?.serviceProfile || zapret?.currentProfile || null,
       error: statusError || this.state.error,
-      statusError
+      statusError,
+      lastActionError: this.lastActionError
     };
   }
 
@@ -81,9 +94,12 @@ export class ShieldConnectionController {
   run(action, operation) {
     if (this.pending) return this.state.action === action ? this.pending : Promise.resolve({ ok: false, message: 'Дождитесь завершения текущего действия.' });
     this.cancelled = false;
+    this.operationGeneration += 1;
+    this.lastActionError = null;
     this.publish({ action, busy: true, error: null, phase: action === 'disconnect' ? 'disconnecting' : 'preparing', progress: 0, message: action === 'disconnect' ? 'Восстанавливаем настройки сети' : 'Подготавливаем подключение' });
     this.pending = Promise.resolve().then(() => this.deps.coordinate(action, operation)).catch(error => {
       const message = error instanceof Error ? error.message : String(error);
+      this.lastActionError = this.cancelled ? null : message;
       this.publish({ phase: this.cancelled ? 'cancelled' : 'error', error: this.cancelled ? null : message, message, progress: 0 });
       return { ok: false, cancelled: this.cancelled, message };
     }).finally(() => {
@@ -94,6 +110,7 @@ export class ShieldConnectionController {
   }
 
   connect({ dnsEnabled = true, telegramEnabled = true } = {}) {
+    if (!this.pending) this.lastConnectOptions = { dnsEnabled, telegramEnabled: telegramEnabled && Boolean(this.deps.telegramProxy) };
     return this.run('connect', async () => {
       this.checkCancelled();
       // VPN handoff is performed once by the main-process coordinator while it
@@ -115,6 +132,12 @@ export class ShieldConnectionController {
       let startedTg = false;
       try {
         let profile = before.serviceProfile || before.currentProfile;
+        if (before.serviceRunning && before.runtimeReady === false) {
+          this.publish({ phase: 'service', progress: 74, message: 'Восстанавливаем рабочий процесс Zapret', profile });
+          this.requireSuccess(await this.deps.zapret.startService(), 'Не удалось восстановить службу Zapret.');
+          const repaired = await this.deps.zapret.status({ force: true });
+          if (!repaired?.serviceRunning || repaired.runtimeReady === false) throw new Error(repaired?.lastError || 'Рабочий процесс Zapret не подтвердил запуск.');
+        }
         if (!before.serviceRunning) {
           if (!dnsPreparedForProbe) dnsBefore = await this.prepareDnsForAutoSelect(dnsBefore);
           this.checkCancelled();
@@ -136,7 +159,7 @@ export class ShieldConnectionController {
           this.checkCancelled();
           this.requireSuccess(await this.deps.zapret.startService(), 'Не удалось запустить службу.');
           const status = await this.deps.zapret.status({ force: true });
-          if (!status.serviceRunning) throw new Error(status.lastError || 'Служба Zapret не подтвердила запуск.');
+          if (!status.serviceRunning || status.runtimeReady === false) throw new Error(status.lastError || 'Служба Zapret не подтвердила запуск.');
         }
         this.checkCancelled();
         if (dnsEnabled && dnsBefore.running !== true) {
@@ -153,10 +176,12 @@ export class ShieldConnectionController {
             // Installation starts the service and may partially succeed before throwing.
             startedTg = true;
             const installed = this.requireSuccess(await this.deps.telegramProxy.installService(), 'Не удалось установить прокси Telegram.');
-            if (!installed?.serviceRunning) throw new Error(installed?.lastError || 'Служба прокси Telegram не подтвердила запуск.');
+            if (!installed?.serviceRunning || installed.runtimeReady === false || installed.listenerReady === false) throw new Error(installed?.lastError || 'Служба прокси Telegram не подтвердила запуск.');
+          } else if (telegramBefore.runtimeReady === false || telegramBefore.listenerReady === false) {
+            this.requireSuccess(await this.deps.telegramProxy.startService(), 'Не удалось восстановить прокси Telegram.');
           }
           const status = await this.deps.telegramProxy.status({ force: true });
-          if (!status?.running && !status?.serviceRunning) throw new Error(status?.lastError || 'Прокси Telegram не подтвердил запуск.');
+          if ((!status?.running && !status?.serviceRunning) || status?.runtimeReady === false || status?.listenerReady === false) throw new Error(status?.lastError || 'Прокси Telegram не подтвердил запуск.');
           this.checkCancelled();
           // Opening the client is optional; service failures above must abort the transaction.
           await this.deps.telegramProxy.openConnectionLink().catch(() => {});

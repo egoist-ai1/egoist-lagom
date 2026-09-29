@@ -6,7 +6,8 @@ function componentOperations() {
   const entries = (names, schema = none) => Object.fromEntries(names.map(name => [name, schema]));
   return {
     SystemDoH: {
-      ...entries(['stop', 'restart', 'stopAndRemove']), status,
+      ...entries(['stop', 'restart', 'stopAndRemove', 'refreshBootstrap']), status,
+      bootstrapServers: z.tuple([z.string().max(2048).url().refine(value => new URL(value).protocol === 'https:', 'DoH requires HTTPS'), z.boolean()]),
       apply: z.tuple([
         z.string().max(2048).url().refine(value => new URL(value).protocol === 'https:', 'DoH requires HTTPS'),
         z.preprocess(value => typeof value === 'string' && value.trim() === '' ? undefined : value,
@@ -38,7 +39,7 @@ function componentOperations() {
     },
   };
 }
-const COMPONENT_QUERIES = new Set(['status', 'tailLogs', 'shouldCheckUpdates', 'cancelAutoSelect', 'autoSelectProgress']);
+const COMPONENT_QUERIES = new Set(['status', 'tailLogs', 'shouldCheckUpdates', 'cancelAutoSelect', 'autoSelectProgress', 'bootstrapServers']);
 function validateComponentRequest(request) {
   const envelope = z.object({ id: z.string().max(128), component: z.enum(['SystemDoH', 'TelegramProxy', 'Zapret']), method: z.string().max(64), args: z.array(z.unknown()).max(4), query: z.boolean() }).strict().parse(request);
   const operations = componentOperations()[envelope.component];

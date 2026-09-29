@@ -60,12 +60,18 @@ test('a public release older than the installed app does not require a missing v
 
 test('enabled background updater installs an available trusted release and restarts only after dispatch', async () => {
   const source = sourceFor('electron/main');
-  const start = source.indexOf('async function runBackgroundUpdateCheck() {');
+  const start = source.indexOf('var backgroundUpdateInFlight = false;');
   const end = source.indexOf('function setupAutoUpdater()', start);
   assert.ok(start >= 0 && end > start);
   const calls = [];
   const context = vm.createContext({
     autoUpdateEnabled: true,
+    updateCheckInterval: null,
+    componentUpdateInFlight: false,
+    globalRuntimeManager: { async status() { return {connected:false}; } },
+    globalNetworkCombinatorManager: { isMutationIdle: () => true },
+    pendingBootRecovery: new Set(),
+    setTimeout: () => ({unref(){}}), clearTimeout(){},
     desktopUpdater: {
       installPromise: null,
       async check() { calls.push('check'); return { ok: true, phase: 'available', latestVersion: '3.7.7' }; },
@@ -76,7 +82,7 @@ test('enabled background updater installs an available trusted release and resta
     Notification: { isSupported: () => false },
     globalStateStore: null,
     scheduleDeferredStartup: callback => { calls.push('scheduled'); callback(); },
-    app: { quit: () => calls.push('quit') },
+    app: { isPackaged: true, quit: () => calls.push('quit') },
     logger: { warn() {}, info() {} },
     isQuitting: false
   });

@@ -5,9 +5,15 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createPackage, listPackage } from '@electron/asar';
 import { rcedit } from 'rcedit';
 import { prepareComponents } from './prepare-components.mjs';
+import { verifyPinnedElectronRuntime, stageElectronPayload, addElectronToRuntimeManifest, verifyPackagedInstallHealth } from './electron-runtime.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 process.chdir(root);
 const pkg = JSON.parse(await fs.readFile('package.json', 'utf8'));
+if (!/^\d+\.\d+\.\d+$/.test(pkg.version)) throw new Error('Packaging requires a stable numeric version.');
+const patchedDotnet = path.join(root, '.tools/dotnet-10.0.401/dotnet.exe');
+const dotnet = process.env.SHIELD_DOTNET || (await fs.access(patchedDotnet).then(() => patchedDotnet).catch(() => path.join(root, '.tools/dotnet/dotnet.exe')));
+const sdkCheck = spawnSync(dotnet, ['--version'], { windowsHide: true, encoding: 'utf8' });
+if (sdkCheck.status !== 0) throw new Error('Required .NET SDK is unavailable; install the version selected by global.json or set SHIELD_DOTNET.');
 const retryWindowsFileOperation = async operation => {
   let lastError;
   for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -26,24 +32,31 @@ if (!evidence || !path.isAbsolute(evidence)) throw new Error('Set SHIELD_EVIDENC
 await fs.mkdir(evidence, { recursive: true });
 const out = path.join(root, 'out', `EgoistShield-${pkg.version}-win-x64`);
 const appRoot = path.join(root, 'out', `app-${pkg.version}`);
+const assertOwnedOutputDirectory = async target => {
+  const outputRoot = path.resolve(root, 'out');
+  if (path.dirname(path.resolve(target)) !== outputRoot) throw new Error('Unexpected package output directory.');
+  for (const directory of [root, outputRoot, target]) {
+    const stat = await fs.lstat(directory).catch(error => {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    });
+    if (stat && (!stat.isDirectory() || stat.isSymbolicLink())) throw new Error('Package output must use ordinary directories: ' + directory);
+  }
+};
+await assertOwnedOutputDirectory(out);
+await assertOwnedOutputDirectory(appRoot);
 await fs.mkdir('dist', { recursive: true });
 const recoveredApp = path.resolve('recovery/official-app');
-const retiredScripts = 'resources/scripts/system-control';
+const electronRuntime = await verifyPinnedElectronRuntime(root);
+await fs.writeFile(path.join(evidence, 'electron-runtime-input.json'), JSON.stringify(electronRuntime, null, 2) + '\n');
 await fs.rm(out, { recursive: true, force: true });
 await fs.rm(appRoot, { recursive: true, force: true });
-await fs.cp(recoveredApp, out, {
-  recursive: true,
-  filter: source => {
-    const relative = path.relative(recoveredApp, source).split(path.sep).join('/');
-    return relative !== retiredScripts && !relative.startsWith(retiredScripts + '/');
-  },
-});
-const obsoleteScripts = path.resolve(out, retiredScripts);
-if (!obsoleteScripts.startsWith(out + path.sep)) throw new Error('Unexpected retired-script destination');
-await fs.rm(obsoleteScripts, { recursive: true, force: true });
+const stagedElectron = await stageElectronPayload({ runtime: electronRuntime, out, recoveredResources: path.join(recoveredApp, 'resources') });
 await prepareComponents(out, pkg.version);
 await fs.cp('resources/release', path.join(out,'resources/release'), { recursive: true });
-await rcedit(path.join(out, 'EgoistShield.exe'), { 'file-version': pkg.version, 'product-version': pkg.version, 'version-string': { ProductName: 'Egoist Lagom', FileDescription: 'Egoist Lagom', ProductVersion: pkg.version, FileVersion: pkg.version }, icon: path.join(out, 'resources/brand/icon.ico') });
+await rcedit(path.join(out, 'EgoistShield.exe'), { 'file-version': pkg.version, 'product-version': pkg.version, 'requested-execution-level': 'requireAdministrator', 'version-string': { ProductName: 'Egoist Lagom', FileDescription: 'Egoist Lagom', ProductVersion: pkg.version, FileVersion: pkg.version }, icon: path.join(out, 'resources/brand/icon.ico') });
+const packagedElectron = await addElectronToRuntimeManifest(out, stagedElectron);
+await fs.writeFile(path.join(evidence, 'electron-runtime-packaged.json'), JSON.stringify(packagedElectron, null, 2) + '\n');
 await fs.mkdir(appRoot, { recursive: true });
 await fs.cp('.vite', path.join(appRoot, '.vite'), { recursive: true });
 await fs.cp('node_modules/electron-log', path.join(appRoot, 'node_modules/electron-log'), { recursive: true });
@@ -58,7 +71,8 @@ const reinstallScriptWithBom = reinstallScript.subarray(0, 3).equals(Buffer.from
   ? reinstallScript
   : Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), reinstallScript]);
 await fs.writeFile(path.join(out, 'resources/installer/invoke-final-silent-reinstall.ps1'), reinstallScriptWithBom);
-await fs.copyFile('scratch/Unbounded.ttf', path.join(out, 'resources/installer/Unbounded.ttf'));
+await fs.copyFile('resources/installer/Unbounded.ttf', path.join(out, 'resources/installer/Unbounded.ttf'));
+await fs.copyFile('resources/installer/Unbounded-OFL.txt', path.join(out, 'resources/installer/Unbounded-OFL.txt'));
 const csc = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe';
 const wpfLib = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\WPF';
 const modernInstallerOut = path.join(out, 'resources/installer/ModernInstaller.exe');
@@ -84,10 +98,11 @@ const cscResult = spawnSync(csc, [
 ], { encoding: 'utf8' });
 if (cscResult.status !== 0) throw new Error('Failed to compile ModernInstaller.exe:\n' + (cscResult.stderr || '') + (cscResult.stdout || ''));
 console.log('Publishing Core service...');
-const dotnet = process.env.SHIELD_DOTNET || path.join(root, '.tools/dotnet/dotnet.exe');
 const publish = spawnSync(dotnet, ['publish', 'src/service/EgoistShield.Service.csproj', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:PublishSingleFile=true', '-p:EnableCompressionInSingleFile=true', '-o', path.join(out, 'resources/core-service/win-x64'), '-v', 'quiet'], { windowsHide: true, env: { ...process.env, DOTNET_ROOT: path.dirname(dotnet), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' }, encoding: 'utf8' });
 await fs.writeFile(path.join(evidence, 'core-publish.txt'), [publish.stdout ?? '', publish.stderr ?? '', publish.error?.message ?? ''].join(''));
 if (publish.status !== 0) throw new Error('Core publish failed; see ' + path.join(evidence, 'core-publish.txt'));
+const installHealth = await verifyPackagedInstallHealth(out);
+await fs.writeFile(path.join(evidence, 'install-health-preflight.json'), JSON.stringify(installHealth, null, 2) + '\n');
 console.log('Configuring NSIS...');
 const makensis = process.env.SHIELD_MAKENSIS || path.join(process.env.LOCALAPPDATA, 'electron-builder/Cache/nsis-3.0.4.1/nsis-3.0.4.1-1mx3n/Bin/makensis.exe');
 const setupFinal=path.join(root,'dist',`EgoistShield-Setup-${pkg.version}.exe`);
@@ -153,18 +168,23 @@ const requiredAsarEntries = [
 ];
 const missingAsarEntries = requiredAsarEntries.filter(entry => !asarEntries.includes(entry));
 if (missingAsarEntries.length) throw new Error(`ASAR is missing required entries: ${missingAsarEntries.join(', ')}`);
-const requiredPayloadFiles = [
+const requiredPayloadFiles = [...new Set([
+  ...packagedElectron.runtimeFiles.map(entry => entry.path),
+  'resources/runtime/electron/provenance.json',
   'EgoistShield.exe',
   'resources/app.asar',
   'resources/component-worker.cjs',
   'resources/core-service/win-x64/EgoistShield.Service.exe',
   'resources/runtime/manifest.json',
+  'resources/release/root-public-key.pem',
+  'resources/release/release-key-registry.json',
+  'resources/release/release-key-registry.json.sig',
   'resources/gravityless-dns/dnscrypt-proxy.exe',
   'resources/gravityless-dns/dnscrypt-proxy.toml',
   'resources/installer/owned-cleanup.ps1',
   'resources/installer/invoke-final-silent-reinstall.ps1',
   'resources/installer/ModernInstaller.exe'
-];
+])];
 const payload = [];
 for (const relative of requiredPayloadFiles) {
   const file = path.join(out, ...relative.split('/'));
@@ -175,6 +195,7 @@ const integrity = {
   generatedAt: new Date().toISOString(),
   product: pkg.productName,
   version: pkg.version,
+  electronRuntime: packagedElectron,
   installer: { path: path.relative(root, setupFinal).split(path.sep).join('/'), bytes: installerStat.size, sha256: installerSha256 },
   publicInstaller: { path: path.relative(root, publicSetup).split(path.sep).join('/'), bytes: installerStat.size, sha256: publicSetupSha256 },
   asar: { path: path.relative(root, asarPath).split(path.sep).join('/'), entries: asarEntries.length, required: requiredAsarEntries },

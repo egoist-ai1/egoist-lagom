@@ -81,23 +81,12 @@ internal sealed class OwnedServiceController
 
 	public async Task<OwnedServiceStatus> StartAsync(string serviceName, CancellationToken cancellationToken = default(CancellationToken))
 	{
+		serviceName = NormalizeServiceName(serviceName);
 		await AssertOwnedImagePathAsync(serviceName, cancellationToken);
-		OwnedServiceStatus ownedServiceStatus = await StatusAsync(serviceName, cancellationToken);
-		if (!ownedServiceStatus.Installed)
-		{
-			throw new InvalidOperationException("Owned service " + serviceName + " is not installed.");
-		}
-		if (ownedServiceStatus.State == "running")
-		{
-			return ownedServiceStatus;
-		}
-		ProcessResult processResult = await RunScAsync(new global::_003C_003Ez__ReadOnlyArray<string>(new string[2] { "start", serviceName }), cancellationToken);
-		int exitCode = processResult.ExitCode;
-		if (exitCode != 0 && exitCode != 1056)
-		{
-			throw new InvalidOperationException("SC start failed for " + serviceName + ": " + CleanError(processResult));
-		}
-		return await WaitForStateAsync(serviceName, "running", cancellationToken);
+		return await OwnedServiceTransition.ChangeAsync(serviceName, true,
+			token => StatusAsync(serviceName, token),
+			(control, token) => RunScAsync(new[] { control, serviceName }, token),
+			ServiceContract.ServiceTransitionTimeout, cancellationToken);
 	}
 
 	public async Task<OwnedServiceStatus> InstallAsync(string serviceName, CancellationToken cancellationToken = default(CancellationToken))
@@ -117,12 +106,10 @@ internal sealed class OwnedServiceController
 		if (before.Installed)
 		{
 			await AssertOwnedImagePathAsync(serviceName, cancellationToken);
-			if (before.StartType != "auto")
-			{
-				await RestoreStartTypeAsync(serviceName, "auto", cancellationToken);
-				return await StatusAsync(serviceName, cancellationToken);
-			}
-			return before;
+			// Repair recovery and dependencies on repeated installation as well:
+			// a previous partial install can already have Start=Automatic.
+			await ConfigureRecoveryAsync(serviceName, definition.Description, cancellationToken);
+			return await StatusAsync(serviceName, cancellationToken);
 		}
 		ProcessResult processResult = await RunOwnedExecutableAsync(executablePath, ResolveOwnedArguments(definition.InstallArguments), cancellationToken);
 		if (processResult.ExitCode != 0)
@@ -167,23 +154,17 @@ internal sealed class OwnedServiceController
 
 	public async Task<OwnedServiceStatus> StopAsync(string serviceName, CancellationToken cancellationToken = default(CancellationToken))
 	{
+		serviceName = NormalizeServiceName(serviceName);
 		OwnedServiceStatus before = await StatusAsync(serviceName, cancellationToken);
 		if (!before.Installed)
 		{
 			return before;
 		}
 		await AssertOwnedImagePathAsync(serviceName, cancellationToken);
-		if (before.State == "stopped")
-		{
-			return before;
-		}
-		ProcessResult processResult = await RunScAsync(new global::_003C_003Ez__ReadOnlyArray<string>(new string[2] { "stop", serviceName }), cancellationToken);
-		int exitCode = processResult.ExitCode;
-		if (exitCode != 0 && exitCode != 1062)
-		{
-			throw new InvalidOperationException("SC stop failed for " + serviceName + ": " + CleanError(processResult));
-		}
-		return await WaitForStateAsync(serviceName, "stopped", cancellationToken);
+		return await OwnedServiceTransition.ChangeAsync(serviceName, false,
+			token => StatusAsync(serviceName, token),
+			(control, token) => RunScAsync(new[] { control, serviceName }, token),
+			ServiceContract.ServiceTransitionTimeout, cancellationToken);
 	}
 
 	public static string NormalizeServiceName(string serviceName)
@@ -290,7 +271,13 @@ internal sealed class OwnedServiceController
 		}
 	}
 
-	private Task AssertOwnedImagePathAsync(string serviceName, CancellationToken cancellationToken)
+	internal Task AssertOwnedImagePathAsync(string serviceName, CancellationToken cancellationToken)
+	{
+		ReadOwnedExecutablePath(serviceName, cancellationToken);
+		return Task.CompletedTask;
+	}
+
+	internal string ReadOwnedExecutablePath(string serviceName, CancellationToken cancellationToken)
 	{
 		EnsureKnownService(serviceName);
 		cancellationToken.ThrowIfCancellationRequested();
@@ -305,8 +292,7 @@ internal sealed class OwnedServiceController
 		{
 			throw new UnauthorizedAccessException("ImagePath executable is not allowlisted for " + serviceName + ".");
 		}
-		TrustedPath.AssertExistingFileUnderRoots(text, _installRoot, _productDataRoot);
-		return Task.CompletedTask;
+		return TrustedPath.AssertExistingFileUnderRoots(text, _installRoot, _productDataRoot);
 	}
 
 	private async Task<OwnedServiceStatus> WaitForStateAsync(string serviceName, string expectedState, CancellationToken cancellationToken)
@@ -392,13 +378,20 @@ internal sealed class OwnedServiceController
 		return ProcessRunner.RunAsync(_scPath, arguments, ServiceContract.CommandTimeout, cancellationToken);
 	}
 
+	internal async Task RepairRecoveryAsync(string serviceName, CancellationToken cancellationToken)
+	{
+		serviceName = NormalizeServiceName(serviceName);
+		await AssertOwnedImagePathAsync(serviceName, cancellationToken);
+		await ConfigureRecoveryAsync(serviceName, OwnedServices[serviceName].Description, cancellationToken);
+	}
+
 	private async Task ConfigureRecoveryAsync(string serviceName, string description, CancellationToken cancellationToken)
 	{
 		string[][] array = new string[4][]
 		{
 			new string[4] { "config", serviceName, "start=", "auto" },
 			new string[4] { "config", serviceName, "depend=", "Tcpip/Afd" },
-			new string[6] { "failure", serviceName, "reset=", "86400", "actions=", "restart/5000/restart/15000/restart/30000" },
+			new string[6] { "failure", serviceName, "reset=", "3600", "actions=", "restart/5000/restart/10000/restart/60000" },
 			new string[3] { "failureflag", serviceName, "1" }
 		};
 		foreach (string[] arguments in array)

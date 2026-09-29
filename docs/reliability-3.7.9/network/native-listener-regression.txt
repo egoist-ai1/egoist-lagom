@@ -1,0 +1,43 @@
+✔ foreign Relay listener cannot make a running Telegram wrapper ready (3.6767ms)
+✔ Telegram foreign-port preflight prevents runtime publication, stop and another spawn (1.5392ms)
+✔ Telegram readiness wait rejects a foreign port even when SCM remains running (0.9336ms)
+✔ Telegram unknown listener ownership blocks start without exposing command details (0.9877ms)
+✔ an owned Telegram listener remains ready and preserves its configured port (1.2143ms)
+✔ an unknown Telegram owner stays unready and does not claim the port is free (0.9517ms)
+✔ current foreign or unknown Telegram ownership takes precedence over an old action error (2.7472ms)
+✔ PowerShell ownership snapshot accepts the actual service grandchild and refuses foreign Relay (808.2392ms)
+✔ PowerShell IPv6 ownership cannot hide a foreign IPv4 listener behind localhost (787.8615ms)
+✔ PowerShell standalone ownership checks the saved process creation time and executable (569.9662ms)
+✔ Telegram CIM service fallback returns the service PID without assigning the PowerShell PID variable (177.3827ms)
+✔ a changing Telegram listener snapshot is unknown rather than a free or ready port (1.4971ms)
+✔ pending Telegram service reports unconfirmed readiness without a stale failure (1.2785ms)
+✔ Zapret startStandalone disables a stopped automatic SCM registration before spawning (3.8277ms)
+✔ Zapret restartStandalone disables a stopped automatic SCM registration before spawning (2.0855ms)
+✔ Zapret unknown SCM state cannot enter standalone mode (1.3441ms)
+✔ temporary VPN suspension preserves Zapret service startup mode (1.3721ms)
+✔ service readiness uses two fresh native proofs within one deadline (3.8736ms)
+✔ native query failure stays unknown without a permissive fallback (0.8737ms)
+✔ foreign IPv6 cannot be hidden behind an owned IPv4 localhost listener (0.852ms)
+✔ an explicit IPv6 endpoint uses its own ownership proof (1.0176ms)
+✔ native ownership rejects wrong operation (1.1347ms)
+✔ native ownership rejects wrong port (0.9037ms)
+✔ native ownership rejects unverified root path (0.9917ms)
+✔ native ownership rejects foreign wrapper path (1.3509ms)
+✔ native ownership rejects unstable SCM root (1.1376ms)
+✔ native ownership rejects unknown address family (1.1058ms)
+✔ native ownership rejects missing process birth (0.9286ms)
+✔ native ownership rejects recycled service root (0.8384ms)
+✔ native ownership rejects recycled listener owner (0.7778ms)
+✔ native ownership rejects changing listener (0.805ms)
+✔ stopped service and standalone mode retain the saved process PowerShell guard (1.4017ms)
+✔ native missing port needs two stable reads and a contradictory TCP result stays unknown (0.9586ms)
+✔ Telegram start-pending waits for SCM before requiring native running ownership (506.4613ms)
+✔ Telegram pending-to-running still refuses an actual foreign ownership response (502.3506ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2453.0347

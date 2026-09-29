@@ -1,0 +1,97 @@
+[
+  {
+    "bytes": 45283,
+    "sha256": "9558ED0EEF0373E2CFF2CEA81934FFB878B1CEF278E0D378E5D42DB21ED84418",
+    "file": "all-tests-final-latest.txt"
+  },
+  {
+    "bytes": 383,
+    "sha256": "F3AB228C9CC464EE80BBCC29B660279E9D66B4645D9E39852DD58CABA9EFDD3E",
+    "file": "audit-final.json"
+  },
+  {
+    "bytes": 1285,
+    "sha256": "D3C0323F3FEF7E61996B3235EE4C815D41AB6FF724AA8C407071714192EBE505",
+    "file": "baseline-audit.json"
+  },
+  {
+    "bytes": 730,
+    "sha256": "F987028F063A1AB48898A680A0329F5BE045E0B1943C0BEE3CD80AD81EEA5DE8",
+    "file": "baseline-release-tests.txt"
+  },
+  {
+    "bytes": 41986,
+    "sha256": "68DAAAC7C825EA12414B2DD8038F79E78C584254DDB60948079BDA647C4AB4F4",
+    "file": "baseline-tests.txt"
+  },
+  {
+    "bytes": 137,
+    "sha256": "96540156441107BB4292AB5CC6E7BDE48E686F63D6774C96851CA7798AA416DD",
+    "file": "build-latest.txt"
+  },
+  {
+    "bytes": 258,
+    "sha256": "436BC7A20F662710867D8BF8F8BC6675204F4B46ADCA6E6644A544BB42A284E8",
+    "file": "core-runtime.json"
+  },
+  {
+    "bytes": 434,
+    "sha256": "BFAB99406760C740F3654E637E905D4320FDC11AF40649C79877B4958D0EEB26",
+    "file": "core-scm-recovery-final.txt"
+  },
+  {
+    "bytes": 434,
+    "sha256": "BFAB99406760C740F3654E637E905D4320FDC11AF40649C79877B4958D0EEB26",
+    "file": "core-scm-recovery.txt"
+  },
+  {
+    "bytes": 2790,
+    "sha256": "7EDF90BE2D2D2B7C70090FF4C9E0E867B8DB8B9AB86C2E35661F55F5F9C6FE48",
+    "file": "installation.json"
+  },
+  {
+    "bytes": 3402,
+    "sha256": "A46E8DF560CA3BB4052CB7B148165E173D311530F45E96C4B027E0C948B1D806",
+    "file": "installed-readback.json"
+  },
+  {
+    "bytes": 301,
+    "sha256": "5EF99A4F025FBE3A76CFE2744B010DD248BAF4672520A6980FEE5AD535BB69C8",
+    "file": "installer-dns-recovery.txt"
+  },
+  {
+    "bytes": 412,
+    "sha256": "63A45878861FDF12278475DED819801D60D18394EB51ABB80D2031CEDD045E24",
+    "file": "installer-migration-regression.txt"
+  },
+  {
+    "bytes": 1043,
+    "sha256": "5B13968E70FA9F4C6BA032E88E7B2691F21964051EBD93107FDEA6AB3A394495",
+    "file": "installer-protected-regression.txt"
+  },
+  {
+    "bytes": 230,
+    "sha256": "657AEB1DEF43CB73E0F92F16838252FA9190EE34D43EE7349FEF01355A58D886",
+    "file": "installer-telegram-ownership.txt"
+  },
+  {
+    "bytes": 339,
+    "sha256": "2C3C51120AA331DD6D28A8B5EBEEE7648A4DD3426EAD5F0DC01BA8F50DE1235D",
+    "file": "package-latest.txt"
+  },
+  {
+    "bytes": 281,
+    "sha256": "FABDF2847FA16A4CFDD41CC11387E7600A899651F2790B2008FB6CDE2EB38D43",
+    "file": "packaged-core-selftest-latest.txt"
+  },
+  {
+    "bytes": 1067,
+    "sha256": "86B0B02DAA14DACCB2415AED7862F5F4054E4FE1B9E0064F7CB1AB3E78FEEDAF",
+    "file": "receipt.json"
+  },
+  {
+    "bytes": 449,
+    "sha256": "DA1644BC280FFEFCEACF117C9F63A0C0D48E255D4DDA535B62EA4E7893986BC4",
+    "file": "telegram-port-repair.json"
+  }
+]

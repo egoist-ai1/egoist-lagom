@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "296×340 layout has no horizontal or vertical overflow",
+    "Dashboard round-trip retains a single active connection",
+    "Connected DNS switch sends a real reset action",
+    "Failure remains readable with a retry action",
+    "Keyboard focus and reduced motion",
+    "Hidden widget pauses its continuous motion",
+    "CSS selection contour moves; connected widget has no repeating CSS or GSAP animation",
+    "Running DNS is shown and reset even when the saved connect preference is off",
+    "A successful status refresh clears a transient IPC error",
+    "Same-turn double connect and cancel dispatch one action; polling preserves the local action lock",
+    "Newer progress supersedes an obsolete status-read failure",
+    "Unresolved initial status disables mutations instead of advertising an idle connection",
+    "A successful DNS IPC result cannot replace a contradictory observed state",
+    "SCM running without a ready Telegram listener cannot be shown as active",
+    "300 same-turn component clicks dispatch one DNS and one Telegram action with no conflict",
+    "Full error details scroll with keyboard focus, 24px targets and 200 percent equivalent layout"
+  ],
+  "errors": [],
+  "limitations": [
+    "Headless renderer fixtures; native DWM, installation and network behavior require separate checks."
+  ],
+  "ok": true
+}

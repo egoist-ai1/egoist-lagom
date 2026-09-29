@@ -1,0 +1,15 @@
+{
+    "relayProcessPreserved":  true,
+    "checkedAt":  "2026-09-29T12:40:33.7241924Z",
+    "configurationChanges":  [
+                                 "port"
+                             ],
+    "relayPort":  1443,
+    "ownedListenerReady":  true,
+    "port":  1445,
+    "protectedBackupCreated":  true,
+    "remoteTelegramDeliveryTested":  false,
+    "status":  "verified",
+    "previousPort":  1443,
+    "hostAddress":  "127.0.0.1"
+}

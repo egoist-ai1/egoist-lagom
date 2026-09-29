@@ -1,0 +1,14 @@
+[
+  {
+    "file": "src/recovered/electron/ipc/system-doh-manager.js",
+    "sha256": "31CC0BCEAB2A4CFC7109FC33A4CD897A7FD217CA052A832F5738B2DDBA13F6F1"
+  },
+  {
+    "file": "src/recovered/electron/ipc/system-doh-service-manager.js",
+    "sha256": "5197B43D1E6E7388B5EB73352B282660E4895D4B1F1FAEFF5F273D5EC3F37A98"
+  },
+  {
+    "file": "tests/system-doh-bootstrap-refresh.test.mjs",
+    "sha256": "FCDF00CA5B7B58A43A71781D40A6432C31EC8387B4396050DC66948A11B57C55"
+  }
+]

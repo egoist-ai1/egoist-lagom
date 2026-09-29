@@ -1,0 +1,64 @@
+{
+  "checkedAt": "2026-09-29T15:53:04.2298519Z",
+  "status": "succeeded",
+  "runId": "8f72194698fa4523bcc4243d919c506d",
+  "versionBefore": "3.7.9",
+  "versionAfter": "3.7.9",
+  "installationIdentityPreserved": true,
+  "productProcessesAtInstallerExit": 0,
+  "services": [
+    {
+      "name": "EgoistShieldCore",
+      "state": "Running",
+      "startMode": "Auto"
+    },
+    {
+      "name": "EgoistShieldSystemDoH",
+      "state": "Running",
+      "startMode": "Auto"
+    },
+    {
+      "name": "EgoistShieldZapret",
+      "state": "Running",
+      "startMode": "Auto"
+    },
+    {
+      "name": "EgoistShieldTelegramProxy",
+      "state": "Running",
+      "startMode": "Auto"
+    }
+  ],
+  "events": [
+    {
+      "at": "2026-09-29T15:52:07.6499603Z",
+      "stage": "dispatch",
+      "status": "dispatched",
+      "message": "Installer was validated and staged; elevated worker will perform the final handoff."
+    },
+    {
+      "at": "2026-09-29T15:52:08.4273527Z",
+      "stage": "worker",
+      "status": "waiting",
+      "message": "Validated elevated worker is waiting before the final handoff."
+    },
+    {
+      "at": "2026-09-29T15:52:14.6510354Z",
+      "stage": "handoff",
+      "status": "dns-stopped",
+      "message": "SystemDoH was stopped last; silent installation is starting."
+    },
+    {
+      "at": "2026-09-29T15:52:52.0009698Z",
+      "stage": "installer",
+      "status": "installer-exited",
+      "message": "Silent installer exited."
+    },
+    {
+      "at": "2026-09-29T15:53:03.2170074Z",
+      "stage": "verify",
+      "status": "succeeded",
+      "message": "Installer, version, Core, preserved services and DNS passed readback."
+    }
+  ],
+  "phase": "final"
+}

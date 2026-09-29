@@ -1,0 +1,107 @@
+{
+  "method": "Read-only brightness count in content-body region; confirms raster content presence, not semantic correctness or foreground performance.",
+  "captures": [
+    {
+      "stage": "hover-final-large",
+      "capture": "native-dashboard.png",
+      "size": [
+        2000,
+        1100
+      ],
+      "bodyRegion": [
+        200,
+        170,
+        1980,
+        1080
+      ],
+      "bodyPixels": 1619800,
+      "bodyPixelsAbove48": 43264,
+      "bodyBrightRatio": 0.026709470304975922
+    },
+    {
+      "stage": "hover-final-large",
+      "capture": "native-dns.png",
+      "size": [
+        2000,
+        1100
+      ],
+      "bodyRegion": [
+        200,
+        170,
+        1980,
+        1080
+      ],
+      "bodyPixels": 1619800,
+      "bodyPixelsAbove48": 66965,
+      "bodyBrightRatio": 0.041341523644894435
+    },
+    {
+      "stage": "hover-final-large",
+      "capture": "native-settings.png",
+      "size": [
+        2000,
+        1100
+      ],
+      "bodyRegion": [
+        200,
+        170,
+        1980,
+        1080
+      ],
+      "bodyPixels": 1619800,
+      "bodyPixelsAbove48": 63961,
+      "bodyBrightRatio": 0.03948697370045685
+    },
+    {
+      "stage": "hover-final-large",
+      "capture": "native-telegram-proxy.png",
+      "size": [
+        2000,
+        1100
+      ],
+      "bodyRegion": [
+        200,
+        170,
+        1980,
+        1080
+      ],
+      "bodyPixels": 1619800,
+      "bodyPixelsAbove48": 48544,
+      "bodyBrightRatio": 0.029969131991603903
+    },
+    {
+      "stage": "hover-final-large",
+      "capture": "native-vpn.png",
+      "size": [
+        2000,
+        1100
+      ],
+      "bodyRegion": [
+        200,
+        170,
+        1980,
+        1080
+      ],
+      "bodyPixels": 1619800,
+      "bodyPixelsAbove48": 67421,
+      "bodyBrightRatio": 0.041623039881466845
+    },
+    {
+      "stage": "hover-final-large",
+      "capture": "native-zapret.png",
+      "size": [
+        2000,
+        1100
+      ],
+      "bodyRegion": [
+        200,
+        170,
+        1980,
+        1080
+      ],
+      "bodyPixels": 1619800,
+      "bodyPixelsAbove48": 56967,
+      "bodyBrightRatio": 0.035169156686010616
+    }
+  ]
+}

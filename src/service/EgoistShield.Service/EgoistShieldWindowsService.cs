@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.ServiceProcess;
 using System.Threading;
@@ -26,6 +27,7 @@ internal sealed class EgoistShieldWindowsService : ServiceBase
 
 	protected override void OnStart(string[] args)
 	{
+		if (_runTask is { IsCompleted: false }) throw new InvalidOperationException("Core from the previous service lifetime is still stopping.");
 		CancellationTokenSource stopSource = new CancellationTokenSource();
 		_stopSource = stopSource;
 		_runTask = Task.Run(async delegate
@@ -34,13 +36,15 @@ internal sealed class EgoistShieldWindowsService : ServiceBase
 			try
 			{
 				await (await ServiceEngine.CreateAsync(_options, stopSource.Token)).RunAsync(stopSource.Token);
+				if (!stopSource.IsCancellationRequested) throw new IOException("Core listener ended unexpectedly.");
 			}
 			catch (OperationCanceledException) when (stopSource.IsCancellationRequested)
 			{
 			}
 			catch (Exception value)
 			{
-				EventLog.WriteEntry($"EgoistShieldCore failed: {value}", EventLogEntryType.Error);
+				try { EventLog.WriteEntry($"EgoistShieldCore failed: {value}", EventLogEntryType.Error); }
+				catch (Exception logError) { Trace.TraceError("Core failure could not be written to Event Log: " + logError.Message); }
 				base.ExitCode = 1;
 				ThreadPool.QueueUserWorkItem(delegate(object? state)
 				{
@@ -65,7 +69,18 @@ internal sealed class EgoistShieldWindowsService : ServiceBase
 		_stopSource?.Cancel();
 		try
 		{
-			_runTask?.Wait(TimeSpan.FromSeconds(20L));
+			var elapsed = Stopwatch.StartNew();
+			while (_runTask != null && !_runTask.Wait(TimeSpan.FromSeconds(10)))
+			{
+				try { RequestAdditionalTime(20000); } catch (InvalidOperationException) { }
+				if (elapsed.Elapsed > ServiceContract.RollbackGracePeriod + TimeSpan.FromSeconds(30))
+				{
+					// Keep the crash marker and fail the owned Core process rather than
+					// report STOPPED while a privileged rollback still mutates the system.
+					Trace.TraceError("Core shutdown exceeded the bounded rollback grace period.");
+					Environment.Exit(1);
+				}
+			}
 		}
 		catch (AggregateException ex) when (ex.InnerExceptions.All((Exception item) => item is OperationCanceledException))
 		{

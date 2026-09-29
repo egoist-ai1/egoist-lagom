@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Globalization;
 using System.ServiceProcess;
 using System.Text.Json;
 using System.Threading;
@@ -9,7 +10,7 @@ namespace EgoistShield.Service;
 
 internal static class Program
 {
-	private sealed record ParsedArguments(bool ConsoleMode, bool AllowDevClient, bool SelfTest, bool RecoverActive, bool RemoveNativeDoh, bool RestoreOwnedDns, bool NotifySystemProxy, bool CheckAdmin, bool VerifyPipeServer, string? PipeName, string? ServiceName, string? StateRoot, string? InstallRoot, string? ConfigureInstallRoot)
+	private sealed record ParsedArguments(bool ConsoleMode, bool AllowDevClient, bool SelfTest, bool RecoverActive, bool RemoveNativeDoh, bool RestoreOwnedDns, bool NotifySystemProxy, bool CheckAdmin, bool VerifyPipeServer, string? PipeName, string? ServiceName, string? StateRoot, string? InstallRoot, string? ConfigureInstallRoot, bool TelegramListenerSnapshot, int? SnapshotPort)
 	{
 		public static ParsedArguments Parse(string[] args)
 		{
@@ -22,6 +23,8 @@ internal static class Program
 			bool notifySystemProxy = false;
 			bool checkAdmin = false;
 			bool verifyPipeServer = false;
+			bool telegramListenerSnapshot = false;
+			int? snapshotPort = null;
 			string pipeName = null;
 			string serviceName = null;
 			string stateRoot = null;
@@ -58,6 +61,14 @@ internal static class Program
 				case "--verify-pipe-server":
 					verifyPipeServer = true;
 					break;
+				case "--telegram-listener-snapshot":
+					telegramListenerSnapshot = true;
+					break;
+				case "--port":
+					if (!int.TryParse(ReadValue(args, ref i, "--port"), NumberStyles.None, CultureInfo.InvariantCulture, out int port) || port < 1 || port > 65535)
+						throw new ArgumentException("--port requires a decimal port from 1 to 65535.");
+					snapshotPort = port;
+					break;
 				case "--pipe-name":
 					pipeName = ReadValue(args, ref i, "--pipe-name");
 					break;
@@ -86,7 +97,11 @@ internal static class Program
 			{
 				throw new ArgumentException("--allow-dev-client is valid only with --console.");
 			}
-			return new ParsedArguments(flag, flag2, selfTest, recoverActive, removeNativeDoh, restoreOwnedDns, notifySystemProxy, checkAdmin, verifyPipeServer, pipeName, serviceName, stateRoot, installRoot, configureInstallRoot);
+			if (telegramListenerSnapshot && (snapshotPort == null || args.Length != 3))
+				throw new ArgumentException("Use only --telegram-listener-snapshot --port <port> for read-only inspection.");
+			if (!telegramListenerSnapshot && snapshotPort != null)
+				throw new ArgumentException("--port is valid only with --telegram-listener-snapshot.");
+			return new ParsedArguments(flag, flag2, selfTest, recoverActive, removeNativeDoh, restoreOwnedDns, notifySystemProxy, checkAdmin, verifyPipeServer, pipeName, serviceName, stateRoot, installRoot, configureInstallRoot, telegramListenerSnapshot, snapshotPort);
 		}
 
 		private static string ReadValue(string[] args, ref int index, string name)
@@ -106,6 +121,8 @@ internal static class Program
 		try
 		{
 			ParsedArguments parsed = ParsedArguments.Parse(args);
+			if (parsed.TelegramListenerSnapshot)
+				return TelegramListenerSnapshotCommand.RunAsync(parsed.SnapshotPort!.Value);
 			if (parsed.VerifyPipeServer && !parsed.CheckAdmin && !parsed.SelfTest)
 			{
 				return VerifyPipeServerAsync(parsed);

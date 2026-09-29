@@ -1,0 +1,640 @@
+{
+  "observedAt": "2026-09-29T13:13:35.742422+00:00",
+  "artifacts": [
+    {
+      "ref": "b8662d3",
+      "path": "resources/release/root-public-key.pem",
+      "bytes": 113,
+      "sha256": "3c5b24f9247110000f70a77e1e8a60157166f9675f6c59bd021c6e45d4eda592"
+    },
+    {
+      "ref": "b8662d3",
+      "path": "resources/release/release-key-registry.json",
+      "bytes": 756,
+      "sha256": "61479bff3873fd1a1a962f1a3da85ca0e2d61b8f6e7eae919f96266e530f0c95"
+    },
+    {
+      "ref": "b8662d3",
+      "path": "resources/release/release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "9ef94926c7e8993bde60ddf79d0beabc53ed2e581029666379df85ce73b46f5a"
+    },
+    {
+      "ref": "b8662d3",
+      "path": "src/recovered/electron/ipc/release-trust.js",
+      "bytes": 12869,
+      "sha256": "a93cb022e341bf966571acec14488dce0a76dc0fb9b7d446f104601d68320150"
+    },
+    {
+      "ref": "b8662d3",
+      "path": "src/recovered/electron/ipc/desktop-updater.js",
+      "bytes": 21802,
+      "sha256": "d65a432e1d5d744fcf38ee284544b150c028e0172cdda1eb258da194520f1af4"
+    },
+    {
+      "ref": "b8662d3",
+      "path": "src/recovered/electron/ipc/state-store.js",
+      "bytes": 18666,
+      "sha256": "91e3d0b3bb6224684c32e938376582236af0318f3bf0b69962a4b35033fb7ee9"
+    },
+    {
+      "ref": "b8662d3",
+      "path": "src/recovered/electron/main.js",
+      "bytes": 49934,
+      "sha256": "87c9f959a9f32428049d2f3beb03ea4f355d6cbb81224cbd230b08642b694fa2"
+    },
+    {
+      "ref": "b8662d3",
+      "path": "package.json",
+      "bytes": 852,
+      "sha256": "c19ae2064fe786776af3aa6194616e868d33e6c59d912c0905e772edd6c9aad9"
+    },
+    {
+      "ref": "174983d",
+      "path": "resources/release/root-public-key.pem",
+      "bytes": 113,
+      "sha256": "3c5b24f9247110000f70a77e1e8a60157166f9675f6c59bd021c6e45d4eda592"
+    },
+    {
+      "ref": "174983d",
+      "path": "resources/release/release-key-registry.json",
+      "bytes": 756,
+      "sha256": "61479bff3873fd1a1a962f1a3da85ca0e2d61b8f6e7eae919f96266e530f0c95"
+    },
+    {
+      "ref": "174983d",
+      "path": "resources/release/release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "9ef94926c7e8993bde60ddf79d0beabc53ed2e581029666379df85ce73b46f5a"
+    },
+    {
+      "ref": "174983d",
+      "path": "src/recovered/electron/ipc/release-trust.js",
+      "bytes": 12869,
+      "sha256": "a93cb022e341bf966571acec14488dce0a76dc0fb9b7d446f104601d68320150"
+    },
+    {
+      "ref": "174983d",
+      "path": "src/recovered/electron/ipc/desktop-updater.js",
+      "bytes": 21802,
+      "sha256": "d65a432e1d5d744fcf38ee284544b150c028e0172cdda1eb258da194520f1af4"
+    },
+    {
+      "ref": "174983d",
+      "path": "src/recovered/electron/ipc/state-store.js",
+      "bytes": 18666,
+      "sha256": "91e3d0b3bb6224684c32e938376582236af0318f3bf0b69962a4b35033fb7ee9"
+    },
+    {
+      "ref": "174983d",
+      "path": "src/recovered/electron/main.js",
+      "bytes": 49619,
+      "sha256": "b3b3c8ec8d19fc3c6eb7e4287ec4648ab1a864154c91f594ac97952e977a90f4"
+    },
+    {
+      "ref": "174983d",
+      "path": "package.json",
+      "bytes": 852,
+      "sha256": "c19ae2064fe786776af3aa6194616e868d33e6c59d912c0905e772edd6c9aad9"
+    },
+    {
+      "ref": "v3.7.1",
+      "path": "resources/release/root-public-key.pem",
+      "bytes": 113,
+      "sha256": "974d66a101aeab923b4045cc2c655b4e1f76afa7e942cf7022fdec58ab179157"
+    },
+    {
+      "ref": "v3.7.1",
+      "path": "resources/release/release-key-registry.json",
+      "bytes": 419,
+      "sha256": "105546c67f4c773f06e6c016c9fc618b7e178c6e67149524203afde45297aa5c"
+    },
+    {
+      "ref": "v3.7.1",
+      "path": "resources/release/release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "a81e67671f4c18d2e04138aa9204720ad6c6856bd096eab9c104a457e6cc1da9"
+    },
+    {
+      "ref": "v3.7.1",
+      "path": "src/recovered/electron/ipc/release-trust.js",
+      "bytes": 12924,
+      "sha256": "ebb078bf7af74781660158411a93b9b23fac76700bec79491f8623ea00aaab4a"
+    },
+    {
+      "ref": "v3.7.1",
+      "path": "src/recovered/electron/ipc/desktop-updater.js",
+      "bytes": 19242,
+      "sha256": "5cd94e33207a8e70870d1ca6d812d7d161980c81bcc9ef49e35c4f08a6609b8c"
+    },
+    {
+      "ref": "v3.7.1",
+      "path": "src/recovered/electron/ipc/state-store.js",
+      "bytes": 18594,
+      "sha256": "785fc5ff8020037fe418d98404571700c07314906a674cf246f4497c7b7d66b9"
+    },
+    {
+      "ref": "v3.7.1",
+      "path": "src/recovered/electron/main.js",
+      "bytes": 47191,
+      "sha256": "0daab445c3254c3d1a191cb98d16986aaf0f24bd28d4687842b75697e04e9739"
+    },
+    {
+      "ref": "v3.7.1",
+      "path": "package.json",
+      "bytes": 852,
+      "sha256": "95726097f031d14fe4d96d5782ba1d442b79b6c8d4c130a179b0c584d095d43d"
+    },
+    {
+      "ref": "current",
+      "path": "root-public-key.pem",
+      "bytes": 113,
+      "sha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7"
+    },
+    {
+      "ref": "current",
+      "path": "release-key-registry.json",
+      "bytes": 1100,
+      "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc"
+    },
+    {
+      "ref": "current",
+      "path": "release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de"
+    },
+    {
+      "ref": "installed",
+      "path": "root-public-key.pem",
+      "bytes": 113,
+      "sha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7"
+    },
+    {
+      "ref": "installed",
+      "path": "release-key-registry.json",
+      "bytes": 1100,
+      "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc"
+    },
+    {
+      "ref": "installed",
+      "path": "release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de"
+    },
+    {
+      "ref": "candidate",
+      "path": "root-public-key.pem",
+      "bytes": 113,
+      "sha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7"
+    },
+    {
+      "ref": "candidate",
+      "path": "release-key-registry.json",
+      "bytes": 1100,
+      "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc"
+    },
+    {
+      "ref": "candidate",
+      "path": "release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de"
+    },
+    {
+      "ref": "candidate",
+      "path": "release-manifest.json",
+      "bytes": 785,
+      "sha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3"
+    },
+    {
+      "ref": "candidate",
+      "path": "release-manifest.json.sig",
+      "bytes": 89,
+      "sha256": "c6b36d487342ab878e3428e1487a6e60e4599740574c22c090445f0b96eecb37"
+    },
+    {
+      "ref": "candidate",
+      "path": "stable-channel.json",
+      "bytes": 785,
+      "sha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3"
+    },
+    {
+      "ref": "candidate",
+      "path": "stable-channel.json.sig",
+      "bytes": 89,
+      "sha256": "c6b36d487342ab878e3428e1487a6e60e4599740574c22c090445f0b96eecb37"
+    },
+    {
+      "ref": "legacy-3.7.1",
+      "path": "root-public-key.pem",
+      "bytes": 113,
+      "sha256": "974d66a101aeab923b4045cc2c655b4e1f76afa7e942cf7022fdec58ab179157"
+    },
+    {
+      "ref": "legacy-3.7.1",
+      "path": "release-key-registry.json",
+      "bytes": 419,
+      "sha256": "105546c67f4c773f06e6c016c9fc618b7e178c6e67149524203afde45297aa5c"
+    },
+    {
+      "ref": "legacy-3.7.1",
+      "path": "release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "a81e67671f4c18d2e04138aa9204720ad6c6856bd096eab9c104a457e6cc1da9"
+    },
+    {
+      "ref": "legacy-3.7.1",
+      "path": "release-manifest.json",
+      "bytes": 762,
+      "sha256": "591645264aab6f181d529071dd72a73e61bfd3304d5dc5333cf6b3cc690ddd4f"
+    },
+    {
+      "ref": "legacy-3.7.1",
+      "path": "release-manifest.json.sig",
+      "bytes": 89,
+      "sha256": "5b739468bf3f6decf0454f0894d8f7f26f9dc8e8fb2f196fa68ca012405c4405"
+    },
+    {
+      "ref": "legacy-3.7.1",
+      "path": "stable-channel.json",
+      "bytes": 762,
+      "sha256": "591645264aab6f181d529071dd72a73e61bfd3304d5dc5333cf6b3cc690ddd4f"
+    },
+    {
+      "ref": "legacy-3.7.1",
+      "path": "stable-channel.json.sig",
+      "bytes": 89,
+      "sha256": "5b739468bf3f6decf0454f0894d8f7f26f9dc8e8fb2f196fa68ca012405c4405"
+    },
+    {
+      "ref": "published-v3.7.1",
+      "path": "release-key-registry.json",
+      "bytes": 419,
+      "sha256": "105546c67f4c773f06e6c016c9fc618b7e178c6e67149524203afde45297aa5c",
+      "githubDigest": "sha256:105546c67f4c773f06e6c016c9fc618b7e178c6e67149524203afde45297aa5c"
+    },
+    {
+      "ref": "published-v3.7.1",
+      "path": "release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "a81e67671f4c18d2e04138aa9204720ad6c6856bd096eab9c104a457e6cc1da9",
+      "githubDigest": "sha256:a81e67671f4c18d2e04138aa9204720ad6c6856bd096eab9c104a457e6cc1da9"
+    },
+    {
+      "ref": "published-v3.7.1",
+      "path": "release-manifest.json",
+      "bytes": 762,
+      "sha256": "591645264aab6f181d529071dd72a73e61bfd3304d5dc5333cf6b3cc690ddd4f",
+      "githubDigest": "sha256:591645264aab6f181d529071dd72a73e61bfd3304d5dc5333cf6b3cc690ddd4f"
+    },
+    {
+      "ref": "published-v3.7.1",
+      "path": "release-manifest.json.sig",
+      "bytes": 89,
+      "sha256": "5b739468bf3f6decf0454f0894d8f7f26f9dc8e8fb2f196fa68ca012405c4405",
+      "githubDigest": "sha256:5b739468bf3f6decf0454f0894d8f7f26f9dc8e8fb2f196fa68ca012405c4405"
+    },
+    {
+      "ref": "published-v3.7.1",
+      "path": "root-public-key.pem",
+      "bytes": 113,
+      "sha256": "974d66a101aeab923b4045cc2c655b4e1f76afa7e942cf7022fdec58ab179157",
+      "githubDigest": "sha256:974d66a101aeab923b4045cc2c655b4e1f76afa7e942cf7022fdec58ab179157"
+    },
+    {
+      "ref": "published-v3.7.1",
+      "path": "stable-channel.json",
+      "bytes": 762,
+      "sha256": "591645264aab6f181d529071dd72a73e61bfd3304d5dc5333cf6b3cc690ddd4f",
+      "githubDigest": "sha256:591645264aab6f181d529071dd72a73e61bfd3304d5dc5333cf6b3cc690ddd4f"
+    },
+    {
+      "ref": "published-v3.7.1",
+      "path": "stable-channel.json.sig",
+      "bytes": 89,
+      "sha256": "5b739468bf3f6decf0454f0894d8f7f26f9dc8e8fb2f196fa68ca012405c4405",
+      "githubDigest": "sha256:5b739468bf3f6decf0454f0894d8f7f26f9dc8e8fb2f196fa68ca012405c4405"
+    },
+    {
+      "ref": "published-v3.5.4",
+      "path": "release-manifest.json",
+      "bytes": 776,
+      "sha256": "c01b9e4028db5905b52a62aed9910bf455a7a65ed9a6c50df5612e56e8e10536",
+      "githubDigest": "sha256:c01b9e4028db5905b52a62aed9910bf455a7a65ed9a6c50df5612e56e8e10536"
+    },
+    {
+      "ref": "published-v3.5.4",
+      "path": "release-manifest.json.sig",
+      "bytes": 89,
+      "sha256": "36802faf538a476de6944b7f17f154dc5381d86a65608d2d526eac15302bf19e",
+      "githubDigest": "sha256:36802faf538a476de6944b7f17f154dc5381d86a65608d2d526eac15302bf19e"
+    },
+    {
+      "ref": "published-v3.5.4",
+      "path": "stable-channel.json",
+      "bytes": 776,
+      "sha256": "c01b9e4028db5905b52a62aed9910bf455a7a65ed9a6c50df5612e56e8e10536",
+      "githubDigest": "sha256:c01b9e4028db5905b52a62aed9910bf455a7a65ed9a6c50df5612e56e8e10536"
+    },
+    {
+      "ref": "published-v3.5.4",
+      "path": "stable-channel.json.sig",
+      "bytes": 89,
+      "sha256": "36802faf538a476de6944b7f17f154dc5381d86a65608d2d526eac15302bf19e",
+      "githubDigest": "sha256:36802faf538a476de6944b7f17f154dc5381d86a65608d2d526eac15302bf19e"
+    },
+    {
+      "ref": "published-v3.5.3",
+      "path": "release-manifest.json",
+      "bytes": 776,
+      "sha256": "c6b7a78395b99e9b77f07ded610c7c3ce7895fef2c3d52dc2cb62e8e89f25e9e",
+      "githubDigest": "sha256:c6b7a78395b99e9b77f07ded610c7c3ce7895fef2c3d52dc2cb62e8e89f25e9e"
+    },
+    {
+      "ref": "published-v3.5.3",
+      "path": "release-manifest.json.sig",
+      "bytes": 89,
+      "sha256": "71ef31d1f0bd8ddb61d815a34b36d220c3681231397d7d10259314d0f71332a8",
+      "githubDigest": "sha256:71ef31d1f0bd8ddb61d815a34b36d220c3681231397d7d10259314d0f71332a8"
+    },
+    {
+      "ref": "published-v3.5.3",
+      "path": "stable-channel.json",
+      "bytes": 776,
+      "sha256": "c6b7a78395b99e9b77f07ded610c7c3ce7895fef2c3d52dc2cb62e8e89f25e9e",
+      "githubDigest": "sha256:c6b7a78395b99e9b77f07ded610c7c3ce7895fef2c3d52dc2cb62e8e89f25e9e"
+    },
+    {
+      "ref": "published-v3.5.3",
+      "path": "stable-channel.json.sig",
+      "bytes": 89,
+      "sha256": "71ef31d1f0bd8ddb61d815a34b36d220c3681231397d7d10259314d0f71332a8",
+      "githubDigest": "sha256:71ef31d1f0bd8ddb61d815a34b36d220c3681231397d7d10259314d0f71332a8"
+    },
+    {
+      "ref": "published-v3.5.2",
+      "path": "release-manifest.json",
+      "bytes": 776,
+      "sha256": "1cdb03312a1235add388a56d40cb80c236d19ba60b508c4eebbfa817c299f0a0",
+      "githubDigest": "sha256:1cdb03312a1235add388a56d40cb80c236d19ba60b508c4eebbfa817c299f0a0"
+    },
+    {
+      "ref": "published-v3.5.2",
+      "path": "release-manifest.json.sig",
+      "bytes": 89,
+      "sha256": "a79c614d389d62cedba31db044413dab616372c2d26c46a214a3eb9c257f9a4f",
+      "githubDigest": "sha256:a79c614d389d62cedba31db044413dab616372c2d26c46a214a3eb9c257f9a4f"
+    },
+    {
+      "ref": "published-v3.5.2",
+      "path": "stable-channel.json",
+      "bytes": 776,
+      "sha256": "1cdb03312a1235add388a56d40cb80c236d19ba60b508c4eebbfa817c299f0a0",
+      "githubDigest": "sha256:1cdb03312a1235add388a56d40cb80c236d19ba60b508c4eebbfa817c299f0a0"
+    },
+    {
+      "ref": "published-v3.5.2",
+      "path": "stable-channel.json.sig",
+      "bytes": 89,
+      "sha256": "a79c614d389d62cedba31db044413dab616372c2d26c46a214a3eb9c257f9a4f",
+      "githubDigest": "sha256:a79c614d389d62cedba31db044413dab616372c2d26c46a214a3eb9c257f9a4f"
+    },
+    {
+      "ref": "published-v3.5.1",
+      "path": "release-manifest.json",
+      "bytes": 776,
+      "sha256": "22af5b29681bf14f483d0afaa977f983abd6f25aef22e34f7e59c065106fed41",
+      "githubDigest": "sha256:22af5b29681bf14f483d0afaa977f983abd6f25aef22e34f7e59c065106fed41"
+    },
+    {
+      "ref": "published-v3.5.1",
+      "path": "release-manifest.json.sig",
+      "bytes": 89,
+      "sha256": "e818fe023a83a2be48cdc6c5837983a14baa3520987fa9e3f9829e29f23f8d53",
+      "githubDigest": "sha256:e818fe023a83a2be48cdc6c5837983a14baa3520987fa9e3f9829e29f23f8d53"
+    },
+    {
+      "ref": "published-v3.5.1",
+      "path": "stable-channel.json",
+      "bytes": 776,
+      "sha256": "22af5b29681bf14f483d0afaa977f983abd6f25aef22e34f7e59c065106fed41",
+      "githubDigest": "sha256:22af5b29681bf14f483d0afaa977f983abd6f25aef22e34f7e59c065106fed41"
+    },
+    {
+      "ref": "published-v3.5.1",
+      "path": "stable-channel.json.sig",
+      "bytes": 89,
+      "sha256": "e818fe023a83a2be48cdc6c5837983a14baa3520987fa9e3f9829e29f23f8d53",
+      "githubDigest": "sha256:e818fe023a83a2be48cdc6c5837983a14baa3520987fa9e3f9829e29f23f8d53"
+    },
+    {
+      "ref": "published-v3.5.0",
+      "path": "release-manifest.json",
+      "bytes": 776,
+      "sha256": "164b734d83cf2487c80120291f250e3627f396c609dae06add959f7b501cd5e1",
+      "githubDigest": "sha256:164b734d83cf2487c80120291f250e3627f396c609dae06add959f7b501cd5e1"
+    },
+    {
+      "ref": "published-v3.5.0",
+      "path": "release-manifest.json.sig",
+      "bytes": 89,
+      "sha256": "9b5c341b6b1635bcc6e3de5bdc2204c2b71609d5440a6ff5b15b18989bdd2a36",
+      "githubDigest": "sha256:9b5c341b6b1635bcc6e3de5bdc2204c2b71609d5440a6ff5b15b18989bdd2a36"
+    },
+    {
+      "ref": "published-v3.5.0",
+      "path": "stable-channel.json",
+      "bytes": 776,
+      "sha256": "164b734d83cf2487c80120291f250e3627f396c609dae06add959f7b501cd5e1",
+      "githubDigest": "sha256:164b734d83cf2487c80120291f250e3627f396c609dae06add959f7b501cd5e1"
+    },
+    {
+      "ref": "published-v3.5.0",
+      "path": "stable-channel.json.sig",
+      "bytes": 89,
+      "sha256": "9b5c341b6b1635bcc6e3de5bdc2204c2b71609d5440a6ff5b15b18989bdd2a36",
+      "githubDigest": "sha256:9b5c341b6b1635bcc6e3de5bdc2204c2b71609d5440a6ff5b15b18989bdd2a36"
+    }
+  ],
+  "network": [
+    {
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/releases?per_page=100",
+      "httpStatus": 200,
+      "bytes": 231626,
+      "sha256": "60f766db80ae0553758bb9ecd7b5e209676a67a6d7fe5a5c7888e5f37fceea9a"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.1/release-key-registry.json",
+      "httpStatus": 200,
+      "bytes": 419,
+      "sha256": "105546c67f4c773f06e6c016c9fc618b7e178c6e67149524203afde45297aa5c"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.1/release-key-registry.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "a81e67671f4c18d2e04138aa9204720ad6c6856bd096eab9c104a457e6cc1da9"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.1/release-manifest.json",
+      "httpStatus": 200,
+      "bytes": 762,
+      "sha256": "591645264aab6f181d529071dd72a73e61bfd3304d5dc5333cf6b3cc690ddd4f"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.1/release-manifest.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "5b739468bf3f6decf0454f0894d8f7f26f9dc8e8fb2f196fa68ca012405c4405"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.1/root-public-key.pem",
+      "httpStatus": 200,
+      "bytes": 113,
+      "sha256": "974d66a101aeab923b4045cc2c655b4e1f76afa7e942cf7022fdec58ab179157"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.1/stable-channel.json",
+      "httpStatus": 200,
+      "bytes": 762,
+      "sha256": "591645264aab6f181d529071dd72a73e61bfd3304d5dc5333cf6b3cc690ddd4f"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.1/stable-channel.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "5b739468bf3f6decf0454f0894d8f7f26f9dc8e8fb2f196fa68ca012405c4405"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.4/release-manifest.json",
+      "httpStatus": 200,
+      "bytes": 776,
+      "sha256": "c01b9e4028db5905b52a62aed9910bf455a7a65ed9a6c50df5612e56e8e10536"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.4/release-manifest.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "36802faf538a476de6944b7f17f154dc5381d86a65608d2d526eac15302bf19e"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.4/stable-channel.json",
+      "httpStatus": 200,
+      "bytes": 776,
+      "sha256": "c01b9e4028db5905b52a62aed9910bf455a7a65ed9a6c50df5612e56e8e10536"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.4/stable-channel.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "36802faf538a476de6944b7f17f154dc5381d86a65608d2d526eac15302bf19e"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.3/release-manifest.json",
+      "httpStatus": 200,
+      "bytes": 776,
+      "sha256": "c6b7a78395b99e9b77f07ded610c7c3ce7895fef2c3d52dc2cb62e8e89f25e9e"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.3/release-manifest.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "71ef31d1f0bd8ddb61d815a34b36d220c3681231397d7d10259314d0f71332a8"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.3/stable-channel.json",
+      "httpStatus": 200,
+      "bytes": 776,
+      "sha256": "c6b7a78395b99e9b77f07ded610c7c3ce7895fef2c3d52dc2cb62e8e89f25e9e"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.3/stable-channel.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "71ef31d1f0bd8ddb61d815a34b36d220c3681231397d7d10259314d0f71332a8"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.2/release-manifest.json",
+      "httpStatus": 200,
+      "bytes": 776,
+      "sha256": "1cdb03312a1235add388a56d40cb80c236d19ba60b508c4eebbfa817c299f0a0"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.2/release-manifest.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "a79c614d389d62cedba31db044413dab616372c2d26c46a214a3eb9c257f9a4f"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.2/stable-channel.json",
+      "httpStatus": 200,
+      "bytes": 776,
+      "sha256": "1cdb03312a1235add388a56d40cb80c236d19ba60b508c4eebbfa817c299f0a0"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.2/stable-channel.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "a79c614d389d62cedba31db044413dab616372c2d26c46a214a3eb9c257f9a4f"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.1/release-manifest.json",
+      "httpStatus": 200,
+      "bytes": 776,
+      "sha256": "22af5b29681bf14f483d0afaa977f983abd6f25aef22e34f7e59c065106fed41"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.1/release-manifest.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "e818fe023a83a2be48cdc6c5837983a14baa3520987fa9e3f9829e29f23f8d53"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.1/stable-channel.json",
+      "httpStatus": 200,
+      "bytes": 776,
+      "sha256": "22af5b29681bf14f483d0afaa977f983abd6f25aef22e34f7e59c065106fed41"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.1/stable-channel.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "e818fe023a83a2be48cdc6c5837983a14baa3520987fa9e3f9829e29f23f8d53"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.0/release-manifest.json",
+      "httpStatus": 200,
+      "bytes": 776,
+      "sha256": "164b734d83cf2487c80120291f250e3627f396c609dae06add959f7b501cd5e1"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.0/release-manifest.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "9b5c341b6b1635bcc6e3de5bdc2204c2b71609d5440a6ff5b15b18989bdd2a36"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.0/stable-channel.json",
+      "httpStatus": 200,
+      "bytes": 776,
+      "sha256": "164b734d83cf2487c80120291f250e3627f396c609dae06add959f7b501cd5e1"
+    },
+    {
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.5.0/stable-channel.json.sig",
+      "httpStatus": 200,
+      "bytes": 89,
+      "sha256": "9b5c341b6b1635bcc6e3de5bdc2204c2b71609d5440a6ff5b15b18989bdd2a36"
+    }
+  ],
+  "publishedStableTags": [
+    "v3.7.7",
+    "v3.7.1",
+    "lagom-final",
+    "v3.5.4",
+    "v3.5.3",
+    "v3.5.2",
+    "v3.5.1",
+    "v3.5.0",
+    "v2.1.0",
+    "v1.0.0"
+  ]
+}

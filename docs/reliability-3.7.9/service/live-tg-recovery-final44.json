@@ -1,0 +1,801 @@
+{
+  "schemaVersion": 1,
+  "mode": "InjectAndObserve",
+  "capturedAtUtc": "2026-09-29T15:25:47.0878821+00:00",
+  "coreHash": "5A2FD51C4E907BC50B8C1DAC352404EF12341CC401E9AA3A3E0D7EEADC2683B8",
+  "before": {
+    "atUtc": "2026-09-29T15:25:47.1909160+00:00",
+    "snapshotMs": 2031.56,
+    "services": [
+      {
+        "Name": "EgoistShieldCore",
+        "State": "Running",
+        "StartMode": "Auto",
+        "ProcessId": 10456
+      },
+      {
+        "Name": "EgoistShieldSystemDoH",
+        "State": "Running",
+        "StartMode": "Auto",
+        "ProcessId": 10004
+      },
+      {
+        "Name": "EgoistShieldZapret",
+        "State": "Running",
+        "StartMode": "Auto",
+        "ProcessId": 51452
+      },
+      {
+        "Name": "EgoistShieldTelegramProxy",
+        "State": "Running",
+        "StartMode": "Auto",
+        "ProcessId": 15668
+      }
+    ],
+    "processes": [
+      {
+        "ProcessId": 10456,
+        "ParentProcessId": 1696,
+        "Name": "EgoistShield.Service.exe",
+        "createdUtc": "2026-09-29T15:24:52.2399980+00:00",
+        "ExecutablePath": "%PROGRAMFILES%\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe"
+      },
+      {
+        "ProcessId": 10004,
+        "ParentProcessId": 1696,
+        "Name": "egoistshield-system-doh-service.exe",
+        "createdUtc": "2026-09-29T15:09:19.9369500+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\service-wrapper\\egoistshield-system-doh-service.exe"
+      },
+      {
+        "ProcessId": 51452,
+        "ParentProcessId": 1696,
+        "Name": "egoistshield-zapret-service.exe",
+        "createdUtc": "2026-09-29T15:09:21.4513240+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\Zapret\\service-wrapper\\egoistshield-zapret-service.exe"
+      },
+      {
+        "ProcessId": 15668,
+        "ParentProcessId": 1696,
+        "Name": "egoistshield-telegram-proxy-service.exe",
+        "createdUtc": "2026-09-29T15:09:22.1228580+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe"
+      },
+      {
+        "ProcessId": 28320,
+        "ParentProcessId": 10004,
+        "Name": "xray-system-doh.exe",
+        "createdUtc": "2026-09-29T15:09:20.4067300+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\runtime\\xray-system-doh.exe"
+      },
+      {
+        "ProcessId": 2020,
+        "ParentProcessId": 37328,
+        "Name": "egoistshield-tg-ws-proxy.exe",
+        "createdUtc": "2026-09-29T15:09:22.7945480+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe"
+      },
+      {
+        "ProcessId": 37328,
+        "ParentProcessId": 15668,
+        "Name": "egoistshield-tg-ws-proxy.exe",
+        "createdUtc": "2026-09-29T15:09:22.6050020+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe"
+      }
+    ],
+    "tcpListeners": [
+      {
+        "LocalAddress": "::1",
+        "LocalPort": 53,
+        "OwningProcess": 28320
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 1445,
+        "OwningProcess": 2020
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 53,
+        "OwningProcess": 28320
+      }
+    ],
+    "udpDnsListeners": [
+      {
+        "LocalAddress": "::1",
+        "LocalPort": 53,
+        "OwningProcess": 28320
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 53,
+        "OwningProcess": 28320
+      }
+    ],
+    "telegramOwned": true,
+    "telegramTcp": true,
+    "uiProcessIds": [],
+    "relay": {
+      "exactRelayProcessAbsent": true,
+      "port1443ListenerAbsent": true,
+      "unknownRelayExecutableCount": 0,
+      "processes": [],
+      "listeners": []
+    }
+  },
+  "actualRebootPerformed": false,
+  "productionSnapshotTiming": [
+    {
+      "trial": 1,
+      "withinFourSecondDeadline": true,
+      "elapsedMs": 2428.44,
+      "stderrCharacters": 1185,
+      "stable": true,
+      "serviceState": "Running",
+      "serviceProcessId": 15668,
+      "rootExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe",
+      "listenerOwnerIds": [
+        2020
+      ]
+    },
+    {
+      "trial": 2,
+      "withinFourSecondDeadline": true,
+      "elapsedMs": 2366.41,
+      "stderrCharacters": 1185,
+      "stable": true,
+      "serviceState": "Running",
+      "serviceProcessId": 15668,
+      "rootExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe",
+      "listenerOwnerIds": [
+        2020
+      ]
+    },
+    {
+      "trial": 3,
+      "withinFourSecondDeadline": true,
+      "elapsedMs": 2448.77,
+      "stderrCharacters": 1185,
+      "stable": true,
+      "serviceState": "Running",
+      "serviceProcessId": 15668,
+      "rootExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe",
+      "listenerOwnerIds": [
+        2020
+      ]
+    }
+  ],
+  "relayPresent": false,
+  "relayBaseline": {
+    "present": false,
+    "state": {
+      "exactRelayProcessAbsent": true,
+      "port1443ListenerAbsent": true,
+      "unknownRelayExecutableCount": 0,
+      "processes": [],
+      "listeners": []
+    },
+    "ownerProcessId": null,
+    "ownerCreatedUtc": null
+  },
+  "mutationCount": 1,
+  "observations": [
+    {
+      "atUtc": "2026-09-29T15:25:59.9372890+00:00",
+      "snapshotMs": 1631.96,
+      "services": [
+        {
+          "Name": "EgoistShieldCore",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 10456
+        },
+        {
+          "Name": "EgoistShieldSystemDoH",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 10004
+        },
+        {
+          "Name": "EgoistShieldZapret",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 51452
+        },
+        {
+          "Name": "EgoistShieldTelegramProxy",
+          "State": "Stopped",
+          "StartMode": "Auto",
+          "ProcessId": 0
+        }
+      ],
+      "processes": [
+        {
+          "ProcessId": 10456,
+          "ParentProcessId": 1696,
+          "Name": "EgoistShield.Service.exe",
+          "createdUtc": "2026-09-29T15:24:52.2399980+00:00",
+          "ExecutablePath": "%PROGRAMFILES%\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe"
+        },
+        {
+          "ProcessId": 10004,
+          "ParentProcessId": 1696,
+          "Name": "egoistshield-system-doh-service.exe",
+          "createdUtc": "2026-09-29T15:09:19.9369500+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\service-wrapper\\egoistshield-system-doh-service.exe"
+        },
+        {
+          "ProcessId": 51452,
+          "ParentProcessId": 1696,
+          "Name": "egoistshield-zapret-service.exe",
+          "createdUtc": "2026-09-29T15:09:21.4513240+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\Zapret\\service-wrapper\\egoistshield-zapret-service.exe"
+        },
+        {
+          "ProcessId": 0,
+          "ParentProcessId": 0,
+          "Name": "System Idle Process",
+          "createdUtc": "2026-09-28T07:59:29.1351390+00:00",
+          "ExecutablePath": null
+        },
+        {
+          "ProcessId": 28320,
+          "ParentProcessId": 10004,
+          "Name": "xray-system-doh.exe",
+          "createdUtc": "2026-09-29T15:09:20.4067300+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\runtime\\xray-system-doh.exe"
+        }
+      ],
+      "tcpListeners": [
+        {
+          "LocalAddress": "::1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        },
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        }
+      ],
+      "udpDnsListeners": [
+        {
+          "LocalAddress": "::1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        },
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        }
+      ],
+      "telegramOwned": false,
+      "telegramTcp": false,
+      "uiProcessIds": [],
+      "relay": {
+        "exactRelayProcessAbsent": true,
+        "port1443ListenerAbsent": true,
+        "unknownRelayExecutableCount": 0,
+        "processes": [],
+        "listeners": []
+      }
+    },
+    {
+      "atUtc": "2026-09-29T15:26:04.6436972+00:00",
+      "snapshotMs": 1642.1,
+      "services": [
+        {
+          "Name": "EgoistShieldCore",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 10456
+        },
+        {
+          "Name": "EgoistShieldSystemDoH",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 10004
+        },
+        {
+          "Name": "EgoistShieldZapret",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 51452
+        },
+        {
+          "Name": "EgoistShieldTelegramProxy",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 52764
+        }
+      ],
+      "processes": [
+        {
+          "ProcessId": 10456,
+          "ParentProcessId": 1696,
+          "Name": "EgoistShield.Service.exe",
+          "createdUtc": "2026-09-29T15:24:52.2399980+00:00",
+          "ExecutablePath": "%PROGRAMFILES%\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe"
+        },
+        {
+          "ProcessId": 10004,
+          "ParentProcessId": 1696,
+          "Name": "egoistshield-system-doh-service.exe",
+          "createdUtc": "2026-09-29T15:09:19.9369500+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\service-wrapper\\egoistshield-system-doh-service.exe"
+        },
+        {
+          "ProcessId": 51452,
+          "ParentProcessId": 1696,
+          "Name": "egoistshield-zapret-service.exe",
+          "createdUtc": "2026-09-29T15:09:21.4513240+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\Zapret\\service-wrapper\\egoistshield-zapret-service.exe"
+        },
+        {
+          "ProcessId": 52764,
+          "ParentProcessId": 1696,
+          "Name": "egoistshield-telegram-proxy-service.exe",
+          "createdUtc": "2026-09-29T15:26:01.6297100+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe"
+        },
+        {
+          "ProcessId": 28320,
+          "ParentProcessId": 10004,
+          "Name": "xray-system-doh.exe",
+          "createdUtc": "2026-09-29T15:09:20.4067300+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\runtime\\xray-system-doh.exe"
+        },
+        {
+          "ProcessId": 30660,
+          "ParentProcessId": 57508,
+          "Name": "egoistshield-tg-ws-proxy.exe",
+          "createdUtc": "2026-09-29T15:26:02.2177680+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe"
+        },
+        {
+          "ProcessId": 57508,
+          "ParentProcessId": 52764,
+          "Name": "egoistshield-tg-ws-proxy.exe",
+          "createdUtc": "2026-09-29T15:26:02.0589130+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe"
+        }
+      ],
+      "tcpListeners": [
+        {
+          "LocalAddress": "::1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        },
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 1445,
+          "OwningProcess": 30660
+        },
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        }
+      ],
+      "udpDnsListeners": [
+        {
+          "LocalAddress": "::1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        },
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        }
+      ],
+      "telegramOwned": true,
+      "telegramTcp": true,
+      "uiProcessIds": [],
+      "relay": {
+        "exactRelayProcessAbsent": true,
+        "port1443ListenerAbsent": true,
+        "unknownRelayExecutableCount": 0,
+        "processes": [],
+        "listeners": []
+      }
+    },
+    {
+      "atUtc": "2026-09-29T15:26:08.2945317+00:00",
+      "snapshotMs": 1615.04,
+      "services": [
+        {
+          "Name": "EgoistShieldCore",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 10456
+        },
+        {
+          "Name": "EgoistShieldSystemDoH",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 10004
+        },
+        {
+          "Name": "EgoistShieldZapret",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 51452
+        },
+        {
+          "Name": "EgoistShieldTelegramProxy",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 52764
+        }
+      ],
+      "processes": [
+        {
+          "ProcessId": 10456,
+          "ParentProcessId": 1696,
+          "Name": "EgoistShield.Service.exe",
+          "createdUtc": "2026-09-29T15:24:52.2399980+00:00",
+          "ExecutablePath": "%PROGRAMFILES%\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe"
+        },
+        {
+          "ProcessId": 10004,
+          "ParentProcessId": 1696,
+          "Name": "egoistshield-system-doh-service.exe",
+          "createdUtc": "2026-09-29T15:09:19.9369500+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\service-wrapper\\egoistshield-system-doh-service.exe"
+        },
+        {
+          "ProcessId": 51452,
+          "ParentProcessId": 1696,
+          "Name": "egoistshield-zapret-service.exe",
+          "createdUtc": "2026-09-29T15:09:21.4513240+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\Zapret\\service-wrapper\\egoistshield-zapret-service.exe"
+        },
+        {
+          "ProcessId": 52764,
+          "ParentProcessId": 1696,
+          "Name": "egoistshield-telegram-proxy-service.exe",
+          "createdUtc": "2026-09-29T15:26:01.6297100+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe"
+        },
+        {
+          "ProcessId": 28320,
+          "ParentProcessId": 10004,
+          "Name": "xray-system-doh.exe",
+          "createdUtc": "2026-09-29T15:09:20.4067300+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\runtime\\xray-system-doh.exe"
+        },
+        {
+          "ProcessId": 30660,
+          "ParentProcessId": 57508,
+          "Name": "egoistshield-tg-ws-proxy.exe",
+          "createdUtc": "2026-09-29T15:26:02.2177680+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe"
+        },
+        {
+          "ProcessId": 57508,
+          "ParentProcessId": 52764,
+          "Name": "egoistshield-tg-ws-proxy.exe",
+          "createdUtc": "2026-09-29T15:26:02.0589130+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe"
+        }
+      ],
+      "tcpListeners": [
+        {
+          "LocalAddress": "::1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        },
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 1445,
+          "OwningProcess": 30660
+        },
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        }
+      ],
+      "udpDnsListeners": [
+        {
+          "LocalAddress": "::1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        },
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        }
+      ],
+      "telegramOwned": true,
+      "telegramTcp": true,
+      "uiProcessIds": [],
+      "relay": {
+        "exactRelayProcessAbsent": true,
+        "port1443ListenerAbsent": true,
+        "unknownRelayExecutableCount": 0,
+        "processes": [],
+        "listeners": []
+      }
+    },
+    {
+      "atUtc": "2026-09-29T15:26:11.9426554+00:00",
+      "snapshotMs": 1626.3,
+      "services": [
+        {
+          "Name": "EgoistShieldCore",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 10456
+        },
+        {
+          "Name": "EgoistShieldSystemDoH",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 10004
+        },
+        {
+          "Name": "EgoistShieldZapret",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 51452
+        },
+        {
+          "Name": "EgoistShieldTelegramProxy",
+          "State": "Running",
+          "StartMode": "Auto",
+          "ProcessId": 52764
+        }
+      ],
+      "processes": [
+        {
+          "ProcessId": 10456,
+          "ParentProcessId": 1696,
+          "Name": "EgoistShield.Service.exe",
+          "createdUtc": "2026-09-29T15:24:52.2399980+00:00",
+          "ExecutablePath": "%PROGRAMFILES%\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe"
+        },
+        {
+          "ProcessId": 10004,
+          "ParentProcessId": 1696,
+          "Name": "egoistshield-system-doh-service.exe",
+          "createdUtc": "2026-09-29T15:09:19.9369500+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\service-wrapper\\egoistshield-system-doh-service.exe"
+        },
+        {
+          "ProcessId": 51452,
+          "ParentProcessId": 1696,
+          "Name": "egoistshield-zapret-service.exe",
+          "createdUtc": "2026-09-29T15:09:21.4513240+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\Zapret\\service-wrapper\\egoistshield-zapret-service.exe"
+        },
+        {
+          "ProcessId": 52764,
+          "ParentProcessId": 1696,
+          "Name": "egoistshield-telegram-proxy-service.exe",
+          "createdUtc": "2026-09-29T15:26:01.6297100+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe"
+        },
+        {
+          "ProcessId": 28320,
+          "ParentProcessId": 10004,
+          "Name": "xray-system-doh.exe",
+          "createdUtc": "2026-09-29T15:09:20.4067300+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\runtime\\xray-system-doh.exe"
+        },
+        {
+          "ProcessId": 30660,
+          "ParentProcessId": 57508,
+          "Name": "egoistshield-tg-ws-proxy.exe",
+          "createdUtc": "2026-09-29T15:26:02.2177680+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe"
+        },
+        {
+          "ProcessId": 57508,
+          "ParentProcessId": 52764,
+          "Name": "egoistshield-tg-ws-proxy.exe",
+          "createdUtc": "2026-09-29T15:26:02.0589130+00:00",
+          "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe"
+        }
+      ],
+      "tcpListeners": [
+        {
+          "LocalAddress": "::1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        },
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 1445,
+          "OwningProcess": 30660
+        },
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        }
+      ],
+      "udpDnsListeners": [
+        {
+          "LocalAddress": "::1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        },
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 53,
+          "OwningProcess": 28320
+        }
+      ],
+      "telegramOwned": true,
+      "telegramTcp": true,
+      "uiProcessIds": [],
+      "relay": {
+        "exactRelayProcessAbsent": true,
+        "port1443ListenerAbsent": true,
+        "unknownRelayExecutableCount": 0,
+        "processes": [],
+        "listeners": []
+      }
+    }
+  ],
+  "result": "recovered",
+  "injectedAtUtc": "2026-09-29T15:25:56.2906131+00:00",
+  "target": {
+    "processId": 2020,
+    "createdUtc": "2026-09-29T15:09:22.794548Z",
+    "executable": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe",
+    "heldHandle": true
+  },
+  "mutationAttemptCount": 1,
+  "recoveryConfirmedAfterSeconds": 15.66,
+  "elapsedSeconds": 15.67,
+  "final": {
+    "atUtc": "2026-09-29T15:26:13.6115245+00:00",
+    "snapshotMs": 1642.52,
+    "services": [
+      {
+        "Name": "EgoistShieldCore",
+        "State": "Running",
+        "StartMode": "Auto",
+        "ProcessId": 10456
+      },
+      {
+        "Name": "EgoistShieldSystemDoH",
+        "State": "Running",
+        "StartMode": "Auto",
+        "ProcessId": 10004
+      },
+      {
+        "Name": "EgoistShieldZapret",
+        "State": "Running",
+        "StartMode": "Auto",
+        "ProcessId": 51452
+      },
+      {
+        "Name": "EgoistShieldTelegramProxy",
+        "State": "Running",
+        "StartMode": "Auto",
+        "ProcessId": 52764
+      }
+    ],
+    "processes": [
+      {
+        "ProcessId": 10456,
+        "ParentProcessId": 1696,
+        "Name": "EgoistShield.Service.exe",
+        "createdUtc": "2026-09-29T15:24:52.2399980+00:00",
+        "ExecutablePath": "%PROGRAMFILES%\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe"
+      },
+      {
+        "ProcessId": 10004,
+        "ParentProcessId": 1696,
+        "Name": "egoistshield-system-doh-service.exe",
+        "createdUtc": "2026-09-29T15:09:19.9369500+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\service-wrapper\\egoistshield-system-doh-service.exe"
+      },
+      {
+        "ProcessId": 51452,
+        "ParentProcessId": 1696,
+        "Name": "egoistshield-zapret-service.exe",
+        "createdUtc": "2026-09-29T15:09:21.4513240+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\Zapret\\service-wrapper\\egoistshield-zapret-service.exe"
+      },
+      {
+        "ProcessId": 52764,
+        "ParentProcessId": 1696,
+        "Name": "egoistshield-telegram-proxy-service.exe",
+        "createdUtc": "2026-09-29T15:26:01.6297100+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe"
+      },
+      {
+        "ProcessId": 28320,
+        "ParentProcessId": 10004,
+        "Name": "xray-system-doh.exe",
+        "createdUtc": "2026-09-29T15:09:20.4067300+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\runtime\\xray-system-doh.exe"
+      },
+      {
+        "ProcessId": 30660,
+        "ParentProcessId": 57508,
+        "Name": "egoistshield-tg-ws-proxy.exe",
+        "createdUtc": "2026-09-29T15:26:02.2177680+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe"
+      },
+      {
+        "ProcessId": 57508,
+        "ParentProcessId": 52764,
+        "Name": "egoistshield-tg-ws-proxy.exe",
+        "createdUtc": "2026-09-29T15:26:02.0589130+00:00",
+        "ExecutablePath": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe"
+      }
+    ],
+    "tcpListeners": [
+      {
+        "LocalAddress": "::1",
+        "LocalPort": 53,
+        "OwningProcess": 28320
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 1445,
+        "OwningProcess": 30660
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 53,
+        "OwningProcess": 28320
+      }
+    ],
+    "udpDnsListeners": [
+      {
+        "LocalAddress": "::1",
+        "LocalPort": 53,
+        "OwningProcess": 28320
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 53,
+        "OwningProcess": 28320
+      }
+    ],
+    "telegramOwned": true,
+    "telegramTcp": true,
+    "uiProcessIds": [],
+    "relay": {
+      "exactRelayProcessAbsent": true,
+      "port1443ListenerAbsent": true,
+      "unknownRelayExecutableCount": 0,
+      "processes": [],
+      "listeners": []
+    }
+  },
+  "relayPreserved": true,
+  "finalIntent": {
+    "EgoistShieldSystemDoH": {
+      "running": true,
+      "lastRecoveryAt": null
+    },
+    "EgoistShieldZapret": {
+      "running": true,
+      "lastRecoveryAt": null
+    },
+    "EgoistShieldTelegramProxy": {
+      "running": true,
+      "lastRecoveryAt": null
+    }
+  },
+  "privateNetworkIdentifiersOmitted": true,
+  "runner": {
+    "component": "TG",
+    "mode": "InjectAndObserve",
+    "exitCode": 0,
+    "completedAt": "2026-09-29T15:26:14.0077401Z",
+    "receipt": "<task-work>\\final44-tg-injectandobserve.json",
+    "helperSha256": "73408B037B077E8A55B46714D7E3A8BF1F58C661BFB00BE12078F7662B469BE7",
+    "postFaultGuardSeconds": 300
+  }
+}

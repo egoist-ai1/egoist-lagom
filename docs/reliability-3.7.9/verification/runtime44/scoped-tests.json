@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-29T15:09:33.183466+00:00",
+  "command": "node --test tests/electron-runtime-packaging.test.mjs",
+  "environment": {
+    "EGOIST_PACKAGING_TEST_DIR": "Current task work directory",
+    "SHIELD_PYTHON": "Explicit configured Python executable",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "tests": 17,
+  "passed": 17,
+  "failed": 0,
+  "skipped": 0,
+  "coverage": [
+    "Pinned archive/official digest/checksum authentication",
+    "Complete offline extracted-file verification",
+    "Tampered/missing/injected file rejection",
+    "ZIP traversal/collision/symlink/version rejection",
+    "New-runtime/product-resource staging and full provenance",
+    "Unchanged real installer health on isolated staging fixture",
+    "Original ../../version path escape rejection",
+    "Absolute and relative root normalization",
+    "Mandatory health gate after Core publish and before NSIS compression"
+  ],
+  "frozenSources": [
+    {
+      "path": "scripts/package-windows.mjs",
+      "sha256": "be702de3f11cf41080af1493b6c65c89208f1a69e329130b12af4e997f6b0d8f"
+    },
+    {
+      "path": "scripts/electron-runtime.json",
+      "sha256": "a8df972c29d0212674449fd621784d5f1e7804a08d962561f22588342d60cdbd"
+    },
+    {
+      "path": "scripts/electron-runtime.mjs",
+      "sha256": "3b44670f49c7c816e7aa3fff0c9132e8bdad98014c9458625cb7e0a78e3e5bf7"
+    },
+    {
+      "path": "scripts/fetch-electron-runtime.py",
+      "sha256": "c04f7151caf598164fba137198f5fe09120e35edb19228e11f943c2af510a528"
+    },
+    {
+      "path": "scripts/check-packaged-install-health.ps1",
+      "sha256": "b1692802f99068bb22b3329023df776366f99ea2eb2086d27a15bb852ae47260"
+    },
+    {
+      "path": "tests/electron-runtime-packaging.test.mjs",
+      "sha256": "a497e69cd19e9988cc6ab2c681630f7cad27ea9bec37b9e79485b89e13d36705"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ServiceSourceRoot Condition="'$(ServiceSourceRoot)' == ''">../../src/service/EgoistShield.Service</ServiceSourceRoot>
+    <ComponentWorkerSource Condition="'$(ComponentWorkerSource)' == ''">$(ServiceSourceRoot)/ComponentWorker.cs</ComponentWorkerSource>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(ServiceSourceRoot)/AtomicJsonFile.cs" Link="AtomicJsonFile.cs" />
+    <Compile Include="$(ServiceSourceRoot)/JsonDefaults.cs" Link="JsonDefaults.cs" />
+    <Compile Include="$(ServiceSourceRoot)/TrustedPath.cs" Link="TrustedPath.cs" />
+    <Compile Include="$(ServiceSourceRoot)/OwnedServiceStatus.cs" Link="OwnedServiceStatus.cs" />
+    <Compile Include="$(ServiceSourceRoot)/ProcessResult.cs" Link="ProcessResult.cs" />
+    <Compile Include="$(ServiceSourceRoot)/OwnedServiceTransition.cs" Link="OwnedServiceTransition.cs" />
+    <Compile Include="$(ServiceSourceRoot)/OwnedServiceIntentStore.cs" Link="OwnedServiceIntentStore.cs" />
+    <Compile Include="$(ServiceSourceRoot)/OwnedServiceSupervisor.cs" Link="OwnedServiceSupervisor.cs" />
+    <Compile Include="$(ServiceSourceRoot)/LocalServiceHealthProbe.cs" Link="LocalServiceHealthProbe.cs" />
+    <Compile Include="$(ServiceSourceRoot)/OwnedTcpListenerProbe.cs" Link="OwnedTcpListenerProbe.cs" />
+    <Compile Include="$(ServiceSourceRoot)/WindowsServiceListenerSnapshot.cs" Link="WindowsServiceListenerSnapshot.cs" />
+    <Compile Include="$(ServiceSourceRoot)/DnsMaintenancePolicy.cs" Link="DnsMaintenancePolicy.cs" />
+    <Compile Include="$(ServiceSourceRoot)/DnsBootstrapRefreshScheduler.cs" Link="DnsBootstrapRefreshScheduler.cs" />
+    <Compile Include="$(ServiceSourceRoot)/DnsAdapterSnapshot.cs" Link="DnsAdapterSnapshot.cs" />
+    <Compile Include="$(ComponentWorkerSource)" Link="ComponentWorker.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,15 @@
+{
+  "at": "2026-09-29T12:54:26.446Z",
+  "version": "3.7.8",
+  "installer": {
+    "path": "dist/EgoistShield-Setup-3.7.8.exe",
+    "bytes": 194405835,
+    "sha256": "34136729F0924E95AF65B7FEFD2792763C29694056B8FF76A79C9FE0E325F927"
+  },
+  "verifiedIntegrityEntries": 15,
+  "verifiedRuntimeFiles": 66,
+  "asarEntries": 183,
+  "trustRootIncluded": true,
+  "authenticode": "not-signed",
+  "releaseSignature": "verified separately by prepare-release-assets --verify-only true"
+}

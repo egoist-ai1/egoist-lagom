@@ -38,10 +38,15 @@ export async function prepareReleaseAssets(options = {}) {
   const dist = path.resolve(options.dist ?? path.join(root, 'dist'));
   const pkg = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
   if (!/^\d+\.\d+\.\d+$/.test(pkg.version)) throw new Error('Expected a stable semantic version');
-  const installerName = 'Egoist-Lagom-Setup.exe';
+  const minimumAppVersion = pkg.minimumAutoUpdateVersion ?? pkg.version;
+  if (!/^\d+\.\d+\.\d+$/.test(minimumAppVersion)) throw new Error('Invalid minimum auto-update version');
+  const installerName = pkg.version === '3.7.1' ? 'Egoist-Lagom-Setup.exe' : `EgoistShield-Setup-${pkg.version}.exe`;
   const installer = await fs.readFile(path.join(dist, installerName));
   const integrity = JSON.parse(await fs.readFile(path.join(dist, 'package-integrity.json'), 'utf8'));
-  if (!installer.length || installer.length > 1024 ** 3 || integrity.version !== pkg.version || integrity.publicInstaller?.bytes !== installer.length || typeof integrity.publicInstaller?.sha256 !== 'string' || integrity.publicInstaller.sha256.toLowerCase() !== hash(installer) || path.basename(integrity.publicInstaller?.path ?? '') !== installerName) throw new Error('Installer does not match package-integrity.json');
+  const installerReceipt = installerName === 'Egoist-Lagom-Setup.exe' ? integrity.publicInstaller : integrity.installer;
+  if (!installer.length || installer.length > 1024 ** 3 || integrity.version !== pkg.version || installerReceipt?.bytes !== installer.length || typeof installerReceipt?.sha256 !== 'string' || installerReceipt.sha256.toLowerCase() !== hash(installer) || path.basename(installerReceipt?.path ?? '') !== installerName) throw new Error('Installer does not match package-integrity.json');
+  const publicAlias = await fs.readFile(path.join(dist, 'Egoist-Lagom-Setup.exe'));
+  if (!publicAlias.equals(installer) || integrity.publicInstaller?.bytes !== publicAlias.length || String(integrity.publicInstaller?.sha256).toLowerCase() !== hash(publicAlias)) throw new Error('Public installer alias differs from the versioned candidate');
   const trust = await readTrust(path.resolve(options['trust-dir'] ?? path.join(root, 'resources/release')));
   for (const name of trustNames) {
     const packed = integrity.payload?.find(item => item.path === `resources/release/${name}`);
@@ -56,10 +61,11 @@ export async function prepareReleaseAssets(options = {}) {
     const key = releaseKey(trust.registry, manifest.keyId, manifest.publishedAt);
     const signature = await fs.readFile(path.join(dist, 'release-manifest.json.sig'));
     if (!verify(null, bytes, createPublicKey(key.publicKeyPem), Buffer.from(signature.toString().trim(), 'base64'))) throw new Error('Release manifest signature is invalid');
-    if (Object.entries(expected).some(([name, value]) => manifest[name] !== value) || typeof manifest.minimumAppVersion !== 'string' || !/^\d+\.\d+\.\d+$/.test(manifest.minimumAppVersion) || !['valid', 'not-signed'].includes(manifest.authenticodeStatus) || typeof manifest.licenseVersion !== 'string' || !manifest.licenseVersion.trim()) throw new Error('Signed manifest does not match candidate');
+    if (Object.entries(expected).some(([name, value]) => manifest[name] !== value) || manifest.minimumAppVersion !== minimumAppVersion || !['valid', 'not-signed'].includes(manifest.authenticodeStatus) || typeof manifest.licenseVersion !== 'string' || !manifest.licenseVersion.trim()) throw new Error('Signed manifest does not match candidate');
     if (!(await fs.readFile(path.join(dist, 'stable-channel.json'))).equals(bytes) || !(await fs.readFile(path.join(dist, 'stable-channel.json.sig'))).equals(signature)) throw new Error('Stable channel differs from signed manifest');
     for (const name of trustNames) if (!(await fs.readFile(path.join(dist, name))).equals(trust.files[name])) throw new Error(`Published trust file differs from bundled trust: ${name}`);
     if ((await fs.readFile(path.join(dist, `${installerName}.sha256`), 'utf8')).trim() !== `${manifest.sha256}  ${installerName}`) throw new Error('Installer checksum file does not match candidate');
+    if ((await fs.readFile(path.join(dist, 'Egoist-Lagom-Setup.exe.sha256'), 'utf8')).trim() !== `${manifest.sha256}  Egoist-Lagom-Setup.exe`) throw new Error('Public installer checksum file does not match candidate');
     return manifest;
   }
   const privatePath = options['private-key'] ?? process.env.EGOIST_RELEASE_PRIVATE_KEY;
@@ -69,7 +75,7 @@ export async function prepareReleaseAssets(options = {}) {
   const trustedKey = releaseKey(trust.registry, keyId, publishedAt);
   const privateKey = createPrivateKey(await fs.readFile(privatePath));
   if (privateKey.asymmetricKeyType !== 'ed25519' || !publicDer(privateKey).equals(publicDer(trustedKey.publicKeyPem))) throw new Error('Private signing key does not match the trusted release key');
-  const manifest = { ...expected, minimumAppVersion: pkg.version, keyId, authenticodeStatus: 'not-signed', licenseVersion: '1.0', publishedAt };
+  const manifest = { ...expected, minimumAppVersion, keyId, authenticodeStatus: 'not-signed', licenseVersion: '1.0', publishedAt };
   const bytes = Buffer.from(JSON.stringify(manifest, null, 2) + '\n');
   const signature = sign(null, bytes, privateKey).toString('base64') + '\n';
   const runtimeDir = path.resolve(options['runtime-dir'] ?? path.join(root, `out/EgoistShield-${pkg.version}-win-x64/resources/runtime`));
@@ -83,7 +89,7 @@ export async function prepareReleaseAssets(options = {}) {
   for (const entry of JSON.parse(runtimeText).components) components.push({ type: 'application', name: entry.name, version: entry.version ?? entry.desiredVersion ?? 'unknown', properties: [{ name: 'egoistlagom:source', value: entry.upstream?.repositoryUrl ?? 'bundled runtime manifest' }] });
   const sbom = { bomFormat: 'CycloneDX', specVersion: '1.6', serialNumber: `urn:uuid:${randomUUID()}`, version: 1, metadata: { timestamp: publishedAt, component: { type: 'application', name: 'Egoist Lagom', version: pkg.version, hashes: [{ alg: 'SHA-256', content: manifest.sha256 }] }, properties: [{ name: 'egoistlagom:inventory-scope', value: 'Current npm lock and bundled runtime manifest. This inventory does not claim complete coverage of recovered renderer code or transitive native dependencies.' }] }, components };
   // Finish input validation before replacing release metadata.
-  const outputs = { ...trust.files, 'LICENSE.txt': license, 'THIRD-PARTY-NOTICES.txt': notices, [`${installerName}.sha256`]: `${manifest.sha256}  ${installerName}\n`, [`Egoist-Lagom-${pkg.version}.cdx.json`]: JSON.stringify(sbom, null, 2) + '\n' };
+  const outputs = { ...trust.files, 'LICENSE.txt': license, 'THIRD-PARTY-NOTICES.txt': notices, [`${installerName}.sha256`]: `${manifest.sha256}  ${installerName}\n`, 'Egoist-Lagom-Setup.exe.sha256': `${manifest.sha256}  Egoist-Lagom-Setup.exe\n`, [`Egoist-Lagom-${pkg.version}.cdx.json`]: JSON.stringify(sbom, null, 2) + '\n' };
   for (const name of ['release-manifest.json', 'stable-channel.json']) { outputs[name] = bytes; outputs[`${name}.sig`] = signature; }
   for (const [name, data] of Object.entries(outputs)) await fs.writeFile(path.join(dist, name), data);
   return manifest;

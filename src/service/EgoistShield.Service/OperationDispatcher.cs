@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.NetworkInformation;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -47,8 +49,18 @@ internal sealed class OperationDispatcher : IDisposable
 
 	private long _sequence;
 	private readonly Lazy<ComponentWorker> _componentWorker;
+	private readonly Func<JsonElement, bool, CancellationToken, Task<JsonElement>> _executeComponent;
+	private readonly OwnedServiceIntentStore _serviceIntents;
+	private readonly OwnedServiceSupervisor? _serviceSupervisor;
+	private readonly DnsBootstrapRefreshScheduler _bootstrapRefresh;
+	private WindowsServiceListenerSnapshot? _telegramListenerSnapshot;
+	private readonly Stopwatch _maintenanceClock = Stopwatch.StartNew();
+	private TimeSpan _nextDnsMaintenance;
+	private TimeSpan _nextDnsAudit;
+	private int _dnsMaintenanceRequested = 1;
 
-	public OperationDispatcher(ServiceOptions options, WindowsDnsController dns, WindowsNativeDohController nativeDoh, OwnedServiceController? services, TransactionJournal journal, ServiceLog log)
+	public OperationDispatcher(ServiceOptions options, WindowsDnsController dns, WindowsNativeDohController nativeDoh, OwnedServiceController? services, TransactionJournal journal, ServiceLog log,
+		Func<JsonElement, bool, CancellationToken, Task<JsonElement>>? componentExecutor = null)
 	{
 		_options = options;
 		_dns = dns;
@@ -58,6 +70,245 @@ internal sealed class OperationDispatcher : IDisposable
 		_log = log;
 		_dnsOwnedStatePath = Path.Combine(options.StateRoot, "dns-owned-state.json");
 		_componentWorker = new Lazy<ComponentWorker>(() => new ComponentWorker(options.InstallRoot ?? throw new InvalidOperationException("Component operations require an installed product.")));
+		_executeComponent = componentExecutor ?? ((payload, query, token) => _componentWorker.Value.ExecuteAsync(payload, query, token));
+		_serviceIntents = new OwnedServiceIntentStore(options.StateRoot);
+		_bootstrapRefresh = new DnsBootstrapRefreshScheduler(options.StateRoot);
+		if (services != null && options.InstallRoot != null && !options.ConsoleMode)
+		{
+			_serviceSupervisor = new OwnedServiceSupervisor(_serviceIntents, services.StatusAsync,
+				services.AssertOwnedImagePathAsync, ProbeOwnedServiceAsync,
+				async (name, running, token) =>
+				{
+					if (running) await services.StopAsync(name, token);
+					await services.StartAsync(name, token);
+				}, message => _log.WarnAsync(message), NetworkInterface.GetIsNetworkAvailable,
+				repairRecovery: services.RepairRecoveryAsync);
+			NetworkChange.NetworkAddressChanged += OnNetworkAddressChanged;
+		}
+	}
+
+	internal async Task RunSupervisionAsync(CancellationToken cancellationToken)
+	{
+		if (_serviceSupervisor == null) return;
+		using var timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
+		DateTimeOffset? lastWarning = null;
+		while (await timer.WaitForNextTickAsync(cancellationToken))
+		{
+			if (!await _mutationLock.WaitAsync(0, cancellationToken)) continue;
+			try
+			{
+				// A crash marker is recovered by the transaction path, never bypassed
+				// by an independent health repair during partial network mutation.
+				if (await _journal.ReadActiveAsync(cancellationToken) != null) continue;
+				await _serviceSupervisor.CheckAsync(cancellationToken);
+				TimeSpan now = _maintenanceClock.Elapsed;
+				if (now >= TimeSpan.FromSeconds(60)) await RefreshOwnedDnsBootstrapAsync(cancellationToken);
+				if (now >= TimeSpan.FromSeconds(60) && now >= _nextDnsMaintenance &&
+					(Volatile.Read(ref _dnsMaintenanceRequested) != 0 || now >= _nextDnsAudit))
+				{
+					_nextDnsMaintenance = now + TimeSpan.FromMinutes(1);
+					_nextDnsAudit = now + TimeSpan.FromMinutes(10);
+					Interlocked.Exchange(ref _dnsMaintenanceRequested, 0);
+					try { await MaintainOwnedDnsAsync(cancellationToken); }
+					catch { Interlocked.Exchange(ref _dnsMaintenanceRequested, 1); throw; }
+				}
+			}
+			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+			catch (Exception error)
+			{
+				if (lastWarning == null || DateTimeOffset.UtcNow - lastWarning >= TimeSpan.FromMinutes(5))
+				{
+					await _log.WarnAsync("Background service supervision deferred: " + error.Message, cancellationToken);
+					lastWarning = DateTimeOffset.UtcNow;
+				}
+			}
+			finally { _mutationLock.Release(); }
+		}
+	}
+
+	private void OnNetworkAddressChanged(object? sender, EventArgs args) => Interlocked.Exchange(ref _dnsMaintenanceRequested, 1);
+
+	internal async Task RefreshOwnedDnsBootstrapAsync(CancellationToken cancellationToken)
+	{
+		if (!NetworkInterface.GetIsNetworkAvailable()) return;
+		var native = await _nativeDoh.ReadOwnedStateAsync(cancellationToken);
+		ValidateNativeDohOwnedState(native);
+		if (native != null)
+		{
+			await _bootstrapRefresh.RunIfDueAsync("native", native.Url, async token =>
+			{
+				if (!WindowsNativeDohController.EntriesMatch(await _nativeDoh.ReadEntriesAsync(native.Servers, token), native))
+					throw new InvalidOperationException("Native bootstrap refresh deferred because owned DoH registrations changed.");
+				var baseline = native.OriginalDnsAdapters ?? Array.Empty<DnsAdapterSnapshot>();
+				if (baseline.Length == 0) throw new InvalidOperationException("Native bootstrap refresh requires a recorded adapter baseline.");
+				// Resolve by GUID including disconnected devices; removal of a
+				// physical device defers rotation rather than deleting its template.
+				var present = await _dns.ReadPresentSnapshotAsync(baseline, token);
+				if (present.Length != baseline.Length) throw new InvalidOperationException("Native bootstrap refresh deferred until recorded adapters are present.");
+				var targets = present.Where(adapter => DnsMatchesServers(new[] { adapter }, native.Servers)).ToArray();
+				var stillOwned = NativeDohRestoreTargets(native, present);
+				if (targets.Length == 0 || targets.Length != stillOwned.Length)
+					throw new InvalidOperationException("Native bootstrap refresh preserved externally changed adapter DNS.");
+				bool ipv6 = native.Servers.Any(server => IPAddress.Parse(server).AddressFamily == AddressFamily.InterNetworkV6) &&
+					await _nativeDoh.HasIpv6DefaultRouteAsync(token);
+				var resolved = await _executeComponent(JsonDefaults.ToElement(new { component = "SystemDoH", method = "bootstrapServers", args = new object[] { native.Url, ipv6 } }), true, token);
+				if (resolved.ValueKind != JsonValueKind.Object || resolved.GetProperty("url").GetString() != native.Url)
+					throw new InvalidOperationException("DNS bootstrap worker returned a different provider URL.");
+				var servers = WindowsDnsController.ValidateServers(resolved.GetProperty("servers").Deserialize<string[]>(JsonDefaults.Options) ?? Array.Empty<string>());
+				if (resolved.GetProperty("knownProvider").GetBoolean() || servers.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(native.Servers)) return;
+				var request = new ServiceRequest(1, "bootstrap:" + Guid.NewGuid().ToString("N"), "dns.doh.apply", JsonDefaults.ToElement(new { url = native.Url, servers, probeHosts = Array.Empty<string>() }));
+				long sequence = Interlocked.Increment(ref _sequence);
+				ServiceResponse response;
+				try { response = ServiceResponse.Success(request.RequestId, sequence, await ExecuteNativeDohApplyAsync(request, sequence, token, targets)); }
+				catch (Exception error) { response = CreateFailureResponse(request.RequestId, sequence, error); }
+				await PersistMutationResponseAsync(request, Fingerprint(request), response, CancellationToken.None);
+				if (!response.Ok) throw new InvalidOperationException(response.Error?.Message ?? "Native bootstrap rotation failed.");
+				await _log.InfoAsync("Rotated custom native DoH bootstrap addresses after owned adapter readback; mode was preserved.", token);
+			}, cancellationToken);
+			return;
+		}
+		var ownership = await ReadDnsOwnedStateAsync(cancellationToken);
+		ownership?.Validate();
+		if (ownership == null || !ownership.Servers.All(server => IPAddress.IsLoopback(IPAddress.Parse(server)))) return;
+		var intents = await _serviceIntents.ReadAsync(cancellationToken);
+		if (!intents.Services.TryGetValue("EgoistShieldSystemDoH", out var intent) || !intent.Running) return;
+		string productRoot = ProtectedProductRoot.Resolve(_options.StateRoot);
+		string statePath = Path.Combine(productRoot, "Runtime", "SystemDoH", "state.json");
+		TrustedPath.AssertPathUnderRoot(statePath, productRoot, true);
+		var state = await AtomicJsonFile.ReadAsync<JsonElement>(statePath, cancellationToken);
+		if (state.ValueKind != JsonValueKind.Object || !state.TryGetProperty("url", out var currentUrl) || string.IsNullOrWhiteSpace(currentUrl.GetString())) return;
+		await _bootstrapRefresh.RunIfDueAsync("local", currentUrl.GetString()!, async token =>
+		{
+			var service = await RequireServiceController().StatusAsync("EgoistShieldSystemDoH", token);
+			if (!service.Installed || service.State != "running" || service.StartType != "auto")
+				throw new InvalidOperationException("Local bootstrap refresh deferred until the intended automatic DNS service is running.");
+			await RequireServiceController().AssertOwnedImagePathAsync(service.ServiceName, token);
+			if (await ProbeOwnedServiceAsync(service.ServiceName, token) != LocalServiceHealth.Responsive)
+				throw new InvalidOperationException("Local bootstrap refresh deferred until the owned DNS listener is responsive.");
+			var result = await _executeComponent(JsonDefaults.ToElement(new { component = "SystemDoH", method = "refreshBootstrap", args = Array.Empty<object>() }), false, token);
+			if (result.ValueKind != JsonValueKind.Object || !result.TryGetProperty("changed", out var changed))
+				throw new InvalidOperationException("DNS bootstrap refresh returned an invalid result.");
+			if (changed.ValueKind == JsonValueKind.True) await _log.InfoAsync("Refreshed custom local DoH bootstrap addresses after listener verification; mode was preserved.", token);
+		}, cancellationToken);
+	}
+
+	private async Task MaintainOwnedDnsAsync(CancellationToken cancellationToken)
+	{
+		if (!NetworkInterface.GetIsNetworkAvailable()) return;
+		var native = await _nativeDoh.ReadOwnedStateAsync(cancellationToken);
+		ValidateNativeDohOwnedState(native);
+		var local = native == null ? await ReadDnsOwnedStateAsync(cancellationToken) : null;
+		local?.Validate();
+		if (native == null && (local == null || !local.Servers.All(server => IPAddress.IsLoopback(IPAddress.Parse(server))))) return;
+		if (native == null)
+		{
+			var intents = await _serviceIntents.ReadAsync(cancellationToken);
+			if (intents.Services.TryGetValue("EgoistShieldSystemDoH", out var intent) && !intent.Running) return;
+			var status = await RequireServiceController().StatusAsync("EgoistShieldSystemDoH", cancellationToken);
+			if (!status.Installed || status.State != "running" ||
+				await ProbeOwnedServiceAsync("EgoistShieldSystemDoH", cancellationToken) != LocalServiceHealth.Responsive) return;
+		}
+		else
+		{
+			var entries = await _nativeDoh.ReadEntriesAsync(native.Servers, cancellationToken);
+			if (entries.Any(entry => entry.Existed && (!string.Equals(entry.DohTemplate, native.Url, StringComparison.OrdinalIgnoreCase) || entry.AllowFallbackToUdp || !entry.AutoUpgrade)))
+				return; // External template changes are never repaired over.
+			var missing = entries.Where(entry => !entry.Existed).Select(entry => entry.ServerAddress).ToArray();
+			if (missing.Length > 0)
+			{
+				await _nativeDoh.ConfigureAsync(native.Url, missing, cancellationToken);
+				await _log.InfoAsync("Restored missing owned native DoH registrations; adapter DNS was preserved.", cancellationToken);
+			}
+		}
+		var current = await _dns.ReadSnapshotAsync(cancellationToken);
+		var targets = DnsMaintenancePolicy.NewAutomaticAdapters(current, native?.OriginalDnsAdapters ?? local?.OriginalAdapters ?? Array.Empty<DnsAdapterSnapshot>());
+		if (targets.Length == 0) return;
+		string operation = native == null ? "dns.apply" : "dns.doh.apply";
+		object payload = native == null ? new { servers = local!.Servers, probeHosts = Array.Empty<string>() } :
+			new { url = native.Url, servers = native.Servers, probeHosts = Array.Empty<string>() };
+		var request = new ServiceRequest(1, "maintenance:" + Guid.NewGuid().ToString("N"), operation, JsonDefaults.ToElement(payload));
+		long sequence = Interlocked.Increment(ref _sequence);
+		ServiceResponse response;
+		try
+		{
+			object result = native == null ? await ExecuteDnsApplyAsync(request, sequence, cancellationToken, targets) :
+				await ExecuteNativeDohApplyAsync(request, sequence, cancellationToken, targets);
+			response = ServiceResponse.Success(request.RequestId, sequence, result);
+		}
+		catch (Exception error) { response = CreateFailureResponse(request.RequestId, sequence, error); }
+		await PersistMutationResponseAsync(request, Fingerprint(request), response, CancellationToken.None);
+		if (!response.Ok) throw new InvalidOperationException(response.Error?.Message ?? "Owned DNS maintenance failed.");
+		await _log.InfoAsync($"Enrolled {targets.Length} new automatic DNS adapter(s) using the saved owned provider; existing adapter settings were preserved.", cancellationToken);
+	}
+
+	private async Task<LocalServiceHealth> ProbeOwnedServiceAsync(string serviceName, CancellationToken cancellationToken)
+	{
+		if (serviceName == "EgoistShieldZapret") return LocalServiceHealth.ScmOnly;
+		string component = serviceName == "EgoistShieldSystemDoH" ? "SystemDoH" : "TelegramProxy";
+		string productRoot = ProtectedProductRoot.Resolve(_options.StateRoot);
+		string file = Path.Combine(productRoot, "Runtime", component,
+			component == "SystemDoH" ? "state.json" : "config.json");
+		if (!File.Exists(file)) return LocalServiceHealth.Unknown;
+		TrustedPath.AssertPathUnderRoot(file, productRoot, requireLeaf: true);
+		var config = await AtomicJsonFile.ReadAsync<JsonElement>(file, cancellationToken);
+		string hostKey = component == "SystemDoH" ? "localAddress" : "host";
+		string portKey = component == "SystemDoH" ? "localPort" : "port";
+		if (config.ValueKind != JsonValueKind.Object || !config.TryGetProperty(hostKey, out var host) ||
+			!IPAddress.TryParse(host.GetString(), out var address) || !IPAddress.IsLoopback(address) ||
+			!config.TryGetProperty(portKey, out var portValue) || !portValue.TryGetInt32(out int port) || port < 1 || port > 65535)
+			return LocalServiceHealth.Unknown;
+		if (component == "SystemDoH")
+		{
+			string runtimeConfigPath = Path.Combine(productRoot, "Runtime", component, "config.json");
+			TrustedPath.AssertPathUnderRoot(runtimeConfigPath, productRoot, requireLeaf: true);
+			var runtimeConfig = await AtomicJsonFile.ReadAsync<JsonElement>(runtimeConfigPath, cancellationToken);
+			if (runtimeConfig.ValueKind != JsonValueKind.Object || !runtimeConfig.TryGetProperty("dns", out var dns) ||
+				!dns.TryGetProperty("hosts", out var hosts) || !hosts.TryGetProperty("health.egoist.invalid", out var healthHost) ||
+				!(healthHost.ValueKind == JsonValueKind.String && healthHost.GetString() == "127.0.0.1" ||
+					healthHost.ValueKind == JsonValueKind.Array && healthHost.EnumerateArray().Any(value => value.ValueKind == JsonValueKind.String && value.GetString() == "127.0.0.1")))
+				return LocalServiceHealth.Unknown;
+		}
+		if (component == "SystemDoH")
+			return await LocalServiceHealthProbe.DnsAsync(address, port, TimeSpan.FromSeconds(3), cancellationToken);
+		_telegramListenerSnapshot ??= new WindowsServiceListenerSnapshot(serviceName);
+		return await OwnedTcpListenerProbe.ProbeSnapshotAsync(RequireServiceController().ReadOwnedExecutablePath(serviceName, cancellationToken),
+			address, port, TimeSpan.FromSeconds(8), token => _telegramListenerSnapshot.ReadAsync(port, token), cancellationToken);
+	}
+
+	private async Task<JsonElement> ExecuteComponentAsync(ServiceRequest request, CancellationToken cancellationToken)
+	{
+		bool query = request.Operation == "component.query";
+		string component = request.Payload.GetProperty("component").GetString() ?? "";
+		string method = request.Payload.GetProperty("method").GetString() ?? "";
+		string serviceName = component switch
+		{
+			"SystemDoH" => "EgoistShieldSystemDoH", "Zapret" => "EgoistShieldZapret",
+			"TelegramProxy" => "EgoistShieldTelegramProxy", _ => ""
+		};
+		var args = request.Payload.GetProperty("args");
+		bool localEnable = component == "SystemDoH" && !query && (method is "apply" or "restart" || method == "recover" &&
+			args.ValueKind == JsonValueKind.Array && args.GetArrayLength() > 0 && args[0].ValueKind == JsonValueKind.Object &&
+			args[0].TryGetProperty("enabled", out var desiredEnabled) && desiredEnabled.ValueKind == JsonValueKind.True);
+		if (localEnable && await _nativeDoh.ReadOwnedStateAsync(cancellationToken) != null)
+			throw new ServiceOperationException("DNS_MODE_CONFLICT", "Native DoH is already enabled; its protected mode must be stopped before enabling the local DNS service.");
+		bool off = !query && (method is "stop" or "stopService" or "removeService" or "stopAndRemove" ||
+			component == "Zapret" && (method is "startStandalone" or "restartStandalone" or "resetNetworkState" ||
+				method == "prepareForVpn" && args.ValueKind == JsonValueKind.Array && args.GetArrayLength() > 0 && args[0].ValueKind == JsonValueKind.True) ||
+			component == "SystemDoH" && method == "recover" && args.ValueKind == JsonValueKind.Array && args.GetArrayLength() > 0 &&
+				args[0].ValueKind == JsonValueKind.Object && args[0].TryGetProperty("enabled", out var enabled) && enabled.ValueKind == JsonValueKind.False);
+		if (off && serviceName.Length > 0) await _serviceIntents.SetRunningAsync(serviceName, false, cancellationToken);
+		JsonElement result = await _executeComponent(request.Payload, query, cancellationToken);
+		bool enablesService = !query && !off && (method is "start" or "startService" or "restart" or "apply" or "recover" or "installService" or "restoreAfterVpnIfNeeded");
+		if (enablesService && _services != null && serviceName.Length > 0)
+		{
+			var status = await _services.StatusAsync(serviceName, cancellationToken);
+			if (status.Installed && status.State == "running" && status.StartType == "auto")
+			{
+				await _services.AssertOwnedImagePathAsync(serviceName, cancellationToken);
+				await _serviceIntents.SetRunningAsync(serviceName, true, cancellationToken);
+			}
+		}
+		return result;
 	}
 
 	public async Task<ServiceResponse> DispatchAsync(ServiceRequest request, ClientIdentity identity, CancellationToken cancellationToken = default(CancellationToken))
@@ -307,7 +558,7 @@ internal sealed class OperationDispatcher : IDisposable
 			{
 			case "component.execute":
 			case "component.query":
-				obj = await _componentWorker.Value.ExecuteAsync(request.Payload, request.Operation == "component.query", cancellationToken);
+				obj = await ExecuteComponentAsync(request, cancellationToken);
 				break;
 			case "hello":
 				obj = new
@@ -327,7 +578,8 @@ internal sealed class OperationDispatcher : IDisposable
 					version = BuildInfo.Version,
 					processId = Environment.ProcessId,
 					startedAt = Program.StartedAt,
-					consoleMode = _options.ConsoleMode
+					consoleMode = _options.ConsoleMode,
+					supervision = _serviceSupervisor?.Describe()
 				};
 				break;
 			case "recovery.status":
@@ -400,12 +652,12 @@ internal sealed class OperationDispatcher : IDisposable
 		}
 	}
 
-	private async Task<object> ExecuteDnsApplyAsync(ServiceRequest request, long sequence, CancellationToken cancellationToken)
+	private async Task<object> ExecuteDnsApplyAsync(ServiceRequest request, long sequence, CancellationToken cancellationToken, DnsAdapterSnapshot[]? targetAdapters = null)
 	{
 		DnsApplyPayload dnsApplyPayload = request.Payload.Deserialize<DnsApplyPayload>(JsonDefaults.Options) ?? throw new ArgumentException("DNS payload is required.");
 		string[] servers = WindowsDnsController.ValidateServers(dnsApplyPayload.Servers ?? Array.Empty<string>());
 		string[] probeHosts = WindowsDnsController.ValidateProbeHosts(dnsApplyPayload.ProbeHosts ?? Array.Empty<string>());
-		DnsAdapterSnapshot[] original = await _dns.ReadSnapshotAsync(cancellationToken);
+		DnsAdapterSnapshot[] original = targetAdapters ?? await _dns.ReadSnapshotAsync(cancellationToken);
 		DnsOwnedState? previousOwnership = await ReadDnsOwnedStateAsync(cancellationToken);
 		previousOwnership?.Validate();
 		ActiveTransaction transaction = CreateTransaction(request, "dns", JsonDefaults.ToElement(new DnsOwnedTransactionSnapshot(original, previousOwnership)), JsonDefaults.ToElement(new { servers, probeHosts }), sequence);
@@ -567,12 +819,19 @@ internal sealed class OperationDispatcher : IDisposable
 
 	private async Task<object> ReadNativeDohStatusAsync(CancellationToken cancellationToken)
 	{
+		if (!WindowsNativeDohController.IsSupported)
+			return new { supported = false, hasIpv6DefaultRoute = false, enabled = false, verified = false, encrypted = false,
+				nativeManaged = true, url = (string?)null, servers = Array.Empty<string>(), adapters = Array.Empty<DnsAdapterSnapshot>(),
+				updatedAt = (DateTimeOffset?)null, fallbackToUdp = false };
 		NativeDohHealth nativeDohHealth = await ReadNativeDohHealthAsync(cancellationToken);
+		bool covered = nativeDohHealth.State != null && DnsMaintenancePolicy.FullyCovered(nativeDohHealth.Adapters, nativeDohHealth.State.Servers);
 		return new
 		{
+			supported = true,
+			hasIpv6DefaultRoute = await _nativeDoh.HasIpv6DefaultRouteAsync(cancellationToken),
 			enabled = ((object)nativeDohHealth.State != null),
-			verified = ((object)nativeDohHealth.State != null && nativeDohHealth.EntriesMatch && nativeDohHealth.DnsOwned),
-			encrypted = ((object)nativeDohHealth.State != null && nativeDohHealth.EntriesMatch),
+			verified = (covered && nativeDohHealth.EntriesMatch && nativeDohHealth.DnsOwned),
+			encrypted = (covered && nativeDohHealth.EntriesMatch && nativeDohHealth.DnsOwned),
 			nativeManaged = true,
 			url = nativeDohHealth.State?.Url,
 			servers = (nativeDohHealth.State?.Servers ?? Array.Empty<string>()),
@@ -582,15 +841,31 @@ internal sealed class OperationDispatcher : IDisposable
 		};
 	}
 
-	private async Task<object> ExecuteNativeDohApplyAsync(ServiceRequest request, long sequence, CancellationToken cancellationToken)
+	private async Task<object> ExecuteNativeDohApplyAsync(ServiceRequest request, long sequence, CancellationToken cancellationToken, DnsAdapterSnapshot[]? targetAdapters = null)
 	{
 		NativeDohApplyPayload nativeDohApplyPayload = request.Payload.Deserialize<NativeDohApplyPayload>(JsonDefaults.Options) ?? throw new ArgumentException("Native DoH payload is required.");
 		string url = WindowsNativeDohController.ValidateUrl(nativeDohApplyPayload.Url);
 		string[] servers = WindowsDnsController.ValidateServers(nativeDohApplyPayload.Servers ?? Array.Empty<string>());
 		string[] probeHosts = WindowsDnsController.ValidateProbeHosts(nativeDohApplyPayload.ProbeHosts ?? Array.Empty<string>());
-		DnsAdapterSnapshot[] originalDns = await _dns.ReadSnapshotAsync(cancellationToken);
+		DnsAdapterSnapshot[] originalDns = targetAdapters ?? await _dns.ReadSnapshotAsync(cancellationToken);
 		NativeDohOwnedState before = await _nativeDoh.ReadOwnedStateAsync(cancellationToken);
 		ValidateNativeDohOwnedState(before);
+		if (before != null && before.Servers.Select(server => IPAddress.Parse(server).AddressFamily).Distinct()
+			.Any(family => !servers.Any(server => IPAddress.Parse(server).AddressFamily == family)))
+			throw new ServiceOperationException("DNS_FAMILY_UNAVAILABLE", "The replacement provider has no verified address for an already managed IP family; existing encrypted DNS settings were preserved.");
+		if (before?.OriginalDnsAdapters is { Length: > 0 } previousBaseline && !servers.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(before.Servers))
+		{
+			var present = await _dns.ReadPresentSnapshotAsync(previousBaseline, cancellationToken);
+			if (present.Length != previousBaseline.Length)
+				throw new ServiceOperationException("DNS_ADAPTER_UNAVAILABLE", "Native provider addresses cannot be replaced until every recorded adapter is present; existing DoH registrations were preserved.");
+			// Disconnected but present owned adapters are migrated too. Otherwise
+			// removing an obsolete provider would break them on reconnect.
+			originalDns = originalDns.Concat(present.Where(adapter => DnsMatchesServers(new[] { adapter }, before.Servers)))
+				.DistinctBy(adapter => adapter.InterfaceGuid, StringComparer.OrdinalIgnoreCase).ToArray();
+		}
+		string localStatePath = Path.Combine(ProtectedProductRoot.Resolve(_options.StateRoot), "Runtime", "SystemDoH", "state.json");
+		if (File.Exists(localStatePath) || _services != null && (await _services.StatusAsync("EgoistShieldSystemDoH", cancellationToken)).Installed)
+			throw new ServiceOperationException("DNS_MODE_CONFLICT", "The local DNS service is already configured; its protected mode must be stopped before enabling native DoH.");
 		string[] rawServers = servers.Concat(before?.Servers ?? Array.Empty<string>()).Distinct<string>(StringComparer.OrdinalIgnoreCase).ToArray();
 		NativeDohEntrySnapshot[] beforeEntries = await _nativeDoh.ReadEntriesAsync(rawServers, cancellationToken);
 		NativeDohTransactionSnapshot value = new NativeDohTransactionSnapshot(originalDns, before, beforeEntries);
@@ -600,28 +875,28 @@ internal sealed class OperationDispatcher : IDisposable
 		{
 			await _journal.UpdatePhaseAsync(transaction, TransactionPhase.Applying, null, cancellationToken);
 			NativeDohEntrySnapshot[] originalEntries = BuildNativeDohOriginalEntries(before, beforeEntries, servers);
-			if ((object)before != null)
-			{
-				bool urlChanged = !string.Equals(before.Url, url, StringComparison.OrdinalIgnoreCase);
-				string[] array = before.Servers.Where((string server) => urlChanged || !servers.Contains<string>(server, StringComparer.OrdinalIgnoreCase)).ToArray();
-				if (array.Length != 0)
-				{
-					await _nativeDoh.RemoveOwnedEntriesAsync(SliceNativeDohOwnedState(before, array), cancellationToken);
-				}
-			}
-			await _nativeDoh.ConfigureAsync(url, servers, cancellationToken);
+			// The old provider remains registered while the new one is configured
+			// and applied. Overlapping IPs can replace only our exact old template.
+			await _nativeDoh.ConfigureAsync(url, servers, cancellationToken, before);
 			DnsAdapterSnapshot[] actual = await _dns.ApplyAsync(originalDns, servers, probeHosts, cancellationToken);
-			NativeDohOwnedState state = new NativeDohOwnedState(1, "EgoistShield", url, servers, DateTimeOffset.UtcNow, originalEntries, before?.OriginalDnsAdapters ?? originalDns);
-			await _nativeDoh.WriteOwnedStateAsync(state, cancellationToken);
+			var oldDnsOwnership = before?.OriginalDnsAdapters == null ? null : new DnsOwnedState(1, "EgoistShield", before.Servers, before.OriginalDnsAdapters);
+			var baseline = DnsOwnedState.Capture(oldDnsOwnership, originalDns, servers).OriginalAdapters;
+			NativeDohOwnedState state = new NativeDohOwnedState(1, "EgoistShield", url, servers, DateTimeOffset.UtcNow, originalEntries, baseline);
 			if (!WindowsNativeDohController.EntriesMatch(await _nativeDoh.ReadEntriesAsync(servers, cancellationToken), state))
 			{
 				throw new InvalidOperationException("Windows native DoH post-configuration verification failed.");
 			}
+			if (before != null)
+			{
+				string[] obsolete = before.Servers.Where(server => !servers.Contains(server, StringComparer.OrdinalIgnoreCase)).ToArray();
+				if (obsolete.Length > 0) await _nativeDoh.RemoveOwnedEntriesAsync(SliceNativeDohOwnedState(before, obsolete), cancellationToken);
+			}
+			await _nativeDoh.WriteOwnedStateAsync(state, cancellationToken);
 			object result = new
 			{
 				enabled = true,
-				verified = true,
-				encrypted = true,
+				verified = DnsMaintenancePolicy.FullyCovered(actual, servers),
+				encrypted = DnsMaintenancePolicy.FullyCovered(actual, servers),
 				nativeManaged = true,
 				url = url,
 				servers = servers,
@@ -658,7 +933,7 @@ internal sealed class OperationDispatcher : IDisposable
 		{
 			await _journal.UpdatePhaseAsync(transaction, TransactionPhase.Applying, null, cancellationToken);
 			bool dnsOwned = (object)before != null && DnsMatchesServers(originalDns, before.Servers);
-			DnsAdapterSnapshot[] array2 = ((!dnsOwned) ? originalDns : (await RestoreNativeDohDnsBaselineAsync(before, originalDns, cancellationToken)));
+			DnsAdapterSnapshot[] array2 = before == null ? originalDns : await RestoreNativeDohDnsBaselineAsync(before, originalDns, cancellationToken);
 			DnsAdapterSnapshot[] actual = array2;
 			string[] removed;
 			string[] preserved;
@@ -700,6 +975,10 @@ internal sealed class OperationDispatcher : IDisposable
 	{
 		string serviceName = ReadOwnedServiceName(request);
 		OwnedServiceController services = RequireServiceController();
+		// Persist explicit off before any control command, including a failed stop.
+		// Recovery must not turn a user's pending stop back into an enabled service.
+		if (desiredState is "stopped" or "not-installed")
+			await _serviceIntents.SetRunningAsync(serviceName, false, cancellationToken);
 		ActiveTransaction transaction = CreateTransaction(request, "owned-service", JsonDefaults.ToElement(await services.StatusAsync(serviceName, cancellationToken)), JsonDefaults.ToElement(new
 		{
 			serviceName = serviceName,
@@ -709,6 +988,7 @@ internal sealed class OperationDispatcher : IDisposable
 		try
 		{
 			await _journal.UpdatePhaseAsync(transaction, TransactionPhase.Applying, null, cancellationToken);
+			if (desiredState == "running") await _serviceIntents.SetRunningAsync(serviceName, true, cancellationToken);
 			OwnedServiceStatus after = desiredState switch
 			{
 				"installed" => await services.InstallAsync(serviceName, cancellationToken), 
@@ -722,6 +1002,7 @@ internal sealed class OperationDispatcher : IDisposable
 		}
 		catch (Exception failure)
 		{
+			if (desiredState == "running") await _serviceIntents.SetRunningAsync(serviceName, false, CancellationToken.None);
 			await RollbackAsync(transaction, failure, cancellationToken);
 			throw;
 		}
@@ -758,7 +1039,7 @@ internal sealed class OperationDispatcher : IDisposable
 				try
 				{
 					await _journal.UpdatePhaseAsync(repair, TransactionPhase.Applying, null, cancellationToken);
-					DnsAdapterSnapshot[] array = ((!health.DnsOwned) ? health.Adapters : (await RestoreNativeDohDnsBaselineAsync(health.State, health.Adapters, cancellationToken)));
+					DnsAdapterSnapshot[] array = await RestoreNativeDohDnsBaselineAsync(health.State, health.Adapters, cancellationToken);
 					DnsAdapterSnapshot[] actual = array;
 					string[] removed;
 					string[] preserved;
@@ -931,7 +1212,9 @@ internal sealed class OperationDispatcher : IDisposable
 					}
 					else
 					{
-						await _dns.RestoreFromExpectedSnapshotAsync(nativeBefore.Adapters, array, grace);
+						var restored = NativeDohRestoreTargets(nativeBefore.OwnedState!, nativeBefore.Adapters);
+						var expected = nativeBefore.Adapters.Select(adapter => restored.SingleOrDefault(target => string.Equals(target.InterfaceGuid, adapter.InterfaceGuid, StringComparison.OrdinalIgnoreCase)) ?? adapter).ToArray();
+						await _dns.RestoreFromExpectedSnapshotAsync(nativeBefore.Adapters, expected, grace);
 					}
 				}
 				break;
@@ -1227,15 +1510,20 @@ internal sealed class OperationDispatcher : IDisposable
 		DnsAdapterSnapshot[] originalDnsAdapters = state.OriginalDnsAdapters;
 		if (originalDnsAdapters != null && originalDnsAdapters.Length > 0)
 		{
-			DnsAdapterSnapshot[] array = WindowsDnsController.IntersectByStableIdentity(originalDnsAdapters, current);
-			if (array.Length != 0)
+			var targets = NativeDohRestoreTargets(state, current);
+			if (targets.Length != 0)
 			{
-				await _dns.RestoreAsync(array, "dns.apply", state.Servers, cancellationToken);
+				var expected = WindowsDnsController.IntersectByStableIdentity(current, targets);
+				await _dns.RestoreFromExpectedSnapshotAsync(targets, expected, cancellationToken);
 			}
 			return await _dns.ReadSnapshotAsync(cancellationToken);
 		}
-		return await _dns.ResetAsync(current, cancellationToken);
+		return DnsMatchesServers(current, state.Servers) ? await _dns.ResetAsync(current, cancellationToken) : current;
 	}
+
+	private static DnsAdapterSnapshot[] NativeDohRestoreTargets(NativeDohOwnedState state, DnsAdapterSnapshot[] current) =>
+		new DnsOwnedState(1, "EgoistShield", state.Servers, state.OriginalDnsAdapters ?? Array.Empty<DnsAdapterSnapshot>())
+			.RestoreTargets(current, out _, repairLoopback: false);
 
 	private static void ValidateNativeDohOwnedState(NativeDohOwnedState? state)
 	{
@@ -1340,6 +1628,7 @@ internal sealed class OperationDispatcher : IDisposable
 
 	public void Dispose()
 	{
+		if (_serviceSupervisor != null) NetworkChange.NetworkAddressChanged -= OnNetworkAddressChanged;
 		_mutationLock.Dispose();
 		if (_componentWorker.IsValueCreated)
 		{

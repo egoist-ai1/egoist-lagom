@@ -1,0 +1,3 @@
+PASS: 10 Telegram ownership checks for invoke-final-silent-reinstall.ps1
+PASS: 10 Telegram ownership checks for owned-cleanup.ps1
+Telegram upgrade ownership: 20 checks passed; actual local TCP, no service or registry mutation.

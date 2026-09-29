@@ -80,9 +80,9 @@ rendererSource=rendererSource.replaceAll('3.5.4',packageVersion);
 const aboutFallback = /Qf = `[^`]*`, \$f = `[^`]*`, ep = \[\[[^\n]*\]\];/;
 if (!aboutFallback.test(rendererSource)) throw new Error('About dialog version/date fallback boundary missing.');
 const releaseNotes = [
-  'Автоподбор проверяет все 23 профиля дважды и рекомендует вариант по покрытию и отклику.',
-  'Проверка голосового TCP Discord учитывает свежий адрес сервера; профиль EGOIST MIX использует исправленную стратегию.',
-  'Кнопка рекомендации и отчёт по профилям адаптированы для узких окон.'
+  'Фоновый Core контролирует собственные службы и локальные слушатели с ограничением повторных перезапусков.',
+  'Статус соединения учитывает готовность компонента; отключение и ошибки переключения подтверждаются результатом операции.',
+  'Прерванная загрузка обновления продолжается автоматически с проверкой диапазона и целостности.'
 ];
 rendererSource = rendererSource.replace(aboutFallback,
   `Qf = ${JSON.stringify(packageVersion)}, $f = ${JSON.stringify(buildDate)}, ep = ${JSON.stringify([[packageVersion, buildDate, releaseNotes]])};`);
@@ -94,7 +94,7 @@ await fs.mkdir('.vite/renderer/main_window/assets/fonts', { recursive: true });
 for (const subset of ['latin', 'cyrillic', 'cyrillic-ext']) await fs.copyFile(`node_modules/@fontsource-variable/unbounded/files/unbounded-${subset}-wght-normal.woff2`, `.vite/renderer/main_window/assets/fonts/unbounded-${subset}.woff2`);
 await fs.copyFile('node_modules/@fontsource-variable/unbounded/LICENSE', '.vite/renderer/main_window/assets/fonts/Unbounded-OFL.txt');
 await fs.mkdir('recovery/official-app/resources/installer', { recursive: true });
-await fs.copyFile('scratch/Unbounded.ttf', 'recovery/official-app/resources/installer/Unbounded.ttf');
+await fs.copyFile('resources/installer/Unbounded.ttf', 'recovery/official-app/resources/installer/Unbounded.ttf');
 await build({ stdin: { contents: "export { gsap } from 'gsap';", resolveDir: root }, outfile: '.vite/renderer/main_window/assets/shield-motion.js', platform: 'browser', format: 'iife', globalName: 'ShieldMotion', bundle: true, minify: true });
 const rendererHtml = '.vite/renderer/main_window/index.html';
 await fs.writeFile(rendererHtml, (await fs.readFile(rendererHtml, 'utf8')).replace(/<title>.*?<\/title>/, '<title>Egoist Lagom</title>').replace(/<link[^>]+href="\.\/assets\/brand\.css"[^>]*>\s*/g, '').replace(/<script[^>]+src="\.\/assets\/shield-motion\.js"[^>]*><\/script>\s*/g, '').replace('</head>', '<link rel="stylesheet" href="./assets/brand.css">\n<script src="./assets/shield-motion.js"></script>\n  </head>'));

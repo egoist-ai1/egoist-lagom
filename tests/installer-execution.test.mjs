@@ -19,7 +19,7 @@ test('direct interactive install hands a sole-local-DNS upgrade to the protected
   const source=await fs.readFile('src/installer/setup.nsi','utf8');
   const init=source.match(/Function \.onInit[\s\S]*?FunctionEnd/)?.[0] ?? '';
   assert.match(source,/!macro RunProtectedReinstallHandoff/);
-  assert.match(source,/-EmbeddedRelease -InstallerUiPath "\$PLUGINSDIR\\ModernInstaller\.exe" -InstallerFontPath "\$PLUGINSDIR\\Unbounded\.ttf" -HandoffSignalPath "\$PLUGINSDIR\\handoff-started\.flag" -RunAfterPath "\$PLUGINSDIR\\run_after\.txt" -DelaySeconds 8/);
+  assert.match(source,/-EmbeddedRelease -InstallerUiDirectory "\$PLUGINSDIR" -DelaySeconds 8/);
   assert.match(init,/\$PhaseResult == "54"[\s\S]*?\$\{AndIfNot\} \$\{Silent\}[\s\S]*?!insertmacro RunProtectedReinstallHandoff/);
   assert.equal((init.match(/!insertmacro RunProtectedReinstallHandoff/g) ?? []).length,1);
   assert.match(init,/The \/S[\s\S]*?preventing recursive dispatch/);
@@ -58,7 +58,7 @@ test('production NSIS handoff passes the exact running installer and launch pref
     const nsi=path.join(dir,'fixture.nsi');
     const fixtureVersion='9.8.7';
     const psMarker=marker.replaceAll("'","''");
-    await fs.writeFile(helper,`param([string]$InstallerPath,[string]$ExpectedVersion,[switch]$EmbeddedRelease,[string]$InstallerUiPath,[string]$InstallerFontPath,[string]$HandoffSignalPath,[string]$RunAfterPath,[int]$DelaySeconds)\n[IO.File]::WriteAllText('${psMarker}',([ordered]@{installer=$InstallerPath;version=$ExpectedVersion;embedded=[bool]$EmbeddedRelease;ui=$InstallerUiPath;font=$InstallerFontPath;signal=$HandoffSignalPath;runAfter=$RunAfterPath;delay=$DelaySeconds}|ConvertTo-Json -Compress),[Text.UTF8Encoding]::new($false))\nexit 0\n`);
+    await fs.writeFile(helper,`param([string]$InstallerPath,[string]$ExpectedVersion,[switch]$EmbeddedRelease,[string]$InstallerUiDirectory,[int]$DelaySeconds)\n[IO.File]::WriteAllText('${psMarker}',([ordered]@{installer=$InstallerPath;version=$ExpectedVersion;embedded=[bool]$EmbeddedRelease;uiDirectory=$InstallerUiDirectory;runAfterValue=[IO.File]::ReadAllText((Join-Path $InstallerUiDirectory 'run_after.txt'));delay=$DelaySeconds}|ConvertTo-Json -Compress),[Text.UTF8Encoding]::new($false))\nexit 0\n`);
     await fs.writeFile(nsi,`\ufeffUnicode true\n!define PRODUCT_VERSION "${fixtureVersion}"\n!include "x64.nsh"\nName "Shield handoff fixture"\nOutFile "${exe}"\nRequestExecutionLevel user\nVar HandoffResult\n${handoff}\nFunction .onInit\nInitPluginsDir\nFile /oname=$PLUGINSDIR\\invoke-final-silent-reinstall.ps1 "${helper}"\nFileOpen $0 "$PLUGINSDIR\\run_after.txt" w\nFileWrite $0 "1"\nFileClose $0\n!insertmacro RunProtectedReinstallHandoff\nSetErrorLevel $HandoffResult\nQuit\nFunctionEnd\nSection\nSectionEnd\n`);
     const compiler=process.env.SHIELD_MAKENSIS || path.join(process.env.LOCALAPPDATA,'electron-builder/Cache/nsis-3.0.4.1/nsis-3.0.4.1-1mx3n/Bin/makensis.exe');
     await exec(compiler,['/V2','/INPUTCHARSET','UTF8',nsi],options);
@@ -67,10 +67,8 @@ test('production NSIS handoff passes the exact running installer and launch pref
     assert.equal(path.resolve(observed.installer),path.resolve(exe));
     assert.equal(observed.version,fixtureVersion);
     assert.equal(observed.embedded,true);
-    assert.equal(path.basename(observed.ui),'ModernInstaller.exe');
-    assert.equal(path.basename(observed.font),'Unbounded.ttf');
-    assert.equal(path.basename(observed.signal),'handoff-started.flag');
-    assert.equal(path.basename(observed.runAfter),'run_after.txt');
+    assert.equal(path.isAbsolute(observed.uiDirectory),true);
+    assert.equal(observed.runAfterValue.trim(),'1');
     assert.equal(observed.delay,8);
   } finally {await fs.rm(dir,{recursive:true,force:true});}
 });

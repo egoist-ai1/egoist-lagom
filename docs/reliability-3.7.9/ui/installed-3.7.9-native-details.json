@@ -1,0 +1,3975 @@
+[
+  {
+    "stage": "hover-final-widget",
+    "createdAt": "2026-09-29T16:11:24.840Z",
+    "version": "3.7.9",
+    "renderer": "152.0.7977.130",
+    "instance": {
+      "pid": 47336,
+      "startTime": "2026-09-29T16:07:26.0224761Z",
+      "targetId": "54AE00A26A54CDFE85D6F53AF6EF0382"
+    },
+    "nativeBefore": {
+      "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "electron": "44.4.5",
+      "chromium": "152.0.7977.130",
+      "node": "24.21.0",
+      "visible": false,
+      "focused": false,
+      "minimized": false,
+      "maximized": false,
+      "contentSize": [
+        300,
+        370
+      ],
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    "nativeAfter": {
+      "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "electron": "44.4.5",
+      "chromium": "152.0.7977.130",
+      "node": "24.21.0",
+      "visible": false,
+      "focused": false,
+      "minimized": false,
+      "maximized": false,
+      "contentSize": [
+        300,
+        370
+      ],
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    "testCondition": "Native Electron webContents background throttling temporarily disabled for the audit; native window remains hidden and unfocused. The Page Visibility API follows Electron behavior. Native capture uses stayHidden:true and stayAwake:true. Throttling is restored at the end.",
+    "limits": [
+      "Native hidden renderer measurements do not represent foreground/DWM frame performance.",
+      "Window geometry is actual native geometry; no viewport/media/state emulation is used.",
+      "No connection, profile, network-configuration, service or clipboard mutation is requested; production read-only status IPC and reversible view navigation are used.",
+      "Raw screen captures are private and excluded from public evidence."
+    ],
+    "scopeClarification": "The UI auditor requests real read-only status IPC and reversible view navigation. It requests no connection, profile, network-configuration, service or clipboard mutations; the application may continue its normal autonomous maintenance.",
+    "auditCompleted": true,
+    "pageErrorCount": 0,
+    "observedBefore": {
+      "version": {
+        "version": "3.7.9",
+        "buildDate": "29.09.2026"
+      },
+      "shield": {
+        "busy": false,
+        "running": true
+      },
+      "vpn": {
+        "connected": false
+      },
+      "dns": {
+        "running": true,
+        "verified": true,
+        "serviceRunning": true,
+        "serviceInstalled": true
+      },
+      "telegram": {
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "serviceRunning": true,
+        "serviceInstalled": true,
+        "observedAt": "2026-09-29T16:11:26.491Z",
+        "listenerOwnership": "owned",
+        "portConflict": {
+          "available": true,
+          "ownerPresent": false
+        },
+        "lastErrorPresent": false
+      },
+      "zapret": {
+        "runtimeReady": true,
+        "serviceRunning": true,
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "serviceInstalled": true,
+        "winwsRunning": true
+      }
+    },
+    "observedAfter": {
+      "version": {
+        "version": "3.7.9",
+        "buildDate": "29.09.2026"
+      },
+      "shield": {
+        "busy": false,
+        "running": true
+      },
+      "vpn": {
+        "connected": false
+      },
+      "dns": {
+        "running": true,
+        "verified": true,
+        "serviceRunning": true,
+        "serviceInstalled": true
+      },
+      "telegram": {
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "serviceRunning": true,
+        "serviceInstalled": true,
+        "observedAt": "2026-09-29T16:11:30.538Z",
+        "listenerOwnership": "owned",
+        "portConflict": {
+          "available": true,
+          "ownerPresent": false
+        },
+        "lastErrorPresent": false
+      },
+      "zapret": {
+        "runtimeReady": true,
+        "serviceRunning": true,
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "serviceInstalled": true,
+        "winwsRunning": true
+      }
+    },
+    "layouts": [
+      {
+        "label": "initial",
+        "screen": "widget",
+        "width": 300,
+        "height": 370,
+        "pageHidden": true,
+        "reducedMotion": false,
+        "widgetPaint": {
+          "phase": "connected",
+          "errorPresent": false,
+          "checkOpacity": "1",
+          "checkDashoffset": "0px",
+          "checkTransform": "none",
+          "emblemOpacity": "1",
+          "statusOpacity": "1"
+        },
+        "contentStageRect": null,
+        "visibleControlCount": 6,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 300,
+            "height": 370
+          },
+          "visible": false,
+          "focused": false
+        }
+      }
+    ],
+    "hiddenRendererSamples": [
+      {
+        "label": "widget-idle",
+        "pageHidden": true,
+        "elapsedMs": 2215.1000000089407,
+        "frameCallbacks": 133,
+        "gapP95Ms": 16.79999999998836,
+        "maxGapMs": 16.89999999999418,
+        "longTaskCount": 0,
+        "maxLongTaskMs": null,
+        "activeAnimations": 0
+      }
+    ],
+    "navigationObservations": [],
+    "checks": [
+      {
+        "name": "same-readonly-service-flags-before-after",
+        "pass": true
+      },
+      {
+        "name": "packaged-main-hash-unchanged-during-audit",
+        "pass": true
+      },
+      {
+        "name": "initial-view-restored",
+        "pass": true
+      }
+    ],
+    "restoredView": {
+      "widget": true,
+      "screen": null,
+      "hidden": false,
+      "visibility": "visible",
+      "width": 300,
+      "height": 370
+    },
+    "pageVisibilityRestoration": {
+      "before": "hidden",
+      "after": "visible",
+      "note": "Recorded Electron Page Visibility behavior; capture may consider the page visible while the native window remains hidden."
+    }
+  },
+  {
+    "stage": "hover-final-full-corrected",
+    "createdAt": "2026-09-29T16:15:40.332Z",
+    "version": "3.7.9",
+    "renderer": "152.0.7977.130",
+    "instance": {
+      "pid": 47336,
+      "startTime": "2026-09-29T16:07:26.0224761Z",
+      "targetId": "54AE00A26A54CDFE85D6F53AF6EF0382"
+    },
+    "nativeBefore": {
+      "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "electron": "44.4.5",
+      "chromium": "152.0.7977.130",
+      "node": "24.21.0",
+      "visible": false,
+      "focused": false,
+      "minimized": false,
+      "maximized": false,
+      "contentSize": [
+        1360,
+        900
+      ],
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    "nativeAfter": {
+      "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "electron": "44.4.5",
+      "chromium": "152.0.7977.130",
+      "node": "24.21.0",
+      "visible": false,
+      "focused": false,
+      "minimized": false,
+      "maximized": false,
+      "contentSize": [
+        1360,
+        900
+      ],
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    "testCondition": "Native Electron webContents background throttling temporarily disabled for the audit; native window remains hidden and unfocused. The Page Visibility API follows Electron behavior. Native capture uses stayHidden:true and stayAwake:true. Throttling is restored at the end.",
+    "limits": [
+      "Native hidden renderer measurements do not represent foreground/DWM frame performance.",
+      "Window geometry is actual native geometry; no viewport/media/state emulation is used.",
+      "No connection, profile, network-configuration, service or clipboard mutation is requested; production read-only status IPC and reversible view navigation are used.",
+      "Raw screen captures are private and excluded from public evidence."
+    ],
+    "scopeClarification": "The UI auditor requests real read-only status IPC and reversible view navigation. It requests no connection, profile, network-configuration, service or clipboard mutations; the application may continue its normal autonomous maintenance.",
+    "auditCompleted": true,
+    "pageErrorCount": 0,
+    "observedBefore": {
+      "version": {
+        "version": "3.7.9",
+        "buildDate": "29.09.2026"
+      },
+      "shield": {
+        "busy": false,
+        "running": true
+      },
+      "vpn": {
+        "connected": false
+      },
+      "dns": {
+        "running": true,
+        "verified": true,
+        "serviceRunning": true,
+        "serviceInstalled": true
+      },
+      "telegram": {
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "serviceRunning": true,
+        "serviceInstalled": true,
+        "observedAt": "2026-09-29T16:15:41.896Z",
+        "listenerOwnership": "owned",
+        "portConflict": {
+          "available": true,
+          "ownerPresent": false
+        },
+        "lastErrorPresent": false
+      },
+      "zapret": {
+        "runtimeReady": true,
+        "serviceRunning": true,
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "serviceInstalled": true,
+        "winwsRunning": true
+      }
+    },
+    "observedAfter": {
+      "version": {
+        "version": "3.7.9",
+        "buildDate": "29.09.2026"
+      },
+      "shield": {
+        "busy": false,
+        "running": true
+      },
+      "vpn": {
+        "connected": false
+      },
+      "dns": {
+        "running": true,
+        "verified": true,
+        "serviceRunning": true,
+        "serviceInstalled": true
+      },
+      "telegram": {
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "serviceRunning": true,
+        "serviceInstalled": true,
+        "observedAt": "2026-09-29T16:16:15.575Z",
+        "listenerOwnership": "owned",
+        "portConflict": {
+          "available": true,
+          "ownerPresent": false
+        },
+        "lastErrorPresent": false
+      },
+      "zapret": {
+        "runtimeReady": true,
+        "serviceRunning": true,
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "serviceInstalled": true,
+        "winwsRunning": true
+      }
+    },
+    "layouts": [
+      {
+        "label": "initial",
+        "screen": "settings",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-settings",
+        "screen": "settings",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-dashboard",
+        "screen": "dashboard",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 41,
+          "width": 1174,
+          "height": 858
+        },
+        "visibleControlCount": 23,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-vpn",
+        "screen": "vpn",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 58,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-dns",
+        "screen": "dns",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 26,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-zapret",
+        "screen": "zapret",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 32,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-telegram-proxy",
+        "screen": "telegram-proxy",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 19,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-before-readonly-tabs",
+        "screen": "zapret",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 32,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-routes",
+        "screen": "zapret",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 41,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-history-expanded",
+        "screen": "zapret",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 32,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "telegram-before-advanced",
+        "screen": "telegram-proxy",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 19,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "telegram-advanced",
+        "screen": "telegram-proxy",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 28,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "overview-before-server-picker",
+        "screen": "dashboard",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 41,
+          "width": 1174,
+          "height": 858
+        },
+        "visibleControlCount": 23,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "server-picker",
+        "screen": "dashboard",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 41,
+          "width": 1174,
+          "height": 858
+        },
+        "visibleControlCount": 8,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "dns-before-confirmation",
+        "screen": "dns",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 26,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "dns-confirmation",
+        "screen": "dns",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 3,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "settings-before-keyboard-help",
+        "screen": "settings",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "about",
+        "screen": "settings",
+        "width": 1360,
+        "height": 900,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1174,
+          "height": 817.6
+        },
+        "visibleControlCount": 2,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1360,
+            "height": 900
+          },
+          "visible": false,
+          "focused": false
+        }
+      }
+    ],
+    "hiddenRendererSamples": [
+      {
+        "label": "initial-full-idle",
+        "pageHidden": false,
+        "elapsedMs": 2201,
+        "frameCallbacks": 3,
+        "gapP95Ms": 1000.9000000000233,
+        "maxGapMs": 1009.6999999999534,
+        "longTaskCount": 0,
+        "maxLongTaskMs": null,
+        "activeAnimations": 0
+      },
+      {
+        "label": "full-idle",
+        "pageHidden": false,
+        "elapsedMs": 2202.8999999910593,
+        "frameCallbacks": 3,
+        "gapP95Ms": 1000.7999999999884,
+        "maxGapMs": 1000.9000000000233,
+        "longTaskCount": 0,
+        "maxLongTaskMs": null,
+        "activeAnimations": 0
+      }
+    ],
+    "navigationObservations": [
+      {
+        "screen": "settings",
+        "elapsedMs": 9,
+        "hidden": false
+      },
+      {
+        "screen": "dashboard",
+        "elapsedMs": 11,
+        "hidden": false
+      },
+      {
+        "screen": "vpn",
+        "elapsedMs": 39,
+        "hidden": false
+      },
+      {
+        "screen": "dns",
+        "elapsedMs": 41,
+        "hidden": false
+      },
+      {
+        "screen": "zapret",
+        "elapsedMs": 20,
+        "hidden": false
+      },
+      {
+        "screen": "telegram-proxy",
+        "elapsedMs": 16,
+        "hidden": false
+      },
+      {
+        "screen": "zapret",
+        "elapsedMs": 10,
+        "hidden": false
+      },
+      {
+        "screen": "telegram-proxy",
+        "elapsedMs": 9,
+        "hidden": false
+      },
+      {
+        "screen": "dashboard",
+        "elapsedMs": 11,
+        "hidden": false
+      },
+      {
+        "screen": "dns",
+        "elapsedMs": 15,
+        "hidden": false
+      },
+      {
+        "screen": "settings",
+        "elapsedMs": 9,
+        "hidden": false
+      }
+    ],
+    "checks": [
+      {
+        "name": "actual-sidebar-icons-native-crop-visibility",
+        "pass": true,
+        "method": "Electron.webContents.capturePage",
+        "stayHidden": true,
+        "pageConsideredVisibleDuringCapture": false,
+        "size": {
+          "width": 167,
+          "height": 248
+        },
+        "visible": false,
+        "focused": false
+      },
+      {
+        "name": "telegram-secret-remains-password-input",
+        "pass": true
+      },
+      {
+        "name": "server-picker-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "dns-confirmation-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "all-real-settings-help-tooltips-fit",
+        "pass": true,
+        "tooltips": [
+          {
+            "index": "Запускать при старте Windows",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Сворачивать в трей",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Автоподключение маршрута",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Переподключаться при обрыве",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Показывать уведомления",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Передавать HWID провайдеру подписки",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Автообновление приложения и компонентов",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          }
+        ]
+      },
+      {
+        "name": "all-real-settings-help-escape-keeps-focus",
+        "pass": true
+      },
+      {
+        "name": "actual-version-dialog-native-crop-visibility",
+        "pass": true,
+        "method": "Electron.webContents.capturePage",
+        "stayHidden": true,
+        "pageConsideredVisibleDuringCapture": false,
+        "size": {
+          "width": 500,
+          "height": 537
+        },
+        "visible": false,
+        "focused": false
+      },
+      {
+        "name": "dialog-action-retains-dom-focus-during-live-background-updates",
+        "pass": true
+      },
+      {
+        "name": "about-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "same-readonly-service-flags-before-after",
+        "pass": true
+      },
+      {
+        "name": "packaged-main-hash-unchanged-during-audit",
+        "pass": true
+      },
+      {
+        "name": "full-view-retained-for-parent-native-resize",
+        "pass": true
+      }
+    ],
+    "restoredView": {
+      "widget": false,
+      "screen": "settings",
+      "hidden": false,
+      "visibility": "visible",
+      "width": 1360,
+      "height": 900
+    },
+    "pageVisibilityRestoration": {
+      "before": "visible",
+      "after": "visible",
+      "note": "Recorded Electron Page Visibility behavior; capture may consider the page visible while the native window remains hidden."
+    }
+  },
+  {
+    "stage": "hover-final-minimum",
+    "createdAt": "2026-09-29T16:16:55.314Z",
+    "version": "3.7.9",
+    "renderer": "152.0.7977.130",
+    "instance": {
+      "pid": 47336,
+      "startTime": "2026-09-29T16:07:26.0224761Z",
+      "targetId": "54AE00A26A54CDFE85D6F53AF6EF0382"
+    },
+    "nativeBefore": {
+      "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "electron": "44.4.5",
+      "chromium": "152.0.7977.130",
+      "node": "24.21.0",
+      "visible": false,
+      "focused": false,
+      "minimized": false,
+      "maximized": false,
+      "contentSize": [
+        1000,
+        680
+      ],
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    "nativeAfter": {
+      "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "electron": "44.4.5",
+      "chromium": "152.0.7977.130",
+      "node": "24.21.0",
+      "visible": false,
+      "focused": false,
+      "minimized": false,
+      "maximized": false,
+      "contentSize": [
+        1000,
+        680
+      ],
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    "testCondition": "Native Electron webContents background throttling temporarily disabled for the audit; native window remains hidden and unfocused. The Page Visibility API follows Electron behavior. Native capture uses stayHidden:true and stayAwake:true. Throttling is restored at the end.",
+    "limits": [
+      "Native hidden renderer measurements do not represent foreground/DWM frame performance.",
+      "Window geometry is actual native geometry; no viewport/media/state emulation is used.",
+      "No connection, profile, network-configuration, service or clipboard mutation is requested; production read-only status IPC and reversible view navigation are used.",
+      "Raw screen captures are private and excluded from public evidence."
+    ],
+    "scopeClarification": "The UI auditor requests real read-only status IPC and reversible view navigation. It requests no connection, profile, network-configuration, service or clipboard mutations; the application may continue its normal autonomous maintenance.",
+    "auditCompleted": true,
+    "pageErrorCount": 0,
+    "observedBefore": {
+      "version": {
+        "version": "3.7.9",
+        "buildDate": "29.09.2026"
+      },
+      "shield": {
+        "busy": false,
+        "running": true
+      },
+      "vpn": {
+        "connected": false
+      },
+      "dns": {
+        "running": true,
+        "verified": true,
+        "serviceRunning": true,
+        "serviceInstalled": true
+      },
+      "telegram": {
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "serviceRunning": true,
+        "serviceInstalled": true,
+        "observedAt": "2026-09-29T16:16:58.300Z",
+        "listenerOwnership": "owned",
+        "portConflict": {
+          "available": true,
+          "ownerPresent": false
+        },
+        "lastErrorPresent": false
+      },
+      "zapret": {
+        "runtimeReady": true,
+        "serviceRunning": true,
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "serviceInstalled": true,
+        "winwsRunning": true
+      }
+    },
+    "observedAfter": {
+      "version": {
+        "version": "3.7.9",
+        "buildDate": "29.09.2026"
+      },
+      "shield": {
+        "busy": false,
+        "running": true
+      },
+      "vpn": {
+        "connected": false
+      },
+      "dns": {
+        "running": true,
+        "verified": true,
+        "serviceRunning": true,
+        "serviceInstalled": true
+      },
+      "telegram": {
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "serviceRunning": true,
+        "serviceInstalled": true,
+        "observedAt": "2026-09-29T16:17:28.073Z",
+        "listenerOwnership": "owned",
+        "portConflict": {
+          "available": true,
+          "ownerPresent": false
+        },
+        "lastErrorPresent": false
+      },
+      "zapret": {
+        "runtimeReady": true,
+        "serviceRunning": true,
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "serviceInstalled": true,
+        "winwsRunning": true
+      }
+    },
+    "layouts": [
+      {
+        "label": "initial",
+        "screen": "settings",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-settings",
+        "screen": "settings",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-dashboard",
+        "screen": "dashboard",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 41,
+          "width": 814,
+          "height": 638
+        },
+        "visibleControlCount": 23,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-vpn",
+        "screen": "vpn",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 46,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-dns",
+        "screen": "dns",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 26,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-zapret",
+        "screen": "zapret",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 27,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-telegram-proxy",
+        "screen": "telegram-proxy",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 19,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-before-readonly-tabs",
+        "screen": "zapret",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 27,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-routes",
+        "screen": "zapret",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 36,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-history-expanded",
+        "screen": "zapret",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 27,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "telegram-before-advanced",
+        "screen": "telegram-proxy",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 19,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "telegram-advanced",
+        "screen": "telegram-proxy",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 23,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "overview-before-server-picker",
+        "screen": "dashboard",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 41,
+          "width": 814,
+          "height": 638
+        },
+        "visibleControlCount": 23,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "server-picker",
+        "screen": "dashboard",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 41,
+          "width": 814,
+          "height": 638
+        },
+        "visibleControlCount": 7,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "dns-before-confirmation",
+        "screen": "dns",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 26,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "dns-confirmation",
+        "screen": "dns",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 3,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "settings-before-keyboard-help",
+        "screen": "settings",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "about",
+        "screen": "settings",
+        "width": 1000,
+        "height": 680,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 814,
+          "height": 597.6
+        },
+        "visibleControlCount": 2,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 1000,
+            "height": 680
+          },
+          "visible": false,
+          "focused": false
+        }
+      }
+    ],
+    "hiddenRendererSamples": [
+      {
+        "label": "initial-full-idle",
+        "pageHidden": false,
+        "elapsedMs": 2201,
+        "frameCallbacks": 3,
+        "gapP95Ms": 1000.7999999999302,
+        "maxGapMs": 1001,
+        "longTaskCount": 0,
+        "maxLongTaskMs": null,
+        "activeAnimations": 0
+      },
+      {
+        "label": "full-idle",
+        "pageHidden": false,
+        "elapsedMs": 2201,
+        "frameCallbacks": 3,
+        "gapP95Ms": 1000.8000000000466,
+        "maxGapMs": 1000.9000000000233,
+        "longTaskCount": 0,
+        "maxLongTaskMs": null,
+        "activeAnimations": 0
+      }
+    ],
+    "navigationObservations": [
+      {
+        "screen": "settings",
+        "elapsedMs": 9,
+        "hidden": false
+      },
+      {
+        "screen": "dashboard",
+        "elapsedMs": 13,
+        "hidden": false
+      },
+      {
+        "screen": "vpn",
+        "elapsedMs": 28,
+        "hidden": false
+      },
+      {
+        "screen": "dns",
+        "elapsedMs": 15,
+        "hidden": false
+      },
+      {
+        "screen": "zapret",
+        "elapsedMs": 10,
+        "hidden": false
+      },
+      {
+        "screen": "telegram-proxy",
+        "elapsedMs": 9,
+        "hidden": false
+      },
+      {
+        "screen": "zapret",
+        "elapsedMs": 9,
+        "hidden": false
+      },
+      {
+        "screen": "telegram-proxy",
+        "elapsedMs": 8,
+        "hidden": false
+      },
+      {
+        "screen": "dashboard",
+        "elapsedMs": 6,
+        "hidden": false
+      },
+      {
+        "screen": "dns",
+        "elapsedMs": 13,
+        "hidden": false
+      },
+      {
+        "screen": "settings",
+        "elapsedMs": 8,
+        "hidden": false
+      }
+    ],
+    "checks": [
+      {
+        "name": "actual-sidebar-icons-native-crop-visibility",
+        "pass": true,
+        "method": "Electron.webContents.capturePage",
+        "stayHidden": true,
+        "pageConsideredVisibleDuringCapture": false,
+        "size": {
+          "width": 167,
+          "height": 248
+        },
+        "visible": false,
+        "focused": false
+      },
+      {
+        "name": "telegram-secret-remains-password-input",
+        "pass": true
+      },
+      {
+        "name": "server-picker-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "dns-confirmation-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "all-real-settings-help-tooltips-fit",
+        "pass": true,
+        "tooltips": [
+          {
+            "index": "Запускать при старте Windows",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Сворачивать в трей",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Автоподключение маршрута",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Переподключаться при обрыве",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Показывать уведомления",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Передавать HWID провайдеру подписки",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Автообновление приложения и компонентов",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          }
+        ]
+      },
+      {
+        "name": "all-real-settings-help-escape-keeps-focus",
+        "pass": true
+      },
+      {
+        "name": "actual-version-dialog-native-crop-visibility",
+        "pass": true,
+        "method": "Electron.webContents.capturePage",
+        "stayHidden": true,
+        "pageConsideredVisibleDuringCapture": false,
+        "size": {
+          "width": 500,
+          "height": 533
+        },
+        "visible": false,
+        "focused": false
+      },
+      {
+        "name": "dialog-action-retains-dom-focus-during-live-background-updates",
+        "pass": true
+      },
+      {
+        "name": "about-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "same-readonly-service-flags-before-after",
+        "pass": true
+      },
+      {
+        "name": "packaged-main-hash-unchanged-during-audit",
+        "pass": true
+      },
+      {
+        "name": "full-view-retained-for-parent-native-resize",
+        "pass": true
+      }
+    ],
+    "restoredView": {
+      "widget": false,
+      "screen": "settings",
+      "hidden": false,
+      "visibility": "visible",
+      "width": 1000,
+      "height": 680
+    },
+    "pageVisibilityRestoration": {
+      "before": "visible",
+      "after": "visible",
+      "note": "Recorded Electron Page Visibility behavior; capture may consider the page visible while the native window remains hidden."
+    }
+  },
+  {
+    "stage": "hover-final-large",
+    "createdAt": "2026-09-29T16:18:09.446Z",
+    "version": "3.7.9",
+    "renderer": "152.0.7977.130",
+    "instance": {
+      "pid": 47336,
+      "startTime": "2026-09-29T16:07:26.0224761Z",
+      "targetId": "54AE00A26A54CDFE85D6F53AF6EF0382"
+    },
+    "nativeBefore": {
+      "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "electron": "44.4.5",
+      "chromium": "152.0.7977.130",
+      "node": "24.21.0",
+      "visible": false,
+      "focused": false,
+      "minimized": false,
+      "maximized": false,
+      "contentSize": [
+        2000,
+        1100
+      ],
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    "nativeAfter": {
+      "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "electron": "44.4.5",
+      "chromium": "152.0.7977.130",
+      "node": "24.21.0",
+      "visible": false,
+      "focused": false,
+      "minimized": false,
+      "maximized": false,
+      "contentSize": [
+        2000,
+        1100
+      ],
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    "testCondition": "Native Electron webContents background throttling temporarily disabled for the audit; native window remains hidden and unfocused. The Page Visibility API follows Electron behavior. Native capture uses stayHidden:true and stayAwake:true. Throttling is restored at the end.",
+    "limits": [
+      "Native hidden renderer measurements do not represent foreground/DWM frame performance.",
+      "Window geometry is actual native geometry; no viewport/media/state emulation is used.",
+      "No connection, profile, network-configuration, service or clipboard mutation is requested; production read-only status IPC and reversible view navigation are used.",
+      "Raw screen captures are private and excluded from public evidence."
+    ],
+    "scopeClarification": "The UI auditor requests real read-only status IPC and reversible view navigation. It requests no connection, profile, network-configuration, service or clipboard mutations; the application may continue its normal autonomous maintenance.",
+    "auditCompleted": true,
+    "pageErrorCount": 0,
+    "observedBefore": {
+      "version": {
+        "version": "3.7.9",
+        "buildDate": "29.09.2026"
+      },
+      "shield": {
+        "busy": false,
+        "running": true
+      },
+      "vpn": {
+        "connected": false
+      },
+      "dns": {
+        "running": true,
+        "verified": true,
+        "serviceRunning": true,
+        "serviceInstalled": true
+      },
+      "telegram": {
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "serviceRunning": true,
+        "serviceInstalled": true,
+        "observedAt": "2026-09-29T16:18:11.088Z",
+        "listenerOwnership": "owned",
+        "portConflict": {
+          "available": true,
+          "ownerPresent": false
+        },
+        "lastErrorPresent": false
+      },
+      "zapret": {
+        "runtimeReady": true,
+        "serviceRunning": true,
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "serviceInstalled": true,
+        "winwsRunning": true
+      }
+    },
+    "observedAfter": {
+      "version": {
+        "version": "3.7.9",
+        "buildDate": "29.09.2026"
+      },
+      "shield": {
+        "busy": false,
+        "running": true
+      },
+      "vpn": {
+        "connected": false
+      },
+      "dns": {
+        "running": true,
+        "verified": true,
+        "serviceRunning": true,
+        "serviceInstalled": true
+      },
+      "telegram": {
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "serviceRunning": true,
+        "serviceInstalled": true,
+        "observedAt": "2026-09-29T16:18:45.877Z",
+        "listenerOwnership": "owned",
+        "portConflict": {
+          "available": true,
+          "ownerPresent": false
+        },
+        "lastErrorPresent": false
+      },
+      "zapret": {
+        "runtimeReady": true,
+        "serviceRunning": true,
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "serviceInstalled": true,
+        "winwsRunning": true
+      }
+    },
+    "layouts": [
+      {
+        "label": "initial",
+        "screen": "settings",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-settings",
+        "screen": "settings",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-dashboard",
+        "screen": "dashboard",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 41,
+          "width": 1806,
+          "height": 1058
+        },
+        "visibleControlCount": 23,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-vpn",
+        "screen": "vpn",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 73,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-dns",
+        "screen": "dns",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 26,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-zapret",
+        "screen": "zapret",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 37,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-telegram-proxy",
+        "screen": "telegram-proxy",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 19,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-before-readonly-tabs",
+        "screen": "zapret",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 37,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-routes",
+        "screen": "zapret",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 46,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-history-expanded",
+        "screen": "zapret",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 37,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "telegram-before-advanced",
+        "screen": "telegram-proxy",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 19,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "telegram-advanced",
+        "screen": "telegram-proxy",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 28,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "overview-before-server-picker",
+        "screen": "dashboard",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 41,
+          "width": 1806,
+          "height": 1058
+        },
+        "visibleControlCount": 23,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "server-picker",
+        "screen": "dashboard",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 41,
+          "width": 1806,
+          "height": 1058
+        },
+        "visibleControlCount": 10,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "dns-before-confirmation",
+        "screen": "dns",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 26,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "dns-confirmation",
+        "screen": "dns",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 3,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "settings-before-keyboard-help",
+        "screen": "settings",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "about",
+        "screen": "settings",
+        "width": 2000,
+        "height": 1100,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 193,
+          "y": 81.4,
+          "width": 1806,
+          "height": 1017.6
+        },
+        "visibleControlCount": 2,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2000,
+            "height": 1100
+          },
+          "visible": false,
+          "focused": false
+        }
+      }
+    ],
+    "hiddenRendererSamples": [
+      {
+        "label": "initial-full-idle",
+        "pageHidden": false,
+        "elapsedMs": 2206.5999999940395,
+        "frameCallbacks": 2,
+        "gapP95Ms": 1000.8000000000466,
+        "maxGapMs": 1000.8000000000466,
+        "longTaskCount": 0,
+        "maxLongTaskMs": null,
+        "activeAnimations": 0
+      },
+      {
+        "label": "full-idle",
+        "pageHidden": false,
+        "elapsedMs": 2202.9000000059605,
+        "frameCallbacks": 3,
+        "gapP95Ms": 1000.7999999999302,
+        "maxGapMs": 1000.8000000000466,
+        "longTaskCount": 0,
+        "maxLongTaskMs": null,
+        "activeAnimations": 0
+      }
+    ],
+    "navigationObservations": [
+      {
+        "screen": "settings",
+        "elapsedMs": 9,
+        "hidden": false
+      },
+      {
+        "screen": "dashboard",
+        "elapsedMs": 12,
+        "hidden": false
+      },
+      {
+        "screen": "vpn",
+        "elapsedMs": 18,
+        "hidden": false
+      },
+      {
+        "screen": "dns",
+        "elapsedMs": 15,
+        "hidden": false
+      },
+      {
+        "screen": "zapret",
+        "elapsedMs": 11,
+        "hidden": false
+      },
+      {
+        "screen": "telegram-proxy",
+        "elapsedMs": 9,
+        "hidden": false
+      },
+      {
+        "screen": "zapret",
+        "elapsedMs": 15,
+        "hidden": false
+      },
+      {
+        "screen": "telegram-proxy",
+        "elapsedMs": 11,
+        "hidden": false
+      },
+      {
+        "screen": "dashboard",
+        "elapsedMs": 8,
+        "hidden": false
+      },
+      {
+        "screen": "dns",
+        "elapsedMs": 25,
+        "hidden": false
+      },
+      {
+        "screen": "settings",
+        "elapsedMs": 9,
+        "hidden": false
+      }
+    ],
+    "checks": [
+      {
+        "name": "actual-sidebar-icons-native-crop-visibility",
+        "pass": true,
+        "method": "Electron.webContents.capturePage",
+        "stayHidden": true,
+        "pageConsideredVisibleDuringCapture": false,
+        "size": {
+          "width": 167,
+          "height": 248
+        },
+        "visible": false,
+        "focused": false
+      },
+      {
+        "name": "telegram-secret-remains-password-input",
+        "pass": true
+      },
+      {
+        "name": "server-picker-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "dns-confirmation-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "all-real-settings-help-tooltips-fit",
+        "pass": true,
+        "tooltips": [
+          {
+            "index": "Запускать при старте Windows",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Сворачивать в трей",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Автоподключение маршрута",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Переподключаться при обрыве",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Показывать уведомления",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Передавать HWID провайдеру подписки",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Автообновление приложения и компонентов",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          }
+        ]
+      },
+      {
+        "name": "all-real-settings-help-escape-keeps-focus",
+        "pass": true
+      },
+      {
+        "name": "actual-version-dialog-native-crop-visibility",
+        "pass": true,
+        "method": "Electron.webContents.capturePage",
+        "stayHidden": true,
+        "pageConsideredVisibleDuringCapture": false,
+        "size": {
+          "width": 500,
+          "height": 537
+        },
+        "visible": false,
+        "focused": false
+      },
+      {
+        "name": "dialog-action-retains-dom-focus-during-live-background-updates",
+        "pass": true
+      },
+      {
+        "name": "about-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "same-readonly-service-flags-before-after",
+        "pass": true
+      },
+      {
+        "name": "packaged-main-hash-unchanged-during-audit",
+        "pass": true
+      },
+      {
+        "name": "full-view-retained-for-parent-native-resize",
+        "pass": true
+      }
+    ],
+    "restoredView": {
+      "widget": false,
+      "screen": "settings",
+      "hidden": false,
+      "visibility": "visible",
+      "width": 2000,
+      "height": 1100
+    },
+    "pageVisibilityRestoration": {
+      "before": "visible",
+      "after": "visible",
+      "note": "Recorded Electron Page Visibility behavior; capture may consider the page visible while the native window remains hidden."
+    }
+  },
+  {
+    "stage": "hover-final-zoom-two",
+    "createdAt": "2026-09-29T16:19:42.471Z",
+    "version": "3.7.9",
+    "renderer": "152.0.7977.130",
+    "instance": {
+      "pid": 47336,
+      "startTime": "2026-09-29T16:07:26.0224761Z",
+      "targetId": "54AE00A26A54CDFE85D6F53AF6EF0382"
+    },
+    "nativeBefore": {
+      "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "electron": "44.4.5",
+      "chromium": "152.0.7977.130",
+      "node": "24.21.0",
+      "visible": false,
+      "focused": false,
+      "minimized": false,
+      "maximized": false,
+      "contentSize": [
+        2560,
+        1600
+      ],
+      "zoomFactor": 2,
+      "backgroundThrottling": false
+    },
+    "nativeAfter": {
+      "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "electron": "44.4.5",
+      "chromium": "152.0.7977.130",
+      "node": "24.21.0",
+      "visible": false,
+      "focused": false,
+      "minimized": false,
+      "maximized": false,
+      "contentSize": [
+        2560,
+        1600
+      ],
+      "zoomFactor": 2,
+      "backgroundThrottling": false
+    },
+    "testCondition": "Native Electron webContents background throttling temporarily disabled for the audit; native window remains hidden and unfocused. The Page Visibility API follows Electron behavior. Native capture uses stayHidden:true and stayAwake:true. Throttling is restored at the end.",
+    "limits": [
+      "Native hidden renderer measurements do not represent foreground/DWM frame performance.",
+      "Window geometry is actual native geometry; no viewport/media/state emulation is used.",
+      "No connection, profile, network-configuration, service or clipboard mutation is requested; production read-only status IPC and reversible view navigation are used.",
+      "Raw screen captures are private and excluded from public evidence."
+    ],
+    "scopeClarification": "The UI auditor requests real read-only status IPC and reversible view navigation. It requests no connection, profile, network-configuration, service or clipboard mutations; the application may continue its normal autonomous maintenance.",
+    "auditCompleted": true,
+    "pageErrorCount": 0,
+    "observedBefore": {
+      "version": {
+        "version": "3.7.9",
+        "buildDate": "29.09.2026"
+      },
+      "shield": {
+        "busy": false,
+        "running": true
+      },
+      "vpn": {
+        "connected": false
+      },
+      "dns": {
+        "running": true,
+        "verified": true,
+        "serviceRunning": true,
+        "serviceInstalled": true
+      },
+      "telegram": {
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "serviceRunning": true,
+        "serviceInstalled": true,
+        "observedAt": "2026-09-29T16:19:43.980Z",
+        "listenerOwnership": "owned",
+        "portConflict": {
+          "available": true,
+          "ownerPresent": false
+        },
+        "lastErrorPresent": false
+      },
+      "zapret": {
+        "runtimeReady": true,
+        "serviceRunning": true,
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "serviceInstalled": true,
+        "winwsRunning": true
+      }
+    },
+    "observedAfter": {
+      "version": {
+        "version": "3.7.9",
+        "buildDate": "29.09.2026"
+      },
+      "shield": {
+        "busy": false,
+        "running": true
+      },
+      "vpn": {
+        "connected": false
+      },
+      "dns": {
+        "running": true,
+        "verified": true,
+        "serviceRunning": true,
+        "serviceInstalled": true
+      },
+      "telegram": {
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "serviceRunning": true,
+        "serviceInstalled": true,
+        "observedAt": "2026-09-29T16:20:20.620Z",
+        "listenerOwnership": "owned",
+        "portConflict": {
+          "available": true,
+          "ownerPresent": false
+        },
+        "lastErrorPresent": false
+      },
+      "zapret": {
+        "runtimeReady": true,
+        "serviceRunning": true,
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "serviceInstalled": true,
+        "winwsRunning": true
+      }
+    },
+    "layouts": [
+      {
+        "label": "initial",
+        "screen": "settings",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-settings",
+        "screen": "settings",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-dashboard",
+        "screen": "dashboard",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 41,
+          "width": 1094,
+          "height": 758
+        },
+        "visibleControlCount": 23,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-vpn",
+        "screen": "vpn",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 52,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-dns",
+        "screen": "dns",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 26,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-zapret",
+        "screen": "zapret",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 30,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "native-telegram-proxy",
+        "screen": "telegram-proxy",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 19,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-before-readonly-tabs",
+        "screen": "zapret",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 30,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-routes",
+        "screen": "zapret",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 39,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "profiles-history-expanded",
+        "screen": "zapret",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 30,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "telegram-before-advanced",
+        "screen": "telegram-proxy",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 19,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "telegram-advanced",
+        "screen": "telegram-proxy",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 28,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "overview-before-server-picker",
+        "screen": "dashboard",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 41,
+          "width": 1094,
+          "height": 758
+        },
+        "visibleControlCount": 23,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "server-picker",
+        "screen": "dashboard",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 41,
+          "width": 1094,
+          "height": 758
+        },
+        "visibleControlCount": 8,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "dns-before-confirmation",
+        "screen": "dns",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 26,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "dns-confirmation",
+        "screen": "dns",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 3,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "settings-before-keyboard-help",
+        "screen": "settings",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 29,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      },
+      {
+        "label": "about",
+        "screen": "settings",
+        "width": 1280,
+        "height": 800,
+        "pageHidden": false,
+        "reducedMotion": false,
+        "widgetPaint": null,
+        "contentStageRect": {
+          "x": 185,
+          "y": 81.4,
+          "width": 1094,
+          "height": 717.6
+        },
+        "visibleControlCount": 2,
+        "smallControls": 0,
+        "unnamedButtons": 0,
+        "blockedControlCenters": 0,
+        "horizontalOverflow": [],
+        "filledDetailsWithOutline": 0,
+        "nativeCapture": {
+          "method": "Electron.webContents.capturePage",
+          "stayHidden": true,
+          "pageConsideredVisibleDuringCapture": false,
+          "size": {
+            "width": 2560,
+            "height": 1600
+          },
+          "visible": false,
+          "focused": false
+        }
+      }
+    ],
+    "hiddenRendererSamples": [
+      {
+        "label": "initial-full-idle",
+        "pageHidden": false,
+        "elapsedMs": 2212.5999999940395,
+        "frameCallbacks": 2,
+        "gapP95Ms": 1000.8000000000466,
+        "maxGapMs": 1000.8000000000466,
+        "longTaskCount": 0,
+        "maxLongTaskMs": null,
+        "activeAnimations": 0
+      },
+      {
+        "label": "full-idle",
+        "pageHidden": false,
+        "elapsedMs": 2201.3999999910593,
+        "frameCallbacks": 3,
+        "gapP95Ms": 1000.7999999999302,
+        "maxGapMs": 1000.8000000000466,
+        "longTaskCount": 0,
+        "maxLongTaskMs": null,
+        "activeAnimations": 0
+      }
+    ],
+    "navigationObservations": [
+      {
+        "screen": "settings",
+        "elapsedMs": 9,
+        "hidden": false
+      },
+      {
+        "screen": "dashboard",
+        "elapsedMs": 17,
+        "hidden": false
+      },
+      {
+        "screen": "vpn",
+        "elapsedMs": 34,
+        "hidden": false
+      },
+      {
+        "screen": "dns",
+        "elapsedMs": 23,
+        "hidden": false
+      },
+      {
+        "screen": "zapret",
+        "elapsedMs": 18,
+        "hidden": false
+      },
+      {
+        "screen": "telegram-proxy",
+        "elapsedMs": 19,
+        "hidden": false
+      },
+      {
+        "screen": "zapret",
+        "elapsedMs": 19,
+        "hidden": false
+      },
+      {
+        "screen": "telegram-proxy",
+        "elapsedMs": 11,
+        "hidden": false
+      },
+      {
+        "screen": "dashboard",
+        "elapsedMs": 11,
+        "hidden": false
+      },
+      {
+        "screen": "dns",
+        "elapsedMs": 17,
+        "hidden": false
+      },
+      {
+        "screen": "settings",
+        "elapsedMs": 9,
+        "hidden": false
+      }
+    ],
+    "checks": [
+      {
+        "name": "actual-sidebar-icons-native-crop-visibility",
+        "pass": null,
+        "reason": "Public crop retained only at normal scale; actual zoom layout remains in private full captures."
+      },
+      {
+        "name": "telegram-secret-remains-password-input",
+        "pass": true
+      },
+      {
+        "name": "server-picker-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "dns-confirmation-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "all-real-settings-help-tooltips-fit",
+        "pass": true,
+        "tooltips": [
+          {
+            "index": "Запускать при старте Windows",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Сворачивать в трей",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Автоподключение маршрута",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Переподключаться при обрыве",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Показывать уведомления",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Передавать HWID провайдеру подписки",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          },
+          {
+            "index": "Автообновление приложения и компонентов",
+            "inside": true,
+            "coversTrigger": false,
+            "escapeKeepsFocus": true,
+            "escapeCollapsed": true
+          }
+        ]
+      },
+      {
+        "name": "all-real-settings-help-escape-keeps-focus",
+        "pass": true
+      },
+      {
+        "name": "actual-version-dialog-native-crop-visibility",
+        "pass": null,
+        "reason": "Public crop retained only at normal scale; actual zoom layout remains in private full captures."
+      },
+      {
+        "name": "dialog-action-retains-dom-focus-during-live-background-updates",
+        "pass": true
+      },
+      {
+        "name": "about-dom-keyboard-trap-escape-and-return",
+        "pass": true,
+        "found": true,
+        "backward": true,
+        "forward": true,
+        "backwardReachable": true,
+        "forwardReachable": true,
+        "returned": true
+      },
+      {
+        "name": "same-readonly-service-flags-before-after",
+        "pass": true
+      },
+      {
+        "name": "packaged-main-hash-unchanged-during-audit",
+        "pass": true
+      },
+      {
+        "name": "full-view-retained-for-parent-native-resize",
+        "pass": true
+      }
+    ],
+    "restoredView": {
+      "widget": false,
+      "screen": "settings",
+      "hidden": false,
+      "visibility": "visible",
+      "width": 1280,
+      "height": 800
+    },
+    "pageVisibilityRestoration": {
+      "before": "visible",
+      "after": "visible",
+      "note": "Recorded Electron Page Visibility behavior; capture may consider the page visible while the native window remains hidden."
+    }
+  }
+]

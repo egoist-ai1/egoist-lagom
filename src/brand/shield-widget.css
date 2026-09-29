@@ -208,16 +208,26 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
 }
 [data-phase='connected'] .shield-power{
   opacity:0;
+  visibility:hidden;
 }
 [data-phase='connected'] .shield-connected-check{
   opacity:1;
+  visibility:visible;
   stroke-dashoffset:0;
 }
-[data-phase='connected'] .shield-travel-edge{
+[data-phase='connected'] .shield-interactive-trigger:hover .shield-power{
   opacity:1;
+  visibility:visible;
+}
+[data-phase='connected'] .shield-interactive-trigger:hover .shield-connected-check{
+  opacity:0;
+  visibility:hidden;
+}
+[data-phase='connected'] .shield-travel-edge{
+  opacity:0;
   stroke:#000000;
   stroke-width:2.6;
-  animation:shield-travel 4.8s linear infinite;
+  animation:none;
 }
 
 /* Typography & Status */
@@ -294,10 +304,11 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
   display:flex;
   align-items:center;
   justify-content:center;
-  height:16px;
+  min-height:24px;
   margin-top:2px;
 }
 .shield-cancel{
+  min-height:24px;
   padding:2px 10px;
   border:1px solid rgba(255,255,255,0.15);
   border-radius:6px;
@@ -332,10 +343,12 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
   line-height:1.35;
   color:#d4d4d8;
   user-select:text;
-  max-height:56px;
-  overflow:hidden;
+  flex:none;
+  max-height:92px;
+  overflow:auto;
 }
 .shield-widget-error summary{
+  min-height:24px;
   display:flex;
   align-items:center;
   gap:6px;
@@ -344,12 +357,9 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
   color:#ffffff;
 }
 .shield-widget-error p{
-  max-height:32px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
+  max-height:44px;
+  overflow:auto;
+  overflow-wrap:anywhere;
   margin:2px 0 0;
   color:#a1a1aa;
 }
@@ -387,7 +397,7 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
   position:relative;
   display:block;
   width:32px;
-  height:18px;
+  height:24px;
   flex:none;
   padding:0;
   border:1.5px solid #71717a;
@@ -410,7 +420,7 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
   position:absolute;
   display:block;
   left:2px;
-  top:2px;
+  top:5px;
   width:11px;
   height:11px;
   border-radius:50%;
@@ -489,4 +499,25 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
     animation:none !important;
     transition:none !important;
   }
+}
+
+.shield-status-retry{min-height:24px;margin-top:4px;padding:3px 6px;border:1px solid var(--shield-line);border-radius:5px;background:#18181b;color:#fff;font:inherit;cursor:pointer}
+.shield-status-retry:focus-visible,.shield-widget-error p:focus-visible{outline:2px solid #fff;outline-offset:1px}
+[data-error='true'] .shield-widget-emblem{width:88px;height:94px}
+[data-error='true'] .shield-widget-symbol{width:80px;height:86px}
+@media(max-height:250px){
+  .shield-widget-container{height:auto;min-height:100%;overflow-y:auto!important}
+  .shield-widget-hero{flex:none;min-height:114px;padding:4px 0}
+  .shield-widget-emblem{width:66px;height:70px}
+  .shield-widget-symbol{width:60px;height:64px}
+  .shield-widget-footer{position:static;background:#0a0a0a}
+}
+@media(max-width:240px){
+  .shield-widget-container{padding-left:8px;padding-right:8px}
+  .shield-widget-brand>span{font-size:10px}
+  .shield-widget-brand>span>span{margin:0 1px}
+  .shield-widget-window-btns{gap:0;margin-right:0}
+  .shield-widget-status-group h1{font-size:12px;overflow-wrap:anywhere}
+  .shield-widget-footer{height:auto;flex-wrap:wrap;justify-content:center;gap:6px;padding-top:6px}
+  .shield-footer-switches{gap:8px}
 }

@@ -1,0 +1,5 @@
+System.TimeoutException: The operation has timed out.
+   at Program.WorkerTimeoutAsync() in <project>\tests\CoreServiceReliabilityRegression\Program.cs:line 368
+   at Program.Check(String name, Func`1 run) in <project>\tests\CoreServiceReliabilityRegression\Program.cs:line 63
+   at Program.Main(String[] args) in <project>\tests\CoreServiceReliabilityRegression\Program.cs:line 50
+Regression evidence preserved: <task-work>\core-reliability-41bb4c7a75b84cb0ab4b0683d193b6cf

@@ -1,0 +1,2198 @@
+{
+  "startedAt": "2026-09-29T14:44:37.442Z",
+  "buildManifest": [
+    {
+      "name": "/assets/br-DfU4KU08.svg",
+      "bytes": 4160,
+      "sha256": "e0215eff9f53b0236db885963ac45d6baea52e10ce33ceafdbe0eb1820d21160"
+    },
+    {
+      "name": "/assets/brand.css",
+      "bytes": 99037,
+      "sha256": "851249e2ef01b43da180bd0522cb835c3cd91557b85132f61520e2142aee8707"
+    },
+    {
+      "name": "/assets/bt-CrazynNP.svg",
+      "bytes": 36820,
+      "sha256": "39a47be433cda95dab7521aed8609c61f3fe377524e5de397dbb9c75624dd822"
+    },
+    {
+      "name": "/assets/egoist-shield-icon-64-iMXW3-NZ.png",
+      "bytes": 4597,
+      "sha256": "343fb697cf62a3daa43aff6220d3df068afc8a3279866e1cd6bffdfdc4037c46"
+    },
+    {
+      "name": "/assets/egoist-shield-logo-Ch4DYhEY.png",
+      "bytes": 678199,
+      "sha256": "108992027b195781defe8b04b2c9757b0251b4dc124fb746ef42273666f4c57d"
+    },
+    {
+      "name": "/assets/es-CWWKyWFl.svg",
+      "bytes": 153035,
+      "sha256": "d672868d51fc5b4f2d76f510c9360a4401bdb3ca805349bd04cb4ba277d5b379"
+    },
+    {
+      "name": "/assets/fonts/unbounded-cyrillic-ext.woff2",
+      "bytes": 1840,
+      "sha256": "f25c38d28da3d57b68419590e7165c382e99bab3548baf4a498af93f87d3e518"
+    },
+    {
+      "name": "/assets/fonts/unbounded-cyrillic.woff2",
+      "bytes": 31424,
+      "sha256": "e30bf6a6063b6a47232bbd657e24c7cf4fdaf76fc2c50d92d9ee63e2ad2087cf"
+    },
+    {
+      "name": "/assets/fonts/unbounded-latin.woff2",
+      "bytes": 50904,
+      "sha256": "22f9b928aa3928a896340422b54d690fbb5875c30eae4c106f029c61f2289fd6"
+    },
+    {
+      "name": "/assets/fonts/Unbounded-OFL.txt",
+      "bytes": 4390,
+      "sha256": "48a780bc857729859e54d1e691b05792894a26634edc1c4b5dbeabffe6941758"
+    },
+    {
+      "name": "/assets/icons/activity.svg",
+      "bytes": 278,
+      "sha256": "5489b0cf28b38342b38e34f49d7a3c4fbd01fc9794c578a251b04e54b9a9d259"
+    },
+    {
+      "name": "/assets/icons/arrow-right.svg",
+      "bytes": 259,
+      "sha256": "c3a0b0ac966c4e483b1116c8d6e171bd71606ae086b541e9ffe4f98d57b448a7"
+    },
+    {
+      "name": "/assets/icons/auto-select.svg",
+      "bytes": 333,
+      "sha256": "9d7c7ea0fcdb84ca686ecda0a2f534a9493972675f536cd3b6b03588275d5e07"
+    },
+    {
+      "name": "/assets/icons/auto-update.svg",
+      "bytes": 327,
+      "sha256": "ffaa154429807e45388e1ec0cd964a0f3cd1dfced6d3df04c0ffc2570c92f90d"
+    },
+    {
+      "name": "/assets/icons/brand-shield.svg",
+      "bytes": 472,
+      "sha256": "af5b2205d501772f1e14ca776d56ff4f63c0956801c943dd29020248675d113f"
+    },
+    {
+      "name": "/assets/icons/check.svg",
+      "bytes": 259,
+      "sha256": "50a9948262924cab885604402f03c571511d375d931e2d7fe356d3abf7739fb9"
+    },
+    {
+      "name": "/assets/icons/chevron-down.svg",
+      "bytes": 231,
+      "sha256": "795b9220d1ec635be0496973bf8c62c05b6e928d5930209f1331cc2c6050a243"
+    },
+    {
+      "name": "/assets/icons/cleanup.svg",
+      "bytes": 444,
+      "sha256": "00338baf6166afabac15a46fe1bd89f7b33697b117d924d36c64a551de26edde"
+    },
+    {
+      "name": "/assets/icons/close.svg",
+      "bytes": 298,
+      "sha256": "1b731d347ad16d22c622be9bfbf07227a0bbd6efc3e91a42e65b2d964dde9c81"
+    },
+    {
+      "name": "/assets/icons/copy.svg",
+      "bytes": 315,
+      "sha256": "de52d06e91c665721ded4da22d89d199b5551efc4087cbe5d639b24e33bcb14f"
+    },
+    {
+      "name": "/assets/icons/dns.svg",
+      "bytes": 455,
+      "sha256": "81d959283926a37a5b98ca5594a02858c16188c3ef4790dd964f47585bf7a88f"
+    },
+    {
+      "name": "/assets/icons/download.svg",
+      "bytes": 318,
+      "sha256": "ea5a106be2221d408d8ee37d0e2c41f3c86f79feab2272c49817470928432fe2"
+    },
+    {
+      "name": "/assets/icons/export.svg",
+      "bytes": 286,
+      "sha256": "21f48e2e725808b7b0b1ecb7fa11d902bc0789aeee4293f29d7928724b5ae00d"
+    },
+    {
+      "name": "/assets/icons/external-link.svg",
+      "bytes": 300,
+      "sha256": "1d1709b7fe512e82a05eff348067e2da32fa1a979bce744b7f3eea0d1c6d2b55"
+    },
+    {
+      "name": "/assets/icons/filter.svg",
+      "bytes": 243,
+      "sha256": "2f7a66c0628dbdc79a5b79cc7f9922ec5e73d6e453543e28628fbc77e3e3e5f1"
+    },
+    {
+      "name": "/assets/icons/folder.svg",
+      "bytes": 388,
+      "sha256": "7bde9b7a675548d6e427c296b3b847a956e94e9d44e2f8f3f96f40c40917fc92"
+    },
+    {
+      "name": "/assets/icons/help.svg",
+      "bytes": 391,
+      "sha256": "c97f7a7fdeb7cd3ea15df30b59cc816a64e1b30da3ccba2cb9e0c0c20ea54699"
+    },
+    {
+      "name": "/assets/icons/import.svg",
+      "bytes": 282,
+      "sha256": "c654d61797f403cd7c5bc06805d6a75fa453ee5104dd81d57d45f077c1905d32"
+    },
+    {
+      "name": "/assets/icons/info.svg",
+      "bytes": 344,
+      "sha256": "14a6b2827f5d162e6d14ca07c886258e0a75b90c5978b1fe0eadf2b76ef53b30"
+    },
+    {
+      "name": "/assets/icons/location.svg",
+      "bytes": 350,
+      "sha256": "11df0f0bcfd023cf4eb91f21b7bb7875b3ebdf1feb49a0320b9f772454b14b17"
+    },
+    {
+      "name": "/assets/icons/logs.svg",
+      "bytes": 489,
+      "sha256": "03c6fda5aeb45e6615762645a342accfc84640dc8a0cb81862fa8fe69558f9ad"
+    },
+    {
+      "name": "/assets/icons/maximize.svg",
+      "bytes": 262,
+      "sha256": "5813a5eb37d00e46907394f6788803984bcd0936e4588ef2445520e04f4adf6d"
+    },
+    {
+      "name": "/assets/icons/minimize.svg",
+      "bytes": 233,
+      "sha256": "216dd5cc052b33ab2e51eb717dfdc21f61d314c0d4e376041f2b81efff6a2670"
+    },
+    {
+      "name": "/assets/icons/notifications.svg",
+      "bytes": 414,
+      "sha256": "748fa1e0078cdb08c5b21192715aa875cc0ba3528d70063d7ea9e40c9e954af8"
+    },
+    {
+      "name": "/assets/icons/overview.svg",
+      "bytes": 476,
+      "sha256": "0afaae7b93f718531ba95f887a99aea8397fd68f265b98a6ffc101f41bd22cb0"
+    },
+    {
+      "name": "/assets/icons/power.svg",
+      "bytes": 385,
+      "sha256": "a6846de47a7421dff7ca089d43a96848717eecdcbf282b035b700a08b3716fb6"
+    },
+    {
+      "name": "/assets/icons/privacy.svg",
+      "bytes": 451,
+      "sha256": "f9ce26919e332e64e7a219fb5aa3834c157498bad82815e97c228d6c4c9f47de"
+    },
+    {
+      "name": "/assets/icons/reconnect.svg",
+      "bytes": 493,
+      "sha256": "a8822d227f39c7f490ea8335e4ca178a7722e29543ce1c65cdd5658100672ce7"
+    },
+    {
+      "name": "/assets/icons/refresh.svg",
+      "bytes": 358,
+      "sha256": "81567a2a35949270a1beacc0c55c030613b8fd812d0f67909ed0ec507e78c3b8"
+    },
+    {
+      "name": "/assets/icons/restore.svg",
+      "bytes": 308,
+      "sha256": "23d972e67ee9523f625b1afd7cd34b2937d0d858416e80e4fd2b096074eb94d3"
+    },
+    {
+      "name": "/assets/icons/route.svg",
+      "bytes": 440,
+      "sha256": "70a66d178d43e9af84fcabf318d613fbe4c00d6eb7fc54f93c517974b9f098b5"
+    },
+    {
+      "name": "/assets/icons/save.svg",
+      "bytes": 377,
+      "sha256": "a9a824e09232a665d173679d5ed70656d083c9b2f0e9c4e11d9edafe28067e9e"
+    },
+    {
+      "name": "/assets/icons/service.svg",
+      "bytes": 475,
+      "sha256": "f2be9327ea0b28b66abf79d6924ffa8098563a656bf7d1e74bf2801539209e76"
+    },
+    {
+      "name": "/assets/icons/settings.svg",
+      "bytes": 463,
+      "sha256": "03788aa72e58a0a68f630195aea5e782ba945c8679ca643c1a16820dcefb06a7"
+    },
+    {
+      "name": "/assets/icons/shield-off.svg",
+      "bytes": 381,
+      "sha256": "eff56e5c24618abe7d7e7281207b99ce7ccc06dda036546ed760f7e23ec5fff6"
+    },
+    {
+      "name": "/assets/icons/speedtest.svg",
+      "bytes": 395,
+      "sha256": "037ac429605f8b3f97e564c9c97b6fffa767309ffad89d01bf374d47dc3e3bd6"
+    },
+    {
+      "name": "/assets/icons/star.svg",
+      "bytes": 284,
+      "sha256": "63785dbf81bdbd644ae9928485d0a5c22f9678206b54c3520b8bdf7cc7360518"
+    },
+    {
+      "name": "/assets/icons/startup.svg",
+      "bytes": 394,
+      "sha256": "5c59e6a311406f8c7994f1bd978c8e1ef57a9a66137597d7b0d9159814cea28e"
+    },
+    {
+      "name": "/assets/icons/system.svg",
+      "bytes": 496,
+      "sha256": "439fd2c86ac85e47115cee02f30a5a00dc6511c93bf1530eec40db47b25a8692"
+    },
+    {
+      "name": "/assets/icons/telegram.svg",
+      "bytes": 377,
+      "sha256": "bd298ff22e37a88390557e95ae75851e83a82e8b4fa27a3a5d4af081c3d432b2"
+    },
+    {
+      "name": "/assets/icons/trash.svg",
+      "bytes": 406,
+      "sha256": "bd2e78524b1ef03af97e4de8ba49cac64077acec020a0ae3df864f661d3a065a"
+    },
+    {
+      "name": "/assets/icons/tray.svg",
+      "bytes": 610,
+      "sha256": "d9ca328f25e5b9dfe0ec09415f7778a6a98cd36a7db03b062f8cbc15303c1814"
+    },
+    {
+      "name": "/assets/icons/upload.svg",
+      "bytes": 317,
+      "sha256": "dc023be9100a4d62ca8444e98573e3e72e13f91aec39ba6e35171e370f528050"
+    },
+    {
+      "name": "/assets/icons/vpn.svg",
+      "bytes": 362,
+      "sha256": "21f0d7b6683dc348684a467359e2daf63a1ccd7438bf4532547c5a15a60400fa"
+    },
+    {
+      "name": "/assets/icons/warning.svg",
+      "bytes": 346,
+      "sha256": "432775b483a40295fe6c77d7821d5df890d8ed78932934c246b55a3582fc8ecb"
+    },
+    {
+      "name": "/assets/icons/zapret.svg",
+      "bytes": 500,
+      "sha256": "3e6a0eb017c5fc0e55992f07ed968341862fe287547ce6d7e9b4808b89d00dd8"
+    },
+    {
+      "name": "/assets/index-Bxx3j0wf.css",
+      "bytes": 143077,
+      "sha256": "fcbd72b6254116f5a81d941718320502ab2aa6b31a69fdca2936d8a05d999aaa"
+    },
+    {
+      "name": "/assets/index-Eaqlb9_F.js",
+      "bytes": 526436,
+      "sha256": "88c82beb60c34bbb8b69054b0f0611bfabb1a7324f88a3e386ecd250e16198b3"
+    },
+    {
+      "name": "/assets/inter-cyrillic-400-normal-HOLc17fK.woff",
+      "bytes": 9780,
+      "sha256": "6e441a6c94788318fa02b6d0a633aa29eebe27b69c6567eb1e59b4edc68ed70e"
+    },
+    {
+      "name": "/assets/inter-cyrillic-400-normal-obahsSVq.woff2",
+      "bytes": 7712,
+      "sha256": "f0bb586459ce8f09b238285040f17e3e9e9538b2c5a7aae0775194e33c36c3c3"
+    },
+    {
+      "name": "/assets/inter-cyrillic-500-normal-BasfLYem.woff2",
+      "bytes": 7900,
+      "sha256": "b77a86ec16aadc157f4a99e8898d71cd75ea264753d9bdf13f962f8c3988cbb0"
+    },
+    {
+      "name": "/assets/inter-cyrillic-500-normal-CxZf_p3X.woff",
+      "bytes": 9940,
+      "sha256": "5be18e0345781cb882a267798518553c0e915174fc70731ab5f085ca64ba1ebc"
+    },
+    {
+      "name": "/assets/inter-cyrillic-600-normal-4D_pXhcN.woff",
+      "bytes": 9936,
+      "sha256": "cc190ed1b64eb650a4ad7e97c7a668cb8b34acd9c4c7f7bf4372c0cbacd35795"
+    },
+    {
+      "name": "/assets/inter-cyrillic-600-normal-CWCymEST.woff2",
+      "bytes": 7972,
+      "sha256": "6c2a37f82a676bcd441b735e4e2cda4edb8873a059ab9c362a84f0711f257041"
+    },
+    {
+      "name": "/assets/inter-cyrillic-700-normal-CjBOestx.woff2",
+      "bytes": 7904,
+      "sha256": "5917871d3cc970d8ce195101cbf65c1f68ec948022eb6070030342bb7edfb3bb"
+    },
+    {
+      "name": "/assets/inter-cyrillic-700-normal-DrXBdSj3.woff",
+      "bytes": 9912,
+      "sha256": "72b6daa49173e531027d8a260ef128e142a165811cab6a2875eefe0c3c58fa0e"
+    },
+    {
+      "name": "/assets/inter-cyrillic-ext-400-normal-BQZuk6qB.woff2",
+      "bytes": 10232,
+      "sha256": "ef572f9187a8be018d9d9c2c6b77c1f6cb2af4199f02fc16c292ea10ab25a2cc"
+    },
+    {
+      "name": "/assets/inter-cyrillic-ext-400-normal-DQukG94-.woff",
+      "bytes": 13336,
+      "sha256": "5cb2f1cc0936f89a42ceae34f5a5720248dc5b8114c12b1c33a7d2ef01a9b6b9"
+    },
+    {
+      "name": "/assets/inter-cyrillic-ext-500-normal-B0yAr1jD.woff2",
+      "bytes": 10432,
+      "sha256": "1c2db92d3cd9b237ca7c9c07af556d542f28ded1db54cd4382cf776501c5291f"
+    },
+    {
+      "name": "/assets/inter-cyrillic-ext-500-normal-BmqWE9Dz.woff",
+      "bytes": 13452,
+      "sha256": "e250c05aebcf49971e0b25f476992dd463c28c0292ebb204d9db542fb5066ca7"
+    },
+    {
+      "name": "/assets/inter-cyrillic-ext-600-normal-Bcila6Z-.woff",
+      "bytes": 13464,
+      "sha256": "a5073285409443f4653c858de58c5dc0bfc2fd33e60d8747388345e7c5ab1ab3"
+    },
+    {
+      "name": "/assets/inter-cyrillic-ext-600-normal-Dfes3d0z.woff2",
+      "bytes": 10484,
+      "sha256": "509fca9c59564f9a846fa69bc647f9b050fc11abf1c9f6f3da71fb2d5ed425bd"
+    },
+    {
+      "name": "/assets/inter-cyrillic-ext-700-normal-BjwYoWNd.woff2",
+      "bytes": 10496,
+      "sha256": "a46b99781170971e2c99a87ff7ee9f5cf90a9dfcd18175e1be6300201d030123"
+    },
+    {
+      "name": "/assets/inter-cyrillic-ext-700-normal-LO58E6JB.woff",
+      "bytes": 13408,
+      "sha256": "0f3d4be2bd7018f78fa3484a5f6e9d8ce567689426643b84a47e8cabb91e5f16"
+    },
+    {
+      "name": "/assets/inter-greek-400-normal-B4URO6DV.woff2",
+      "bytes": 7776,
+      "sha256": "c15ddd00a9927b56f5c655a41f976f79bd848a20cce91fc14227751872a1cc27"
+    },
+    {
+      "name": "/assets/inter-greek-400-normal-q2sYcFCs.woff",
+      "bytes": 9924,
+      "sha256": "bdae9d28729e8c68587d5d54e216d771a40d7a6800e824586a6e2f570c2f10df"
+    },
+    {
+      "name": "/assets/inter-greek-500-normal-BIZE56-Y.woff2",
+      "bytes": 7920,
+      "sha256": "cc197d79d33a3615a047baae85f4d1957f6f98b8898313658e160b1d519b1b6f"
+    },
+    {
+      "name": "/assets/inter-greek-500-normal-Xzm54t5V.woff",
+      "bytes": 9980,
+      "sha256": "86d55a4b1b9cbced7e61e76d5d44cf49d0bd1c814d3df2de67b7136ab4fdcece"
+    },
+    {
+      "name": "/assets/inter-greek-600-normal-BZpKdvQh.woff",
+      "bytes": 10032,
+      "sha256": "090b24e22fc4ddf41450d13bdec81c8a74808b9fc7edaf8df06c909b177a8992"
+    },
+    {
+      "name": "/assets/inter-greek-600-normal-plRanbMR.woff2",
+      "bytes": 7944,
+      "sha256": "9c5a897f9d9fcfe60d90631d766ae62b4bf1edd76633fa7a4b2f8c87e036789b"
+    },
+    {
+      "name": "/assets/inter-greek-700-normal-BUv2fZ6O.woff",
+      "bytes": 9980,
+      "sha256": "53368f53d5fc43381dcc45c8533ba2476f80337136313525f96dcbdc736616a5"
+    },
+    {
+      "name": "/assets/inter-greek-700-normal-C3JjAnD8.woff2",
+      "bytes": 7920,
+      "sha256": "737c6c91cd60372d30e6540096ada83c89c9b4613cd7472e3366bf2e07ad99f1"
+    },
+    {
+      "name": "/assets/inter-greek-ext-400-normal-DGGRlc-M.woff2",
+      "bytes": 5264,
+      "sha256": "eadedd9e13c2582430a9fb1519eb86152fdabb483a6f66d90f8d8a52e977a1b7"
+    },
+    {
+      "name": "/assets/inter-greek-ext-400-normal-KugGGMne.woff",
+      "bytes": 7064,
+      "sha256": "4f2b6f92ddfece8812e79774d446218aa6e0773ff8c2d31130fe2bdc23bd22d0"
+    },
+    {
+      "name": "/assets/inter-greek-ext-500-normal-2j5mBUwD.woff",
+      "bytes": 7192,
+      "sha256": "c85d11bde719108cc9a4f6f5b008087f6c36493b47395580d4f5336182b0f0c7"
+    },
+    {
+      "name": "/assets/inter-greek-ext-500-normal-C4iEst2y.woff2",
+      "bytes": 5428,
+      "sha256": "75a9ec9383a3b7a7bf7cfb94f64edf38d9cfdc5f7ffa0cbed2733627a6e4426d"
+    },
+    {
+      "name": "/assets/inter-greek-ext-600-normal-B8X0CLgF.woff",
+      "bytes": 7212,
+      "sha256": "efc7aa9cce5c505dd8cc4c4daf00247fa805f37bcda96079239ba3358ab27dfb"
+    },
+    {
+      "name": "/assets/inter-greek-ext-600-normal-DRtmH8MT.woff2",
+      "bytes": 5432,
+      "sha256": "399f94d75aa73403e40e2353e8c0cc75c38f7362a6ca263b3b02d9723157ffe5"
+    },
+    {
+      "name": "/assets/inter-greek-ext-700-normal-BoQ6DsYi.woff",
+      "bytes": 7216,
+      "sha256": "b26ed64c9135a750ad580b92152bedeef90771e74e18f6f7759a6d7adb0f1b5d"
+    },
+    {
+      "name": "/assets/inter-greek-ext-700-normal-qfdV9bQt.woff2",
+      "bytes": 5444,
+      "sha256": "b7b2732ebc981b30a5463ffc850407649dba41e625aee124cc63293da4547629"
+    },
+    {
+      "name": "/assets/inter-latin-400-normal-C38fXH4l.woff2",
+      "bytes": 23664,
+      "sha256": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
+    },
+    {
+      "name": "/assets/inter-latin-400-normal-CyCys3Eg.woff",
+      "bytes": 30696,
+      "sha256": "e20fa0b4fd2dd26e4d14b3ac3cc922509c3a63fa5e910e90c614544aa042dd45"
+    },
+    {
+      "name": "/assets/inter-latin-500-normal-BL9OpVg8.woff",
+      "bytes": 31284,
+      "sha256": "9b42c108da48b5ed55a3072e815ffee2d271562e6c0dd6998910e8f9c09e0a3d"
+    },
+    {
+      "name": "/assets/inter-latin-500-normal-Cerq10X2.woff2",
+      "bytes": 24272,
+      "sha256": "f3779f1efccc4bdcdf9c0a02ab95bf6bd092ed09c48c08cedc725889edd1d19f"
+    },
+    {
+      "name": "/assets/inter-latin-600-normal-CiBQ2DWP.woff",
+      "bytes": 31260,
+      "sha256": "6a9cb3a509b4eeaf12b7dda6c4aacac3e85d07f4201bf4dd716e332e692b87bd"
+    },
+    {
+      "name": "/assets/inter-latin-600-normal-LgqL8muc.woff2",
+      "bytes": 24452,
+      "sha256": "f9a06e79cd3a2a20951c0f0e28f66dd0e6d3fda73911d640a2125c8fcb78f21a"
+    },
+    {
+      "name": "/assets/inter-latin-700-normal-BLAVimhd.woff",
+      "bytes": 31320,
+      "sha256": "7c5ed5655730de337704d3fc94628515cd7e3d8d32368871709bf56ac0397e7a"
+    },
+    {
+      "name": "/assets/inter-latin-700-normal-Yt3aPRUw.woff2",
+      "bytes": 24356,
+      "sha256": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
+    },
+    {
+      "name": "/assets/inter-latin-ext-400-normal-77YHD8bZ.woff",
+      "bytes": 47560,
+      "sha256": "22ae8360fbad24d2af7c6c9898a346c881774dc87f7cf94bd262c48ad58d7116"
+    },
+    {
+      "name": "/assets/inter-latin-ext-400-normal-C1nco2VV.woff2",
+      "bytes": 35000,
+      "sha256": "6744a7f509ebc6ab220a6cd4ea77e898adf014f03d88dcda5d45d8a9feefb4e9"
+    },
+    {
+      "name": "/assets/inter-latin-ext-500-normal-BxGbmqWO.woff",
+      "bytes": 48492,
+      "sha256": "30d2903ce97f8a89ea0e9c083b42cb8bf97e7bbb5607e7f00352815f19cb0d5b"
+    },
+    {
+      "name": "/assets/inter-latin-ext-500-normal-CV4jyFjo.woff2",
+      "bytes": 36024,
+      "sha256": "2c6fbc42d315528beb06c1096df45487bf4186c4b78b8111d12c9c951f8acca2"
+    },
+    {
+      "name": "/assets/inter-latin-ext-600-normal-CIVaiw4L.woff",
+      "bytes": 48668,
+      "sha256": "22ff20a6170674fb9637c2a072227be86303bb6ec52b829b9d7077405f7196a6"
+    },
+    {
+      "name": "/assets/inter-latin-ext-600-normal-D2bJ5OIk.woff2",
+      "bytes": 36260,
+      "sha256": "e4bdf67b0cd15ca9e184509275be95db942195d3cc2b17f6a0452f2adf75d0bf"
+    },
+    {
+      "name": "/assets/inter-latin-ext-700-normal-Ca8adRJv.woff2",
+      "bytes": 36244,
+      "sha256": "143f9504f1377012aa3e39c90c4354ef429cb0494b9ac0e1437f1a81e5412236"
+    },
+    {
+      "name": "/assets/inter-latin-ext-700-normal-TidjK2hL.woff",
+      "bytes": 48632,
+      "sha256": "1761edba32014180deab3dbbe3f7156c64ef6f34bc76313ba31ce227fc9ff391"
+    },
+    {
+      "name": "/assets/inter-vietnamese-400-normal-Bbgyi5SW.woff",
+      "bytes": 6500,
+      "sha256": "54aa42d325bcdfd623ecb9eac4a5e3c6420c63d7b86e9d8545fb479f653beb57"
+    },
+    {
+      "name": "/assets/inter-vietnamese-400-normal-DMkecbls.woff2",
+      "bytes": 4972,
+      "sha256": "547ad9fdaeb0ae43487f4b8a02e47c36553c0c0cb73c8aa98f93b7b615f6b55d"
+    },
+    {
+      "name": "/assets/inter-vietnamese-500-normal-DOriooB6.woff2",
+      "bytes": 5112,
+      "sha256": "44e36aa5a8f12130029a29bb0e6695d0262b67446ce321e878b1fb56162b5de6"
+    },
+    {
+      "name": "/assets/inter-vietnamese-500-normal-mJboJaSs.woff",
+      "bytes": 6596,
+      "sha256": "18a4a09f751671cd8929d7c66e8fe7d820b511c36e51cf6047ffceab88eec4a4"
+    },
+    {
+      "name": "/assets/inter-vietnamese-600-normal-BuLX-rYi.woff",
+      "bytes": 6640,
+      "sha256": "24a01e7bd947aeef91ae8f7b8edeb23fadaf5ceda34a610ce62d2bbdaea57e83"
+    },
+    {
+      "name": "/assets/inter-vietnamese-600-normal-Cc8MFFhd.woff2",
+      "bytes": 5100,
+      "sha256": "1aeb94ae9db052a4a2fe6f3046f928cff1fdbd7abdf870a9a01c13cae6faeba5"
+    },
+    {
+      "name": "/assets/inter-vietnamese-700-normal-BZaoP0fm.woff",
+      "bytes": 6632,
+      "sha256": "412023ab2f41333b373e2c6eb2a3ebab806fddd610015d2ae8cd4f4314c7ba92"
+    },
+    {
+      "name": "/assets/inter-vietnamese-700-normal-DlLaEgI2.woff2",
+      "bytes": 5104,
+      "sha256": "5fafa3829a16d9ea5ac3a67c51e54186353122790b604a3e361f96cab188da8b"
+    },
+    {
+      "name": "/assets/kz-CxppamuO.svg",
+      "bytes": 9636,
+      "sha256": "71a7d90e17ae74f6bf9572d9560b83d2d6ca047482fe2a229b770c67338f3848"
+    },
+    {
+      "name": "/assets/pt-C3eOmvl2.svg",
+      "bytes": 10853,
+      "sha256": "f60337f226fba6b695f54222f63b354920b1ecb4a0ff27f16bd49983f345f4c7"
+    },
+    {
+      "name": "/assets/shield-motion.js",
+      "bytes": 71176,
+      "sha256": "27e3cd42ee021f050b261c9c70c177a36fc81bcfe885b147984ed25747eaeeb6"
+    },
+    {
+      "name": "/index.html",
+      "bytes": 820,
+      "sha256": "29d32cfef5670b30fb85b8e8e60e074487b1351c3a264e0b4ccc577434e15113"
+    }
+  ],
+  "checks": [
+    {
+      "id": "setting-autoStart",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "state.set",
+          "args": [
+            {
+              "settings": {
+                "autoStart": true,
+                "minimizeToTray": false,
+                "autoConnect": false,
+                "reconnectOnDrop": true,
+                "notifications": true,
+                "sendSubscriptionHwid": false,
+                "autoUpdate": true,
+                "soundNotifications": false
+              },
+              "nodes": [
+                {
+                  "id": "fixture-node",
+                  "name": "QA server",
+                  "server": "192.0.2.2",
+                  "port": 443,
+                  "protocol": "vless"
+                }
+              ],
+              "subscriptions": [],
+              "activeNodeId": "fixture-node"
+            }
+          ]
+        }
+      ],
+      "reads": {
+        "state.get": 2,
+        "vpn.status": 2,
+        "dns.status": 2,
+        "doh.status": 2,
+        "zapret.status": 2,
+        "telegram.status": 2,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "setting-minimizeToTray",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "state.set",
+          "args": [
+            {
+              "settings": {
+                "autoStart": false,
+                "minimizeToTray": true,
+                "autoConnect": false,
+                "reconnectOnDrop": true,
+                "notifications": true,
+                "sendSubscriptionHwid": false,
+                "autoUpdate": true,
+                "soundNotifications": false
+              },
+              "nodes": [
+                {
+                  "id": "fixture-node",
+                  "name": "QA server",
+                  "server": "192.0.2.2",
+                  "port": 443,
+                  "protocol": "vless"
+                }
+              ],
+              "subscriptions": [],
+              "activeNodeId": "fixture-node"
+            }
+          ]
+        }
+      ],
+      "reads": {
+        "state.get": 2,
+        "vpn.status": 2,
+        "dns.status": 2,
+        "doh.status": 2,
+        "zapret.status": 2,
+        "telegram.status": 2,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "setting-autoConnect",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "state.set",
+          "args": [
+            {
+              "settings": {
+                "autoStart": false,
+                "minimizeToTray": false,
+                "autoConnect": true,
+                "reconnectOnDrop": true,
+                "notifications": true,
+                "sendSubscriptionHwid": false,
+                "autoUpdate": true,
+                "soundNotifications": false
+              },
+              "nodes": [
+                {
+                  "id": "fixture-node",
+                  "name": "QA server",
+                  "server": "192.0.2.2",
+                  "port": 443,
+                  "protocol": "vless"
+                }
+              ],
+              "subscriptions": [],
+              "activeNodeId": "fixture-node"
+            }
+          ]
+        }
+      ],
+      "reads": {
+        "state.get": 2,
+        "vpn.status": 2,
+        "dns.status": 2,
+        "doh.status": 2,
+        "zapret.status": 2,
+        "telegram.status": 2,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "setting-reconnectOnDrop",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "state.set",
+          "args": [
+            {
+              "settings": {
+                "autoStart": false,
+                "minimizeToTray": false,
+                "autoConnect": false,
+                "reconnectOnDrop": false,
+                "notifications": true,
+                "sendSubscriptionHwid": false,
+                "autoUpdate": true,
+                "soundNotifications": false
+              },
+              "nodes": [
+                {
+                  "id": "fixture-node",
+                  "name": "QA server",
+                  "server": "192.0.2.2",
+                  "port": 443,
+                  "protocol": "vless"
+                }
+              ],
+              "subscriptions": [],
+              "activeNodeId": "fixture-node"
+            }
+          ]
+        }
+      ],
+      "reads": {
+        "state.get": 2,
+        "vpn.status": 2,
+        "dns.status": 2,
+        "doh.status": 2,
+        "zapret.status": 2,
+        "telegram.status": 2,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "setting-notifications",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "state.set",
+          "args": [
+            {
+              "settings": {
+                "autoStart": false,
+                "minimizeToTray": false,
+                "autoConnect": false,
+                "reconnectOnDrop": true,
+                "notifications": false,
+                "sendSubscriptionHwid": false,
+                "autoUpdate": true,
+                "soundNotifications": false
+              },
+              "nodes": [
+                {
+                  "id": "fixture-node",
+                  "name": "QA server",
+                  "server": "192.0.2.2",
+                  "port": 443,
+                  "protocol": "vless"
+                }
+              ],
+              "subscriptions": [],
+              "activeNodeId": "fixture-node"
+            }
+          ]
+        }
+      ],
+      "reads": {
+        "state.get": 2,
+        "vpn.status": 2,
+        "dns.status": 2,
+        "doh.status": 2,
+        "zapret.status": 2,
+        "telegram.status": 2,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "setting-sendSubscriptionHwid",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "state.set",
+          "args": [
+            {
+              "settings": {
+                "autoStart": false,
+                "minimizeToTray": false,
+                "autoConnect": false,
+                "reconnectOnDrop": true,
+                "notifications": true,
+                "sendSubscriptionHwid": true,
+                "autoUpdate": true,
+                "soundNotifications": false
+              },
+              "nodes": [
+                {
+                  "id": "fixture-node",
+                  "name": "QA server",
+                  "server": "192.0.2.2",
+                  "port": 443,
+                  "protocol": "vless"
+                }
+              ],
+              "subscriptions": [],
+              "activeNodeId": "fixture-node"
+            }
+          ]
+        }
+      ],
+      "reads": {
+        "state.get": 2,
+        "vpn.status": 2,
+        "dns.status": 2,
+        "doh.status": 2,
+        "zapret.status": 2,
+        "telegram.status": 2,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "setting-autoUpdate",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "updater.setAuto",
+          "args": [
+            false
+          ]
+        }
+      ],
+      "reads": {
+        "state.get": 2,
+        "vpn.status": 2,
+        "dns.status": 2,
+        "doh.status": 2,
+        "zapret.status": 2,
+        "telegram.status": 2,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "startup-autoConnect-dependency",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "state.set",
+          "args": [
+            {
+              "settings": {
+                "autoStart": false,
+                "minimizeToTray": false,
+                "autoConnect": true,
+                "reconnectOnDrop": true,
+                "notifications": true,
+                "sendSubscriptionHwid": false,
+                "autoUpdate": true,
+                "soundNotifications": false
+              },
+              "nodes": [
+                {
+                  "id": "fixture-node",
+                  "name": "QA server",
+                  "server": "192.0.2.2",
+                  "port": 443,
+                  "protocol": "vless"
+                }
+              ],
+              "subscriptions": [],
+              "activeNodeId": "fixture-node"
+            }
+          ]
+        },
+        {
+          "name": "state.set",
+          "args": [
+            {
+              "settings": {
+                "autoStart": false,
+                "minimizeToTray": false,
+                "autoConnect": false,
+                "reconnectOnDrop": true,
+                "notifications": true,
+                "sendSubscriptionHwid": false,
+                "autoUpdate": true,
+                "soundNotifications": false
+              },
+              "nodes": [
+                {
+                  "id": "fixture-node",
+                  "name": "QA server",
+                  "server": "192.0.2.2",
+                  "port": 443,
+                  "protocol": "vless"
+                }
+              ],
+              "subscriptions": [],
+              "activeNodeId": "fixture-node"
+            }
+          ]
+        }
+      ],
+      "reads": {
+        "state.get": 3,
+        "vpn.status": 3,
+        "dns.status": 3,
+        "doh.status": 3,
+        "zapret.status": 3,
+        "telegram.status": 3,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "help-focus-ref-and-keyboard",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "anchor": {
+        "helpBox": {
+          "x": 845.046875,
+          "y": 263.734375,
+          "width": 28,
+          "height": 28
+        },
+        "hintBox": {
+          "x": 573.046875,
+          "y": 297.734375,
+          "width": 300,
+          "height": 52.78125
+        },
+        "ancestors": [
+          {
+            "tag": "SPAN",
+            "className": "toggle-setting-hint visible",
+            "position": "fixed",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "DIV",
+            "className": "toggle-setting-row",
+            "position": "relative",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "DIV",
+            "className": "settings-section-items",
+            "position": "static",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "SECTION",
+            "className": "settings-section",
+            "position": "static",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "DIV",
+            "className": "settings-section-list settings-preferences-list",
+            "position": "static",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "ARTICLE",
+            "className": "panel settings-surface settings-preferences-surface",
+            "position": "relative",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "DIV",
+            "className": "settings-layout",
+            "position": "relative",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "SECTION",
+            "className": "screen-stage",
+            "position": "static",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "SECTION",
+            "className": "workspace",
+            "position": "relative",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "MAIN",
+            "className": "app-shell",
+            "position": "relative",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "DIV",
+            "className": "",
+            "position": "static",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "BODY",
+            "className": "",
+            "position": "static",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          },
+          {
+            "tag": "HTML",
+            "className": "",
+            "position": "static",
+            "transform": "none",
+            "filter": "none",
+            "backdropFilter": "none",
+            "contain": "none",
+            "willChange": "auto"
+          }
+        ]
+      },
+      "escapeKeepsFocus": true,
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "privacy-help-narrow-viewport",
+      "screen": "settings",
+      "viewport": {
+        "width": 550,
+        "height": 728
+      },
+      "status": "passed",
+      "bounds": {
+        "helpBox": {
+          "x": 468,
+          "y": 551.140625,
+          "width": 28,
+          "height": 28
+        },
+        "hintBox": {
+          "x": 196,
+          "y": 585.140625,
+          "width": 300,
+          "height": 52.78125
+        },
+        "viewport": {
+          "width": 550,
+          "height": 728
+        }
+      },
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "release-actions-fit",
+      "screen": "settings",
+      "viewport": {
+        "width": 550,
+        "height": 728
+      },
+      "status": "passed",
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "update-error-recovers-with-successful-event",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "updater.checkAndInstall",
+          "args": []
+        }
+      ],
+      "reads": {
+        "state.get": 2,
+        "vpn.status": 2,
+        "dns.status": 2,
+        "doh.status": 2,
+        "zapret.status": 2,
+        "telegram.status": 2,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "update-initial-ipc-failure-retry",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "updater.checkAndInstall",
+          "args": []
+        }
+      ],
+      "reads": {
+        "state.get": 3,
+        "vpn.status": 3,
+        "dns.status": 3,
+        "doh.status": 3,
+        "zapret.status": 3,
+        "telegram.status": 3,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "update-newer-event-wins",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "dashboard-service-running-is-not-runtime-ready",
+      "screen": "dashboard",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [],
+      "reads": {
+        "state.get": 2,
+        "vpn.status": 2,
+        "dns.status": 2,
+        "doh.status": 2,
+        "zapret.status": 2,
+        "telegram.status": 2,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "dns-presets-and-confirmed-apply",
+      "screen": "dns",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "system.setDnsServers",
+          "args": [
+            "94.140.14.14\n94.140.15.15"
+          ]
+        }
+      ],
+      "reads": {
+        "state.get": 4,
+        "vpn.status": 4,
+        "dns.status": 4,
+        "doh.status": 4,
+        "zapret.status": 4,
+        "telegram.status": 4,
+        "updater.check": 1,
+        "dns.diagnostics": 1
+      }
+    },
+    {
+      "id": "zapret-routes-four-fields-save",
+      "screen": "zapret",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "zapret.saveUserLists",
+          "args": [
+            {
+              "generalDomains": [
+                "one.example.test",
+                "two.example.test"
+              ],
+              "includedCidrs": [
+                "192.0.2.0/24"
+              ],
+              "excludedDomains": [
+                "exclude.example.test"
+              ],
+              "excludedCidrs": [
+                "198.51.100.0/24"
+              ]
+            }
+          ]
+        }
+      ],
+      "reads": {
+        "state.get": 4,
+        "vpn.status": 4,
+        "dns.status": 4,
+        "doh.status": 4,
+        "zapret.status": 4,
+        "telegram.status": 4,
+        "updater.check": 1,
+        "zapret.getUserLists": 1
+      }
+    },
+    {
+      "id": "telegram-advanced-draft-passive-refresh",
+      "screen": "telegram-proxy",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [
+        {
+          "name": "telegramProxy.saveConfig",
+          "args": [
+            {
+              "host": "127.0.0.1",
+              "port": 2443,
+              "secret": "0123456789abcdef0123456789abcdef",
+              "dcIp": [],
+              "verbose": false,
+              "bufKb": 256,
+              "poolSize": 12,
+              "logMaxMb": 5,
+              "checkUpdates": true
+            }
+          ]
+        },
+        {
+          "name": "telegramProxy.start",
+          "args": []
+        }
+      ],
+      "reads": {
+        "state.get": 5,
+        "vpn.status": 5,
+        "dns.status": 5,
+        "doh.status": 5,
+        "zapret.status": 5,
+        "telegram.status": 5,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "generic-dialog-escape-focus-trap",
+      "screen": "dashboard",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "about-dialog-escape-focus-trap",
+      "screen": "dashboard",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [],
+      "reads": {
+        "state.get": 2,
+        "vpn.status": 2,
+        "dns.status": 2,
+        "doh.status": 2,
+        "zapret.status": 2,
+        "telegram.status": 2,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "svg-fill-paint-and-update-action-icon",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "profile-legend-within-panel",
+      "screen": "zapret",
+      "viewport": {
+        "width": 1000,
+        "height": 680
+      },
+      "status": "passed",
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1,
+        "zapret.getUserLists": 1
+      }
+    },
+    {
+      "id": "zapret-recommendation-fit-820",
+      "screen": "zapret",
+      "viewport": {
+        "width": 820,
+        "height": 760
+      },
+      "status": "passed",
+      "layout": {
+        "bannerWidth": 666,
+        "buttonWidth": 149.140625,
+        "buttonScroll": 147,
+        "buttonClient": 147,
+        "buttonWithin": true,
+        "titleFits": true,
+        "bodyFits": true,
+        "insideStatus": true,
+        "noWorkbenchOverlap": true
+      },
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1,
+        "zapret.getUserLists": 1
+      }
+    },
+    {
+      "id": "zapret-recommendation-fit-550",
+      "screen": "zapret",
+      "viewport": {
+        "width": 550,
+        "height": 740
+      },
+      "status": "passed",
+      "layout": {
+        "bannerWidth": 396,
+        "buttonWidth": 149.140625,
+        "buttonScroll": 147,
+        "buttonClient": 147,
+        "buttonWithin": true,
+        "titleFits": true,
+        "bodyFits": true,
+        "insideStatus": true,
+        "noWorkbenchOverlap": true
+      },
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1,
+        "zapret.getUserLists": 1
+      }
+    },
+    {
+      "id": "button-text-fit-1440",
+      "screen": "settings",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "screens": [
+        {
+          "label": "Обзор",
+          "clipped": []
+        },
+        {
+          "label": "Соединение",
+          "clipped": []
+        },
+        {
+          "label": "DNS",
+          "clipped": []
+        },
+        {
+          "label": "Профили",
+          "clipped": []
+        },
+        {
+          "label": "Telegram",
+          "clipped": []
+        },
+        {
+          "label": "Настройки",
+          "clipped": []
+        }
+      ],
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1,
+        "dns.diagnostics": 1,
+        "zapret.getUserLists": 1
+      }
+    },
+    {
+      "id": "button-text-fit-820",
+      "screen": "settings",
+      "viewport": {
+        "width": 820,
+        "height": 760
+      },
+      "status": "passed",
+      "screens": [
+        {
+          "label": "Обзор",
+          "clipped": []
+        },
+        {
+          "label": "Соединение",
+          "clipped": []
+        },
+        {
+          "label": "DNS",
+          "clipped": []
+        },
+        {
+          "label": "Профили",
+          "clipped": []
+        },
+        {
+          "label": "Telegram",
+          "clipped": []
+        },
+        {
+          "label": "Настройки",
+          "clipped": []
+        }
+      ],
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1,
+        "dns.diagnostics": 1,
+        "zapret.getUserLists": 1
+      }
+    },
+    {
+      "id": "server-picker-escape-focus-trap",
+      "screen": "dashboard",
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "status": "passed",
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "zoom-settings-tooltips-550x370",
+      "screen": "settings",
+      "viewport": {
+        "width": 550,
+        "height": 370
+      },
+      "status": "passed",
+      "tooltips": [
+        {
+          "key": "autoStart",
+          "label": "Запускать при старте Windows",
+          "helpBox": {
+            "x": 468,
+            "y": 199.390625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 196,
+            "y": 233.390625,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "minimizeToTray",
+          "label": "Сворачивать в трей",
+          "helpBox": {
+            "x": 468,
+            "y": 244.390625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 196,
+            "y": 278.390625,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "autoConnect",
+          "label": "Автоподключение маршрута",
+          "helpBox": {
+            "x": 468,
+            "y": 331.640625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 196,
+            "y": 272.859375,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "reconnectOnDrop",
+          "label": "Переподключаться при обрыве",
+          "helpBox": {
+            "x": 468,
+            "y": 332.640625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 196,
+            "y": 273.859375,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "notifications",
+          "label": "Показывать уведомления",
+          "helpBox": {
+            "x": 468,
+            "y": 221.890625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 196,
+            "y": 255.890625,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "sendSubscriptionHwid",
+          "label": "Передавать HWID провайдеру подписки",
+          "helpBox": {
+            "x": 468,
+            "y": 309.140625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 196,
+            "y": 250.359375,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "autoUpdate",
+          "label": "Автообновление приложения и компонентов",
+          "helpBox": {
+            "x": 468,
+            "y": 111.203125,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 196,
+            "y": 145.203125,
+            "width": 300,
+            "height": 70.171875
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        }
+      ],
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "zoom-generic-modal-550x370",
+      "screen": "dashboard",
+      "viewport": {
+        "width": 550,
+        "height": 370
+      },
+      "status": "passed",
+      "controls": [
+        {
+          "label": "Закрыть диалог",
+          "box": {
+            "x": 482,
+            "y": 78.671875,
+            "width": 30,
+            "height": 30
+          },
+          "insideViewport": true,
+          "receivesPointer": true
+        },
+        {
+          "label": "Отмена",
+          "box": {
+            "x": 46,
+            "y": 247.3125,
+            "width": 225,
+            "height": 36
+          },
+          "insideViewport": true,
+          "receivesPointer": true
+        },
+        {
+          "label": "Восстановить",
+          "box": {
+            "x": 279,
+            "y": 247.3125,
+            "width": 225,
+            "height": 36
+          },
+          "insideViewport": true,
+          "receivesPointer": true
+        }
+      ],
+      "focusAfterCancel": {
+        "active": {
+          "tag": "BUTTON",
+          "className": "ruby-recovery",
+          "text": "Восстановить интернет"
+        },
+        "events": [
+          {
+            "tag": "BUTTON",
+            "className": "ruby-recovery",
+            "text": "Восстановить интернет",
+            "at": 742.4000000059605
+          },
+          {
+            "tag": "BUTTON",
+            "className": "modal-close",
+            "text": "",
+            "at": 756.5
+          },
+          {
+            "tag": "BUTTON",
+            "className": "btn-secondary",
+            "text": "Отмена",
+            "at": 1007.4000000059605
+          },
+          {
+            "tag": "BUTTON",
+            "className": "ruby-recovery",
+            "text": "Восстановить интернет",
+            "at": 1009.1000000089407
+          }
+        ]
+      },
+      "focusAfterEscape": {
+        "active": {
+          "tag": "BUTTON",
+          "className": "ruby-recovery",
+          "text": "Восстановить интернет"
+        },
+        "events": [
+          {
+            "tag": "BUTTON",
+            "className": "ruby-recovery",
+            "text": "Восстановить интернет",
+            "at": 742.4000000059605
+          },
+          {
+            "tag": "BUTTON",
+            "className": "modal-close",
+            "text": "",
+            "at": 756.5
+          },
+          {
+            "tag": "BUTTON",
+            "className": "btn-secondary",
+            "text": "Отмена",
+            "at": 1007.4000000059605
+          },
+          {
+            "tag": "BUTTON",
+            "className": "ruby-recovery",
+            "text": "Восстановить интернет",
+            "at": 1009.1000000089407
+          }
+        ]
+      },
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "zoom-settings-tooltips-512x364",
+      "screen": "settings",
+      "viewport": {
+        "width": 512,
+        "height": 364
+      },
+      "status": "passed",
+      "tooltips": [
+        {
+          "key": "autoStart",
+          "label": "Запускать при старте Windows",
+          "helpBox": {
+            "x": 430,
+            "y": 199.390625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 158,
+            "y": 233.390625,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "minimizeToTray",
+          "label": "Сворачивать в трей",
+          "helpBox": {
+            "x": 430,
+            "y": 244.390625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 158,
+            "y": 278.390625,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "autoConnect",
+          "label": "Автоподключение маршрута",
+          "helpBox": {
+            "x": 430,
+            "y": 326.640625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 158,
+            "y": 267.859375,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "reconnectOnDrop",
+          "label": "Переподключаться при обрыве",
+          "helpBox": {
+            "x": 430,
+            "y": 219.640625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 158,
+            "y": 253.640625,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "notifications",
+          "label": "Показывать уведомления",
+          "helpBox": {
+            "x": 430,
+            "y": 306.890625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 158,
+            "y": 248.109375,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "sendSubscriptionHwid",
+          "label": "Передавать HWID провайдеру подписки",
+          "helpBox": {
+            "x": 430,
+            "y": 219.140625,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 158,
+            "y": 253.140625,
+            "width": 300,
+            "height": 52.78125
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        },
+        {
+          "key": "autoUpdate",
+          "label": "Автообновление приложения и компонентов",
+          "helpBox": {
+            "x": 430,
+            "y": 219.203125,
+            "width": 28,
+            "height": 28
+          },
+          "hintBox": {
+            "x": 158,
+            "y": 253.203125,
+            "width": 300,
+            "height": 70.171875
+          },
+          "insideViewport": true,
+          "coversOwnTrigger": false
+        }
+      ],
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1
+      }
+    },
+    {
+      "id": "zoom-generic-modal-512x364",
+      "screen": "dashboard",
+      "viewport": {
+        "width": 512,
+        "height": 364
+      },
+      "status": "passed",
+      "controls": [
+        {
+          "label": "Закрыть диалог",
+          "box": {
+            "x": 453,
+            "y": 75.671875,
+            "width": 30,
+            "height": 30
+          },
+          "insideViewport": true,
+          "receivesPointer": true
+        },
+        {
+          "label": "Отмена",
+          "box": {
+            "x": 37,
+            "y": 244.3125,
+            "width": 215,
+            "height": 36
+          },
+          "insideViewport": true,
+          "receivesPointer": true
+        },
+        {
+          "label": "Восстановить",
+          "box": {
+            "x": 260,
+            "y": 244.3125,
+            "width": 215,
+            "height": 36
+          },
+          "insideViewport": true,
+          "receivesPointer": true
+        }
+      ],
+      "focusAfterCancel": {
+        "active": {
+          "tag": "BUTTON",
+          "className": "ruby-recovery",
+          "text": "Восстановить интернет"
+        },
+        "events": [
+          {
+            "tag": "BUTTON",
+            "className": "ruby-recovery",
+            "text": "Восстановить интернет",
+            "at": 735.6000000089407
+          },
+          {
+            "tag": "BUTTON",
+            "className": "modal-close",
+            "text": "",
+            "at": 750.1000000089407
+          },
+          {
+            "tag": "BUTTON",
+            "className": "btn-secondary",
+            "text": "Отмена",
+            "at": 1002.5
+          },
+          {
+            "tag": "BUTTON",
+            "className": "ruby-recovery",
+            "text": "Восстановить интернет",
+            "at": 1004.1000000089407
+          }
+        ]
+      },
+      "focusAfterEscape": {
+        "active": {
+          "tag": "BUTTON",
+          "className": "ruby-recovery",
+          "text": "Восстановить интернет"
+        },
+        "events": [
+          {
+            "tag": "BUTTON",
+            "className": "ruby-recovery",
+            "text": "Восстановить интернет",
+            "at": 735.6000000089407
+          },
+          {
+            "tag": "BUTTON",
+            "className": "modal-close",
+            "text": "",
+            "at": 750.1000000089407
+          },
+          {
+            "tag": "BUTTON",
+            "className": "btn-secondary",
+            "text": "Отмена",
+            "at": 1002.5
+          },
+          {
+            "tag": "BUTTON",
+            "className": "ruby-recovery",
+            "text": "Восстановить интернет",
+            "at": 1004.1000000089407
+          }
+        ]
+      },
+      "calls": [],
+      "reads": {
+        "state.get": 1,
+        "vpn.status": 1,
+        "dns.status": 1,
+        "doh.status": 1,
+        "zapret.status": 1,
+        "telegram.status": 1,
+        "updater.check": 1
+      }
+    }
+  ],
+  "pageErrors": [],
+  "blockedRequests": [],
+  "limitations": [
+    "Renderer contracts exercised with mocks; Windows services, real persistence and packaged Electron behavior are not tested."
+  ],
+  "browserVersion": "153.0.8010.12",
+  "buildChangedDuringRun": [],
+  "finishedAt": "2026-09-29T14:45:15.394Z",
+  "passed": true
+}

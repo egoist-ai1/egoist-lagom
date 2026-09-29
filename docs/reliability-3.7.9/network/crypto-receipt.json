@@ -1,0 +1,882 @@
+{
+  "observedAt": "2026-09-29T13:23:46.065Z",
+  "nodeVersion": "v24.19.0",
+  "method": "Actual Ed25519 crypto.verify over original artifact bytes; no generated keys, signatures, mocks or installed-app execution",
+  "roots": [
+    {
+      "label": "b8662d3",
+      "pemSha256": "3c5b24f9247110000f70a77e1e8a60157166f9675f6c59bd021c6e45d4eda592",
+      "spkiSha256": "45e9a2c687439088f2a742c2a1f518d8ecb6bc0288eab8d9d2736faaa2e18b7c"
+    },
+    {
+      "label": "candidate",
+      "pemSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+      "spkiSha256": "c5afc36a97cc4c27f60cdda41d33e1e460e8697f1ff641438ab915c6d259307d"
+    },
+    {
+      "label": "current",
+      "pemSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+      "spkiSha256": "c5afc36a97cc4c27f60cdda41d33e1e460e8697f1ff641438ab915c6d259307d"
+    },
+    {
+      "label": "installed",
+      "pemSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+      "spkiSha256": "c5afc36a97cc4c27f60cdda41d33e1e460e8697f1ff641438ab915c6d259307d"
+    },
+    {
+      "label": "published-v3.7.1",
+      "pemSha256": "974d66a101aeab923b4045cc2c655b4e1f76afa7e942cf7022fdec58ab179157",
+      "spkiSha256": "954d1985c460f869a7f2ada2819b478d8e8a1fd3b7a07f408e42a61554998892"
+    },
+    {
+      "label": "v3.7.1",
+      "pemSha256": "974d66a101aeab923b4045cc2c655b4e1f76afa7e942cf7022fdec58ab179157",
+      "spkiSha256": "954d1985c460f869a7f2ada2819b478d8e8a1fd3b7a07f408e42a61554998892"
+    }
+  ],
+  "registries": [
+    {
+      "label": "b8662d3",
+      "bytesSha256": "61479bff3873fd1a1a962f1a3da85ca0e2d61b8f6e7eae919f96266e530f0c95",
+      "signatureBytes": 64,
+      "keys": [
+        {
+          "id": "release-2026-01",
+          "status": "trusted",
+          "notBefore": "2026-01-01T00:00:00.000Z",
+          "notAfter": "2036-01-01T00:00:00.000Z",
+          "spkiSha256": "955434d719e19542ea5a5596e17e2061c3a0efb3a792ff30ae5e856b33baa58a"
+        },
+        {
+          "id": "release-2026-09",
+          "status": "trusted",
+          "notBefore": "2026-09-07T00:00:00.000Z",
+          "notAfter": "2028-09-07T00:00:00.000Z",
+          "spkiSha256": "a0567b8b03b273c46bffc4e0e9a4576fcb912a8420e9f2193861ea091ada87d4"
+        }
+      ],
+      "verifiedByRoots": {
+        "b8662d3": true,
+        "candidate": false,
+        "current": false,
+        "installed": false,
+        "published-v3.7.1": false,
+        "v3.7.1": false
+      }
+    },
+    {
+      "label": "candidate",
+      "bytesSha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+      "signatureBytes": 64,
+      "keys": [
+        {
+          "id": "release-2026-01",
+          "status": "trusted",
+          "notBefore": "2026-01-01T00:00:00.000Z",
+          "notAfter": "2036-01-01T00:00:00.000Z",
+          "spkiSha256": "955434d719e19542ea5a5596e17e2061c3a0efb3a792ff30ae5e856b33baa58a"
+        },
+        {
+          "id": "release-2026-09",
+          "status": "trusted",
+          "notBefore": "2026-09-07T00:00:00.000Z",
+          "notAfter": "2028-09-07T00:00:00.000Z",
+          "spkiSha256": "a0567b8b03b273c46bffc4e0e9a4576fcb912a8420e9f2193861ea091ada87d4"
+        },
+        {
+          "id": "release-2026-09-recovery",
+          "status": "trusted",
+          "notBefore": "2026-09-29T00:00:00.000Z",
+          "notAfter": "2028-09-29T00:00:00.000Z",
+          "spkiSha256": "89a3fe6e668a02ec3b52ec0fadbf0018947525ce8343d5243f857be6a80564a4"
+        }
+      ],
+      "verifiedByRoots": {
+        "b8662d3": false,
+        "candidate": true,
+        "current": true,
+        "installed": true,
+        "published-v3.7.1": false,
+        "v3.7.1": false
+      }
+    },
+    {
+      "label": "current",
+      "bytesSha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+      "signatureBytes": 64,
+      "keys": [
+        {
+          "id": "release-2026-01",
+          "status": "trusted",
+          "notBefore": "2026-01-01T00:00:00.000Z",
+          "notAfter": "2036-01-01T00:00:00.000Z",
+          "spkiSha256": "955434d719e19542ea5a5596e17e2061c3a0efb3a792ff30ae5e856b33baa58a"
+        },
+        {
+          "id": "release-2026-09",
+          "status": "trusted",
+          "notBefore": "2026-09-07T00:00:00.000Z",
+          "notAfter": "2028-09-07T00:00:00.000Z",
+          "spkiSha256": "a0567b8b03b273c46bffc4e0e9a4576fcb912a8420e9f2193861ea091ada87d4"
+        },
+        {
+          "id": "release-2026-09-recovery",
+          "status": "trusted",
+          "notBefore": "2026-09-29T00:00:00.000Z",
+          "notAfter": "2028-09-29T00:00:00.000Z",
+          "spkiSha256": "89a3fe6e668a02ec3b52ec0fadbf0018947525ce8343d5243f857be6a80564a4"
+        }
+      ],
+      "verifiedByRoots": {
+        "b8662d3": false,
+        "candidate": true,
+        "current": true,
+        "installed": true,
+        "published-v3.7.1": false,
+        "v3.7.1": false
+      }
+    },
+    {
+      "label": "installed",
+      "bytesSha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+      "signatureBytes": 64,
+      "keys": [
+        {
+          "id": "release-2026-01",
+          "status": "trusted",
+          "notBefore": "2026-01-01T00:00:00.000Z",
+          "notAfter": "2036-01-01T00:00:00.000Z",
+          "spkiSha256": "955434d719e19542ea5a5596e17e2061c3a0efb3a792ff30ae5e856b33baa58a"
+        },
+        {
+          "id": "release-2026-09",
+          "status": "trusted",
+          "notBefore": "2026-09-07T00:00:00.000Z",
+          "notAfter": "2028-09-07T00:00:00.000Z",
+          "spkiSha256": "a0567b8b03b273c46bffc4e0e9a4576fcb912a8420e9f2193861ea091ada87d4"
+        },
+        {
+          "id": "release-2026-09-recovery",
+          "status": "trusted",
+          "notBefore": "2026-09-29T00:00:00.000Z",
+          "notAfter": "2028-09-29T00:00:00.000Z",
+          "spkiSha256": "89a3fe6e668a02ec3b52ec0fadbf0018947525ce8343d5243f857be6a80564a4"
+        }
+      ],
+      "verifiedByRoots": {
+        "b8662d3": false,
+        "candidate": true,
+        "current": true,
+        "installed": true,
+        "published-v3.7.1": false,
+        "v3.7.1": false
+      }
+    },
+    {
+      "label": "published-v3.7.1",
+      "bytesSha256": "105546c67f4c773f06e6c016c9fc618b7e178c6e67149524203afde45297aa5c",
+      "signatureBytes": 64,
+      "keys": [
+        {
+          "id": "lagom-2026-09",
+          "status": "trusted",
+          "notBefore": "2026-09-12T00:00:00.000Z",
+          "notAfter": "2028-09-12T00:00:00.000Z",
+          "spkiSha256": "4cbd30c39730ebce38218bbe36deac9049e0277dc755545151b17ad51aea119a"
+        }
+      ],
+      "verifiedByRoots": {
+        "b8662d3": false,
+        "candidate": false,
+        "current": false,
+        "installed": false,
+        "published-v3.7.1": true,
+        "v3.7.1": true
+      }
+    },
+    {
+      "label": "v3.7.1",
+      "bytesSha256": "105546c67f4c773f06e6c016c9fc618b7e178c6e67149524203afde45297aa5c",
+      "signatureBytes": 64,
+      "keys": [
+        {
+          "id": "lagom-2026-09",
+          "status": "trusted",
+          "notBefore": "2026-09-12T00:00:00.000Z",
+          "notAfter": "2028-09-12T00:00:00.000Z",
+          "spkiSha256": "4cbd30c39730ebce38218bbe36deac9049e0277dc755545151b17ad51aea119a"
+        }
+      ],
+      "verifiedByRoots": {
+        "b8662d3": false,
+        "candidate": false,
+        "current": false,
+        "installed": false,
+        "published-v3.7.1": true,
+        "v3.7.1": true
+      }
+    }
+  ],
+  "manifests": [
+    {
+      "label": "candidate",
+      "name": "release-manifest.json",
+      "bytesSha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3",
+      "version": "3.7.8",
+      "keyId": "release-2026-09-recovery",
+      "minimumAppVersion": "3.7.8",
+      "publishedAt": "2026-09-29T12:54:24.535Z",
+      "assetName": "EgoistShield-Setup-3.7.8.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.8/EgoistShield-Setup-3.7.8.exe",
+      "assetBytes": 194405835,
+      "assetSha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "assetSha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "candidate",
+      "name": "stable-channel.json",
+      "bytesSha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3",
+      "version": "3.7.8",
+      "keyId": "release-2026-09-recovery",
+      "minimumAppVersion": "3.7.8",
+      "publishedAt": "2026-09-29T12:54:24.535Z",
+      "assetName": "EgoistShield-Setup-3.7.8.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.8/EgoistShield-Setup-3.7.8.exe",
+      "assetBytes": 194405835,
+      "assetSha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "assetSha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "published-v3.5.0",
+      "name": "release-manifest.json",
+      "bytesSha256": "164b734d83cf2487c80120291f250e3627f396c609dae06add959f7b501cd5e1",
+      "version": "3.5.0",
+      "keyId": "release-2026-01",
+      "minimumAppVersion": "3.5.0",
+      "publishedAt": "2026-08-09T14:55:40.939Z",
+      "assetName": "EgoistShield-Setup-3.5.0.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.0/EgoistShield-Setup-3.5.0.exe",
+      "assetBytes": 268423841,
+      "assetSha256": "a547ead4fc8d752273d9e4bae305df95ef7cc6bc0c82bb543ace4e59169d315b",
+      "assetSha512": "a430ac341c8b7940ca92fb2d06ad5085600a81fb8f0f4da3a87ac9547d021428591660515110f1b21d07afad15ca96364e0ec135a780758449520d45d73a2115",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "published-v3.5.0",
+      "name": "stable-channel.json",
+      "bytesSha256": "164b734d83cf2487c80120291f250e3627f396c609dae06add959f7b501cd5e1",
+      "version": "3.5.0",
+      "keyId": "release-2026-01",
+      "minimumAppVersion": "3.5.0",
+      "publishedAt": "2026-08-09T14:55:40.939Z",
+      "assetName": "EgoistShield-Setup-3.5.0.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.0/EgoistShield-Setup-3.5.0.exe",
+      "assetBytes": 268423841,
+      "assetSha256": "a547ead4fc8d752273d9e4bae305df95ef7cc6bc0c82bb543ace4e59169d315b",
+      "assetSha512": "a430ac341c8b7940ca92fb2d06ad5085600a81fb8f0f4da3a87ac9547d021428591660515110f1b21d07afad15ca96364e0ec135a780758449520d45d73a2115",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "published-v3.5.1",
+      "name": "release-manifest.json",
+      "bytesSha256": "22af5b29681bf14f483d0afaa977f983abd6f25aef22e34f7e59c065106fed41",
+      "version": "3.5.1",
+      "keyId": "release-2026-01",
+      "minimumAppVersion": "3.5.0",
+      "publishedAt": "2026-08-09T17:05:45.131Z",
+      "assetName": "EgoistShield-Setup-3.5.1.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.1/EgoistShield-Setup-3.5.1.exe",
+      "assetBytes": 268423467,
+      "assetSha256": "9271d79938e4a58c84b1332100a566285f23b70039247f43a5b0d085528b9e99",
+      "assetSha512": "452c2f5ea66e1d7c379165ed6cd7dec92723a4e6afa0bbb28476eee208473013aace05f3bfef2ef1872de123069b7286e7b450871a90e57b29ceba0c8ddae766",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "published-v3.5.1",
+      "name": "stable-channel.json",
+      "bytesSha256": "22af5b29681bf14f483d0afaa977f983abd6f25aef22e34f7e59c065106fed41",
+      "version": "3.5.1",
+      "keyId": "release-2026-01",
+      "minimumAppVersion": "3.5.0",
+      "publishedAt": "2026-08-09T17:05:45.131Z",
+      "assetName": "EgoistShield-Setup-3.5.1.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.1/EgoistShield-Setup-3.5.1.exe",
+      "assetBytes": 268423467,
+      "assetSha256": "9271d79938e4a58c84b1332100a566285f23b70039247f43a5b0d085528b9e99",
+      "assetSha512": "452c2f5ea66e1d7c379165ed6cd7dec92723a4e6afa0bbb28476eee208473013aace05f3bfef2ef1872de123069b7286e7b450871a90e57b29ceba0c8ddae766",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "published-v3.5.2",
+      "name": "release-manifest.json",
+      "bytesSha256": "1cdb03312a1235add388a56d40cb80c236d19ba60b508c4eebbfa817c299f0a0",
+      "version": "3.5.2",
+      "keyId": "release-2026-01",
+      "minimumAppVersion": "3.5.0",
+      "publishedAt": "2026-08-09T19:54:52.961Z",
+      "assetName": "EgoistShield-Setup-3.5.2.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.2/EgoistShield-Setup-3.5.2.exe",
+      "assetBytes": 268426781,
+      "assetSha256": "c1be783f2fee562de770d45ffa1ba02c5e5b7994974abf4931a5dc8933e1e206",
+      "assetSha512": "664523f958b33894c423455ef37e64786d1bc38f88f6e5110d57beebbb0eafe3a346bd8e4991f0dad4b99428a37efcdde03845cc40ff7ecd76d6a9c6b8227fa1",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "published-v3.5.2",
+      "name": "stable-channel.json",
+      "bytesSha256": "1cdb03312a1235add388a56d40cb80c236d19ba60b508c4eebbfa817c299f0a0",
+      "version": "3.5.2",
+      "keyId": "release-2026-01",
+      "minimumAppVersion": "3.5.0",
+      "publishedAt": "2026-08-09T19:54:52.961Z",
+      "assetName": "EgoistShield-Setup-3.5.2.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.2/EgoistShield-Setup-3.5.2.exe",
+      "assetBytes": 268426781,
+      "assetSha256": "c1be783f2fee562de770d45ffa1ba02c5e5b7994974abf4931a5dc8933e1e206",
+      "assetSha512": "664523f958b33894c423455ef37e64786d1bc38f88f6e5110d57beebbb0eafe3a346bd8e4991f0dad4b99428a37efcdde03845cc40ff7ecd76d6a9c6b8227fa1",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "published-v3.5.3",
+      "name": "release-manifest.json",
+      "bytesSha256": "c6b7a78395b99e9b77f07ded610c7c3ce7895fef2c3d52dc2cb62e8e89f25e9e",
+      "version": "3.5.3",
+      "keyId": "release-2026-01",
+      "minimumAppVersion": "3.5.0",
+      "publishedAt": "2026-08-10T18:13:42.715Z",
+      "assetName": "EgoistShield-Setup-3.5.3.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.3/EgoistShield-Setup-3.5.3.exe",
+      "assetBytes": 268437757,
+      "assetSha256": "ccad1002b5da843cdd4ce4697318ac1f56df38500397cb7075b148b16413983b",
+      "assetSha512": "de9836d99e8a6e19ec24b73966319a4c2f12162533ee5f8dfafcdcd5631308146733d941a29bea144ce753f2a30660ff5cfa17b0aa7fc10e7c5394ab13833356",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "published-v3.5.3",
+      "name": "stable-channel.json",
+      "bytesSha256": "c6b7a78395b99e9b77f07ded610c7c3ce7895fef2c3d52dc2cb62e8e89f25e9e",
+      "version": "3.5.3",
+      "keyId": "release-2026-01",
+      "minimumAppVersion": "3.5.0",
+      "publishedAt": "2026-08-10T18:13:42.715Z",
+      "assetName": "EgoistShield-Setup-3.5.3.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.3/EgoistShield-Setup-3.5.3.exe",
+      "assetBytes": 268437757,
+      "assetSha256": "ccad1002b5da843cdd4ce4697318ac1f56df38500397cb7075b148b16413983b",
+      "assetSha512": "de9836d99e8a6e19ec24b73966319a4c2f12162533ee5f8dfafcdcd5631308146733d941a29bea144ce753f2a30660ff5cfa17b0aa7fc10e7c5394ab13833356",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "published-v3.5.4",
+      "name": "release-manifest.json",
+      "bytesSha256": "c01b9e4028db5905b52a62aed9910bf455a7a65ed9a6c50df5612e56e8e10536",
+      "version": "3.5.4",
+      "keyId": "release-2026-01",
+      "minimumAppVersion": "3.5.0",
+      "publishedAt": "2026-08-10T20:28:20.721Z",
+      "assetName": "EgoistShield-Setup-3.5.4.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.4/EgoistShield-Setup-3.5.4.exe",
+      "assetBytes": 268441871,
+      "assetSha256": "97c2f6207176f68e1b63f5052b530a055ee60c15407448052ef4af5dbd478ce8",
+      "assetSha512": "62467505436e7d7d6f6b1d971c9911a721ed518ba5a93c3f4891e0eecd878974fcd9026e9f02681532a11e3bf4dd351d9ff52e946c8437aaa7cfed368ebe694c",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "published-v3.5.4",
+      "name": "stable-channel.json",
+      "bytesSha256": "c01b9e4028db5905b52a62aed9910bf455a7a65ed9a6c50df5612e56e8e10536",
+      "version": "3.5.4",
+      "keyId": "release-2026-01",
+      "minimumAppVersion": "3.5.0",
+      "publishedAt": "2026-08-10T20:28:20.721Z",
+      "assetName": "EgoistShield-Setup-3.5.4.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.4/EgoistShield-Setup-3.5.4.exe",
+      "assetBytes": 268441871,
+      "assetSha256": "97c2f6207176f68e1b63f5052b530a055ee60c15407448052ef4af5dbd478ce8",
+      "assetSha512": "62467505436e7d7d6f6b1d971c9911a721ed518ba5a93c3f4891e0eecd878974fcd9026e9f02681532a11e3bf4dd351d9ff52e946c8437aaa7cfed368ebe694c",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "candidate": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "current": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "installed": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "published-v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "v3.7.1": {
+          "accepted": false,
+          "reason": "key-unknown"
+        }
+      }
+    },
+    {
+      "label": "published-v3.7.1",
+      "name": "release-manifest.json",
+      "bytesSha256": "591645264aab6f181d529071dd72a73e61bfd3304d5dc5333cf6b3cc690ddd4f",
+      "version": "3.7.1",
+      "keyId": "lagom-2026-09",
+      "minimumAppVersion": "3.7.1",
+      "publishedAt": "2026-09-12T17:51:28.824Z",
+      "assetName": "Egoist-Lagom-Setup.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.1/Egoist-Lagom-Setup.exe",
+      "assetBytes": 194178840,
+      "assetSha256": "9b6a6131a073727727b25559869a108d7fc7e6ba93b449f625bd073a01b3b6eb",
+      "assetSha512": "6f3a9acba43faecf65c819a38cbd37c3423b765bfba2a638137450f4fb1f17383d9f3aa8b3d6dcac38008b2c272d0aac214f1a6cee4ba9199db61aa4b6d0f79c",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "candidate": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "current": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "installed": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "published-v3.7.1": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "v3.7.1": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        }
+      }
+    },
+    {
+      "label": "published-v3.7.1",
+      "name": "stable-channel.json",
+      "bytesSha256": "591645264aab6f181d529071dd72a73e61bfd3304d5dc5333cf6b3cc690ddd4f",
+      "version": "3.7.1",
+      "keyId": "lagom-2026-09",
+      "minimumAppVersion": "3.7.1",
+      "publishedAt": "2026-09-12T17:51:28.824Z",
+      "assetName": "Egoist-Lagom-Setup.exe",
+      "assetUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.1/Egoist-Lagom-Setup.exe",
+      "assetBytes": 194178840,
+      "assetSha256": "9b6a6131a073727727b25559869a108d7fc7e6ba93b449f625bd073a01b3b6eb",
+      "assetSha512": "6f3a9acba43faecf65c819a38cbd37c3423b765bfba2a638137450f4fb1f17383d9f3aa8b3d6dcac38008b2c272d0aac214f1a6cee4ba9199db61aa4b6d0f79c",
+      "verifiedByRegistries": {
+        "b8662d3": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "candidate": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "current": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "installed": {
+          "accepted": false,
+          "reason": "key-unknown"
+        },
+        "published-v3.7.1": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        },
+        "v3.7.1": {
+          "accepted": true,
+          "signatureValid": true,
+          "keyWindow": true
+        }
+      }
+    }
+  ],
+  "sourceFacts": {
+    "baseline": "b8662d3",
+    "updaterSha256": "d65a432e1d5d744fcf38ee284544b150c028e0172cdda1eb258da194520f1af4",
+    "trustSourceSha256": "a93cb022e341bf966571acec14488dce0a76dc0fb9b7d446f104601d68320150",
+    "minimumAppVersionMentionedInUpdater": false,
+    "minimumAppVersionMentionsInTrustSource": 3,
+    "bundledRegistryOnly": true,
+    "startupDelayTenSeconds": true,
+    "dailyInterval": true,
+    "automaticInstallOnAvailable": true,
+    "autoUpdateDefaultTrue": true
+  },
+  "verificationAssertions": [
+    {
+      "name": "Old bundled registry has a valid old-root signature",
+      "ok": true
+    },
+    {
+      "name": "New bundled registry has a valid new-root signature",
+      "ok": true
+    },
+    {
+      "name": "New registry is rejected by the old pinned root",
+      "ok": true
+    },
+    {
+      "name": "Installed root exactly matches the current public root",
+      "ok": true
+    },
+    {
+      "name": "Actual candidate signature is valid for the installed key registry",
+      "ok": true
+    },
+    {
+      "name": "Actual candidate key is unknown to the old key registry",
+      "ok": true
+    },
+    {
+      "name": "Published3.7.1 signature verifies with its original own registry",
+      "ok": true
+    },
+    {
+      "name": "Published3.5.4 signature verifies with the old release key",
+      "ok": true
+    },
+    {
+      "name": "Exact old updater has no minimumAppVersion comparison",
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "recordedAt": "2026-09-29T13:40:59.694220+00:00",
+  "candidateVersion": "3.7.9",
+  "method": "Controlled asynchronous behavioral regressions; no live network/service mutations or actual update installation",
+  "command": "node --test tests/telegram-listener-ownership.test.mjs tests/network-lifecycle-reliability.test.mjs tests/shield-connection.test.mjs tests/shield-connection-truthfulness.test.mjs tests/zapret-selection-lifecycle.test.mjs tests/zapret-shutdown.test.mjs tests/zapret-update.test.mjs tests/vpn-tun-lifecycle.test.mjs tests/vpn-runtime-selection.test.mjs tests/network-races.test.mjs tests/telegram-route-health.test.mjs tests/lagom-runtime-regressions.test.mjs tests/service-status-locale.test.mjs tests/boot-network-race.test.mjs tests/review-network-audit.test.mjs tests/network-audit-followup.test.mjs tests/network-mutation-idle.test.mjs",
+  "exitCode": 0,
+  "counts": {
+    "tests": 167,
+    "suites": 0,
+    "pass": 167,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 11731.7622
+  },
+  "sourceFiles": [
+    {
+      "path": "src/recovered/electron/ipc/network-combinator-manager.js",
+      "sha256": "c9fe290354ab7f3364a8c6c6de0ab2ffd9eea896bdc0cd9ef3f84cd5299aef82"
+    },
+    {
+      "path": "tests/network-mutation-idle.test.mjs",
+      "sha256": "a629a891be016d235a65b3f2e2ab069afaddbca7eb3fa7b1bcb88e6e54e97bfb"
+    }
+  ]
+}

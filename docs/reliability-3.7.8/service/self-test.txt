@@ -1,0 +1,5 @@
+Owned DNS baseline self-tests passed: 10
+Component worker response self-test passed: malformed-json
+Component worker response self-test passed: missing-result
+Component worker response self-test passed: healthy
+EgoistShield.Service self-test passed; protocol=1; version=3.7.8

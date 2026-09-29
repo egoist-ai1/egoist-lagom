@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-12T14:31:33.192Z",
+  "keys": [
+    {
+      "id": "lagom-2026-09",
+      "algorithm": "Ed25519",
+      "status": "trusted",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEARkClz1otYTfTMgfFXYXd+CdBoJp5hNo5PAA4HFFoalI=\n-----END PUBLIC KEY-----\n",
+      "notBefore": "2026-09-12T00:00:00.000Z",
+      "notAfter": "2028-09-12T00:00:00.000Z"
+    }
+  ]
+}

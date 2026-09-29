@@ -34,6 +34,8 @@ var desktopUpdater = new DesktopUpdater({
 	currentVersion: app.getVersion(),
 	userDataDir: USER_DATA_DIR,
 	resourcesPath: process.resourcesPath,
+	canInstall: canInstallDesktopUpdate,
+	restartMinimized: () => !mainWindow || !mainWindow.isVisible() || mainWindow.isMinimized(),
 	onProgress: (progress) => {
 		mainWindow?.webContents.send("update-progress", progress);
 	}
@@ -69,39 +71,82 @@ function cancelDeferredStartupTimers() {
 	for (const timer of deferredStartupTimers) clearTimeout(timer);
 	deferredStartupTimers.clear();
 }
-async function runBackgroundUpdateCheck() {
-	if (!autoUpdateEnabled) return;
-	const result = toPublicUpdateResult(await desktopUpdater.check());
-	emitUpdateResult(result);
-	if (result.phase === "available" && result.latestVersion && autoUpdateEnabled && !desktopUpdater.installPromise) {
-		if (Notification.isSupported() && globalStateStore?.get()?.settings?.notifications !== false) new Notification({
-			title: "Egoist Lagom: обновление",
-			body: `Доверенная версия ${result.latestVersion} загружается и будет установлена с сохранением сетевых настроек.`,
-			silent: true
-		}).show();
-		const installed = toPublicUpdateResult(await desktopUpdater.checkAndInstall());
-		emitUpdateResult(installed);
-		if (installed.phase === "restarting") scheduleDeferredStartup(() => {
-			isQuitting = true;
-			app.quit();
-		}, 750);
-		else if (!installed.ok) logger.warn(`[updater] Automatic installation failed: ${installed.failureCode ?? "unknown"}`);
-		return;
+var backgroundUpdateInFlight = false;
+var backgroundUpdateFailures = 0;
+async function canInstallDesktopUpdate() {
+	const idle = () => Boolean(globalNetworkCombinatorManager?.isMutationIdle()) && pendingBootRecovery.size === 0 && !componentUpdateInFlight;
+	if (!globalRuntimeManager || !idle()) return false;
+	const status = await globalRuntimeManager.status();
+	return status?.connected === false && idle();
+}
+function scheduleNextUpdateCheck(delayMs) {
+	if (updateCheckInterval) clearTimeout(updateCheckInterval);
+	updateCheckInterval = null;
+	if (!autoUpdateEnabled || !app.isPackaged || isQuitting) return;
+	updateCheckInterval = setTimeout(() => {
+		updateCheckInterval = null;
+		void runBackgroundUpdateCheck();
+	}, delayMs);
+	updateCheckInterval.unref?.();
+}
+function backgroundUpdateRetryDelay(result) {
+	if (result.ok) {
+		backgroundUpdateFailures = 0;
+		return 86400 * 1e3;
 	}
-	if (result.phase === "failed" || result.phase === "blocked") logger.warn(`[updater] Background check ${result.phase}: ${result.failureCode ?? "unknown"}`);
-	else logger.info(`[updater] Background check: ${result.phase}, latest=${result.latestVersion ?? "none"}`);
+	if (!result.retryable) return 86400 * 1e3;
+	backgroundUpdateFailures = Math.min(backgroundUpdateFailures + 1, 5);
+	return [300, 900, 3600, 10800, 86400][backgroundUpdateFailures - 1] * 1e3;
+}
+async function runBackgroundUpdateCheck() {
+	if (!autoUpdateEnabled || backgroundUpdateInFlight || isQuitting) return;
+	backgroundUpdateInFlight = true;
+	let nextDelay = 86400 * 1e3;
+	let dispatched = false;
+	try {
+		const result = toPublicUpdateResult(await desktopUpdater.check());
+		emitUpdateResult(result);
+		if (result.phase === "available" && result.latestVersion && autoUpdateEnabled && !desktopUpdater.installPromise) {
+			if (!(await canInstallDesktopUpdate())) {
+				nextDelay = 900 * 1e3;
+				logger.info("[updater] Automatic installation deferred until the VPN and component update are idle.");
+				return;
+			}
+			if (!autoUpdateEnabled || isQuitting) return;
+			if (Notification.isSupported() && globalStateStore?.get()?.settings?.notifications !== false) new Notification({
+				title: "Egoist Lagom: обновление",
+				body: `Доверенная версия ${result.latestVersion} загружается и будет установлена с сохранением сетевых настроек.`,
+				silent: true
+			}).show();
+			const installed = toPublicUpdateResult(await desktopUpdater.checkAndInstall());
+			emitUpdateResult(installed);
+			nextDelay = backgroundUpdateRetryDelay(installed);
+			if (installed.phase === "restarting") {
+				dispatched = true;
+				scheduleDeferredStartup(() => {
+					isQuitting = true;
+					app.quit();
+				}, 750);
+			} else if (!installed.ok) logger.warn(`[updater] Automatic installation failed: ${installed.failureCode ?? "unknown"}`);
+			return;
+		}
+		nextDelay = backgroundUpdateRetryDelay(result);
+		if (result.phase === "failed" || result.phase === "blocked") logger.warn(`[updater] Background check ${result.phase}: ${result.failureCode ?? "unknown"}`);
+		else logger.info(`[updater] Background check: ${result.phase}, latest=${result.latestVersion ?? "none"}`);
+	} catch (error) {
+		nextDelay = backgroundUpdateRetryDelay({ ok: false, retryable: true });
+		logger.warn("[updater] Background operation failed; a bounded retry is scheduled:", error);
+	} finally {
+		backgroundUpdateInFlight = false;
+		if (!dispatched) scheduleNextUpdateCheck(nextDelay);
+	}
 }
 function setupAutoUpdater() {
 	if (!app.isPackaged) {
 		logger.info("[updater] Dev-режим: фоновые проверки desktop-релизов отключены");
 		return;
 	}
-	scheduleDeferredStartup(() => {
-		runBackgroundUpdateCheck();
-	}, 1e4);
-	updateCheckInterval = setInterval(() => {
-		runBackgroundUpdateCheck();
-	}, 86400 * 1e3);
+	scheduleNextUpdateCheck(1e4);
 	logger.info(`[updater] Signed stable channel configured, current=${app.getVersion()}`);
 }
 ipcMain.handle("updater:check", async (event) => {
@@ -150,17 +195,14 @@ ipcMain.handle("updater:last-result", async (event) => {
 ipcMain.handle("updater:set-auto", async (event, enabled) => {
 	assertTrustedIpcEvent(event);
 	if (typeof enabled !== "boolean") throw new TypeError("enabled must be boolean");
+	if (globalStateStore) await globalStateStore.patch({ settings: { autoUpdate: enabled } });
 	autoUpdateEnabled = enabled;
 	logger.info(`[updater] autoCheck set to ${enabled}`);
-	if (globalStateStore) await globalStateStore.patch({ settings: { autoUpdate: enabled } });
 	if (!enabled && updateCheckInterval) {
-		clearInterval(updateCheckInterval);
+		clearTimeout(updateCheckInterval);
 		updateCheckInterval = null;
-	} else if (enabled && !updateCheckInterval && app.isPackaged) {
-		updateCheckInterval = setInterval(() => {
-			runBackgroundUpdateCheck();
-		}, 86400 * 1e3);
-		runBackgroundUpdateCheck();
+	} else if (enabled && !backgroundUpdateInFlight && app.isPackaged) {
+		scheduleNextUpdateCheck(0);
 		scheduleDeferredStartup(() => checkManagedComponentUpdates(), 2e4);
 	}
 	return enabled;
@@ -372,7 +414,7 @@ app.on("before-quit", (event) => {
 		componentUpdateInterval = null;
 	}
 	if (updateCheckInterval) {
-		clearInterval(updateCheckInterval);
+		clearTimeout(updateCheckInterval);
 		updateCheckInterval = null;
 	}
 	if (trafficInterval) {
@@ -630,8 +672,8 @@ function getTrayAssetPath(filename) {
 * загрузки интерфейса, а внутри неё живут `netsh`, `sc.exe` и PowerShell. На
 * зависшем сетевом стеке любой из них не возвращается никогда, и приложение
 * навсегда останавливалось до появления обработчиков: окно открыто, но не
-* отвечает ни одна кнопка. Просроченный шаг теперь пропускается, а его работу
-* доделывает восстановление после загрузки renderer.
+* отвечает ни одна кнопка. Дедлайн ограничивает ожидание интерфейса, но не
+* отменяет системную операцию. Новые сетевые изменения ждут её завершения.
 */
 var pendingBootRecovery = new Set();
 async function withBootDeadline(label, budgetMs, work) {
@@ -726,14 +768,14 @@ async function inspectOwnedLoopbackDnsHealth() {
 async function restoreDnsIfLocalResolverIsDown() {
 	try {
 		const [systemDoh, gravityless] = await Promise.all([globalSystemDohManager?.status({ force: true }).catch(() => null) ?? Promise.resolve(null), globalGravitylessDnsManager?.status({ force: true }).catch(() => null) ?? Promise.resolve(null)]);
-		if (systemDoh?.verified || gravityless?.verified) return false;
+		if (!shouldRestoreOwnedDnsForUnavailableResolvers([systemDoh, gravityless])) return false;
+		const coreService = globalSystemDohManager?.coreService ?? globalGravitylessDnsManager?.coreService;
+		if (!coreService) return false;
 		const health = await inspectOwnedLoopbackDnsHealth();
 		if (!health.active || health.healthy) return false;
-		logger.error(`[boot] DNS safety net: adapter(s) ${health.interfaceIndices.join(",")} point at ${health.addresses.join(",")}, but the local resolver does not answer. Restoring DHCP only on those adapters.`);
-		const { resetSystemDnsInterfaces } = await Promise.resolve().then(() => system_dns_exports);
-		await resetSystemDnsInterfaces(health.interfaceIndices, false);
-		logger.warn("[boot] DNS safety net: affected adapters restored to DHCP; external DNS on other adapters was preserved");
-		return true;
+		const restored = await coreService.restoreOwnedDns();
+		logger.warn(`[boot] DNS safety net: stopped resolver; restored ${restored.restored ?? 0} owned adapter(s), ${restored.pendingAdapters ?? 0} pending.`);
+		return Number(restored.restored ?? 0) > 0;
 	} catch (error) {
 		logger.error("[boot] DNS safety net failed:", error);
 		return false;
@@ -1112,7 +1154,8 @@ function createTray() {
 }
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-	app.on("second-instance", () => {
+	app.on("second-instance", (_event, commandLine) => {
+		if (commandLine.includes("--minimized")) return;
 		if (mainWindow) {
 			applyShieldWindowMode(mainWindow, true);
 			mainWindow.webContents?.send("switch-to-widget");

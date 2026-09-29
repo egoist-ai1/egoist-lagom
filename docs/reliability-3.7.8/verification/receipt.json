@@ -1,0 +1,33 @@
+{
+  "productionRuntime": "10.0.12",
+  "hostedCiConclusion": "pending publication",
+  "installerBytes": 194405835,
+  "networkAffectedTests": 158,
+  "nodeTests": {
+    "pass": 484,
+    "skip": 0,
+    "durationMs": 15095.3392,
+    "fail": 0
+  },
+  "remoteTelegramDeliveryVerified": false,
+  "version": "3.7.8",
+  "npmAdvisories": 0,
+  "realRebootPerformed": false,
+  "candidateIntegrity": "../package-verification.json",
+  "coreRestartActions": 3,
+  "fullSourceCompilerWarnings": 141,
+  "coreGroups": 22,
+  "productionSdk": "10.0.401",
+  "installerTelegramOwnershipChecks": 20,
+  "windowsAuthenticodeSigned": false,
+  "installedReadback": "installed-readback.json",
+  "baselineCommit": "b8662d31128f6366a86c9f2be6d9bbaab60d387c",
+  "realMonthSoakPerformed": false,
+  "nativeFullSourceGroups": 12,
+  "dnsAffectedTests": 80,
+  "installerSha256": "34136729F0924E95AF65B7FEFD2792763C29694056B8FF76A79C9FE0E325F927",
+  "actionlintPassed": true,
+  "releaseSignatureVerified": true,
+  "compilerErrors": 0,
+  "installation": "installation.json"
+}

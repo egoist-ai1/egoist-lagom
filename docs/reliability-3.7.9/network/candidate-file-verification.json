@@ -1,0 +1,15 @@
+{
+  "recordedAt": "2026-09-29T13:29:58.0181315+00:00",
+  "method": "Real local installer read and Ed25519/hash verification through repository verify-only command",
+  "command": "node scripts/prepare-release-assets.mjs --verify-only true",
+  "exitCode": 0,
+  "version": "3.7.8",
+  "tag": "v3.7.8",
+  "keyId": "release-2026-09-recovery",
+  "size": 194405835,
+  "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+  "installerExecuted": false,
+  "privateKeysRead": false,
+  "appSourceModified": false,
+  "verifierSourceSha256": "befbcf4c9d8fd5b0c403830ce64240d52845926db5092069f2a856347036f830"
+}

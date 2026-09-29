@@ -1,0 +1,15 @@
+✖ foreign Relay listener cannot make a running Telegram wrapper ready (3.5603ms)
+✖ Telegram foreign-port preflight prevents runtime publication, stop and another spawn (1.6165ms)
+✖ Telegram readiness wait rejects a foreign port even when SCM remains running (1.1505ms)
+✖ Telegram unknown listener ownership blocks start without exposing command details (0.9419ms)
+✖ Zapret startStandalone disables a stopped automatic SCM registration before spawning (4.7589ms)
+✖ Zapret restartStandalone disables a stopped automatic SCM registration before spawning (1.2671ms)
+✖ Zapret unknown SCM state cannot enter standalone mode (1.2258ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 0
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 75.929

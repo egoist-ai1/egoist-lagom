@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "channel": "stable",
+  "version": "3.5.0",
+  "tag": "v3.5.0",
+  "installerName": "EgoistShield-Setup-3.5.0.exe",
+  "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoistshield/releases/download/v3.5.0/EgoistShield-Setup-3.5.0.exe",
+  "size": 268423841,
+  "sha256": "a547ead4fc8d752273d9e4bae305df95ef7cc6bc0c82bb543ace4e59169d315b",
+  "sha512": "a430ac341c8b7940ca92fb2d06ad5085600a81fb8f0f4da3a87ac9547d021428591660515110f1b21d07afad15ca96364e0ec135a780758449520d45d73a2115",
+  "githubDigest": "sha256:a547ead4fc8d752273d9e4bae305df95ef7cc6bc0c82bb543ace4e59169d315b",
+  "minimumAppVersion": "3.5.0",
+  "keyId": "release-2026-01",
+  "authenticodeStatus": "not-signed",
+  "licenseVersion": "1.0",
+  "publishedAt": "2026-08-09T14:55:40.939Z"
+}

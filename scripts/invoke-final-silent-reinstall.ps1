@@ -13,6 +13,8 @@ param(
   [Parameter(ParameterSetName = "Dispatch")]
   [switch]$EmbeddedRelease,
   [Parameter(ParameterSetName = "Dispatch")]
+  [string]$InstallerUiDirectory = "",
+  [Parameter(ParameterSetName = "Dispatch")]
   [string]$InstallerUiPath = "",
   [Parameter(ParameterSetName = "Dispatch")]
   [string]$InstallerFontPath = "",
@@ -20,6 +22,10 @@ param(
   [string]$HandoffSignalPath = "",
   [Parameter(ParameterSetName = "Dispatch")]
   [string]$RunAfterPath = "",
+  [Parameter(ParameterSetName = "Dispatch")]
+  [switch]$NoRunAfter,
+  [Parameter(ParameterSetName = "Dispatch")]
+  [switch]$MinimizedAfter,
   [Parameter(ParameterSetName = "Dispatch")]
   [ValidatePattern('^$|^[0-9]+\.[0-9]+\.[0-9]+$')]
   [string]$FromVersion = "",
@@ -125,7 +131,7 @@ function Write-BrandedInstallerStatus {
     }
     "recovering" { "88|Восстанавливаем предыдущую рабочую версию..." }
     "succeeded" { "100|DONE" }
-    "recovered" { "0|ERROR: Обновление прервалось. Предыдущая версия и DNS восстановлены." }
+    "recovered" { "0|ERROR: Обновление прервалось. Службы и DNS восстановлены." }
     "recovery-warning" { "0|ERROR: Восстановление требует внимания. Подробности в защищённом журнале установки." }
     "failed" { "0|ERROR: Установка не завершена. Подробности в защищённом журнале установки." }
     default { $null }
@@ -509,6 +515,163 @@ function Restore-PreservedState {
   }
 }
 
+function Assert-OwnedRuntimeMigrationPath {
+  param([string]$Path)
+  $candidate = [IO.Path]::GetFullPath($Path)
+  $runtimeRoot = [IO.Path]::GetFullPath($script:RuntimeRoot).TrimEnd('\')
+  if (-not $candidate.StartsWith($runtimeRoot + '\', [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'Runtime migration path is outside the owned root.'
+  }
+  $current = $candidate
+  while ($current -and $current.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase)) {
+    if (Test-Path -LiteralPath $current) {
+      $item = Get-Item -LiteralPath $current -Force -ErrorAction Stop
+      if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Runtime migration refuses reparse points.' }
+    }
+    if ($current -eq $runtimeRoot) { break }
+    $current = [IO.Path]::GetDirectoryName($current)
+  }
+  return $candidate
+}
+
+function Write-OwnedRuntimeMigrationFile {
+  param([string]$Path, [string]$Content)
+  $target = Assert-OwnedRuntimeMigrationPath $Path
+  if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { throw 'Runtime migration target is missing.' }
+  $temporary = Assert-OwnedRuntimeMigrationPath ($target + '.migration-' + [Guid]::NewGuid().ToString('N'))
+  try {
+    [IO.File]::WriteAllText($temporary, $Content, (New-Object Text.UTF8Encoding($false)))
+    [IO.File]::Replace($temporary, $target, [NullString]::Value)
+  } finally {
+    if (Test-Path -LiteralPath $temporary -PathType Leaf) { Remove-Item -LiteralPath $temporary -Force -ErrorAction Stop }
+  }
+}
+
+function Update-PreservedRuntimeReliability {
+  param([object]$State)
+  $definitions = @{
+    EgoistShieldSystemDoH = @('SystemDoH', 'egoistshield-system-doh-service')
+    EgoistShieldTelegramProxy = @('TelegramProxy', 'egoistshield-telegram-proxy-service')
+    EgoistShieldZapret = @('Zapret', 'egoistshield-zapret-service')
+  }
+  foreach ($record in @($State.services)) {
+    $name = [string]$record.name
+    if (-not $definitions.ContainsKey($name)) { continue }
+    $service = Get-Service -Name $name -ErrorAction Stop
+    if ($service.Status -ne 'Stopped') { throw "Runtime migration requires stopped service $name." }
+    $definition = $definitions[$name]
+    $componentRoot = Join-Path $script:RuntimeRoot $definition[0]
+    $wrapper = Assert-OwnedRuntimeMigrationPath (Join-Path $componentRoot ('service-wrapper\' + $definition[1] + '.exe'))
+    if ([IO.Path]::GetFullPath(([string]$record.pathName).Trim().Trim('"')) -ne $wrapper) { throw "Runtime migration service ownership mismatch for $name." }
+    $xmlPath = Assert-OwnedRuntimeMigrationPath ([IO.Path]::ChangeExtension($wrapper, '.xml'))
+    if ((Get-Item -LiteralPath $xmlPath).Length -gt 65536) { throw 'Runtime wrapper configuration exceeds its migration limit.' }
+    $settings = New-Object Xml.XmlReaderSettings
+    $settings.DtdProcessing = [Xml.DtdProcessing]::Prohibit
+    $settings.XmlResolver = $null
+    $reader = [Xml.XmlReader]::Create($xmlPath, $settings)
+    $document = New-Object Xml.XmlDocument
+    $document.XmlResolver = $null
+    try { $document.Load($reader) } finally { $reader.Dispose() }
+    if ($document.SelectSingleNode('/service/id').InnerText -ne $name) { throw 'Runtime wrapper service id mismatch.' }
+    $engine = Assert-OwnedRuntimeMigrationPath $document.SelectSingleNode('/service/executable').InnerText
+    if (-not $engine.StartsWith([IO.Path]::GetFullPath($componentRoot) + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Runtime engine belongs to a different component.' }
+    $log = $document.SelectSingleNode('/service/log')
+    if (-not $log -or $log.GetAttribute('mode') -ne 'roll-by-size') { throw 'Runtime wrapper logging mode is unsupported.' }
+    $threshold = $log.SelectSingleNode('sizeThreshold')
+    $keep = $log.SelectSingleNode('keepFiles')
+    if (-not $threshold -or -not $keep) { throw 'Runtime wrapper logging limits are missing.' }
+    $threshold.InnerText = '10240'
+    $keep.InnerText = '5'
+    foreach ($node in @($document.SelectNodes('/service/onfailure'))) { [void]$document.DocumentElement.RemoveChild($node) }
+    foreach ($delay in @('5 sec', '10 sec', '60 sec')) {
+      $failure = $document.CreateElement('onfailure')
+      $failure.SetAttribute('action', 'restart'); $failure.SetAttribute('delay', $delay)
+      [void]$document.DocumentElement.AppendChild($failure)
+    }
+    $reset = $document.SelectSingleNode('/service/resetfailure')
+    if (-not $reset) { $reset = $document.CreateElement('resetfailure'); [void]$document.DocumentElement.AppendChild($reset) }
+    $reset.InnerText = '1 hour'
+    Write-OwnedRuntimeMigrationFile -Path $xmlPath -Content $document.OuterXml
+    if ($name -ne 'EgoistShieldSystemDoH') { continue }
+    $configPath = Assert-OwnedRuntimeMigrationPath (Join-Path $componentRoot 'config.json')
+    if ((Get-Item -LiteralPath $configPath).Length -gt 1048576) { throw 'DNS configuration exceeds its migration limit.' }
+    $config = Get-Content -LiteralPath $configPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    if (-not $config.dns -or -not $config.inbounds -or -not $config.log) { throw 'DNS configuration does not match the managed Xray format.' }
+    foreach ($inbound in @($config.inbounds)) {
+      $address = $null
+      if (-not [Net.IPAddress]::TryParse([string]$inbound.listen, [ref]$address) -or -not [Net.IPAddress]::IsLoopback($address)) { throw 'DNS configuration contains a non-loopback listener.' }
+    }
+    if (-not $config.dns.PSObject.Properties['hosts']) { $config.dns | Add-Member -NotePropertyName hosts -NotePropertyValue ([pscustomobject]@{}) }
+    $marker = $config.dns.hosts.PSObject.Properties['health.egoist.invalid']
+    if ($marker -and (@($marker.Value).Count -ne 1 -or [string]@($marker.Value)[0] -ne '127.0.0.1')) { throw 'DNS health marker conflicts with preserved configuration.' }
+    if (-not $marker) { $config.dns.hosts | Add-Member -NotePropertyName 'health.egoist.invalid' -NotePropertyValue '127.0.0.1' }
+    if ($config.log.PSObject.Properties['error']) { $config.log.error = '' }
+    Write-OwnedRuntimeMigrationFile -Path $configPath -Content ($config | ConvertTo-Json -Depth 64)
+    & $engine run -test -config $configPath *> $null
+    if ($LASTEXITCODE -ne 0) { throw 'Preserved DNS configuration failed the Xray validation; recovery will restore its backup.' }
+  }
+}
+
+function Test-OwnedTelegramProxyListener {
+  param([string]$ExpectedWrapper, [int]$Port, [string]$HostAddress = '127.0.0.1')
+  $address = $null
+  if ($Port -lt 1 -or $Port -gt 65535 -or
+      -not [Net.IPAddress]::TryParse($HostAddress, [ref]$address) -or
+      -not [Net.IPAddress]::IsLoopback($address)) { return $false }
+  $service = Get-CimInstance Win32_Service -Filter "Name='EgoistShieldTelegramProxy'" -OperationTimeoutSec 3 -ErrorAction Stop
+  if (-not $service -or $service.State -ne 'Running' -or [int]$service.ProcessId -le 0) { return $false }
+  $actualWrapper = [IO.Path]::GetFullPath(([string]$service.PathName).Trim().Trim('"'))
+  if (-not $actualWrapper.Equals([IO.Path]::GetFullPath($ExpectedWrapper), [StringComparison]::OrdinalIgnoreCase)) { return $false }
+  $processes = @(Get-CimInstance Win32_Process -Property ProcessId,ParentProcessId,ExecutablePath,CreationDate -OperationTimeoutSec 3 -ErrorAction Stop)
+  $root = @($processes | Where-Object { [int]$_.ProcessId -eq [int]$service.ProcessId })
+  if ($root.Count -ne 1 -or -not [string]::Equals([string]$root[0].ExecutablePath, $actualWrapper, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+  $component = [IO.Path]::GetFullPath((Split-Path -Parent (Split-Path -Parent $ExpectedWrapper))).TrimEnd('\') + '\'
+  $owned = New-Object 'Collections.Generic.HashSet[int]'
+  [void]$owned.Add([int]$service.ProcessId)
+  $byPid = @{}
+  foreach ($item in $processes) { $byPid[[int]$item.ProcessId] = $item }
+  for ($depth = 0; $depth -lt 8; $depth++) {
+    $count = $owned.Count
+    foreach ($item in $processes) {
+      $parent = $byPid[[int]$item.ParentProcessId]
+      if ($parent -and $owned.Contains([int]$item.ParentProcessId) -and
+          $parent.CreationDate -and $item.CreationDate -and
+          [DateTime]$item.CreationDate -ge [DateTime]$parent.CreationDate -and
+          ([string]$item.ExecutablePath).StartsWith($component, [StringComparison]::OrdinalIgnoreCase)) {
+        [void]$owned.Add([int]$item.ProcessId)
+      }
+    }
+    if ($owned.Count -gt 64) { return $false }
+    if ($owned.Count -eq $count) { break }
+  }
+  $wildcard = if ($address.AddressFamily -eq [Net.Sockets.AddressFamily]::InterNetwork) { '0.0.0.0' } else { '::' }
+  $listeners = @(Get-CimInstance -Namespace 'root/StandardCimv2' -ClassName MSFT_NetTCPConnection `
+    -Filter "LocalPort=$Port AND State=2" -OperationTimeoutSec 3 -ErrorAction Stop)
+  return @($listeners | Where-Object {
+    $owned.Contains([int]$_.OwningProcess) -and
+    ([string]$_.LocalAddress -eq $address.ToString() -or [string]$_.LocalAddress -eq $wildcard)
+  }).Count -gt 0
+}
+
+function Wait-OwnedTelegramProxyReady {
+  param([string]$ExpectedWrapper, [int]$Port, [string]$HostAddress = '127.0.0.1', [int]$TimeoutSeconds = 45)
+  $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+  while ([DateTime]::UtcNow -lt $deadline) {
+    $client = $null
+    try {
+      if (Test-OwnedTelegramProxyListener -ExpectedWrapper $ExpectedWrapper -Port $Port -HostAddress $HostAddress) {
+        $client = New-Object Net.Sockets.TcpClient
+        $connect = $client.ConnectAsync($HostAddress, $Port)
+        if ($connect.Wait(750) -and $client.Connected -and
+            (Test-OwnedTelegramProxyListener -ExpectedWrapper $ExpectedWrapper -Port $Port -HostAddress $HostAddress)) { return $true }
+      }
+    } catch { Write-Verbose 'Telegram readiness ownership could not be confirmed.' }
+    finally { if ($client) { $client.Dispose() } }
+    Start-Sleep -Milliseconds 250
+  }
+  return $false
+}
+
 function Start-PreservedServices {
   param([object]$State)
   $runningNames = @($State.services | Where-Object { $_.wasRunning -eq $true } | ForEach-Object { [string]$_.name })
@@ -540,6 +703,14 @@ function Start-PreservedServices {
       if (-not (Test-LoopbackDnsReady -State $State)) { throw "SystemDoH did not recover before network services started." }
       Restore-CriticalAdapterDns -State $State
     }
+    if ($name -eq 'EgoistShieldTelegramProxy') {
+      $componentRoot = Join-Path $script:RuntimeRoot 'TelegramProxy'
+      $config = Get-Content -LiteralPath (Join-Path $componentRoot 'config.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+      $wrapper = Join-Path $componentRoot 'service-wrapper\egoistshield-telegram-proxy-service.exe'
+      if (-not (Wait-OwnedTelegramProxyReady -ExpectedWrapper $wrapper -Port ([int]$config.port) -HostAddress ([string]$config.host))) {
+        throw 'Telegram Proxy did not confirm an owned listener after reinstall; a foreign listener is not readiness.'
+      }
+    }
   }
 }
 
@@ -560,34 +731,77 @@ function Test-LoopbackDnsReady {
 }
 
 function Start-InstalledDesktop {
+  param([object]$State)
   $exe = Join-Path $script:OwnedInstallRoot "EgoistShield.exe"
   if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Installed desktop executable is missing." }
-  # A normal launch also raises the already-running Electron window through its
-  # second-instance handler. Hidden/minimized startup left the app invisible.
-  Start-Process -FilePath $exe -WorkingDirectory $script:OwnedInstallRoot | Out-Null
+  $minimized = $State -and $State.PSObject.Properties.Name -contains 'minimizedAfter' -and $State.minimizedAfter -eq $true
+  if ($minimized) {
+    Start-Process -FilePath $exe -ArgumentList '--minimized' -WorkingDirectory $script:OwnedInstallRoot -WindowStyle Hidden | Out-Null
+  } else {
+    Start-Process -FilePath $exe -WorkingDirectory $script:OwnedInstallRoot | Out-Null
+  }
   for ($attempt = 0; $attempt -lt 20; $attempt++) {
     $running = @(Get-CimInstance Win32_Process -Filter "Name='EgoistShield.exe'" -ErrorAction SilentlyContinue |
-      Where-Object { [string]$_.ExecutablePath -eq $exe })
+      Where-Object { [string]$_.ExecutablePath -eq $exe -and [string]$_.CommandLine -notmatch '--type=|component-worker\.cjs' })
     if ($running.Count -gt 0) { return }
     Start-Sleep -Milliseconds 500
   }
   throw "Installed Shield desktop did not start after reinstall."
 }
 
-function Reset-CriticalLoopbackDnsToDhcp {
-  $active = @(Get-NetAdapter -IncludeHidden -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" })
-  $dns = @(Get-DnsClientServerAddress -ErrorAction SilentlyContinue)
-  foreach ($adapter in $active) {
-    $servers = @($dns | Where-Object { $_.InterfaceIndex -eq $adapter.ifIndex } | ForEach-Object { @($_.ServerAddresses) })
-    if ($servers.Count -eq 0) { continue }
-    $allLoopback = $true
-    foreach ($server in $servers) {
-      $ip = $null
-      if (-not [Net.IPAddress]::TryParse(([string]$server).Trim('[', ']'), [ref]$ip) -or -not [Net.IPAddress]::IsLoopback($ip)) { $allLoopback = $false; break }
+function Restore-CriticalOwnedDnsBaseline {
+  param([object]$State)
+  if (@($State.criticalDns).Count -eq 0) { return }
+  $backup = Join-Path $StageDirectory 'dns-owned-state.json'
+  $metadata = Get-Content -LiteralPath $backup -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  if ($metadata.schemaVersion -ne 1 -or $metadata.owner -ne 'EgoistShield') { throw 'Protected DNS ownership state is invalid.' }
+  $adapters = @(Get-NetAdapter -IncludeHidden -ErrorAction Stop)
+  foreach ($record in @($State.criticalDns)) {
+    $guid = [Guid]$record.interfaceGuid
+    $matches = @($adapters | Where-Object { [Guid]$_.InterfaceGuid -eq $guid })
+    $saved = @($metadata.originalAdapters | Where-Object { [Guid]$_.interfaceGuid -eq $guid })
+    if ($matches.Count -ne 1 -or $saved.Count -ne 1) { throw 'Protected DNS adapter or baseline is unavailable.' }
+    $owned = @($metadata.servers)
+    if ($metadata.PSObject.Properties['adapterServers']) {
+      foreach ($entry in $metadata.adapterServers.PSObject.Properties) {
+        if ([Guid]$entry.Name -eq $guid) { $owned = @($entry.Value); break }
+      }
     }
-    if ($allLoopback) { Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -ResetServerAddresses -ErrorAction Stop }
+    foreach ($address in @($record.servers)) {
+      if ($owned -notcontains [string]$address) { throw 'Critical DNS snapshot contains an unowned resolver.' }
+    }
+    $index = [int]$matches[0].ifIndex
+    $rows = @(Get-DnsClientServerAddress -InterfaceIndex $index -ErrorAction Stop)
+    $current = @($rows | ForEach-Object { @($_.ServerAddresses) } | Where-Object { $_ })
+    if (($current -join '|') -ne (@($record.servers) -join '|')) { throw 'DNS changed after the protected snapshot; baseline recovery was skipped.' }
+    foreach ($family in @(@{code=2;addresses='ipv4';isStatic='ipv4Static'}, @{code=23;addresses='ipv6';isStatic='ipv6Static'})) {
+      $row = @($rows | Where-Object { [int]$_.AddressFamily -eq $family.code })
+      if ($row.Count -ne 1 -or @($row[0].ServerAddresses).Count -eq 0) { continue }
+      $original = @($saved[0].($family.addresses) | Where-Object { $_ })
+      if ([bool]$saved[0].($family.isStatic)) {
+        if ($original.Count -eq 0) { throw 'Static DNS baseline has no addresses.' }
+        foreach ($address in $original) {
+          $ip = $null
+          if (-not [Net.IPAddress]::TryParse([string]$address, [ref]$ip) -or [Net.IPAddress]::IsLoopback($ip)) { throw 'DNS baseline has no independent usable resolver.' }
+        }
+        $row[0] | Set-DnsClientServerAddress -ServerAddresses $original -ErrorAction Stop
+        $actual = @((Get-DnsClientServerAddress -InterfaceIndex $index -AddressFamily $family.code -ErrorAction Stop).ServerAddresses)
+        if (($actual -join '|') -ne ($original -join '|')) { throw 'Static DNS baseline readback failed.' }
+      } else {
+        $row[0] | Set-DnsClientServerAddress -ResetServerAddresses -ErrorAction Stop
+      }
+    }
   }
-  Clear-DnsClientCache -ErrorAction SilentlyContinue
+  Clear-DnsClientCache -ErrorAction Stop
+}
+
+function Test-PayloadRollbackPending {
+  $marker = Join-Path (Split-Path -Parent $script:RuntimeRoot) 'installer\pending-upgrade-quarantine.txt'
+  if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { return $false }
+  try {
+    $value = [IO.File]::ReadAllText($marker).Trim()
+    return -not $value.StartsWith('COMMITTED|', [StringComparison]::Ordinal)
+  } catch { return $true }
 }
 
 function Invoke-Recovery {
@@ -598,17 +812,19 @@ function Invoke-Recovery {
   try { Restore-PreservedState -State $State } catch { $recoveryErrors += "restore: $($_.Exception.Message)" }
   try { Reconcile-PreservedZapretProfile -State $State } catch { $recoveryErrors += "zapret-profile: $($_.Exception.Message)" }
   try { Restore-InstalledIdentity -State $State } catch { $recoveryErrors += "identity: $($_.Exception.Message)" }
+  $payloadRollbackPending = Test-PayloadRollbackPending
+  if ($payloadRollbackPending) { $recoveryErrors += 'payload-rollback-pending: Previous application files are preserved in quarantine; application rollback is not yet confirmed.' }
   try { Start-PreservedServices -State $State } catch { $recoveryErrors += "services: $($_.Exception.Message)" }
   if (Test-LoopbackDnsReady -State $State) {
     try { Restore-CriticalAdapterDns -State $State } catch { $recoveryErrors += "dns-adapter: $($_.Exception.Message)" }
   } else {
     try {
-      Reset-CriticalLoopbackDnsToDhcp
-      $recoveryErrors += "SystemDoH was not healthy; loopback-only DNS adapters were reset to DHCP."
+      Restore-CriticalOwnedDnsBaseline -State $State
+      $recoveryErrors += "SystemDoH was not healthy; still-owned critical adapters were restored to their recorded DNS baseline."
     } catch { $recoveryErrors += "dns-failsafe: $($_.Exception.Message)" }
   }
-  if ($State.runAfter -ne $false) {
-    try { Start-InstalledDesktop } catch { $recoveryErrors += "desktop: $($_.Exception.Message)" }
+  if ($State.runAfter -ne $false -and -not $payloadRollbackPending) {
+    try { Start-InstalledDesktop -State $State } catch { $recoveryErrors += "desktop: $($_.Exception.Message)" }
   }
   if ($recoveryErrors.Count -gt 0) {
     Add-ReceiptEvent -Stage "recovery" -Status "recovery-warning" -Message ($recoveryErrors -join " | ")
@@ -650,7 +866,7 @@ function Invoke-WatchdogMode {
     } catch { Write-Verbose "Watchdog could not terminate the exact installer process: $($_.Exception.Message)" }
   }
   Invoke-Recovery -State $state -Reason "Watchdog recovered an interrupted or timed-out silent reinstall."
-  Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление прервалось. Предыдущая версия и сетевые службы восстановлены."
+  Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление прервалось. Результат восстановления служб и DNS сохранён в журнале установки."
   Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "watchdog-recovered" -Encoding ASCII -Force
 }
 
@@ -692,7 +908,13 @@ function Invoke-WorkerMode {
     Add-ReceiptEvent -Stage "handoff" -Status "dns-stopped" -Message "SystemDoH was stopped last; silent installation is starting."
     Set-Content -LiteralPath (Join-Path $StageDirectory "backup-ready.flag") -Value "ready" -Encoding ASCII -Force
 
-    $installerProcess = Start-Process -FilePath $release.installer -ArgumentList @("/S") -PassThru -WindowStyle Hidden
+    $previousProtectedStage = $env:EGOIST_PROTECTED_REINSTALL_STAGE
+    try {
+      $env:EGOIST_PROTECTED_REINSTALL_STAGE = $StageDirectory
+      $installerProcess = Start-Process -FilePath $release.installer -ArgumentList @("/S") -PassThru -WindowStyle Hidden
+    } finally {
+      $env:EGOIST_PROTECTED_REINSTALL_STAGE = $previousProtectedStage
+    }
     while (-not $installerProcess.HasExited) {
       Write-Heartbeat -Stage $StageDirectory -Phase "installer-running" -InstallerPid $installerProcess.Id
       Start-Sleep -Seconds 2
@@ -705,6 +927,7 @@ function Invoke-WorkerMode {
     Write-Heartbeat -Stage $StageDirectory -Phase "restoring"
     Stop-OwnedServiceForInstall -Name "EgoistShieldCore"
     Restore-PreservedState -State $state
+    Update-PreservedRuntimeReliability -State $state
     Reconcile-PreservedZapretProfile -State $state
     Restore-InstalledIdentity -State $state
     Start-PreservedServices -State $state
@@ -715,7 +938,7 @@ function Invoke-WorkerMode {
     if (-not (Test-LoopbackDnsReady -State $state)) { throw "SystemDoH did not answer through 127.0.0.1 after reinstall." }
     Restore-CriticalAdapterDns -State $state
     if (-not (Test-LoopbackDnsReady -State $state)) { throw "Restored adapter DNS did not pass readback." }
-    if ($state.runAfter -ne $false) { Start-InstalledDesktop }
+    if ($state.runAfter -ne $false) { Start-InstalledDesktop -State $state }
     Add-ReceiptEvent -Stage "verify" -Status "succeeded" -Message "Installer, version, Core, preserved services and DNS passed readback." -Data @{ installedVersion = $installedVersion }
     Write-DesktopUpdateResult -State $state -Ok $true -Message "Обновление до $installedVersion установлено; службы и DNS проверены."
     Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "success" -Encoding ASCII -Force
@@ -723,7 +946,7 @@ function Invoke-WorkerMode {
     try {
       $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
       Invoke-Recovery -State $state -Reason $_.Exception.Message
-      Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление не завершилось. Предыдущая версия и сетевые службы восстановлены."
+      Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление не завершилось. Результат восстановления служб и DNS сохранён в журнале установки."
     } catch {
       Add-ReceiptEvent -Stage "fatal" -Status "failed" -Message $_.Exception.Message
     }
@@ -755,6 +978,15 @@ if ($Worker) {
     throw
   }
   exit 0
+}
+
+if ($InstallerUiDirectory) {
+  if ($InstallerUiPath -or $InstallerFontPath -or $HandoffSignalPath -or $RunAfterPath) { throw 'Use either the branded UI directory or individual handoff paths.' }
+  $InstallerUiDirectory = Resolve-FullPath -Path $InstallerUiDirectory -MustExist
+  $InstallerUiPath = Join-Path $InstallerUiDirectory 'ModernInstaller.exe'
+  $InstallerFontPath = Join-Path $InstallerUiDirectory 'Unbounded.ttf'
+  $HandoffSignalPath = Join-Path $InstallerUiDirectory 'handoff-started.flag'
+  $RunAfterPath = Join-Path $InstallerUiDirectory 'run_after.txt'
 }
 
 if ($EmbeddedRelease) {
@@ -813,6 +1045,7 @@ if (-not [string]::IsNullOrWhiteSpace($RunAfterPath)) {
   if ($runAfterValue -notin @("0", "1")) { throw "Installer launch preference is invalid." }
   $runAfter = $runAfterValue -eq "1"
 }
+if ($NoRunAfter) { $runAfter = $false }
 
 if ([string]::IsNullOrWhiteSpace($ReceiptRoot)) { $ReceiptRoot = Join-Path $env:ProgramData "EgoistShieldInstaller\DeferredRuns" }
 $receiptBase = Resolve-FullPath -Path $ReceiptRoot
@@ -848,6 +1081,7 @@ if ((Get-FileSha256 $stagedInstaller) -ne $release.sha256) { throw "Staged insta
 $state = [ordered]@{
   schemaVersion = 1
   owner = "EgoistShield"
+  receiptBase = $receiptBase
   installer = $stagedInstaller
   manifest = $stagedManifest
   sourceInstaller = $release.installer
@@ -856,6 +1090,7 @@ $state = [ordered]@{
   bytes = $release.bytes
   delaySeconds = $DelaySeconds
   runAfter = $runAfter
+  minimizedAfter = [bool]$MinimizedAfter
   fromVersion = $FromVersion
   watchdogTimeoutSeconds = $WatchdogTimeoutSeconds
   services = @()

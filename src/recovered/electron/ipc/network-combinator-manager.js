@@ -63,6 +63,7 @@ var NetworkCombinatorManager = class {
 	inspectionInFlight = null;
 	inspectionGeneration = 0;
 	activeCoordinatedMutations = /* @__PURE__ */ new Map();
+	outstandingCoordinatedMutations = 0;
 	mutationReleaseWaiters = /* @__PURE__ */ new Set();
 	mutationSequence = 0;
 	constructor(options) {
@@ -162,7 +163,18 @@ var NetworkCombinatorManager = class {
 			activeMutations: [...inspection.activeMutations, ...coordinated.map((item) => `${item.module}:${item.action}`)]
 		};
 	}
+	isMutationIdle() {
+		return this.outstandingCoordinatedMutations === 0;
+	}
 	async runCoordinatedMutation(intent, operation) {
+		this.outstandingCoordinatedMutations += 1;
+		try {
+			return await this.runCoordinatedMutationWithLocks(intent, operation);
+		} finally {
+			this.outstandingCoordinatedMutations -= 1;
+		}
+	}
+	async runCoordinatedMutationWithLocks(intent, operation) {
 		if (!this.isNetworkReady()) throw new Error("Завершается восстановление сети после запуска. Повторите действие через несколько секунд.");
 		const normalized = {
 			module: intent.module,
@@ -179,7 +191,8 @@ var NetworkCombinatorManager = class {
 			// a VPN was already routing traffic.  Invalidate before every attempt so
 			// a cached inspection cannot authorize a conflicting operation.
 			this.invalidateInspection();
-			const inspection = await this.inspect();
+			const inspection = await this.inspectBeforeDeadline(deadline, `${intent.module}:${intent.action}`);
+			if (!this.isNetworkReady()) throw new Error("Завершается восстановление сети после запуска. Повторите действие через несколько секунд.");
 			// VPN transitions own suspension/restoration of a steady Zapret runtime.
 			// Active Zapret mutations still conflict through tryAcquireMutation below.
 			const transitionsZapret = normalized.module === "vpn" && ["connect", "reconnect", "disconnect"].includes(normalized.action) && normalized.requiredLocks.includes("zapret-suspend");
@@ -208,6 +221,21 @@ var NetworkCombinatorManager = class {
 			this.activeCoordinatedMutations.delete(active.id);
 			this.invalidateInspection();
 			for (const release of [...this.mutationReleaseWaiters]) release();
+		}
+	}
+	async inspectBeforeDeadline(deadline, action) {
+		const remainingMs = deadline - Date.now();
+		if (remainingMs <= 0) throw new Error(`Timed out waiting for a safe network mutation slot: ${action}`);
+		let timer;
+		try {
+			return await Promise.race([
+				this.inspect(),
+				new Promise((_, reject) => {
+					timer = setTimeout(() => reject(new Error(`Timed out inspecting network owners before mutation: ${action}`)), remainingMs);
+				})
+			]);
+		} finally {
+			clearTimeout(timer);
 		}
 	}
 	tryAcquireMutation(intent) {

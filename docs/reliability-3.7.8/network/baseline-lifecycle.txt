@@ -1,0 +1,20 @@
+✖ Telegram readiness requires its configured listener, even when SCM reports running (4.3319ms)
+✖ Telegram stop timeout does not kill workers behind a live SCM or claim success (1.2127ms)
+✖ Telegram persistence repair preserves service registration (12144.2544ms)
+✖ telegram-proxy-manager ignores a status sample that completes after cache invalidation (1.6518ms)
+✖ zapret-manager ignores a status sample that completes after cache invalidation (2.3759ms)
+✖ Zapret running wrapper without owned worker is explicitly unready (1.5001ms)
+✖ Zapret stop waits for a pending transition before allowing VPN handoff (1.4644ms)
+✖ VPN transient retry budget enters cooldown and recovers after a long outage (1.4541ms)
+✖ VPN stale retry completion cannot release the new manual connection guard (0.7708ms)
+✔ VPN auth failure requires user correction rather than periodic retries (0.8133ms)
+✖ coordinator deadline includes a hung read-only inspection and never invokes the mutation later (113.8148ms)
+✖ Shield does not accept SCM running if the working component explicitly failed readiness (0.7914ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 1
+ℹ fail 11
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12333.6678

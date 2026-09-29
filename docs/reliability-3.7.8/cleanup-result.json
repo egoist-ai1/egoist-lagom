@@ -1,0 +1,90 @@
+{
+  "checkedAt": "2026-09-29T12:16:21.9698090Z",
+  "deleted": [
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Shield",
+      "files": 15383,
+      "bytes": 8967391705,
+      "kind": "consolidated obsolete project"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\out\\app-3.7.1",
+      "files": 163,
+      "bytes": 10242267.0,
+      "kind": "obsolete generated package"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\out\\app-3.7.2",
+      "files": 163,
+      "bytes": 10249945.0,
+      "kind": "obsolete generated package"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\out\\EgoistShield-3.7.1-win-x64",
+      "files": 168,
+      "bytes": 608842936.0,
+      "kind": "obsolete generated package"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\out\\EgoistShield-3.7.2-win-x64",
+      "files": 168,
+      "bytes": 608851292.0,
+      "kind": "obsolete generated package"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\release\\3.7.1-candidate",
+      "files": 17,
+      "bytes": 194217652.0,
+      "kind": "old installer; small metadata preserved"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\dist\\EgoistShield-Setup-3.7.1.exe",
+      "files": 1,
+      "bytes": 194178840,
+      "kind": "obsolete installer or generated release metadata"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\dist\\EgoistShield-Setup-3.7.1.exe.sha256",
+      "files": 1,
+      "bytes": 95,
+      "kind": "obsolete installer or generated release metadata"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\dist\\EgoistShield-Setup-3.7.2.exe",
+      "files": 1,
+      "bytes": 194237519,
+      "kind": "obsolete installer or generated release metadata"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\dist\\EgoistShield-Setup-3.7.2.exe.sha256",
+      "files": 1,
+      "bytes": 95,
+      "kind": "obsolete installer or generated release metadata"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\dist\\Egoist-Lagom-3.7.1.cdx.json",
+      "files": 1,
+      "bytes": 15411,
+      "kind": "obsolete installer or generated release metadata"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\dist\\Egoist-Lagom-3.7.2.cdx.json",
+      "files": 1,
+      "bytes": 15411,
+      "kind": "obsolete installer or generated release metadata"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\dist\\Egoist-Lagom-validation.md",
+      "files": 1,
+      "bytes": 6600,
+      "kind": "obsolete installer or generated release metadata"
+    }
+  ],
+  "removedSourceBytes": 10788249768.0,
+  "preservedShieldInputFiles": 6078,
+  "preservedShieldInputBytes": 610252385,
+  "oldRootAbsent": true,
+  "writerPathReferences": 0,
+  "junctionRemovedWithoutFollowing": true,
+  "arbitraryOpenHandlesEnumerated": false
+}

@@ -64,17 +64,20 @@ function buildNetworkModuleInspectors({ stateStore, runtimeManager, gravitylessD
 			const state = stateStore.get();
 			const [gravityless, systemDoh] = await Promise.all([gravitylessDnsManager.status().catch((error) => ({
 				running: false,
+				serviceState: "unknown",
 				lastError: stringifyError(error)
 			})), systemDohManager.status().catch((error) => ({
 				running: false,
+				serviceState: "unknown",
 				lastError: stringifyError(error)
 			}))]);
+			if (isNetworkServiceStateUnknown(gravityless) || isNetworkServiceStateUnknown(systemDoh)) throw new Error("Состояние службы DNS не подтверждено; сетевые блокировки сохранены.");
 			const mode = state.settings.systemDohEnabled ? "system-doh" : String(state.settings.systemDnsServers ?? "").trim() ? "system-dns" : "system-default";
 			const active = mode !== "system-default" || Boolean(gravityless.running) || Boolean(systemDoh.running);
 			const health = mode === "system-doh" && !systemDoh.running || String(state.settings.systemDnsServers ?? "").includes("127.0.0.1") && !gravityless.running ? "warn" : "ok";
 			return {
 				id: "dns",
-				status: active ? "active" : "idle",
+				status: active && health === "warn" ? "degraded" : active ? "active" : "idle",
 				health,
 				ownedLocks: active ? ["dns", "dns-verify"] : [],
 				activeMutations: active ? [
@@ -88,15 +91,17 @@ function buildNetworkModuleInspectors({ stateStore, runtimeManager, gravitylessD
 		}),
 		zapret: async () => inspectModule("zapret", async () => {
 			const status = await zapretManager.status();
-			const active = Boolean(status.serviceRunning || status.standaloneRunning);
+			if (isNetworkServiceStateUnknown(status)) throw new Error("Состояние службы профилей не подтверждено; блокировки перехвата сохранены.");
+			const occupied = Boolean(status.serviceRunning || status.standaloneRunning);
+			const active = Boolean(status.runtimeReady ?? occupied);
 			const suspended = Boolean(status.suspension?.active);
 			const conflicts = Array.isArray(status.conflictMatrix) ? status.conflictMatrix : [];
 			return {
 				id: "zapret",
-				status: suspended ? "suspended" : active ? "active" : conflicts.length > 0 ? "blocked" : "idle",
-				health: status.lastError ? "warn" : conflicts.length > 0 ? "warn" : "ok",
-				ownedLocks: active ? ["packet-interception", "windivert"] : [],
-				activeMutations: active ? [
+				status: suspended ? "suspended" : active ? "active" : occupied ? "degraded" : conflicts.length > 0 ? "blocked" : "idle",
+				health: status.lastError || occupied && !active ? "warn" : conflicts.length > 0 ? "warn" : "ok",
+				ownedLocks: occupied ? ["packet-interception", "windivert"] : [],
+				activeMutations: occupied ? [
 					status.serviceRunning ? "service:EgoistShieldZapret" : "standalone:winws",
 					`profile:${status.currentProfile ?? "unknown"}`,
 					`core:${status.coreVersion ?? "unknown"}`
@@ -107,14 +112,16 @@ function buildNetworkModuleInspectors({ stateStore, runtimeManager, gravitylessD
 		}),
 		"telegram-proxy": async () => inspectModule("telegram-proxy", async () => {
 			const status = await telegramProxyManager.status();
-			const running = Boolean(status.running);
+			if (isNetworkServiceStateUnknown(status)) throw new Error("Состояние службы Telegram не подтверждено; её порт остаётся зарезервированным.");
+			const occupied = Boolean(status.serviceRunning || status.userModeRunning || status.running);
+			const running = Boolean(status.runtimeReady ?? status.running);
 			const portBlocked = status.portConflict && status.portConflict.available === false;
 			return {
 				id: "telegram-proxy",
-				status: running ? "active" : portBlocked ? "blocked" : "idle",
-				health: status.lastError || portBlocked ? "warn" : "ok",
-				ownedLocks: running ? ["telegram-proxy-port"] : [],
-				activeMutations: running ? [
+				status: running ? "active" : portBlocked ? "blocked" : occupied ? "degraded" : "idle",
+				health: status.lastError || portBlocked || occupied && !running ? "warn" : "ok",
+				ownedLocks: occupied ? ["telegram-proxy-port"] : [],
+				activeMutations: occupied ? [
 					status.serviceRunning ? "service:EgoistShieldTelegramProxy" : "user-mode:tg-ws-proxy",
 					`port:${status.portConflict?.port ?? status.config?.port ?? "unknown"}`,
 					`version:${status.currentVersion ?? "unknown"}`
@@ -170,7 +177,7 @@ async function inspectModule(id, inspect) {
 			id,
 			status: "degraded",
 			health: "warn",
-			ownedLocks: [],
+			ownedLocks: conservativeNetworkModuleLocks(id),
 			activeMutations: [],
 			rollbackReady: false,
 			blockers: [stringifyError(error)]
@@ -179,5 +186,20 @@ async function inspectModule(id, inspect) {
 }
 function stringifyError(error) {
 	return error instanceof Error ? error.message : String(error);
+}
+function isNetworkServiceStateUnknown(status) {
+	const state = String(status?.serviceState ?? status?.service?.state ?? "").toLowerCase();
+	return ["unknown", "unavailable", "query-failed"].includes(state);
+}
+function conservativeNetworkModuleLocks(id) {
+	return ({
+		vpn: ["traffic-route", "system-proxy", "dns-verify", "firewall-kill-switch", "zapret-suspend"],
+		dns: ["dns", "dns-verify"],
+		zapret: ["packet-interception", "windivert"],
+		"telegram-proxy": ["telegram-proxy-port"],
+		"system-proxy": ["system-proxy"],
+		firewall: ["firewall-kill-switch"],
+		updates: ["updates"]
+	})[id] ?? [];
 }
 //#endregion

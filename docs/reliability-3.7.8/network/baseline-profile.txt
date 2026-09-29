@@ -1,0 +1,11 @@
+✖ Zapret profile selection preserves registration and does not restart an unchanged strategy (4.0767ms)
+✖ Zapret failed strategy switch restores the previous running profile and configuration (1.453ms)
+✖ Zapret failed rollback reports both failures instead of promising restoration (1.1354ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 68.2424

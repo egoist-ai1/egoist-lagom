@@ -1,5 +1,6 @@
 using System;
 using System.CodeDom.Compiler;
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Text.RegularExpressions.Generated;
@@ -13,6 +14,7 @@ internal sealed class ServiceLog
 	private readonly string _logPath;
 
 	private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+	private DateTimeOffset? _lastWriteFailure;
 
 	public ServiceLog(string stateRoot)
 	{
@@ -44,6 +46,16 @@ internal sealed class ServiceLog
 		{
 			RotateIfNeeded();
 			await File.AppendAllTextAsync(_logPath, line, cancellationToken);
+		}
+		catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+		{
+			// Diagnostics cannot turn a completed network mutation into a failure
+			// or stop Core when antivirus/file viewers temporarily lock the log.
+			if (_lastWriteFailure == null || DateTimeOffset.UtcNow - _lastWriteFailure >= TimeSpan.FromMinutes(1))
+			{
+				Trace.TraceError("Core service log is temporarily unavailable: " + error.Message);
+				_lastWriteFailure = DateTimeOffset.UtcNow;
+			}
 		}
 		finally
 		{
