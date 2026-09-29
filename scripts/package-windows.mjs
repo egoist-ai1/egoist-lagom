@@ -8,6 +8,11 @@ import { prepareComponents } from './prepare-components.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 process.chdir(root);
 const pkg = JSON.parse(await fs.readFile('package.json', 'utf8'));
+if (!/^\d+\.\d+\.\d+$/.test(pkg.version)) throw new Error('Packaging requires a stable numeric version.');
+const patchedDotnet = path.join(root, '.tools/dotnet-10.0.401/dotnet.exe');
+const dotnet = process.env.SHIELD_DOTNET || (await fs.access(patchedDotnet).then(() => patchedDotnet).catch(() => path.join(root, '.tools/dotnet/dotnet.exe')));
+const sdkCheck = spawnSync(dotnet, ['--version'], { windowsHide: true, encoding: 'utf8' });
+if (sdkCheck.status !== 0) throw new Error('Required .NET SDK is unavailable; install the version selected by global.json or set SHIELD_DOTNET.');
 const retryWindowsFileOperation = async operation => {
   let lastError;
   for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -26,6 +31,19 @@ if (!evidence || !path.isAbsolute(evidence)) throw new Error('Set SHIELD_EVIDENC
 await fs.mkdir(evidence, { recursive: true });
 const out = path.join(root, 'out', `EgoistShield-${pkg.version}-win-x64`);
 const appRoot = path.join(root, 'out', `app-${pkg.version}`);
+const assertOwnedOutputDirectory = async target => {
+  const outputRoot = path.resolve(root, 'out');
+  if (path.dirname(path.resolve(target)) !== outputRoot) throw new Error('Unexpected package output directory.');
+  for (const directory of [root, outputRoot, target]) {
+    const stat = await fs.lstat(directory).catch(error => {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    });
+    if (stat && (!stat.isDirectory() || stat.isSymbolicLink())) throw new Error('Package output must use ordinary directories: ' + directory);
+  }
+};
+await assertOwnedOutputDirectory(out);
+await assertOwnedOutputDirectory(appRoot);
 await fs.mkdir('dist', { recursive: true });
 const recoveredApp = path.resolve('recovery/official-app');
 const retiredScripts = 'resources/scripts/system-control';
@@ -58,7 +76,8 @@ const reinstallScriptWithBom = reinstallScript.subarray(0, 3).equals(Buffer.from
   ? reinstallScript
   : Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), reinstallScript]);
 await fs.writeFile(path.join(out, 'resources/installer/invoke-final-silent-reinstall.ps1'), reinstallScriptWithBom);
-await fs.copyFile('scratch/Unbounded.ttf', path.join(out, 'resources/installer/Unbounded.ttf'));
+await fs.copyFile('resources/installer/Unbounded.ttf', path.join(out, 'resources/installer/Unbounded.ttf'));
+await fs.copyFile('resources/installer/Unbounded-OFL.txt', path.join(out, 'resources/installer/Unbounded-OFL.txt'));
 const csc = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe';
 const wpfLib = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\WPF';
 const modernInstallerOut = path.join(out, 'resources/installer/ModernInstaller.exe');
@@ -84,7 +103,6 @@ const cscResult = spawnSync(csc, [
 ], { encoding: 'utf8' });
 if (cscResult.status !== 0) throw new Error('Failed to compile ModernInstaller.exe:\n' + (cscResult.stderr || '') + (cscResult.stdout || ''));
 console.log('Publishing Core service...');
-const dotnet = process.env.SHIELD_DOTNET || path.join(root, '.tools/dotnet/dotnet.exe');
 const publish = spawnSync(dotnet, ['publish', 'src/service/EgoistShield.Service.csproj', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:PublishSingleFile=true', '-p:EnableCompressionInSingleFile=true', '-o', path.join(out, 'resources/core-service/win-x64'), '-v', 'quiet'], { windowsHide: true, env: { ...process.env, DOTNET_ROOT: path.dirname(dotnet), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' }, encoding: 'utf8' });
 await fs.writeFile(path.join(evidence, 'core-publish.txt'), [publish.stdout ?? '', publish.stderr ?? '', publish.error?.message ?? ''].join(''));
 if (publish.status !== 0) throw new Error('Core publish failed; see ' + path.join(evidence, 'core-publish.txt'));
@@ -159,6 +177,9 @@ const requiredPayloadFiles = [
   'resources/component-worker.cjs',
   'resources/core-service/win-x64/EgoistShield.Service.exe',
   'resources/runtime/manifest.json',
+  'resources/release/root-public-key.pem',
+  'resources/release/release-key-registry.json',
+  'resources/release/release-key-registry.json.sig',
   'resources/gravityless-dns/dnscrypt-proxy.exe',
   'resources/gravityless-dns/dnscrypt-proxy.toml',
   'resources/installer/owned-cleanup.ps1',

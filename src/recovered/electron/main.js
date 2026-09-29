@@ -630,8 +630,8 @@ function getTrayAssetPath(filename) {
 * загрузки интерфейса, а внутри неё живут `netsh`, `sc.exe` и PowerShell. На
 * зависшем сетевом стеке любой из них не возвращается никогда, и приложение
 * навсегда останавливалось до появления обработчиков: окно открыто, но не
-* отвечает ни одна кнопка. Просроченный шаг теперь пропускается, а его работу
-* доделывает восстановление после загрузки renderer.
+* отвечает ни одна кнопка. Дедлайн ограничивает ожидание интерфейса, но не
+* отменяет системную операцию. Новые сетевые изменения ждут её завершения.
 */
 var pendingBootRecovery = new Set();
 async function withBootDeadline(label, budgetMs, work) {
@@ -726,14 +726,14 @@ async function inspectOwnedLoopbackDnsHealth() {
 async function restoreDnsIfLocalResolverIsDown() {
 	try {
 		const [systemDoh, gravityless] = await Promise.all([globalSystemDohManager?.status({ force: true }).catch(() => null) ?? Promise.resolve(null), globalGravitylessDnsManager?.status({ force: true }).catch(() => null) ?? Promise.resolve(null)]);
-		if (systemDoh?.verified || gravityless?.verified) return false;
+		if (!shouldRestoreOwnedDnsForUnavailableResolvers([systemDoh, gravityless])) return false;
+		const coreService = globalSystemDohManager?.coreService ?? globalGravitylessDnsManager?.coreService;
+		if (!coreService) return false;
 		const health = await inspectOwnedLoopbackDnsHealth();
 		if (!health.active || health.healthy) return false;
-		logger.error(`[boot] DNS safety net: adapter(s) ${health.interfaceIndices.join(",")} point at ${health.addresses.join(",")}, but the local resolver does not answer. Restoring DHCP only on those adapters.`);
-		const { resetSystemDnsInterfaces } = await Promise.resolve().then(() => system_dns_exports);
-		await resetSystemDnsInterfaces(health.interfaceIndices, false);
-		logger.warn("[boot] DNS safety net: affected adapters restored to DHCP; external DNS on other adapters was preserved");
-		return true;
+		const restored = await coreService.restoreOwnedDns();
+		logger.warn(`[boot] DNS safety net: stopped resolver; restored ${restored.restored ?? 0} owned adapter(s), ${restored.pendingAdapters ?? 0} pending.`);
+		return Number(restored.restored ?? 0) > 0;
 	} catch (error) {
 		logger.error("[boot] DNS safety net failed:", error);
 		return false;

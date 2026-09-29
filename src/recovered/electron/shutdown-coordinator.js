@@ -4,8 +4,14 @@ async function runShutdownSteps(steps, timeoutMs) {
 	const failedSteps = [];
 	let timeoutHandle = null;
 	let runningStep = null;
+	let deadlineReached = false;
+	const deadline = Date.now() + timeoutMs;
 	const work = (async () => {
 		for (const step of steps) {
+			if (deadlineReached || Date.now() >= deadline) {
+				deadlineReached = true;
+				break;
+			}
 			runningStep = step.name;
 			try {
 				await step.run();
@@ -18,16 +24,19 @@ async function runShutdownSteps(steps, timeoutMs) {
 			}
 			runningStep = null;
 		}
-		return false;
+		return deadlineReached;
 	})();
 	const timeout = new Promise((resolve) => {
-		timeoutHandle = setTimeout(() => resolve(true), timeoutMs);
+		timeoutHandle = setTimeout(() => {
+			deadlineReached = true;
+			resolve(true);
+		}, timeoutMs);
 	});
 	const timedOut = await Promise.race([work, timeout]);
 	if (timeoutHandle) clearTimeout(timeoutHandle);
 	return {
-		completedSteps,
-		failedSteps,
+		completedSteps: [...completedSteps],
+		failedSteps: [...failedSteps],
 		timedOut,
 		unfinishedStep: timedOut ? runningStep : null
 	};

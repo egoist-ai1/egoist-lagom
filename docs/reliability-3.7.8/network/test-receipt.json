@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "product": "Egoist Lagom",
+  "candidateVersion": "3.7.8",
+  "evidenceCapturedAtUtc": "2026-09-29T12:53:35.687495+00:00",
+  "workingBranchBaseCommit": "b8662d31128f6366a86c9f2be6d9bbaab60d387c",
+  "codeState": "uncommitted working candidate; scoped file hashes captured after the successful final run",
+  "environment": {
+    "os": "Windows",
+    "nodeVersion": "v24.19.0"
+  },
+  "finalRun": {
+    "command": "node --test tests/telegram-listener-ownership.test.mjs tests/network-lifecycle-reliability.test.mjs tests/shield-connection.test.mjs tests/shield-connection-truthfulness.test.mjs tests/zapret-selection-lifecycle.test.mjs tests/zapret-shutdown.test.mjs tests/zapret-update.test.mjs tests/vpn-tun-lifecycle.test.mjs tests/vpn-runtime-selection.test.mjs tests/network-races.test.mjs tests/telegram-route-health.test.mjs tests/lagom-runtime-regressions.test.mjs tests/service-status-locale.test.mjs tests/boot-network-race.test.mjs tests/review-network-audit.test.mjs tests/network-audit-followup.test.mjs",
+    "exitCode": 0,
+    "artifact": "test-results.txt",
+    "counts": {
+      "tests": 158,
+      "suites": 0,
+      "pass": 158,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 11660.2054
+    },
+    "newLifecycleTests": 30,
+    "newOwnershipAndStandaloneTests": 16,
+    "existingAffectedTests": 112
+  },
+  "baselineRuns": [
+    {
+      "artifact": "baseline-lifecycle.txt",
+      "scope": "Initial readiness, cache, stop, persistence, retry and coordination scenarios",
+      "counts": {
+        "tests": 12,
+        "suites": 0,
+        "pass": 1,
+        "fail": 11,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 12333.6678
+      }
+    },
+    {
+      "artifact": "baseline-profile.txt",
+      "scope": "Selected profile switching scenarios before targeted fixes",
+      "counts": {
+        "tests": 3,
+        "suites": 0,
+        "pass": 0,
+        "fail": 3,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 68.2424
+      }
+    },
+    {
+      "artifact": "baseline-pending-start.txt",
+      "scope": "Pending SCM startup scenarios before targeted fixes",
+      "counts": {
+        "tests": 2,
+        "suites": 0,
+        "pass": 0,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 72.2729
+      }
+    },
+    {
+      "artifact": "baseline-listener-ownership.txt",
+      "scope": "Foreign/unknown listener ownership and standalone SCM startup policy before targeted fixes",
+      "counts": {
+        "tests": 7,
+        "suites": 0,
+        "pass": 0,
+        "fail": 7,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 75.929
+      }
+    }
+  ],
+  "baselineInterpretation": "Incremental scenario reproductions before their targeted fixes; not one full-project baseline, and fixture versions developed between runs.",
+  "checks": {
+    "syntax": {
+      "command": "node --check <each scoped source and the two new test files>",
+      "files": 9,
+      "passed": true
+    },
+    "gitDiffCheck": {
+      "command": "git diff --check -- <owned files>",
+      "passed": true
+    }
+  },
+  "stress": [
+    {
+      "scenario": "128 concurrent route mutation requests",
+      "requests": 128,
+      "overlappingMutations": 0,
+      "retainedLocks": 0,
+      "retainedWaiters": 0,
+      "kind": "controlled asynchronous fixture"
+    },
+    {
+      "scenario": "90-day offline reconnect schedule",
+      "simulatedDays": 90,
+      "failedReconnectCalls": 143009,
+      "maximumPendingRetryTimers": 1,
+      "maximumAttemptsPerBatch": 8,
+      "networkCooldownMs": 300000,
+      "manualCancelRemovedTimer": true,
+      "kind": "virtual clock, no elapsed-day soak"
+    }
+  ],
+  "scopedFiles": [
+    {
+      "path": "src/recovered/electron/ipc/telegram-proxy-manager.js",
+      "sha256": "5c0dd312d0db43393e58e505d9effc686b27566a78ca23233166fb5b2b4fe40d"
+    },
+    {
+      "path": "src/recovered/electron/ipc/zapret-manager.js",
+      "sha256": "ffc62cdd5103045620cabba6c0c90b8890e38688dbd61cc0531a7830fd942d73"
+    },
+    {
+      "path": "src/recovered/electron/ipc/vpn-manager.js",
+      "sha256": "1adb0a913f528dbfc654920764c8fcd6cc06803b6a0e966bce6f6073be2e5978"
+    },
+    {
+      "path": "src/recovered/electron/ipc/vpn-reconnect-supervisor.js",
+      "sha256": "24a498c50ed0e153feccbf0fdfbe17516e1fbea19aea8be76f656fc18d3f5569"
+    },
+    {
+      "path": "src/recovered/electron/ipc/network-combinator-manager.js",
+      "sha256": "dcbea07af8e8f665f72464efdbfb7beae58abc64c4feed10dc55b5073b1f60d2"
+    },
+    {
+      "path": "src/recovered/electron/shutdown-coordinator.js",
+      "sha256": "a95988d4b5c578b09577a0798fd9cdfcad942d6cc55b7f99d16ffb1258f0e3ff"
+    },
+    {
+      "path": "src/shield-connection-controller.js",
+      "sha256": "2ad2456f68b0ef1a379470c834de4250b9007b554486efd4ea38a875ed4d9a05"
+    },
+    {
+      "path": "tests/telegram-listener-ownership.test.mjs",
+      "sha256": "7935daf35071d9a164221d8c82334899bb113020929a4a048c7196680dc911e9"
+    },
+    {
+      "path": "tests/network-lifecycle-reliability.test.mjs",
+      "sha256": "f3ca81be5cceb970d8f90348522603d5ff689fbfa13dee23f0f5fac581e30214"
+    },
+    {
+      "path": "tests/shield-connection.test.mjs",
+      "sha256": "cbf7d9593b7ce3f4200ba9379f331235f7f62c3d32bd669f9d64cfa072ff943e"
+    },
+    {
+      "path": "tests/shield-connection-truthfulness.test.mjs",
+      "sha256": "c0692292ff9cd5cd1c8fb778529dcc9315fd669ac001d5214f1e4f3c29530dc6"
+    },
+    {
+      "path": "tests/zapret-selection-lifecycle.test.mjs",
+      "sha256": "cc5e9027b4a1afd3cc2c27df8f976865803e2bdee6f20cc21b2b64933ce56c3c"
+    },
+    {
+      "path": "tests/zapret-shutdown.test.mjs",
+      "sha256": "eab6bc8699fb4768dedc17f1dfb5998ead80b49402116a8ec4dbf4dd6d0817e4"
+    },
+    {
+      "path": "tests/zapret-update.test.mjs",
+      "sha256": "a7c25623e6a68cabcd5ade29a46249bf80c986b019fede825175f2682a544ff3"
+    },
+    {
+      "path": "tests/vpn-tun-lifecycle.test.mjs",
+      "sha256": "5accc0ce70bde2d65ac9da30008fb24b5e355ea5db7170f7f583b383ad9e8ce8"
+    },
+    {
+      "path": "tests/vpn-runtime-selection.test.mjs",
+      "sha256": "2395ced471c42f0cf541685d6572ba6415be3711cb3ec79f0789ec3d6ecde6e3"
+    },
+    {
+      "path": "tests/network-races.test.mjs",
+      "sha256": "279a83350f5422f25b408d07ab500309f7a58d02bc219fec5339a702fee386cb"
+    },
+    {
+      "path": "tests/telegram-route-health.test.mjs",
+      "sha256": "65de1129ee1ef3303c48528eec9ccb2543c7e89059dc6e42b2aac0f2c69abb7a"
+    },
+    {
+      "path": "tests/lagom-runtime-regressions.test.mjs",
+      "sha256": "d248c6a901c4752b2d1de2d2980da99a01fb5443a29a3754c3a60a0ecb895e4e"
+    },
+    {
+      "path": "tests/service-status-locale.test.mjs",
+      "sha256": "13372334fb823e8e10f03499e182628590a2c16065bf1001122d586321dad601"
+    },
+    {
+      "path": "tests/boot-network-race.test.mjs",
+      "sha256": "4d41cc76198329d06c37b1afe1e8ee106ecc41274dc0e9513f6cd8ad5938e437"
+    },
+    {
+      "path": "tests/review-network-audit.test.mjs",
+      "sha256": "a79b8b5cd46d6a169d3e2c1c63e0bb039b7a44e7c6b63c429a9ee0a2624b773b"
+    },
+    {
+      "path": "tests/network-audit-followup.test.mjs",
+      "sha256": "5b66abfdd8a78bad787a781d07ae3da28e84f44e6f9d851ad3c1a7ab624ebc5f"
+    }
+  ],
+  "limits": [
+    "No live service, registry, network or installed-app mutation was performed for these tests.",
+    "Local listener ownership and TCP readiness do not prove remote Telegram traffic.",
+    "An owned Zapret worker does not prove access to all sites or media.",
+    "VPN reconnect supervision requires the desktop application process.",
+    "Core/installer/package and real reboot validation are separate evidence scopes.",
+    "Virtual 90-day scheduling is not a real 90-day stability measurement."
+  ],
+  "installedTelegramCoexistence": {
+    "initialReadOnlyObservationUtc": "2026-09-29T12:31:14Z",
+    "initialForeignOwner": "Egoist Relay egoist-tg-proxy.exe",
+    "conflictingEndpoint": "127.0.0.1:1443",
+    "ownBindFailureCode": 10048,
+    "resolutionVerifiedBy": "root agent protected elevated helper; separate live installation scope",
+    "resolutionReportedAtUtc": "2026-09-29T12:40:33Z",
+    "persistedLagomEndpoint": "127.0.0.1:1445",
+    "relayEndpointPreserved": "127.0.0.1:1443",
+    "remoteTelegramDeliveryVerified": false,
+    "savedClientEndpointAutomaticallyUpdated": false
+  }
+}

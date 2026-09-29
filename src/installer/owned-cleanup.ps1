@@ -636,8 +636,37 @@ function Get-CriticalLoopbackDnsInterfaces {
   return @($critical)
 }
 
+function Test-VerifiedProtectedReinstall {
+  $stage = $env:EGOIST_PROTECTED_REINSTALL_STAGE
+  if (-not $stage) { return $false }
+  try {
+    $stage = [IO.Path]::GetFullPath($stage).TrimEnd('\')
+    $state = Get-Content -LiteralPath (Join-Path $stage 'state.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $receiptBase = if ($state.PSObject.Properties['receiptBase']) { [string]$state.receiptBase } else { Join-Path $programDataRoot 'EgoistShieldInstaller\DeferredRuns' }
+    $base = [IO.Path]::GetFullPath($receiptBase).TrimEnd('\')
+    if ([IO.Path]::GetDirectoryName($stage) -ne $base) { return $false }
+    foreach ($path in @($base, $stage)) {
+      $item = Get-Item -LiteralPath $path -Force -ErrorAction Stop
+      if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { return $false }
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $stage 'backup-ready.flag') -PathType Leaf)) { return $false }
+    $heartbeat = Get-Content -LiteralPath (Join-Path $stage 'heartbeat.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    if ($state.schemaVersion -ne 1 -or $state.owner -ne 'EgoistShield' -or
+        [IO.Path]::GetDirectoryName([IO.Path]::GetFullPath([string]$state.installer)) -ne $stage -or
+        [string]$state.sha256 -notmatch '^[a-fA-F0-9]{64}$' -or
+        (Get-FileSha256 ([string]$state.installer)) -ne [string]$state.sha256) { return $false }
+    $worker = Get-Process -Id ([int]$heartbeat.workerPid) -ErrorAction Stop
+    if ([int64]$worker.StartTime.Ticks -ne [int64]$heartbeat.workerStartTicks) { return $false }
+    return $true
+  } catch { return $false }
+}
+
 function Test-InstallMayStopOwnedRuntimes {
   try {
+    if ((Test-InstallRootIdentified $installRoot) -and -not (Test-VerifiedProtectedReinstall)) {
+      Write-Error 'PROTECTED_UPGRADE_REQUIRED: The existing installation requires the protected handoff to preserve services and settings.' -ErrorAction Continue
+      return $false
+    }
     if (-not (Test-RunningOwnedSystemDoh)) { return $true }
     $criticalInterfaces = @(Get-CriticalLoopbackDnsInterfaces)
   } catch {
@@ -966,25 +995,68 @@ function Assert-TelegramProxyServicePersistence {
   }
 }
 
-function Wait-TelegramProxyServiceReady {
-  param([int]$Port, [int]$TimeoutSeconds = 45)
-  $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
-  while ((Get-Date) -lt $deadline) {
-    $service = Get-Service -Name $telegramProxyServiceName -ErrorAction SilentlyContinue
-    if ($service -and $service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Running) {
-      $client = New-Object Net.Sockets.TcpClient
-      try {
-        $connect = $client.ConnectAsync("127.0.0.1", $Port)
-        if ($connect.Wait(750) -and $client.Connected) { return $true }
-      } catch {
-        # Retry until both SCM and the listener report readiness.
-      } finally {
-        $client.Dispose()
+function Test-OwnedTelegramProxyListener {
+  param([string]$ExpectedWrapper, [int]$Port, [string]$HostAddress = '127.0.0.1')
+  $address = $null
+  if ($Port -lt 1 -or $Port -gt 65535 -or
+      -not [Net.IPAddress]::TryParse($HostAddress, [ref]$address) -or
+      -not [Net.IPAddress]::IsLoopback($address)) { return $false }
+  $service = Get-CimInstance Win32_Service -Filter "Name='EgoistShieldTelegramProxy'" -OperationTimeoutSec 3 -ErrorAction Stop
+  if (-not $service -or $service.State -ne 'Running' -or [int]$service.ProcessId -le 0) { return $false }
+  $actualWrapper = [IO.Path]::GetFullPath(([string]$service.PathName).Trim().Trim('"'))
+  if (-not $actualWrapper.Equals([IO.Path]::GetFullPath($ExpectedWrapper), [StringComparison]::OrdinalIgnoreCase)) { return $false }
+  $processes = @(Get-CimInstance Win32_Process -Property ProcessId,ParentProcessId,ExecutablePath,CreationDate -OperationTimeoutSec 3 -ErrorAction Stop)
+  $root = @($processes | Where-Object { [int]$_.ProcessId -eq [int]$service.ProcessId })
+  if ($root.Count -ne 1 -or -not [string]::Equals([string]$root[0].ExecutablePath, $actualWrapper, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+  $component = [IO.Path]::GetFullPath((Split-Path -Parent (Split-Path -Parent $ExpectedWrapper))).TrimEnd('\') + '\'
+  $owned = New-Object 'Collections.Generic.HashSet[int]'
+  [void]$owned.Add([int]$service.ProcessId)
+  $byPid = @{}
+  foreach ($item in $processes) { $byPid[[int]$item.ProcessId] = $item }
+  for ($depth = 0; $depth -lt 8; $depth++) {
+    $count = $owned.Count
+    foreach ($item in $processes) {
+      $parent = $byPid[[int]$item.ParentProcessId]
+      if ($parent -and $owned.Contains([int]$item.ParentProcessId) -and
+          $parent.CreationDate -and $item.CreationDate -and
+          [DateTime]$item.CreationDate -ge [DateTime]$parent.CreationDate -and
+          ([string]$item.ExecutablePath).StartsWith($component, [StringComparison]::OrdinalIgnoreCase)) {
+        [void]$owned.Add([int]$item.ProcessId)
       }
     }
+    if ($owned.Count -gt 64) { return $false }
+    if ($owned.Count -eq $count) { break }
+  }
+  $wildcard = if ($address.AddressFamily -eq [Net.Sockets.AddressFamily]::InterNetwork) { '0.0.0.0' } else { '::' }
+  $listeners = @(Get-CimInstance -Namespace 'root/StandardCimv2' -ClassName MSFT_NetTCPConnection `
+    -Filter "LocalPort=$Port AND State=2" -OperationTimeoutSec 3 -ErrorAction Stop)
+  return @($listeners | Where-Object {
+    $owned.Contains([int]$_.OwningProcess) -and
+    ([string]$_.LocalAddress -eq $address.ToString() -or [string]$_.LocalAddress -eq $wildcard)
+  }).Count -gt 0
+}
+
+function Wait-OwnedTelegramProxyReady {
+  param([string]$ExpectedWrapper, [int]$Port, [string]$HostAddress = '127.0.0.1', [int]$TimeoutSeconds = 45)
+  $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+  while ([DateTime]::UtcNow -lt $deadline) {
+    $client = $null
+    try {
+      if (Test-OwnedTelegramProxyListener -ExpectedWrapper $ExpectedWrapper -Port $Port -HostAddress $HostAddress) {
+        $client = New-Object Net.Sockets.TcpClient
+        $connect = $client.ConnectAsync($HostAddress, $Port)
+        if ($connect.Wait(750) -and $client.Connected -and
+            (Test-OwnedTelegramProxyListener -ExpectedWrapper $ExpectedWrapper -Port $Port -HostAddress $HostAddress)) { return $true }
+      }
+    } catch { Write-Verbose 'Telegram readiness ownership could not be confirmed.' }
+    finally { if ($client) { $client.Dispose() } }
     Start-Sleep -Milliseconds 250
   }
   return $false
+}
+function Wait-TelegramProxyServiceReady {
+  param([int]$Port, [int]$TimeoutSeconds = 45, [string]$HostAddress = '127.0.0.1')
+  return Wait-OwnedTelegramProxyReady -ExpectedWrapper $telegramProxyWrapperPath -Port $Port -HostAddress $HostAddress -TimeoutSeconds $TimeoutSeconds
 }
 
 function Restore-PersistedTelegramProxyService {
@@ -1057,7 +1129,7 @@ function Restore-PersistedTelegramProxyService {
     $config = Get-Content -LiteralPath (Join-Path $telegramProxyComponentRoot "config.json") -Raw -ErrorAction Stop |
       ConvertFrom-Json -ErrorAction Stop
     $port = [int]$config.port
-    if ($port -lt 1 -or $port -gt 65535 -or -not (Wait-TelegramProxyServiceReady $port 45)) {
+    if ($port -lt 1 -or $port -gt 65535 -or -not (Wait-TelegramProxyServiceReady -Port $port -TimeoutSeconds 45 -HostAddress ([string]$config.host))) {
       throw "Telegram Proxy service did not reach Running/listening state after the upgrade."
     }
   }
@@ -3536,7 +3608,7 @@ switch ($Phase) {
         Invoke-CoreOwnedDnsCleanup
         Remove-OptionalOwnedServices
         # Every successful install requires a new explicit connection choice.
-        Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.7" } | ConvertTo-Json -Compress)
+        Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.8" } | ConvertTo-Json -Compress)
         Write-Journal "optional-components-left-off" @{}
         Assert-InstalledCandidateRuntime -BeforeCommit
         Discard-OwnedNetworkArtifacts
@@ -3698,7 +3770,7 @@ switch ($Phase) {
       Remove-OptionalOwnedServices
       Write-Journal "optional-components-left-off" @{}
       Discard-OwnedNetworkArtifacts
-      Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.7" } | ConvertTo-Json -Compress)
+      Write-Utf8NoBomFile -Path (Join-Path $installRoot "resources\installation.json") -Content (@{ id = [Guid]::NewGuid().ToString(); version = "3.7.8" } | ConvertTo-Json -Compress)
       Complete-UpgradeQuarantine
       Write-Output "RECOVER: committed"
       exit 0

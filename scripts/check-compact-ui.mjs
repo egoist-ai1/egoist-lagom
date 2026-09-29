@@ -11,10 +11,12 @@ if(!evidenceArg || !path.isAbsolute(evidenceArg))throw new Error('Supply an abso
 const evidence=path.resolve(evidenceArg);
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const packageVersion=JSON.parse(await fs.readFile(path.join(project,'package.json'),'utf8')).version;
-const builtMain=await fs.readFile(path.join(project,'.vite/build/main.js'),'utf8');
+const buildDir=process.env.EGOIST_UI_BUILD_DIR||path.join(project,'.vite');
+if(!path.isAbsolute(buildDir))throw new Error('EGOIST_UI_BUILD_DIR must be absolute');
+const builtMain=await fs.readFile(path.join(buildDir,'build/main.js'),'utf8');
 const buildDate=builtMain.match(/EGOIST_SHIELD_BUILD_DATE = "([^"]+)"/)?.[1];
 assert.ok(buildDate,'Built app date is missing');
-const build=path.join(project,'.vite/renderer/main_window');
+const build=path.join(buildDir,'renderer/main_window');
 const moduleName=process.env.PLAYWRIGHT_MODULE;
 const {chromium}=await import(moduleName ? (path.isAbsolute(moduleName)?pathToFileURL(moduleName).href:moduleName) : 'playwright');
 const hash=data=>crypto.createHash('sha256').update(data).digest('hex');
@@ -46,10 +48,17 @@ let browser;
 function installFixture(){
   localStorage.setItem('egoist_widget_mode','false');
   const clone=v=>structuredClone(v);
-  const data=window.compactLab={calls:[],reads:{},state:{settings:{autoStart:false,minimizeToTray:false,autoConnect:false,reconnectOnDrop:true,notifications:true,sendSubscriptionHwid:false,autoUpdate:true,soundNotifications:false},nodes:[{id:'fixture-node',name:'QA server',server:'192.0.2.2',port:443,protocol:'vless'}],subscriptions:[],activeNodeId:'fixture-node'},vpn:{connected:false,running:false},doh:{running:false,nativeManaged:true,serviceInstalled:false,serviceRunning:false},zapret:{serviceRunning:false,standaloneRunning:false,currentProfile:'general'},userLists:{generalDomains:['existing.example.test'],includedCidrs:[],excludedDomains:[],excludedCidrs:[]},telegram:{running:false,serviceRunning:false,serviceInstalled:true,config:{host:'127.0.0.1',port:1443,secret:'0123456789abcdef0123456789abcdef',dcIp:[],verbose:false,bufKb:256,poolSize:8,logMaxMb:5,checkUpdates:true}}};
+  const data=window.compactLab={calls:[],reads:{},listeners:{},state:{settings:{autoStart:false,minimizeToTray:false,autoConnect:false,reconnectOnDrop:true,notifications:true,sendSubscriptionHwid:false,autoUpdate:true,soundNotifications:false},nodes:[{id:'fixture-node',name:'QA server',server:'192.0.2.2',port:443,protocol:'vless'}],subscriptions:[],activeNodeId:'fixture-node'},vpn:{connected:false,running:false},doh:{running:false,nativeManaged:true,serviceInstalled:false,serviceRunning:false},zapret:{serviceRunning:false,standaloneRunning:false,currentProfile:'general'},userLists:{generalDomains:['existing.example.test'],includedCidrs:[],excludedDomains:[],excludedCidrs:[]},telegram:{running:false,serviceRunning:false,serviceInstalled:true,config:{host:'127.0.0.1',port:1443,secret:'0123456789abcdef0123456789abcdef',dcIp:[],verbose:false,bufKb:256,poolSize:8,logMaxMb:5,checkUpdates:true}}};
   const read=(name,fn)=>async(...args)=>{data.reads[name]=(data.reads[name]??0)+1;return clone(fn(...args))};
   const action=(name,fn=()=>({ok:true}))=>async(...args)=>{data.calls.push({name,args:clone(args)});return clone(fn(...args))};
   const noop=()=>()=>{};
+  const listen=name=>callback=>{data.listeners[name]=callback;return()=>{if(data.listeners[name]===callback)delete data.listeners[name]}};
+  const checkUpdate=async()=>{
+    data.reads['updater.check']=(data.reads['updater.check']??0)+1;
+    if(window.__qaUpdateCheckFails)throw new Error('Initial updater IPC failed');
+    if(window.__qaUpdateCheckHold)return await new Promise(resolve=>{data.finishUpdateCheck=resolve});
+    return {ok:false,phase:'blocked',latestVersion:'3.7.1',message:'QA fixture: release verification required'};
+  };
   window.egoistAPI={
     state:{get:read('state.get',()=>data.state),set:action('state.set',next=>data.state=clone(next))},
     app:{isAdmin:async()=>true,getVersion:async()=>({version:window.__qaVersion,buildDate:window.__qaBuildDate}),isFirstRun:async()=>false},
@@ -58,7 +67,7 @@ function installFixture(){
     zapret:{status:read('zapret.status',()=>data.zapret),listProfiles:async()=>JSON.parse(localStorage.getItem('qa-zapret-profiles')||'null')??[{name:'general'}],getUserLists:read('zapret.getUserLists',()=>data.userLists),saveUserLists:action('zapret.saveUserLists',lists=>{data.userLists=clone(lists);return {ok:true}}),onAutoSelectProgress:noop},
     telegramProxy:{status:read('telegram.status',()=>data.telegram),tailLogs:async()=>[],saveConfig:action('telegramProxy.saveConfig',config=>{data.telegram.config=clone(config);return {ok:true}}),start:action('telegramProxy.start',()=>{data.telegram.running=true;return {ok:true}})},
     health:{getReport:async()=>({})},network:{inspect:async()=>({})},logs:{getRuntimeSummary:async()=>[]},
-    updater:{getLastResult:async()=>null,check:read('updater.check',()=>({ok:false,phase:'blocked',latestVersion:'3.7.1',message:'QA fixture: release verification required'})),setAuto:action('updater.setAuto',enabled=>{data.state.settings.autoUpdate=enabled;return {ok:true,enabled}}),onUpdateAvailable:noop,onDownloadProgress:noop,onUpdateDownloaded:noop,onUpdateNotAvailable:noop,onUpdateError:noop},
+    updater:{getLastResult:async()=>null,check:checkUpdate,checkAndInstall:action('updater.checkAndInstall',()=>({ok:true,phase:'up-to-date',currentVersion:window.__qaVersion,latestVersion:window.__qaVersion,message:'Установлена последняя доступная версия.'})),setAuto:action('updater.setAuto',enabled=>{data.state.settings.autoUpdate=enabled;return {ok:true,enabled}}),onUpdateAvailable:listen('updateAvailable'),onDownloadProgress:listen('downloadProgress'),onUpdateDownloaded:noop,onUpdateNotAvailable:listen('updateNotAvailable'),onUpdateError:listen('updateError')},
     traffic:{onUpdate:noop},autoConnect:{onAutoConnect:noop},
 
   };
@@ -91,7 +100,7 @@ async function check(id,screen,fn,viewport={width:1440,height:940}){
   });
   const page=await context.newPage();page.setDefaultTimeout(7000);
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.addInitScript(({version,date})=>{window.__qaVersion=version;window.__qaBuildDate=date},{version:packageVersion,date:buildDate});
+  await page.addInitScript(({version,date,id})=>{window.__qaVersion=version;window.__qaBuildDate=date;window.__qaUpdateCheckFails=id==='update-initial-ipc-failure-retry';window.__qaUpdateCheckHold=id==='update-newer-event-wins'},{version:packageVersion,date:buildDate,id});
   await page.addInitScript(installFixture);
   const result={id,screen,viewport,status:'running'};report.checks.push(result);
   try{
@@ -177,6 +186,46 @@ try{
     assert.ok(!geometry.versionVisible||!geometry.service||!geometry.version||geometry.version.top>=geometry.service.bottom-0.5,'App version must not overlap service settings');
     assert.match(layout[0].label,/Открыть релиз/);assert.match(layout[1].label,/Проверить/);
   },{width:550,height:728});
+  await check('update-error-recovers-with-successful-event','settings',async page=>{
+    await page.evaluate(()=>compactLab.listeners.updateError({code:'transport-failed',message:'Temporary network timeout',retryable:true}));
+    await page.getByText('Канал обновлений недоступен',{exact:true}).waitFor();
+    assert.equal(await page.getByText('Обновление заблокировано',{exact:true}).count(),0,'Transport failure is distinct from rejected release trust');
+    await page.evaluate(()=>compactLab.listeners.updateNotAvailable({ok:true,phase:'up-to-date',currentVersion:window.__qaVersion,latestVersion:window.__qaVersion,message:'Установлена последняя доступная версия.'}));
+    await page.getByText('Установлена последняя доступная версия.',{exact:true}).waitFor();
+    await page.getByText('Temporary network timeout',{exact:true}).waitFor({state:'hidden'});
+    assert.equal(await page.getByText('Temporary network timeout',{exact:true}).count(),0,'A successful event clears obsolete update error UI');
+    assert.equal(await page.getByRole('button',{name:'Открыть релиз',exact:true}).count(),0);
+    const button=page.getByRole('button',{name:'Проверить и установить',exact:true});assert.equal(await button.isEnabled(),true);
+    await button.click();await page.waitForFunction(()=>compactLab.calls.some(call=>call.name==='updater.checkAndInstall'));await waitIdle(page);
+    assert.equal((await calls(page)).filter(call=>call.name==='updater.checkAndInstall').length,1);
+  });
+  await check('update-initial-ipc-failure-retry','settings',async page=>{
+    await page.getByText('Initial updater IPC failed',{exact:true}).waitFor();
+    const retry=page.getByRole('button',{name:'Проверить и установить',exact:true});assert.equal(await retry.isEnabled(),true);
+    await retry.evaluate(button=>{for(let index=0;index<100;index++)button.click()});await page.waitForFunction(()=>compactLab.calls.some(call=>call.name==='updater.checkAndInstall'));
+    await page.getByText('Установлена последняя доступная версия.',{exact:true}).waitFor();await waitIdle(page);
+    assert.equal((await calls(page)).filter(call=>call.name==='updater.checkAndInstall').length,1,'100 repeat retries dispatch one action and preserve its result');
+  });
+  await check('update-newer-event-wins','settings',async page=>{
+    await page.waitForFunction(()=>!!compactLab.finishUpdateCheck);
+    await page.evaluate(()=>compactLab.listeners.updateNotAvailable({ok:true,phase:'up-to-date',latestVersion:window.__qaVersion,message:'Свежий результат проверки'}));
+    await page.getByText('Свежий результат проверки',{exact:true}).waitFor();
+    await page.evaluate(()=>compactLab.finishUpdateCheck({ok:false,phase:'blocked',message:'Устаревшая ошибка проверки'}));
+    await page.waitForTimeout(100);
+    assert.equal(await page.getByText('Устаревшая ошибка проверки',{exact:true}).count(),0);
+    assert.equal(await page.getByRole('button',{name:'Проверить и установить',exact:true}).isEnabled(),true);
+  });
+  await check('dashboard-service-running-is-not-runtime-ready','dashboard',async page=>{
+    await page.evaluate(()=>{compactLab.zapret={serviceRunning:true,standaloneRunning:false,runtimeReady:false,serviceReady:false,currentProfile:'general',lastError:'Worker unavailable'};Object.assign(compactLab.telegram,{serviceRunning:true,running:true,runtimeReady:false,listenerReady:false,lastError:'Listener unavailable'})});
+    await refresh(page);
+    await page.waitForFunction(()=>document.querySelectorAll('.ruby-component-copy p[title]').length===3&&Array.from(document.querySelectorAll('.ruby-component-copy p')).filter(el=>el.textContent==='Служба не готова').length===2);
+    for(const name of ['Профили','Telegram'])assert.equal(await page.getByRole('switch',{name,exact:true}).getAttribute('aria-checked'),'false');
+    await page.getByRole('button',{name:'Telegram',exact:true}).click();
+    await page.getByRole('button',{name:'Запустить',exact:true}).waitFor();
+    assert.equal(await page.getByRole('button',{name:'Остановить',exact:true}).count(),0);
+    await page.getByText('установлена, прокси не готов',{exact:true}).waitFor();
+    assert.deepEqual(await calls(page),[]);
+  });
   await check('dns-presets-and-confirmed-apply','dns',async page=>{
     for(const [name,primary,secondary] of [['Cloudflare','1.1.1.1','1.0.0.1'],['Google DNS','8.8.8.8','8.8.4.4'],['Quad9','9.9.9.9','149.112.112.112'],['AdGuard','94.140.14.14','94.140.15.15']]){
       await page.getByRole('button',{name:new RegExp('^'+name)}).click();assert.equal(await page.getByLabel('Основной DNS',{exact:true}).inputValue(),primary);assert.equal(await page.getByLabel('Дополнительный DNS',{exact:true}).inputValue(),secondary);
@@ -208,7 +257,12 @@ try{
     assert.equal(writes[0].name,'telegramProxy.saveConfig');assert.equal(writes[0].args[0].port,2443);assert.equal(writes[0].args[0].poolSize,12);assert.equal(writes[1].name,'telegramProxy.start');
   });
   await check('generic-dialog-escape-focus-trap','dashboard',async page=>{
-    const opener=page.getByRole('button',{name:'Восстановить интернет',exact:true});await opener.click();await dialogKeyboard(page,page.getByRole('dialog',{name:'Восстановить настройки',exact:true}),opener);assert.deepEqual(await calls(page),[]);
+    const opener=page.getByRole('button',{name:'Восстановить интернет',exact:true});await opener.click();
+    const dialog=page.getByRole('dialog',{name:'Восстановить настройки',exact:true});await dialog.waitFor();
+    assert.equal(await dialog.evaluate(el=>el.getAnimations({subtree:true}).length),0,'Reduced motion disables modal CSS and Web Animations');
+    const transform=await dialog.evaluate(el=>getComputedStyle(el).transform);
+    assert.ok(transform==='none'||transform==='matrix(1, 0, 0, 1, 0, 0)','Reduced motion opens the dialog without a scale or movement');
+    await dialogKeyboard(page,dialog,opener);assert.deepEqual(await calls(page),[]);
   });
   await check('about-dialog-escape-focus-trap','dashboard',async page=>{
     await page.evaluate(()=>{window.__qaVersion='9.8.7';window.__qaBuildDate='17.04.2042'});
@@ -216,7 +270,7 @@ try{
     const dialog=page.getByRole('dialog');
     await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="dialog"] .modal-meta-row strong')).some(element=>element.textContent==='9.8.7'));
     const rows=dialog.locator('.modal-meta-row');
-    assert.equal(await rows.nth(0).locator('span').innerText(),'Версия Egoist Shield:');
+    assert.equal(await rows.nth(0).locator('span').innerText(),'Версия Egoist Lagom:');
     assert.equal(await rows.nth(0).locator('strong').innerText(),'9.8.7');
     assert.equal(await rows.nth(1).locator('span').innerText(),'Дата сборки:');
     assert.equal(await rows.nth(1).locator('strong').innerText(),'17.04.2042');
@@ -315,7 +369,7 @@ finally{
   for(const entry of manifest){const data=await fs.readFile(path.join(build,entry.name.slice(1))).catch(()=>null);if(!data||hash(data)!==entry.sha256)current.push(entry.name)}
   report.buildChangedDuringRun=current;
   report.finishedAt=new Date().toISOString();
-  report.passed=!report.fatal&&report.checks.length===25&&report.checks.every(c=>c.status==='passed')&&current.length===0;
+  report.passed=!report.fatal&&report.checks.length===29&&report.checks.every(c=>c.status==='passed')&&current.length===0;
   await fs.writeFile(path.join(evidence,'compact-ui-report.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify({passed:report.passed,checks:report.checks.length,failed:report.checks.filter(c=>c.status!=='passed').map(c=>c.id),buildChanged:current,evidence}));
   if(!report.passed)process.exitCode=1;

@@ -1,0 +1,5 @@
+
+> egoist-lagom-desktop@3.7.8 build
+> node scripts/build.mjs
+
+Built desktop main, preload, recovered renderer and component worker.

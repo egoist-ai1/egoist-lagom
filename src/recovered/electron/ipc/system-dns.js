@@ -8,6 +8,7 @@ var system_dns_exports = /* @__PURE__ */ __exportAll({
 });
 var execFileAsync$8 = promisify(execFile);
 var WINDOWS_SCRIPT_TIMEOUT_MS = 2e4;
+var dnsApplicationQueue = Promise.resolve();
 var CONNECTED_INTERFACE_FILTER = "$adapter = Get-NetAdapter -InterfaceIndex $_.InterfaceIndex -ErrorAction SilentlyContinue; $identity = ([string]$_.InterfaceAlias + ' ' + [string]$adapter.InterfaceDescription); $_.ConnectionState -eq 'Connected' -and $identity -notmatch 'WireGuard|Wintun|Cloudflare\\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\\s_-])(TAP|TUN)([\\s_-]|$)'";
 function toPowerShellArray(values) {
 	if (values.length === 0) return "@()";
@@ -22,6 +23,23 @@ function toPowerShellIntArray(values) {
 }
 function createWindowsDnsScript(options) {
 	const { reset, servers } = options;
+	const savedTargets = options.adapters;
+	const targetSelection = savedTargets ? `
+$targets = @(${savedTargets.map((adapter) => `[pscustomobject]@{ guid = '${String(adapter.interfaceGuid ?? "").replaceAll("'", "''")}'; index = ${adapter.interfaceIndex} }`).join(", ")})
+$connectedInterfaces = @()
+foreach ($target in $targets) {
+  if (-not $target.guid) { throw 'DNS target has no stable GUID.' }
+  $adapter = Get-NetAdapter -ErrorAction Stop | Where-Object { [string]$_.InterfaceGuid -eq $target.guid } | Select-Object -First 1
+  if (-not $adapter) { throw "Adapter $($target.guid) is no longer present; DNS was not applied to a reused index." }
+  $connectedInterfaces += [pscustomobject]@{ InterfaceIndex = [int]$adapter.ifIndex; InterfaceGuid = [string]$adapter.InterfaceGuid }
+}` : `
+$connectedInterfaces = @(
+  Get-NetIPInterface | Where-Object { ${CONNECTED_INTERFACE_FILTER} } |
+    Group-Object InterfaceIndex | ForEach-Object { $_.Group | Sort-Object InterfaceMetric | Select-Object -First 1 }
+)
+if ($targetIndices.Count -gt 0) {
+  $connectedInterfaces = @($connectedInterfaces | Where-Object { $targetIndices -contains [int]$_.InterfaceIndex })
+}`;
 	return `
 $ErrorActionPreference = 'Stop'
 $dnsServers = ${toPowerShellArray(servers.servers)}
@@ -29,13 +47,7 @@ $ipv4Servers = ${toPowerShellArray(servers.ipv4Servers)}
 $ipv6Servers = ${toPowerShellArray(servers.ipv6Servers)}
 $resetMode = ${toPowerShellBoolean(reset)}
 $targetIndices = ${toPowerShellIntArray(options.interfaceIndices ?? [])}
-$connectedInterfaces = @(
-  Get-NetIPInterface | Where-Object { ${CONNECTED_INTERFACE_FILTER} } |
-    Group-Object InterfaceIndex | ForEach-Object { $_.Group | Sort-Object InterfaceMetric | Select-Object -First 1 }
-)
-if ($targetIndices.Count -gt 0) {
-  $connectedInterfaces = @($connectedInterfaces | Where-Object { $targetIndices -contains [int]$_.InterfaceIndex })
-}
+${targetSelection}
 if (-not $connectedInterfaces) { throw 'Не найден активный физический сетевой интерфейс Windows.' }
 $appliedCount = 0
 $errors = New-Object System.Collections.Generic.List[string]
@@ -79,9 +91,9 @@ function Test-DnsAddressesApplied {
       ($Family -eq 'IPv6' -and ($config.AddressFamily -eq 23 -or $config.AddressFamily -eq 'IPv6'))
     if (-not $matchesFamily) { continue }
     $configured = @($config.ServerAddresses)
-    $allFound = $true
-    foreach ($expectedServer in $Expected) {
-      if ($configured -notcontains $expectedServer) {
+    $allFound = $configured.Count -eq $Expected.Count
+    for ($i = 0; $allFound -and $i -lt $Expected.Count; $i++) {
+      if (-not ([System.Net.IPAddress]::Parse([string]$configured[$i])).Equals([System.Net.IPAddress]::Parse($Expected[$i]))) {
         $allFound = $false
         break
       }
@@ -127,6 +139,17 @@ if (-not $resetMode) {
       throw ("Windows не подтвердила применение IPv6 DNS на интерфейсе #{0}." -f $verifyIndex)
     }
   }
+} else {
+  foreach ($verifyIndex in $verifyIndices) {
+    $adapter = Get-NetAdapter -InterfaceIndex $verifyIndex -ErrorAction Stop
+    if (-not $adapter.InterfaceGuid) { throw "DNS reset readback has no GUID for interface #$verifyIndex." }
+    foreach ($protocol in @('Tcpip', 'Tcpip6')) {
+      try {
+        $value = (Get-ItemProperty -Path "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\$protocol\\Parameters\\Interfaces\\$($adapter.InterfaceGuid)" -ErrorAction Stop).NameServer
+        if (-not [string]::IsNullOrWhiteSpace([string]$value)) { throw "Windows did not confirm DHCP DNS on interface #$verifyIndex ($protocol)." }
+      } catch { if ($_.CategoryInfo.Category -ne 'ObjectNotFound') { throw } }
+    }
+  }
 }
 `.trim();
 }
@@ -139,13 +162,15 @@ async function flushDnsCache() {
 async function runWindowsPowerShell(script) {
 	await execFileAsync$8(resolveWindowsExecutable("powershell.exe"), [
 		"-NoProfile",
+		"-NonInteractive",
 		"-ExecutionPolicy",
 		"Bypass",
 		"-Command",
 		script
 	], {
 		windowsHide: true,
-		timeout: WINDOWS_SCRIPT_TIMEOUT_MS
+		timeout: WINDOWS_SCRIPT_TIMEOUT_MS,
+		maxBuffer: 4 * 1024 * 1024
 	});
 }
 async function applyWindowsDnsScript(options) {
@@ -162,21 +187,27 @@ async function applyWindowsDnsScript(options) {
 * промежуточной конфигурации без единого способа вернуть её назад (HIGH-03).
 */
 async function applyWindowsDnsInTransaction(options) {
+	const result = dnsApplicationQueue.then(() => applyWindowsDnsTransactionInternal(options));
+	dnsApplicationQueue = result.catch(() => {});
+	return result;
+}
+async function applyWindowsDnsTransactionInternal(options) {
 	const handle = await beginDnsTransaction({
 		intent: options.intent,
-		desiredServers: options.desiredServers
+		desiredServers: options.desiredServers,
+		interfaceIndices: options.scriptOptions.interfaceIndices
 	});
 	try {
 		await handle.setPhase("applying");
-		await applyWindowsDnsScript(options.scriptOptions);
+		await applyWindowsDnsScript({ ...options.scriptOptions, adapters: handle.transaction.original });
 		await handle.setPhase("verified");
+		await handle.commit();
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : String(error);
-		const rollback = await handle.rollback(reason);
+		const rollback = await handle.rollback(reason).catch((failure) => ({ restored: 0, failures: [failure instanceof Error ? failure.message : String(failure)] }));
 		const suffix = rollback.failures.length > 0 ? ` Автоматический откат завершён не полностью: ${rollback.failures.join("; ")}. Журнал транзакции сохранён и будет применён при следующем запуске.` : ` Исходные настройки DNS восстановлены на ${rollback.restored} адаптере(ах).`;
 		throw new Error(`${reason}.${suffix}`);
 	}
-	await handle.commit();
 }
 async function setSystemDnsServers(rawInput, mock = false) {
 	const servers = parseDnsServers(rawInput);

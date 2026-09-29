@@ -13,6 +13,11 @@ namespace EgoistShield.Service;
 internal sealed class WindowsDnsController
 {
 	private const string ConnectedInterfaceFilter = "$adapter = Get-NetAdapter -InterfaceIndex $_.InterfaceIndex -ErrorAction SilentlyContinue; $identity = ([string]$_.InterfaceAlias + ' ' + [string]$adapter.InterfaceDescription); $_.ConnectionState -eq 'Connected' -and $identity -notmatch 'WireGuard|Wintun|Cloudflare\\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\\s_-])(TAP|TUN)([\\s_-]|$)'";
+	private readonly Func<string, CancellationToken, Task<ProcessResult>> _powerShellRunner;
+
+	public WindowsDnsController() => _powerShellRunner = RunWindowsPowerShellAsync;
+	internal WindowsDnsController(Func<string, CancellationToken, Task<ProcessResult>> powerShellRunner) =>
+		_powerShellRunner = powerShellRunner ?? throw new ArgumentNullException(nameof(powerShellRunner));
 
 	public Task<DnsAdapterSnapshot[]> ReadSnapshotAsync(CancellationToken cancellationToken = default(CancellationToken))
 	{
@@ -219,7 +224,9 @@ internal sealed class WindowsDnsController
 		return array2;
 	}
 
-	private static async Task<ProcessResult> RunPowerShellAsync(string script, CancellationToken cancellationToken)
+	private Task<ProcessResult> RunPowerShellAsync(string script, CancellationToken cancellationToken) => _powerShellRunner(script, cancellationToken);
+
+	private static async Task<ProcessResult> RunWindowsPowerShellAsync(string script, CancellationToken cancellationToken)
 	{
 		return await ProcessRunner.RunAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe"), new global::_003C_003Ez__ReadOnlyArray<string>(new string[6] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script }), ServiceContract.PowerShellTimeout, cancellationToken);
 	}

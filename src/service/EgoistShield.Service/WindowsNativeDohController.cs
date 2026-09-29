@@ -20,15 +20,38 @@ internal sealed class WindowsNativeDohController
 
 
 	private readonly string _statePath;
+	private readonly Func<string, CancellationToken, Task<ProcessResult>> _powerShellRunner;
+	private readonly SemaphoreSlim _routeLock = new(1, 1);
+	private DateTimeOffset _routeCacheUntil;
+	private bool _hasIpv6DefaultRoute;
 
 	public WindowsNativeDohController(string stateRoot)
 	{
 		_statePath = Path.Combine(stateRoot, "native-doh-state.json");
+		_powerShellRunner = RunWindowsPowerShellAsync;
 	}
+
+	internal WindowsNativeDohController(string stateRoot, Func<string, CancellationToken, Task<ProcessResult>> powerShellRunner)
+		: this(stateRoot) => _powerShellRunner = powerShellRunner ?? throw new ArgumentNullException(nameof(powerShellRunner));
 
 	public Task<NativeDohOwnedState?> ReadOwnedStateAsync(CancellationToken cancellationToken = default(CancellationToken))
 	{
 		return AtomicJsonFile.ReadAsync<NativeDohOwnedState>(_statePath, cancellationToken);
+	}
+
+	internal async Task<bool> HasIpv6DefaultRouteAsync(CancellationToken cancellationToken)
+	{
+		await _routeLock.WaitAsync(cancellationToken);
+		try
+		{
+			if (DateTimeOffset.UtcNow < _routeCacheUntil) return _hasIpv6DefaultRoute;
+			string script = "$ErrorActionPreference = 'Stop'\n$connected = @(Get-NetAdapter -Physical -ErrorAction Stop | Where-Object { $_.Status -eq 'Up' } | ForEach-Object { [int]$_.ifIndex })\n$routes = @(Get-NetRoute -AddressFamily IPv6 -DestinationPrefix '::/0' -PolicyStore ActiveStore -ErrorAction SilentlyContinue | Where-Object { [int]$_.InterfaceIndex -in $connected })\n[bool]($routes.Count -gt 0) | ConvertTo-Json -Compress";
+			var result = await RunPowerShellAsync(script, cancellationToken);
+			_hasIpv6DefaultRoute = result.ExitCode == 0 && bool.TryParse(result.StandardOutput.Trim(), out bool available) && available;
+			_routeCacheUntil = DateTimeOffset.UtcNow.AddSeconds(30);
+			return _hasIpv6DefaultRoute;
+		}
+		finally { _routeLock.Release(); }
 	}
 
 	public async Task WriteOwnedStateAsync(NativeDohOwnedState? state, CancellationToken cancellationToken = default(CancellationToken))
@@ -62,11 +85,11 @@ internal sealed class WindowsNativeDohController
 		return JsonSerializer.Deserialize<NativeDohEntrySnapshot[]>(obj.StandardOutput, JsonDefaults.Options) ?? Array.Empty<NativeDohEntrySnapshot>();
 	}
 
-	public async Task ConfigureAsync(string url, IReadOnlyCollection<string> rawServers, CancellationToken cancellationToken = default(CancellationToken))
+	public async Task ConfigureAsync(string url, IReadOnlyCollection<string> rawServers, CancellationToken cancellationToken = default(CancellationToken), NativeDohOwnedState? previousOwnership = null)
 	{
 		string url2 = ValidateUrl(url);
 		string[] servers = WindowsDnsController.ValidateServers(rawServers);
-		EnsureSuccess(await RunPowerShellAsync(CreateConfigureScript(url2, servers), cancellationToken), "configure Windows native DoH");
+		EnsureSuccess(await RunPowerShellAsync(CreateConfigureScript(url2, servers, previousOwnership), cancellationToken), "configure Windows native DoH");
 	}
 
 	public async Task<(string[] Removed, string[] Preserved)> RemoveOwnedEntriesAsync(NativeDohOwnedState? state, CancellationToken cancellationToken = default(CancellationToken))
@@ -138,11 +161,10 @@ internal sealed class WindowsNativeDohController
 		DnsAdapterSnapshot[] originalDnsAdapters = state.OriginalDnsAdapters;
 		if (originalDnsAdapters != null && originalDnsAdapters.Length > 0)
 		{
-			DnsAdapterSnapshot[] array2 = WindowsDnsController.IntersectByStableIdentity(originalDnsAdapters, array);
-			DnsAdapterSnapshot[] adapters = WindowsDnsController.IntersectByStableIdentity(array, array2);
-			if (array2.Length != 0 && DnsMatchesServers(adapters, servers))
+			var targets = new DnsOwnedState(1, "EgoistShield", servers, originalDnsAdapters).RestoreTargets(array, out _, repairLoopback: false);
+			if (targets.Length != 0)
 			{
-				await dns.RestoreAsync(array2, "dns.apply", servers, cancellationToken);
+				await dns.RestoreFromExpectedSnapshotAsync(targets, WindowsDnsController.IntersectByStableIdentity(array, targets), cancellationToken);
 			}
 		}
 		else if (DnsMatchesServers(array, servers))
@@ -170,9 +192,11 @@ internal sealed class WindowsNativeDohController
 		return "$ErrorActionPreference = 'Stop'\nif (-not (Get-Command Get-DnsClientDohServerAddress -ErrorAction SilentlyContinue)) {\n  throw 'Windows native DoH cmdlets are unavailable on this OS.'\n}\n$servers = @()\nforeach ($item in (ConvertFrom-Json -InputObject '" + SerializeForPowerShell(servers) + "')) { $servers += [string]$item }\n$rows = @()\nforeach ($server in $servers) {\n  $entry = Get-DnsClientDohServerAddress -ServerAddress ([string]$server) -ErrorAction SilentlyContinue | Select-Object -First 1\n  if ($entry) {\n    $rows += [pscustomobject]@{\n      serverAddress = [string]$entry.ServerAddress\n      existed = $true\n      dohTemplate = [string]$entry.DohTemplate\n      allowFallbackToUdp = [bool]$entry.AllowFallbackToUdp\n      autoUpgrade = [bool]$entry.AutoUpgrade\n    }\n  } else {\n    $rows += [pscustomobject]@{\n      serverAddress = [string]$server\n      existed = $false\n      dohTemplate = $null\n      allowFallbackToUdp = $false\n      autoUpgrade = $false\n    }\n  }\n}\nConvertTo-Json -InputObject @($rows) -Compress";
 	}
 
-	private static string CreateConfigureScript(string url, IReadOnlyCollection<string> servers)
+	internal static string CreateConfigureScript(string url, IReadOnlyCollection<string> servers, NativeDohOwnedState? previousOwnership = null)
 	{
-		return $"$ErrorActionPreference = 'Stop'\n$url = [string](ConvertFrom-Json -InputObject '{SerializeForPowerShell(url)}')\n$servers = @()\nforeach ($item in (ConvertFrom-Json -InputObject '{SerializeForPowerShell(servers)}')) {{ $servers += [string]$item }}\nforeach ($server in $servers) {{\n  $entry = Get-DnsClientDohServerAddress -ServerAddress ([string]$server) -ErrorAction SilentlyContinue | Select-Object -First 1\n  if ($entry -and -not [string]::Equals([string]$entry.DohTemplate, $url, [StringComparison]::OrdinalIgnoreCase)) {{\n    throw \"DoH server $server is already owned by another template: $($entry.DohTemplate)\"\n  }}\n  if ($entry) {{\n    Set-DnsClientDohServerAddress -ServerAddress ([string]$server) -DohTemplate $url -AllowFallbackToUdp $false -AutoUpgrade $true -ErrorAction Stop | Out-Null\n  }} else {{\n    Add-DnsClientDohServerAddress -ServerAddress ([string]$server) -DohTemplate $url -AllowFallbackToUdp $false -AutoUpgrade $true -ErrorAction Stop | Out-Null\n  }}\n  $actual = Get-DnsClientDohServerAddress -ServerAddress ([string]$server) -ErrorAction Stop | Select-Object -First 1\n  if (-not $actual -or\n      -not [string]::Equals([string]$actual.DohTemplate, $url, [StringComparison]::OrdinalIgnoreCase) -or\n      [bool]$actual.AllowFallbackToUdp -or\n      -not [bool]$actual.AutoUpgrade) {{\n    throw \"Native DoH readback failed for $server.\"\n  }}\n}}";
+		string? previousUrl = previousOwnership == null ? null : ValidateUrl(previousOwnership.Url);
+		string[] previousServers = previousOwnership == null ? Array.Empty<string>() : WindowsDnsController.ValidateServers(previousOwnership.Servers);
+		return $"$ErrorActionPreference = 'Stop'\n$url = [string](ConvertFrom-Json -InputObject '{SerializeForPowerShell(url)}')\n$previousUrl = [string](ConvertFrom-Json -InputObject '{SerializeForPowerShell(previousUrl)}')\n$previousServers = @()\nforeach ($item in (ConvertFrom-Json -InputObject '{SerializeForPowerShell(previousServers)}')) {{ $previousServers += [string]$item }}\n$servers = @()\nforeach ($item in (ConvertFrom-Json -InputObject '{SerializeForPowerShell(servers)}')) {{ $servers += [string]$item }}\nforeach ($server in $servers) {{\n  $entry = Get-DnsClientDohServerAddress -ServerAddress ([string]$server) -ErrorAction SilentlyContinue | Select-Object -First 1\n  $previousOwned = $entry -and ($previousServers -contains $server) -and\n    [string]::Equals([string]$entry.DohTemplate, $previousUrl, [StringComparison]::OrdinalIgnoreCase) -and\n    -not [bool]$entry.AllowFallbackToUdp -and [bool]$entry.AutoUpgrade\n  if ($entry -and -not [string]::Equals([string]$entry.DohTemplate, $url, [StringComparison]::OrdinalIgnoreCase) -and -not $previousOwned) {{\n    throw \"DoH server $server is already owned by another template: $($entry.DohTemplate)\"\n  }}\n  if ($entry) {{\n    Set-DnsClientDohServerAddress -ServerAddress ([string]$server) -DohTemplate $url -AllowFallbackToUdp $false -AutoUpgrade $true -ErrorAction Stop | Out-Null\n  }} else {{\n    Add-DnsClientDohServerAddress -ServerAddress ([string]$server) -DohTemplate $url -AllowFallbackToUdp $false -AutoUpgrade $true -ErrorAction Stop | Out-Null\n  }}\n  $actual = Get-DnsClientDohServerAddress -ServerAddress ([string]$server) -ErrorAction Stop | Select-Object -First 1\n  if (-not $actual -or\n      -not [string]::Equals([string]$actual.DohTemplate, $url, [StringComparison]::OrdinalIgnoreCase) -or\n      [bool]$actual.AllowFallbackToUdp -or\n      -not [bool]$actual.AutoUpgrade) {{\n    throw \"Native DoH readback failed for $server.\"\n  }}\n}}";
 	}
 
 	private static string CreateRemoveOwnedScript(string url, IReadOnlyCollection<string> servers)
@@ -195,7 +219,9 @@ internal sealed class WindowsNativeDohController
 		return JsonSerializer.Serialize(value, JsonDefaults.StateOptions).Replace("'", "''");
 	}
 
-	private static async Task<ProcessResult> RunPowerShellAsync(string script, CancellationToken cancellationToken)
+	private Task<ProcessResult> RunPowerShellAsync(string script, CancellationToken cancellationToken) => _powerShellRunner(script, cancellationToken);
+
+	private static async Task<ProcessResult> RunWindowsPowerShellAsync(string script, CancellationToken cancellationToken)
 	{
 		if (!IsSupported)
 		{

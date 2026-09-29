@@ -1,0 +1,15 @@
+✔ prepares and verifies the v3.7.1 public alias without recovery or docs inputs (45.0285ms)
+✔ wrong signing key fails before any metadata is changed (15.8796ms)
+✔ release preparation rejects source trust that differs from the packaged trust receipt (15.7793ms)
+✔ missing late input leaves no partial signed manifest (17.1342ms)
+✔ tampered registry, installer and signed channel fail validation (36.3542ms)
+✔ bootstrap preserves pinned trust and refuses a replacement root (18.4525ms)
+﹣ GitHub preflight verifies offline and rejects changed inputs before any API request (0.0963ms) # SKIP
+ℹ tests 7
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 214.4829

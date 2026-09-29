@@ -117,7 +117,7 @@ electron.contextBridge.exposeInMainWorld("egoistAPI", {
 		onUpdateAvailable: (callback) => subscribeToChannel("update-available", callback),
 		onDownloadProgress: (callback) => subscribeToChannel("update-progress", callback),
 		onUpdateDownloaded: (callback) => subscribeToChannel("update-downloaded", callback),
-		onUpdateNotAvailable: (callback) => subscribeToSignal("update-not-available", callback),
+		onUpdateNotAvailable: (callback) => subscribeToChannel("update-not-available", callback),
 		onUpdateError: (callback) => subscribeToChannel("update-error", callback),
 		checkAndInstall: () => electron.ipcRenderer.invoke("updater:check-and-install"),
 		openReleasePage: () => electron.ipcRenderer.invoke("updater:open-release-page"),

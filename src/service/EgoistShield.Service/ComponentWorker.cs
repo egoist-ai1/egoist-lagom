@@ -19,6 +19,8 @@ internal sealed class ComponentWorker : IDisposable
         private readonly Dictionary<string, TaskCompletionSource<JsonElement>> _pending = new();
         private Exception? _failure;
 
+        internal bool Failed { get { lock (_pending) return _failure != null; } }
+
         public void Add(string id, TaskCompletionSource<JsonElement> completion)
         {
             lock (_pending)
@@ -47,6 +49,7 @@ internal sealed class ComponentWorker : IDisposable
 
     private readonly string _installRoot;
     private readonly Func<Process> _startWorker;
+    private readonly TimeSpan? _responseTimeout;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private WorkerRequests _requests = new();
     private Process? _process;
@@ -58,10 +61,11 @@ internal sealed class ComponentWorker : IDisposable
         _startWorker = StartInstalledWorker;
     }
 
-    internal ComponentWorker(Func<Process> startWorker)
+    internal ComponentWorker(Func<Process> startWorker, TimeSpan? responseTimeout = null)
     {
         _installRoot = string.Empty;
         _startWorker = startWorker;
+        _responseTimeout = responseTimeout;
     }
 
     public async Task<JsonElement> ExecuteAsync(JsonElement payload, bool query, CancellationToken cancellationToken)
@@ -78,35 +82,55 @@ internal sealed class ComponentWorker : IDisposable
         string id = Guid.NewGuid().ToString("N");
         var completion = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
         WorkerRequests? requests = null;
-        await _writeLock.WaitAsync(cancellationToken);
+        Process? worker = null;
+        TimeSpan timeout = _responseTimeout ?? (query ? TimeSpan.FromMinutes(1) :
+            method == "autoSelectBestProfile" ? TimeSpan.FromMinutes(20) :
+            method is "installCoreUpdate" or "installCoreVersion" or "installDiscordRescueCore" or "installUpdate" ? TimeSpan.FromMinutes(10) : TimeSpan.FromMinutes(5));
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(timeout);
         try
         {
-            EnsureStarted();
-            requests = _requests;
-            requests.Add(id, completion);
-            string line = JsonSerializer.Serialize(new { id, component, method, args, query });
-            await _process!.StandardInput.WriteLineAsync(line.AsMemory(), cancellationToken);
-            await _process.StandardInput.FlushAsync(cancellationToken);
+            await _writeLock.WaitAsync(deadline.Token);
+            try
+            {
+                EnsureStarted();
+                worker = _process!;
+                requests = _requests;
+                requests.Add(id, completion);
+                string line = JsonSerializer.Serialize(new { id, component, method, args, query });
+                await worker.StandardInput.WriteLineAsync(line.AsMemory(), deadline.Token);
+                await worker.StandardInput.FlushAsync(deadline.Token);
+            }
+            finally { _writeLock.Release(); }
+            // The same budget covers pipe writes and the reply; a blocked stdin
+            // can no longer hold the Core mutation slot forever.
+            return await completion.Task.WaitAsync(deadline.Token);
         }
-        catch
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && deadline.IsCancellationRequested)
+        {
+            var error = new TimeoutException($"Component {component}.{method} exceeded {timeout.TotalSeconds:0} seconds; verify its actual state before retrying.");
+            // Do not replay the mutation. Retire only this owned protocol worker;
+            // Windows services launched by SCM retain their own lifetime.
+            requests?.Remove(id);
+            requests?.Fail(error);
+            try { if (worker is { HasExited: false }) worker.Kill(entireProcessTree: true); } catch { }
+            throw error;
+        }
+        catch (Exception error) when (error is IOException or ObjectDisposedException)
         {
             requests?.Remove(id);
+            requests?.Fail(error);
+            try { if (worker is { HasExited: false }) worker.Kill(entireProcessTree: true); } catch { }
             throw;
         }
-        finally { _writeLock.Release(); }
-
-        try
-        {
-            // A timed-out mutation is never automatically replayed.
-            return await completion.Task.WaitAsync(TimeSpan.FromMinutes(20), cancellationToken);
-        }
-        finally { requests.Remove(id); }
+        finally { requests?.Remove(id); }
     }
 
     private void EnsureStarted()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (_process is { HasExited: false }) return;
+        if (_process is { HasExited: false } && !_requests.Failed) return;
+        try { if (_process is { HasExited: false }) _process.Kill(entireProcessTree: true); } catch { }
         _process?.Dispose();
         _process = _startWorker();
         Process worker = _process;
@@ -149,21 +173,27 @@ internal sealed class ComponentWorker : IDisposable
     {
         try
         {
-            while (await worker.StandardOutput.ReadLineAsync() is string line)
+            var buffer = new char[4096];
+            var line = new StringBuilder();
+            int count;
+            while ((count = await worker.StandardOutput.ReadAsync(buffer)) > 0)
             {
-                if (line.Length > 4 * 1024 * 1024) throw new IOException("Worker response is too large.");
-                using JsonDocument json = JsonDocument.Parse(line);
-                JsonElement response = json.RootElement;
-                string id = response.GetProperty("id").GetString() ?? "";
-                bool ok = response.GetProperty("ok").GetBoolean();
-                JsonElement result = ok ? response.GetProperty("result").Clone() : default;
-                string? error = ok ? null : response.GetProperty("error").GetString() ?? "Component operation failed.";
-                // Keep the completion registered until every response field is validated.
-                var completion = requests.Remove(id);
-                if (completion == null) continue;
-                if (ok) completion.TrySetResult(result);
-                else completion.TrySetException(new InvalidOperationException(error));
+                for (int offset = 0; offset < count; offset++)
+                {
+                    char value = buffer[offset];
+                    if (value == '\n')
+                    {
+                        CompleteResponse(line.ToString(), requests);
+                        line.Clear();
+                    }
+                    else
+                    {
+                        if (line.Length >= 4 * 1024 * 1024) throw new IOException("Worker response is too large.");
+                        line.Append(value);
+                    }
+                }
             }
+            if (line.Length > 0) throw new IOException("Worker response stream ended before a complete frame.");
         }
         catch (Exception error) { requests.Fail(error); }
         finally
@@ -173,6 +203,20 @@ internal sealed class ComponentWorker : IDisposable
             // Kill only this owned worker tree so the next request can restart it.
             try { if (!worker.HasExited) worker.Kill(entireProcessTree: true); } catch { }
         }
+    }
+
+    private static void CompleteResponse(string line, WorkerRequests requests)
+    {
+        using JsonDocument json = JsonDocument.Parse(line);
+        JsonElement response = json.RootElement;
+        string id = response.GetProperty("id").GetString() ?? "";
+        bool ok = response.GetProperty("ok").GetBoolean();
+        JsonElement result = ok ? response.GetProperty("result").Clone() : default;
+        string? error = ok ? null : response.GetProperty("error").GetString() ?? "Component operation failed.";
+        var completion = requests.Remove(id);
+        if (completion == null) return;
+        if (ok) completion.TrySetResult(result);
+        else completion.TrySetException(new InvalidOperationException(error));
     }
 
     public void Dispose()

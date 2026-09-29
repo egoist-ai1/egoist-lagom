@@ -1,0 +1,14 @@
+Test-InstallMayStopOwnedRuntimes : PROTECTED_UPGRADE_REQUIRED: The existing installation requires the protected handoff
+ to preserve services and settings.
+At C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\installer-protected-upgrade.ps1:24 char:18
++   Require (-not (Test-InstallMayStopOwnedRuntimes)) 'Unprotected upgr ...
++                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Test-InstallMayStopOwnedRuntimes
+ 
+PASS: installed upgrade requires protected handoff even when DoH is inactive
+PASS: a fresh install retains its direct path
+PASS: exact installer hash, backup marker and live worker evidence permit protected upgrade
+PASS: stale worker identity cannot bypass protected-upgrade guard
+PASS: changed installer content cannot bypass protected-upgrade guard
+Protected upgrade checks: 5 passed; no service/registry/network writes

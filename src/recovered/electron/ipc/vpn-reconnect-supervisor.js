@@ -24,7 +24,8 @@ function describeDrop(status) {
 /**
 * Классифицирует причину срыва по тексту ошибки (MED-08).
 *
-* Повтор осмыслен только для сетевых причин. Ошибки авторизации и конфигурации
+* Сетевые отказы и аварийный выход runtime допускают ограниченные повторы.
+* Ошибки авторизации и конфигурации
 * сами не исчезнут, поэтому бесконечные попытки давали лишь шум и нагрузку.
 */
 function classifyReconnectFailure(reason) {
@@ -32,6 +33,7 @@ function classifyReconnectFailure(reason) {
 	const text = reason.toLowerCase();
 	if (/unauthor|unauthentic|auth fail|authentication|invalid user|invalid password|forbidden|403|401|bad credential|подписка|срок действия|неверн(ый|ые) (логин|пароль|ключ)/.test(text)) return "auth";
 	if (/config|конфиг|parse|invalid (json|uri|url|address|port)|unsupported protocol|missing field|некоррект|не найден.*(файл|runtime)|runtime не найден|failed to parse/.test(text)) return "config";
+	if (/runtime.*(?:exited|crash|заверш|terminated)|процесс.*заверш/.test(text)) return "runtime";
 	if (/timeout|timed out|timedout|etimedout|econn|econnreset|econnrefused|enet|enetunreach|ehostunreach|enotfound|eai_again|dns|network|нет сети|соединение|маршрут|unreachable|refused|reset by peer|tls|handshake|socket/.test(text)) return "network";
 	return "unknown";
 }
@@ -56,12 +58,13 @@ var VpnReconnectSupervisor = class {
 	pollIntervalMs;
 	baseDelayMs;
 	maxDelayMs;
+	networkCooldownMs;
 	interval = null;
 	retryTimer = null;
 	attemptInFlight = false;
 	statusCheckInFlight = false;
 	generation = 0;
-	/** Порог сетевых попыток, после которого цепь размыкается. */
+	/** Порог временных отказов, после которого следующая серия ждёт cooldown. */
 	maxNetworkAttempts;
 	state = {
 		armed: false,
@@ -81,6 +84,7 @@ var VpnReconnectSupervisor = class {
 		this.baseDelayMs = options.baseDelayMs ?? 1500;
 		this.maxDelayMs = options.maxDelayMs ?? 3e4;
 		this.maxNetworkAttempts = options.maxNetworkAttempts ?? 8;
+		this.networkCooldownMs = options.networkCooldownMs ?? 3e5;
 	}
 	/**
 	* Размыкает цепь: автоматические попытки прекращаются до действия пользователя.
@@ -286,7 +290,7 @@ var VpnReconnectSupervisor = class {
 				failureClass: classifyReconnectFailure(reason)
 			};
 		} finally {
-			this.attemptInFlight = false;
+			if (generation === this.generation) this.attemptInFlight = false;
 		}
 		if (generation !== this.generation || !this.state.armed || !this.options.readEnabled()) return;
 		if (this.state.failureClass === "auth" || this.state.failureClass === "config") {
@@ -294,10 +298,26 @@ var VpnReconnectSupervisor = class {
 			return;
 		}
 		if (this.state.attempt >= this.maxNetworkAttempts) {
-			this.openCircuit(this.state.failureClass, `${this.state.lastReason ?? "Соединение не восстановлено"} (исчерпано ${this.state.attempt} попыток)`);
+			if (this.state.failureClass === "network" || this.state.failureClass === "runtime") this.scheduleNetworkCooldown();
+			else this.openCircuit(this.state.failureClass, `${this.state.lastReason ?? "Соединение не восстановлено"} (исчерпано ${this.state.attempt} попыток)`);
 			return;
 		}
 		this.scheduleRetry();
+	}
+	scheduleNetworkCooldown() {
+		this.clearRetry();
+		const generation = this.generation;
+		this.state = {
+			...this.state,
+			phase: "cooldown",
+			attempt: 0,
+			nextAttemptAt: new Date(this.scheduler.now() + this.networkCooldownMs).toISOString(),
+			circuitOpen: false,
+			requiredAction: null
+		};
+		this.options.log?.("warn", `[vpn:reconnect] Соединение не восстановилось; следующая ограниченная серия попыток через ${this.networkCooldownMs} мс.`);
+		this.retryTimer = this.scheduler.setTimeout(() => this.runReconnect(generation), this.networkCooldownMs);
+		this.retryTimer.unref?.();
 	}
 	clearRetry() {
 		if (!this.retryTimer) return;

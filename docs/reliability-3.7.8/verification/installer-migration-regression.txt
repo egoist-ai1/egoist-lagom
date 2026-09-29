@@ -1,0 +1,6 @@
+PASS: stopped-runtime migration preserves upstream/hosts/arguments and real Xray accepts result
+PASS: migration is idempotent with an existing health marker
+PASS: running service is rejected before writing
+PASS: foreign service ownership is rejected
+PASS: conflicting health marker is preserved and migration fails for recovery
+Runtime migration checks: 5 passed; no service, registry or adapter mutations

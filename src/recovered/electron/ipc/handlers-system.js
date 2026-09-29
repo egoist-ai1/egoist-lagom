@@ -173,6 +173,11 @@ async function resetSystemDnsThroughCurrentOwner(mock) {
 		throw error;
 	}
 }
+function localSystemDohServers(status) {
+	const servers = Array.isArray(status.serverAddresses) && status.serverAddresses.length > 0 ? status.serverAddresses : [status.localAddress];
+	if (servers.some((server) => !/^127\.0\.0\.(?:[1-9]|[1-9]\d|1\d\d|2[0-4]\d|25[0-4])$/.test(server) && server !== "::1")) throw new Error("Локальная служба DNS вернула адрес вне loopback.");
+	return [...new Set(servers)].join(" ");
+}
 function createMockSystemDohStatus(options) {
 	const running = options.running ?? false;
 	const preferredLocalAddress = typeof options.localAddress === "string" ? options.localAddress.trim() : "";
@@ -977,13 +982,13 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			problems.push(`Проверка журнала DNS: ${error instanceof Error ? error.message : String(error)}`);
 		}
 		if (telegramBefore) {
-			const running = Boolean(telegramBefore.running || telegramBefore.serviceRunning);
+			const running = Boolean(telegramBefore.runtimeReady ?? telegramBefore.running);
 			preserved.push(running ? "Telegram Proxy: работает — не изменялся" : "Telegram Proxy: остановлен — не изменялся");
 		}
 		await runStep("Возвращён прежний режим Discord-обхода", async () => {
 			const restored = await zapretManager.restoreAfterVpnIfNeeded(settings.zapretSuspendDuringVpn ?? true, settings.zapretProfile || "General");
-			const wasRunning = Boolean(zapretBefore?.serviceRunning || zapretBefore?.standaloneRunning);
-			const isRunning = Boolean(restored?.serviceRunning || restored?.standaloneRunning);
+			const wasRunning = Boolean(zapretBefore?.runtimeReady ?? (zapretBefore?.serviceRunning || zapretBefore?.standaloneRunning));
+			const isRunning = Boolean(restored?.runtimeReady ?? (restored?.serviceRunning || restored?.standaloneRunning));
 			if (wasRunning && isRunning) {
 				preserved.push("Discord-обход: работал и работает — не перезапускался");
 				return false;
@@ -1281,15 +1286,17 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 					running: true
 				}) : await systemDohManager.apply(url, persistedState.settings.systemDohLocalAddress);
 				if (!startedStatus.localAddress) throw new Error("System DoH запустился без локального адреса.");
+				if (startedStatus.running !== true || startedStatus.verified !== true) throw new Error("System DoH не прошёл проверку; действующие настройки DNS сохранены.");
 				if (!mock && startedStatus.nativeManaged !== true) try {
-					await setSystemDnsThroughCurrentOwner(startedStatus.localAddress, false, SYSTEM_DOH_VERIFICATION_DOMAINS);
+					await setSystemDnsThroughCurrentOwner(localSystemDohServers(startedStatus), false, SYSTEM_DOH_VERIFICATION_DOMAINS);
 				} catch (error) {
 					if (gravitylessWasRunning && gravitylessDnsManager) await gravitylessDnsManager.ensureRunning().catch((restoreError) => {
 						logger.warn("[system-doh] Failed to restore Gravityless after DNS apply error:", restoreError);
 					});
 					throw error;
 				}
-				const nextStatus = mock ? startedStatus : await systemDohManager.status();
+				const nextStatus = mock ? startedStatus : await systemDohManager.status({ force: true });
+				if (nextStatus.running !== true || nextStatus.verified !== true) throw new Error("Повторная проверка System DoH не подтвердила готовность.");
 				await patchSettingsWithLoginItemSync({
 					systemDohEnabled: true,
 					systemDohUrl: url,
@@ -1432,8 +1439,9 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			const targetUrl = stateStore.get().settings.systemDohUrl || "https://cloudflare-dns.com/dns-query";
 			const persistedState = stateStore.get();
 			const startedStatus = await systemDohManager.apply(targetUrl, persistedState.settings.systemDohLocalAddress);
+			if (startedStatus?.running !== true || startedStatus?.verified !== true) throw new Error("System DoH не прошёл проверку; действующие настройки DNS сохранены.");
 			if (startedStatus?.localAddress && startedStatus.nativeManaged !== true) {
-				await setSystemDnsThroughCurrentOwner(startedStatus.localAddress, false, SYSTEM_DOH_VERIFICATION_DOMAINS);
+				await setSystemDnsThroughCurrentOwner(localSystemDohServers(startedStatus), false, SYSTEM_DOH_VERIFICATION_DOMAINS);
 			}
 			await patchSettingsWithLoginItemSync({
 				systemDohEnabled: true,

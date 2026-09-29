@@ -1,0 +1,5 @@
+PASS: exact owned GUID restores static IPv4 and DHCP IPv6, ignoring unrelated adapter
+PASS: DNS changed after snapshot is preserved
+PASS: absent adapter never targets a replacement device
+PASS: invalid loopback baseline refuses a blind fallback
+PASS: unowned resolver is rejected before mutation

@@ -60,6 +60,24 @@ test('wrong signing key fails before any metadata is changed', async t => {
   assert.deepEqual((await fs.readdir(f.dist)).sort(), ['Egoist-Lagom-Setup.exe', 'package-integrity.json', 'release-manifest.json']);
 });
 
+test('new release metadata points to the versioned installer required by the updater', async t => {
+  const f = await fixture(t);
+  const version = '3.7.8';
+  const name = `EgoistShield-Setup-${version}.exe`;
+  await fs.writeFile(path.join(f.base, 'package.json'), JSON.stringify({ version }));
+  await fs.copyFile(path.join(f.dist, 'Egoist-Lagom-Setup.exe'), path.join(f.dist, name));
+  const integrity = JSON.parse(await fs.readFile(path.join(f.dist, 'package-integrity.json')));
+  integrity.version = version;
+  integrity.installer = { ...integrity.publicInstaller, path: `dist/${name}` };
+  await fs.writeFile(path.join(f.dist, 'package-integrity.json'), JSON.stringify(integrity));
+  const manifest = await prepareReleaseAssets(f.options);
+  assert.equal(manifest.installerName, name);
+  assert.equal(manifest.canonicalDownloadUrl, `https://github.com/egoist-ai1/egoist-lagom/releases/download/v${version}/${name}`);
+  assert.deepEqual(await prepareReleaseAssets({ ...f.options, 'verify-only': 'true' }), manifest);
+  await fs.appendFile(path.join(f.dist, 'Egoist-Lagom-Setup.exe'), 'changed alias');
+  await assert.rejects(prepareReleaseAssets({ ...f.options, 'verify-only': 'true' }), /alias differs/);
+});
+
 test('release preparation rejects source trust that differs from the packaged trust receipt', async t => {
   const f = await fixture(t);
   const file = path.join(f.dist, 'package-integrity.json');
@@ -106,7 +124,7 @@ test('GitHub preflight verifies offline and rejects changed inputs before any AP
   await fs.mkdir(scripts);
   for (const name of ['prepare-release-assets.mjs', 'release-github.py']) await fs.copyFile(fileURLToPath(new URL(`../scripts/${name}`, import.meta.url)), path.join(scripts, name));
   await fs.writeFile(path.join(scripts, 'github-api.py'), 'def request(*args, **kwargs):\n    raise RuntimeError("UNEXPECTED_API_REQUEST")\n');
-  const run = mode => spawnSync(process.env.EGOIST_RELEASE_PYTHON, [path.join(scripts, 'release-github.py'), mode], { encoding: 'utf8', env: { ...process.env, EGOIST_NODE: process.execPath, EGOIST_RELEASE_DIST: f.dist, PYTHONDONTWRITEBYTECODE: '1' } });
+  const run = mode => spawnSync(process.env.EGOIST_RELEASE_PYTHON, [path.join(scripts, 'release-github.py'), mode], { encoding: 'utf8', env: { ...process.env, EGOIST_NODE: process.execPath, EGOIST_RELEASE_DIST: f.dist, SHIELD_RELEASE_RECEIPT: path.join(f.base, 'release-receipt.json'), PYTHONDONTWRITEBYTECODE: '1' } });
   const verified = run('verify');
   assert.equal(verified.status, 0, verified.stderr);
   assert.match(verified.stdout, /"tag": "v3.7.1"/);

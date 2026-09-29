@@ -91,7 +91,7 @@ test('worker starts watchdog before service stops and stops SystemDoH last', asy
   assert.ok(watchdogStart >= 0 && watchdogStart < ordinaryStops);
   assert.ok(dnsBackup >= 0 && runtimeBackup >= 0 && runtimeBackup < dnsStop);
   assert.ok(ordinaryStops < dnsStop && dnsStop < installerStart);
-  assert.match(source, /Reset-CriticalLoopbackDnsToDhcp/);
+  assert.match(source, /Restore-CriticalOwnedDnsBaseline -State \$State/);
   assert.match(source, /Restore-PreservedState/);
   assert.match(source, /Test-LoopbackDnsReady/);
   assert.match(source, /Restore-CriticalAdapterDns -State \$state/);

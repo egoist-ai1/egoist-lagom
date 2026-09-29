@@ -191,15 +191,17 @@ var VpnRuntimeManager = class extends EventEmitter {
 	* процессу, а лишь проверяет его существование.
 	*/
 	isRuntimeProcessAlive() {
-		const child = this.snapshot.process;
-		if (!child || child.exitCode !== null || child.killed) return false;
+		return this.isChildProcessAlive(this.snapshot.process);
+	}
+	isChildProcessAlive(child) {
+		if (!child || child.exitCode !== null || child.signalCode) return false;
 		const pid = child.pid;
 		if (typeof pid !== "number" || pid <= 0) return false;
 		try {
 			process.kill(pid, 0);
 			return true;
 		} catch (error) {
-			return error?.code === "EPERM";
+			return error?.code !== "ESRCH";
 		}
 	}
 	async status() {
@@ -611,24 +613,27 @@ var VpnRuntimeManager = class extends EventEmitter {
 	async flushRetiringSessions() {
 		this.clearPendingHandoff();
 		const retirements = Array.from(this.retiringSessions.values());
-		this.retiringSessions.clear();
-		await Promise.all(retirements.map(async ({ session, timer }) => {
+		const outcomes = await Promise.allSettled(retirements.map(async ({ session, timer }) => {
 			clearTimeout(timer);
+			this.retiringSessions.set(session.processGeneration, { session, timer: null });
 			await this.terminateSession(session, {
 				disableSystemProxy: false,
 				clearKillSwitch: false
 			});
+			this.retiringSessions.delete(session.processGeneration);
 		}));
+		const failure = outcomes.find((outcome) => outcome.status === "rejected");
+		if (failure) throw failure.reason;
 	}
 	scheduleSessionRetirement(session, graceMs) {
 		const existingRetirement = this.retiringSessions.get(session.processGeneration);
 		if (existingRetirement) clearTimeout(existingRetirement.timer);
 		const timer = setTimeout(() => {
-			this.retiringSessions.delete(session.processGeneration);
-			this.terminateSession(session, {
-				disableSystemProxy: false,
-				clearKillSwitch: false
-			});
+			this.enqueueOperation(async () => {
+				this.retiringSessions.set(session.processGeneration, { session, timer: null });
+				await this.terminateSession(session, { disableSystemProxy: false, clearKillSwitch: false });
+				this.retiringSessions.delete(session.processGeneration);
+			}).catch((error) => this.logRuntimeEvent("warn", `Retired runtime cleanup failed: ${error instanceof Error ? error.message : String(error)}`));
 		}, graceMs);
 		this.retiringSessions.set(session.processGeneration, {
 			session,
@@ -640,14 +645,18 @@ var VpnRuntimeManager = class extends EventEmitter {
 		const activeGeneration = session.processGeneration;
 		const activePid = activeProcess.pid;
 		const wasMockRuntime = this.mockMode && session.activeRuntimePath === "mock";
+		let exitObserved = !this.isChildProcessAlive(activeProcess);
+		let terminationError = null;
+		const stillRunning = () => !exitObserved && this.isChildProcessAlive(activeProcess);
 		this.expectedExits.add(activeGeneration);
 		const exitPromise = new Promise((resolve) => {
-			if (activeProcess.exitCode !== null) {
+			if (exitObserved) {
 				resolve();
 				return;
 			}
 			let waitTimer = null;
 			const onExit = () => {
+				exitObserved = true;
 				if (waitTimer) {
 					clearTimeout(waitTimer);
 					waitTimer = null;
@@ -662,31 +671,31 @@ var VpnRuntimeManager = class extends EventEmitter {
 			}, wasMockRuntime ? 300 : 3e3);
 			waitTimer.unref?.();
 		});
-		activeProcess.kill();
+		if (stillRunning()) try {
+			activeProcess.kill();
+		} catch (error) {
+			terminationError = error;
+		}
 		await exitPromise;
-		if (!wasMockRuntime && activePid && activeProcess.exitCode === null) {
+		if (!wasMockRuntime && activePid && stillRunning()) {
 			try {
-				spawnSync(resolveWindowsExecutable("taskkill"), [
-					"/F",
-					"/PID",
-					String(activePid)
-				], {
-					windowsHide: true,
-					timeout: 2e3
-				});
-			} catch {}
+				activeProcess.kill("SIGKILL");
+			} catch (error) {
+				terminationError = error;
+			}
 			await delay(300);
+		}
+		if (stillRunning()) {
+			this.expectedExits.delete(activeGeneration);
+			throw new Error(`VPN runtime ${activePid ?? "unknown"} не подтвердил остановку${terminationError ? `: ${terminationError instanceof Error ? terminationError.message : String(terminationError)}` : ""}. Повторное подключение отменено, чтобы не создать конфликт маршрутов.`);
 		}
 		const cleanupTasks = [];
 		if (session.configPath) cleanupTasks.push(promises.rm(session.configPath, { force: true }).catch(() => {}));
 		if (options.disableSystemProxy && !this.mockMode) cleanupTasks.push(disableSystemProxy().then((result) => {
 			if (result.conflict) logger.warn("[vpn] System proxy was changed outside the app; user configuration left untouched.");
-			else if (!result.ok) logger.error("[vpn] System proxy restore incomplete:", result.error);
+			else if (!result.ok) throw new Error(`System proxy restore incomplete: ${result.error ?? "verification mismatch"}`);
 		}));
-		if (options.clearKillSwitch && this.killSwitch.isActive()) cleanupTasks.push(this.killSwitch.disable().catch((err) => {
-			const msg = err instanceof Error ? err.message : String(err);
-			console.warn("Kill Switch disable failed:", msg);
-		}));
+		if (options.clearKillSwitch && this.killSwitch.isActive()) cleanupTasks.push(this.killSwitch.disable());
 		await Promise.all(cleanupTasks);
 		this.pruneExpectedExits();
 	}
@@ -1246,21 +1255,24 @@ var VpnRuntimeManager = class extends EventEmitter {
 	}
 	async _disconnect() {
 		this.clearPendingHandoff();
-		this.setLifecycle("idle");
 		const activeSession = this.getActiveSession();
-		this.clearActiveSession();
-		await this.flushRetiringSessions();
-		if (activeSession) await this.terminateSession(activeSession, {
-			disableSystemProxy: !this.mockMode,
-			clearKillSwitch: true
-		});
-		else if (!this.mockMode) {
-			await disableSystemProxy();
-			if (this.killSwitch.isActive()) await this.killSwitch.disable().catch((err) => {
-				const msg = err instanceof Error ? err.message : String(err);
-				console.warn("Kill Switch disable failed:", msg);
+		try {
+			await this.flushRetiringSessions();
+			if (activeSession) await this.terminateSession(activeSession, {
+				disableSystemProxy: !this.mockMode,
+				clearKillSwitch: true
 			});
+			else if (!this.mockMode) {
+				const result = await disableSystemProxy();
+				if (result?.ok === false && !result.conflict) throw new Error(`System proxy restore incomplete: ${result.error ?? "verification mismatch"}`);
+				if (this.killSwitch.isActive()) await this.killSwitch.disable();
+			}
+		} catch (error) {
+			this.setFailure("runtime_stop_failed", error instanceof Error ? error.message : String(error));
+			throw error;
 		}
+		this.clearActiveSession();
+		this.setLifecycle("idle");
 		await delay(200);
 		this.logRuntimeEvent("info", "Runtime session disconnected.", {
 			activeNodeId: activeSession?.nodeId ?? null,

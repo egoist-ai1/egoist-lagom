@@ -1,0 +1,10 @@
+{
+  "generatedAt": "2026-09-29T12:02:01.705Z",
+  "keyId": "release-2026-09-recovery",
+  "oldRootSha256": "45e9a2c687439088f2a742c2a1f518d8ecb6bc0288eab8d9d2736faaa2e18b7c",
+  "newRootSha256": "c5afc36a97cc4c27f60cdda41d33e1e460e8697f1ff641438ab915c6d259307d",
+  "releasePublicKeySha256": "89a3fe6e668a02ec3b52ec0fadbf0018947525ce8343d5243f857be6a80564a4",
+  "privateKeysPrinted": false,
+  "migration": "manual verified installer only; cannot authenticate new root with missing old root private key",
+  "oldReleasePublicKeysRetained": true
+}

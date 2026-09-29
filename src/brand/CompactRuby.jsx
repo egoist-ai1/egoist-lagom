@@ -9,6 +9,7 @@ function RubyIcon({name,size=20,className='',style={},strokeWidth,forwardedRef,.
 function rubyButtonText(children){return O.Children.toArray(children).map(child=>typeof child==='string'||typeof child==='number'?String(child):O.isValidElement(child)?rubyButtonText(child.props.children):'').join(' ').replace(/\s+/g,' ').trim()}
 function rubyButtonHasIcon(children){return O.Children.toArray(children).some(child=>O.isValidElement(child)&&(child.type===RubyIcon||child.type==='svg'||child.type?.displayName in rubyLegacyIconNames||rubyButtonHasIcon(child.props.children)))}
 function rubyRequireOk(result,fallback){if(result?.ok===false)throw new Error(result.message||result.error||fallback);return result}
+function rubyBusy(snapshot,...actions){return actions.some(id=>snapshot.busy===id||snapshot.busyActions?.includes(id))}
 function rubyActionIcon(label,role){
   if(role==='switch'){
     if(/старт.*Windows/i.test(label))return 'startup';
@@ -60,10 +61,10 @@ function lp({confirmAction,onCloseSpeedPanel,onNavigate,runAction,snapshot,speed
   const vpnVerified=wm(snapshot.vpn);
   const vpnRunning=!!(snapshot.vpn?.connected||snapshot.vpn?.running);
   const vpnFailed=/failed|error/i.test(String(snapshot.vpn?.lifecycle??''));
-  const vpnBusy=snapshot.busy==='vpn-toggle'||snapshot.busy==='vpn-disconnect';
-  const dnsActive=snapshot.systemDoh?.running===true;
-  const zapretActive=!!(snapshot.zapret?.serviceRunning||snapshot.zapret?.standaloneRunning);
-  const telegramActive=!!snapshot.telegram?.running;
+  const vpnBusy=rubyBusy(snapshot,'vpn-toggle','vpn-disconnect','vpn-connect-node');
+  const dnsActive=rubyDnsReady(snapshot.systemDoh);
+  const zapretActive=rubyZapretReady(snapshot.zapret);
+  const telegramActive=rubyTelegramReady(snapshot.telegram);
   const anyActive=vpnRunning||dnsActive||zapretActive||telegramActive;
   const nodes=pm(snapshot.state?.nodes);
   const activeNode=nodes.find(node=>node.id===snapshot.state?.activeNodeId);
@@ -100,14 +101,14 @@ function lp({confirmAction,onCloseSpeedPanel,onNavigate,runAction,snapshot,speed
     return runAction(telegramActive?'tg-stop':'tg-start',()=>telegramActive?Z('telegramProxy.stop',api?.telegramProxy?.stop):Z('telegramProxy.start',api?.telegramProxy?.start),telegramActive?'Telegram Proxy остановлен':'Telegram Proxy запущен');
   }
   function restore(){confirmAction('Восстановить настройки','Egoist Lagom вернёт исходный системный прокси и проверит доступ к сети. Настройки DNS, Telegram и сторонних программ сохранятся.','Восстановить',()=>runAction('internet-fix',()=>Z('system.internetFix',api?.system?.internetFix),'Восстановление завершено'))}
-  const components=[{id:'dns',title:'DNS',description:'Шифрование DNS-запросов',icon:'dns',active:dnsActive,toggle:toggleDns},{id:'zapret',title:'Профили',description:'Правила маршрутизации',icon:'zapret',active:zapretActive,toggle:toggleZapret},{id:'telegram-proxy',title:'Telegram',description:'Локальный прокси для Telegram',icon:'telegram',active:telegramActive,toggle:toggleTelegram}];
+  const components=[{id:'dns',title:'DNS',description:'Шифрование DNS-запросов',icon:'dns',active:dnsActive,status:snapshot.systemDoh,pending:rubyBusy(snapshot,'doh-apply','doh-reset'),toggle:toggleDns},{id:'zapret',title:'Профили',description:'Правила маршрутизации',icon:'zapret',active:zapretActive,status:snapshot.zapret,pending:rubyBusy(snapshot,'zapret-standalone','zapret-stop'),toggle:toggleZapret},{id:'telegram-proxy',title:'Telegram',description:'Локальный прокси для Telegram',icon:'telegram',active:telegramActive,status:snapshot.telegram,pending:rubyBusy(snapshot,'tg-start','tg-stop'),toggle:toggleTelegram}];
   return <div className="ruby-dashboard">
     <header className="ruby-dashboard-heading ruby-page-heading"><div><h1>Обзор</h1></div><span className={'ruby-connection-summary'+(anyActive?' active':'')}><i/>{anyActive?'Есть активные подключения':'Всё выключено'}</span></header>
     <section className="ruby-connection-panel" aria-label="Подключение">
       <div className="ruby-connect"><img className="ruby-connection-mark" src="./assets/icons/brand-shield.svg" alt="" aria-hidden="true"/><div className="ruby-connect-body"><h2>{snapshot.busy==='vpn-disconnect'?'Отключение…':vpnBusy?'Подключение…':vpnVerified?'Маршрут подключён':vpnRunning?'Проверяем маршрут':vpnFailed?'Маршрут не подключён':'Маршрут отключён'}</h2><p>{vpnVerified?'Маршрут подтверждён':vpnRunning?'Проверяем внешний адрес и маршрут':vpnFailed?'Повторите попытку или выберите другой сервер':'Выберите сервер для подключения'}</p><button className="ruby-server-select" onClick={()=>nodes.length?setServersOpen(true):onNavigate('vpn')}><RubyIcon name="vpn"/><span>{activeNode?dm(snapshot.vpn,snapshot.state):'Выбрать сервер'}</span><RubyIcon name="chevron-down" size={16}/></button><button className="btn-primary ruby-connect-button" disabled={vpnBusy} aria-busy={vpnBusy} onClick={connect}><RubyIcon name="power" size={19}/>{vpnBusy?'Пожалуйста, подождите':vpnRunning?'Отключить':'Подключить'}</button>{vpnVerified&&<small className="ruby-uptime">Подключено {Im(snapshot.vpn?.uptimeMs??snapshot.vpn?.startedAt)}</small>}</div></div>
       <aside className="ruby-network"><dl>{[['Ваш IP',ip],['Провайдер',provider],['Регион',region],['Протокол',activeNode?.protocol?.toUpperCase()]].map(([label,value])=><div key={label}><dt>{label}</dt><dd title={value??''}>{value??'Не определено'}</dd></div>)}</dl><div className="ruby-route-status"><RubyIcon name={vpnVerified?'check':'zapret'} size={22}/><div><h3>{vpnVerified?'Выход подтверждён':snapshot.busy==='route-probe'?'Проверяем выход…':route?'Результат проверки':'Выход не проверен'}</h3><p>{vpnVerified?'Внешний маршрут прошёл проверку':'Проверьте точку выхода в интернет'}</p></div></div><button className="btn-secondary" disabled={snapshot.busy==='route-probe'} onClick={probe}>Проверить</button></aside>
     </section>
-    <section className="ruby-components" aria-label="Сетевые компоненты"><h2>Компоненты</h2><div className="ruby-component-list">{components.map(({id,title,description,icon,active,toggle})=><article key={id}><RubyIcon name={icon} size={24}/><div className="ruby-component-copy"><h3>{title}</h3><p>{description}</p></div><button className="btn-secondary ruby-configure" aria-label={'Настроить '+title} onClick={()=>onNavigate(id)}>Настроить</button><button role="switch" aria-label={title} aria-checked={active} className={'ruby-toggle'+(active?' active':'')} disabled={!!snapshot.busy} onClick={toggle}><span className="ruby-toggle-track"><i/></span><span>{active?'Вкл':'Выкл'}</span></button></article>)}</div></section>
+    <section className="ruby-components" aria-label="Сетевые компоненты"><h2>Компоненты</h2><div className="ruby-component-list">{components.map(({id,title,description,icon,active,status,pending,toggle})=><article key={id}><RubyIcon name={icon} size={24}/><div className="ruby-component-copy"><h3>{title}</h3><p title={status?.lastError || ''}>{pending?'Переключаем…':!status?'Проверяем состояние…':!active&&(status.serviceRunning||status.standaloneRunning)?'Служба не готова':description}</p></div><button className="btn-secondary ruby-configure" aria-label={'Настроить '+title} onClick={()=>onNavigate(id)}>Настроить</button><button role="switch" aria-label={title} aria-checked={active} aria-busy={pending} className={'ruby-toggle'+(active?' active':'')} disabled={!status||!!snapshot.busy} onClick={toggle}><span className="ruby-toggle-track"><i/></span><span>{pending?'…':active?'Вкл':'Выкл'}</span></button></article>)}</div></section>
     <section className="ruby-traffic" aria-label="Трафик"><div className="ruby-traffic-heading"><RubyIcon name="activity"/><h2>Трафик</h2></div><div className="ruby-metric"><span>Входящий</span><strong><RubyIcon name="download" size={17}/>{vpnVerified?Gm(snapshot.traffic?.rx??0):'0 Б'}/с</strong></div><div className="ruby-metric"><span>Исходящий</span><strong><RubyIcon name="upload" size={17}/>{vpnVerified?Gm(snapshot.traffic?.tx??0):'0 Б'}/с</strong></div><button className="btn-secondary" disabled={snapshot.busy==='speedtest'} onClick={()=>runAction('speedtest',()=>Z('system.speedtest',api?.system?.speedtest),'Замер скорости выполнен')}><RubyIcon name="speedtest"/>{snapshot.busy==='speedtest'?'Измеряем…':'Speedtest'}</button></section>
     <button className="ruby-recovery" disabled={snapshot.busy==='internet-fix'} onClick={restore}><RubyIcon name="restore"/>Восстановить интернет</button>
     <ShieldSpeedPanel onClose={onCloseSpeedPanel} open={speedPanelVisible&&(snapshot.busy==='speedtest'||!!snapshot.speedtest)} progress={snapshot.speedProgress} result={snapshot.speedtest}/>
@@ -123,6 +124,14 @@ function ShieldServerPicker({nodes,activeId,onClose,onManage,onSelect}){
 
 function ap({ activeScreen, activity, children, onAppInfo, onDismissActivity, onNavigate, snapshot }) {
   const [widgetMode, setWidgetMode] = O.useState(true);
+  const [reducedMotion, setReducedMotion] = O.useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  O.useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const change = () => setReducedMotion(media.matches);
+    media.addEventListener('change', change);
+    return () => media.removeEventListener('change', change);
+  }, []);
 
   O.useEffect(() => {
     try {
@@ -139,31 +148,25 @@ function ap({ activeScreen, activity, children, onAppInfo, onDismissActivity, on
 
   if (widgetMode) {
     return (
-      <main className="shield-widget-window">
+      <Tl reducedMotion="user" skipAnimations={reducedMotion}><main className="shield-widget-window">
         <ShieldWidget
           snapshot={snapshot}
           onOpenSettings={() => {
             onNavigate?.('settings');
             setWidgetMode(false);
-            try {
-              window.egoistAPI?.window?.setWidgetMode?.(false);
-            } catch (e) {}
           }}
         />
-      </main>
+      </main></Tl>
     );
   }
 
   return (
-    <main className="app-shell" data-busy={snapshot?.busy ?? ''} data-screen={activeScreen}>
+    <Tl reducedMotion="user" skipAnimations={reducedMotion}><main className="app-shell" data-busy={snapshot?.busy ?? ''} data-screen={activeScreen}>
       {O.createElement(sp, {activeScreen, onAppInfo, onNavigate, snapshot, onSwitchToWidget: () => {
         setWidgetMode(true);
-        try {
-          window.egoistAPI?.window?.setWidgetMode?.(true);
-        } catch (e) {}
       }})}
       <section className="workspace">{children}</section>
       {O.createElement(op, {activity: activeScreen === 'dashboard' && activity?.id === 'speedtest' ? null : activity, onDismiss: onDismissActivity})}
-    </main>
+    </main></Tl>
   );
 }

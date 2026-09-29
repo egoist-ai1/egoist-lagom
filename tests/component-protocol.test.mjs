@@ -19,6 +19,9 @@ test('query endpoint cannot invoke mutations and optional arguments are accepted
   assert.throws(() => request('Zapret', 'listProfiles', [], true));
   assert.equal(request('TelegramProxy', 'status', [], true).method, 'status');
   assert.equal(request('Zapret', 'cancelAutoSelect', [], true).method, 'cancelAutoSelect');
+  assert.throws(() => request('SystemDoH', 'refreshBootstrap', [], true));
+  assert.equal(request('SystemDoH', 'bootstrapServers', ['https://resolver.example/dns-query', false], true).method, 'bootstrapServers');
+  assert.throws(() => request('SystemDoH', 'bootstrapServers', ['http://resolver.example/dns-query', false], true));
 });
 test('DoH accepts HTTPS and loopback addresses only', () => {
   request('SystemDoH', 'apply', ['https://dns.google/dns-query']);

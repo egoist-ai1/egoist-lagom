@@ -100,7 +100,7 @@ test('sc.exe parser preserves pending, missing, and unknown fallback behaviour',
   assert.strictEqual(await queryTelegramService({ stdout: 'unrecognized sc.exe output' }, { controller: controllerFallback }), controllerFallback);
   const cimFallback = { installed: false, running: false, state: 'not-installed', rawState: null, pid: null };
   const missing = Object.assign(new Error('sc.exe query failed'), { code: 1060 });
-  assert.strictEqual(await queryTelegramService(missing, { cim: cimFallback }), cimFallback);
+  assert.deepEqual(JSON.parse(JSON.stringify(await queryTelegramService(missing, { cim: cimFallback }))), cimFallback);
 });
 
 test('System DoH parses Russian running and pending states without falling back to CIM', async () => {

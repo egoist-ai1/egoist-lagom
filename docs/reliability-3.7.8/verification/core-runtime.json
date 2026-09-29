@@ -1,0 +1,11 @@
+{
+  "sdk": "10.0.401",
+  "bundleIncludedFrameworks": [
+    {
+      "name": "Microsoft.NETCore.App",
+      "version": "10.0.12"
+    }
+  ],
+  "coreSha256": "27A13930AD2D5B6C29942C5B46E71A35FE2746ED0F33B282BEA781880A775D4C",
+  "selfTestPassed": true
+}

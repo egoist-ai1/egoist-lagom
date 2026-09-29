@@ -12,14 +12,35 @@ permissions:
 jobs:
   test:
     runs-on: windows-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Use Node.js 22
+      - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
+      - name: Use .NET for Core regression tests
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - name: Use Python for offline release preflight
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare isolated test directories
+        shell: pwsh
+        run: |
+          $testWork = Join-Path $env:RUNNER_TEMP 'lagom-tests'
+          New-Item -ItemType Directory -Path $testWork -Force | Out-Null
+          "LAGOM_TEST_TEMP=$testWork" >> $env:GITHUB_ENV
+          "EGOIST_RELEASE_TEST_DIR=$testWork" >> $env:GITHUB_ENV
+          "EGOIST_RELEASE_PYTHON=$env:pythonLocation\python.exe" >> $env:GITHUB_ENV
+          "TEMP=$testWork" >> $env:GITHUB_ENV
+          "TMP=$testWork" >> $env:GITHUB_ENV
       - name: Install dependencies
         run: npm ci
       - name: Build generated bundles
@@ -31,3 +52,20 @@ jobs:
         env:
           SHIELD_MAKENSIS: C:\\Program Files (x86)\\NSIS\\makensis.exe
         run: npm test
+      - name: Run Core fault and recovery regressions
+        shell: pwsh
+        run: |
+          dotnet run --project tests/CoreServiceReliabilityRegression -c Release -- --work $env:LAGOM_TEST_TEMP
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet run --project tests/NativeDohConfigurationRegression -c Release -- --work $env:LAGOM_TEST_TEMP
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet run --project tests/NativeDohConfigurationRegression -c Release -- --self-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run Windows PowerShell installer safety regressions
+        shell: pwsh
+        run: |
+          $nativeShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+          foreach ($test in @('installer-protected-upgrade.ps1', 'installer-owned-dns-recovery.ps1')) {
+            & $nativeShell -NoProfile -ExecutionPolicy Bypass -File (Join-Path 'tests' $test)
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }

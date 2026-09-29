@@ -1,12 +1,14 @@
 //#region src/shared/system-doh.ts
 var SYSTEM_DOH_DEFAULT_LOCAL_ADDRESS = "127.0.0.1";
+var SYSTEM_DOH_HEALTH_DOMAIN = "health.egoist.invalid";
 var SYSTEM_DOH_VERIFICATION_DOMAINS = [
 	"example.com",
 	"www.microsoft.com",
 	"github.com"
 ];
 function isIpv4Octet(value) {
-	const parsed = Number.parseInt(value, 10);
+	if (!/^(?:0|[1-9]\d{0,2})$/.test(value)) return false;
+	const parsed = Number(value);
 	return Number.isInteger(parsed) && parsed >= 0 && parsed <= 255;
 }
 function isLoopbackAddress(value) {

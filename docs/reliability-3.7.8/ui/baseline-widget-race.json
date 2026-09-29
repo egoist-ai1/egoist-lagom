@@ -1,0 +1,19 @@
+{
+  "checks": [
+    "296×340 layout has no horizontal or vertical overflow",
+    "Dashboard round-trip retains a single active connection",
+    "Connected DNS switch sends a real reset action",
+    "Failure remains readable with a retry action",
+    "Keyboard focus and reduced motion",
+    "Hidden widget pauses its continuous motion",
+    "GSAP selection animation runs and is disposed after success",
+    "Running DNS is shown and reset even when the saved connect preference is off",
+    "A successful status refresh clears a transient IPC error"
+  ],
+  "errors": [],
+  "limitations": [
+    "Headless renderer fixtures; native DWM, installation and network behavior require separate checks."
+  ],
+  "ok": false,
+  "failure": "AssertionError [ERR_ASSERTION]: Same-turn double click must dispatch one connect\n\n2 !== 1\n\n    at file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/scripts/check-shield-widget.mjs:161:10"
+}

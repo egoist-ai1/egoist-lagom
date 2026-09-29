@@ -11,7 +11,7 @@ if (!evidence || !path.isAbsolute(evidence)) throw new Error('Supply task-owned 
 await fs.mkdir(evidence, { recursive: true });
 const { isValidIpLiteral } = loadRecovered('shared/system-dns', {}, ['isValidIpLiteral']);
 const { parseCustomDnsUrl } = loadRecovered('shared/secure-dns', { isValidIpLiteral }, ['parseCustomDnsUrl']);
-const helpers = loadRecovered('shared/system-doh', { parseCustomDnsUrl }, ['buildXrayLocalDohServerUrl','parseSystemDohUrl']);
+const helpers = loadRecovered('shared/system-doh', { parseCustomDnsUrl }, ['buildXrayLocalDohServerUrl','parseSystemDohUrl','normalizeSystemDohLocalAddress','SYSTEM_DOH_HEALTH_DOMAIN']);
 const { buildSystemDohXrayConfig } = loadRecovered('electron/ipc/system-doh-manager', helpers, ['buildSystemDohXrayConfig']);
 const source = await fs.readFile('src/recovered/electron/ipc/state-store.js', 'utf8');
 const url = process.env.SHIELD_TEST_DOH_URL || source.match(/https:\/\/de-prem\.aeternia\.space[^"\s]+/)?.[0];

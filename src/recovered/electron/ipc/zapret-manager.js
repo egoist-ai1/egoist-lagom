@@ -676,6 +676,8 @@ var ZapretManager = class {
 	suspendedProfileDuringVpn = null;
 	statusCache = null;
 	statusInFlight = null;
+	statusGeneration = 0;
+	statusInFlightGeneration = null;
 	autoSelectController = null;
 	/** Non-null only while an auto-select sweep is running. */
 	probeProfiles = null;
@@ -693,20 +695,24 @@ var ZapretManager = class {
 	async status(options = {}) {
 		const now = Date.now();
 		if (!options.force && this.statusCache && this.statusCache.expiresAt > now) return this.statusCache.value;
-		if (!options.force && this.statusInFlight) return this.statusInFlight;
-		this.statusInFlight = this.readStatus().then((value) => {
-			this.statusCache = {
+		const generation = this.statusGeneration;
+		if (this.statusInFlight && this.statusInFlightGeneration === generation) return this.statusInFlight;
+		const request = this.readStatus().then((value) => {
+			if (generation === this.statusGeneration) this.statusCache = {
 				value,
 				expiresAt: Date.now() + ZAPRET_STATUS_CACHE_TTL_MS
 			};
 			return value;
 		}).finally(() => {
-			this.statusInFlight = null;
+			if (this.statusInFlight === request) this.statusInFlight = null;
 		});
-		return this.statusInFlight;
+		this.statusInFlight = request;
+		this.statusInFlightGeneration = generation;
+		return request;
 	}
 	invalidateStatusCache() {
 		this.statusCache = null;
+		this.statusGeneration += 1;
 	}
 	async readStatus() {
 		const sourceRuntime = await this.getSourceRuntimeInfo();
@@ -716,6 +722,7 @@ var ZapretManager = class {
 		const coreVersion = provisioned ? await this.readCoreVersion() : sourceRuntime?.version ?? null;
 		const standaloneState = await this.readStandaloneState();
 		const integratedProcesses = await this.listIntegratedWinwsProcesses();
+		const runtimeReady = integratedProcesses.length > 0;
 		const standaloneRunning = !service.running && integratedProcesses.length > 0;
 		const standalonePid = standaloneRunning && standaloneState?.pid ? standaloneState.pid : standaloneRunning ? integratedProcesses[0]?.pid ?? null : null;
 		const standaloneProfile = standaloneRunning ? standaloneState?.profile ?? null : null;
@@ -750,13 +757,16 @@ var ZapretManager = class {
 			serviceName: SERVICE_NAME,
 			serviceInstalled: service.installed,
 			serviceRunning: service.running,
+			serviceState: service.state,
+			serviceReady: service.running && runtimeReady,
+			runtimeReady,
 			serviceProfile,
 			standaloneRunning,
 			standalonePid,
 			standaloneProfile,
 			startedAt: runningStartedAt,
 			uptimeMs,
-			winwsRunning: service.running || standaloneRunning,
+			winwsRunning: runtimeReady,
 			drivers,
 			gameFilterMode,
 			ipsetMode,
@@ -772,7 +782,7 @@ var ZapretManager = class {
 				standaloneRunning,
 				staleIntegratedProcesses: integratedProcesses.length
 			}),
-			lastError: this.lastError
+			lastError: this.lastError || (service.running && !runtimeReady ? "Служба Zapret запущена, но принадлежащий Egoist Lagom winws.exe не работает." : null)
 		};
 	}
 	async listProfiles() {
@@ -824,6 +834,10 @@ var ZapretManager = class {
 	async installService(profileName = DEFAULT_PROFILE_NAME) {
 		await this.ensureProvisioned();
 		await this.assertNoExternalConflict();
+		if ((await this.queryService(SERVICE_NAME)).installed) {
+			await this.setServiceProfile(profileName);
+			return this.startService();
+		}
 		try {
 			const { profile, args, winwsPath } = await this.buildServiceCommand(profileName);
 			await this.deleteServiceIfPresent(SERVICE_NAME);
@@ -862,39 +876,62 @@ var ZapretManager = class {
 		await this.assertStandaloneStopped();
 		const service = await this.queryService(SERVICE_NAME);
 		if (!service.installed) throw new Error("Служба Zapret ещё не установлена.");
-		const shouldRestart = service.running;
+		if (service.state === "UNKNOWN") throw new Error("Не удалось подтвердить состояние службы Zapret; переключение отменено.");
+		const shouldRestart = service.running || service.state === "START_PENDING";
 		const { profile, args, winwsPath } = await this.buildServiceCommand(profileName);
-		await this.deleteServiceIfPresent(SERVICE_NAME);
-		await this.installWrappedService(profile.name, winwsPath, args);
-		if (!this.coreService) await this.execSc([
-			"description",
-			SERVICE_NAME,
-			SERVICE_DESCRIPTION
-		]);
-		if (!this.coreService) await this.configureServiceAutostartRecovery();
-		if (this.coreService) await this.coreService.setZapretProfile(profile.name);
-		else await this.execReg([
-			"add",
-			`HKLM\\SYSTEM\\CurrentControlSet\\Services\\${SERVICE_NAME}`,
-			"/v",
-			"EgoistShieldProfile",
-			"/t",
-			"REG_SZ",
-			"/d",
-			profile.name,
-			"/f"
-		]);
-		if (shouldRestart) await this.startService();
-		this.lastError = null;
+		const { xmlPath } = this.getServiceWrapperPaths();
+		const previousXml = await promises.readFile(xmlPath, "utf8");
+		const previousProfile = await this.readServiceProfile();
+		const nextXml = this.buildServiceWrapperXml(profile.name, winwsPath, args);
+		if (previousXml === nextXml && previousProfile === profile.name) return this.status({ force: true });
+		if (!previousXml || !previousProfile) throw new Error("Не удалось сохранить предыдущую конфигурацию Zapret; переключение отменено.");
 		this.invalidateStatusCache();
-		return this.status({ force: true });
+		await this.stopServiceInternal(false);
+		try {
+			await this.installWrappedService(profile.name, winwsPath, args, { existing: true });
+			await this.writeServiceProfile(profile.name);
+			if (shouldRestart) await this.startService();
+			this.lastError = null;
+			this.invalidateStatusCache();
+			return await this.status({ force: true });
+		} catch (error) {
+			let rollbackError = null;
+			try {
+				await this.stopServiceInternal(false);
+				await promises.writeFile(xmlPath, previousXml, "utf8");
+				await this.writeServiceProfile(previousProfile);
+				if (shouldRestart) await this.startService();
+			} catch (failure) {
+				rollbackError = failure instanceof Error ? failure.message : String(failure);
+			}
+			this.lastError = `${error instanceof Error ? error.message : String(error)}${rollbackError ? `. Восстановление предыдущего профиля требует внимания: ${rollbackError}` : ""}`;
+			this.invalidateStatusCache();
+			throw new Error(this.lastError);
+		}
+	}
+	async writeServiceProfile(profileName) {
+		if (this.coreService) await this.coreService.setZapretProfile(profileName);
+		else await this.execReg(["add", `HKLM\\SYSTEM\\CurrentControlSet\\Services\\${SERVICE_NAME}`, "/v", "EgoistShieldProfile", "/t", "REG_SZ", "/d", profileName, "/f"]);
 	}
 	async startService() {
 		await this.ensureProvisioned();
 		await this.assertNoExternalConflict();
 		const service = await this.queryService(SERVICE_NAME);
 		if (!service.installed) throw new Error("Служба Zapret ещё не установлена.");
+		if (service.state === "UNKNOWN") throw new Error("Не удалось подтвердить состояние службы Zapret перед запуском.");
 		if (this.coreService) await this.coreService.installOwnedService(SERVICE_NAME);
+		else await this.configureServiceAutostartRecovery();
+		if (service.state === "START_PENDING") {
+			await this.waitForServiceState(SERVICE_NAME, ["RUNNING"], SERVICE_START_TIMEOUT_MS);
+			service.running = true;
+		} else if (service.state === "STOP_PENDING") {
+			await this.waitForServiceState(SERVICE_NAME, ["STOPPED"], 2e4);
+			service.running = false;
+		}
+		if (service.running && (await this.listIntegratedWinwsProcesses()).length === 0 && !await this.waitForIntegratedWinwsStart(null, 5e3)) {
+			await this.stopServiceInternal(false);
+			service.running = false;
+		}
 		const restoreStandalone = await this.prepareStandaloneForServiceStart();
 		try {
 			await this.stopStaleWinwsBeforeServiceStart();
@@ -954,7 +991,10 @@ var ZapretManager = class {
 	async startStandalone(profileName = DEFAULT_PROFILE_NAME) {
 		await this.ensureProvisioned();
 		await this.assertNoExternalConflict();
-		if ((await this.queryService(SERVICE_NAME)).running) throw new Error("Сначала остановите службу Zapret, затем запускайте standalone-режим.");
+		const service = await this.queryService(SERVICE_NAME);
+		if (service.installed && service.state !== "STOPPED") throw new Error(service.state === "UNKNOWN" ? "Не удалось проверить состояние службы Zapret перед запуском standalone-режима." : "Сначала остановите службу Zapret, затем запускайте standalone-режим.");
+		if (service.running) throw new Error("Сначала остановите службу Zapret, затем запускайте standalone-режим.");
+		if (service.installed) await this.execSc(["config", SERVICE_NAME, "start=", "disabled"]);
 		await this.stopStandaloneInternal(true);
 		const { profile, args, winwsPath } = await this.buildServiceCommand(profileName);
 		const child = spawn(winwsPath, splitWindowsCommandLine(args), {
@@ -985,7 +1025,6 @@ var ZapretManager = class {
 		return this.status({ force: true });
 	}
 	async restartStandalone(profileName = DEFAULT_PROFILE_NAME) {
-		await this.stopStandaloneInternal(true);
 		return this.startStandalone(profileName);
 	}
 	async stopStandalone() {
@@ -1701,7 +1740,9 @@ var ZapretManager = class {
 	}
 	async prepareForVpn(suspendDuringVpn) {
 		if (!suspendDuringVpn || this.suspendedByVpnMode !== "none") return;
-		if ((await this.queryService(SERVICE_NAME)).running) {
+		const service = await this.queryService(SERVICE_NAME);
+		if (service.installed && service.state === "UNKNOWN") throw new Error("Не удалось проверить службу Zapret перед переключением на VPN.");
+		if (service.running || service.state === "START_PENDING" || service.state === "STOP_PENDING") {
 			this.suspendedByVpnMode = "service";
 			this.suspendedProfileDuringVpn = await this.readServiceProfile();
 			await this.stopServiceInternal(false);
@@ -1744,10 +1785,13 @@ var ZapretManager = class {
 			if (clearVpnSuspension && this.suspendedByVpnMode === "service") this.clearVpnSuspension();
 			return;
 		}
-		if (service.running) {
+		if (service.running || service.state && service.state !== "STOPPED") {
+			if (service.state === "UNKNOWN") throw new Error("Не удалось подтвердить состояние службы Zapret перед остановкой.");
 			try {
-				if (this.coreService) await this.coreService.stopOwnedService(SERVICE_NAME);
-				else await this.execSc(["stop", SERVICE_NAME]);
+				if (service.state !== "STOP_PENDING") {
+					if (this.coreService) await this.coreService.stopOwnedService(SERVICE_NAME);
+					else await this.execSc(["stop", SERVICE_NAME]);
+				}
 			} catch (error) {
 				if (!isScNotActiveError(error)) {
 					this.lastError = error instanceof Error ? error.message : String(error);
@@ -1808,12 +1852,13 @@ var ZapretManager = class {
 			xmlPath: path.join(wrapperDir, SERVICE_WRAPPER_XML)
 		};
 	}
-	async installWrappedService(profileName, winwsPath, args) {
+	async installWrappedService(profileName, winwsPath, args, { existing = false } = {}) {
 		const { wrapperDir, wrapperPath, xmlPath } = this.getServiceWrapperPaths();
 		await this.ensurePathExists(wrapperPath, "Service wrapper WinSW для Zapret не найден в runtime.");
 		await promises.mkdir(wrapperDir, { recursive: true });
 		await promises.mkdir(path.join(this.workDir, "logs", "zapret-service"), { recursive: true });
 		await promises.writeFile(xmlPath, this.buildServiceWrapperXml(profileName, winwsPath, args), "utf8");
+		if (existing) return;
 		if (this.coreService) await this.coreService.installOwnedService(SERVICE_NAME);
 		else await execFileAsync$1(wrapperPath, ["install"], {
 			cwd: wrapperDir,
@@ -1842,9 +1887,9 @@ var ZapretManager = class {
 				"failure",
 				SERVICE_NAME,
 				"reset=",
-				"86400",
+				"3600",
 				"actions=",
-				"restart/5000/restart/10000/restart/30000"
+				"restart/5000/restart/10000/restart/60000"
 			],
 			[
 				"config",
@@ -1895,11 +1940,12 @@ var ZapretManager = class {
 			"  <stopparentprocessfirst>false</stopparentprocessfirst>",
 			`  <logpath>${escapeXmlText(logDir)}</logpath>`,
 			"  <log mode=\"roll-by-size\">",
-			"    <sizeThreshold>10485760</sizeThreshold>",
+			"    <sizeThreshold>10240</sizeThreshold>",
 			"    <keepFiles>5</keepFiles>",
 			"  </log>",
 			"  <onfailure action=\"restart\" delay=\"5 sec\" />",
 			"  <onfailure action=\"restart\" delay=\"10 sec\" />",
+			"  <onfailure action=\"restart\" delay=\"60 sec\" />",
 			"</service>",
 			""
 		].join("\n");
@@ -2625,7 +2671,7 @@ var ZapretManager = class {
 				windowsHide: true,
 				timeout: 8e3
 			});
-			const state = parseScQueryState(stdout);
+			const state = parseScQueryState(stdout) ?? "UNKNOWN";
 			return {
 				installed: true,
 				running: state === "RUNNING",

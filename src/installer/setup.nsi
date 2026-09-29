@@ -90,7 +90,7 @@ FunctionEnd
 
 !macro RunProtectedReinstallHandoff
   ${DisableX64FSRedirection}
-  nsExec::Exec '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "$PLUGINSDIR\invoke-final-silent-reinstall.ps1" -InstallerPath "$EXEPATH" -ExpectedVersion "${PRODUCT_VERSION}" -EmbeddedRelease -InstallerUiPath "$PLUGINSDIR\ModernInstaller.exe" -InstallerFontPath "$PLUGINSDIR\Unbounded.ttf" -HandoffSignalPath "$PLUGINSDIR\handoff-started.flag" -RunAfterPath "$PLUGINSDIR\run_after.txt" -DelaySeconds 8'
+  nsExec::Exec '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "$PLUGINSDIR\invoke-final-silent-reinstall.ps1" -InstallerPath "$EXEPATH" -ExpectedVersion "${PRODUCT_VERSION}" -EmbeddedRelease -InstallerUiDirectory "$PLUGINSDIR" -DelaySeconds 8'
   Pop $HandoffResult
   ${EnableX64FSRedirection}
 !macroend

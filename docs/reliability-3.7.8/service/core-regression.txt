@@ -1,0 +1,25 @@
+PASS: SCM pending transitions and control races
+PASS: SCM transition deadline and cancellation
+PASS: boot enrollment preserves stopped and disabled services
+PASS: boot recovery policy repair is bounded and preserves stopped intent
+PASS: explicit stop and disabled races beat recovery
+PASS: recovery backoff survives Core restart
+PASS: offline and unknown probes never trigger recovery
+COLLISION STRESS: runningChecks=1440, stoppedChecks=1440, recoveries=0, warnings=0
+PASS: foreign Telegram listener cannot cause a running/stopped recovery storm
+PASS: listener ownership validates process ancestry, birth time and endpoint
+PASS: real TCP reachability cannot override foreign or changing listener ownership
+STRESS: checks=1440, simulatedHours=6, recoveries=14, warnings=14
+PASS: 1,440 fault cycles have bounded recovery and diagnostics
+PASS: malformed durable intent prevents recovery
+PASS: new DNS adapter selection preserves existing and static settings
+PASS: bootstrap refresh deadline persists across restart and concurrent checks
+PASS: DNS SERVFAIL proves local liveness
+PASS: DNS TCP fallback and unresponsive transport
+PASS: DNS identity/question checks and malformed packet stress
+PASS: worker replies correlate and operation error keeps protocol alive
+PASS: worker malformed frame fails all pending requests
+PASS: oversized unterminated worker frame fails within a bound
+PASS: blocked worker stdin cannot hold the mutation indefinitely
+PASS: worker timeout retires process and never replays mutation
+Core service reliability regression passed: 22 groups; runtime=.NET 8.0.30; elapsed=3,37s; work=<task-work>\core-reliability-6c8c57cbe62b4ca1b761ed671d85f4c4

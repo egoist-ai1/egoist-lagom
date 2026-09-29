@@ -8,6 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$packageVersion = (Get-Content -LiteralPath (Join-Path $projectRoot 'package.json') -Raw | ConvertFrom-Json).version
 if (-not [IO.Path]::IsPathRooted($EvidenceDirectory)) {
   throw 'EvidenceDirectory must be an absolute path.'
 }
@@ -142,7 +143,7 @@ try {
   try {
     Invoke-ValidationStep 'build' $npm @('run', 'build')
     Invoke-ValidationStep 'tests' $npm @('test')
-    Invoke-ValidationStep 'core-self-test' (Join-Path $projectRoot 'out\EgoistShield-3.7.1-win-x64\resources\core-service\win-x64\EgoistShield.Service.exe') @('--self-test')
+    Invoke-ValidationStep 'core-self-test' (Join-Path $projectRoot ('out\EgoistShield-' + $packageVersion + '-win-x64\resources\core-service\win-x64\EgoistShield.Service.exe')) @('--self-test')
     Invoke-ValidationStep 'release-preflight' $node @('scripts/prepare-release-assets.mjs', '--verify-only', 'true')
     if ($PlaywrightModule) {
       Invoke-ValidationStep 'ui-compact' $node @('scripts/check-compact-ui.mjs', (Join-Path $sandbox 'ui-compact'))
