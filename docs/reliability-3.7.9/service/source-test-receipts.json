@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "capturedAtUtc": "2026-09-29T17:18:17.46651+03:00",
+  "sourceVersion": "3.7.9",
+  "sdk": "10.0.401",
+  "productionRegressionRuntime": "10.0.12",
+  "coreRegressionRuntime": "8.0.30",
+  "completeSourceBuild": {
+    "errors": 0,
+    "warnings": 141
+  },
+  "coreSubsetBuild": {
+    "errors": 0,
+    "warnings": 6
+  },
+  "coreRegression": {
+    "groupsPassed": 24,
+    "result": "passed",
+    "file": "core-regression.txt",
+    "realNativeTcpTables": true,
+    "serviceMutations": false,
+    "blockedReadAttempts": 10000,
+    "blockedCollectorExecutions": 1
+  },
+  "nativeRegression": {
+    "groupsPassed": 15,
+    "result": "passed",
+    "file": "native-regression.txt",
+    "realReadOnlyCli": true,
+    "invalidOrMixedCliCases": 12,
+    "mockedPowerShellDnsScmCmdlets": true,
+    "serviceMutations": false
+  },
+  "selfTest": {
+    "result": "passed",
+    "version": "3.7.9",
+    "protocol": 1,
+    "file": "self-test.txt",
+    "serviceMutations": false
+  },
+  "coreChangedFrom3_7_8": [
+    "WindowsServiceListenerSnapshot.cs",
+    "TelegramListenerSnapshotCommand.cs",
+    "OwnedTcpListenerProbe.cs",
+    "OperationDispatcher.cs",
+    "Program.cs"
+  ],
+  "currentSourceSnapshots": [
+    {
+      "path": "src/service/EgoistShield.Service/DnsBootstrapRefreshScheduler.cs",
+      "sha256": "25512281437E14BAFB634EEC56FC1A62AFDD137051ED5F2422615EDBBC70C551"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/DnsMaintenancePolicy.cs",
+      "sha256": "61E06310CD2B8DCEA738FF18B3F60271B6C1817ABEFA24A037FFD3EB1890E36F"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/LocalServiceHealthProbe.cs",
+      "sha256": "79F11FAE5D8B3FCE7B9D2D05662B887014D72D167FE7C88ACF384B1403F5FA3D"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceIntentStore.cs",
+      "sha256": "266D4B10C505F3716239268B07ED38BABC2E71F5CD90AE4E2241CB792B299F18"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceSupervisor.cs",
+      "sha256": "3E1BA8B73881E5DD4D23F7327598458B7F72EC473CBB6770F0EF07F1162C4E1D"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceTransition.cs",
+      "sha256": "45DC82DB9A44DD0851F6F55FAFFBE8A6713C53A6BE6A214C803F5707685CDB88"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedTcpListenerProbe.cs",
+      "sha256": "018EFBA76B4222A061E4C4C4351EDEDF81AF94C7E5A5799ACB9A44A27C660B07"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ComponentWorker.cs",
+      "sha256": "5C613CE8D00F8840CD6DF3B2CF0BEED624B53A2464BB97CF61F24E4809C21263"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/EgoistShieldWindowsService.cs",
+      "sha256": "3A28D790D370C08F352AB18B7A8CA6DF1B3A597C9198A4F62E0680219EA3DF5B"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OperationDispatcher.cs",
+      "sha256": "F63B6A9FBE5EFE77D4D903E129D47B1CBD44B31D39E2EA05D39A431C4D0AE37F"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceController.cs",
+      "sha256": "3955EA797D7F53BF9793E068F159D49A7B69DF66E02721883ABFA012F9991849"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceEngine.cs",
+      "sha256": "8C4AAFD99DD2E2A3783686C49F1D7BB141FD5E03F63A65CD2BBF1FB7926A568C"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceLog.cs",
+      "sha256": "952A0B7910656B89541DBD9B1326F385DDC31C6BC7AD9D504A9152ABC971398E"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/WindowsDnsController.cs",
+      "sha256": "F3CC36C702E66F7A64E03DF74E2001F4CB57FF16EEE33201257DA9DE97A7EE3A"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/WindowsNativeDohController.cs",
+      "sha256": "A104EB6FEB16DFFBC826AF823D65107283DCE1487FB3057B18EE8B42DC08A6BB"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/WindowsServiceListenerSnapshot.cs",
+      "sha256": "6C328EF0A3FD68D9BA8CCE31A2A6A86F9CB2F05E2E198B374D732BB6EE4527C9"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/TelegramListenerSnapshotCommand.cs",
+      "sha256": "C6B94F7E60262E22AC6FDB1823272B17904A6038A6EA982FEDFCF3F346688186"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/Program.cs",
+      "sha256": "2E485F74EA0B0B8448D6474A4A2609DE57BB1C1439273E37198E2646A1D175B9"
+    }
+  ],
+  "actualMeasurements": {
+    "wholeProbeTrialCountPerScenario": 3,
+    "installedVersion": "3.7.8",
+    "inspectorSourceVersion": "3.7.9",
+    "inspectorRuntime": "10.0.12",
+    "mutationPerformed": false,
+    "files": [
+      "legacy-whole-probe.json",
+      "native-owned-probe.json",
+      "native-foreign-probe.json",
+      "native-missing-probe.json"
+    ]
+  },
+  "actualBaselineFaults": {
+    "installedVersion": "3.7.8",
+    "files": [
+      "live-tg-recovery-3.7.8.json",
+      "live-dns-recovery-3.7.8.json"
+    ],
+    "faultsExecutedBy": "release owner",
+    "uiRequired": false,
+    "actualRebootPerformed": false,
+    "monthLongRunPerformed": false
+  },
+  "final3_7_9FaultVerification": "separate-release-owner-receipts-required",
+  "currentInstalledPackageAtReadback": {
+    "phase": "preliminary-Electron41.10.4",
+    "version": "3.7.9",
+    "coreHash": "5A2FD51C4E907BC50B8C1DAC352404EF12341CC401E9AA3A3E0D7EEADC2683B8",
+    "finalElectron44RepackPending": true,
+    "files": [
+      "install-receipt.json",
+      "installed-payload-verification.json"
+    ],
+    "coreVersion": "3.7.9.0"
+  },
+  "liveCoreFaultHelper": {
+    "parserErrors": 0,
+    "path": "tests/windows-live-core-recovery.ps1",
+    "actualRecoveryPolicyFile": "actual-core-recovery-policy.json",
+    "totalPostFaultControllerCapSeconds": 180,
+    "sha256": "E68EFC7C7FE01D56F0565388F0860BA9FE2F2F91BDCE9361F19BB3A715927D22",
+    "serviceMutationsByThisAgent": false,
+    "powerShellVersion": "5.1.26100.9168",
+    "analyzerWarningsAndErrors": 0
+  }
+}

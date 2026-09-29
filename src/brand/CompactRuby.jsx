@@ -4,7 +4,12 @@ const rubyScreenCopy={dashboard:['Обзор','Подключения и сос�
 const rubyNavIcons={dashboard:'overview',vpn:'vpn',dns:'dns',zapret:'zapret','telegram-proxy':'telegram',settings:'settings'};
 const rubyLegacyIconNames={activity:'activity',check:'check','circle-help':'help',clipboard:'copy','clock-3':'activity',download:'download',earth:'vpn','external-link':'external-link',gauge:'speedtest','key-round':'privacy','layout-dashboard':'overview','list-restart':'restore','map-pin':'location','maximize-2':'maximize',minus:'minimize',network:'dns',power:'power',radar:'route','refresh-ccw':'refresh',send:'telegram',settings:'settings','shield-alert':'warning','shield-check':'check','shield-off':'shield-off',star:'star','triangle-alert':'warning',upload:'upload',wrench:'system',x:'close'};
 function RubyIcon({name,size=20,className='',style={},strokeWidth,forwardedRef,...props}){
-  return <svg {...props} ref={forwardedRef} aria-hidden="true" className={'ruby-icon '+className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" style={style}>{(rubyGlyphs[name]??rubyGlyphs.help).map(([tag,attributes],index)=>O.createElement(tag,{...attributes,key:index}))}</svg>;
+  return <svg {...props} ref={forwardedRef} aria-hidden="true" focusable="false" data-icon={name} className={'ruby-icon '+className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth??1.65} strokeLinecap="round" strokeLinejoin="round" style={style}>{(rubyGlyphs[name]??rubyGlyphs.help).map(([tag,attributes],index)=>{
+    const paint={...attributes};
+    if(paint.fill&&paint.fill!=='none'&&paint.stroke===undefined)paint.stroke='none';
+    if(strokeWidth!==undefined&&paint.strokeWidth!==undefined&&paint.stroke!=='none')paint.strokeWidth=strokeWidth;
+    return O.createElement(tag,{...paint,key:index});
+  })}</svg>;
 }
 function rubyButtonText(children){return O.Children.toArray(children).map(child=>typeof child==='string'||typeof child==='number'?String(child):O.isValidElement(child)?rubyButtonText(child.props.children):'').join(' ').replace(/\s+/g,' ').trim()}
 function rubyButtonHasIcon(children){return O.Children.toArray(children).some(child=>O.isValidElement(child)&&(child.type===RubyIcon||child.type==='svg'||child.type?.displayName in rubyLegacyIconNames||rubyButtonHasIcon(child.props.children)))}
@@ -21,7 +26,7 @@ function rubyActionIcon(label,role){
     if(/обновлен/i.test(label))return 'auto-update';
     return null;
   }
-  const actions=[[/импорт|вставить/i,'import'],[/экспорт/i,'export'],[/сохран/i,'save'],[/автоподбор|подобрать/i,'auto-select'],[/восстанов|сброс/i,'restore'],[/очист/i,'cleanup'],[/удал/i,'trash'],[/журнал|логи|логами/i,'logs'],[/папк/i,'folder'],[/копир/i,'copy'],[/обнов|проверяем|загруз/i,'refresh'],[/диагност|проверить|тест/i,'activity'],[/настро/i,'settings'],[/маршрут/i,'route'],[/служб/i,'service'],[/открыть Telegram/i,'telegram'],[/открыть|страницу/i,'external-link'],[/подключ|запуст|останов|включ|выключ/i,'power'],[/применить/i,'check']];
+  const actions=[[/проверить и установить/i,'auto-update'],[/импорт|вставить/i,'import'],[/экспорт/i,'export'],[/сохран/i,'save'],[/автоподбор|подобрать/i,'auto-select'],[/восстанов|сброс/i,'restore'],[/очист/i,'cleanup'],[/удал/i,'trash'],[/журнал|логи|логами/i,'logs'],[/папк/i,'folder'],[/копир/i,'copy'],[/обнов|проверяем|загруз/i,'refresh'],[/диагност|проверить|тест/i,'activity'],[/настро/i,'settings'],[/маршрут/i,'route'],[/служб/i,'service'],[/открыть Telegram/i,'telegram'],[/открыть|страницу/i,'external-link'],[/подключ|запуст|останов|включ|выключ/i,'power'],[/применить/i,'check']];
   return actions.find(([pattern])=>pattern.test(label))?.[1]??null;
 }
 const RubyButton=O.forwardRef(({children,className='',...props},ref)=>{
@@ -44,7 +49,7 @@ function sp({activeScreen,onAppInfo,onNavigate,onSwitchToWidget}){
       </div>
     </header>
     <aside className="ruby-sidebar">
-      <nav aria-label="Основная навигация">{Cf.map(item=><button key={item.id} className={item.id===activeScreen?'active':''} aria-label={rubyScreenCopy[item.id][0]} aria-current={item.id===activeScreen?'page':undefined} onClick={()=>onNavigate(item.id)}><RubyIcon name={rubyNavIcons[item.id]}/><span>{rubyScreenCopy[item.id][0]}</span></button>)}</nav>
+      <nav aria-label="Основная навигация">{Cf.map(item=><button key={item.id} className={item.id===activeScreen?'active':''} aria-label={rubyScreenCopy[item.id][0]} title={rubyScreenCopy[item.id][0]} aria-current={item.id===activeScreen?'page':undefined} onClick={()=>onNavigate(item.id)}><RubyIcon name={rubyNavIcons[item.id]}/><span>{rubyScreenCopy[item.id][0]}</span></button>)}</nav>
       <footer><button onClick={onAppInfo}><RubyIcon name="info" size={14}/><span>О приложении</span></button><small>Версия Lagom</small></footer>
     </aside>
   </>;

@@ -1,0 +1,26 @@
+{
+  "observedAt": "2026-09-29T14:26:19.228Z",
+  "method": "Isolated source execution with controlled SCM/native results; before method extracted from real installed pre-fix component-worker.cjs, after method from maintained source; no live service mutation",
+  "isActualInstalledFailure": false,
+  "before": {
+    "accepted": false,
+    "statusReads": 1,
+    "nativeCalls": 1,
+    "rejectedBeforeSecondScmRead": true
+  },
+  "afterOwned": {
+    "accepted": true,
+    "statusReads": 2,
+    "nativeCalls": 2,
+    "rejectedBeforeSecondScmRead": false
+  },
+  "afterForeign": {
+    "accepted": false,
+    "statusReads": 2,
+    "nativeCalls": 1,
+    "rejectedBeforeSecondScmRead": false
+  },
+  "beforeMethodSha256": "1d02e518053abaa945c54a7cbdc9ab78b0657fd364116f2a5d9194de04f11785",
+  "installedWorkerSha256": "00e983cc4f907bc44f7a7c2c546926409cce30bda16d940f8e9fd537c53b6081",
+  "afterSourceSha256": "1eb1709338b408fde62c959539d059a1dc456ade0061b0f29fcf059c59a3a6ea"
+}

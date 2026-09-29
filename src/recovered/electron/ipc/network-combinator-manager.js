@@ -63,6 +63,7 @@ var NetworkCombinatorManager = class {
 	inspectionInFlight = null;
 	inspectionGeneration = 0;
 	activeCoordinatedMutations = /* @__PURE__ */ new Map();
+	outstandingCoordinatedMutations = 0;
 	mutationReleaseWaiters = /* @__PURE__ */ new Set();
 	mutationSequence = 0;
 	constructor(options) {
@@ -162,7 +163,18 @@ var NetworkCombinatorManager = class {
 			activeMutations: [...inspection.activeMutations, ...coordinated.map((item) => `${item.module}:${item.action}`)]
 		};
 	}
+	isMutationIdle() {
+		return this.outstandingCoordinatedMutations === 0;
+	}
 	async runCoordinatedMutation(intent, operation) {
+		this.outstandingCoordinatedMutations += 1;
+		try {
+			return await this.runCoordinatedMutationWithLocks(intent, operation);
+		} finally {
+			this.outstandingCoordinatedMutations -= 1;
+		}
+	}
+	async runCoordinatedMutationWithLocks(intent, operation) {
 		if (!this.isNetworkReady()) throw new Error("Завершается восстановление сети после запуска. Повторите действие через несколько секунд.");
 		const normalized = {
 			module: intent.module,

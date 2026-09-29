@@ -1,0 +1,465 @@
+{
+  "schemaVersion": 1,
+  "installedVersion": "3.7.8",
+  "mode": "InjectAndObserve",
+  "result": "recovered",
+  "coreHash": "27A13930AD2D5B6C29942C5B46E71A35FE2746ED0F33B282BEA781880A775D4C",
+  "capturedAtUtc": "2026-09-29T17:00:50.807938+03:00",
+  "injectedAtUtc": "2026-09-29T17:00:53.1861087+03:00",
+  "mutationCount": 1,
+  "target": {
+    "processId": 39664,
+    "createdUtc": "2026-09-29T12:56:22.369653Z",
+    "executable": "C:\\ProgramData\\EgoistShield\\Runtime\\SystemDoH\\runtime\\xray-system-doh.exe",
+    "heldHandle": true
+  },
+  "actualRebootPerformed": false,
+  "beforeServices": [
+    {
+      "Name": "EgoistShieldCore",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 35832
+    },
+    {
+      "Name": "EgoistShieldSystemDoH",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 38096
+    },
+    {
+      "Name": "EgoistShieldZapret",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 54416
+    },
+    {
+      "Name": "EgoistShieldTelegramProxy",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 55828
+    }
+  ],
+  "finalServices": [
+    {
+      "Name": "EgoistShieldCore",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 35832
+    },
+    {
+      "Name": "EgoistShieldSystemDoH",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 55180
+    },
+    {
+      "Name": "EgoistShieldZapret",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 54416
+    },
+    {
+      "Name": "EgoistShieldTelegramProxy",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 55828
+    }
+  ],
+  "beforeUiProcessIds": [],
+  "finalUiProcessIds": [],
+  "localRecoveryConfirmedAfterSeconds": 17.35,
+  "elapsedSeconds": 19.32,
+  "adapterDnsModesAndBindingsPreserved": true,
+  "configurationHashesPreserved": true,
+  "beforeQueries": [
+    {
+      "address": "127.0.0.1",
+      "name": "health.egoist.invalid",
+      "transport": "UDP",
+      "verified": true,
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "rcode": 0,
+      "elapsedMs": 52.05
+    },
+    {
+      "address": "127.0.0.1",
+      "name": "example.com",
+      "transport": "UDP",
+      "verified": true,
+      "addresses": [
+        "172.66.147.243",
+        "104.20.23.154"
+      ],
+      "rcode": 0,
+      "elapsedMs": 83.25
+    },
+    {
+      "address": "127.0.0.1",
+      "name": "health.egoist.invalid",
+      "transport": "TCP",
+      "verified": true,
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "rcode": 0,
+      "elapsedMs": 35.58
+    },
+    {
+      "address": "127.0.0.1",
+      "name": "example.com",
+      "transport": "TCP",
+      "verified": true,
+      "addresses": [
+        "172.66.147.243",
+        "104.20.23.154"
+      ],
+      "rcode": 0,
+      "elapsedMs": 1.15
+    },
+    {
+      "address": "::1",
+      "name": "health.egoist.invalid",
+      "transport": "UDP",
+      "verified": true,
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "rcode": 0,
+      "elapsedMs": 1.24
+    },
+    {
+      "address": "::1",
+      "name": "example.com",
+      "transport": "UDP",
+      "verified": true,
+      "addresses": [
+        "172.66.147.243",
+        "104.20.23.154"
+      ],
+      "rcode": 0,
+      "elapsedMs": 0.69
+    },
+    {
+      "address": "::1",
+      "name": "health.egoist.invalid",
+      "transport": "TCP",
+      "verified": true,
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "rcode": 0,
+      "elapsedMs": 1.27
+    },
+    {
+      "address": "::1",
+      "name": "example.com",
+      "transport": "TCP",
+      "verified": true,
+      "addresses": [
+        "172.66.147.243",
+        "104.20.23.154"
+      ],
+      "rcode": 0,
+      "elapsedMs": 1.12
+    }
+  ],
+  "finalQueries": [
+    {
+      "address": "127.0.0.1",
+      "name": "health.egoist.invalid",
+      "transport": "UDP",
+      "verified": true,
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "rcode": 0,
+      "elapsedMs": 0.66
+    },
+    {
+      "address": "127.0.0.1",
+      "name": "example.com",
+      "transport": "UDP",
+      "verified": true,
+      "addresses": [
+        "172.66.147.243",
+        "104.20.23.154"
+      ],
+      "rcode": 0,
+      "elapsedMs": 73.95
+    },
+    {
+      "address": "127.0.0.1",
+      "name": "health.egoist.invalid",
+      "transport": "TCP",
+      "verified": true,
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "rcode": 0,
+      "elapsedMs": 0.96
+    },
+    {
+      "address": "127.0.0.1",
+      "name": "example.com",
+      "transport": "TCP",
+      "verified": true,
+      "addresses": [
+        "172.66.147.243",
+        "104.20.23.154"
+      ],
+      "rcode": 0,
+      "elapsedMs": 0.79
+    },
+    {
+      "address": "::1",
+      "name": "health.egoist.invalid",
+      "transport": "UDP",
+      "verified": true,
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "rcode": 0,
+      "elapsedMs": 0.6
+    },
+    {
+      "address": "::1",
+      "name": "example.com",
+      "transport": "UDP",
+      "verified": true,
+      "addresses": [
+        "172.66.147.243",
+        "104.20.23.154"
+      ],
+      "rcode": 0,
+      "elapsedMs": 0.5
+    },
+    {
+      "address": "::1",
+      "name": "health.egoist.invalid",
+      "transport": "TCP",
+      "verified": true,
+      "addresses": [
+        "127.0.0.1"
+      ],
+      "rcode": 0,
+      "elapsedMs": 0.77
+    },
+    {
+      "address": "::1",
+      "name": "example.com",
+      "transport": "TCP",
+      "verified": true,
+      "addresses": [
+        "172.66.147.243",
+        "104.20.23.154"
+      ],
+      "rcode": 0,
+      "elapsedMs": 0.96
+    }
+  ],
+  "observations": [
+    {
+      "atUtc": "2026-09-29T17:00:58.9002594+03:00",
+      "dnsOwned": false,
+      "uiProcessIds": [],
+      "healthQueries": [
+        {
+          "address": "127.0.0.1",
+          "name": "health.egoist.invalid",
+          "transport": "UDP",
+          "verified": false,
+          "addresses": [],
+          "errorType": "MethodInvocationException",
+          "elapsedMs": 11.61
+        },
+        {
+          "address": "127.0.0.1",
+          "name": "health.egoist.invalid",
+          "transport": "TCP",
+          "verified": false,
+          "addresses": [],
+          "errorType": "RuntimeException",
+          "elapsedMs": 1007.66
+        },
+        {
+          "address": "::1",
+          "name": "health.egoist.invalid",
+          "transport": "UDP",
+          "verified": false,
+          "addresses": [],
+          "errorType": "MethodInvocationException",
+          "elapsedMs": 0.46
+        },
+        {
+          "address": "::1",
+          "name": "health.egoist.invalid",
+          "transport": "TCP",
+          "verified": false,
+          "addresses": [],
+          "errorType": "RuntimeException",
+          "elapsedMs": 1006.62
+        }
+      ],
+      "elapsedSeconds": 5.71
+    },
+    {
+      "atUtc": "2026-09-29T17:01:02.767685+03:00",
+      "dnsOwned": true,
+      "uiProcessIds": [],
+      "healthQueries": [
+        {
+          "address": "127.0.0.1",
+          "name": "health.egoist.invalid",
+          "transport": "UDP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 0.75
+        },
+        {
+          "address": "127.0.0.1",
+          "name": "health.egoist.invalid",
+          "transport": "TCP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 1.02
+        },
+        {
+          "address": "::1",
+          "name": "health.egoist.invalid",
+          "transport": "UDP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 0.66
+        },
+        {
+          "address": "::1",
+          "name": "health.egoist.invalid",
+          "transport": "TCP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 0.78
+        }
+      ],
+      "elapsedSeconds": 9.58
+    },
+    {
+      "atUtc": "2026-09-29T17:01:06.5449833+03:00",
+      "dnsOwned": true,
+      "uiProcessIds": [],
+      "healthQueries": [
+        {
+          "address": "127.0.0.1",
+          "name": "health.egoist.invalid",
+          "transport": "UDP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 0.72
+        },
+        {
+          "address": "127.0.0.1",
+          "name": "health.egoist.invalid",
+          "transport": "TCP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 1.38
+        },
+        {
+          "address": "::1",
+          "name": "health.egoist.invalid",
+          "transport": "UDP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 0.6
+        },
+        {
+          "address": "::1",
+          "name": "health.egoist.invalid",
+          "transport": "TCP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 0.83
+        }
+      ],
+      "elapsedSeconds": 13.36
+    },
+    {
+      "atUtc": "2026-09-29T17:01:10.3854842+03:00",
+      "dnsOwned": true,
+      "uiProcessIds": [],
+      "healthQueries": [
+        {
+          "address": "127.0.0.1",
+          "name": "health.egoist.invalid",
+          "transport": "UDP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 0.74
+        },
+        {
+          "address": "127.0.0.1",
+          "name": "health.egoist.invalid",
+          "transport": "TCP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 0.81
+        },
+        {
+          "address": "::1",
+          "name": "health.egoist.invalid",
+          "transport": "UDP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 0.57
+        },
+        {
+          "address": "::1",
+          "name": "health.egoist.invalid",
+          "transport": "TCP",
+          "verified": true,
+          "addresses": [
+            "127.0.0.1"
+          ],
+          "rcode": 0,
+          "elapsedMs": 1.32
+        }
+      ],
+      "elapsedSeconds": 17.2
+    }
+  ]
+}

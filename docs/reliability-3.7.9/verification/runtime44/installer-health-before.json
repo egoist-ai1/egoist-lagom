@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-29T15:09:33.183466+00:00",
+  "root": "out/EgoistShield-3.7.9-win-x64",
+  "healthy": false,
+  "reason": "runtime path escapes the package root: ../../version",
+  "source": "src/installer/owned-cleanup.ps1",
+  "sourceSha256": "c7eca1981c0aa2eb237f1db29c0acfa2fe62a0756ef292efb97339815011f44e",
+  "execution": "Read-only AST extraction of Get-FileSha256, Test-InstallRootIdentified, Test-InstallRootHealthy and their two required-file arrays under Windows PowerShell 5.1.",
+  "scope": "Observed original candidate rejection before provenance relocation; no install/service/GUI side effects."
+}

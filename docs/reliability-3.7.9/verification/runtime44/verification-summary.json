@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "candidate": "out/EgoistShield-3.7.9-win-x64",
+  "previousFailure": "Actual production installer health rejected ../../version outside resources/runtime before the provenance path correction.",
+  "productionInstallerHealth": {
+    "schemaVersion": 1,
+    "healthy": true,
+    "root": "out/EgoistShield-3.7.9-win-x64",
+    "sourceSha256": "c7eca1981c0aa2eb237f1db29c0acfa2fe62a0756ef292efb97339815011f44e",
+    "source": "src/installer/owned-cleanup.ps1",
+    "verifiedAt": "2026-09-29T15:06:14.003602+00:00",
+    "execution": "Read-only AST extraction of Get-FileSha256, Test-InstallRootIdentified, Test-InstallRootHealthy and their two required-file arrays under Windows PowerShell 5.1."
+  },
+  "electronVersion": "44.4.5",
+  "archiveSha256": "11c395820a5aaa8ebcc0686b476d0ac98a730274ebfbdc8cf5538a7c2815cb5d",
+  "archiveBytes": 158184819,
+  "verifiedCacheFiles": 73,
+  "verifiedPackagedRuntimeFiles": 72,
+  "provenancePath": "resources/runtime/electron/provenance.json",
+  "provenanceSha256": "07a30310d36db06eb57739bff003d8aeadbf7a421adc3fa4205055029298f551",
+  "manifestFileCount": 1,
+  "scope": "Read-only candidate/cache verification; no packaging, installation, service change, or GUI launch.",
+  "recordedAt": "2026-09-29T15:09:33.183466+00:00",
+  "verifiedAt": "2026-09-29T15:06:14.003602+00:00",
+  "pathsSanitized": true,
+  "healthScope": "Electron health inventory verifies only electron/provenance.json; full payload/file hashes and root version marker are independently verified and retained in package integrity.",
+  "records": [
+    "installer-health-before.json",
+    "installer-health-after.json",
+    "cache-runtime-inventory.json",
+    "packaged-runtime-inventory.json",
+    "scoped-tests.json"
+  ]
+}

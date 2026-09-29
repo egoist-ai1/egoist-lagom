@@ -1,0 +1,34 @@
+{
+  "checks": [
+    "296×340 layout has no horizontal or vertical overflow",
+    "Dashboard round-trip retains a single active connection"
+  ],
+  "errors": [],
+  "limitations": [
+    "Headless renderer fixtures; native DWM, installation and network behavior require separate checks."
+  ],
+  "hoverObservations": [
+    {
+      "mode": "reduced motion",
+      "initial": {
+        "powerVisible": "visible",
+        "checkVisible": "visible",
+        "powerOpacity": "0",
+        "checkOpacity": "1",
+        "powerStroke": "rgb(255, 255, 255)",
+        "fill": "rgb(255, 255, 255)"
+      },
+      "entered": {
+        "powerVisible": "visible",
+        "checkVisible": "visible",
+        "powerOpacity": "1",
+        "checkOpacity": "1",
+        "powerStroke": "rgb(255, 255, 255)",
+        "fill": "rgb(39, 39, 42)"
+      }
+    }
+  ],
+  "ok": false,
+  "failure": "AssertionError [ERR_ASSERTION]: The connected check disappears immediately on hover\n+ actual - expected\n\n+ 'visible'\n- 'hidden'\n\n    at checkConnectedHover (<project>/scripts/check-shield-widget.mjs:82:10)\n    at async <project>/scripts/check-shield-widget.mjs:129:3",
+  "testEnvironment": "Headless renderer with fixture/mocked egoistAPI; no production IPC or real network reset."
+}

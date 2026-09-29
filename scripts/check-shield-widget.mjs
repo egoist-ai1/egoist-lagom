@@ -62,7 +62,37 @@ function fixture() {
   };
 }
 let browser;
-const report = { checks:[], errors:[], limitations:['Headless renderer fixtures; native DWM, installation and network behavior require separate checks.'] };
+const report = { checks:[], errors:[], testEnvironment:'Headless renderer with fixture/mocked egoistAPI; no production IPC or real network reset.', limitations:['Headless renderer fixtures; native DWM, installation and network behavior require separate checks.'] };
+async function checkConnectedHover(page, mode) {
+  const trigger = page.getByRole('button',{name:'Отключить защиту',exact:true});
+  const glyphs = () => page.locator('.shield-widget-emblem').evaluate(el=>{
+    const power=getComputedStyle(el.querySelector('.shield-power')),check=getComputedStyle(el.querySelector('.shield-connected-check'));
+    return {powerVisible:power.visibility,checkVisible:check.visibility,powerOpacity:power.opacity,checkOpacity:check.opacity,powerStroke:power.stroke,fill:getComputedStyle(el.querySelector('.shield-base-fill')).fill};
+  });
+  const sampleTransition = () => page.locator('.shield-widget-emblem').evaluate(el=>new Promise(resolve=>{
+    const start=performance.now();let samples=0,overlap=false;
+    const sample=()=>{const power=getComputedStyle(el.querySelector('.shield-power')),check=getComputedStyle(el.querySelector('.shield-connected-check'));samples++;overlap ||= power.visibility==='visible'&&check.visibility==='visible'&&Number(power.opacity)>0&&Number(check.opacity)>0;performance.now()-start<380?requestAnimationFrame(sample):resolve({samples,overlap})};sample();
+  }));
+  await page.mouse.move(1,1);
+  await page.waitForTimeout(380);
+  const initial=await glyphs();
+  await trigger.hover();
+  const entered=await glyphs();
+  (report.hoverObservations ||= []).push({mode,initial,entered});
+  assert.equal(entered.checkVisible,'hidden','The connected check disappears immediately on hover');
+  assert.equal(initial.powerVisible,'hidden');
+  assert.equal(initial.checkVisible,'visible');
+  const entering=await sampleTransition();
+  assert.equal(entering.overlap,false,'Hover entry never paints both glyphs');
+  const hovered=await glyphs();
+  assert.equal(hovered.powerVisible,'visible');assert.equal(hovered.powerOpacity,'1');assert.equal(hovered.powerStroke,'rgb(255, 255, 255)');assert.equal(hovered.fill,'rgb(39, 39, 42)');
+  await page.mouse.move(1,1);
+  assert.equal((await glyphs()).powerVisible,'hidden','The power glyph disappears immediately on hover leave');
+  const leaving=await sampleTransition();
+  assert.equal(leaving.overlap,false,'Hover leave never paints both glyphs');
+  const settled=await glyphs();assert.equal(settled.checkVisible,'visible');assert.equal(settled.checkOpacity,'1');assert.equal(settled.fill,'rgb(255, 255, 255)');
+  report.checks.push(`Connected hover has exclusive glyph visibility on entry and leave (${mode}; ${entering.samples+leaving.samples} frame samples)`);
+}
 try {
   browser = await chromium.launch({ headless:true, ...(process.env.BROWSER_EXECUTABLE ? {executablePath:process.env.BROWSER_EXECUTABLE} : {}) });
   const context = await browser.newContext({ viewport:{width:296,height:340}, reducedMotion:'reduce' });
@@ -73,6 +103,8 @@ try {
   await page.goto(origin, {waitUntil:'networkidle'});
   await page.getByRole('button',{name:'Подключить защиту',exact:true}).waitFor();
   await page.waitForFunction(()=>!document.querySelector('.shield-interactive-trigger').disabled);
+  const idleGlyphs=await page.locator('.shield-widget-emblem').evaluate(el=>({powerVisibility:getComputedStyle(el.querySelector('.shield-power')).visibility,powerOpacity:getComputedStyle(el.querySelector('.shield-power')).opacity,checkOpacity:getComputedStyle(el.querySelector('.shield-connected-check')).opacity}));
+  assert.equal(idleGlyphs.powerVisibility,'visible');assert.equal(idleGlyphs.powerOpacity,'0.95');assert.equal(idleGlyphs.checkOpacity,'0');
   const overflow = await page.evaluate(()=>({width:document.documentElement.scrollWidth,height:document.querySelector('.shield-widget-container').getBoundingClientRect().height}));
   assert.ok(overflow.width<=296 && overflow.height<=340, JSON.stringify(overflow));
   await page.screenshot({path:path.join(evidence,'widget-idle.png')});
@@ -81,6 +113,9 @@ try {
   await page.getByRole('button',{name:'Подключить защиту',exact:true}).click();
   await page.getByText('Проверяем general (ALT11)',{exact:true}).waitFor();
   assert.equal(await page.getByRole('progressbar').getAttribute('aria-valuenow'),'24');
+  const busyGlyphs=await page.locator('.shield-widget-emblem').evaluate(el=>({powerVisibility:getComputedStyle(el.querySelector('.shield-power')).visibility,powerOpacity:getComputedStyle(el.querySelector('.shield-power')).opacity,checkOpacity:getComputedStyle(el.querySelector('.shield-connected-check')).opacity}));
+  assert.equal(busyGlyphs.powerVisibility,'visible');assert.ok(Number(busyGlyphs.powerOpacity)>0);assert.equal(busyGlyphs.checkOpacity,'0');
+  report.checks.push('Idle and busy glyphs keep their existing power symbol and hidden check');
   assert.ok(await page.locator('.shield-widget-footer').evaluate(el=>el.getBoundingClientRect().bottom<=340),'Progress keeps footer inside the compact window');
   await page.screenshot({path:path.join(evidence,'widget-progress.png')});
   await page.getByRole('button',{name:'Настройки',exact:true}).click();
@@ -96,9 +131,10 @@ try {
   await page.getByRole('heading',{name:'Подключено',exact:true}).waitFor();
   assert.equal(await page.getByRole('progressbar').getAttribute('aria-valuenow'),'100');
   await page.screenshot({path:path.join(evidence,'widget-connected.png')});
+  await checkConnectedHover(page,'reduced motion');
   await page.getByRole('switch',{name:'Зашифрованный DNS',exact:true}).click();
   await page.waitForFunction(()=>!shieldLab.status.dnsRunning);
-  report.checks.push('Connected DNS switch sends a real reset action');
+  report.checks.push('Connected DNS switch dispatches the reset action to the fixture API');
   await page.getByRole('button',{name:'Отключить защиту',exact:true}).click();
   await page.getByRole('button',{name:'Подключить защиту',exact:true}).waitFor();
   await page.evaluate(()=>{shieldLab.failure='DNS не прошёл проверку. Исходные настройки сети восстановлены. Проверьте доступность сервера и повторите подключение.'});
@@ -141,6 +177,7 @@ try {
   const cssLoops=await page.locator('.shield-widget-container').evaluate(el=>el.getAnimations({subtree:true}).filter(animation=>animation.effect?.getTiming().iterations===Infinity).length);
   assert.equal(cssLoops,0,'A stable connected widget needs no repeating CSS animation');
   report.checks.push('CSS selection contour moves; connected widget has no repeating CSS or GSAP animation');
+  await checkConnectedHover(page,'normal motion');
   await page.evaluate(()=>{
     localStorage.setItem('shield_dns_on_connect','false');
     localStorage.setItem('shield_lab_dns_running','true');

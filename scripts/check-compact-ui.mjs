@@ -161,6 +161,9 @@ try{
     const helpBox=await help.boundingBox(),hintBox=await hint.boundingBox();
     result.anchor={helpBox,hintBox,ancestors:await hint.evaluate(el=>{const items=[];for(let p=el;p;p=p.parentElement){const s=getComputedStyle(p);items.push({tag:p.tagName,className:p.className,position:s.position,transform:s.transform,filter:s.filter,backdropFilter:s.backdropFilter,contain:s.contain,willChange:s.willChange})}return items})};
     assert.ok(Math.abs(hintBox.y-(helpBox.y+helpBox.height+6))<3,'Tooltip must anchor to the forwarded button ref');
+    await page.keyboard.press('Escape');await hint.waitFor({state:'hidden'});await expectFocused(help);
+    assert.equal(await help.getAttribute('aria-expanded'),'false');result.escapeKeepsFocus=true;
+    await control.focus();await help.focus();await hint.waitFor();
     await page.keyboard.press('Tab');await hint.waitFor({state:'hidden'});assert.equal(await help.getAttribute('aria-expanded'),'false');
     await help.focus();await page.keyboard.press('Enter');assert.equal(await help.getAttribute('aria-expanded'),'false');
     await page.keyboard.press('Enter');assert.equal(await help.getAttribute('aria-expanded'),'true');assert.deepEqual(await calls(page),[]);
@@ -259,6 +262,7 @@ try{
   await check('generic-dialog-escape-focus-trap','dashboard',async page=>{
     const opener=page.getByRole('button',{name:'Восстановить интернет',exact:true});await opener.click();
     const dialog=page.getByRole('dialog',{name:'Восстановить настройки',exact:true});await dialog.waitFor();
+    await page.waitForFunction(()=>document.querySelector('[role="dialog"]')?.contains(document.activeElement));
     assert.equal(await dialog.evaluate(el=>el.getAnimations({subtree:true}).length),0,'Reduced motion disables modal CSS and Web Animations');
     const transform=await dialog.evaluate(el=>getComputedStyle(el).transform);
     assert.ok(transform==='none'||transform==='matrix(1, 0, 0, 1, 0, 0)','Reduced motion opens the dialog without a scale or movement');
@@ -277,8 +281,24 @@ try{
     const copy=await dialog.innerText();
     assert.doesNotMatch(copy,/10\.08\.2026|Версия приложения Lagom/);
     assert.equal(await dialog.locator('.modal-list-title').textContent(),`Что нового в ${packageVersion}:`);
+    const action=dialog.locator('.modal-actions button:last-child');
+    await action.focus();
+    await refresh(page);
+    await page.waitForTimeout(80);
+    await expectFocused(action);
     await dialogKeyboard(page,dialog,opener);assert.deepEqual(await calls(page),[]);
   });
+  await check('svg-fill-paint-and-update-action-icon','settings',async page=>{
+    const outlinedFill=await page.locator('svg.ruby-icon [fill]:not([fill="none"])').evaluateAll(shapes=>shapes.filter(shape=>getComputedStyle(shape).stroke!=='none').map(shape=>shape.closest('svg').getAttribute('data-icon')));
+    assert.deepEqual(outlinedFill,[],'Filled SVG details must not inherit an unintended outline');
+    assert.equal(await page.locator('svg.ruby-icon:not([focusable="false"])').count(),0,'Decorative SVG icons stay out of keyboard navigation');
+    assert.equal(await page.getByRole('button',{name:'Проверить и установить',exact:true}).locator('svg').getAttribute('data-icon'),'auto-update');
+  });
+  await check('profile-legend-within-panel','zapret',async page=>{
+    const geometry=await page.locator('.config-list').evaluate(panel=>({client:panel.clientWidth,scroll:panel.scrollWidth,legendClient:panel.querySelector('.config-legend').clientWidth,legendScroll:panel.querySelector('.config-legend').scrollWidth}));
+    assert.ok(geometry.scroll<=geometry.client+1,'Profile panel must not overflow horizontally');
+    assert.ok(geometry.legendScroll<=geometry.legendClient+1,'All profile-status legend entries must fit within the panel');
+  },{width:1000,height:680});
   for (const viewport of [{width:820,height:760},{width:550,height:740}]) await check(`zapret-recommendation-fit-${viewport.width}`,'zapret',async (page,result)=>{
     await page.evaluate(()=>{
       const names=Array.from({length:23},(_,index)=>index===22?'general (EGOIST MIX)':`general (ALT${index+1})`);
@@ -369,7 +389,7 @@ finally{
   for(const entry of manifest){const data=await fs.readFile(path.join(build,entry.name.slice(1))).catch(()=>null);if(!data||hash(data)!==entry.sha256)current.push(entry.name)}
   report.buildChangedDuringRun=current;
   report.finishedAt=new Date().toISOString();
-  report.passed=!report.fatal&&report.checks.length===29&&report.checks.every(c=>c.status==='passed')&&current.length===0;
+  report.passed=!report.fatal&&report.checks.length===31&&report.checks.every(c=>c.status==='passed')&&current.length===0;
   await fs.writeFile(path.join(evidence,'compact-ui-report.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify({passed:report.passed,checks:report.checks.length,failed:report.checks.filter(c=>c.status!=='passed').map(c=>c.id),buildChanged:current,evidence}));
   if(!report.passed)process.exitCode=1;

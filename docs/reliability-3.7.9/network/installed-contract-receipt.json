@@ -1,0 +1,426 @@
+{
+  "observedAt": "2026-09-29T15:16:53.705Z",
+  "method": "Real installed EXE running Node-only read-only named-pipe requests to installed production Core; no emulated statuses or mutations",
+  "executable": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+  "nodeVersion": "v24.21.0",
+  "results": [
+    {
+      "operation": "hello",
+      "component": null,
+      "ok": true,
+      "milliseconds": 17,
+      "selected": {
+        "protocolVersion": 1,
+        "serviceVersion": "3.7.9",
+        "developmentOverride": false,
+        "identityProbe": false
+      },
+      "schema": {
+        "clientPid": "number",
+        "developmentOverride": "boolean",
+        "identityProbe": "boolean",
+        "pipeName": "string",
+        "protocolVersion": "number",
+        "serviceVersion": "string"
+      }
+    },
+    {
+      "operation": "service.status",
+      "component": null,
+      "ok": true,
+      "milliseconds": 4,
+      "selected": {
+        "version": "3.7.9",
+        "consoleMode": false,
+        "supervisionPresent": true
+      },
+      "schema": {
+        "consoleMode": "boolean",
+        "processId": "number",
+        "serviceName": "string",
+        "startedAt": "string",
+        "supervision": {
+          "remoteConnectivityVerified": "boolean",
+          "scope": "string",
+          "services": {
+            "type": "array",
+            "length": 3,
+            "element": {
+              "type": "object",
+              "keys": [
+                "consecutiveFailures",
+                "intendedRunning",
+                "localHealth",
+                "recoveryAttempts",
+                "serviceName"
+              ]
+            }
+          }
+        },
+        "version": "string"
+      }
+    },
+    {
+      "operation": "component.query",
+      "component": "TelegramProxy",
+      "ok": true,
+      "milliseconds": 419,
+      "selected": {
+        "available": true,
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "listenerOwnership": "owned",
+        "serviceInstalled": true,
+        "serviceRunning": true,
+        "serviceState": "running",
+        "hasLastError": false,
+        "portConflict": {
+          "host": "127.0.0.1",
+          "port": 1445,
+          "available": true,
+          "ownerPresent": false
+        }
+      },
+      "schema": {
+        "available": "boolean",
+        "bundledSha256": "string",
+        "config": {
+          "bufKb": "number",
+          "checkUpdates": "boolean",
+          "dcIp": {
+            "type": "array",
+            "length": 0,
+            "element": null
+          },
+          "host": "string",
+          "logMaxMb": "number",
+          "poolSize": "number",
+          "port": "number",
+          "secret": "string",
+          "verbose": "boolean"
+        },
+        "configPath": "string",
+        "connectionUrl": "string",
+        "currentVersion": "string",
+        "health": {
+          "available": "boolean",
+          "links": {
+            "qrPayload": "string",
+            "tgUrl": "string",
+            "webUrl": "string"
+          },
+          "logTail": {
+            "type": "array",
+            "length": 80,
+            "element": "string"
+          },
+          "port": {
+            "available": "boolean",
+            "host": "string",
+            "owner": "null",
+            "port": "number",
+            "visibleReason": "string"
+          },
+          "route": {
+            "activeConnections": "number",
+            "errors": "number",
+            "mode": "string",
+            "recentFallbackAttempts": "number",
+            "recentHandshakeFailures": "number",
+            "state": "string",
+            "successfulFallbackConnections": "number",
+            "totalConnections": "number",
+            "visibleReason": "string"
+          },
+          "running": "boolean",
+          "serviceRunning": "boolean",
+          "serviceState": "string",
+          "updateGate": {
+            "checksumState": "string",
+            "controlledInstallAllowed": "boolean",
+            "currentVersion": "string",
+            "latestVersion": "string",
+            "targetVersion": "string",
+            "updateAvailable": "boolean",
+            "visibleReason": "string"
+          }
+        },
+        "lastError": "null",
+        "listenerOwnership": "string",
+        "listenerReady": "boolean",
+        "logPath": "string",
+        "logTail": {
+          "type": "array",
+          "length": 80,
+          "element": "string"
+        },
+        "pid": "null",
+        "portConflict": {
+          "available": "boolean",
+          "host": "string",
+          "owner": "null",
+          "port": "number"
+        },
+        "qrPayload": "string",
+        "running": "boolean",
+        "runtimeMatchesBundled": "boolean",
+        "runtimePath": "string",
+        "runtimeReady": "boolean",
+        "runtimeSha256": "string",
+        "serviceInstalled": "boolean",
+        "serviceName": "string",
+        "serviceRunning": "boolean",
+        "serviceState": "string",
+        "trafficRx": "number",
+        "trafficSource": "string",
+        "trafficTx": "number",
+        "trafficUpdatedAt": "string",
+        "updateChecksEnabled": "boolean",
+        "updateGate": {
+          "checksumState": "string",
+          "controlledInstallAllowed": "boolean",
+          "currentVersion": "string",
+          "latestVersion": "string",
+          "targetVersion": "string",
+          "updateAvailable": "boolean",
+          "visibleReason": "string"
+        },
+        "upstreamInstallable": "boolean",
+        "upstreamLatestVersion": "null",
+        "webConnectionUrl": "string"
+      }
+    },
+    {
+      "operation": "component.query",
+      "component": "Zapret",
+      "ok": true,
+      "milliseconds": 740,
+      "selected": {
+        "available": true,
+        "runtimeReady": true,
+        "serviceInstalled": true,
+        "serviceRunning": true,
+        "serviceState": "RUNNING",
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "winwsRunning": true,
+        "hasLastError": false
+      },
+      "schema": {
+        "available": "boolean",
+        "conflictMatrix": {
+          "type": "array",
+          "length": 0,
+          "element": null
+        },
+        "coreVersion": "string",
+        "currentProfile": "string",
+        "drivers": {
+          "type": "array",
+          "length": 2,
+          "element": {
+            "installed": "boolean",
+            "name": "string",
+            "running": "boolean"
+          }
+        },
+        "gameFilterMode": "string",
+        "ipsetMode": "string",
+        "lastError": "null",
+        "provisioned": "boolean",
+        "recoveryPlan": {
+          "actions": {
+            "type": "array",
+            "length": 1,
+            "element": "string"
+          },
+          "reason": "string",
+          "required": "boolean"
+        },
+        "runtimeReady": "boolean",
+        "serviceInstalled": "boolean",
+        "serviceName": "string",
+        "serviceProfile": "string",
+        "serviceReady": "boolean",
+        "serviceRunning": "boolean",
+        "serviceState": "string",
+        "standalonePid": "null",
+        "standaloneProfile": "null",
+        "standaloneRunning": "boolean",
+        "startedAt": "null",
+        "suspension": {
+          "active": "boolean",
+          "mode": "string",
+          "profile": "null",
+          "visibleLabel": "string"
+        },
+        "updateChecksEnabled": "boolean",
+        "uptimeMs": "null",
+        "winwsRunning": "boolean",
+        "workDir": "string"
+      }
+    },
+    {
+      "operation": "component.query",
+      "component": "SystemDoH",
+      "ok": true,
+      "milliseconds": 135,
+      "selected": {
+        "available": true,
+        "running": true,
+        "serviceInstalled": true,
+        "serviceRunning": true,
+        "serviceState": "running",
+        "enabled": true,
+        "encrypted": true,
+        "verified": true,
+        "nativeManaged": false,
+        "hasLastError": false
+      },
+      "schema": {
+        "available": "boolean",
+        "configPath": "string",
+        "currentUrl": "string",
+        "enabled": "boolean",
+        "encrypted": "boolean",
+        "lastError": "null",
+        "localAddress": "string",
+        "localPort": "number",
+        "logPath": "string",
+        "nativeManaged": "boolean",
+        "pid": "null",
+        "running": "boolean",
+        "runtimePath": "string",
+        "serverAddresses": {
+          "type": "array",
+          "length": 2,
+          "element": "string"
+        },
+        "serviceInstalled": "boolean",
+        "serviceName": "string",
+        "serviceRunning": "boolean",
+        "serviceState": "string",
+        "serviceWrapperPath": "string",
+        "startedAt": "string",
+        "verified": "boolean"
+      }
+    },
+    {
+      "operation": "dns.status",
+      "component": null,
+      "ok": true,
+      "milliseconds": 1979,
+      "selected": {
+        "adapterCount": 1,
+        "staticV4AdapterCount": 1
+      },
+      "schema": {
+        "adapters": {
+          "type": "array",
+          "length": 1,
+          "element": {
+            "interfaceAlias": "string",
+            "interfaceGuid": "string",
+            "interfaceIndex": "number",
+            "ipv4": {
+              "type": "array",
+              "length": 1,
+              "element": "string"
+            },
+            "ipv4Static": "boolean",
+            "ipv6": {
+              "type": "array",
+              "length": 0,
+              "element": null
+            },
+            "ipv6Static": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "operation": "dns.doh.status",
+      "component": null,
+      "ok": true,
+      "milliseconds": 2658,
+      "selected": {
+        "supported": true,
+        "enabled": false,
+        "encrypted": false,
+        "verified": false,
+        "nativeManaged": true
+      },
+      "schema": {
+        "adapters": {
+          "type": "array",
+          "length": 1,
+          "element": {
+            "interfaceAlias": "string",
+            "interfaceGuid": "string",
+            "interfaceIndex": "number",
+            "ipv4": {
+              "type": "array",
+              "length": 1,
+              "element": "string"
+            },
+            "ipv4Static": "boolean",
+            "ipv6": {
+              "type": "array",
+              "length": 0,
+              "element": null
+            },
+            "ipv6Static": "boolean"
+          }
+        },
+        "enabled": "boolean",
+        "encrypted": "boolean",
+        "fallbackToUdp": "boolean",
+        "hasIpv6DefaultRoute": "boolean",
+        "nativeManaged": "boolean",
+        "servers": {
+          "type": "array",
+          "length": 0,
+          "element": null
+        },
+        "supported": "boolean",
+        "updatedAt": "null",
+        "url": "null",
+        "verified": "boolean"
+      }
+    }
+  ],
+  "sourceSnapshot": {
+    "packageVersion": "3.7.9",
+    "files": [
+      {
+        "path": "src/recovered/electron/ipc/telegram-proxy-manager.js",
+        "sha256": "fe4d8c49ff791d1c4c5f05db29b1735e1ef241ef45a8193ed66bc89c5affe39c"
+      },
+      {
+        "path": "src/recovered/electron/ipc/zapret-manager.js",
+        "sha256": "ffc62cdd5103045620cabba6c0c90b8890e38688dbd61cc0531a7830fd942d73"
+      },
+      {
+        "path": "src/recovered/electron/ipc/system-doh-manager.js",
+        "sha256": "31cc0bceab2a4cfc7109fc33a4cd897a7fd217ca052a832f5738b2ddba13f6f1"
+      },
+      {
+        "path": "src/recovered/electron/ipc/system-doh-service-manager.js",
+        "sha256": "5197b43d1e6e7388b5eb73352b282660e4895d4b1f1faeff5f273d5ec3f37a98"
+      },
+      {
+        "path": "src/component-facade.js",
+        "sha256": "d33bc90ce1dbc673866feafa74813a0503d0cf8e2d3f12b7317f0603301557e8"
+      },
+      {
+        "path": "src/component-worker-entry.js",
+        "sha256": "ab5e6974684a203e8047d13e4198b8b48ef07fc9743d93ffc2084371fd930e2b"
+      },
+      {
+        "path": "src/service/EgoistShield.Service/OperationDispatcher.cs",
+        "sha256": "f63b6a9fbe5efe77d4d903e129d47b1cbd44b31d39e2ea05d39a431c4d0ae37f"
+      }
+    ]
+  }
+}

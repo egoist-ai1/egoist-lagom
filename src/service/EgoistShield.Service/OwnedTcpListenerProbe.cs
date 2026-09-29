@@ -23,14 +23,25 @@ internal static class OwnedTcpListenerProbe
         CancellationToken cancellationToken)
     {
         string script = CreateSnapshotScript(serviceName, port);
+        return await ProbeSnapshotAsync(expectedExecutable, address, port, timeout, async token =>
+        {
+            var result = await readSnapshot(script, token);
+            return result.ExitCode == 0 ? JsonSerializer.Deserialize<ServiceListenerSnapshot>(result.StandardOutput, JsonDefaults.Options) : null;
+        }, cancellationToken);
+    }
+
+    internal static async Task<LocalServiceHealth> ProbeSnapshotAsync(string expectedExecutable,
+        IPAddress address, int port, TimeSpan timeout,
+        Func<CancellationToken, Task<ServiceListenerSnapshot?>> readSnapshot,
+        CancellationToken cancellationToken)
+    {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
         try
         {
             async Task<ServiceListenerSnapshot?> Read()
             {
-                var result = await readSnapshot(script, deadline.Token).WaitAsync(deadline.Token);
-                return result.ExitCode == 0 ? JsonSerializer.Deserialize<ServiceListenerSnapshot>(result.StandardOutput, JsonDefaults.Options) : null;
+                return await readSnapshot(deadline.Token).WaitAsync(deadline.Token);
             }
             var before = await Read();
             var ownership = Classify(before, address, port, expectedExecutable);
@@ -112,7 +123,7 @@ internal static class OwnedTcpListenerProbe
         return TcpListenerOwnership.Unknown;
     }
 
-    private static bool MatchesAddress(string candidate, IPAddress address) => IPAddress.TryParse(candidate, out var value) &&
+    internal static bool MatchesAddress(string candidate, IPAddress address) => IPAddress.TryParse(candidate, out var value) &&
         (value.Equals(address) || value.Equals(IPAddress.IPv6Any) ||
             address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && value.Equals(IPAddress.Any));
 

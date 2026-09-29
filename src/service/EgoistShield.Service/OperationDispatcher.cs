@@ -53,6 +53,7 @@ internal sealed class OperationDispatcher : IDisposable
 	private readonly OwnedServiceIntentStore _serviceIntents;
 	private readonly OwnedServiceSupervisor? _serviceSupervisor;
 	private readonly DnsBootstrapRefreshScheduler _bootstrapRefresh;
+	private WindowsServiceListenerSnapshot? _telegramListenerSnapshot;
 	private readonly Stopwatch _maintenanceClock = Stopwatch.StartNew();
 	private TimeSpan _nextDnsMaintenance;
 	private TimeSpan _nextDnsAudit;
@@ -267,12 +268,11 @@ internal sealed class OperationDispatcher : IDisposable
 					healthHost.ValueKind == JsonValueKind.Array && healthHost.EnumerateArray().Any(value => value.ValueKind == JsonValueKind.String && value.GetString() == "127.0.0.1")))
 				return LocalServiceHealth.Unknown;
 		}
-		return component == "SystemDoH"
-			? await LocalServiceHealthProbe.DnsAsync(address, port, TimeSpan.FromSeconds(3), cancellationToken)
-			: await OwnedTcpListenerProbe.ProbeAsync(serviceName, RequireServiceController().ReadOwnedExecutablePath(serviceName, cancellationToken),
-				address, port, TimeSpan.FromSeconds(8),
-				(script, token) => ProcessRunner.RunAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe"),
-					new[] { "-NoProfile", "-NonInteractive", "-Command", script }, TimeSpan.FromSeconds(4), token), cancellationToken);
+		if (component == "SystemDoH")
+			return await LocalServiceHealthProbe.DnsAsync(address, port, TimeSpan.FromSeconds(3), cancellationToken);
+		_telegramListenerSnapshot ??= new WindowsServiceListenerSnapshot(serviceName);
+		return await OwnedTcpListenerProbe.ProbeSnapshotAsync(RequireServiceController().ReadOwnedExecutablePath(serviceName, cancellationToken),
+			address, port, TimeSpan.FromSeconds(8), token => _telegramListenerSnapshot.ReadAsync(port, token), cancellationToken);
 	}
 
 	private async Task<JsonElement> ExecuteComponentAsync(ServiceRequest request, CancellationToken cancellationToken)

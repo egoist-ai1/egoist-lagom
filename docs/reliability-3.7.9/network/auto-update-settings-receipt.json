@@ -1,0 +1,17 @@
+{
+  "observedAt": "2026-09-29T13:29:24.7658338+00:00",
+  "productionUserData": "APPDATA/Egoist Shield",
+  "explicitAutoUpdate": true,
+  "autoUpdate": true,
+  "autoStart": true,
+  "notifications": true,
+  "manualChoiceProven": false,
+  "originReason": "Saved state contains no setting-origin audit trail; a boolean alone cannot establish who changed it.",
+  "sourceDefaultsAutoUpdate": true,
+  "desktopTimerStartupMs": 10000,
+  "desktopTimerIntervalMs": 86400000,
+  "componentTimerStartupMs": 20000,
+  "componentTimerIntervalMs": 21600000,
+  "requiresElectronProcess": true,
+  "networkOrStateModified": false
+}

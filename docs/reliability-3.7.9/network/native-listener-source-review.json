@@ -1,0 +1,81 @@
+{
+  "reviewedAt": "2026-09-29T14:35:27.908742+00:00",
+  "method": "Independent read-only source review, real installed canonical IPC/payload receipts, and isolated native/pending/foreign-port behavioral regressions; no live service changes",
+  "scope": "Core read-only native Telegram snapshot CLI and Node two-fresh-ownership readiness contract",
+  "sourceFiles": [
+    {
+      "path": "src/recovered/electron/ipc/telegram-proxy-manager.js",
+      "sha256": "fe4d8c49ff791d1c4c5f05db29b1735e1ef241ef45a8193ed66bc89c5affe39c"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/Program.cs",
+      "sha256": "2e485f74ea0b0b8448d6474a4a2609de57bb1c1439273e37198e2646a1d175b9"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/TelegramListenerSnapshotCommand.cs",
+      "sha256": "c6b94f7e60262e22ac6fdb1823272b17904a6038a6ea982fedfcf3f346688186"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/WindowsServiceListenerSnapshot.cs",
+      "sha256": "6c328ef0a3fd68d9ba8cce31a2a6a86f9cb2f05e2e198b374d732bb6ee4527c9"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedTcpListenerProbe.cs",
+      "sha256": "018efba76b4222a061e4c4c4351ededf81af94c7e5a5799acb9a44a27c660b07"
+    },
+    {
+      "path": "tests/telegram-native-listener.test.mjs",
+      "sha256": "dfd1c45cab2829d0c64e53a2be5ef917e6c46581fa622d74cf73d56a6dea99b6"
+    },
+    {
+      "path": "tests/telegram-listener-ownership.test.mjs",
+      "sha256": "b3163fa99ef8bcaa3c2bed260a24b12267a6f311da2ad6a8c752dd9bf8639093"
+    }
+  ],
+  "regression": {
+    "command": "node --test tests/telegram-native-listener.test.mjs tests/telegram-listener-ownership.test.mjs",
+    "exitCode": 0,
+    "counts": {
+      "tests": 35,
+      "pass": 35,
+      "fail": 0,
+      "skipped": 0,
+      "duration_ms": 2453.0347
+    },
+    "controlledDependencies": true,
+    "liveFailureInjection": false,
+    "output": "native-listener-regression.txt"
+  },
+  "actualEvidence": {
+    "installedIpc": "installed-contract-receipt.json",
+    "historicalInstalledIpc": "installed-contract-3.7.8.json",
+    "preliminaryInstalledPayload": "../service/installed-payload-verification.json",
+    "nativeOwnedRealOs": "../service/native-owned-probe.json",
+    "nativeForeignRealOs": "../service/native-foreign-probe.json"
+  },
+  "sourceVerified": {
+    "exactThreeArgumentCli": true,
+    "arbitraryServiceOrPathRejected": true,
+    "noServiceHostStartup": true,
+    "noSelfIpc": true,
+    "fixedOwnedWrapperPath": true,
+    "scmAndProcessBirthAncestry": true,
+    "twoFreshRootAndOwnerIdentities": true,
+    "foreignIsNotReady": true,
+    "unknownIsNotReady": true,
+    "noPermissiveRunningServiceFallback": true,
+    "nativeSnapshotDeadlineMs": 3000,
+    "nodeTwoReadDeadlineMs": 4000,
+    "nativeOutputMaxBytes": 61440,
+    "nodeOutputMaxBytes": 65536,
+    "processAndListenerMaxRows": 128,
+    "ancestryMaxDepth": 32,
+    "tcpTableMaxBytes": 4194304,
+    "tcpTableResizeMaxAttempts": 3,
+    "onePendingReadPerNativeReader": true,
+    "stoppedStandalonePowershellGuardPreserved": true,
+    "remoteTelegramDeliveryClaimed": false
+  },
+  "pendingBehavior": "native-pending-before-after.json",
+  "futureFinalRuntimeInstall": "Electron 44 rebuild/installation and fresh actual IPC stress/fault checks belong to release coordinator; existing 14:16 UTC IPC snapshot is preliminary 3.7.9"
+}

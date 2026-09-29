@@ -1,3 +1,4 @@
 resources/release/release-key-registry.json -text
 resources/release/*.sig -text
 resources/release/*.pem -text
+docs/reliability-3.7.9/network/public-artifacts/** -text

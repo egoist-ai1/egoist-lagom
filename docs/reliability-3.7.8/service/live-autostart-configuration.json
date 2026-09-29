@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "capturedAtUtc": "2026-09-29T13:19:44.9349545+00:00",
+  "mutationPerformed": false,
+  "actualRebootPerformed": false,
+  "lastBootUtc": "2026-09-28T07:59:23.6870980+00:00",
+  "installedCoreVersion": "3.7.8.0",
+  "installedCoreHash": "27A13930AD2D5B6C29942C5B46E71A35FE2746ED0F33B282BEA781880A775D4C",
+  "packagedCoreHash": "27A13930AD2D5B6C29942C5B46E71A35FE2746ED0F33B282BEA781880A775D4C",
+  "services": [
+    {
+      "name": "EgoistShieldCore",
+      "state": "Running",
+      "startMode": "Auto",
+      "processId": 35832,
+      "account": "LocalSystem",
+      "executable": "%PROGRAMFILES%\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe",
+      "registryStart": 2,
+      "dependencies": [
+        null
+      ],
+      "nonCrashRecovery": 1,
+      "recoveryResetSeconds": 86400,
+      "recoveryActions": [
+        {
+          "type": 1,
+          "delayMilliseconds": 5000
+        },
+        {
+          "type": 1,
+          "delayMilliseconds": 15000
+        },
+        {
+          "type": 1,
+          "delayMilliseconds": 30000
+        }
+      ]
+    },
+    {
+      "name": "EgoistShieldSystemDoH",
+      "state": "Running",
+      "startMode": "Auto",
+      "processId": 38096,
+      "account": "LocalSystem",
+      "executable": "%PROGRAMDATA%\\EgoistShield\\Runtime\\SystemDoH\\service-wrapper\\egoistshield-system-doh-service.exe",
+      "registryStart": 2,
+      "dependencies": [
+        "Tcpip",
+        "Afd"
+      ],
+      "nonCrashRecovery": 1,
+      "recoveryResetSeconds": 3600,
+      "recoveryActions": [
+        {
+          "type": 1,
+          "delayMilliseconds": 5000
+        },
+        {
+          "type": 1,
+          "delayMilliseconds": 10000
+        },
+        {
+          "type": 1,
+          "delayMilliseconds": 60000
+        }
+      ]
+    },
+    {
+      "name": "EgoistShieldZapret",
+      "state": "Running",
+      "startMode": "Auto",
+      "processId": 54416,
+      "account": "LocalSystem",
+      "executable": "%PROGRAMDATA%\\EgoistShield\\Runtime\\Zapret\\service-wrapper\\egoistshield-zapret-service.exe",
+      "registryStart": 2,
+      "dependencies": [
+        "Tcpip",
+        "Afd"
+      ],
+      "nonCrashRecovery": 1,
+      "recoveryResetSeconds": 3600,
+      "recoveryActions": [
+        {
+          "type": 1,
+          "delayMilliseconds": 5000
+        },
+        {
+          "type": 1,
+          "delayMilliseconds": 10000
+        },
+        {
+          "type": 1,
+          "delayMilliseconds": 60000
+        }
+      ]
+    },
+    {
+      "name": "EgoistShieldTelegramProxy",
+      "state": "Running",
+      "startMode": "Auto",
+      "processId": 26520,
+      "account": "LocalSystem",
+      "executable": "%PROGRAMDATA%\\EgoistShield\\Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe",
+      "registryStart": 2,
+      "dependencies": [
+        "Tcpip",
+        "Afd"
+      ],
+      "nonCrashRecovery": 1,
+      "recoveryResetSeconds": 3600,
+      "recoveryActions": [
+        {
+          "type": 1,
+          "delayMilliseconds": 5000
+        },
+        {
+          "type": 1,
+          "delayMilliseconds": 10000
+        },
+        {
+          "type": 1,
+          "delayMilliseconds": 60000
+        }
+      ]
+    }
+  ],
+  "supervision": {
+    "schemaVersion": 1,
+    "owner": "EgoistShield",
+    "services": {
+      "EgoistShieldSystemDoH": {
+        "running": true,
+        "lastRecoveryAt": null
+      },
+      "EgoistShieldZapret": {
+        "running": true,
+        "lastRecoveryAt": null
+      },
+      "EgoistShieldTelegramProxy": {
+        "running": true,
+        "lastRecoveryAt": null
+      }
+    }
+  },
+  "dnsHealth": {
+    "capturedAtUtc": "2026-09-29T16:17:21.5456388+03:00",
+    "query": "health.egoist.invalid",
+    "localOnly": true,
+    "results": [
+      {
+        "address": "127.0.0.1",
+        "transport": "UDP",
+        "elapsedMs": 13.88,
+        "receivedBytes": 55,
+        "idAndSourceMatch": true,
+        "rcode": 0,
+        "answerCount": 1,
+        "hasPinnedLoopbackAnswer": true
+      },
+      {
+        "address": "::1",
+        "transport": "UDP",
+        "elapsedMs": 1.52,
+        "receivedBytes": 55,
+        "idAndSourceMatch": true,
+        "rcode": 0,
+        "answerCount": 1,
+        "hasPinnedLoopbackAnswer": true
+      }
+    ]
+  },
+  "applicationProcesses": [
+    {
+      "ProcessId": 30324,
+      "ParentProcessId": 35832,
+      "CreationDate": "2026-09-29T16:01:21.033469+03:00"
+    },
+    {
+      "ProcessId": 27836,
+      "ParentProcessId": 48236,
+      "CreationDate": "2026-09-29T16:17:52.776044+03:00"
+    },
+    {
+      "ProcessId": 32940,
+      "ParentProcessId": 27836,
+      "CreationDate": "2026-09-29T16:17:52.995281+03:00"
+    },
+    {
+      "ProcessId": 22400,
+      "ParentProcessId": 27836,
+      "CreationDate": "2026-09-29T16:17:53.056305+03:00"
+    },
+    {
+      "ProcessId": 49412,
+      "ParentProcessId": 27836,
+      "CreationDate": "2026-09-29T16:17:53.351156+03:00"
+    }
+  ],
+  "listeners": [
+    {
+      "LocalAddress": "::1",
+      "LocalPort": 53,
+      "OwningProcess": 39664
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 1445,
+      "OwningProcess": 37948
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 1443,
+      "OwningProcess": 48988
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 53,
+      "OwningProcess": 39664
+    }
+  ],
+  "privateNetworkConfigurationOmitted": true,
+  "networkSnapshotRowCounts": {
+    "dnsServers": 4,
+    "ipv6Bindings": 5
+  },
+  "publicReceiptScope": "Actual service/autostart/recovery and loopback-health facts; raw adapter aliases, indices, DNS server lists and bindings retained only in private task evidence."
+}

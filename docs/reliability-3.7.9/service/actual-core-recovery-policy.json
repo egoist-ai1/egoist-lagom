@@ -1,0 +1,25 @@
+﻿{
+    "actualWindowsRegistryRead":  true,
+    "mutationPerformed":  false,
+    "powerShellVersion":  "5.1.26100.9168",
+    "coreRecovery":  {
+                         "automatic":  true,
+                         "resetSeconds":  86400,
+                         "nonCrashFlag":  true,
+                         "actions":  [
+                                         {
+                                             "type":  1,
+                                             "delayMs":  5000
+                                         },
+                                         {
+                                             "type":  1,
+                                             "delayMs":  15000
+                                         },
+                                         {
+                                             "type":  1,
+                                             "delayMs":  30000
+                                         }
+                                     ],
+                         "restartOnly":  true
+                     }
+}

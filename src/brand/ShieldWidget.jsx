@@ -103,9 +103,11 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
     if (!gsap) return;
     const media = gsap.matchMedia(surface.current);
     media.add('(prefers-reduced-motion: no-preference)', () => {
+      // Hidden windows retain the complete status glyph, without a paused entrance frame.
+      if (document.hidden) return;
       const timeline = gsap.timeline();
-      timeline.fromTo('.shield-widget-status-group', { y: 3, opacity: .6 }, { y: 0, opacity: 1, duration: .32, ease: 'power2.out' });
-      if (phase === 'connected') timeline.fromTo('.shield-connected-check', { strokeDashoffset: 44 }, { strokeDashoffset: 0, duration: .46, ease: 'power2.out' }, 0);
+      timeline.fromTo('.shield-widget-status-group', { y: 2, opacity: .8 }, { y: 0, opacity: 1, duration: .18, ease: 'power2.out' });
+      if (phase === 'connected') timeline.fromTo('.shield-connected-check', { strokeDashoffset: 44 }, { strokeDashoffset: 0, duration: .28, ease: 'power2.out' }, 0);
       const visibility = () => document.hidden ? timeline.pause() : timeline.resume();
       visibility();
       document.addEventListener('visibilitychange', visibility);

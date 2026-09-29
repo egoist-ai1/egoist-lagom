@@ -1,0 +1,117 @@
+{
+  "source": "Actual installed Electron44 product process in Node mode; real production Core pipe.",
+  "requests": [
+    {
+      "operation": "hello",
+      "component": null,
+      "ok": true,
+      "milliseconds": 17,
+      "selected": {
+        "protocolVersion": 1,
+        "serviceVersion": "3.7.9",
+        "developmentOverride": false,
+        "identityProbe": false
+      }
+    },
+    {
+      "operation": "service.status",
+      "component": null,
+      "ok": true,
+      "milliseconds": 4,
+      "selected": {
+        "version": "3.7.9",
+        "consoleMode": false,
+        "supervisionPresent": true
+      }
+    },
+    {
+      "operation": "component.query",
+      "component": "TelegramProxy",
+      "ok": true,
+      "milliseconds": 419,
+      "selected": {
+        "available": true,
+        "running": true,
+        "runtimeReady": true,
+        "listenerReady": true,
+        "listenerOwnership": "owned",
+        "serviceInstalled": true,
+        "serviceRunning": true,
+        "serviceState": "running",
+        "hasLastError": false,
+        "portConflict": {
+          "host": "127.0.0.1",
+          "port": 1445,
+          "available": true,
+          "ownerPresent": false
+        }
+      }
+    },
+    {
+      "operation": "component.query",
+      "component": "Zapret",
+      "ok": true,
+      "milliseconds": 740,
+      "selected": {
+        "available": true,
+        "runtimeReady": true,
+        "serviceInstalled": true,
+        "serviceRunning": true,
+        "serviceState": "RUNNING",
+        "serviceReady": true,
+        "standaloneRunning": false,
+        "winwsRunning": true,
+        "hasLastError": false
+      }
+    },
+    {
+      "operation": "component.query",
+      "component": "SystemDoH",
+      "ok": true,
+      "milliseconds": 135,
+      "selected": {
+        "available": true,
+        "running": true,
+        "serviceInstalled": true,
+        "serviceRunning": true,
+        "serviceState": "running",
+        "enabled": true,
+        "encrypted": true,
+        "verified": true,
+        "nativeManaged": false,
+        "hasLastError": false
+      }
+    },
+    {
+      "operation": "dns.status",
+      "component": null,
+      "ok": true,
+      "milliseconds": 1979,
+      "selected": {
+        "adapterCount": 1,
+        "staticV4AdapterCount": 1
+      }
+    },
+    {
+      "operation": "dns.doh.status",
+      "component": null,
+      "ok": true,
+      "milliseconds": 2658,
+      "selected": {
+        "supported": true,
+        "enabled": false,
+        "encrypted": false,
+        "verified": false,
+        "nativeManaged": true
+      }
+    }
+  ],
+  "launch": {
+    "ok": true,
+    "exitCode": 0,
+    "completedAt": "2026-09-29T15:16:59.7104617Z",
+    "executable": "%PROGRAMFILES%\\EgoistShield\\EgoistShield.exe",
+    "scriptSha256": "FC2A62E7ECDDC05F8F87C2081272A218739BD0AE86318B7B8FA7AA66859F7EED",
+    "stderrBytes": 0
+  }
+}

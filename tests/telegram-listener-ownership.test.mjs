@@ -17,6 +17,21 @@ function telegramFixture(ownership = foreignListener) {
     execFile: async (_exe, _args, options) => {
       assert.ok(options.timeout <= 4000, 'listener ownership query has a bounded deadline');
       if (ownership instanceof Error) throw ownership;
+      if (_args[0] === '--telegram-listener-snapshot') {
+        const createdAt = '2026-09-29T12:00:00.000Z';
+        const ownerCreatedAt = '2026-09-29T12:00:02.000Z';
+        return { stdout: JSON.stringify({
+          schemaVersion: 1, operation: 'telegram-listener-snapshot', serviceName: 'EgoistShieldTelegramProxy',
+          port: Number(_args[2]), snapshotAvailable: true, stable: true, serviceState: 'Running',
+          serviceProcessId: 100, rootProcessPathVerified: true,
+          ipv4: { ...ownership, state: ownership.state === 'none' ? 'missing' : ownership.state, ownerCreatedAt },
+          ipv6: { state: 'missing', ownerPid: null },
+          snapshot: { processes: [
+            { processId: 100, createdAt, executablePath: 'C:\\Lagom\\Telegram\\service-wrapper\\egoistshield-telegram-proxy-service.exe' },
+            { processId: ownership.ownerPid, createdAt: ownerCreatedAt },
+          ], listeners: [] },
+        }) };
+      }
       return { stdout: JSON.stringify(ownership) };
     },
     resolveWindowsExecutable: name => name,
@@ -177,6 +192,20 @@ test('a changing Telegram listener snapshot is unknown rather than a free or rea
   assert.equal(status.listenerOwnership, 'unknown');
   assert.equal(status.running, false);
   assert.equal(status.portConflict.available, null);
+});
+
+test('pending Telegram service reports unconfirmed readiness without a stale failure', async () => {
+  const { manager } = telegramFixture(new Error('SCM ownership not ready yet'));
+  manager.queryServiceStatus = async () => ({ installed: true, running: false, state: 'start-pending', pid: 100 });
+  manager.lastError = 'an obsolete failure';
+  const status = await manager.readStatus();
+  assert.equal(status.running, false);
+  assert.equal(status.runtimeReady, false);
+  assert.equal(status.listenerReady, false);
+  assert.equal(status.listenerOwnership, 'unknown');
+  assert.equal(status.portConflict.available, null);
+  assert.equal(status.serviceState, 'start-pending');
+  assert.equal(status.lastError, null);
 });
 
 function standaloneFixture(serviceState = 'STOPPED') {

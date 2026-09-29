@@ -345,12 +345,13 @@ var TelegramProxyManager = class {
 		const bundledRuntime = await this.getBundledRuntimeInfo();
 		const runtime = managedRuntime ?? bundledRuntime;
 		const latestVersion = this.pickNewerVersion(bundledRuntime?.version ?? null, runtime?.version ?? null);
-		const listener = await this.inspectListener(config.port, config.host, { serviceRunning: service.running, managedState: running ? managedState : null });
+		const servicePending = service.installed && ["start-pending", "stop-pending"].includes(service.state);
+		const listener = await this.inspectListener(config.port, config.host, { serviceRunning: service.running || servicePending, managedState: running ? managedState : null });
 		const listenerReady = listener.ready;
 		const runtimeReady = (running || service.running) && listenerReady;
 		const portAvailable = listener.state === "unknown" ? null : listener.state !== "foreign";
 		const portOwner = listener.state === "foreign" ? this.describeListenerOwner(listener) : null;
-		const readinessError = listener.state === "foreign" || listener.state === "unknown" ? this.listenerOwnershipError(config.port, config.host, listener) : (running || service.running) && !listenerReady ? `Telegram Proxy запущен, но порт ${config.host}:${config.port} не отвечает.` : null;
+		const readinessError = servicePending ? null : listener.state === "foreign" || listener.state === "unknown" ? this.listenerOwnershipError(config.port, config.host, listener) : (running || service.running) && !listenerReady ? `Готовность Telegram Proxy на ${config.host}:${config.port} не подтверждена.` : null;
 		const [managedSha256, bundledSha256] = await Promise.all([managedRuntime ? this.sha256File(managedRuntime.runtimePath) : Promise.resolve(null), bundledRuntime ? this.sha256File(bundledRuntime.runtimePath) : Promise.resolve(null)]);
 		const checksumState = resolveTelegramProxyChecksumState({
 			bundledSha256,
@@ -414,7 +415,7 @@ var TelegramProxyManager = class {
 			}),
 			logTail,
 			config,
-			lastError: readinessError || this.lastError
+			lastError: readinessError || (servicePending ? null : this.lastError)
 		};
 	}
 	async saveConfig(config) {
@@ -1453,18 +1454,23 @@ var TelegramProxyManager = class {
 		while (Date.now() < deadline) {
 			const status = await this.queryServiceStatus();
 			lastState = status.state;
-			const listener = await this.inspectListener(port, host, { serviceRunning: status.running || status.state === "start-pending", timeoutMs: Math.max(1, Math.min(4000, deadline - Date.now())) });
+			if (status.state === "start-pending") {
+				await new Promise((resolve) => setTimeout(resolve, Math.min(500, Math.max(1, deadline - Date.now()))));
+				continue;
+			}
+			const listener = await this.inspectListener(port, host, { serviceRunning: status.running, timeoutMs: Math.max(1, Math.min(4000, deadline - Date.now())) });
 			if (listener.state === "foreign" || listener.state === "unknown") throw new Error(this.listenerOwnershipError(port, host, listener));
 			lastPortOpen = listener.ready;
 			if (status.running && listener.ready) return;
 			if (status.state === "stopped" || status.state === "not-installed") break;
 			await new Promise((resolve) => setTimeout(resolve, 500));
 		}
-		const portHint = lastPortOpen ? `порт ${host}:${port} занят другим процессом` : `порт ${host}:${port} не отвечает`;
+		const portHint = lastPortOpen ? `слушатель ${host}:${port} подтверждён` : `готовность слушателя ${host}:${port} не подтверждена`;
 		throw new Error(`Служба ${TG_WS_PROXY_SERVICE_NAME} не подтвердила запуск: состояние ${lastState}, ${portHint}.`);
 	}
 	async queryListenerOwnership(port, host, { serviceRunning = false, managedState = null, timeoutMs = 4000 } = {}) {
 		try {
+			if (serviceRunning) return await this.queryNativeServiceListenerOwnership(port, host, timeoutMs);
 			const script = buildTelegramProxyListenerOwnershipScript(port, host, {
 				serviceRunning,
 				wrapperPath: path.join(this.appDataDir, "service-wrapper", TG_WS_PROXY_SERVICE_EXE_NAME),
@@ -1480,6 +1486,40 @@ var TelegramProxyManager = class {
 		} catch {
 			return { state: "unknown", ownerPid: null, ownerName: null };
 		}
+	}
+	async queryNativeServiceListenerOwnership(port, host, timeoutMs) {
+		const unknown = { state: "unknown", ownerPid: null, ownerName: null };
+		if (!Number.isInteger(port) || port < 1 || port > 65535 || typeof host !== "string" || !isLoopbackHost(host)) return unknown;
+		const deadline = Date.now() + Math.max(1, Math.min(4000, timeoutMs));
+		const executable = path.join(this.resourcesPath, "core-service", "win-x64", "EgoistShield.Service.exe");
+		const wrapperPath = path.resolve(this.appDataDir, "service-wrapper", TG_WS_PROXY_SERVICE_EXE_NAME).toLowerCase();
+		const address = host.trim().toLowerCase().replace(/^\[|\]$/g, "");
+		let prior = null;
+		for (let read = 0; read < 2; read++) {
+			const remaining = deadline - Date.now();
+			if (remaining <= 0) return unknown;
+			const { stdout } = await execFileAsync$3(executable, ["--telegram-listener-snapshot", "--port", String(port)], { windowsHide: true, timeout: remaining, maxBuffer: 64 * 1024 });
+			const value = JSON.parse(stdout.trim());
+			if (value?.schemaVersion !== 1 || value.operation !== "telegram-listener-snapshot" || value.serviceName !== TG_WS_PROXY_SERVICE_NAME || value.port !== port || value.snapshotAvailable !== true || value.stable !== true || value.serviceState !== "Running" || value.rootProcessPathVerified !== true) return unknown;
+			const rows = value.snapshot?.processes;
+			if (!Array.isArray(rows) || rows.length > 128 || !Array.isArray(value.snapshot.listeners) || value.snapshot.listeners.length > 128) return unknown;
+			const roots = rows.filter((row) => row.processId === value.serviceProcessId);
+			const root = roots.length === 1 ? roots[0] : null;
+			if (!Number.isInteger(value.serviceProcessId) || value.serviceProcessId <= 0 || !root || typeof root.executablePath !== "string" || path.resolve(root.executablePath).toLowerCase() !== wrapperPath || !Number.isFinite(Date.parse(root.createdAt))) return unknown;
+			const families = address === "localhost" ? [value.ipv4, value.ipv6] : [address === "::1" ? value.ipv6 : value.ipv4];
+			if (families.some((family) => !family || !["owned", "foreign", "missing", "unknown"].includes(family.state))) return unknown;
+			const selected = families.find((family) => family.state === "foreign") ?? families.find((family) => family.state === "unknown") ?? families.find((family) => family.state === "owned") ?? families[0];
+			if (selected.state === "unknown") return unknown;
+			if (selected.state !== "missing" && (!Number.isInteger(selected.ownerPid) || selected.ownerPid <= 0)) return unknown;
+			const result = { state: selected.state === "missing" ? "none" : selected.state, ownerPid: selected.ownerPid ?? null, ownerName: typeof selected.ownerName === "string" ? selected.ownerName.replace(/[\x00-\x1f]/g, "").slice(0, 80) : null };
+			if (result.state === "foreign") return result;
+			const owner = result.state === "owned" ? rows.find((row) => row.processId === result.ownerPid) : null;
+			if (result.state === "owned" && (!owner || !Number.isFinite(Date.parse(owner.createdAt)) || Date.parse(owner.createdAt) < Date.parse(root.createdAt) || selected.ownerCreatedAt !== owner.createdAt)) return unknown;
+			const identity = JSON.stringify([result.state, value.serviceProcessId, root.createdAt, result.ownerPid, owner?.createdAt ?? null]);
+			if (prior && prior.identity !== identity) return unknown;
+			prior = { identity, result };
+		}
+		return prior?.result ?? unknown;
 	}
 	async inspectListener(port, host = "127.0.0.1", options = {}) {
 		const [ownership, open] = await Promise.all([this.queryListenerOwnership(port, host, options), this.isLocalTcpPortOpen(port, host)]);

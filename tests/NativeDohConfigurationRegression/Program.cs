@@ -38,6 +38,9 @@ internal static class Program
             await Check("central DNS mode guards reject cross-mode mutations", ModeGuardsAsync);
             await Check("optional log locking does not fail network operations", LogLockAsync);
             await Check("generated listener ownership snapshot is bounded and stable in PowerShell5.1", ListenerSnapshotScriptAsync);
+            await Check("read-only CLI reports the actual foreign owner across mixed endpoint families", ListenerSnapshotContractAsync);
+            await Check("read-only CLI rejects invalid or mixed service arguments before startup", ListenerSnapshotArgumentsAsync);
+            await Check("read-only CLI emits a bounded native snapshot from the actual Windows host", ActualListenerSnapshotCommandAsync);
             Console.WriteLine($"Native DoH/Core regression passed: {_passed} groups; runtime={System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}; elapsed={elapsed.Elapsed.TotalSeconds:0.00}s; work={_work}");
             return 0;
         }
@@ -306,6 +309,87 @@ internal static class Program
             var expected = mode switch { "owned" => TcpListenerOwnership.Owned, "foreign" => TcpListenerOwnership.Foreign, "missing" => TcpListenerOwnership.Missing, _ => TcpListenerOwnership.Unknown };
             Assert(ownership == expected && snapshot.Processes.Length <= 3, "PowerShell snapshot lost stable SCM identity, process ancestry or listener address: " + mode + ": " + ownership);
         }
+    }
+
+    private static Task ListenerSnapshotContractAsync()
+    {
+        string executable = Path.Combine(_work, "owned-tg-wrapper.exe");
+        var birth = DateTimeOffset.Parse("2026-09-29T00:00:00Z");
+        var rows = new[] { new ListenerProcess(10, 0, birth, executable),
+            new ListenerProcess(20, 10, birth.AddSeconds(1), Path.Combine(_work, "owned-child.exe")),
+            new ListenerProcess(99, 0, birth.AddSeconds(-1), Path.Combine(_work, "actual-foreign-relay.exe")) };
+        var mixed = new ServiceListenerSnapshot(10, "Running", rows, new[] {
+            new ListenerEndpoint("127.0.0.1", 1445, 20), new ListenerEndpoint("0.0.0.0", 1445, 99),
+            new ListenerEndpoint("::1", 1445, 20) }, true);
+        var ipv4 = TelegramListenerSnapshotCommand.DescribeFamily(mixed, IPAddress.Loopback, 1445, executable);
+        Assert(ipv4.State == "foreign" && ipv4.OwnerPid == 99 && ipv4.OwnerName == "actual-foreign-relay.exe" && ipv4.OwnerCreatedAt == rows[2].CreatedAt,
+            "Mixed owned+foreign listeners reported the first owned process as the conflicting owner.");
+        var ipv6 = TelegramListenerSnapshotCommand.DescribeFamily(mixed, IPAddress.IPv6Loopback, 1445, executable);
+        Assert(ipv6.State == "owned" && ipv6.OwnerPid == 20 && ipv6.OwnerCreatedAt == rows[1].CreatedAt, "IPv4 wildcard conflict incorrectly changed IPv6 proof.");
+        var missing = TelegramListenerSnapshotCommand.DescribeFamily(mixed, IPAddress.Loopback, 49123, executable);
+        Assert(missing.State == "missing" && missing.OwnerPid == null && missing.OwnerName == null && missing.OwnerCreatedAt == null, "Missing listener invented an owner.");
+        var unknown = TelegramListenerSnapshotCommand.DescribeFamily(null, IPAddress.Loopback, 1445, executable);
+        Assert(unknown.State == "unknown" && unknown.OwnerPid == null, "Unavailable native metadata was treated as a missing or owned listener.");
+        using var response = JsonDocument.Parse(TelegramListenerSnapshotCommand.SerializeSnapshot(mixed, 1445, executable));
+        Assert(response.RootElement.GetProperty("rootProcessPathVerified").GetBoolean() && response.RootElement.GetProperty("ipv4").GetProperty("ownerPid").GetInt32() == 99,
+            "Serialized contract lost fixed wrapper path proof or actual conflicting owner.");
+        var large = mixed with { Processes = rows.Concat(Enumerable.Range(200, 64).Select(id => new ListenerProcess(id, 0, birth, new string('x', 3000)))).ToArray() };
+        string bounded = TelegramListenerSnapshotCommand.SerializeSnapshot(large, 1445, executable);
+        using var oversized = JsonDocument.Parse(bounded);
+        Assert(Encoding.UTF8.GetByteCount(bounded) <= 60 * 1024 && !oversized.RootElement.GetProperty("snapshotAvailable").GetBoolean() &&
+            oversized.RootElement.GetProperty("ownership").GetString() == "unknown" && oversized.RootElement.GetProperty("snapshot").ValueKind == JsonValueKind.Null,
+            "Oversized metadata exceeded the GUI limit or dropped proof while reporting health.");
+        return Task.CompletedTask;
+    }
+
+    private static async Task ListenerSnapshotArgumentsAsync()
+    {
+        string[][] invalid = {
+            new[] { "--telegram-listener-snapshot" }, new[] { "--port", "1445" },
+            new[] { "--telegram-listener-snapshot", "--port", "0" }, new[] { "--telegram-listener-snapshot", "--port", "65536" },
+            new[] { "--telegram-listener-snapshot", "--port", "+1445" }, new[] { "--telegram-listener-snapshot", "--port", "-1" },
+            new[] { "--telegram-listener-snapshot", "--port", "1.5" }, new[] { "--telegram-listener-snapshot", "--port", "1445", "--console" },
+            new[] { "--telegram-listener-snapshot", "--port", "1445", "--recover-active" },
+            new[] { "--telegram-listener-snapshot", "--port", "1445", "--remove-native-doh" },
+            new[] { "--telegram-listener-snapshot", "--port", "1445", "configure", "--install-root", _work },
+            new[] { "--telegram-listener-snapshot", "--port", "1445", "--state-root", Path.Combine(_work, "must-not-exist") }
+        };
+        var beforeOut = Console.Out; var beforeError = Console.Error;
+        try
+        {
+            foreach (var args in invalid)
+            {
+                using var output = new StringWriter(); using var error = new StringWriter();
+                Console.SetOut(output); Console.SetError(error);
+                Assert(await EgoistShield.Service.Program.Main(args) == 1 && output.ToString().Length == 0 && error.ToString().Contains("ArgumentException"),
+                    "Invalid read-only CLI arguments reached another service mode: " + string.Join(' ', args));
+            }
+        }
+        finally { Console.SetOut(beforeOut); Console.SetError(beforeError); }
+        Assert(!Directory.Exists(Path.Combine(_work, "must-not-exist")), "Rejected CLI created a service state directory.");
+    }
+
+    private static async Task ActualListenerSnapshotCommandAsync()
+    {
+        var beforeOut = Console.Out; var beforeError = Console.Error;
+        using var output = new StringWriter(); using var error = new StringWriter(); var elapsed = Stopwatch.StartNew();
+        try
+        {
+            Console.SetOut(output); Console.SetError(error);
+            Assert(await EgoistShield.Service.Program.Main(new[] { "--telegram-listener-snapshot", "--port", "49123" }) == 0, "Actual native inspection CLI failed.");
+        }
+        finally { Console.SetOut(beforeOut); Console.SetError(beforeError); }
+        string json = output.ToString().Trim(); using var doc = JsonDocument.Parse(json); var value = doc.RootElement;
+        Assert(value.GetProperty("schemaVersion").GetInt32() == 1 && value.GetProperty("operation").GetString() == "telegram-listener-snapshot" &&
+            value.GetProperty("serviceName").GetString() == "EgoistShieldTelegramProxy" && value.GetProperty("port").GetInt32() == 49123 &&
+            !value.GetProperty("remoteConnectivityVerified").GetBoolean() && error.ToString().Length == 0 && Encoding.UTF8.GetByteCount(json) <= 60 * 1024 && elapsed.Elapsed < TimeSpan.FromSeconds(4),
+            "Actual inspection emitted another mode, unbounded output or a false remote-connectivity claim.");
+        foreach (string family in new[] { "ipv4", "ipv6" })
+        {
+            string? state = value.GetProperty(family).GetProperty("state").GetString();
+            Assert(state is "owned" or "foreign" or "missing" or "unknown", "Actual native metadata has an unsupported family state.");
+        }
+        await File.WriteAllTextAsync(Path.Combine(_work, "actual-read-only-cli.json"), json);
     }
 
     private static async Task LogLockAsync()

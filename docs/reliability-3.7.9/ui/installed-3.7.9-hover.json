@@ -1,0 +1,465 @@
+{
+  "createdAt": "2026-09-29T16:22:57.721Z",
+  "stage": "hover-final-connected-bounded",
+  "identity": {
+    "pid": 47336,
+    "startTime": "2026-09-29T16:07:26.0224761Z",
+    "targetId": "54AE00A26A54CDFE85D6F53AF6EF0382",
+    "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade"
+  },
+  "inputMethod": "Playwright page.mouse.move: documented page-local browser input through the exact production renderer; no OS cursor/focus or CSS pseudo-state override.",
+  "captureCondition": "Native capturePage stayHidden:true,stayAwake:true; full foreground painting is not claimed.",
+  "observations": [
+    {
+      "label": "initial",
+      "widget": true,
+      "phase": "connected",
+      "busy": false,
+      "hover": false,
+      "pageHidden": false,
+      "powerVisibility": "hidden",
+      "powerOpacity": "0",
+      "powerStroke": "rgb(255, 255, 255)",
+      "checkVisibility": "visible",
+      "checkOpacity": "1",
+      "fill": "rgb(255, 255, 255)"
+    },
+    {
+      "label": "default",
+      "widget": true,
+      "phase": "connected",
+      "busy": false,
+      "hover": false,
+      "pageHidden": false,
+      "powerVisibility": "hidden",
+      "powerOpacity": "0",
+      "powerStroke": "rgb(255, 255, 255)",
+      "checkVisibility": "visible",
+      "checkOpacity": "1",
+      "fill": "rgb(255, 255, 255)"
+    },
+    {
+      "label": "first-observed-enter",
+      "widget": true,
+      "phase": "connected",
+      "busy": false,
+      "hover": true,
+      "pageHidden": false,
+      "powerVisibility": "visible",
+      "powerOpacity": "0",
+      "powerStroke": "rgb(255, 255, 255)",
+      "checkVisibility": "hidden",
+      "checkOpacity": "1",
+      "fill": "rgb(255, 255, 255)"
+    },
+    {
+      "label": "first-scheduled-hover-paint",
+      "widget": true,
+      "phase": "connected",
+      "busy": false,
+      "hover": true,
+      "pageHidden": false,
+      "powerVisibility": "visible",
+      "powerOpacity": "0.221664",
+      "powerStroke": "rgb(255, 255, 255)",
+      "checkVisibility": "hidden",
+      "checkOpacity": "0.778336",
+      "fill": "rgb(140, 140, 141)"
+    },
+    {
+      "label": "hover-after-native-wake-0",
+      "widget": true,
+      "phase": "connected",
+      "busy": false,
+      "hover": true,
+      "pageHidden": false,
+      "powerVisibility": "visible",
+      "powerOpacity": "1",
+      "powerStroke": "rgb(255, 255, 255)",
+      "checkVisibility": "hidden",
+      "checkOpacity": "0",
+      "fill": "rgb(39, 39, 42)"
+    },
+    {
+      "label": "settled-hover-after-native-capture",
+      "widget": true,
+      "phase": "connected",
+      "busy": false,
+      "hover": true,
+      "pageHidden": false,
+      "powerVisibility": "visible",
+      "powerOpacity": "1",
+      "powerStroke": "rgb(255, 255, 255)",
+      "checkVisibility": "hidden",
+      "checkOpacity": "0",
+      "fill": "rgb(39, 39, 42)"
+    },
+    {
+      "label": "first-observed-leave",
+      "widget": true,
+      "phase": "connected",
+      "busy": false,
+      "hover": false,
+      "pageHidden": false,
+      "powerVisibility": "hidden",
+      "powerOpacity": "1",
+      "powerStroke": "rgb(255, 255, 255)",
+      "checkVisibility": "visible",
+      "checkOpacity": "0",
+      "fill": "rgb(39, 39, 42)"
+    },
+    {
+      "label": "first-scheduled-leave-paint",
+      "widget": true,
+      "phase": "connected",
+      "busy": false,
+      "hover": false,
+      "pageHidden": false,
+      "powerVisibility": "hidden",
+      "powerOpacity": "0",
+      "powerStroke": "rgb(255, 255, 255)",
+      "checkVisibility": "visible",
+      "checkOpacity": "1",
+      "fill": "rgb(255, 255, 255)"
+    }
+  ],
+  "nativeGuards": [
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    },
+    {
+      "pid": 47336,
+      "version": "3.7.9",
+      "electron": "44.4.5",
+      "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+      "visible": false,
+      "focused": false,
+      "bounds": {
+        "x": 1130,
+        "y": 535,
+        "width": 300,
+        "height": 370
+      },
+      "zoomFactor": 1,
+      "backgroundThrottling": false
+    }
+  ],
+  "limitations": [
+    "A hidden renderer test does not measure visible-window/DWM motion. No connection, DNS, Telegram, profile, settings or clipboard changes are requested."
+  ],
+  "installedStyles": [],
+  "hoverSamples": {
+    "scheduledSamples": 32,
+    "overlap": false,
+    "elapsedMs": 512.7999999970198
+  },
+  "firstScheduledHoverSettled": false,
+  "result": "pass",
+  "nativeAfter": {
+    "pid": 47336,
+    "version": "3.7.9",
+    "electron": "44.4.5",
+    "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+    "visible": false,
+    "focused": false,
+    "bounds": {
+      "x": 1130,
+      "y": 535,
+      "width": 300,
+      "height": 370
+    },
+    "zoomFactor": 1,
+    "backgroundThrottling": false
+  },
+  "previousPaintFailure": {
+    "result": "fail",
+    "failure": "Observed settled hover paint failed",
+    "observations": [
+      {
+        "label": "initial",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": false,
+        "pageHidden": false,
+        "powerVisibility": "hidden",
+        "powerOpacity": "0",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "visible",
+        "checkOpacity": "1",
+        "fill": "rgb(255, 255, 255)"
+      },
+      {
+        "label": "default",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": false,
+        "pageHidden": false,
+        "powerVisibility": "hidden",
+        "powerOpacity": "0",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "visible",
+        "checkOpacity": "1",
+        "fill": "rgb(255, 255, 255)"
+      },
+      {
+        "label": "first-observed-enter",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": true,
+        "pageHidden": false,
+        "powerVisibility": "visible",
+        "powerOpacity": "0",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "hidden",
+        "checkOpacity": "1",
+        "fill": "rgb(255, 255, 255)"
+      },
+      {
+        "label": "settled-hover",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": true,
+        "pageHidden": false,
+        "powerVisibility": "visible",
+        "powerOpacity": "0.0381405",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "hidden",
+        "checkOpacity": "0.96186",
+        "fill": "rgb(209, 209, 209)"
+      }
+    ]
+  },
+  "publicCrops": [
+    "screens/installed-3.7.9-widget-default.png",
+    "screens/installed-3.7.9-widget-hover.png"
+  ],
+  "limits": [
+    "Hidden native capture may pause or show intermediate animation paint even after a500ms wall-clock delay; the bounded final captured glyph is not a foreground latency/FPS guarantee.",
+    "No native Windows maximize/minimize or foreground focus actions were performed. Large native dimensions and hidden mode do not reproduce all DWM/display behavior."
+  ]
+}

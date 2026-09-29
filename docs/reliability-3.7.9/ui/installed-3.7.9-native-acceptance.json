@@ -1,0 +1,565 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-09-29T16:28:10.187Z",
+  "result": "pass-with-stated-native-background-limits",
+  "installedInstance": {
+    "pid": 47336,
+    "startTime": "2026-09-29T16:07:26.0224761Z",
+    "version": "3.7.9",
+    "electronVersion": "44.4.5",
+    "rendererTargetId": "54AE00A26A54CDFE85D6F53AF6EF0382",
+    "windowId": 1,
+    "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+    "installerRun": "8f72194698fa4523bcc4243d919c506d"
+  },
+  "method": {
+    "actualInstalledApplication": true,
+    "realReadonlyIPC": true,
+    "nativeWindowSizes": true,
+    "nativeZoomFactor": true,
+    "viewportMediaVisibilityStateEmulation": false,
+    "ipcOrResponseMocks": false,
+    "osCursorOrNativeFocus": false,
+    "captureOptions": {
+      "stayHidden": true,
+      "stayAwake": true
+    },
+    "nativeBackgroundThrottlingTemporarilyDisabled": true,
+    "productionScope": "Only read-only status IPC, reversible real screen/dialog/section navigation and documented native geometry/zoom/capture operations. No connection, network setting, profile/server selection, service, clipboard or external URL mutations requested."
+  },
+  "stages": [
+    {
+      "stage": "hover-final-widget",
+      "nativeContentSize": [
+        300,
+        370
+      ],
+      "zoomFactor": 1,
+      "rendererSize": [
+        300,
+        370
+      ],
+      "screens": [
+        "widget"
+      ],
+      "layoutObservations": 1,
+      "rendererErrors": 0,
+      "smallTargets": 0,
+      "unnamedButtons": 0,
+      "blockedControlCenters": 0,
+      "horizontalOverflow": 0,
+      "filledSvgDetailsWithUnwantedOutline": 0,
+      "passedChecks": 3,
+      "deliberatePublicCropSkips": [],
+      "allStoredNativeGuardsHiddenUnfocused": true,
+      "mainHashUnchanged": true,
+      "observedServiceFlagsUnchanged": true
+    },
+    {
+      "stage": "hover-final-full-corrected",
+      "nativeContentSize": [
+        1360,
+        900
+      ],
+      "zoomFactor": 1,
+      "rendererSize": [
+        1360,
+        900
+      ],
+      "screens": [
+        "settings",
+        "dashboard",
+        "vpn",
+        "dns",
+        "zapret",
+        "telegram-proxy"
+      ],
+      "layoutObservations": 18,
+      "rendererErrors": 0,
+      "smallTargets": 0,
+      "unnamedButtons": 0,
+      "blockedControlCenters": 0,
+      "horizontalOverflow": 0,
+      "filledSvgDetailsWithUnwantedOutline": 0,
+      "passedChecks": 12,
+      "deliberatePublicCropSkips": [],
+      "allStoredNativeGuardsHiddenUnfocused": true,
+      "mainHashUnchanged": true,
+      "observedServiceFlagsUnchanged": true
+    },
+    {
+      "stage": "hover-final-minimum",
+      "nativeContentSize": [
+        1000,
+        680
+      ],
+      "zoomFactor": 1,
+      "rendererSize": [
+        1000,
+        680
+      ],
+      "screens": [
+        "settings",
+        "dashboard",
+        "vpn",
+        "dns",
+        "zapret",
+        "telegram-proxy"
+      ],
+      "layoutObservations": 18,
+      "rendererErrors": 0,
+      "smallTargets": 0,
+      "unnamedButtons": 0,
+      "blockedControlCenters": 0,
+      "horizontalOverflow": 0,
+      "filledSvgDetailsWithUnwantedOutline": 0,
+      "passedChecks": 12,
+      "deliberatePublicCropSkips": [],
+      "allStoredNativeGuardsHiddenUnfocused": true,
+      "mainHashUnchanged": true,
+      "observedServiceFlagsUnchanged": true
+    },
+    {
+      "stage": "hover-final-large",
+      "nativeContentSize": [
+        2000,
+        1100
+      ],
+      "zoomFactor": 1,
+      "rendererSize": [
+        2000,
+        1100
+      ],
+      "screens": [
+        "settings",
+        "dashboard",
+        "vpn",
+        "dns",
+        "zapret",
+        "telegram-proxy"
+      ],
+      "layoutObservations": 18,
+      "rendererErrors": 0,
+      "smallTargets": 0,
+      "unnamedButtons": 0,
+      "blockedControlCenters": 0,
+      "horizontalOverflow": 0,
+      "filledSvgDetailsWithUnwantedOutline": 0,
+      "passedChecks": 12,
+      "deliberatePublicCropSkips": [],
+      "allStoredNativeGuardsHiddenUnfocused": true,
+      "mainHashUnchanged": true,
+      "observedServiceFlagsUnchanged": true
+    },
+    {
+      "stage": "hover-final-zoom-two",
+      "nativeContentSize": [
+        2560,
+        1600
+      ],
+      "zoomFactor": 2,
+      "rendererSize": [
+        1280,
+        800
+      ],
+      "screens": [
+        "settings",
+        "dashboard",
+        "vpn",
+        "dns",
+        "zapret",
+        "telegram-proxy"
+      ],
+      "layoutObservations": 18,
+      "rendererErrors": 0,
+      "smallTargets": 0,
+      "unnamedButtons": 0,
+      "blockedControlCenters": 0,
+      "horizontalOverflow": 0,
+      "filledSvgDetailsWithUnwantedOutline": 0,
+      "passedChecks": 10,
+      "deliberatePublicCropSkips": [
+        "actual-sidebar-icons-native-crop-visibility",
+        "actual-version-dialog-native-crop-visibility"
+      ],
+      "allStoredNativeGuardsHiddenUnfocused": true,
+      "mainHashUnchanged": true,
+      "observedServiceFlagsUnchanged": true
+    }
+  ],
+  "summary": {
+    "layoutObservations": 73,
+    "rendererErrors": 0,
+    "passedChecks": 49,
+    "deliberatePublicCropSkips": 2,
+    "sourceHashesUnchanged": 14,
+    "allSevenTooltipFitEscapeFocus": true,
+    "aboutPassiveRefreshFocus": true,
+    "threeDialogTabEscapeReturnContracts": true,
+    "actualRoutesHistoryAndTelegramAdvanced": true
+  },
+  "connectedHover": {
+    "result": "pass",
+    "actualConnectedObserved": true,
+    "actualPagePointerInput": true,
+    "inputMethod": "Playwright page.mouse.move: documented page-local browser input through the exact production renderer; no OS cursor/focus or CSS pseudo-state override.",
+    "observations": [
+      {
+        "label": "initial",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": false,
+        "pageHidden": false,
+        "powerVisibility": "hidden",
+        "powerOpacity": "0",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "visible",
+        "checkOpacity": "1",
+        "fill": "rgb(255, 255, 255)"
+      },
+      {
+        "label": "default",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": false,
+        "pageHidden": false,
+        "powerVisibility": "hidden",
+        "powerOpacity": "0",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "visible",
+        "checkOpacity": "1",
+        "fill": "rgb(255, 255, 255)"
+      },
+      {
+        "label": "first-observed-enter",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": true,
+        "pageHidden": false,
+        "powerVisibility": "visible",
+        "powerOpacity": "0",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "hidden",
+        "checkOpacity": "1",
+        "fill": "rgb(255, 255, 255)"
+      },
+      {
+        "label": "first-scheduled-hover-paint",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": true,
+        "pageHidden": false,
+        "powerVisibility": "visible",
+        "powerOpacity": "0.221664",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "hidden",
+        "checkOpacity": "0.778336",
+        "fill": "rgb(140, 140, 141)"
+      },
+      {
+        "label": "hover-after-native-wake-0",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": true,
+        "pageHidden": false,
+        "powerVisibility": "visible",
+        "powerOpacity": "1",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "hidden",
+        "checkOpacity": "0",
+        "fill": "rgb(39, 39, 42)"
+      },
+      {
+        "label": "settled-hover-after-native-capture",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": true,
+        "pageHidden": false,
+        "powerVisibility": "visible",
+        "powerOpacity": "1",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "hidden",
+        "checkOpacity": "0",
+        "fill": "rgb(39, 39, 42)"
+      },
+      {
+        "label": "first-observed-leave",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": false,
+        "pageHidden": false,
+        "powerVisibility": "hidden",
+        "powerOpacity": "1",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "visible",
+        "checkOpacity": "0",
+        "fill": "rgb(39, 39, 42)"
+      },
+      {
+        "label": "first-scheduled-leave-paint",
+        "widget": true,
+        "phase": "connected",
+        "busy": false,
+        "hover": false,
+        "pageHidden": false,
+        "powerVisibility": "hidden",
+        "powerOpacity": "0",
+        "powerStroke": "rgb(255, 255, 255)",
+        "checkVisibility": "visible",
+        "checkOpacity": "1",
+        "fill": "rgb(255, 255, 255)"
+      }
+    ],
+    "scheduledSamples": {
+      "scheduledSamples": 32,
+      "overlap": false,
+      "elapsedMs": 512.7999999970198
+    },
+    "first500msScheduledPaintSettled": false,
+    "additionalNativeCaptureObservations": 1,
+    "nativeGuardObservations": 15,
+    "allNativeGuardsHiddenUnfocused": true,
+    "installedCssRules": [],
+    "publicCrops": [
+      "screens/installed-3.7.9-widget-default.png",
+      "screens/installed-3.7.9-widget-hover.png"
+    ]
+  },
+  "previousObservations": {
+    "harnessCorrections": [
+      {
+        "original": "About return expectation failed after programmatic click without focusing opener.",
+        "correction": "Focus the real opener before its real handler, matching the keyboard contract.",
+        "correctedResult": "pass at all four native full sizes/zoom"
+      },
+      {
+        "original": "Server-picker geometry sampled before its modal entry completed and counted23 covered background controls.",
+        "correction": "Wait for actual dialog opacity completion, then evaluate controls inside actual active dialog.",
+        "correctedResult": "0 blocked controls at all four native full sizes/zoom"
+      }
+    ],
+    "nativePaint": {
+      "firstNativeHoverCrop": "Pale/intermediate-looking while computed settled style was already white stroke/dark-gray fill.",
+      "second500msAttempt": {
+        "result": "fail",
+        "failure": "Observed settled hover paint failed",
+        "observations": [
+          {
+            "label": "initial",
+            "widget": true,
+            "phase": "connected",
+            "busy": false,
+            "hover": false,
+            "pageHidden": false,
+            "powerVisibility": "hidden",
+            "powerOpacity": "0",
+            "powerStroke": "rgb(255, 255, 255)",
+            "checkVisibility": "visible",
+            "checkOpacity": "1",
+            "fill": "rgb(255, 255, 255)"
+          },
+          {
+            "label": "default",
+            "widget": true,
+            "phase": "connected",
+            "busy": false,
+            "hover": false,
+            "pageHidden": false,
+            "powerVisibility": "hidden",
+            "powerOpacity": "0",
+            "powerStroke": "rgb(255, 255, 255)",
+            "checkVisibility": "visible",
+            "checkOpacity": "1",
+            "fill": "rgb(255, 255, 255)"
+          },
+          {
+            "label": "first-observed-enter",
+            "widget": true,
+            "phase": "connected",
+            "busy": false,
+            "hover": true,
+            "pageHidden": false,
+            "powerVisibility": "visible",
+            "powerOpacity": "0",
+            "powerStroke": "rgb(255, 255, 255)",
+            "checkVisibility": "hidden",
+            "checkOpacity": "1",
+            "fill": "rgb(255, 255, 255)"
+          },
+          {
+            "label": "settled-hover",
+            "widget": true,
+            "phase": "connected",
+            "busy": false,
+            "hover": true,
+            "pageHidden": false,
+            "powerVisibility": "visible",
+            "powerOpacity": "0.0381405",
+            "powerStroke": "rgb(255, 255, 255)",
+            "checkVisibility": "hidden",
+            "checkOpacity": "0.96186",
+            "fill": "rgb(209, 209, 209)"
+          }
+        ]
+      },
+      "boundedFinalRead": "One extra documented stayHidden:true native capture/wait reached the final computed style and produced the clean native glyph crop. No CSS, pseudo-state, page visibility or IPC substitution used."
+    }
+  },
+  "nativePaintPresence": {
+    "method": "Read-only brightness count in content-body region; confirms raster content presence, not semantic correctness or foreground performance.",
+    "captures": [
+      {
+        "stage": "hover-final-large",
+        "capture": "native-dashboard.png",
+        "size": [
+          2000,
+          1100
+        ],
+        "bodyRegion": [
+          200,
+          170,
+          1980,
+          1080
+        ],
+        "bodyPixels": 1619800,
+        "bodyPixelsAbove48": 43264,
+        "bodyBrightRatio": 0.026709470304975922
+      },
+      {
+        "stage": "hover-final-large",
+        "capture": "native-dns.png",
+        "size": [
+          2000,
+          1100
+        ],
+        "bodyRegion": [
+          200,
+          170,
+          1980,
+          1080
+        ],
+        "bodyPixels": 1619800,
+        "bodyPixelsAbove48": 66965,
+        "bodyBrightRatio": 0.041341523644894435
+      },
+      {
+        "stage": "hover-final-large",
+        "capture": "native-settings.png",
+        "size": [
+          2000,
+          1100
+        ],
+        "bodyRegion": [
+          200,
+          170,
+          1980,
+          1080
+        ],
+        "bodyPixels": 1619800,
+        "bodyPixelsAbove48": 63961,
+        "bodyBrightRatio": 0.03948697370045685
+      },
+      {
+        "stage": "hover-final-large",
+        "capture": "native-telegram-proxy.png",
+        "size": [
+          2000,
+          1100
+        ],
+        "bodyRegion": [
+          200,
+          170,
+          1980,
+          1080
+        ],
+        "bodyPixels": 1619800,
+        "bodyPixelsAbove48": 48544,
+        "bodyBrightRatio": 0.029969131991603903
+      },
+      {
+        "stage": "hover-final-large",
+        "capture": "native-vpn.png",
+        "size": [
+          2000,
+          1100
+        ],
+        "bodyRegion": [
+          200,
+          170,
+          1980,
+          1080
+        ],
+        "bodyPixels": 1619800,
+        "bodyPixelsAbove48": 67421,
+        "bodyBrightRatio": 0.041623039881466845
+      },
+      {
+        "stage": "hover-final-large",
+        "capture": "native-zapret.png",
+        "size": [
+          2000,
+          1100
+        ],
+        "bodyRegion": [
+          200,
+          170,
+          1980,
+          1080
+        ],
+        "bodyPixels": 1619800,
+        "bodyPixelsAbove48": 56967,
+        "bodyBrightRatio": 0.035169156686010616
+      }
+    ]
+  },
+  "restoration": {
+    "createdAt": "2026-09-29T16:24:29.164Z",
+    "pid": 47336,
+    "version": "3.7.9",
+    "electron": "44.4.5",
+    "packagedMainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+    "bounds": {
+      "x": 1130,
+      "y": 535,
+      "width": 300,
+      "height": 370
+    },
+    "contentSize": [
+      300,
+      370
+    ],
+    "zoomFactor": 1,
+    "backgroundThrottling": true,
+    "widgetMode": true,
+    "rememberedFullBounds": {
+      "x": 600,
+      "y": 270,
+      "width": 1360,
+      "height": 900
+    },
+    "visible": false,
+    "focused": false,
+    "minimized": false,
+    "maximized": false,
+    "sameExactInstanceAlive": true,
+    "widgetBoundsRestored": true,
+    "rememberedFullBoundsRestored": true,
+    "zoomRestored": true,
+    "backgroundThrottlingRestored": true
+  },
+  "limits": [
+    "Hidden native capture may pause or show intermediate animation paint even after a500ms wall-clock delay; the bounded final captured glyph is not a foreground latency/FPS guarantee.",
+    "No native Windows maximize/minimize or foreground focus actions were performed. Large native dimensions and hidden mode do not reproduce all DWM/display behavior.",
+    "Actual OS reduced-motion preference was read; alternate motion states were checked in the explicitly mocked renderer fixture.",
+    "Native body brightness confirms raster content presence, not semantic correctness of every pixel. Both UI source and Electron runtime changed from the41 baseline, so improved captured paint is not attributed solely to CSS.",
+    "Observed status booleans are real read-only IPC. They do not prove every network route or months of continuous operation; backend recovery evidence is separate.",
+    "Full captures containing real addresses, logs, Telegram QR or other user data remain private. Public images are only verified nonsecret native crops."
+  ]
+}

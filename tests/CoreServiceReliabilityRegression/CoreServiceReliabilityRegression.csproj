@@ -19,6 +19,7 @@
     <Compile Include="$(ServiceSourceRoot)/OwnedServiceSupervisor.cs" Link="OwnedServiceSupervisor.cs" />
     <Compile Include="$(ServiceSourceRoot)/LocalServiceHealthProbe.cs" Link="LocalServiceHealthProbe.cs" />
     <Compile Include="$(ServiceSourceRoot)/OwnedTcpListenerProbe.cs" Link="OwnedTcpListenerProbe.cs" />
+    <Compile Include="$(ServiceSourceRoot)/WindowsServiceListenerSnapshot.cs" Link="WindowsServiceListenerSnapshot.cs" />
     <Compile Include="$(ServiceSourceRoot)/DnsMaintenancePolicy.cs" Link="DnsMaintenancePolicy.cs" />
     <Compile Include="$(ServiceSourceRoot)/DnsBootstrapRefreshScheduler.cs" Link="DnsBootstrapRefreshScheduler.cs" />
     <Compile Include="$(ServiceSourceRoot)/DnsAdapterSnapshot.cs" Link="DnsAdapterSnapshot.cs" />

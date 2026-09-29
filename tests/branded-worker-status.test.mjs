@@ -64,7 +64,9 @@ test('protected updater records a readable final result for the relaunched app',
   const start = source.indexOf('function Write-DesktopUpdateResult {');
   const end = source.indexOf('function Add-ReceiptEvent {', start);
   assert.ok(start >= 0 && end > start);
-  assert.doesNotMatch(source.match(/function Start-InstalledDesktop \{[\s\S]*?\n\}/)?.[0] ?? '', /--background|--minimized|WindowStyle Hidden/);
+  const desktopRestart = source.match(/function Start-InstalledDesktop \{[\s\S]*?\n\}/)?.[0] ?? '';
+  assert.match(desktopRestart, /if \(\$minimized\)/);
+  assert.match(desktopRestart, /else \{\s+Start-Process -FilePath \$exe -WorkingDirectory \$script:OwnedInstallRoot \| Out-Null/);
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'shield-update-result-'));
   const scriptPath = path.join(directory, 'probe.ps1');
   try {

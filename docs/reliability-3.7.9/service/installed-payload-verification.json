@@ -1,0 +1,87 @@
+{
+    "processRoles":  [
+
+                     ],
+    "changedDnsRows":  0,
+    "payloadReadback":  [
+                            {
+                                "path":  "resources/app.asar",
+                                "matches":  true
+                            },
+                            {
+                                "path":  "resources/component-worker.cjs",
+                                "matches":  true
+                            },
+                            {
+                                "path":  "resources/core-service/win-x64/EgoistShield.Service.exe",
+                                "matches":  true
+                            },
+                            {
+                                "path":  "resources/release/root-public-key.pem",
+                                "matches":  true
+                            },
+                            {
+                                "path":  "resources/installer/owned-cleanup.ps1",
+                                "matches":  true
+                            },
+                            {
+                                "path":  "resources/installer/invoke-final-silent-reinstall.ps1",
+                                "matches":  true
+                            }
+                        ],
+    "services":  [
+                     {
+                         "name":  "EgoistShieldCore",
+                         "state":  "Running",
+                         "startMode":  "Auto"
+                     },
+                     {
+                         "name":  "EgoistShieldSystemDoH",
+                         "state":  "Running",
+                         "startMode":  "Auto"
+                     },
+                     {
+                         "name":  "EgoistShieldZapret",
+                         "state":  "Running",
+                         "startMode":  "Auto"
+                     },
+                     {
+                         "name":  "EgoistShieldTelegramProxy",
+                         "state":  "Running",
+                         "startMode":  "Auto"
+                     }
+                 ],
+    "comparedDnsRows":  12,
+    "rebootTestPerformed":  false,
+    "checkedAt":  "2026-09-29T14:15:30.0547692Z",
+    "status":  "verified",
+    "dns":  [
+                {
+                    "server":  "127.0.0.1",
+                    "localHealthMarker":  true,
+                    "externalA":  true
+                },
+                {
+                    "server":  "::1",
+                    "localHealthMarker":  true,
+                    "externalA":  true
+                }
+            ],
+    "elapsedMonthSoakPerformed":  false,
+    "ownedZapretProcesses":  1,
+    "desktopProcesses":  0,
+    "installedVersion":  "3.7.9",
+    "telegram":  {
+                     "hostAddress":  "127.0.0.1",
+                     "ownedListenerReady":  true,
+                     "remoteDeliveryTested":  false,
+                     "relayEndpointPreserved":  true,
+                     "relayPort":  1443,
+                     "port":  1445
+                 },
+    "supervisedServiceNames":  [
+                                   "EgoistShieldSystemDoH",
+                                   "EgoistShieldZapret",
+                                   "EgoistShieldTelegramProxy"
+                               ]
+}

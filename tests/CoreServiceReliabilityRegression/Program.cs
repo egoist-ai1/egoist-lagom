@@ -38,6 +38,8 @@ internal static class Program
                 await Check("foreign Telegram listener cannot cause a running/stopped recovery storm", TelegramCollisionAsync);
                 await Check("listener ownership validates process ancestry, birth time and endpoint", ListenerOwnershipAsync);
                 await Check("real TCP reachability cannot override foreign or changing listener ownership", OwnedTcpAsync);
+                await Check("native snapshot timeout cannot accumulate reads or reuse stale metadata", NativeSnapshotBoundsAsync);
+                await Check("real native IPv4/IPv6 TCP tables retain exact endpoint PID and fresh changes", NativeTcpTablesAsync);
                 await Check("1,440 fault cycles have bounded recovery and diagnostics", FaultStressAsync);
                 await Check("malformed durable intent prevents recovery", InvalidIntentAsync);
                 await Check("new DNS adapter selection preserves existing and static settings", DnsMaintenanceSelectionAsync);
@@ -292,6 +294,56 @@ internal static class Program
                 async (_, token) => { await Task.Delay(Timeout.Infinite, token); return new ProcessResult(0, "", ""); }, cancel.Token));
         }
         finally { listener.Stop(); }
+    }
+
+    private static async Task NativeSnapshotBoundsAsync()
+    {
+        int calls = 0;
+        var captured = new List<int>();
+        using var release = new ManualResetEventSlim(false);
+        var reader = new WindowsServiceListenerSnapshot("EgoistShieldTelegramProxy", (port, token) =>
+        {
+            int call = Interlocked.Increment(ref calls);
+            lock (captured) captured.Add(port);
+            if (call == 1) release.Wait(TimeSpan.FromSeconds(5));
+            return new(0, "Stopped", Array.Empty<ListenerProcess>(), Array.Empty<ListenerEndpoint>(), true);
+        });
+        using var deadline = new CancellationTokenSource(TimeSpan.FromMilliseconds(80));
+        await Expect<OperationCanceledException>(() => reader.ReadAsync(1445, deadline.Token));
+        for (int index = 0; index < 10000; index++)
+            Assert(await reader.ReadAsync(1446, default) == null, "An outstanding timed-out native read was reused as current metadata.");
+        Assert(calls == 1, "Timed-out native reads accumulated threads.");
+        release.Set();
+        ServiceListenerSnapshot? fresh = null;
+        var retry = Stopwatch.StartNew();
+        while (fresh == null && retry.Elapsed < TimeSpan.FromSeconds(2))
+        { fresh = await reader.ReadAsync(1446, default); if (fresh == null) await Task.Delay(5); }
+        Assert(fresh != null && calls == 2 && captured.SequenceEqual(new[] { 1445, 1446 }),
+            "A completed timed-out native snapshot was reused, or a changed port was cached.");
+        using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
+        await Expect<OperationCanceledException>(() => reader.ReadAsync(1446, cancelled.Token));
+        Assert(calls == 2, "Cancellation started another native read.");
+    }
+
+    private static Task NativeTcpTablesAsync()
+    {
+        if (!OperatingSystem.IsWindows()) return Task.CompletedTask;
+        using var ipv4 = new TcpListener(IPAddress.Loopback, 0); ipv4.Start();
+        int port = ((IPEndPoint)ipv4.LocalEndpoint).Port;
+        using var ipv6 = new TcpListener(IPAddress.IPv6Loopback, port); ipv6.Server.DualMode = false; ipv6.Start();
+        var endpoints = WindowsServiceListenerSnapshot.ReadListeners(port, default);
+        Assert(endpoints.Any(x => x.LocalAddress == "127.0.0.1" && x.OwningProcess == Environment.ProcessId),
+            "Real IPv4 native TCP row port/address/PID layout was incorrect.");
+        Assert(endpoints.Any(x => x.LocalAddress == "::1" && x.OwningProcess == Environment.ProcessId),
+            "Real IPv6 native TCP row port/address/PID layout was incorrect.");
+        ipv4.Stop();
+        var changed = WindowsServiceListenerSnapshot.ReadListeners(port, default);
+        Assert(!changed.Any(x => x.LocalAddress == "127.0.0.1") && changed.Any(x => x.LocalAddress == "::1"),
+            "Fresh native read retained a stale endpoint or merged address families.");
+        using var cancel = new CancellationTokenSource(); cancel.Cancel();
+        try { WindowsServiceListenerSnapshot.ReadListeners(port, cancel.Token); throw new InvalidOperationException("Cancelled native capture continued."); }
+        catch (OperationCanceledException) { }
+        return Task.CompletedTask;
     }
 
     private static async Task FaultStressAsync()

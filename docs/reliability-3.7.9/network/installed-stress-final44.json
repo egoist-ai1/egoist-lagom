@@ -1,0 +1,3280 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-09-29T15:18:20.248Z",
+  "method": "Actual installed EXE Node-only real production Core IPC; read-only status requests, no fixtures or result overrides",
+  "status": "passed",
+  "executable": "%PROGRAMFILES%\\EgoistShield\\EgoistShield.exe",
+  "nodeVersion": "v24.21.0",
+  "electronVersion": "44.4.5",
+  "expectedCoreVersion": "3.7.9",
+  "mutationRequested": false,
+  "requestTimeoutMs": 20000,
+  "runTimeoutMs": 180000,
+  "maxResponseBytes": 1048576,
+  "concurrency": 4,
+  "plannedRequests": 120,
+  "serverIdentityProbeAdditionalHello": true,
+  "helperSha256": "024acba78f57e8cf2252d389073e2f4569e8eca64459ad86c9a07f52876cf270",
+  "executableSha256": "a031b05eb84a0526ca09e98f1ca1e9145567121190be6b83b5b3c2fe2805192b",
+  "coreExecutableSha256": "5a2fd51c4e907bc50b8c1dac352404ef12341cc401e9aa3a3e0d7eeadc2683b8",
+  "batches": [
+    {
+      "batch": 1,
+      "round": 1,
+      "operation": "hello",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 1.66,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 1.28,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 1.13,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 1.15,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 2,
+      "round": 1,
+      "operation": "service.status",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.85,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.82,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.82,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.89,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 3,
+      "round": 1,
+      "operation": "component.query",
+      "component": "TelegramProxy",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 397.52,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 397.64,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 397.5,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 397.63,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 4,
+      "round": 1,
+      "operation": "component.query",
+      "component": "Zapret",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 831.38,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 831.5,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 831.42,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 831.36,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 5,
+      "round": 1,
+      "operation": "component.query",
+      "component": "SystemDoH",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 25.85,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 25.9,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 25.84,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 25.76,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 6,
+      "round": 2,
+      "operation": "hello",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 1.55,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 1.48,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 1.53,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 1.11,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 7,
+      "round": 2,
+      "operation": "service.status",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.86,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.92,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 1.06,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.98,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 8,
+      "round": 2,
+      "operation": "component.query",
+      "component": "TelegramProxy",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 454.34,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 454.4,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 454.5,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 454.58,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 9,
+      "round": 2,
+      "operation": "component.query",
+      "component": "Zapret",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 810.28,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 810.24,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 810.22,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 810.23,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 10,
+      "round": 2,
+      "operation": "component.query",
+      "component": "SystemDoH",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 37.3,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 37.3,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 37.23,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 37.15,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 11,
+      "round": 3,
+      "operation": "hello",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.85,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.82,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.78,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.68,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 12,
+      "round": 3,
+      "operation": "service.status",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.71,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.67,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.68,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.58,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 13,
+      "round": 3,
+      "operation": "component.query",
+      "component": "TelegramProxy",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 371.37,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 371.49,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 371.4,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 371.5,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 14,
+      "round": 3,
+      "operation": "component.query",
+      "component": "Zapret",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 656.66,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 656.52,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 656.47,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 656.36,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 15,
+      "round": 3,
+      "operation": "component.query",
+      "component": "SystemDoH",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 32.1,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 32.06,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 32.06,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 32.07,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 16,
+      "round": 4,
+      "operation": "hello",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.59,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.59,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.71,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.52,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 17,
+      "round": 4,
+      "operation": "service.status",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.58,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.55,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.66,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.48,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 18,
+      "round": 4,
+      "operation": "component.query",
+      "component": "TelegramProxy",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 376.76,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 376.78,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 376.85,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 376.8,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 19,
+      "round": 4,
+      "operation": "component.query",
+      "component": "Zapret",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 696.14,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 695.96,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 696.09,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 695.95,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 20,
+      "round": 4,
+      "operation": "component.query",
+      "component": "SystemDoH",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 19.6,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 19.59,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 19.55,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 19.52,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 21,
+      "round": 5,
+      "operation": "hello",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.54,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.51,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.56,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.47,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 22,
+      "round": 5,
+      "operation": "service.status",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.54,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.51,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.55,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.6,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 23,
+      "round": 5,
+      "operation": "component.query",
+      "component": "TelegramProxy",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 343.74,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 343.84,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 343.73,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 343.75,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 24,
+      "round": 5,
+      "operation": "component.query",
+      "component": "Zapret",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 687.09,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 687.15,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 687.05,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 687,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 25,
+      "round": 5,
+      "operation": "component.query",
+      "component": "SystemDoH",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 21.7,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 21.68,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 21.62,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 21.66,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 26,
+      "round": 6,
+      "operation": "hello",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.57,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.67,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.81,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.66,
+          "selected": {
+            "protocolVersion": 1,
+            "serviceVersion": "3.7.9",
+            "developmentOverride": false,
+            "identityProbe": false,
+            "clientPidMatches": true
+          },
+          "schema": {
+            "protocolVersion": "number",
+            "serviceVersion": "string",
+            "developmentOverride": "boolean",
+            "identityProbe": "boolean",
+            "clientPidMatches": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 27,
+      "round": 6,
+      "operation": "service.status",
+      "component": null,
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.54,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.7,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.73,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 0.7,
+          "selected": {
+            "version": "3.7.9",
+            "consoleMode": false,
+            "supervisionPresent": true
+          },
+          "schema": {
+            "version": "string",
+            "consoleMode": "boolean",
+            "supervisionPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 28,
+      "round": 6,
+      "operation": "component.query",
+      "component": "TelegramProxy",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 374.75,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 374.84,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 374.73,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 374.75,
+          "selected": {
+            "available": true,
+            "running": true,
+            "runtimeReady": true,
+            "listenerReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false,
+            "listenerOwnership": "owned"
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "runtimeReady": "boolean",
+            "listenerReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean",
+            "listenerOwnership": "string"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 29,
+      "round": 6,
+      "operation": "component.query",
+      "component": "Zapret",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 687.03,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 686.98,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 686.99,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 686.99,
+          "selected": {
+            "available": true,
+            "runtimeReady": true,
+            "serviceReady": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "standaloneRunning": false,
+            "winwsRunning": true,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "runtimeReady": "boolean",
+            "serviceReady": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "standaloneRunning": "boolean",
+            "winwsRunning": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "batch": 30,
+      "round": 6,
+      "operation": "component.query",
+      "component": "SystemDoH",
+      "rows": [
+        {
+          "index": 0,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 19.66,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 19.53,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 2,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 19.57,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        },
+        {
+          "index": 3,
+          "ok": true,
+          "healthy": true,
+          "milliseconds": 19.57,
+          "selected": {
+            "available": true,
+            "running": true,
+            "serviceInstalled": true,
+            "serviceRunning": true,
+            "enabled": true,
+            "encrypted": true,
+            "verified": true,
+            "nativeManaged": false,
+            "serviceState": "running",
+            "lastErrorPresent": false
+          },
+          "schema": {
+            "available": "boolean",
+            "running": "boolean",
+            "serviceInstalled": "boolean",
+            "serviceRunning": "boolean",
+            "enabled": "boolean",
+            "encrypted": "boolean",
+            "verified": "boolean",
+            "nativeManaged": "boolean",
+            "serviceState": "string",
+            "lastErrorPresent": "boolean"
+          }
+        }
+      ]
+    }
+  ],
+  "coalescing": {
+    "overlappingSameComponentRequests": 72,
+    "batchesWithIdenticalSafeStatus": 18,
+    "publicContractExposesInternalReadCounter": false,
+    "internalCoalescingProven": false
+  },
+  "serverIdentityVerified": true,
+  "completedAt": "2026-09-29T15:18:27.475Z",
+  "durationMs": 7046.74,
+  "summary": {
+    "completed": 120,
+    "pass": 120,
+    "fail": 0,
+    "healthy": 120,
+    "notAttempted": 0,
+    "latency": {
+      "minMs": 0.47,
+      "p50Ms": 21.7,
+      "p95Ms": 810.23,
+      "maxMs": 831.5
+    },
+    "errors": {},
+    "perOperation": [
+      {
+        "operation": "hello",
+        "component": null,
+        "completed": 24,
+        "pass": 24,
+        "healthy": 24,
+        "latency": {
+          "minMs": 0.47,
+          "p50Ms": 0.71,
+          "p95Ms": 1.55,
+          "maxMs": 1.66
+        }
+      },
+      {
+        "operation": "service.status",
+        "component": null,
+        "completed": 24,
+        "pass": 24,
+        "healthy": 24,
+        "latency": {
+          "minMs": 0.48,
+          "p50Ms": 0.68,
+          "p95Ms": 0.98,
+          "maxMs": 1.06
+        }
+      },
+      {
+        "operation": "component.query",
+        "component": "TelegramProxy",
+        "completed": 24,
+        "pass": 24,
+        "healthy": 24,
+        "latency": {
+          "minMs": 343.73,
+          "p50Ms": 374.84,
+          "p95Ms": 454.5,
+          "maxMs": 454.58
+        }
+      },
+      {
+        "operation": "component.query",
+        "component": "Zapret",
+        "completed": 24,
+        "pass": 24,
+        "healthy": 24,
+        "latency": {
+          "minMs": 656.36,
+          "p50Ms": 687.15,
+          "p95Ms": 831.42,
+          "maxMs": 831.5
+        }
+      },
+      {
+        "operation": "component.query",
+        "component": "SystemDoH",
+        "completed": 24,
+        "pass": 24,
+        "healthy": 24,
+        "latency": {
+          "minMs": 19.52,
+          "p50Ms": 21.7,
+          "p95Ms": 37.3,
+          "maxMs": 37.3
+        }
+      }
+    ]
+  }
+}

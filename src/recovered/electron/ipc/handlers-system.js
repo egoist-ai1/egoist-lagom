@@ -838,7 +838,13 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 		const now = Date.now();
 		if (now - lastClipboardRead < CLIPBOARD_COOLDOWN_MS) return "";
 		lastClipboardRead = now;
-		const text = clipboard.readText().trim();
+		let text;
+		try {
+			text = (await clipboard.readText()).trim();
+		} catch {
+			logger.warn("[system:read-clipboard] Clipboard access failed");
+			return "";
+		}
 		if (!text) return "";
 		if (CLIPBOARD_URI_PATTERN.test(text) || CLIPBOARD_SUB_URL_PATTERN.test(text) || CLIPBOARD_BASE64_PATTERN.test(text)) return text;
 		return "";
@@ -847,8 +853,13 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 		if (typeof text !== "string") return false;
 		const value = text.trim();
 		if (!value || value.length > 4096) return false;
-		clipboard.writeText(value);
-		return true;
+		try {
+			await clipboard.writeText(value);
+			return true;
+		} catch {
+			logger.warn("[system:write-clipboard] Clipboard access failed");
+			return false;
+		}
 	});
 	ipcMain.handle("system:terminate-conflicts", async () => {
 		const isAdmin = await runtimeManager.isAdmin();

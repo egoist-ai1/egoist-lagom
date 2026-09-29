@@ -208,10 +208,20 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
 }
 [data-phase='connected'] .shield-power{
   opacity:0;
+  visibility:hidden;
 }
 [data-phase='connected'] .shield-connected-check{
   opacity:1;
+  visibility:visible;
   stroke-dashoffset:0;
+}
+[data-phase='connected'] .shield-interactive-trigger:hover .shield-power{
+  opacity:1;
+  visibility:visible;
+}
+[data-phase='connected'] .shield-interactive-trigger:hover .shield-connected-check{
+  opacity:0;
+  visibility:hidden;
 }
 [data-phase='connected'] .shield-travel-edge{
   opacity:0;

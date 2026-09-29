@@ -50,7 +50,8 @@ function failureResult(currentVersion, error) {
 			"anti-rollback",
 			"candidate-mismatch",
 			"redirect-blocked",
-			"integrity-failed"
+			"integrity-failed",
+			"migration-required"
 		].includes(mapped.code) ? "blocked" : "failed",
 		currentVersion,
 		message: mapped.message,
@@ -59,13 +60,14 @@ function failureResult(currentVersion, error) {
 	};
 }
 function candidateEquals(left, right) {
-	return left.version === right.version && left.tag === right.tag && left.assetName === right.assetName && left.assetUrl === right.assetUrl && left.size === right.size && left.sha256 === right.sha256 && left.sha512 === right.sha512 && left.githubDigest === right.githubDigest && left.manifestDigest === right.manifestDigest && left.keyId === right.keyId;
+	return left.version === right.version && left.minimumAppVersion === right.minimumAppVersion && left.tag === right.tag && left.assetName === right.assetName && left.assetUrl === right.assetUrl && left.size === right.size && left.sha256 === right.sha256 && left.sha512 === right.sha512 && left.githubDigest === right.githubDigest && left.manifestDigest === right.manifestDigest && left.keyId === right.keyId;
 }
 function buildCandidate(trust, releaseUrl) {
 	const manifest = trust.manifest;
 	if (trust.trustStatus !== "trusted" || !trust.manifestVerified || !manifest || !trust.manifestDigest || !trust.keyId) throw new UpdaterError("signature-invalid", "Релиз не прошёл проверку Ed25519 и заблокирован.");
 	return {
 		version: manifest.version,
+		minimumAppVersion: manifest.minimumAppVersion,
 		tag: manifest.tag,
 		assetName: manifest.installerName,
 		assetUrl: manifest.canonicalDownloadUrl,
@@ -268,6 +270,7 @@ var DesktopUpdater = class {
 				};
 			}
 			await this.enforceAntiRollback(candidate);
+			if (compareLooseVersions(this.options.currentVersion, candidate.minimumAppVersion) < 0) throw new UpdaterError("migration-required", `Для обновления требуется Egoist Lagom ${candidate.minimumAppVersion} или новее. Один раз установите проверенный Setup из страницы релиза.`);
 			emit(this.options, {
 				phase: "available",
 				message: `Доступна доверенная версия ${candidate.version}.`,
@@ -334,6 +337,7 @@ var DesktopUpdater = class {
 				if (!(await promises.stat(required).catch(() => null))?.isFile()) throw new UpdaterError("installer-launch-failed", "В установленной версии отсутствует компонент защищённого обновления.", true);
 			}
 			await writeJsonAtomic(launch.manifestPath, launch.manifest);
+			if (this.options.canInstall && !(await this.options.canInstall())) throw new UpdaterError("busy", "Обновление отложено до отключения VPN и завершения изменений компонентов.", true);
 			emit(this.options, {
 				phase: "installing",
 				message: "Запускаем защищённое обновление с видимым ходом установки…",
@@ -345,6 +349,7 @@ var DesktopUpdater = class {
 				"-InstallerPath", finalPath, "-IntegrityManifestPath", launch.manifestPath, "-ExpectedVersion", candidate.version,
 				"-ExpectedSha256", candidate.sha256, "-InstallerUiPath", launch.uiPath, "-InstallerFontPath", launch.fontPath,
 				"-HandoffSignalPath", launch.signalPath, "-FromVersion", this.options.currentVersion, "-DelaySeconds", "8"];
+			if (this.options.restartMinimized?.()) args.push("-MinimizedAfter");
 			const child = spawn(powershell, args, { stdio: "ignore", windowsHide: true });
 			const exitCode = await new Promise((resolve, reject) => {
 				child.once("error", () => reject(new UpdaterError("installer-launch-failed", "Не удалось запустить защищённое обновление.", true)));

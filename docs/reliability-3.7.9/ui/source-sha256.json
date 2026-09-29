@@ -1,0 +1,58 @@
+[
+  {
+    "file": "scripts/check-compact-ui.mjs",
+    "sha256": "618e59902992eab3aec03820459f60b2223ac38ab0cbac6cc4d01aaa7026a58b"
+  },
+  {
+    "file": "scripts/check-shield-widget.mjs",
+    "sha256": "769895e4d9a1703bb787710cddb5097e1f133568fd6433fe789d82fbae8b760c"
+  },
+  {
+    "file": "src/brand/compact-ruby.css",
+    "sha256": "3d76e0ac7219de99f2d53b5763759055b4b6b6cb0c784cf6bf4c638d71f8ed19"
+  },
+  {
+    "file": "src/brand/compact-surfaces.css",
+    "sha256": "c3316a3e78b06637ed89c01095effebf01ab4243bd83204253d9e01bf06e839a"
+  },
+  {
+    "file": "src/brand/CompactRuby.jsx",
+    "sha256": "b7139b970fb534147cebe883fac416fe1bb56234ad198f19cc059216daf78dc9"
+  },
+  {
+    "file": "src/brand/icons/dns.svg",
+    "sha256": "81d959283926a37a5b98ca5594a02858c16188c3ef4790dd964f47585bf7a88f"
+  },
+  {
+    "file": "src/brand/icons/overview.svg",
+    "sha256": "0afaae7b93f718531ba95f887a99aea8397fd68f265b98a6ffc101f41bd22cb0"
+  },
+  {
+    "file": "src/brand/icons/settings.svg",
+    "sha256": "03788aa72e58a0a68f630195aea5e782ba945c8679ca643c1a16820dcefb06a7"
+  },
+  {
+    "file": "src/brand/icons/telegram.svg",
+    "sha256": "bd298ff22e37a88390557e95ae75851e83a82e8b4fa27a3a5d4af081c3d432b2"
+  },
+  {
+    "file": "src/brand/icons/vpn.svg",
+    "sha256": "21f0d7b6683dc348684a467359e2daf63a1ccd7438bf4532547c5a15a60400fa"
+  },
+  {
+    "file": "src/brand/icons/zapret.svg",
+    "sha256": "3e6a0eb017c5fc0e55992f07ed968341862fe287547ce6d7e9b4808b89d00dd8"
+  },
+  {
+    "file": "src/brand/shield-widget.css",
+    "sha256": "05250dbd2e5ce868a222610bd860dc8872e05c659222b931aefd821f4f064f50"
+  },
+  {
+    "file": "src/brand/ShieldWidget.jsx",
+    "sha256": "d70f93220a3d0179c535ea3a3a19dc4ac950328b79ee03418aa2d97fdf17e0cb"
+  },
+  {
+    "file": "src/recovered/renderer.js",
+    "sha256": "bd2ee47f450cba81f485385c375d30eed58dceac5f75abc97fb652068c4eed69"
+  }
+]

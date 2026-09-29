@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "channel": "stable",
+  "version": "3.7.8",
+  "tag": "v3.7.8",
+  "installerName": "EgoistShield-Setup-3.7.8.exe",
+  "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.8/EgoistShield-Setup-3.7.8.exe",
+  "size": 194405835,
+  "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+  "sha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61",
+  "githubDigest": "sha256:34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+  "minimumAppVersion": "3.7.8",
+  "keyId": "release-2026-09-recovery",
+  "authenticodeStatus": "not-signed",
+  "licenseVersion": "1.0",
+  "publishedAt": "2026-09-29T12:54:24.535Z"
+}

@@ -995,6 +995,7 @@
 }
 
 .screen-stage[data-screen="zapret"] .config-legend {
+  flex-wrap: wrap;
   gap: 7px;
   padding: 0 0 7px;
   font-size: 11px;

@@ -197,6 +197,7 @@ FunctionEnd
 
 Function RollbackFailedInstall
   ${If} $RollbackNeeded == "1"
+    SetOutPath "$PLUGINSDIR"
     !insertmacro RunPhase RollbackUpgrade
     StrCpy $RollbackNeeded "0"
     ${If} $PhaseResult != "0"
@@ -258,6 +259,7 @@ Section "Egoist Lagom"
     Quit
   ${EndIf}
 
+  SetOutPath "$PLUGINSDIR"
   WriteUninstaller "$INSTDIR\Uninstall Egoist Shield.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EgoistShield" "DisplayName" "Egoist Lagom"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EgoistShield" "DisplayVersion" "${PRODUCT_VERSION}"
@@ -313,6 +315,7 @@ Section "Egoist Lagom"
     FileClose $0
   ${EndIf}
 
+  SetOutPath "$INSTDIR"
   CreateShortcut "$SMPROGRAMS\Egoist Lagom.lnk" "$INSTDIR\EgoistShield.exe" "" "$INSTDIR\resources\brand\icon.ico" 0
 
   ; Check desktop shortcut flag
@@ -324,6 +327,7 @@ Section "Egoist Lagom"
     CreateShortcut "$DESKTOP\Egoist Lagom.lnk" "$INSTDIR\EgoistShield.exe" "" "$INSTDIR\resources\brand\icon.ico" 0
   ${EndIf}
 DoneDesktopShortcut:
+  SetOutPath "$PLUGINSDIR"
 
   ; Set RunAsAdmin flag (0x20 at byte 21) on shortcuts so they always launch elevated
   ${DisableX64FSRedirection}

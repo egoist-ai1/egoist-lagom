@@ -32,7 +32,8 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
 .ruby-sidebar footer small{display:block;margin:0;padding-left:32px;font-size:10px;font-weight:400;color:var(--dim);letter-spacing:0.02em}
 .ruby-icon{display:inline-block;flex:0 0 auto;vertical-align:middle;background:none;overflow:visible}.ruby-action-button{display:inline-flex;align-items:center;justify-content:center;gap:7px}.ruby-action-glyph{flex:none}.toggle-setting.ruby-action-button>.toggle-setting-text{flex:1;min-width:0;text-align:left}.toggle-setting.ruby-action-button>.ruby-action-glyph{color:var(--muted)}
 .workspace{grid-column:2;grid-row:2;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--canvas)}
-.screen-stage{will-change:opacity;min-width:0;min-height:0;flex:1;height:auto;overflow:auto;padding:14px 24px 18px;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:#27272a transparent}
+.screen-stage{min-width:0;min-height:0;flex:1;height:auto;overflow:auto;padding:14px 24px 18px;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:#27272a transparent;will-change:auto;animation:ruby-screen-enter .12s ease-out}
+@keyframes ruby-screen-enter{from{opacity:.88}to{opacity:1}}
 .screen-stage::-webkit-scrollbar{width:6px;height:6px}
 .screen-stage::-webkit-scrollbar-thumb{background:#27272a;border-radius:3px}
 .screen-stage::-webkit-scrollbar-track{background:transparent}

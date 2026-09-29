@@ -25,6 +25,8 @@ param(
   [Parameter(ParameterSetName = "Dispatch")]
   [switch]$NoRunAfter,
   [Parameter(ParameterSetName = "Dispatch")]
+  [switch]$MinimizedAfter,
+  [Parameter(ParameterSetName = "Dispatch")]
   [ValidatePattern('^$|^[0-9]+\.[0-9]+\.[0-9]+$')]
   [string]$FromVersion = "",
   [Parameter(ParameterSetName = "Dispatch")]
@@ -129,7 +131,7 @@ function Write-BrandedInstallerStatus {
     }
     "recovering" { "88|Восстанавливаем предыдущую рабочую версию..." }
     "succeeded" { "100|DONE" }
-    "recovered" { "0|ERROR: Обновление прервалось. Предыдущая версия и DNS восстановлены." }
+    "recovered" { "0|ERROR: Обновление прервалось. Службы и DNS восстановлены." }
     "recovery-warning" { "0|ERROR: Восстановление требует внимания. Подробности в защищённом журнале установки." }
     "failed" { "0|ERROR: Установка не завершена. Подробности в защищённом журнале установки." }
     default { $null }
@@ -729,14 +731,18 @@ function Test-LoopbackDnsReady {
 }
 
 function Start-InstalledDesktop {
+  param([object]$State)
   $exe = Join-Path $script:OwnedInstallRoot "EgoistShield.exe"
   if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Installed desktop executable is missing." }
-  # A normal launch also raises the already-running Electron window through its
-  # second-instance handler. Hidden/minimized startup left the app invisible.
-  Start-Process -FilePath $exe -WorkingDirectory $script:OwnedInstallRoot | Out-Null
+  $minimized = $State -and $State.PSObject.Properties.Name -contains 'minimizedAfter' -and $State.minimizedAfter -eq $true
+  if ($minimized) {
+    Start-Process -FilePath $exe -ArgumentList '--minimized' -WorkingDirectory $script:OwnedInstallRoot -WindowStyle Hidden | Out-Null
+  } else {
+    Start-Process -FilePath $exe -WorkingDirectory $script:OwnedInstallRoot | Out-Null
+  }
   for ($attempt = 0; $attempt -lt 20; $attempt++) {
     $running = @(Get-CimInstance Win32_Process -Filter "Name='EgoistShield.exe'" -ErrorAction SilentlyContinue |
-      Where-Object { [string]$_.ExecutablePath -eq $exe })
+      Where-Object { [string]$_.ExecutablePath -eq $exe -and [string]$_.CommandLine -notmatch '--type=|component-worker\.cjs' })
     if ($running.Count -gt 0) { return }
     Start-Sleep -Milliseconds 500
   }
@@ -789,6 +795,15 @@ function Restore-CriticalOwnedDnsBaseline {
   Clear-DnsClientCache -ErrorAction Stop
 }
 
+function Test-PayloadRollbackPending {
+  $marker = Join-Path (Split-Path -Parent $script:RuntimeRoot) 'installer\pending-upgrade-quarantine.txt'
+  if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { return $false }
+  try {
+    $value = [IO.File]::ReadAllText($marker).Trim()
+    return -not $value.StartsWith('COMMITTED|', [StringComparison]::Ordinal)
+  } catch { return $true }
+}
+
 function Invoke-Recovery {
   param([object]$State, [string]$Reason)
   Add-ReceiptEvent -Stage "recovery" -Status "recovering" -Message $Reason
@@ -797,6 +812,8 @@ function Invoke-Recovery {
   try { Restore-PreservedState -State $State } catch { $recoveryErrors += "restore: $($_.Exception.Message)" }
   try { Reconcile-PreservedZapretProfile -State $State } catch { $recoveryErrors += "zapret-profile: $($_.Exception.Message)" }
   try { Restore-InstalledIdentity -State $State } catch { $recoveryErrors += "identity: $($_.Exception.Message)" }
+  $payloadRollbackPending = Test-PayloadRollbackPending
+  if ($payloadRollbackPending) { $recoveryErrors += 'payload-rollback-pending: Previous application files are preserved in quarantine; application rollback is not yet confirmed.' }
   try { Start-PreservedServices -State $State } catch { $recoveryErrors += "services: $($_.Exception.Message)" }
   if (Test-LoopbackDnsReady -State $State) {
     try { Restore-CriticalAdapterDns -State $State } catch { $recoveryErrors += "dns-adapter: $($_.Exception.Message)" }
@@ -806,8 +823,8 @@ function Invoke-Recovery {
       $recoveryErrors += "SystemDoH was not healthy; still-owned critical adapters were restored to their recorded DNS baseline."
     } catch { $recoveryErrors += "dns-failsafe: $($_.Exception.Message)" }
   }
-  if ($State.runAfter -ne $false) {
-    try { Start-InstalledDesktop } catch { $recoveryErrors += "desktop: $($_.Exception.Message)" }
+  if ($State.runAfter -ne $false -and -not $payloadRollbackPending) {
+    try { Start-InstalledDesktop -State $State } catch { $recoveryErrors += "desktop: $($_.Exception.Message)" }
   }
   if ($recoveryErrors.Count -gt 0) {
     Add-ReceiptEvent -Stage "recovery" -Status "recovery-warning" -Message ($recoveryErrors -join " | ")
@@ -849,7 +866,7 @@ function Invoke-WatchdogMode {
     } catch { Write-Verbose "Watchdog could not terminate the exact installer process: $($_.Exception.Message)" }
   }
   Invoke-Recovery -State $state -Reason "Watchdog recovered an interrupted or timed-out silent reinstall."
-  Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление прервалось. Предыдущая версия и сетевые службы восстановлены."
+  Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление прервалось. Результат восстановления служб и DNS сохранён в журнале установки."
   Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "watchdog-recovered" -Encoding ASCII -Force
 }
 
@@ -921,7 +938,7 @@ function Invoke-WorkerMode {
     if (-not (Test-LoopbackDnsReady -State $state)) { throw "SystemDoH did not answer through 127.0.0.1 after reinstall." }
     Restore-CriticalAdapterDns -State $state
     if (-not (Test-LoopbackDnsReady -State $state)) { throw "Restored adapter DNS did not pass readback." }
-    if ($state.runAfter -ne $false) { Start-InstalledDesktop }
+    if ($state.runAfter -ne $false) { Start-InstalledDesktop -State $state }
     Add-ReceiptEvent -Stage "verify" -Status "succeeded" -Message "Installer, version, Core, preserved services and DNS passed readback." -Data @{ installedVersion = $installedVersion }
     Write-DesktopUpdateResult -State $state -Ok $true -Message "Обновление до $installedVersion установлено; службы и DNS проверены."
     Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "success" -Encoding ASCII -Force
@@ -929,7 +946,7 @@ function Invoke-WorkerMode {
     try {
       $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
       Invoke-Recovery -State $state -Reason $_.Exception.Message
-      Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление не завершилось. Предыдущая версия и сетевые службы восстановлены."
+      Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление не завершилось. Результат восстановления служб и DNS сохранён в журнале установки."
     } catch {
       Add-ReceiptEvent -Stage "fatal" -Status "failed" -Message $_.Exception.Message
     }
@@ -1073,6 +1090,7 @@ $state = [ordered]@{
   bytes = $release.bytes
   delaySeconds = $DelaySeconds
   runAfter = $runAfter
+  minimizedAfter = [bool]$MinimizedAfter
   fromVersion = $FromVersion
   watchdogTimeoutSeconds = $WatchdogTimeoutSeconds
   services = @()

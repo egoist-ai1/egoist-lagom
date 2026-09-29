@@ -1,0 +1,578 @@
+{
+  "supervisedServiceNames": [
+    "EgoistShieldSystemDoH",
+    "EgoistShieldZapret",
+    "EgoistShieldTelegramProxy"
+  ],
+  "desktopProcesses": 0,
+  "electronVersion": "44.4.5",
+  "installedVersion": "3.7.9",
+  "checkedAt": "2026-09-29T16:07:08.7878771Z",
+  "rebootTestPerformed": false,
+  "committedCleanupDeferred": false,
+  "telegram": {
+    "relayPort": 1443,
+    "ownedListenerReady": true,
+    "remoteDeliveryTested": false,
+    "port": 1445,
+    "relayCurrentIdentityPreserved": true,
+    "relayBaselineChangedSinceEarlierObservation": true,
+    "relayStartedAfterInstallation": true,
+    "relayPresentAtBaseline": true,
+    "hostAddress": "127.0.0.1"
+  },
+  "processRoles": [],
+  "changedDnsRows": 0,
+  "services": [
+    {
+      "name": "EgoistShieldCore",
+      "state": "Running",
+      "startMode": "Auto"
+    },
+    {
+      "name": "EgoistShieldSystemDoH",
+      "state": "Running",
+      "startMode": "Auto"
+    },
+    {
+      "name": "EgoistShieldZapret",
+      "state": "Running",
+      "startMode": "Auto"
+    },
+    {
+      "name": "EgoistShieldTelegramProxy",
+      "state": "Running",
+      "startMode": "Auto"
+    }
+  ],
+  "dns": [
+    {
+      "server": "127.0.0.1",
+      "localHealthMarker": true,
+      "externalA": true
+    },
+    {
+      "server": "::1",
+      "localHealthMarker": true,
+      "externalA": true
+    }
+  ],
+  "payloadRollbackPending": false,
+  "payloadReadback": [
+    {
+      "path": "LICENSE",
+      "matches": true,
+      "bytes": 1096,
+      "sha256": "5154E165BD6C2CC0CFBCD8916498C7ABAB0497923BAFCD5CB07673FE8480087D"
+    },
+    {
+      "path": "LICENSES.chromium.html",
+      "matches": true,
+      "bytes": 20472830,
+      "sha256": "7B328B8C7463AC9BFC7DC648C751533517C8441A0B5B21047D6C0B2620E60D70"
+    },
+    {
+      "path": "chrome_100_percent.pak",
+      "matches": true,
+      "bytes": 719654,
+      "sha256": "AB7C4B7B6CB8832A31D44B95EC50CE52294F49422A3BDDE4E21968ECA2930CBE"
+    },
+    {
+      "path": "chrome_200_percent.pak",
+      "matches": true,
+      "bytes": 1269017,
+      "sha256": "30FA4A6E27C9FF2FB0F939F01158477E621A67D86E9ECB84CF11B3947DB8EB9D"
+    },
+    {
+      "path": "d3dcompiler_47.dll",
+      "matches": true,
+      "bytes": 4741488,
+      "sha256": "A05F99734F7C4822FEFC12B367AF21FD0976ED6608752FB1E1E80B6ECE7ECBBB"
+    },
+    {
+      "path": "dxcompiler.dll",
+      "matches": true,
+      "bytes": 25745408,
+      "sha256": "E389F028B89A7A1459E730968A1FB8E4218BDED24B05C761DF16F1C80B1BA703"
+    },
+    {
+      "path": "dxil.dll",
+      "matches": true,
+      "bytes": 1509760,
+      "sha256": "77E039C905030A641E53658A008B74E90635A5EA9B6B79EABD0F2003BDFCA59A"
+    },
+    {
+      "path": "EgoistShield.exe",
+      "matches": true,
+      "bytes": 246368256,
+      "sha256": "A031B05EB84A0526CA09E98F1CA1E9145567121190BE6B83B5B3C2FE2805192B"
+    },
+    {
+      "path": "ffmpeg.dll",
+      "matches": true,
+      "bytes": 3113472,
+      "sha256": "22E07BE5D900ECAD1FA47CBD9F783143AF0058E18793B4804B887253988273AC"
+    },
+    {
+      "path": "icudtl.dat",
+      "matches": true,
+      "bytes": 10876560,
+      "sha256": "9F48C7F9C7C94D516A14870707E910AB94D75AE640FF6842C4AF53276CD26EBE"
+    },
+    {
+      "path": "locales/af.pak",
+      "matches": true,
+      "bytes": 636155,
+      "sha256": "3017B141BD16E24190D810F0748612F0FD4352CA8553002B9A63A7F77F7154F8"
+    },
+    {
+      "path": "locales/am.pak",
+      "matches": true,
+      "bytes": 1029450,
+      "sha256": "67B938D162BC75DB067120BB8366B5BAFD9A75FA99A0CA9AD4F46B47D1D37634"
+    },
+    {
+      "path": "locales/ar.pak",
+      "matches": true,
+      "bytes": 1130919,
+      "sha256": "4C47004ABD0969CB1174D06EB7429C024872207960986AFBF3CAE37E339A8D01"
+    },
+    {
+      "path": "locales/bg.pak",
+      "matches": true,
+      "bytes": 1178203,
+      "sha256": "2EB9C74C67E4B13B45A73061FA978738E335BC245DA71BAB0EA9B205FE91074E"
+    },
+    {
+      "path": "locales/bn.pak",
+      "matches": true,
+      "bytes": 1513545,
+      "sha256": "415621A5C0B1546E6E447D43B76414425A8703CC7681D637EC1F283AD0C787E7"
+    },
+    {
+      "path": "locales/ca.pak",
+      "matches": true,
+      "bytes": 716908,
+      "sha256": "6F28297C1CCB628F534D65DADE167AE559F83EACE359ACF47E48FF890B9409D5"
+    },
+    {
+      "path": "locales/cs.pak",
+      "matches": true,
+      "bytes": 743351,
+      "sha256": "799A789CE531991CB975425730DB310F9A8FE74091EEE568F3E65FCC7EF0CD57"
+    },
+    {
+      "path": "locales/da.pak",
+      "matches": true,
+      "bytes": 666471,
+      "sha256": "530FD95DAEE21D793B99492CA7D0BF9979DAFFE42944E24414D4B08A3D23B9FE"
+    },
+    {
+      "path": "locales/de.pak",
+      "matches": true,
+      "bytes": 717862,
+      "sha256": "58165025C4252BA8B2CE8203B59362B9968938CB0FEF9D7DA04941BE22F41BB3"
+    },
+    {
+      "path": "locales/el.pak",
+      "matches": true,
+      "bytes": 1295538,
+      "sha256": "37D2E1EF69FEA9BDB1E0902CBC61A458BAA9009FC3761029BD1C1882A7A0C9B2"
+    },
+    {
+      "path": "locales/en-GB.pak",
+      "matches": true,
+      "bytes": 580030,
+      "sha256": "01D9200A5DAEE1770F7147B166D25BAA6A8DD72C138C3C526421E656DEC789F5"
+    },
+    {
+      "path": "locales/en-US.pak",
+      "matches": true,
+      "bytes": 586582,
+      "sha256": "23B271E8009BFA14783700CD0712B4ECAA5B8F2EA28A4D81AE1D7E05BC0C96B1"
+    },
+    {
+      "path": "locales/es-419.pak",
+      "matches": true,
+      "bytes": 707627,
+      "sha256": "2766FD52DA83FF679346313E66440F013A7D478B9BE946DF4AB197505912450B"
+    },
+    {
+      "path": "locales/es.pak",
+      "matches": true,
+      "bytes": 703941,
+      "sha256": "FE6FFF51EF19DB1F4FE0FC602E0BD4BD7FABCFB1CA5D6896D1CE0EFCF37E49C4"
+    },
+    {
+      "path": "locales/et.pak",
+      "matches": true,
+      "bytes": 642216,
+      "sha256": "DD1205EAE606F12510E24CE39F301439C98B3293D766CA5839DC292A14D7973C"
+    },
+    {
+      "path": "locales/fa.pak",
+      "matches": true,
+      "bytes": 1063069,
+      "sha256": "BA33624CCAD6D0E4A4339589C56BE557B28968BF9422BD12A8F26E2A3D581577"
+    },
+    {
+      "path": "locales/fi.pak",
+      "matches": true,
+      "bytes": 655113,
+      "sha256": "1F3123D7FB5C22A95B5250EA17450B665C3C6CD6A6DFD28BBDDE15E1BF684A0E"
+    },
+    {
+      "path": "locales/fil.pak",
+      "matches": true,
+      "bytes": 741385,
+      "sha256": "02E2C70D3D85B0DEB677A9AE576AE3CF89E80774532CB3315C14F1E8CE64B310"
+    },
+    {
+      "path": "locales/fr.pak",
+      "matches": true,
+      "bytes": 763461,
+      "sha256": "8BAD7FD88072AC66649DD9307DA9163962F8AB00313E627BF1C5CA4450A48B4A"
+    },
+    {
+      "path": "locales/gu.pak",
+      "matches": true,
+      "bytes": 1495625,
+      "sha256": "E86E8C240D4B6283ABB03C49DF9E8899607EF9DEF6D4933C7A541D63B5835271"
+    },
+    {
+      "path": "locales/he.pak",
+      "matches": true,
+      "bytes": 928748,
+      "sha256": "DDC1F304AB1F4489D19AE2B31E7F8E3FFB47DAE439520159E8975422C65E4115"
+    },
+    {
+      "path": "locales/hi.pak",
+      "matches": true,
+      "bytes": 1586602,
+      "sha256": "015B3856DC05E8635A48E749E6970FE43F5D620B8DBD04E5ABFF586178213F6E"
+    },
+    {
+      "path": "locales/hr.pak",
+      "matches": true,
+      "bytes": 715279,
+      "sha256": "D46C64AE8AF3562E37EB80438AA2BEE228FAFDA251D58BA4D0991291F1C72AAB"
+    },
+    {
+      "path": "locales/hu.pak",
+      "matches": true,
+      "bytes": 765640,
+      "sha256": "0A46FC8D50F74EFFD1CFE1979E677DF3DE6FC47E6B551267303D93D57BD83F50"
+    },
+    {
+      "path": "locales/id.pak",
+      "matches": true,
+      "bytes": 635080,
+      "sha256": "F567569C42A25BB2DFC5C33E13AAC558C0E2A1D5D4B969592BBD0841B36438DB"
+    },
+    {
+      "path": "locales/it.pak",
+      "matches": true,
+      "bytes": 693991,
+      "sha256": "AEB1D99A2A09476D9EE0FD133DF2D4D987C731B9F91A248AC4E60377DDDA1CA5"
+    },
+    {
+      "path": "locales/ja.pak",
+      "matches": true,
+      "bytes": 842053,
+      "sha256": "F6E0D8EDA3BC8F1112494BDA96B230F3C44F054C47CCED50C94C5EE9199F04C6"
+    },
+    {
+      "path": "locales/kn.pak",
+      "matches": true,
+      "bytes": 1720240,
+      "sha256": "AF5FED2130102ECC0C878059C88FAED9D6DB2E8B147FB5AE9E15E3FE69706C8A"
+    },
+    {
+      "path": "locales/ko.pak",
+      "matches": true,
+      "bytes": 718705,
+      "sha256": "55A3A8DB9C84B1FE9E50B56D68FB069AD7546117CF1F6CB89F36F49CC044AD5E"
+    },
+    {
+      "path": "locales/lt.pak",
+      "matches": true,
+      "bytes": 777281,
+      "sha256": "AF969F4407C190DD01A426FA1244CB1EC7CDF2909D1C3BA5B87FF662BA567303"
+    },
+    {
+      "path": "locales/lv.pak",
+      "matches": true,
+      "bytes": 774733,
+      "sha256": "4455AB7C06172C2C80796A99558E41F452CC3B33BE76654D70440CF4AC7A2D34"
+    },
+    {
+      "path": "locales/ml.pak",
+      "matches": true,
+      "bytes": 1767850,
+      "sha256": "B5606265910E45098A88E989202A550531F6D00333C6B112ED4C5CBC07B2FF6A"
+    },
+    {
+      "path": "locales/mr.pak",
+      "matches": true,
+      "bytes": 1467313,
+      "sha256": "8465D4077ED5414CBCB7D9BDB00D85E515A1A069703CDC1D4D67C9D6E5623FB0"
+    },
+    {
+      "path": "locales/ms.pak",
+      "matches": true,
+      "bytes": 668356,
+      "sha256": "AF7021A00BEFA586AA067AE3CCB339079E6F13EE0CAB1621836F6ABB608B6F2A"
+    },
+    {
+      "path": "locales/nb.pak",
+      "matches": true,
+      "bytes": 638121,
+      "sha256": "D97A2B0CBE6ADC99ADD2ED3CE0D15D0BB124B778086C466C126634D60EA72608"
+    },
+    {
+      "path": "locales/nl.pak",
+      "matches": true,
+      "bytes": 664759,
+      "sha256": "B642C8AB5CE11438E9A8FD4639244FA8F1D55CFD70269565490BC55EE907B048"
+    },
+    {
+      "path": "locales/pl.pak",
+      "matches": true,
+      "bytes": 742064,
+      "sha256": "8A0969FC743D3E2F5111387D53C0D79E8C1D9F68256AD6553B87FCA2BCAA7E6E"
+    },
+    {
+      "path": "locales/pt-BR.pak",
+      "matches": true,
+      "bytes": 697019,
+      "sha256": "5546559A56F9AC3191062C3FD42DEFD190A68E78AC988EB57FA5A6FD2DC5F874"
+    },
+    {
+      "path": "locales/pt-PT.pak",
+      "matches": true,
+      "bytes": 701056,
+      "sha256": "BDFA7264DDDF70F936F1785737969559A577B51D1952C820A468C611D18B17CA"
+    },
+    {
+      "path": "locales/ro.pak",
+      "matches": true,
+      "bytes": 728144,
+      "sha256": "1E6B5B0DAC63A9E951DAF523DE310F6BD9E5C53E281F37706D41BD35D2A08BB5"
+    },
+    {
+      "path": "locales/ru.pak",
+      "matches": true,
+      "bytes": 1200985,
+      "sha256": "A9E76536472C45B39E7AE2AF5F3AE1BC0E50A11646EFDB6FB3CA373B5F2E2C70"
+    },
+    {
+      "path": "locales/sk.pak",
+      "matches": true,
+      "bytes": 755481,
+      "sha256": "3CDC8BCA8696C90A572FB15C865CAA5C286DF45344C72194C3EEA97201CC816A"
+    },
+    {
+      "path": "locales/sl.pak",
+      "matches": true,
+      "bytes": 722720,
+      "sha256": "E1371C8DF577B979E3A515AF34B0AAA3D07153C7A5C55D39A9B49A7FFE62D3D2"
+    },
+    {
+      "path": "locales/sr.pak",
+      "matches": true,
+      "bytes": 1112909,
+      "sha256": "C42A674E3F43AA70CEF005931915C8B7CEB34B29566FBA3309F8DA931DC7861F"
+    },
+    {
+      "path": "locales/sv.pak",
+      "matches": true,
+      "bytes": 646543,
+      "sha256": "7B0399A206BFBEBE77D1A4FC598C8A6636A1BD940D3AB56519CF4AF0134B6EDB"
+    },
+    {
+      "path": "locales/sw.pak",
+      "matches": true,
+      "bytes": 685127,
+      "sha256": "BD41EA707A0D90D683EC8D5D0F0C79F3E925747BC4EA1982562DFB75080199B9"
+    },
+    {
+      "path": "locales/ta.pak",
+      "matches": true,
+      "bytes": 1758067,
+      "sha256": "91FB1460711DF108D8D435A378C8BE1D1E80B0886C0158D8C6AE92F35812681B"
+    },
+    {
+      "path": "locales/te.pak",
+      "matches": true,
+      "bytes": 1629379,
+      "sha256": "FC8C2706C5DFD36E7AF8E380A240E0F697CC5FE969B512092A2185896512C4AF"
+    },
+    {
+      "path": "locales/th.pak",
+      "matches": true,
+      "bytes": 1368866,
+      "sha256": "C1F4235C31BC05153230B0E55B7AABC9020D7460D5B0A025C386885E1E4BDA3C"
+    },
+    {
+      "path": "locales/tr.pak",
+      "matches": true,
+      "bytes": 697394,
+      "sha256": "D5648D7EAF1826211FB244FCF8419DABDC16C228D92139BC8B0B73C7A6B7E700"
+    },
+    {
+      "path": "locales/uk.pak",
+      "matches": true,
+      "bytes": 1211563,
+      "sha256": "EC5D0B426E289C064E8F2D63636AE2A544FF30FC1E99DDE04FE1920971E4D060"
+    },
+    {
+      "path": "locales/ur.pak",
+      "matches": true,
+      "bytes": 1047994,
+      "sha256": "C218E21744DF2FF0669A87D497D65D76333073577360D4C662C592DE146BF82A"
+    },
+    {
+      "path": "locales/vi.pak",
+      "matches": true,
+      "bytes": 830014,
+      "sha256": "76A32F8AD5D08A6F9899E12E4AA9B3D9A9023931E2CA0F73E5CED541C922DCFB"
+    },
+    {
+      "path": "locales/zh-CN.pak",
+      "matches": true,
+      "bytes": 592081,
+      "sha256": "7887BD3D01E12306E32A11D9A20566CA0E93688A0375E6FF59DA04CF782B1681"
+    },
+    {
+      "path": "locales/zh-TW.pak",
+      "matches": true,
+      "bytes": 583887,
+      "sha256": "7CB5F76E54A548D4E52AA8CDF226A4339BDADC304897ABCA690F407E95E42F4D"
+    },
+    {
+      "path": "resources.pak",
+      "matches": true,
+      "bytes": 12435875,
+      "sha256": "EE5707E9409E76742E1DACDAE0EBBB3C567B8772CE5BBCB9785AA215F5784C22"
+    },
+    {
+      "path": "snapshot_blob.bin",
+      "matches": true,
+      "bytes": 368768,
+      "sha256": "132B5C838D93D5067C1DE721B1B4D906B59289B3BB0A407925C228E621901A9A"
+    },
+    {
+      "path": "v8_context_snapshot.bin",
+      "matches": true,
+      "bytes": 742200,
+      "sha256": "D11A9FFF344E9A6D067243EF85D4064716EA378098894F9A21BF8A1EECA66E53"
+    },
+    {
+      "path": "version",
+      "matches": true,
+      "bytes": 6,
+      "sha256": "C3DADC2FA9B04E773A1EAD37254B8721CF423BEDC618A5342F17F5FF790CC203"
+    },
+    {
+      "path": "vk_swiftshader.dll",
+      "matches": true,
+      "bytes": 5520384,
+      "sha256": "20938B3BB2DA284A828D8B881A0954882A82620E57551EE3C93DB3046B98C989"
+    },
+    {
+      "path": "vk_swiftshader_icd.json",
+      "matches": true,
+      "bytes": 106,
+      "sha256": "32D83FF113FEF532A9F97E0D2831F8656628AB1C99E9060F0332B1532839AFD9"
+    },
+    {
+      "path": "vulkan-1.dll",
+      "matches": true,
+      "bytes": 939520,
+      "sha256": "17F4FB133BF92744913ABE23202C3D6434FA84577746AD9FCE18A74D1EC921C8"
+    },
+    {
+      "path": "resources/runtime/electron/provenance.json",
+      "matches": true,
+      "bytes": 12921,
+      "sha256": "07A30310D36DB06EB57739BFF003D8AEADBF7A421ADC3FA4205055029298F551"
+    },
+    {
+      "path": "resources/app.asar",
+      "matches": true,
+      "bytes": 11689184,
+      "sha256": "0696D3F37B56E70FB6DD3CBBB4C14F820AEAFE9931EF32A74787FFE6055D7711"
+    },
+    {
+      "path": "resources/component-worker.cjs",
+      "matches": true,
+      "bytes": 1863975,
+      "sha256": "459028B58533BC3C3C60EE69D469AC5B1A35ACCA98A470B4415E878C2B3C1752"
+    },
+    {
+      "path": "resources/core-service/win-x64/EgoistShield.Service.exe",
+      "matches": true,
+      "bytes": 37901599,
+      "sha256": "5A2FD51C4E907BC50B8C1DAC352404EF12341CC401E9AA3A3E0D7EEADC2683B8"
+    },
+    {
+      "path": "resources/runtime/manifest.json",
+      "matches": true,
+      "bytes": 17917,
+      "sha256": "AAA7537E8DF0237EA1327DD5E1869C08DE5A500C5E89E204F6A9B4A1719A5A81"
+    },
+    {
+      "path": "resources/release/root-public-key.pem",
+      "matches": true,
+      "bytes": 113,
+      "sha256": "30C069D617B6E6B1792E7FB6E0F73C17FB659676DD90F6A55D50BC537AC862E7"
+    },
+    {
+      "path": "resources/release/release-key-registry.json",
+      "matches": true,
+      "bytes": 1100,
+      "sha256": "D3CBBD5B636ADBB5F47733BE32197F0D7DD7ED3294D8785B1AA4B9BB51197DBC"
+    },
+    {
+      "path": "resources/release/release-key-registry.json.sig",
+      "matches": true,
+      "bytes": 89,
+      "sha256": "651104184902338CD00DCC38BAFF0DADC718946C26E1326E204CDD6EAAA5A6DE"
+    },
+    {
+      "path": "resources/gravityless-dns/dnscrypt-proxy.exe",
+      "matches": true,
+      "bytes": 11823104,
+      "sha256": "23D1895BCFA8573605E811056D12B2BF5F13B0633758FBEDA3DED79C5A6EA19D"
+    },
+    {
+      "path": "resources/gravityless-dns/dnscrypt-proxy.toml",
+      "matches": true,
+      "bytes": 619,
+      "sha256": "669C65B7A682F56E2DD78E94237B8FFE6F4B3B859F1546BF35D327A6F6F47D16"
+    },
+    {
+      "path": "resources/installer/owned-cleanup.ps1",
+      "matches": true,
+      "bytes": 190567,
+      "sha256": "C7ECA1981C0AA2EB237F1DB29C0ACFA2FE62A0756EF292EFB97339815011F44E"
+    },
+    {
+      "path": "resources/installer/invoke-final-silent-reinstall.ps1",
+      "matches": true,
+      "bytes": 63700,
+      "sha256": "F6C232FA15E4E8F1D78C149F973DF8B807D58CABD8EF5898B8B5CE0D2279DA8E"
+    },
+    {
+      "path": "resources/installer/ModernInstaller.exe",
+      "matches": true,
+      "bytes": 468992,
+      "sha256": "321B04000ED67EBF304021AA2102E6A9258A6A64F3CDC1501908ABFD16556F0F"
+    }
+  ],
+  "elapsedMonthSoakPerformed": false,
+  "status": "verified",
+  "ownedZapretProcesses": 1,
+  "comparedDnsRows": 12,
+  "phase": "final"
+}

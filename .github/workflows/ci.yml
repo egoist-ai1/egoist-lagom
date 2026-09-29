@@ -39,6 +39,8 @@ jobs:
           "LAGOM_TEST_TEMP=$testWork" >> $env:GITHUB_ENV
           "EGOIST_RELEASE_TEST_DIR=$testWork" >> $env:GITHUB_ENV
           "EGOIST_RELEASE_PYTHON=$env:pythonLocation\python.exe" >> $env:GITHUB_ENV
+          "EGOIST_PACKAGING_TEST_DIR=$testWork" >> $env:GITHUB_ENV
+          "SHIELD_PYTHON=$env:pythonLocation\python.exe" >> $env:GITHUB_ENV
           "TEMP=$testWork" >> $env:GITHUB_ENV
           "TMP=$testWork" >> $env:GITHUB_ENV
       - name: Install dependencies
