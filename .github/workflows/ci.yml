@@ -61,10 +61,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
           if ($actualSdk.Trim() -ne $sdkPin) { throw "SDK mismatch: expected $sdkPin, received $actualSdk" }
-          $gitPath = (Get-Command git -CommandType Application -ErrorAction Stop).Source
-          $gitRoot = Split-Path (Split-Path $gitPath -Parent) -Parent
-          $opensslPath = Join-Path $gitRoot 'usr\bin\openssl.exe'
-          if (-not (Test-Path -LiteralPath $opensslPath -PathType Leaf)) { throw 'Git OpenSSL is required for the local TLS fixture' }
+          . ./scripts/resolve-git-openssl.ps1
+          $gitApplicationPaths = @((Get-Command git -CommandType Application -ErrorAction Stop).Source)
+          $opensslPath = Resolve-GitOpenSsl -GitApplicationPaths $gitApplicationPaths
           & $opensslPath version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "LAGOM_TEST_TEMP=$testWork" >> $env:GITHUB_ENV
@@ -237,9 +236,9 @@ jobs:
           if ($integrity.nativeSources.path -ne "dist/Egoist-Lagom-$version-native-sources.zip") { throw 'Mandatory native source companion is missing from package integrity' }
           $xrayPath = Join-Path $env:GITHUB_WORKSPACE "out\EgoistShield-$version-win-x64\resources\runtime\xray\xray.exe"
           $pythonPath = Join-Path $env:pythonLocation 'python.exe'
-          $gitPath = (Get-Command git -CommandType Application -ErrorAction Stop).Source
-          $gitRoot = Split-Path (Split-Path $gitPath -Parent) -Parent
-          $opensslPath = Join-Path $gitRoot 'usr\bin\openssl.exe'
+          . ./scripts/resolve-git-openssl.ps1
+          $gitApplicationPaths = @((Get-Command git -CommandType Application -ErrorAction Stop).Source)
+          $opensslPath = Resolve-GitOpenSsl -GitApplicationPaths $gitApplicationPaths
           foreach ($required in @($installer, $nativeSourcesPath, "$nativeSourcesPath.sha256", $xrayPath, $pythonPath, $opensslPath)) {
             if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { throw "Candidate test input is missing: $required" }
           }

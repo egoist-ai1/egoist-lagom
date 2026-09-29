@@ -3,12 +3,12 @@
   "version": "3.8.0",
   "baselineCommit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
   "node": {
-    "tests": 631,
-    "pass": 631,
+    "tests": 632,
+    "pass": 632,
     "fail": 0,
     "skip": 0,
-    "durationMs": 16421.3728,
-    "logSha256": "a29cd78991cc686cfd86a9bbd9a53629798591e77e53cc340d29359789158a17",
+    "durationMs": 16719.6332,
+    "logSha256": "dd7ec6f4b391eae80ffd0e927b76b8c91b5ca9ae8b97d2a6687185dbddf95f42",
     "scope": "Full source suite against first3.8 package; actual OpenSSL/TLS, packaged Xray, installer PlanOnly; no live service reinstall."
   },
   "csharp": {
@@ -42,8 +42,8 @@
   "ciLocal": {
     "actionlint": "PASS",
     "powershellParsedBlocks": 17,
-    "workflowSha256": "2769139E522751314B85F1939911B50F59F61ECD47C418E986427032C2567FD8",
-    "hosted": "pending"
+    "workflowSha256": "b35b5dc4a56a6521e4a743de420d4062897c9b462b0fce9489e77bec37858891",
+    "hosted": "Initialrun36644018803 failed on duplicate Git application paths. Scalar resolver fixed with10fixtures; finalhosted run pending."
   },
   "limitations": [
     "No actual3.8 clean install/upgrade/uninstall/reboot",
