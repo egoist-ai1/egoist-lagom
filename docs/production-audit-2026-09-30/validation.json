@@ -3,12 +3,12 @@
   "version": "3.8.0",
   "baselineCommit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
   "node": {
-    "tests": 632,
-    "pass": 632,
+    "tests": 633,
+    "pass": 633,
     "fail": 0,
     "skip": 0,
-    "durationMs": 16719.6332,
-    "logSha256": "dd7ec6f4b391eae80ffd0e927b76b8c91b5ca9ae8b97d2a6687185dbddf95f42",
+    "durationMs": 16594.5506,
+    "logSha256": "05a963208526963e688730786c627ad4014f3be7f8d34aebacfe73f29c5450f6",
     "scope": "Full source suite against first3.8 package; actual OpenSSL/TLS, packaged Xray, installer PlanOnly; no live service reinstall."
   },
   "csharp": {
@@ -43,7 +43,7 @@
     "actionlint": "PASS",
     "powershellParsedBlocks": 17,
     "workflowSha256": "b35b5dc4a56a6521e4a743de420d4062897c9b462b0fce9489e77bec37858891",
-    "hosted": "Initialrun36644018803 failed on duplicate Git application paths. Scalar resolver fixed with10fixtures; finalhosted run pending."
+    "hosted": "Run36644018803 tool resolver failed; fixed. Run36645329326 trust fixture cleanup raced pending cache writer; deterministic regression and drainage fixed. Nextresult is finalartifact receipt."
   },
   "limitations": [
     "No actual3.8 clean install/upgrade/uninstall/reboot",

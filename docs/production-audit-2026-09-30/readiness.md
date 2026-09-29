@@ -6,7 +6,7 @@
 
 | Проверка | Наблюдение | Статус |
 |---|---|---|
-| Сеть/IPC/state | Полный Node-набор с локальными HTTP/TLS и настоящим packaged Xray; отказные сценарии и отмена | 632/632, 0 fail/skip; настоящий installer PlanOnly и packaged Xray |
+| Сеть/IPC/state | Полный Node-набор с локальными HTTP/TLS и настоящим packaged Xray; отказные сценарии и отмена | 633/633, 0 fail/skip; настоящий installer PlanOnly и packaged Xray |
 | Core | 27 групп после исправлений scope/root/bootstrap/clock; свежая production build | PASS |
 | Native DoH | 17 групп и read-only CLI на настоящем Windows host | PASS |
 | Wrapper logs | 10 групп:144 ротации, native sharing, NTFS ACL, junction paths, предупреждения настоящего Core | PASS |
@@ -17,7 +17,7 @@
 | Source companion | 220548158B,144 архива; SHA5e6e0e65…49ff4 | Integrity PASS; coverage неполная |
 | npm audit | 0 известных уязвимостей в npm-охвате | PASS в проверенной выборке |
 | CI definition | actionlint,17PowerShell-блоков и whitespace owned-code check | PASS локально |
-| Hosted CI | GitHub Actions на финальном PR | Первый run отказал в tool resolution; исправлено, повтор ожидается |
+| Hosted CI | GitHub Actions на финальном PR | Tool resolution исправлен; следующая fixture cleanup race воспроизведена/исправлена; результат следующего run в final receipt |
 | Windows install/reboot | Чистая установка, upgrade, rollback/uninstall и boot на отдельной ОС | Не выполнено для 3.8.0 |
 | Long soak | RSS/handles/threads/disk/network transitions72 ч, затем 7–14 дней pilot | Не выполнено |
 | Installed connected UI | Новая installed3.8 connected/foreground/DPI/FPS acceptance | Не выполнено |

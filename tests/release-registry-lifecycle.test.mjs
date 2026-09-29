@@ -15,14 +15,31 @@ const registryUrl = 'https://github.com/egoist-ai1/egoist-lagom/releases/latest/
 const signature = (bytes, key) => Buffer.from(sign(null, bytes, key).toString('base64') + '\n');
 const toPem = key => key.export({ type: 'spki', format: 'pem' });
 
+async function boundedFixtureWait(pending, label) {
+  let timer;
+  try {
+    return await Promise.race([
+      pending,
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} did not settle within 10 seconds`)), 10e3); })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fixture(t) {
   assert.ok(fixtureRoot && path.isAbsolute(fixtureRoot), 'LAGOM_TRUST_TEST_WORK must be this task\'s absolute fixture directory');
   await fs.mkdir(fixtureRoot, { recursive: true });
   const directory = await fs.mkdtemp(path.join(fixtureRoot, 'registry-'));
-  t.after(async () => {
+  const loadedApis = [];
+  let cleanup;
+  const dispose = () => cleanup ??= (async () => {
     assert.ok(path.resolve(directory).startsWith(path.resolve(fixtureRoot) + path.sep));
-    await fs.rm(directory, { recursive: true, force: true });
-  });
+    const pending = loadedApis.flatMap(api => api.pendingRegistryLoads());
+    await boundedFixtureWait(Promise.allSettled(pending), 'Already-started registry work');
+    await fs.rm(directory, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+  })();
+  t.after(dispose);
   const root = generateKeyPairSync('ed25519');
   const release = generateKeyPairSync('ed25519');
   const generatedAt = new Date(Date.now() - 3 * 864e5).toISOString();
@@ -66,13 +83,14 @@ async function fixture(t) {
   } };
   const load = (overrides = {}, includeUpdater = false) => {
     const context = vm.createContext({ ...bindings, ...overrides });
-    vm.runInContext(source + (includeUpdater ? '\n' + sourceFor('electron/ipc/desktop-updater') : '') + '\n;globalThis.api = { loadTrustedKeyRegistry, verifyRemoteReleaseTrust, verifyStableChannelTrust' + (includeUpdater ? ', DesktopUpdater' : '') + ' };', context);
+    vm.runInContext(source + (includeUpdater ? '\n' + sourceFor('electron/ipc/desktop-updater') : '') + '\n;globalThis.api = { loadTrustedKeyRegistry, verifyRemoteReleaseTrust, verifyStableChannelTrust, pendingRegistryLoads: () => typeof releaseRegistryLoads === "undefined" ? [] : Array.from(releaseRegistryLoads.values())' + (includeUpdater ? ', DesktopUpdater' : '') + ' };', context);
+    loadedApis.push(context.api);
     return context.api;
   };
   const options = { userDataDir, headers: { 'User-Agent': 'Lagom-registry-regression' } };
   const releaseOptions = { ...options, release: { assets: [{ name: manifest.installerName, browser_download_url: manifest.canonicalDownloadUrl, digest: manifest.githubDigest }] }, releaseApiUrl: 'https://api.github.com/repos/egoist-ai1/egoist-lagom/releases/latest', tagName: manifest.tag, expectedVersion: manifest.version, expectedInstallerName: manifest.installerName, expectedInstallerUrl: manifest.canonicalDownloadUrl };
   const stableOptions = { ...options, manifestUrl: 'https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/stable-channel.json', signatureUrl: 'https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/stable-channel.json.sig' };
-  return { root, release, registry, bundled, manifest, userDataDir, cachePath, requests, options, releaseOptions, stableOptions, load,
+  return { root, release, registry, bundled, manifest, directory, userDataDir, cachePath, requests, options, releaseOptions, stableOptions, load, dispose,
     updateRegistry(change, timestamp = nextGeneratedAt, signer = root.privateKey) {
       const next = structuredClone(registry); next.generatedAt = timestamp; change(next);
       remote = Buffer.from(JSON.stringify(next)); remoteSignature = signature(remote, signer); return next;
@@ -324,4 +342,43 @@ test('manifest timeout is reported truthfully and retryably rather than as an in
   const result = await f.load().verifyRemoteReleaseTrust(f.releaseOptions);
   assert.equal(result.trustStatus, 'untrusted'); assert.equal(result.failureCode, 'timeout');
   assert.equal(result.retryable, true);
+});
+
+test('timeout fixture drains pending registry persistence before removing its directory without new fetches', async t => {
+  const f = await fixture(t);
+  let releaseWrite, announceWrite;
+  const writeAllowed = new Promise(resolve => { releaseWrite = resolve; });
+  const writeStarted = new Promise(resolve => { announceWrite = resolve; });
+  f.setFetch(async url => {
+    if (url.includes('release-key-registry.json')) return new Response(url.endsWith('.sig') ? signature(f.bundled, f.root.privateKey) : f.bundled);
+    throw Object.assign(new Error('fixture manifest deadline'), { name: 'TimeoutError' });
+  });
+  const api = f.load({ promises: { ...fs, async mkdir(target, options) {
+    if (target === path.dirname(f.cachePath)) {
+      announceWrite();
+      await writeAllowed;
+    }
+    return fs.mkdir(target, options);
+  } } });
+  let cleanupFinished = false, cleanupResult;
+  try {
+    const result = await api.verifyRemoteReleaseTrust(f.releaseOptions);
+    assert.equal(result.trustStatus, 'untrusted'); assert.equal(result.failureCode, 'timeout');
+    assert.equal(result.retryable, true);
+    await boundedFixtureWait(writeStarted, 'Controlled cache persistence');
+    const pending = api.pendingRegistryLoads();
+    assert.equal(pending.length, 1, 'Manifest timeout returns while the cache write is still pending');
+    const requestsBeforeCleanup = f.requests.length;
+    cleanupResult = f.dispose().then(() => { cleanupFinished = true; });
+    await new Promise(resolve => setTimeout(resolve, 25));
+    assert.equal(cleanupFinished, false, 'Cleanup must wait for the existing cache writer');
+    await fs.access(f.directory);
+    releaseWrite();
+    await Promise.all([boundedFixtureWait(Promise.allSettled(pending), 'Controlled registry work'), cleanupResult]);
+    assert.equal(f.requests.length, requestsBeforeCleanup, 'Draining must not call the registry loader or fetch again');
+    await assert.rejects(fs.access(f.directory), { code: 'ENOENT' });
+  } finally {
+    releaseWrite();
+    if (cleanupResult) await cleanupResult;
+  }
 });

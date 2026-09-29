@@ -4,6 +4,8 @@ Baseline: published `3.7.9`, commit `d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2`. 
 
 ## Reproduced defect
 
+Hosted acceptance later exposed a test-lifecycle race: manifest timeout returns before the concurrent authenticated cache writer finishes. Test cleanup now waits for already-started registry work before removing its own directory. A controlled delayed-write regression proves both the old failure and the corrected wait without extra fetches. This changes only the fixture; production trust policy is unchanged.
+
 The previous `loadTrustedKeyRegistry()` authenticated only the bundled registry. An otherwise valid release signed by a key subsequently revoked in a newer root-signed remote registry was still accepted. The same logical fixture against the exact baseline source failed with `actual: trusted`, `expected: untrusted`. The fixture uses newly generated in-memory keys and signed public test metadata; it does not access any product private key or publish a revocation.
 
 ## Implemented policy
