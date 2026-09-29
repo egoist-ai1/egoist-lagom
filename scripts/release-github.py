@@ -70,7 +70,8 @@ def verify_local():
         integrity=json.loads((DIST/'package-integrity.json').read_text(encoding='utf-8-sig'))
         source_bundle=integrity.get('nativeSources')
         actual=digests[source_bundle_name]
-        if not isinstance(source_bundle,dict) or Path(source_bundle.get('path','')).name != source_bundle_name or source_bundle.get('bytes') != actual['size'] or source_bundle.get('sha256') != actual['digest'][7:]:
+        metadata_sha256=source_bundle.get('sha256') if isinstance(source_bundle,dict) else None
+        if not isinstance(source_bundle,dict) or not isinstance(metadata_sha256,str) or not re.fullmatch(r'[a-fA-F0-9]{64}',metadata_sha256) or Path(source_bundle.get('path','')).name != source_bundle_name or source_bundle.get('bytes') != actual['size'] or metadata_sha256.lower() != actual['digest'][7:]:
             raise RuntimeError('Native-source companion differs from package-integrity.json')
         if (DIST/(source_bundle_name+'.sha256')).read_text(encoding='utf-8-sig').strip() != actual['digest'][7:]+'  '+source_bundle_name:
             raise RuntimeError('Native-source companion checksum file differs')

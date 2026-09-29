@@ -206,3 +206,43 @@ print(json.dumps({'h1':'verified','changed':'rejected','source-link':'preserved'
   const { stdout } = await exec(python, ['-c', script, fileURLToPath(new URL('../scripts/prepare-native-sources.py', import.meta.url)), root], { windowsHide: true, timeout: 30000 });
   assert.equal(JSON.parse(stdout).h1, 'verified');
 });
+
+test('release verify_local accepts validated uppercase and lowercase source hashes while rejecting altered metadata', async t => {
+  const root = await temporary(t, 'native-source-release-contract-');
+  const script = String.raw`import ast,hashlib,json,os,pathlib,re,sys,types
+sys.dont_write_bytecode=True
+source=pathlib.Path(sys.argv[1]);root=pathlib.Path(sys.argv[2]);dist=root/'dist';dist.mkdir()
+tree=ast.parse(source.read_text(encoding='utf-8-sig'))
+function=next(node for node in tree.body if isinstance(node,ast.FunctionDef) and node.name=='verify_local')
+name='Egoist-Lagom-3.8.0-native-sources.zip';data=b'INERT source-companion fixture';digest=hashlib.sha256(data).hexdigest()
+(dist/name).write_bytes(data)
+def signature_dependency(args,**options):
+ assert args[-2:]==['--verify-only','true'] and options['check'] is True
+namespace={'subprocess':types.SimpleNamespace(run=signature_dependency),'os':os,'ROOT':root,'DIST':dist,'names':[name,name+'.sha256','package-integrity.json'],'hashlib':hashlib,'json':json,'re':re,'Path':pathlib.Path,'requires_native_sources':True,'source_bundle_name':name}
+exec(compile(ast.Module(body=[function],type_ignores=[]),str(source),'exec'),namespace)
+results={}
+for mode in ['lowercase','uppercase','mixed-case','altered','nonhex','short','long','null','number','whitespace','size','path','checksum-file']:
+ entry={'path':'dist/'+name,'bytes':len(data),'sha256':digest}
+ (dist/(name+'.sha256')).write_text(digest+'  '+name+'\n')
+ if mode=='uppercase':entry['sha256']=digest.upper()
+ if mode=='mixed-case':entry['sha256']=''.join(c.upper() if i%2 else c for i,c in enumerate(digest))
+ if mode=='altered':entry['sha256']='0'*64
+ if mode=='nonhex':entry['sha256']='g'+digest[1:]
+ if mode=='short':entry['sha256']=digest[:-1]
+ if mode=='long':entry['sha256']=digest+'0'
+ if mode=='null':entry['sha256']=None
+ if mode=='number':entry['sha256']=123
+ if mode=='whitespace':entry['sha256']=' '+digest
+ if mode=='size':entry['bytes']+=1
+ if mode=='path':entry['path']='dist/wrong-source.zip'
+ if mode=='checksum-file':(dist/(name+'.sha256')).write_text('0'*64+'  '+name+'\n')
+ (dist/'package-integrity.json').write_text(json.dumps({'nativeSources':entry}))
+ try:
+  actual=namespace['verify_local']();assert actual[name]['digest']=='sha256:'+digest;results[mode]='accepted'
+ except (RuntimeError,ValueError,TypeError):results[mode]='rejected'
+print(json.dumps(results))`;
+  const { stdout } = await exec(python, ['-c', script, fileURLToPath(new URL('../scripts/release-github.py', import.meta.url)), root], { windowsHide: true, timeout: 30000 });
+  const results = JSON.parse(stdout);
+  for (const mode of ['lowercase', 'uppercase', 'mixed-case']) assert.equal(results[mode], 'accepted', mode);
+  for (const mode of ['altered', 'nonhex', 'short', 'long', 'null', 'number', 'whitespace', 'size', 'path', 'checksum-file']) assert.equal(results[mode], 'rejected', mode);
+});

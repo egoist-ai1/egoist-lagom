@@ -21,14 +21,15 @@
 
 ## Подтверждение
 
-Общий Node-прогон до новой упаковки: **630 тестов, 627 прошли, 0 ошибок, 3 artifact-dependent проверки ожидают EXE 3.8.0**. Свежий `npm audit`: 0 известных уязвимостей в его охвате; это не полный native/transitive аудит.
+Общий Node-прогон с настоящим новым пакетом, OpenSSL и packaged Xray: **631 тест, 631 прошёл, 0 ошибок и пропусков**. Три реальных installer PlanOnly проверки теперь включены. Свежий `npm audit`: 0 известных уязвимостей в его охвате; это не полный native/transitive аудит.
 
 Настоящий собранный UI: **24 сочетания экран/размер/масштаб**, 7 взаимодействий, 10 геометрических/scroll checks и диалог. Ошибок страницы и горизонтального переполнения нет; исходные вертикальные наложения исправлены. Один настоящий renderer crash восстановился до `did-finish-load` за 390 мс, без оценки первого кадра или многодневного SLA.
 
-Core: 27 групп и Native DoH: 17 групп прошли. Wrapper guard: 10 групп прошли, включая 144 настоящие ротации, ACL, sharing failures и native junction paths; test harness исправлен для PowerShell 7 и длинных путей. Source-bound пакет и postpackage проверки оформляются в final receipt.
+Core: 27 групп и Native DoH: 17 групп прошли. Wrapper guard: 10 групп прошли, включая 144 настоящие ротации, ACL, sharing failures и native junction paths; test harness исправлен для PowerShell 7 и длинных путей. Первый source-bound EXE, Core self-test и полный postpackage набор прошли. Окончательный артефакт повторно собирается после последней поправки release SHA contract; его точные хеши находятся в dist/package-integrity.json и dist/production-audit-3.8.0.json.
 
 ## Материалы
 
+- [Готовность и оставшиеся gates](readiness.md), [сводная проверка](validation.json).
 - [План выпуска, архитектура и следующая итерация](production-plan.md).
 - [Принятая дизайн-система](../../DESIGN.md), [направление дизайна](design-proposal.md).
 - [Настоящая UI-приёмка и снимки](native-ui-acceptance.md), [UI-аудит](ui-audit.md).
