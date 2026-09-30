@@ -13,10 +13,18 @@ $null = New-Item -ItemType Directory -Path $script:RuntimeRoot,$script:OwnedInst
 $tokens = $null; $errors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile([IO.Path]::GetFullPath($SourceScript), [ref]$tokens, [ref]$errors)
 if ($errors.Count) { throw ($errors | Out-String) }
-foreach ($name in @('Get-FileSha256','Write-JsonAtomic','Get-PreservedWrapperDefinitions','Assert-PlainWrapperMigrationPath','Get-VerifiedPackagedServiceWrapper','Assert-PreservedWrapperStopped','Update-PreservedServiceWrappers','Stop-PreservedWrappersForRecovery','Assert-SupportedServiceFramework','Invoke-WorkerMode')) {
+foreach ($name in @('Get-FileSha256','Write-JsonAtomic','Get-PreservedWrapperDefinitions','Assert-PlainWrapperMigrationPath','Get-VerifiedPackagedServiceWrapper','Assert-PreservedWrapperStopped','Update-PreservedServiceWrappers','Stop-PreservedWrappersForRecovery','Assert-SupportedServiceFramework','Invoke-WorkerMode','Assert-InstallerNotCancelled')) {
   $fn = $ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name}, $true)
   if ($fn) { . ([scriptblock]::Create($fn.Extent.Text)) }
 }
+function New-InstallerProtectedFileSecurity {
+  $security=New-Object Security.AccessControl.FileSecurity
+  $identity=[Security.Principal.WindowsIdentity]::GetCurrent().User
+  $security.SetOwner($identity);$security.SetAccessRuleProtection($true,$false)
+  $security.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($identity,'FullControl','Allow')))
+  return $security
+}
+function Unregister-InstallerMaintenanceBootRecovery {param($StageDirectory,$RestorationVerified)}
 function Require { param([bool]$Value, [string]$Message) if (-not $Value) { throw $Message } }
 function Expect-Refused { param([scriptblock]$Action, [string]$Pattern) $refused=$false; try { & $Action } catch { $refused=$_.Exception.Message -like $Pattern }; Require $refused ('Expected refusal: ' + $Pattern) }
 $script:registrations = @{}
@@ -167,6 +175,8 @@ function Add-ReceiptEvent { }
 function Write-DesktopUpdateResult { }
 function Invoke-Recovery { $script:recoveryCalls++ }
 function Start-Sleep { }
+function Resume-InterruptedServiceMaintenance { }
+function Test-InstallerServiceMaintenanceOwner { return $false }
 function Get-OwnedServiceSnapshot { $script:snapshotCalls++; throw 'Fixture snapshot rejection before backup' }
 $workerState=[pscustomobject]@{installer='unused';manifest='unused';version='3.8.0';sha256=$hash;delaySeconds=0;handoffStarted=$false}
 Write-JsonAtomic -Path (Join-Path $StageDirectory 'state.json') -Value $workerState

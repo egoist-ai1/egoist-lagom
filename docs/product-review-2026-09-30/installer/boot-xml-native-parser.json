@@ -1,0 +1,18 @@
+{
+  "schemaAccepted": true,
+  "actualComParser": true,
+  "taskRegistrations": 0,
+  "taskStarts": 0,
+  "taskDeletions": 0,
+  "executionTimeLimit": "PT20M",
+  "restartCount": 3,
+  "runOnBattery": true,
+  "runLevel": 1,
+  "bootTriggerType": 8,
+  "actionCount": 1,
+  "schemaVersion": 1,
+  "scope": "Actual Schedule.Service.Connect/NewTask(0)/XmlText parser; in-memory only, no task registration or action execution",
+  "productionModuleSha256": "94006D7D993F6B58FF6EFF903D16CF2D968DD6C18F86EB66E0D31A11C0E6DE42",
+  "generatedXmlSha256": "83A6F22D3D290966CB89A4221BDB03AFA2D2BA64F5F69D98B35494DA5E0DD166",
+  "normalizedXmlSha256": "E4EDD6ACAF81FBDD518261FEEABADC1CDCB35F963B3DEFE8FBD702E7C9C9DCE0"
+}

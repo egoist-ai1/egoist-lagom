@@ -1,0 +1,59 @@
+{
+  "checkedAt": "2026-09-30T11:34:00.931833+00:00",
+  "results": [
+    {
+      "name": "electron-fuses-doc",
+      "url": "https://raw.githubusercontent.com/electron/electron/v44.4.5/docs/tutorial/fuses.md",
+      "readback": true,
+      "status": 200,
+      "bytes": 10984,
+      "sha256": "6c8a3545df38bfa09ba522f524db52e693516a5c07130e0cf1c54094cc3910a0"
+    },
+    {
+      "name": "electron-env-doc",
+      "url": "https://raw.githubusercontent.com/electron/electron/v44.4.5/docs/api/environment-variables.md",
+      "readback": true,
+      "status": 200,
+      "bytes": 9668,
+      "sha256": "85456d6c310169162ba1c7ffa4c23b9f0c3a9b925ce293847b25fd9eb329866f"
+    },
+    {
+      "name": "electron-security-doc",
+      "url": "https://raw.githubusercontent.com/electron/electron/v44.4.5/docs/tutorial/security.md",
+      "readback": true,
+      "status": 200,
+      "bytes": 32555,
+      "sha256": "9bec21b1e4e451fb710685d09e0cdfd1770df02ffd44ad6afebf976f4cbac50a"
+    },
+    {
+      "name": "fuses-api",
+      "url": "https://raw.githubusercontent.com/electron/fuses/main/src/config.ts",
+      "readback": true,
+      "status": 200,
+      "bytes": 1166,
+      "sha256": "851455b915ad3d16e8edfb5fed7f467107cb2e06261af91f4a367f76addd6932"
+    },
+    {
+      "name": "fuses-implementation",
+      "url": "https://raw.githubusercontent.com/electron/fuses/main/src/index.ts",
+      "readback": true,
+      "status": 200,
+      "bytes": 10373,
+      "sha256": "acbcf7b79d85223983e43550c9517a2d4158f139d6fddafc80a9af452ef5efa4"
+    },
+    {
+      "name": "chromium-safety",
+      "url": "https://www.chromium.org/administrators/policy-list-3/",
+      "readback": false,
+      "error": "URLError: <urlopen error timed out>"
+    },
+    {
+      "name": "sing-box-pinned",
+      "url": "https://api.github.com/repos/SagerNet/sing-box/releases/tags/v1.14.0",
+      "readback": true,
+      "status": 200,
+      "bytes": 309078,
+      "sha256": "56e5f75569aa01628d37018f49b9449405c84cce68556061ea1f3f0f9bce51ea"
+    }
+  ]
+}

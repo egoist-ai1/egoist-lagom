@@ -84,6 +84,7 @@ internal sealed class ServiceEngine
 		Task? supervision = null;
 		try
 		{
+			await _dispatcher.WaitForInstallerMaintenanceAsync(lifetime.Token);
 			await _dispatcher.RecoverOnStartupAsync(lifetime.Token);
 			supervision = _dispatcher.RunSupervisionAsync(lifetime.Token);
 			await _pipeServer.RunAsync(lifetime.Token);
@@ -111,9 +112,8 @@ internal sealed class ServiceEngine
 		try
 		{
 			await _dispatcher.RecoverOnStartupAsync(cancellationToken);
-			var request = new ServiceRequest(1, "uninstall-dns:" + Guid.NewGuid().ToString("N"), "dns.restore-owned", JsonDefaults.ToElement(new { }));
 			var identity = new ClientIdentity(Environment.ProcessId, Environment.ProcessPath ?? "", false, "S-1-5-18");
-			var response = await _dispatcher.DispatchAsync(request, identity, cancellationToken);
+			var response = await _dispatcher.RestoreOwnedDnsOfflineAsync(identity, cancellationToken);
 			if (!response.Ok) throw new InvalidOperationException(response.Error?.Message ?? "DNS restoration failed.");
 			var result = JsonDefaults.ToElement(response.Result);
 			if (result.TryGetProperty("pendingAdapters", out var pending) && pending.GetInt32() > 0) throw new InvalidOperationException("Reconnect absent adapters before uninstalling the DNS resolver.");

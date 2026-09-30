@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "sourceScope": "new installer/Core diff on base; legacy packaged artifact remains unchanged",
+  "rawLogSha256": "8255121861df4a305bd1c7ed0e851a92059ee7d8b2665c9d60e540a7baa3c62d",
+  "tests": 644,
+  "pass": 644,
+  "fail": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "todo": 0,
+  "durationMs": 19570.9442
+}

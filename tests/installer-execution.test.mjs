@@ -9,6 +9,41 @@ const exec = promisify(execFile);
 const powershell = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe');
 const options = {windowsHide:true, timeout:30000};
 
+test('full production NSIS source links the maintenance dependency against a harmless payload', {skip:process.platform!=='win32'}, async()=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'lagom-nsis-link-'));
+  try {
+    const payload=path.join(dir,'payload');
+    const installer=path.join(payload,'resources','installer');
+    const brand=path.join(payload,'resources','brand');
+    await fs.mkdir(installer,{recursive:true});
+    await fs.mkdir(brand,{recursive:true});
+    const icon=Buffer.alloc(22+40+16*16*4+16*4);
+    icon.writeUInt16LE(1,2); icon.writeUInt16LE(1,4);
+    icon[6]=16; icon[7]=16; icon.writeUInt16LE(1,10); icon.writeUInt16LE(32,12);
+    icon.writeUInt32LE(icon.length-22,14); icon.writeUInt32LE(22,18);
+    icon.writeUInt32LE(40,22); icon.writeInt32LE(16,26); icon.writeInt32LE(32,30);
+    icon.writeUInt16LE(1,34); icon.writeUInt16LE(32,36);
+    await fs.writeFile(path.join(brand,'icon.ico'),icon);
+    await fs.copyFile('src/installer/service-maintenance.ps1',path.join(installer,'service-maintenance.ps1'));
+    await fs.copyFile('src/installer/maintenance-boot-recovery.ps1',path.join(installer,'maintenance-boot-recovery.ps1'));
+    for(const name of ['owned-cleanup.ps1','invoke-final-silent-reinstall.ps1','ModernInstaller.exe','Unbounded.ttf'])
+      await fs.writeFile(path.join(installer,name),'inert compile-only fixture');
+    await fs.writeFile(path.join(payload,'EgoistShield.exe'),'inert compile-only fixture');
+    const source=await fs.readFile('src/installer/setup.nsi','utf8');
+    const nsi=path.join(dir,'setup.nsi'),exe=path.join(dir,'compile-only.exe');
+    await fs.writeFile(nsi,'\ufeff'+source.replace(/^\ufeff/,''));
+    const compiler=process.env.SHIELD_MAKENSIS || path.join(process.env.LOCALAPPDATA,'electron-builder/Cache/nsis-3.0.4.1/nsis-3.0.4.1-1mx3n/Bin/makensis.exe');
+    await exec(compiler,['/V2','/INPUTCHARSET','UTF8','/DPRODUCT_VERSION=9.8.7','/DPAYLOAD='+payload,'/DOUTPUT='+exe,nsi],options);
+    assert.ok((await fs.stat(exe)).size>0);
+    await fs.rm(path.join(installer,'maintenance-boot-recovery.ps1'));
+    await assert.rejects(exec(compiler,['/V2','/INPUTCHARSET','UTF8','/DPRODUCT_VERSION=9.8.7','/DPAYLOAD='+payload,'/DOUTPUT='+exe,nsi],options),/maintenance-boot-recovery\.ps1/);
+    await fs.copyFile('src/installer/maintenance-boot-recovery.ps1',path.join(installer,'maintenance-boot-recovery.ps1'));
+    await fs.rm(path.join(installer,'service-maintenance.ps1'));
+    await assert.rejects(exec(compiler,['/V2','/INPUTCHARSET','UTF8','/DPRODUCT_VERSION=9.8.7','/DPAYLOAD='+payload,'/DOUTPUT='+exe,nsi],options),/service-maintenance\.ps1/);
+    // This is a linker fixture. It must never be executed as an installer.
+  } finally {await fs.rm(dir,{recursive:true,force:true});}
+});
+
 test('packager compiles the production NSIS source explicitly as UTF-8 with a BOM', async()=>{
   const source=await fs.readFile('scripts/package-windows.mjs','utf8');
   assert.match(source,/setupSourceWithBom = '\\uFEFF'/);
@@ -101,13 +136,25 @@ test('32-bit NSIS invokes the packaged cleanup directly through 64-bit PowerShel
     const nsi=path.join(dir,'test.nsi');
     const setupSource=await fs.readFile('src/installer/setup.nsi','utf8');
     const runPhase=setupSource.match(/!macro RunPhase PHASE[\s\S]*?!macroend/)[0];
-    await fs.writeFile(cleanup,`param($Phase,$InstallRoot)\n[IO.File]::WriteAllText('${cleanupMarker}', $Phase)\nexit 0\n`);
-    await fs.writeFile(nsi,'\ufeff'+`Unicode true\n!include "x64.nsh"\nName "Shield phase fixture"\nOutFile "${exe}"\nRequestExecutionLevel user\nSilentInstall silent\nVar PhaseResult\n${runPhase}\nFunction .onInit\nInitPluginsDir\nFile /oname=$PLUGINSDIR\\owned-cleanup.ps1 "${cleanup}"\nFunctionEnd\nSection\nStrCpy $INSTDIR "${dir}"\n!insertmacro RunPhase PreInstall\nFileOpen $0 "${marker}" w\nFileWrite $0 "$PhaseResult"\nFileClose $0\nSetErrorLevel $PhaseResult\nSectionEnd\n`);
+    const maintenance=path.join(dir,'service-maintenance.ps1');
+    await fs.writeFile(maintenance,'\ufeff'+(await fs.readFile('src/installer/service-maintenance.ps1','utf8')).replace(/^\ufeff/,''));
+    const maintenanceExtract=setupSource.split(/\r?\n/).find(line=>line.includes('File /oname=$PLUGINSDIR\\service-maintenance.ps1'));
+    assert.ok(maintenanceExtract);
+    const extract=maintenanceExtract.replace('"${PAYLOAD}\\resources\\installer\\service-maintenance.ps1"','"'+maintenance+'"');
+    await fs.writeFile(cleanup,`param($Phase,$InstallRoot)\n$ErrorActionPreference='Stop'\n. (Join-Path $PSScriptRoot 'service-maintenance.ps1')\nif(-not (Get-Command Suspend-InstallerServiceRestarts -ErrorAction Stop)){throw 'Helper is missing'}\n[IO.File]::WriteAllText('${cleanupMarker}', $Phase)\nexit 0\n`);
+    const fixture='\ufeff'+`Unicode true\n!include "x64.nsh"\nName "Shield phase fixture"\nOutFile "${exe}"\nRequestExecutionLevel user\nSilentInstall silent\nVar PhaseResult\n${runPhase}\nFunction .onInit\nInitPluginsDir\nFile /oname=$PLUGINSDIR\\owned-cleanup.ps1 "${cleanup}"\n${extract}\nFunctionEnd\nSection\nStrCpy $INSTDIR "${dir}"\n!insertmacro RunPhase PreInstall\nFileOpen $0 "${marker}" w\nFileWrite $0 "$PhaseResult"\nFileClose $0\nSetErrorLevel $PhaseResult\nSectionEnd\n`;
+    await fs.writeFile(nsi,fixture);
     const compiler=process.env.SHIELD_MAKENSIS || path.join(process.env.LOCALAPPDATA,'electron-builder/Cache/nsis-3.0.4.1/nsis-3.0.4.1-1mx3n/Bin/makensis.exe');
     await exec(compiler,['/V2',nsi],options);
     await exec(exe,['/S'],options);
     assert.equal(await fs.readFile(marker,'utf8'),'0');
     assert.equal(await fs.readFile(cleanupMarker,'utf8'),'PreInstall');
+    await fs.rm(cleanupMarker);
+    await fs.writeFile(nsi,fixture.replace(extract,''));
+    await exec(compiler,['/V2',nsi],options);
+    await assert.rejects(exec(exe,['/S'],options),error=>error.code===1);
+    assert.equal(await fs.readFile(marker,'utf8'),'1');
+    await assert.rejects(fs.access(cleanupMarker));
   } finally {await fs.rm(dir,{recursive:true,force:true});}
 });
 

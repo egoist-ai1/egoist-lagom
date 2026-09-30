@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "findings": [
+    {
+      "id": "NET-01",
+      "severity": "P1",
+      "title": "DNS header alone confirms resolver health",
+      "source": "src/recovered/electron/ipc/gravityless-dns-manager.js",
+      "line": 15,
+      "evidenceStatus": "reproduced-real-loopback-UDP",
+      "measuredResult": {
+        "observedAccepted": 32,
+        "outOf": 32,
+        "expected": 0,
+        "replyBytes": 12,
+        "actualAnswerRecords": 0
+      }
+    },
+    {
+      "id": "NET-02",
+      "severity": "P2",
+      "title": "Equivalent IPv6 literals are counted as changed egress",
+      "source": "src/recovered/electron/ipc/route-probe.js",
+      "line": 78,
+      "evidenceStatus": "reproduced-source-function",
+      "measuredResult": {
+        "actual": "protected",
+        "egressChanged": "pass",
+        "semanticAddressEqual": true
+      }
+    },
+    {
+      "id": "NET-03",
+      "severity": "P2",
+      "title": "Dripping CONNECT response defeats inactivity timeout",
+      "source": "src/recovered/electron/ipc/handlers-vpn.js",
+      "line": 218,
+      "evidenceStatus": "reproduced-real-loopback-CONNECT",
+      "measuredResult": {
+        "inactivityTimeoutMs": 40,
+        "observedAtMs": 197.28149999999914,
+        "remainedPending": true,
+        "manualAbortResult": "Замер скорости отменён.",
+        "settledAtMs": 197.77399999999943
+      }
+    },
+    {
+      "id": "NET-04",
+      "severity": "P2",
+      "title": "TCP error ports containing401/403 are misclassified as authorization failure",
+      "source": "src/recovered/electron/ipc/vpn-reconnect-supervisor.js",
+      "line": 34,
+      "evidenceStatus": "reproduced-source-function",
+      "measuredResult": {
+        "cases": [
+          {
+            "reason": "connect ECONNREFUSED 203.0.113.40:40123",
+            "actual": "auth",
+            "expected": "network"
+          },
+          {
+            "reason": "connect ETIMEDOUT 203.0.113.40:40301",
+            "actual": "auth",
+            "expected": "network"
+          }
+        ]
+      }
+    },
+    {
+      "id": "NET-05",
+      "severity": "P2",
+      "title": "Chunk framing inflates downloaded payload bytes",
+      "source": "src/recovered/electron/ipc/handlers-vpn.js",
+      "line": 429,
+      "evidenceStatus": "reproduced-real-loopback-TLS",
+      "measuredResult": {
+        "observed": 1065,
+        "expectedPayloadBytes": 1000,
+        "detail": "Raw HTTP chunk framing is counted as downloaded payload."
+      }
+    },
+    {
+      "id": "NET-06",
+      "severity": "P1",
+      "title": "TUN protection verdict reuses explicit proxy comparison without actual TUN route verification",
+      "source": "src/recovered/electron/ipc/route-probe.js",
+      "line": 97,
+      "evidenceStatus": "reproduced-source-function; direct path under actual full TUN code-derived and not Windows-tested",
+      "measuredResult": [
+        {
+          "label": "different",
+          "verdict": "protected",
+          "bypassDetected": false,
+          "checks": [
+            {
+              "id": "vpn-egress",
+              "title": "Внешний маршрут доступен",
+              "status": "pass",
+              "observed": "203.0.113.2",
+              "expected": "внешний адрес получен через управляемый рантайм",
+              "explanation": "HTTPS-запрос через локальный прокси завершился успешно.",
+              "recommendedAction": null
+            },
+            {
+              "id": "egress-changed",
+              "title": "Внешний адрес изменён",
+              "status": "pass",
+              "observed": "203.0.113.1 -> 203.0.113.2",
+              "expected": "адрес внешнего маршрута отличается от прямого",
+              "explanation": "Трафик выходит с другого внешнего адреса — точка выхода изменена.",
+              "recommendedAction": null
+            },
+            {
+              "id": "route-applied",
+              "title": "Маршрут применён в Windows",
+              "status": "skipped",
+              "observed": null,
+              "expected": "TUN/WFP-проверка",
+              "explanation": "Для полного туннеля применяется отдельная проверка интерфейса и таблицы маршрутов.",
+              "recommendedAction": null
+            }
+          ]
+        },
+        {
+          "label": "same",
+          "verdict": "partial",
+          "bypassDetected": true,
+          "checks": [
+            {
+              "id": "vpn-egress",
+              "title": "Внешний маршрут доступен",
+              "status": "pass",
+              "observed": "203.0.113.2",
+              "expected": "внешний адрес получен через управляемый рантайм",
+              "explanation": "HTTPS-запрос через локальный прокси завершился успешно.",
+              "recommendedAction": null
+            },
+            {
+              "id": "egress-changed",
+              "title": "Внешний адрес изменён",
+              "status": "fail",
+              "observed": "direct и внешний маршрут совпадают: 203.0.113.2",
+              "expected": "адрес внешнего маршрута отличается от прямого",
+              "explanation": "Точка выхода не изменилась: трафик покидает сеть с того же адреса, что и прямой. Защита внешнего маршрута не подтверждена.",
+              "recommendedAction": "Выбрать другой сервер"
+            },
+            {
+              "id": "route-applied",
+              "title": "Маршрут применён в Windows",
+              "status": "skipped",
+              "observed": null,
+              "expected": "TUN/WFP-проверка",
+              "explanation": "Для полного туннеля применяется отдельная проверка интерфейса и таблицы маршрутов.",
+              "recommendedAction": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "NET-07",
+      "severity": "P2",
+      "title": "Wall clock rollback freezes DNS observation cache",
+      "source": "src/recovered/electron/ipc/gravityless-dns-manager.js",
+      "line": 45,
+      "evidenceStatus": "reproduced-source-function-with-isolated-wall-clock-input",
+      "measuredResult": {
+        "scope": "isolated Date.now dependency for actual JS status-cache; no OS clock or SCM changed",
+        "virtualRollbackDays": 90,
+        "before": {
+          "running": true,
+          "verified": true,
+          "serviceState": "running"
+        },
+        "afterRollback": {
+          "running": true,
+          "verified": true,
+          "serviceState": "running"
+        },
+        "readsBeforeForce": 1,
+        "forced": {
+          "running": false,
+          "verified": false,
+          "serviceState": "stopped"
+        },
+        "totalReads": 2
+      }
+    }
+  ],
+  "productionSourceChanges": 0,
+  "installedServicesChanged": false
+}

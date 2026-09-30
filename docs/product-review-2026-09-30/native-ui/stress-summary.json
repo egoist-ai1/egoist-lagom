@@ -1,0 +1,594 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "candidateVersion": "3.8.0",
+  "electronVersion": "44.4.5",
+  "generatedAt": "2026-09-30T11:56:18.771Z",
+  "scope": "Actual hidden unfocused native Electron UI, page-local pointer/keys, noDefaults; NODE_ENV=test has service mocks. No production readiness, OS-DPI, foreground FPS or month-soak claim.",
+  "counts": {
+    "navigations": 360,
+    "miniCycles": 40,
+    "dialogCycles": 10,
+    "elapsedMs": 829233
+  },
+  "pageErrors": [],
+  "samples": [
+    {
+      "label": "warm",
+      "elapsedMs": 10262,
+      "workingSetMiB": 414.6836,
+      "privateMiB": 342.6445,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 124.2539,
+          "privateMiB": 83.8438,
+          "cumulativeCpuSeconds": 3.542942
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 126.5273,
+          "privateMiB": 195.4219,
+          "cumulativeCpuSeconds": 1.259438
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.1953,
+          "privateMiB": 11.7109,
+          "cumulativeCpuSeconds": 0.087004
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 112.707,
+          "privateMiB": 51.668,
+          "cumulativeCpuSeconds": 0.50266
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    },
+    {
+      "label": "navigation-10",
+      "elapsedMs": 130360,
+      "workingSetMiB": 426.3125,
+      "privateMiB": 505.625,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 124.0469,
+          "privateMiB": 83.0742,
+          "cumulativeCpuSeconds": 5.502736
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 129.9414,
+          "privateMiB": 353.6055,
+          "cumulativeCpuSeconds": 2.274114
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3438,
+          "privateMiB": 11.7734,
+          "cumulativeCpuSeconds": 0.089295
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 120.9805,
+          "privateMiB": 57.1719,
+          "cumulativeCpuSeconds": 1.508726
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    },
+    {
+      "label": "navigation-20",
+      "elapsedMs": 250461,
+      "workingSetMiB": 428.1953,
+      "privateMiB": 408.1562,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 124.457,
+          "privateMiB": 83.5508,
+          "cumulativeCpuSeconds": 7.110534
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 130.6523,
+          "privateMiB": 255.0352,
+          "cumulativeCpuSeconds": 3.239337
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3125,
+          "privateMiB": 11.7031,
+          "cumulativeCpuSeconds": 0.091399
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 121.7734,
+          "privateMiB": 57.8672,
+          "cumulativeCpuSeconds": 2.474432
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    },
+    {
+      "label": "navigation-30",
+      "elapsedMs": 370563,
+      "workingSetMiB": 432.332,
+      "privateMiB": 528.5703,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 125.2422,
+          "privateMiB": 84.7422,
+          "cumulativeCpuSeconds": 8.314933
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 131.4414,
+          "privateMiB": 371.8906,
+          "cumulativeCpuSeconds": 4.191472
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.332,
+          "privateMiB": 11.7695,
+          "cumulativeCpuSeconds": 0.093229
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 124.3164,
+          "privateMiB": 60.168,
+          "cumulativeCpuSeconds": 3.41107
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    },
+    {
+      "label": "navigation-40",
+      "elapsedMs": 490667,
+      "workingSetMiB": 430.0625,
+      "privateMiB": 416.2188,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 125.9922,
+          "privateMiB": 85.3945,
+          "cumulativeCpuSeconds": 10.496927
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 131.4727,
+          "privateMiB": 258.7227,
+          "cumulativeCpuSeconds": 5.251458
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3047,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.095104
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 121.293,
+          "privateMiB": 60.3945,
+          "cumulativeCpuSeconds": 4.401194
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    },
+    {
+      "label": "navigation-50",
+      "elapsedMs": 610766,
+      "workingSetMiB": 432.9453,
+      "privateMiB": 565.9102,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 126.1406,
+          "privateMiB": 85.4258,
+          "cumulativeCpuSeconds": 11.896619
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 132.5273,
+          "privateMiB": 406.6758,
+          "cumulativeCpuSeconds": 6.255936
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3086,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.096826
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 122.9688,
+          "privateMiB": 62.1016,
+          "cumulativeCpuSeconds": 5.358821
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    },
+    {
+      "label": "navigation-60",
+      "elapsedMs": 730868,
+      "workingSetMiB": 434.6602,
+      "privateMiB": 455.168,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 126.8789,
+          "privateMiB": 85.9453,
+          "cumulativeCpuSeconds": 13.50103
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 133.0312,
+          "privateMiB": 295.2969,
+          "cumulativeCpuSeconds": 7.267942
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3086,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.098435
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 123.4414,
+          "privateMiB": 62.2188,
+          "cumulativeCpuSeconds": 6.370387
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    },
+    {
+      "label": "mini-10",
+      "elapsedMs": 751128,
+      "workingSetMiB": 443.7734,
+      "privateMiB": 309.4219,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 129.0469,
+          "privateMiB": 87.9766,
+          "cumulativeCpuSeconds": 14.401289
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 136.2539,
+          "privateMiB": 144.1797,
+          "cumulativeCpuSeconds": 7.602725
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3086,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.098666
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 127.1641,
+          "privateMiB": 65.5586,
+          "cumulativeCpuSeconds": 6.947293
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    },
+    {
+      "label": "mini-20",
+      "elapsedMs": 772145,
+      "workingSetMiB": 445.8945,
+      "privateMiB": 310.6523,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 128.8242,
+          "privateMiB": 87.582,
+          "cumulativeCpuSeconds": 15.290781
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 137.3359,
+          "privateMiB": 144.5391,
+          "cumulativeCpuSeconds": 7.885419
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3086,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.098991
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 128.4258,
+          "privateMiB": 66.8242,
+          "cumulativeCpuSeconds": 7.498731
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    },
+    {
+      "label": "mini-30",
+      "elapsedMs": 793163,
+      "workingSetMiB": 449.0078,
+      "privateMiB": 313.5039,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 128.8281,
+          "privateMiB": 87.6133,
+          "cumulativeCpuSeconds": 16.090594
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 138.6055,
+          "privateMiB": 145.3477,
+          "cumulativeCpuSeconds": 8.170228
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3086,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.099217
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 130.2656,
+          "privateMiB": 68.8359,
+          "cumulativeCpuSeconds": 8.047174
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    },
+    {
+      "label": "mini-40",
+      "elapsedMs": 814180,
+      "workingSetMiB": 451.2461,
+      "privateMiB": 315.8789,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 128.6992,
+          "privateMiB": 87.3867,
+          "cumulativeCpuSeconds": 16.931365
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 139.543,
+          "privateMiB": 146.5352,
+          "cumulativeCpuSeconds": 8.459367
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3086,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.099473
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 131.6953,
+          "privateMiB": 70.25,
+          "cumulativeCpuSeconds": 8.612297
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    },
+    {
+      "label": "end",
+      "elapsedMs": 829021,
+      "workingSetMiB": 486.6875,
+      "privateMiB": 414.1016,
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 141.0547,
+          "privateMiB": 90.5195,
+          "cumulativeCpuSeconds": 18.239529
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 154.5039,
+          "privateMiB": 234.4219,
+          "cumulativeCpuSeconds": 9.21097
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3086,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.099634
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 139.8203,
+          "privateMiB": 77.4531,
+          "cumulativeCpuSeconds": 9.27609
+        }
+      ],
+      "dom": {
+        "nodes": 262,
+        "viewport": {
+          "width": 1360,
+          "height": 900
+        },
+        "scrollWidth": 1360,
+        "heap": {
+          "used": 10000000,
+          "total": 10000000,
+          "limit": 3760000000
+        }
+      }
+    }
+  ],
+  "clickAutomationLatencyMs": {
+    "median": 2001.3375000000233,
+    "p95": 2020.3412000000244,
+    "max": 2026.3965000000317,
+    "caveat": "Playwright click completion includes automation and actionability; not click-to-first-frame latency."
+  },
+  "workingSetDeltaMiB": 72.0039,
+  "limitations": [
+    "Empty own profile with no nodes; actual renderer, service-status test branches.",
+    "No operational DNS/VPN/SCM readiness, no native DPI or foreground FPS measurement.",
+    "Click completion includes hidden-window Playwright actionability; not first-frame user latency.",
+    "Debugger/capture/cache impact and observed memory growth not isolated; no leak/plateau/month claim.",
+    "performance.memory was coarse/quantized in this run."
+  ],
+  "rawEvidence": {
+    "name": "stress-result.json",
+    "sha256": "1a1cf702f1e811de5a9fdcc3a4ca40f9d775332492bbb7a4a1e0678dc58b610a",
+    "scope": "own task work; sanitized metrics exported"
+  },
+  "harnessEvidence": [
+    {
+      "name": "stress.mjs",
+      "sha256": "dd9c179fe7dc2be66a3dd315654a9e30774ccc1a8cc85592e9af600bc047de2f",
+      "scope": "own task work; sanitized metrics exported"
+    },
+    {
+      "name": "native-control.mjs",
+      "sha256": "da70ec5481c82d4f6ffa86087efe8dade3292a9c08967b2ee85e86033b62bb04",
+      "scope": "own task work; sanitized metrics exported"
+    }
+  ],
+  "identityControl": {
+    "pidBirthPathHashProfileBound": true,
+    "ownInspectorPorts": true,
+    "hiddenUnfocused": true,
+    "playwrightNoDefaults": true
+  }
+}

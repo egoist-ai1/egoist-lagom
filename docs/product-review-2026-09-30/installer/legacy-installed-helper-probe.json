@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "observedAtUtc": "2026-09-30T18:06:52.7928526Z",
+  "readOnly": true,
+  "installedVersion": "3.7.9",
+  "helperPath": "C:\\Program Files\\EgoistShield\\resources\\installer\\invoke-final-silent-reinstall.ps1",
+  "helperSha256": "F6C232FA15E4E8F1D78C149F973DF8B807D58CABD8EF5898B8B5CE0D2279DA8E",
+  "hasBootRecoveryFunction": false,
+  "hasCheckedRegistrationFunction": false,
+  "hasMaintenanceLeaseFunction": false,
+  "scope": "Specific installed helper source only; historical clean VM migration is not performed",
+  "nativeServiceMutations": 0,
+  "nativeInstallerExecutions": 0,
+  "currentSourceUpdaterPath": "src/recovered/electron/ipc/desktop-updater.js",
+  "currentSourceUpdaterSha256": "72523aef188e2a8210d5a597980c19cf74ea74feeda55297a6cbd078f1ac7af3",
+  "actualInstalledUpdaterSourceReceipt": "legacy-installed-updater-asar.json",
+  "historical378SourceOrNativeMigrationConfirmed": false
+}

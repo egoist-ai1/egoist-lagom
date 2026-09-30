@@ -1,0 +1,17 @@
+Entry point: isolated single-file EgoistShield.Service.exe --self-test
+Owned DNS baseline self-tests passed: 10
+Component worker response self-test passed: malformed-json
+Component worker response self-test passed: missing-result
+Component worker response self-test passed: healthy
+Installer maintenance self-tests passed: marker fixtures=6; blocked mutations=84; blocked component queries=12; offline empty DNS restores=6; trailing separator checks=24; queued mutation race=1; cancellable startup wait=1; hosted recovery/pipe gate=1
+Recovery startup policy self-tests passed: policies=4; repeated repairs=4; supervisor fixtures=5; Disabled races=2; SCM failure steps=4; runner exceptions=2; cancellation boundaries=5; unknown service refusal=1
+EgoistShield.Service self-test passed; protocol=1; version=3.8.0
+
+Entry point: selected SDK 10.0.401 dotnet.exe + compiled EgoistShield.Service.dll --self-test
+Owned DNS baseline self-tests passed: 10
+Component worker response self-test passed: malformed-json
+Component worker response self-test passed: missing-result
+Component worker response self-test passed: healthy
+Installer maintenance self-tests passed: marker fixtures=6; blocked mutations=84; blocked component queries=12; offline empty DNS restores=6; trailing separator checks=24; queued mutation race=1; cancellable startup wait=1; hosted recovery/pipe gate=1
+Recovery startup policy self-tests passed: policies=4; repeated repairs=4; supervisor fixtures=5; Disabled races=2; SCM failure steps=4; runner exceptions=2; cancellation boundaries=5; unknown service refusal=1
+EgoistShield.Service self-test passed; protocol=1; version=3.8.0

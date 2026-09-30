@@ -119,6 +119,8 @@ Function .onInit
   StrCpy $INSTDIR "$PROGRAMFILES64\EgoistShield"
   InitPluginsDir
   File /oname=$PLUGINSDIR\owned-cleanup.ps1 "${PAYLOAD}\resources\installer\owned-cleanup.ps1"
+  File /oname=$PLUGINSDIR\service-maintenance.ps1 "${PAYLOAD}\resources\installer\service-maintenance.ps1"
+  File /oname=$PLUGINSDIR\maintenance-boot-recovery.ps1 "${PAYLOAD}\resources\installer\maintenance-boot-recovery.ps1"
   File /oname=$PLUGINSDIR\invoke-final-silent-reinstall.ps1 "${PAYLOAD}\resources\installer\invoke-final-silent-reinstall.ps1"
   File /oname=$PLUGINSDIR\ModernInstaller.exe "${PAYLOAD}\resources\installer\ModernInstaller.exe"
   File /oname=$PLUGINSDIR\Unbounded.ttf "${PAYLOAD}\resources\installer\Unbounded.ttf"
@@ -381,6 +383,8 @@ Section "Uninstall"
   ${EndIf}
   InitPluginsDir
   CopyFiles /SILENT "$INSTDIR\resources\installer\owned-cleanup.ps1" "$PLUGINSDIR\owned-cleanup.ps1"
+  CopyFiles /SILENT "$INSTDIR\resources\installer\service-maintenance.ps1" "$PLUGINSDIR\service-maintenance.ps1"
+  CopyFiles /SILENT "$INSTDIR\resources\installer\maintenance-boot-recovery.ps1" "$PLUGINSDIR\maintenance-boot-recovery.ps1"
   !insertmacro RunPhase Uninstall
   ${If} $PhaseResult != "0"
     SetErrorLevel 46

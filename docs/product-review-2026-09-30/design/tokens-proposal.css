@@ -1,0 +1,65 @@
+/* Design proposal only. Not imported by candidate 3.8.0. Exact values live here. */
+@font-face{font-family:Manrope;src:url('./assets/manrope-latin.woff2') format('woff2');font-style:normal;font-weight:200 800;font-display:swap}
+@font-face{font-family:Manrope;src:url('./assets/manrope-cyrillic.woff2') format('woff2');font-style:normal;font-weight:200 800;font-display:swap;unicode-range:U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:Unbounded;src:url('./assets/unbounded-latin.woff2') format('woff2');font-style:normal;font-weight:200 900;font-display:swap}
+@font-face{font-family:Unbounded;src:url('./assets/unbounded-cyrillic.woff2') format('woff2');font-style:normal;font-weight:200 900;font-display:swap;unicode-range:U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+:root {
+  color-scheme: dark;
+  --font-sans: Manrope, 'Segoe UI', sans-serif;
+  --font-display: Unbounded, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  --canvas: #090909;
+  --sidebar: #0e0e0e;
+  --panel: #121212;
+  --panel-raised: #1b1b1b;
+  --panel-hover: #222222;
+  --ink: #f5f5f5;
+  --muted: #b8b8b8;
+  --dim: #a0a0a0;
+  --line: #333333;
+  --control-line: #737373;
+  --line-hover: #a3a3a3;
+  --action: #f5f5f5;
+  --action-hover: #dedede;
+  --action-ink: #090909;
+  --focus-ring: #f5f5f5;
+  --status-ready: #f5f5f5;
+  --status-warning: #e5e5e5;
+  --status-error: #f5f5f5;
+  --status-unknown: #a0a0a0;
+  --type-caption: 12px;
+  --type-body: 14px;
+  --type-section: 16px;
+  --type-title: 24px;
+  --line-body: 1.5;
+  --line-heading: 1.25;
+  --weight-body: 450;
+  --weight-emphasis: 650;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --control-height: 40px;
+  --icon-target: 32px;
+  --icon-size: 20px;
+  --icon-stroke: 1.8;
+  --nav-width: 192px;
+  --rail-width: 64px;
+  --titlebar-height: 40px;
+  --content-max: 1160px;
+  --compact-width: 320px;
+  --mini-min-height: 400px;
+  --mini-emblem-size: 88px;
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 12px;
+  --focus-width: 2px;
+  --focus-offset: 3px;
+  --motion-feedback: 100ms;
+  --motion-content: 140ms;
+  --motion-dialog: 180ms;
+  --motion-ease: cubic-bezier(.2,0,.2,1);
+}

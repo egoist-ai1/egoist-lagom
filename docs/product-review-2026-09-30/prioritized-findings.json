@@ -1,0 +1,984 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-09-30",
+  "sourceCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "candidateVersion": "3.8.0",
+  "installedPublicVersion": "3.7.9",
+  "decision": "hold_stable_candidate_new_findings_open",
+  "productChangesAppliedInThisReview": true,
+  "confirmedP0": false,
+  "priorityMeaning": "P1 before stable; not CVE/exploit severity or observed failure frequency",
+  "kindMeaning": "32 deduplicated implementation/acceptance tasks, including architecture and measurement; not 32 independent crashes.",
+  "summary": {
+    "tasks": 32,
+    "byPriority": {
+      "P2": 13,
+      "P1": 19
+    },
+    "byKind": {
+      "defect": 27,
+      "architecture_gap": 3,
+      "measurement_gap": 1,
+      "policy_debt": 1
+    },
+    "byStatus": {
+      "open_not_implemented": 27,
+      "implemented_source_fixture_verified_native_acceptance_pending": 5
+    },
+    "dependencyReferencesValid": true,
+    "dependencyCycles": 0
+  },
+  "findings": [
+    {
+      "id": "R01",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Временная недоступность atomic JSON выглядит как отсутствие данных",
+      "sourceIds": [
+        "S2-03"
+      ],
+      "evidenceFiles": [
+        "services/stress-results.json",
+        "services-audit.md"
+      ],
+      "evidenceType": "production classes + actual NTFS concurrency",
+      "confirmedClaim": "420 writes/2000 reads дали 468 transient empty; 240 Applying writes/1600 recovery.status дали 103 false no-recovery.",
+      "limits": "Итоговые данные сохранились; потери файла или реальной сетевой мутации не доказано.",
+      "proposedChange": "Typed Missing/Valid/Unavailable/Corrupt; open внутри bounded retry вместо File.Exists; стабилизация Missing/координация.",
+      "acceptance": [
+        "0 false no-recovery при File.Replace",
+        "Unavailable не превращается в пустой state",
+        "Финальные acknowledged updates сохранены"
+      ],
+      "milestone": "M1",
+      "dependencies": [],
+      "stableGate": false
+    },
+    {
+      "id": "R02",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Устаревший state:set перезаписывает более новое состояние",
+      "sourceIds": [
+        "FC-01"
+      ],
+      "evidenceFiles": [
+        "feature-contracts.json",
+        "feature-map.md"
+      ],
+      "evidenceType": "actual StateStore + own file reproduction",
+      "confirmedClaim": "Новый узел исчез после сохранения старого снимка notification settings; count 1→0, на диске тоже 0.",
+      "limits": "Собственная fixture; пользовательские узлы не изменялись.",
+      "proposedChange": "Узкие атомарные commands/settings:patch с expectedRevision; проверить все get()+set() callers.",
+      "acceptance": [
+        "Concurrent settings/node/subscription сохраняют обе независимые операции",
+        "Conflict явный",
+        "Старый renderer snapshot не сохраняется целиком"
+      ],
+      "milestone": "M1",
+      "dependencies": [],
+      "stableGate": true
+    },
+    {
+      "id": "R03",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Повреждённый журнал блокирует диагностический startup Core",
+      "sourceIds": [
+        "S2-01"
+      ],
+      "evidenceFiles": [
+        "services/stress-results.json",
+        "services/ServiceAuditStress.cs",
+        "services-audit.md"
+      ],
+      "evidenceType": "actual ServiceEngine + own native ACL and named pipe",
+      "confirmedClaim": "Authentic terminal marker усечён 823→226 bytes; RunAsync бросает JsonException до pipe; healthy marker открывает hello.",
+      "limits": "Не настоящий ProgramData/LocalSystem; installed Core не повреждался.",
+      "proposedChange": "Read-only degraded startup, typed journal errors, mutation block и ownership-checked recovery без удаления evidence.",
+      "acceptance": [
+        "Hello/health доступны при corrupt marker",
+        "Unsafe mutation отклонена",
+        "Журнал сохранён для диагностики",
+        "Recovery не трогает foreign state"
+      ],
+      "milestone": "M1",
+      "dependencies": [
+        "R01"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R04",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Повтор component.execute после отказа сохранения результата",
+      "sourceIds": [
+        "S2-02"
+      ],
+      "evidenceFiles": [
+        "services/stress-results.json",
+        "services/ServiceAuditStress.cs",
+        "services-audit.md"
+      ],
+      "evidenceType": "actual dispatcher/persistence + explicitly injected harmless executor",
+      "confirmedClaim": "Side effect завершён, FileShare.None сорвал durable response; после unlock тот же requestId выполнил executor второй раз.",
+      "limits": "Executor только пишет собственный файл; двойной запуск сетевой службы не выполнялся.",
+      "proposedChange": "Durable intent до действия, fingerprint/precondition, outcome-unknown и method-specific reconciliation перед replay.",
+      "acceptance": [
+        "Crash/write-failure windows не приводят к blind replay",
+        "Payload mismatch отклонён",
+        "Unknown outcome проверяется по фактическому state"
+      ],
+      "milestone": "M1",
+      "dependencies": [
+        "R01"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R05",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Quick-on DPI-профиля снимает постоянный service mode",
+      "sourceIds": [
+        "FC-03",
+        "D14"
+      ],
+      "evidenceFiles": [
+        "feature-contracts.json",
+        "feature-map.md",
+        "design-audit.md"
+      ],
+      "evidenceType": "actual callback reproduction + production manager source",
+      "confirmedClaim": "QuickProfilesOn выбирает startStandalone; менеджер для установленной остановленной службы ставит Disabled.",
+      "limits": "Живой SCM не менялся; native reboot ещё gate.",
+      "proposedChange": "Сохранять service mode через startService; standalone отдельная явно временная операция.",
+      "acceptance": [
+        "Installed quick-on → Auto/Running/readiness",
+        "GUI exit и reboot без GUI сохраняют выбранный режим",
+        "Disabled intent не восстанавливается"
+      ],
+      "milestone": "M1",
+      "dependencies": [
+        "R02",
+        "R04"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R06",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Панель второй подписки может удалить первую",
+      "sourceIds": [
+        "FC-09"
+      ],
+      "evidenceFiles": [
+        "feature-contracts.json",
+        "feature-map.md"
+      ],
+      "evidenceType": "source-proven mismatched target",
+      "confirmedClaim": "Provider следует active node, а quota/expiry/delete читают subscriptions[0].",
+      "limits": "Реальные подписки не удалялись; пользовательский failure path не запускался.",
+      "proposedChange": "Единый selectedSubscriptionId для display/actions; stable target и подтверждение конкретной подписки.",
+      "acceptance": [
+        "Вторая выбранная подписка показывает свои данные",
+        "Удаляется только подтверждённый ID",
+        "Concurrent refresh не меняет цель"
+      ],
+      "milestone": "M1",
+      "dependencies": [
+        "R02"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R07",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "DNS header-only ответ подтверждает resolution",
+      "sourceIds": [
+        "NET-01"
+      ],
+      "evidenceFiles": [
+        "network/network-stress.json",
+        "network/network-findings.json",
+        "network-audit.md"
+      ],
+      "evidenceType": "actual production function + actual own UDP",
+      "confirmedClaim": "32/32 ответов из 12-byte header с ANCOUNT=1 приняты без question/answer bytes.",
+      "limits": "Это JS Gravityless probe, не доказательство отказа installed Native DoH.",
+      "proposedChange": "Bounded DNS decoder question/records/source/ID/type/class; local identity и external resolution отдельны.",
+      "acceptance": [
+        "Header-only/truncated/foreign source не verified",
+        "Compression loops bounded",
+        "Правильные ответы проходят",
+        "Socket закрыт во всех путях"
+      ],
+      "milestone": "M3",
+      "dependencies": [],
+      "stableGate": true
+    },
+    {
+      "id": "R08",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Вердикт protected в TUN не подтверждён маршрутом",
+      "sourceIds": [
+        "NET-06",
+        "D04"
+      ],
+      "evidenceFiles": [
+        "network/network-contracts.json",
+        "network/network-findings.json",
+        "network-audit.md"
+      ],
+      "evidenceType": "actual pure source function + source flow analysis",
+      "confirmedClaim": "buildRouteProbeResult может дать protected при changed IP и skipped Windows route check.",
+      "limits": "Реальный TUN/маршруты Windows не менялись; direct request без binding может тоже идти через tunnel.",
+      "proposedChange": "Interface/route/physical-path evidence; иначе unknown; общий IP не доказывает all-app protection.",
+      "acceptance": [
+        "Skipped route не protected",
+        "Full TUN equal IP не автоматический bypass",
+        "Native route matrix подтверждает заявленную область"
+      ],
+      "milestone": "M3",
+      "dependencies": [],
+      "stableGate": true
+    },
+    {
+      "id": "R09",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Секретный DNS URL path сохраняется в диагностике",
+      "sourceIds": [
+        "FC-02"
+      ],
+      "evidenceFiles": [
+        "feature-contracts.json",
+        "feature-map.md"
+      ],
+      "evidenceType": "actual redactor + synthetic sentinel reproduction",
+      "confirmedClaim": "DNS URL path с AUDIT_SENTINEL остаётся после redaction.",
+      "limits": "Реальных секретов не использовалось; полный ZIP надо проверить после исправления.",
+      "proposedChange": "Структурная URL redaction для export/logs без изменения operational endpoint.",
+      "acceptance": [
+        "Sentinels отсутствуют в полном ZIP/logs/nested JSON",
+        "Безопасные host/type/error сохранены",
+        "Рабочая конфигурация не изменяется"
+      ],
+      "milestone": "M2",
+      "dependencies": [],
+      "stableGate": true
+    },
+    {
+      "id": "R10",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Writable runtime выбирается для повышенного GUI без проверки байтов",
+      "sourceIds": [
+        "SEC-01"
+      ],
+      "evidenceFiles": [
+        "security/security-boundary-reproductions.json",
+        "security-release-audit.md"
+      ],
+      "evidenceType": "actual path resolver + own inert bytes; installer/manifest source",
+      "confirmedClaim": "Изменённый userData runtime снова выбран при bundled runtime; GUI требует administrator.",
+      "limits": "Изменённый EXE не исполнялся; UAC bypass или exploit не доказан.",
+      "proposedChange": "GUI с обычными правами; protected verified runtime/DLL execution; явная custom-runtime boundary.",
+      "acceptance": [
+        "Tampered writable bytes не исполняются privileged",
+        "ACL/reparse/TOCTOU/DLL policy проверены",
+        "Обычный VPN и TUN проходят"
+      ],
+      "milestone": "M2",
+      "dependencies": [],
+      "stableGate": true
+    },
+    {
+      "id": "R11",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Общий component downloader зависает после заголовков и теряет cleanup",
+      "sourceIds": [
+        "SEC-02"
+      ],
+      "evidenceFiles": [
+        "security/shared-download-reproductions.json",
+        "security/audit-harness/audit-shared-download.mjs",
+        "security-release-audit.md"
+      ],
+      "evidenceType": "actual fetch/transport/helper + own loopback; open case controlled stream",
+      "confirmedClaim": "После header-only budget операция pending на 320 ms; open failure EISDIR оставляет body cancel count=0.",
+      "limits": "Header timeout в fixture сокращён до 60 ms; не реальный GitHub outage. DesktopUpdater использует другой путь.",
+      "proposedChange": "Общий header/body/idle/total/byte budget, cancellation, file/reader cleanup, digest и rollback.",
+      "acceptance": [
+        "Hang/drip/cancel/open/write/ENOSPC bounded",
+        "Все handles/streams закрыты",
+        "Очередь принимает следующую работу",
+        "Работающий runtime сохранён"
+      ],
+      "milestone": "M2",
+      "dependencies": [],
+      "stableGate": true
+    },
+    {
+      "id": "R12",
+      "priority": "P1",
+      "kind": "architecture_gap",
+      "status": "open_not_implemented",
+      "title": "GUI EXE capabilities противоречат Core path identity",
+      "sourceIds": [
+        "SEC-03"
+      ],
+      "evidenceFiles": [
+        "security/electron-fuses-readback.json",
+        "security-release-audit.md"
+      ],
+      "evidenceType": "actual candidate PE fuse readback + actual authorizer/worker source",
+      "confirmedClaim": "RunAsNode/inspect/Node options включены, ASAR-only/integrity выключены; Core доверяет GUI path; worker использует RunAsNode.",
+      "limits": "Произвольный Node→Core вызов/полная privilege exploit chain не запускались.",
+      "proposedChange": "Отдельный protected worker host и identity; после миграции hardening GUI fuses/ASAR.",
+      "acceptance": [
+        "Production PE fuses прочитаны",
+        "Пользовательский script не считается GUI client",
+        "Real SystemDoH/Zapret/TG worker checks сохранены"
+      ],
+      "milestone": "M2",
+      "dependencies": [
+        "R10"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R13",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "UI смешивает intent, наблюдение и unknown",
+      "sourceIds": [
+        "D01",
+        "D03",
+        "D04",
+        "FC-04",
+        "FC-05",
+        "FC-10"
+      ],
+      "evidenceFiles": [
+        "design-audit.md",
+        "feature-map.md",
+        "native-ui/mini-intent.json"
+      ],
+      "evidenceType": "fresh actual idle renderer observation + source failure-path analysis",
+      "confirmedClaim": "Idle DNS/TG aria-checked=true оформляет будущий intent как ON; missing DNS snapshot даёт false; mini shield и Overview VPN имеют разные области.",
+      "limits": "Отказ IPC на рабочей системе не вызывался; native test содержит service-status mocks.",
+      "proposedChange": "Единый desired/observed/generation/freshness contract; unknown/stale; явные shield/VPN scopes; first read-only preflight.",
+      "acceptance": [
+        "Нет connected/off из отсутствующего ответа",
+        "Intent отображён отдельно",
+        "Late result не стирает новое поколение",
+        "Частичная ошибка видна в full/mini"
+      ],
+      "milestone": "M3+M4",
+      "dependencies": [
+        "R02",
+        "R03",
+        "R07",
+        "R08"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R14",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "DNS labels недостаточно контрастны и мелки",
+      "sourceIds": [
+        "D02"
+      ],
+      "evidenceFiles": [
+        "design/validation.json",
+        "design-audit.md"
+      ],
+      "evidenceType": "observed current UI + computed CSS color ratio",
+      "confirmedClaim": "Current #71717a на #0d0e12 = 3.9913:1, font 10.5 px для обычного текста.",
+      "limits": "Proposal contrast проходит в HTML; реальный compiled UI после миграции ещё не проверен.",
+      "proposedChange": "Semantic dim/muted, body/caption sizes, computed contrast для всех background/state.",
+      "acceptance": [
+        "Обычный текст >=4.5:1 на реальном фоне",
+        "DPI/200% без clipping",
+        "Статус читается в mini и вложенных панелях"
+      ],
+      "milestone": "M4",
+      "dependencies": [
+        "R13"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R15",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Эквивалентные IPv6 ошибочно считаются разными",
+      "sourceIds": [
+        "NET-02"
+      ],
+      "evidenceFiles": [
+        "network/network-contracts.json",
+        "network/network-findings.json"
+      ],
+      "evidenceType": "actual address comparison function",
+      "confirmedClaim": "Compressed и expanded IPv6 дают changed-address verdict.",
+      "limits": "Нативный tunnel не проверялся.",
+      "proposedChange": "Каноническое сравнение адресов; исходный display/server/SNI сохраняется.",
+      "acceptance": [
+        "Aliases равны",
+        "Разные IP не объединяются",
+        "Server/SNI не изменены"
+      ],
+      "milestone": "M3",
+      "dependencies": [
+        "R08"
+      ],
+      "stableGate": false
+    },
+    {
+      "id": "R16",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "CONNECT timeout можно продлевать медленным drip",
+      "sourceIds": [
+        "NET-03"
+      ],
+      "evidenceFiles": [
+        "network/network-contracts.json",
+        "network/network-findings.json",
+        "network-audit.md"
+      ],
+      "evidenceType": "actual own TCP CONNECT fixture",
+      "confirmedClaim": "Drip каждые 10 ms держит pending 197 ms при inactivity timeout 40 ms; manual abort завершает.",
+      "limits": "Это укороченная fixture; обычный local runtime может отвечать быстро.",
+      "proposedChange": "Absolute deadline, idle/header cap, AbortSignal, cleanup.",
+      "acceptance": [
+        "Drip не продлевает total budget",
+        "Abort освобождает socket",
+        "Обычный CONNECT сохранён"
+      ],
+      "milestone": "M3",
+      "dependencies": [],
+      "stableGate": false
+    },
+    {
+      "id": "R17",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Цифры порта ошибочно классифицируются как auth",
+      "sourceIds": [
+        "NET-04"
+      ],
+      "evidenceFiles": [
+        "network/network-contracts.json",
+        "network/network-findings.json"
+      ],
+      "evidenceType": "actual reconnect classifier reproduction",
+      "confirmedClaim": "ECONNREFUSED:40123 и ETIMEDOUT:40301 попадают в auth из regex 401/403.",
+      "limits": "Живой reconnect/circuit на установленном клиенте не провоцировался.",
+      "proposedChange": "Structured status/error code вместо поиска цифр в тексте.",
+      "acceptance": [
+        "Порты не auth",
+        "Настоящий 401/403 имеет соответствующую policy",
+        "Network failure допускает bounded retry"
+      ],
+      "milestone": "M3",
+      "dependencies": [],
+      "stableGate": false
+    },
+    {
+      "id": "R18",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Speedtest учитывает chunk framing и неясный расход трафика",
+      "sourceIds": [
+        "NET-05"
+      ],
+      "evidenceFiles": [
+        "network/network-contracts.json",
+        "network/network-findings.json",
+        "network-audit.md"
+      ],
+      "evidenceType": "actual own TLS HTTP fixture + source budget calculation",
+      "confirmedClaim": "1000 payload bytes посчитаны как 1065; верхний исходный download budget 3.072 GB.",
+      "limits": "Большой внешний speedtest не запускался; 3.072 GB — расчёт кода.",
+      "proposedChange": "Payload parser; явный bounded quick test и отдельный large test.",
+      "acceptance": [
+        "Framing не counted как payload",
+        "Byte/time budget отображён/соблюдён",
+        "Cancel завершает все streams"
+      ],
+      "milestone": "M3",
+      "dependencies": [
+        "R16"
+      ],
+      "stableGate": false
+    },
+    {
+      "id": "R19",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Wall-clock rollback удерживает старые health/cache",
+      "sourceIds": [
+        "NET-07",
+        "S2-native-route-cache"
+      ],
+      "evidenceFiles": [
+        "network/network-contracts.json",
+        "network/network-findings.json",
+        "services-audit.md"
+      ],
+      "evidenceType": "actual JS cache with controlled VM Date; native source-derived risk",
+      "confirmedClaim": "После виртуального rollback 90 дней старое running/verified возвращается без read; force обнаруживает stopped.",
+      "limits": "Системное время Windows не менялось; native IPv6 cache rollback не исполнялся.",
+      "proposedChange": "Monotonic TTL/backoff/elapsed; future timestamp guard и invalidation по generation.",
+      "acceptance": [
+        "Rollback/forward/stale cache не замораживают old success",
+        "Force semantics сохранены",
+        "UTC только для человеческой даты"
+      ],
+      "milestone": "M3",
+      "dependencies": [],
+      "stableGate": false
+    },
+    {
+      "id": "R20",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Подключение щита неявно меняет startup-предпочтения GUI",
+      "sourceIds": [
+        "FC-07"
+      ],
+      "evidenceFiles": [
+        "feature-map.md",
+        "feature-contracts.json"
+      ],
+      "evidenceType": "production source-derived behavior",
+      "confirmedClaim": "Shield connect выставляет autoStart/startMinimized/minimizeToTray=true.",
+      "limits": "Настройки пользователя не менялись этим аудитом.",
+      "proposedChange": "GUI startup только по явному выбору; background-service intent независим.",
+      "acceptance": [
+        "Shield connect не меняет GUI preferences",
+        "Service boot без GUI работает",
+        "Миграция не теряет текущий явный выбор"
+      ],
+      "milestone": "M4",
+      "dependencies": [
+        "R02",
+        "R05"
+      ],
+      "stableGate": false
+    },
+    {
+      "id": "R21",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Foreign file host принимается как trusted renderer",
+      "sourceIds": [
+        "SEC-04"
+      ],
+      "evidenceFiles": [
+        "security/security-boundary-reproductions.json",
+        "security-release-audit.md"
+      ],
+      "evidenceType": "actual trusted URL validator",
+      "confirmedClaim": "file://audit.invalid с похожим pathname принят; hostname не проверяется.",
+      "limits": "Реальная загрузка UNC/IPC exploit chain не выполнялась.",
+      "proposedChange": "Exact document/main frame; empty file host/canonical path или собственный app protocol.",
+      "acceptance": [
+        "UNC/host/encoded ambiguity/outside/child frame отвергнуты",
+        "Обычный packaged renderer работает"
+      ],
+      "milestone": "M2",
+      "dependencies": [
+        "R12"
+      ],
+      "stableGate": false
+    },
+    {
+      "id": "R22",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Release URL policy допускает userinfo и неожиданный порт",
+      "sourceIds": [
+        "SEC-05"
+      ],
+      "evidenceFiles": [
+        "security/canonical-url-reproductions.json",
+        "security-release-audit.md"
+      ],
+      "evidenceType": "actual schema/candidate validation with synthetic metadata",
+      "confirmedClaim": "github.com:8443 и credentials URL проходят validators.",
+      "limits": "Доверенная подпись не подделывалась; remote fetch/installation не выполнялись.",
+      "proposedChange": "Единая exact HTTPS/default-port/no-userinfo policy и проверка каждого redirect до request.",
+      "acceptance": [
+        "Недопустимый URL отвергается до request",
+        "Canonical signed candidate принимается",
+        "Redirect chain bounded"
+      ],
+      "milestone": "M2",
+      "dependencies": [
+        "R11"
+      ],
+      "stableGate": false
+    },
+    {
+      "id": "R23",
+      "priority": "P2",
+      "kind": "measurement_gap",
+      "status": "open_not_implemented",
+      "title": "Ресурсы и polling требуют пределов и профилирования",
+      "sourceIds": [
+        "FC-06",
+        "S2-resource-debt",
+        "D-motion-performance"
+      ],
+      "evidenceFiles": [
+        "native-ui/stress-summary.json",
+        "native-ui/idle-summary.json",
+        "services-audit.md",
+        "feature-map.md"
+      ],
+      "evidenceType": "actual bounded resource measurements + source limits",
+      "confirmedClaim": "Пустой native UI working set 414.68→486.69 MiB; response cache ограничен числом 512, не общими bytes; own crash оставил 8 zero-byte temps.",
+      "limits": "Причина UI growth не установлена; no leak/plateau claim; большой cache и month soak не выполнены.",
+      "proposedChange": "Profile before optimize; visible polling/coalescing/obsolete cancellation; byte/log/temp limits с ownership.",
+      "acceptance": [
+        "0/60/500/2000-node profiles измерены",
+        "Foreground latency/FPS измерены отдельно",
+        "Cache/logs bounded",
+        "Устойчивый memory/handle growth объяснён"
+      ],
+      "milestone": "M4",
+      "dependencies": [
+        "R13"
+      ],
+      "stableGate": false
+    },
+    {
+      "id": "R24",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "open_not_implemented",
+      "title": "Generic DNS поле обещает неподдерживаемый DoT hostname",
+      "sourceIds": [
+        "FC-08"
+      ],
+      "evidenceFiles": [
+        "feature-map.md",
+        "feature-contracts.json"
+      ],
+      "evidenceType": "source contract mismatch",
+      "confirmedClaim": "Общее поле DoH URL/DoT hostname принимает HTTPS DoH; hostname DoT реализован только в Gravityless пути.",
+      "limits": "Новый DoT handshake не проверялся.",
+      "proposedChange": "Точная подпись или отдельный полноценный DoT contract.",
+      "acceptance": [
+        "Accepted UI input соответствует executor",
+        "TLS/SNI/bootstrap failure явно проверены при реализации DoT"
+      ],
+      "milestone": "M3",
+      "dependencies": [
+        "R07"
+      ],
+      "stableGate": false
+    },
+    {
+      "id": "R25",
+      "priority": "P1",
+      "kind": "architecture_gap",
+      "status": "open_not_implemented",
+      "title": "Не все функции автономны без GUI",
+      "sourceIds": [
+        "market-headless-vpn",
+        "FC-network-combinator"
+      ],
+      "evidenceFiles": [
+        "market-research.md",
+        "feature-map.md"
+      ],
+      "evidenceType": "current lifecycle/source capability inventory",
+      "confirmedClaim": "VPN lifecycle app-dependent; NetworkCombinator apply/rollback возвращают applied:false.",
+      "limits": "Это незавершённое требование, не новый воспроизведённый crash; перенос потребует отдельной архитектуры.",
+      "proposedChange": "Protected service-owned VPN lifecycle и реальные supported coordinator transactions; GUI joins observed state.",
+      "acceptance": [
+        "Boot/crash GUI/engine/sleep/network-loss без GUI",
+        "Одна owned instance/routes/DNS owner",
+        "Unsupported функция не выдаёт успех"
+      ],
+      "milestone": "M5",
+      "dependencies": [
+        "R03",
+        "R04",
+        "R08",
+        "R10",
+        "R12",
+        "R19"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R26",
+      "priority": "P1",
+      "kind": "policy_debt",
+      "status": "open_not_implemented",
+      "title": "Старый update trust и native release gates не закрыты",
+      "sourceIds": [
+        "SEC-06",
+        "release-3.7.7-trust-migration"
+      ],
+      "evidenceFiles": [
+        "security-release-audit.md",
+        "implementation-plan.md"
+      ],
+      "evidenceType": "existing pinned trust contract + unperformed Windows matrix",
+      "confirmedClaim": "Нет найденного старого приватного ключа для прозрачной 3.7.7 migration; новый clean install/upgrade/reboot/soak не выполнен.",
+      "limits": "Не новый криптографический exploit; 3.7.8/3.7.9 update needs real chain acceptance.",
+      "proposedChange": "Реальные upgrade/rollback/fault gates; безопасная ручная 3.7.7 migration без отключения подписи; новая source-bound сборка.",
+      "acceptance": [
+        "3.7.8/3.7.9 upgrade с настоящим trust проходит",
+        "3.7.7 safe migration документирована",
+        "Revoked/rollback/wrong hash отвергнуты",
+        "Native matrix/pilot имеют реальные receipts"
+      ],
+      "milestone": "M6",
+      "dependencies": [
+        "R11",
+        "R22",
+        "R25"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R27",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "implemented_source_fixture_verified_native_acceptance_pending",
+      "title": "Самовосстанавливающиеся старые службы препятствуют замене файлов",
+      "sourceIds": [
+        "INST-01"
+      ],
+      "evidenceFiles": [
+        "installer-fix.md",
+        "installer-upgrade-analysis.md",
+        "installer-test-plan.md",
+        "installer/maintenance-regressions.json",
+        "installer/core-maintenance-receipt.json",
+        "installer/node-suite-summary.json"
+      ],
+      "evidenceType": "actual production PowerShell/Core; controlled SCM/process boundaries; real isolated files/mutex/named pipe",
+      "confirmedClaim": "Old production stop returned at Running in controlled restart repro. New helper43/43, lifecycle9groups, registration38/38 with148 actual native argv probes and compiled Core self-test pass; full suite bound by installer/node-suite-summary.json.",
+      "limits": "Source fix not installed or published. Native SCM queue, policy resume, full crash/watchdog/reboot/power-loss, historical migration coverage and soak pending.",
+      "implementedChange": "Durable original policy, Core-first, explicit Disabled/readback, verified bounded stop/PID handle, Core maintenance barrier, narrow offline DNS restore, scoped old-stage recovery and helper delivery.",
+      "proposedChange": "Complete native acceptance and rebuild exact corrected release after remaining stable blockers.",
+      "acceptance": [
+        "SCM cannot restart owned service while files are replaced",
+        "Original intent/startup remains correct after recovery/supervision",
+        "Native interrupted upgrade/reboot does not strand Disabled DNS",
+        "Foreign services unchanged",
+        "Published artifact binds the corrected commit and complete trusted update chain"
+      ],
+      "milestone": "M1",
+      "dependencies": [
+        "R03",
+        "R28",
+        "R29",
+        "R30"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R28",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "implemented_source_fixture_verified_native_acceptance_pending",
+      "title": "Recovery repair нормализует delayed-auto после возврата policy установщиком",
+      "sourceIds": [
+        "INST-02"
+      ],
+      "evidenceFiles": [
+        "installer-fix.md",
+        "installer/core-maintenance-receipt.json",
+        "installer/core-maintenance-selftest.txt"
+      ],
+      "evidenceType": "actual production recovery flow and supervisor with harmless SCM runner boundaries; regressive startup-write mutant",
+      "confirmedClaim": "Recovery-only repair no longer configures startup or DelayedAutoStart. Explicit install retains startup defaults. Four policies, supervisor cycles, racing Disabled, error and cancellation cases passed in compiled Core self-test.",
+      "limits": "No live SCM startup-policy mutation performed. Native post-upgrade supervisor policy readback pending.",
+      "implementedChange": "Separated explicit startup configuration from recovery-only dependencies/failure/failureflag/description; checks cancellation before commands.",
+      "proposedChange": "Verify supported original policy after native upgrade and supervision.",
+      "acceptance": [
+        "Recovery repair leaves current startup and delayed flag unchanged",
+        "Initial explicit service installation configures intended default",
+        "Native supervision after upgrade preserves supported original policy"
+      ],
+      "milestone": "M1",
+      "dependencies": [],
+      "stableGate": true
+    },
+    {
+      "id": "R29",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "implemented_source_fixture_verified_native_acceptance_pending",
+      "title": "Восстановление после прерывания установки при загрузке Windows",
+      "sourceIds": [
+        "INST-BOOT-01",
+        "INST-UNINSTALL-01"
+      ],
+      "evidenceFiles": [
+        "installer/boot-recovery.md",
+        "installer/boot-recovery.json",
+        "installer/boot-xml-native-parser.json",
+        "installer/post-recovery-review.md",
+        "installer-fix.md"
+      ],
+      "evidenceType": "actual production module/COM adapter with controlled factory22groups/490assertions; real files/hash/flush/rename/reparse/native argv; actual in-memory Windows Task XML parser",
+      "confirmedClaim": "Protected SYSTEM boot registration and immutable worker/helper/module inventory are validated before Disabled; retirement is ownership-checked after verified restoration. Uninstall acquires shared mutation lease and refuses pending markers/backups before destructive actions.",
+      "limits": "No actual privileged task registration, boot/reboot/power-loss action, SYSTEM/BA disk ACL or effective SCM upgrade acceptance. The old installed helper lacks these new paths.",
+      "implementedChange": "Canonical protected stage/tree, trusted file owners/ACL, checksummed recovery inventory, create-only bounded SYSTEM boot task/readback, Recover entrypoint, completion retirement, uninstall collision guard.",
+      "proposedChange": "Run privileged isolated Windows registration/boot/recovery/uninstall acceptance and implement the verified historical updater bootstrap bridge.",
+      "acceptance": [
+        "Interrupted update followed by reboot restores original running/startup intent without GUI or new installer",
+        "Foreign state is unchanged",
+        "Recovery execution is protected and bounded",
+        "Normal completion retires only its own recovery registration"
+      ],
+      "milestone": "M1",
+      "dependencies": [
+        "R03",
+        "R28"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R30",
+      "priority": "P1",
+      "kind": "defect",
+      "status": "implemented_source_fixture_verified_native_acceptance_pending",
+      "title": "Ограниченное восстановление зависшего worker и повтор после incomplete recovery",
+      "sourceIds": [
+        "INST-TIMEOUT-01",
+        "INST-TERMINAL-01"
+      ],
+      "evidenceFiles": [
+        "installer/post-recovery-review.md",
+        "installer/terminal-recovery-before.ps1",
+        "installer/recovery-fix.json",
+        "installer-fix.md"
+      ],
+      "evidenceType": "actual unchanged production AST with real owned hidden child/held identity handle/local mutex/files; pre-fix terminal retry suppression reproduced; independent harmless concurrency checks",
+      "confirmedClaim": "Old recovery-warning left maintenance active but complete.flag suppressed future attempts1to1. New8group fixture proves transient retry, bounded unresolved pending then later retry, verified own hung-child cancellation/stop, untrusted PID/path/heartbeat refusal and journal sharing-error handling.",
+      "limits": "Only own harmless child processes were terminated. Grace/retry delays shortened; SCM/DNS/task boundaries controlled. Real installer hang, privileged Global mutex ACL, boot scheduler/SYSTEM action and full upgrade pending.",
+      "implementedChange": "Explicit recovery outcome, pending marker instead of false terminal, cancel flag, held process handle/start/path verification and bounded Kill/Wait, six bounded attempts, outer completion lease across restoration/retirement/terminal, strict malformed marker status.",
+      "proposedChange": "Exercise timed-out actual installer/worker and interrupted recovery on isolated privileged Windows with native readback.",
+      "acceptance": [
+        "Hung worker past deadline cannot indefinitely strand service startup Disabled",
+        "Recovery never runs concurrently with the active mutation owner",
+        "Reused PID/foreign process is never terminated",
+        "Persisted warning has a bounded autonomous retry path"
+      ],
+      "milestone": "M1",
+      "dependencies": [
+        "R29"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R31",
+      "priority": "P1",
+      "kind": "architecture_gap",
+      "status": "open_not_implemented",
+      "title": "Старый автообновитель запускает установленный helper без нового защищённого recovery",
+      "sourceIds": [
+        "INST-LEGACY-BOOTSTRAP-01"
+      ],
+      "evidenceFiles": [
+        "installer/legacy-installed-helper-probe.json",
+        "installer/legacy-installed-updater-asar.json",
+        "installer-fix.md",
+        "implementation-plan.md"
+      ],
+      "evidenceType": "actual installed3.7.9 helper and ASAR main source/hash read-only, actual helperPath construction and -File launch; production cleanup6case protected-stage guard with explicit legacy refusal",
+      "confirmedClaim": "Installed3.7.9 helperF6C232FA lacks new boot/checked-registration/maintenance functions. Desktop updater launches its installed helper; new installer requires verified new boot registration. New payload alone does not upgrade the old handoff worker.",
+      "limits": "Historical3.7.8/3.7.9 clean VM update chain not exercised; no verified signed bootstrap bridge is implemented. Current new candidate is not published.",
+      "proposedChange": "Deliver and verify a signed bootstrap bridge before old worker mutations, or perform a protected verified handoff to the new worker with recovery inventory. Preserve old accepted trust and avoid trusting an unprotected old snapshot.",
+      "acceptance": [
+        "Actual trusted3.7.8/3.7.9 clients update with running owned services and closed GUI",
+        "Bridge is authenticated under old accepted trust before execution",
+        "Cancellation/interruption preserves prior services/DNS",
+        "No signature bypass or acceptance of unverified old stage",
+        "3.7.7 manual trust migration remains explicit unless old accepted key exists"
+      ],
+      "milestone": "M6",
+      "dependencies": [
+        "R26",
+        "R29",
+        "R30"
+      ],
+      "stableGate": true
+    },
+    {
+      "id": "R32",
+      "priority": "P2",
+      "kind": "defect",
+      "status": "implemented_source_fixture_verified_native_acceptance_pending",
+      "title": "Конкурирующие записи журнала теряют события; его ошибка подавляет ранний terminal UI",
+      "sourceIds": [
+        "INST-JOURNAL-01",
+        "INST-EARLY-UI-01"
+      ],
+      "evidenceFiles": [
+        "installer/receipt-event-before.ps1",
+        "installer/recovery-fix.json",
+        "installer/post-recovery-review.md",
+        "installer/full-node-test-output.txt",
+        "installer-fix.md"
+      ],
+      "evidenceType": "actual before/after Add-ReceiptEvent AST with real isolated WinPS runspaces/named mutex/atomic files; actual before/after Worker dispatch AST; actual non-elevated worker and Russian message",
+      "confirmedClaim": "Controlled old RMW interleave loses the committed B event. New4group fixture preserves both events, releases after parse/write failure and recovers abandoned mutex. Full642 pre-fix suite caught missing early complete/status after protected receipt failure; corrected dispatch retains original error and visible failed outcome without terminating active recovery.",
+      "limits": "Fixture uses testSID ACL factory/unique Local mutex; privileged Global/SYSTEM/BA mutex acceptance pending. Terminal early-error fallback applies only before acquired own maintenance marker.",
+      "implementedChange": "Protected per-stage hashed receipt mutex covers entire read/update/flush/status write with bounded wait/finally; separate best-effort journal from early failure UI/flag; UTF8BOM preserves WinPS Russian messages.",
+      "proposedChange": "Verify privileged worker/watchdog/SYSTEM receipt contention and failure display in native installer acceptance.",
+      "acceptance": [
+        "Every committed receipt event survives concurrent writers",
+        "Failed/uncommitted event is not falsely recorded",
+        "Journal failure preserves pre-handoff error UI and original exception",
+        "Active incomplete service recovery never receives false terminal flag"
+      ],
+      "milestone": "M1",
+      "dependencies": [
+        "R30"
+      ],
+      "stableGate": false
+    }
+  ],
+  "productChangeScope": "R27–R30 and R32 source/fixture fixes; Core self-test build; legacy bootstrap R31 remains open; installed/public3.7.9 and existing3.8.0 installer unchanged"
+}

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-30T11:28:57.660Z",
+  "sourceCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "scope": "Audit-only direct production function execution, isolated own fixture, no GUI, services, privilege change or executable launch",
+  "sourceFiles": [
+    {
+      "path": "src/recovered/electron/ipc/trusted-ipc.js",
+      "sha256": "986cade4f337aa84f80e4d2225e37348bc64e1f6caaad2e4d9ea2710946486af"
+    },
+    {
+      "path": "src/recovered/electron/ipc/vpn-manager.js",
+      "sha256": "1adb0a913f528dbfc654920764c8fcd6cc06803b6a0e966bce6f6073be2e5978"
+    }
+  ],
+  "ipcCases": [
+    {
+      "kind": "canonical-local-file",
+      "url": "file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/renderer/main_window/index.html",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "kind": "foreign-network-host",
+      "url": "file://audit.invalid/C:/Program%20Files/EgoistShield/resources/app.asar/.vite/renderer/main_window/index.html",
+      "expected": false,
+      "actual": true
+    },
+    {
+      "kind": "localhost-alias",
+      "url": "file://localhost/C:/Program%20Files/EgoistShield/resources/app.asar/.vite/renderer/main_window/index.html",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "kind": "outside-renderer",
+      "url": "file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/other/index.html",
+      "expected": false,
+      "actual": false
+    },
+    {
+      "kind": "renderer-prefix-sibling",
+      "url": "file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/renderer/main_window-other/index.html",
+      "expected": false,
+      "actual": false
+    },
+    {
+      "kind": "remote-https",
+      "url": "https://audit.invalid/index.html",
+      "expected": false,
+      "actual": false
+    }
+  ],
+  "runtimeCase": {
+    "kind": "modified-profile-runtime-selected",
+    "selectedBefore": "userData/runtime/xray/xray.exe",
+    "selectedAfter": "userData/runtime/xray/xray.exe",
+    "bundledRuntimeExists": true,
+    "fileDigestChanged": true,
+    "inertBytesOnly": true,
+    "binaryExecuted": false
+  },
+  "observedBoundaryDefects": 2,
+  "checks": 7,
+  "expectedRejectionsNotObserved": 1,
+  "limitations": [
+    "UNC content navigation and privilege escalation were not executed.",
+    "Fixture directory label does not assert a real Program Files ACL.",
+    "Existing updater package signature does not authenticate later profile runtime bytes."
+  ]
+}

@@ -1,0 +1,443 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-09-30T18:17:18.1974091Z",
+  "taskId": "01a0f2e8-78f3-7110-9d6f-8765864083dd",
+  "scope": "Independent read-only R27-R30 recovery/boot integration and uninstall review, plus final early-error/restoration checks; controlled host boundaries and own isolated files/Local mutex/threads/runspaces",
+  "sourceFiles": [
+    {
+      "sha256": "CACA6ED98EF87E74895B83C6B4B513E9DD0435D2B91F4E1EBDA780508340822E",
+      "path": "scripts/invoke-final-silent-reinstall.ps1",
+      "bytes": 114140
+    },
+    {
+      "sha256": "8E726D7551005E98031087AA9E6CF2F7F004D0CFF538D10EF754B47FF90D128A",
+      "path": "src/installer/owned-cleanup.ps1",
+      "bytes": 199171
+    },
+    {
+      "sha256": "94006D7D993F6B58FF6EFF903D16CF2D968DD6C18F86EB66E0D31A11C0E6DE42",
+      "path": "src/installer/maintenance-boot-recovery.ps1",
+      "bytes": 24239
+    },
+    {
+      "sha256": "516CC2B55ACCBC0AEBA7FA7451CEEECB8DAE958FFF6B5AEB7DA6981E9E740EB1",
+      "path": "src/installer/service-maintenance.ps1",
+      "bytes": 8017
+    },
+    {
+      "sha256": "6CE2ACD0E69D99175EEB1E63FD44121CABCBC5C8606AE9174752D8CF125F31EF",
+      "path": "src/installer/setup.nsi",
+      "bytes": 16827
+    },
+    {
+      "sha256": "82AF44C6A1E9F72011FE958BB7C2168C7FDBB9FEC4553DE8A05A6422DB7B053A",
+      "path": "tests/installer-receipt-events.ps1",
+      "bytes": 10088
+    },
+    {
+      "sha256": "29B68E13EA566EA7697578242C8ED29058071000041F4E149F8115AB24D103E3",
+      "path": "tests/installer-receipt-events.test.mjs",
+      "bytes": 1072
+    },
+    {
+      "sha256": "4F71DB899D883BD8E9E32806E7597248113BBD9CA9A3606770A29CFA87889C28",
+      "path": "tests/branded-worker-status.test.mjs",
+      "bytes": 7985
+    },
+    {
+      "sha256": "D342CFDCD203FFF04F2C74906B650C477CA81342282FC5845BA6B5790429E04E",
+      "path": "tests/installer-worker-restoration.ps1",
+      "bytes": 5791
+    },
+    {
+      "sha256": "3476128D26D35C392A3672652CE02D1B8BDEBD82254A19C3E0073D0D135574CC",
+      "path": "tests/installer-worker-restoration.test.mjs",
+      "bytes": 1071
+    }
+  ],
+  "probeSource": {
+    "sha256": "62F163B666811E52F858F4F5A47E7847C99782ACD6A69FE2F95CE0A79231BEE2",
+    "locationScope": "Own task work",
+    "astFunctionsOnly": true,
+    "productionGlobalMutexTouched": false
+  },
+  "beforeReview": {
+    "schemaVersion": 1,
+    "workerSnapshotSha256": "D2E146A04141AE621C219EEAC78F3E86FFF2A24C2C705145CEED8592565E90F3",
+    "cleanupSnapshotSha256": "8E726D7551005E98031087AA9E6CF2F7F004D0CFF538D10EF754B47FF90D128A",
+    "expectStrictMarker": false,
+    "powerShellVersion": "5.1.26100.9168",
+    "caseCount": 10,
+    "passed": 10,
+    "failed": 0,
+    "observations": {
+      "completionLease": {
+        "outcome": true,
+        "stopAttempts": 2,
+        "retireCalls": 1,
+        "leaseGaps": []
+      },
+      "malformedMarker": {
+        "outcome": true,
+        "refusal": null,
+        "stopCalls": 0,
+        "markerExists": true
+      },
+      "uninstallBefore": {
+        "destructiveLeafCalls": 14,
+        "markerRetained": true,
+        "bootTaskRetained": true,
+        "scope": "Original old clause statements with controlled destructive leaves; boot absence of retirement also source-verified"
+      },
+      "uninstallAfter": {
+        "destructiveLeafCalls": 14,
+        "leaseGaps": [],
+        "clause": "Actual current production Uninstall AST"
+      },
+      "receiptInterleave": {
+        "writers": 2,
+        "eventsRetained": 1,
+        "lostStatus": "pending-B",
+        "scope": "Actual Add-ReceiptEvent; controlled atomic-write scheduling at final commit boundary, own isolated file"
+      }
+    },
+    "cases": [
+      {
+        "name": "watchdog holds actual isolated mutex through recovery marker removal task retirement and terminal write",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "absent marker after handoff returns closed without replaying services",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "malformed marker contract matches the exact selected before or after snapshot",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "complete flag cannot convert malformed marker into success in the strict snapshot",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "fixed uninstall guard refuses own pending marker before destructive leaves",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "fixed uninstall guard refuses preserved backup manifest before destructive leaves",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "fixed uninstall guard refuses a lease held by another actual isolated thread",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "uninstall before guard reached destructive leaves with own marker and boot recovery retained",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "actual corrected uninstall clause keeps isolated lease through every destructive leaf",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "receipt read modify write permits a lost event under a controlled writer interleave",
+        "passed": true,
+        "error": ""
+      }
+    ],
+    "forbiddenHostCalls": 0,
+    "liveScmMutations": 0,
+    "liveRegistryMutations": 0,
+    "liveTaskMutations": 0,
+    "liveNetworkMutations": 0,
+    "realProcessKills": 0,
+    "scope": "AST production functions; controlled host boundaries; actual own files and Local mutex/threads only"
+  },
+  "finalReview": {
+    "schemaVersion": 1,
+    "workerSnapshotSha256": "CACA6ED98EF87E74895B83C6B4B513E9DD0435D2B91F4E1EBDA780508340822E",
+    "cleanupSnapshotSha256": "8E726D7551005E98031087AA9E6CF2F7F004D0CFF538D10EF754B47FF90D128A",
+    "expectStrictMarker": true,
+    "powerShellVersion": "5.1.26100.9168",
+    "caseCount": 9,
+    "passed": 9,
+    "failed": 0,
+    "observations": {
+      "completionLease": {
+        "outcome": true,
+        "stopAttempts": 2,
+        "retireCalls": 1,
+        "leaseGaps": []
+      },
+      "malformedMarker": {
+        "outcome": null,
+        "refusal": "Invalid object passed in, ':' or '}' expected. (7): {broken",
+        "stopCalls": 0,
+        "markerExists": true
+      },
+      "uninstallBefore": {
+        "destructiveLeafCalls": 14,
+        "markerRetained": true,
+        "bootTaskRetained": true,
+        "scope": "Original old clause statements with controlled destructive leaves; boot absence of retirement also source-verified"
+      },
+      "uninstallAfter": {
+        "destructiveLeafCalls": 14,
+        "leaseGaps": [],
+        "clause": "Actual current production Uninstall AST"
+      }
+    },
+    "cases": [
+      {
+        "name": "watchdog holds actual isolated mutex through recovery marker removal task retirement and terminal write",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "absent marker after handoff returns closed without replaying services",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "malformed marker contract matches the exact selected before or after snapshot",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "complete flag cannot convert malformed marker into success in the strict snapshot",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "fixed uninstall guard refuses own pending marker before destructive leaves",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "fixed uninstall guard refuses preserved backup manifest before destructive leaves",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "fixed uninstall guard refuses a lease held by another actual isolated thread",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "uninstall before guard reached destructive leaves with own marker and boot recovery retained",
+        "passed": true,
+        "error": ""
+      },
+      {
+        "name": "actual corrected uninstall clause keeps isolated lease through every destructive leaf",
+        "passed": true,
+        "error": ""
+      }
+    ],
+    "forbiddenHostCalls": 0,
+    "liveScmMutations": 0,
+    "liveRegistryMutations": 0,
+    "liveTaskMutations": 0,
+    "liveNetworkMutations": 0,
+    "realProcessKills": 0,
+    "scope": "AST production functions; controlled host boundaries; actual own files and Local mutex/threads only"
+  },
+  "journalRegression": {
+    "exitCode": 0,
+    "groups": 4,
+    "passed": 4,
+    "failed": 0,
+    "exactPreFixAstLostEvent": true,
+    "actualConcurrentProductionWritersPreserveEvents": true,
+    "parseCommitFinallyRelease": true,
+    "abandonedMutexRecovery": true,
+    "passLines": [
+      "PASS: exact pre-fix production receipt AST loses the competing committed event",
+      "PASS: concurrent actual production writers serialize and preserve both committed events",
+      "PASS: parse and commit failures release the lease and retain retry eligibility",
+      "PASS: abandoned actual named mutex is recovered without dropping its next event"
+    ],
+    "logSha256": "0756866511721356C54C8F9241563BBD5DC6C6C9E592849342A66AE50E5E1934",
+    "scope": "Unmodified project fixture, actual WinPS runspaces/named Local mutex/atomic FileStream and files; only ACL factories replaced with current test SID",
+    "systemAclAcceptance": false,
+    "liveTaskRegistration": false,
+    "sourceSha256": "CACA6ED98EF87E74895B83C6B4B513E9DD0435D2B91F4E1EBDA780508340822E"
+  },
+  "findings": [
+    {
+      "id": "POST-01",
+      "title": "Watchdog completion retirement lease gap",
+      "status": "closed-in-reviewed-source",
+      "evidence": "Actual own cross-thread Local mutex probe observes no gap at marker removal/task retirement/terminal write",
+      "source": "scripts/invoke-final-silent-reinstall.ps1:1546"
+    },
+    {
+      "id": "POST-02",
+      "title": "Malformed marker accepted as absent/closed",
+      "status": "reproduced-before-and-fixed",
+      "before": "D2E146 returned true/no service replay while malformed marker remained",
+      "after": "Final CACA6E rejects actual malformed JSON before any service replay or boot assertion",
+      "source": "scripts/invoke-final-silent-reinstall.ps1:838"
+    },
+    {
+      "id": "POST-03",
+      "title": "Uninstall races live or pending recovery",
+      "status": "reproduced-before-and-fixed",
+      "before": "Old clause reached 14 controlled destructive leaves with own marker and boot task retained",
+      "after": "Current actual Uninstall clause holds lease throughout; marker/backup/busy-thread guards refuse before destructive leaves",
+      "source": "src/installer/owned-cleanup.ps1:709"
+    },
+    {
+      "id": "POST-04",
+      "title": "Atomic receipt replace loses committed competing event",
+      "status": "reproduced-before-and-fixed",
+      "before": "Actual unlocked Add-ReceiptEvent controlled interleave kept 1 of 2 events",
+      "after": "Actual concurrent WinPS runspaces preserve both events after full stage-specific RMW mutex serialization",
+      "source": "scripts/invoke-final-silent-reinstall.ps1:480",
+      "globalAuditId": "R32 P2"
+    },
+    {
+      "pendingRecoveryGuard": "Owned marker=true invokes no terminal/journal/status write; incomplete recovery stays pending",
+      "title": "Early worker journal failure suppresses terminal and branded error",
+      "source": "scripts/invoke-final-silent-reinstall.ps1:1773",
+      "before": "Exact D71C19 Worker If AST retains the original error but writes neither status nor complete.flag when Add-ReceiptEvent throws",
+      "status": "reproduced-before-and-fixed",
+      "after": "Exact CACA6E AST independently writes branded failure and worker-failed despite journal failure; original worker error remains preserved",
+      "id": "POST-05"
+    }
+  ],
+  "remainingNewBlockersInAgreedScope": [],
+  "knownOpenOutsideScope": [
+    "R31: installed legacy helper bootstrap/migration is still open; compatibility was not assumed fixed"
+  ],
+  "liveScmMutations": 0,
+  "liveRegistryMutations": 0,
+  "liveTaskMutations": 0,
+  "liveNetworkMutations": 0,
+  "realProcessKills": 0,
+  "productionGlobalMutexTouched": false,
+  "nativeAcceptancePending": [
+    "Effective SYSTEM/Administrators file/task/Global mutex ACL across privilege levels and sessions",
+    "Task Scheduler registration/readback/boot trigger and retirement on a real privileged host",
+    "Real SCM restart queue, configuration cache and service/process upgrade",
+    "Actual installer crash, power loss, reboot and locked payload replacement",
+    "Long continuous runtime and UI/network protocol readiness are outside this narrow review"
+  ],
+  "brandedWorkerRegression": {
+    "logSha256": "00090677902BDF284FB54C822D6E7E97293D46AE685AD22617F587F384E339E6",
+    "exitCode": 0,
+    "passed": 4,
+    "testSha256": "4F71DB899D883BD8E9E32806E7597248113BBD9CA9A3606770A29CFA87889C28",
+    "caseCount": 4,
+    "scope": "Unmodified project Node fixture; actual isolated WinPS status/result file writes, actual script early exit, actual Worker If AST with controlled journal failure",
+    "sourceSha256": "CACA6ED98EF87E74895B83C6B4B513E9DD0435D2B91F4E1EBDA780508340822E",
+    "cancelled": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  "earlyFailureRegression": {
+    "schemaVersion": 1,
+    "powerShellVersion": "5.1.26100.9168",
+    "caseCount": 3,
+    "passed": 3,
+    "failed": 0,
+    "cases": [
+      {
+        "name": "before",
+        "sourceSha256": "D71C19D1289308F457B3920581179FF89B253A637DC29710C0109F28183BBB19",
+        "reason": "Fixture pre-handoff failure",
+        "terminalWritten": false,
+        "statusWritten": false,
+        "journalCalls": 1,
+        "passed": true
+      },
+      {
+        "name": "after",
+        "sourceSha256": "CACA6ED98EF87E74895B83C6B4B513E9DD0435D2B91F4E1EBDA780508340822E",
+        "reason": "Fixture pre-handoff failure",
+        "terminalWritten": true,
+        "statusWritten": true,
+        "journalCalls": 1,
+        "passed": true
+      },
+      {
+        "name": "after-owned-marker",
+        "sourceSha256": "CACA6ED98EF87E74895B83C6B4B513E9DD0435D2B91F4E1EBDA780508340822E",
+        "reason": "Fixture pre-handoff failure",
+        "terminalWritten": false,
+        "statusWritten": false,
+        "journalCalls": 0,
+        "passed": true
+      }
+    ],
+    "liveScmMutations": 0,
+    "liveRegistryMutations": 0,
+    "liveTaskMutations": 0,
+    "liveNetworkMutations": 0,
+    "realProcessKills": 0,
+    "scope": "Exact production Worker If AST and status function; controlled worker/owner/journal leaves; own isolated files only",
+    "probeSha256": "3AEE9C50BDAE8751A06FB4F17A91F3794DD002C976ECAABEB2889766BC5D2418",
+    "logSha256": "39689CADB6E2403E9EA1286EB39FD7331E85FD06D592424CF5D7FCBBEE00C1F9"
+  },
+  "workerRestorationRegression": {
+    "exitCode": 0,
+    "sourceSha256": "CACA6ED98EF87E74895B83C6B4B513E9DD0435D2B91F4E1EBDA780508340822E",
+    "passLines": [
+      "PASS: actual profile recovery writes the selected profile and retains original state via real File.Replace",
+      "PASS: actual baseline recovery selects the GUID-matched adapter and verifies IPv4/IPv6 results",
+      "PASS: actual critical resolver recovery targets only the matching active adapter"
+    ],
+    "liveRegistryMutations": 0,
+    "realProcessKills": 0,
+    "failed": 0,
+    "liveScmMutations": 0,
+    "logSha256": "4C0CE7C9F71C60EAFC7D2DB548E7138B1A25D044A98F56B48EAC07FD5C9A725B",
+    "liveDnsWrites": 0,
+    "testSha256": "D342CFDCD203FFF04F2C74906B650C477CA81342282FC5845BA6B5790429E04E",
+    "passed": 3,
+    "scope": "Unmodified WinPS fixture; real own profile File.Replace, production AST functions and controlled adapter/DNS/cache boundaries",
+    "groups": 3,
+    "liveNetworkMutations": 0
+  },
+  "parentReportedFullSuite": {
+    "sourceSha256": "CACA6ED98EF87E74895B83C6B4B513E9DD0435D2B91F4E1EBDA780508340822E",
+    "skipped": 0,
+    "provenance": "Parent final validation message",
+    "failed": 0,
+    "independentlyExecutedByReviewer": false,
+    "durationMs": 19570.9442,
+    "passed": 644,
+    "cancelled": 0
+  },
+  "recordedFinalNativeExecution": {
+    "liveScmCommands": 0,
+    "purpose": "Harmless isolated fixture processes, actual Local mutex/thread/runspace/file behavior; no product native management commands",
+    "liveRegistryCommands": 0,
+    "countsScope": "Only accepted final validation fixture launch commands; host tool shells, compiler children and earlier fixture-development runs excluded",
+    "nodeFixtureWrapperLaunches": 1,
+    "productionGlobalMutexTouched": false,
+    "directWindowsPowerShellFixtureLaunches": 4,
+    "liveTaskCommands": 0,
+    "brandedFixtureWindowsPowerShellChildren": 4,
+    "liveDnsWrites": 0,
+    "actualProcessKills": 0
+  },
+  "fixtureDevelopmentCorrections": [
+    "Own early-error probe first expected the wrong pre-fix exception; corrected expectation: original worker exception was already retained, only terminal/status were lost",
+    "Own early-error probe JSON serialization corrected to Generic.List.ToArray for WinPS5.1; accepted receipt is the subsequent 3/3 run"
+  ],
+  "reviewerProductionSourceOrTestEdits": false,
+  "reviewStatus": "complete-narrow-review",
+  "ownedOutputs": [
+    "docs/product-review-2026-09-30/installer/post-recovery-review.md",
+    "docs/product-review-2026-09-30/installer/post-recovery-review.json"
+  ]
+}

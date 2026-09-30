@@ -1,0 +1,36 @@
+{
+  "checkedAt": "2026-09-30T11:44:54.136579+00:00",
+  "releases": [
+    {
+      "component": "electron-latest",
+      "tag": "v44.5.1",
+      "publishedAt": "2026-09-30T02:12:03Z",
+      "url": "https://github.com/electron/electron/releases/tag/v44.5.1",
+      "draft": false,
+      "prerelease": false,
+      "releaseNotesObservation": "Upstream engine fixes backported; specific CVE applicability not established."
+    },
+    {
+      "component": "electron-pinned",
+      "tag": "v44.4.5",
+      "publishedAt": "2026-09-23T06:45:03Z",
+      "url": "https://github.com/electron/electron/releases/tag/v44.4.5",
+      "draft": false,
+      "prerelease": false,
+      "releaseNotesObservation": "Upstream engine fixes backported; specific CVE applicability not established."
+    },
+    {
+      "component": "sing-box-latest",
+      "tag": "v1.14.2",
+      "publishedAt": "2026-09-24T11:47:08Z",
+      "url": "https://github.com/SagerNet/sing-box/releases/tag/v1.14.2",
+      "draft": false,
+      "prerelease": false,
+      "releaseNotesObservation": "Maintainer release notes only say fixes and improvements; exact impact requires changelog/compatibility acceptance."
+    }
+  ],
+  "limits": [
+    "GitHub latest is a maintainer-selected release, not a proof of newest usable artifact for every platform.",
+    "No executable downloads or patch adoption were performed."
+  ]
+}

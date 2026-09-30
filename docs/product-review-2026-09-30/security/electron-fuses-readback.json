@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-30T11:34:51.671293+00:00",
+  "sourceCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "binary": "out/EgoistShield-3.8.0-win-x64/EgoistShield.exe",
+  "sha256": "826cc357db7fae89c25a1d4cad7cf2341f090852f2debed878128aeb9046fd56",
+  "bytes": 246368256,
+  "fuseWireReadback": [
+    {
+      "offset": 199176568,
+      "schemaVersion": 1,
+      "length": 9,
+      "wire": "101100011",
+      "bytes": [
+        49,
+        48,
+        49,
+        49,
+        48,
+        48,
+        48,
+        49,
+        49
+      ],
+      "interpreted": {
+        "RunAsNode": true,
+        "EnableCookieEncryption": false,
+        "EnableNodeOptionsEnvironmentVariable": true,
+        "EnableNodeCliInspectArguments": true,
+        "EnableEmbeddedAsarIntegrityValidation": false,
+        "OnlyLoadAppFromAsar": false,
+        "LoadBrowserProcessSpecificV8Snapshot": false,
+        "GrantFileProtocolExtraPrivileges": true,
+        "WasmTrapHandlers": true
+      }
+    }
+  ],
+  "scope": "Read only raw PE bytes, binary never launched",
+  "wireSources": [
+    "https://github.com/electron/electron/blob/v44.4.5/docs/tutorial/fuses.md",
+    "https://github.com/electron/fuses/blob/main/src/config.ts"
+  ]
+}

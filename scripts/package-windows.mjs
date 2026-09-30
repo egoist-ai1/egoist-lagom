@@ -86,7 +86,17 @@ await fs.copyFile('.vite/build/component-worker.cjs', path.join(out, 'resources/
 const cleanupScript=await fs.readFile('src/installer/owned-cleanup.ps1');
 if(!cleanupScript.subarray(0,3).equals(Buffer.from([0xef,0xbb,0xbf])))throw new Error('Installer PowerShell script requires its UTF-8 BOM for Windows PowerShell 5.1.');
 await fs.writeFile(path.join(out, 'resources/installer/owned-cleanup.ps1'),cleanupScript);
+const serviceMaintenanceScript = await fs.readFile('src/installer/service-maintenance.ps1');
+await fs.writeFile(path.join(out, 'resources/installer/service-maintenance.ps1'),
+  serviceMaintenanceScript.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))
+    ? serviceMaintenanceScript
+    : Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), serviceMaintenanceScript]));
 const reinstallScript = await fs.readFile('scripts/invoke-final-silent-reinstall.ps1');
+const bootRecoveryScript = await fs.readFile('src/installer/maintenance-boot-recovery.ps1');
+await fs.writeFile(path.join(out, 'resources/installer/maintenance-boot-recovery.ps1'),
+  bootRecoveryScript.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))
+    ? bootRecoveryScript
+    : Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), bootRecoveryScript]));
 const reinstallScriptWithBom = reinstallScript.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))
   ? reinstallScript
   : Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), reinstallScript]);
@@ -210,6 +220,8 @@ const requiredPayloadFiles = [...new Set([
   'resources/gravityless-dns/dnscrypt-proxy.exe',
   'resources/gravityless-dns/dnscrypt-proxy.toml',
   'resources/installer/owned-cleanup.ps1',
+  'resources/installer/service-maintenance.ps1',
+  'resources/installer/maintenance-boot-recovery.ps1',
   'resources/installer/invoke-final-silent-reinstall.ps1',
   'resources/installer/ModernInstaller.exe'
 ])];

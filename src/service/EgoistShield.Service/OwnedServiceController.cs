@@ -110,7 +110,7 @@ internal sealed class OwnedServiceController
 			await AssertOwnedImagePathAsync(serviceName, cancellationToken);
 			// Repair recovery and dependencies on repeated installation as well:
 			// a previous partial install can already have Start=Automatic.
-			await ConfigureRecoveryAsync(serviceName, definition.Description, cancellationToken);
+			await ConfigureInstallationAsync(serviceName, definition.Description, cancellationToken);
 			return await StatusAsync(serviceName, cancellationToken);
 		}
 		ProcessResult processResult = await RunOwnedExecutableAsync(executablePath, ResolveOwnedArguments(definition.InstallArguments), cancellationToken);
@@ -119,7 +119,7 @@ internal sealed class OwnedServiceController
 			throw new InvalidOperationException("Service install failed for " + serviceName + ": " + CleanError(processResult));
 		}
 		await AssertOwnedImagePathAsync(serviceName, cancellationToken);
-		await ConfigureRecoveryAsync(serviceName, definition.Description, cancellationToken);
+		await ConfigureInstallationAsync(serviceName, definition.Description, cancellationToken);
 		OwnedServiceStatus obj = await StatusAsync(serviceName, cancellationToken);
 		if (!obj.Installed)
 		{
@@ -386,33 +386,21 @@ internal sealed class OwnedServiceController
 		serviceName = NormalizeServiceName(serviceName);
 		EnsureProductDataRootVerified();
 		await AssertOwnedImagePathAsync(serviceName, cancellationToken);
-		await ConfigureRecoveryAsync(serviceName, OwnedServices[serviceName].Description, cancellationToken);
+		await ConfigureRecoveryAsync(serviceName, OwnedServices[serviceName].Description, RunScAsync, cancellationToken);
 	}
 
-	private async Task ConfigureRecoveryAsync(string serviceName, string description, CancellationToken cancellationToken)
+	private async Task ConfigureInstallationAsync(string serviceName, string description, CancellationToken cancellationToken)
 	{
 		EnsureProductDataRootVerified();
-		string[][] array = new string[4][]
+		cancellationToken.ThrowIfCancellationRequested();
+		ProcessResult startup = await RunScAsync(new[] { "config", serviceName, "start=", "auto" }, cancellationToken);
+		if (startup.ExitCode != 0)
 		{
-			new string[4] { "config", serviceName, "start=", "auto" },
-			new string[4] { "config", serviceName, "depend=", "Tcpip/Afd" },
-			new string[6] { "failure", serviceName, "reset=", "3600", "actions=", "restart/5000/restart/10000/restart/60000" },
-			new string[3] { "failureflag", serviceName, "1" }
-		};
-		foreach (string[] arguments in array)
-		{
-			ProcessResult processResult = await RunScAsync(arguments, cancellationToken);
-			if (processResult.ExitCode != 0)
-			{
-				throw new InvalidOperationException("SC recovery configuration failed for " + serviceName + ": " + CleanError(processResult));
-			}
+			throw new InvalidOperationException("SC installation startup configuration failed for " + serviceName + ": " + CleanError(startup));
 		}
-		ProcessResult processResult2 = await RunScAsync(new global::_003C_003Ez__ReadOnlyArray<string>(new string[3] { "description", serviceName, description }), cancellationToken);
-		if (processResult2.ExitCode != 0)
-		{
-			throw new InvalidOperationException("SC description failed for " + serviceName + ": " + CleanError(processResult2));
-		}
-		ProcessResult processResult3 = await ProcessRunner.RunAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "reg.exe"), new global::_003C_003Ez__ReadOnlyArray<string>(new string[9]
+		await ConfigureRecoveryAsync(serviceName, description, RunScAsync, cancellationToken);
+		cancellationToken.ThrowIfCancellationRequested();
+		ProcessResult delayedStart = await RunRegAsync(new[]
 		{
 			"add",
 			"HKLM\\SYSTEM\\CurrentControlSet\\Services\\" + serviceName,
@@ -423,10 +411,39 @@ internal sealed class OwnedServiceController
 			"/d",
 			"0",
 			"/f"
-		}), ServiceContract.CommandTimeout, cancellationToken);
-		if (processResult3.ExitCode != 0)
+		}, cancellationToken);
+		if (delayedStart.ExitCode != 0)
 		{
-			throw new InvalidOperationException("DelayedAutoStart configuration failed for " + serviceName + ": " + CleanError(processResult3));
+			throw new InvalidOperationException("DelayedAutoStart configuration failed for " + serviceName + ": " + CleanError(delayedStart));
+		}
+	}
+
+	internal static async Task ConfigureRecoveryAsync(string serviceName, string description,
+		Func<IEnumerable<string>, CancellationToken, Task<ProcessResult>> runSc, CancellationToken cancellationToken)
+	{
+		serviceName = NormalizeServiceName(serviceName);
+		// Recovery repair must leave startup policy unchanged, including an external
+		// Disabled change made after the supervisor's earlier status observation.
+		string[][] array = new string[3][]
+		{
+			new string[4] { "config", serviceName, "depend=", "Tcpip/Afd" },
+			new string[6] { "failure", serviceName, "reset=", "3600", "actions=", "restart/5000/restart/10000/restart/60000" },
+			new string[3] { "failureflag", serviceName, "1" }
+		};
+		foreach (string[] arguments in array)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			ProcessResult processResult = await runSc(arguments, cancellationToken);
+			if (processResult.ExitCode != 0)
+			{
+				throw new InvalidOperationException("SC recovery configuration failed for " + serviceName + ": " + CleanError(processResult));
+			}
+		}
+		cancellationToken.ThrowIfCancellationRequested();
+		ProcessResult processResult2 = await runSc(new[] { "description", serviceName, description }, cancellationToken);
+		if (processResult2.ExitCode != 0)
+		{
+			throw new InvalidOperationException("SC description failed for " + serviceName + ": " + CleanError(processResult2));
 		}
 	}
 

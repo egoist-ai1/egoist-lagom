@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "tool": "PSScriptAnalyzer",
+  "toolVersion": "1.25.0",
+  "hostVersion": "7.6.5",
+  "errors": 0.0,
+  "files": [
+    {
+      "file": "scripts\\invoke-final-silent-reinstall.ps1",
+      "sha256": "CACA6ED98EF87E74895B83C6B4B513E9DD0435D2B91F4E1EBDA780508340822E",
+      "errors": 0,
+      "warnings": 23,
+      "rules": [
+        {
+          "Name": "PSReviewUnusedParameter",
+          "Count": 2
+        },
+        {
+          "Name": "PSUseApprovedVerbs",
+          "Count": 1
+        },
+        {
+          "Name": "PSUseDeclaredVarsMoreThanAssignments",
+          "Count": 1
+        },
+        {
+          "Name": "PSUseShouldProcessForStateChangingFunctions",
+          "Count": 11
+        },
+        {
+          "Name": "PSUseSingularNouns",
+          "Count": 8
+        }
+      ]
+    },
+    {
+      "file": "src\\installer\\owned-cleanup.ps1",
+      "sha256": "8E726D7551005E98031087AA9E6CF2F7F004D0CFF538D10EF754B47FF90D128A",
+      "errors": 0,
+      "warnings": 68,
+      "rules": [
+        {
+          "Name": "PSAvoidAssignmentToAutomaticVariable",
+          "Count": 1
+        },
+        {
+          "Name": "PSAvoidUsingEmptyCatchBlock",
+          "Count": 10
+        },
+        {
+          "Name": "PSUseApprovedVerbs",
+          "Count": 7
+        },
+        {
+          "Name": "PSUseDeclaredVarsMoreThanAssignments",
+          "Count": 1
+        },
+        {
+          "Name": "PSUseShouldProcessForStateChangingFunctions",
+          "Count": 22
+        },
+        {
+          "Name": "PSUseSingularNouns",
+          "Count": 27
+        }
+      ]
+    },
+    {
+      "file": "src\\installer\\service-maintenance.ps1",
+      "sha256": "516CC2B55ACCBC0AEBA7FA7451CEEECB8DAE958FFF6B5AEB7DA6981E9E740EB1",
+      "errors": 0,
+      "warnings": 4,
+      "rules": [
+        {
+          "Name": "PSUseShouldProcessForStateChangingFunctions",
+          "Count": 2
+        },
+        {
+          "Name": "PSUseSingularNouns",
+          "Count": 2
+        }
+      ]
+    },
+    {
+      "file": "src\\installer\\maintenance-boot-recovery.ps1",
+      "sha256": "94006D7D993F6B58FF6EFF903D16CF2D968DD6C18F86EB66E0D31A11C0E6DE42",
+      "errors": 0,
+      "warnings": 2,
+      "rules": [
+        {
+          "Name": "PSUseShouldProcessForStateChangingFunctions",
+          "Count": 2
+        }
+      ]
+    },
+    {
+      "file": "tests\\installer-maintenance-lifecycle.ps1",
+      "sha256": "22796BE8EDE2D2F0C4224BE7F2CF0B387CF09A5A6A43A1DDCC7701FF9B4A25B2",
+      "errors": 0,
+      "warnings": 72,
+      "rules": [
+        {
+          "Name": "PSAvoidOverwritingBuiltInCmdlets",
+          "Count": 7
+        },
+        {
+          "Name": "PSReviewUnusedParameter",
+          "Count": 53
+        },
+        {
+          "Name": "PSUseApprovedVerbs",
+          "Count": 2
+        },
+        {
+          "Name": "PSUseShouldProcessForStateChangingFunctions",
+          "Count": 7
+        },
+        {
+          "Name": "PSUseSingularNouns",
+          "Count": 3
+        }
+      ]
+    },
+    {
+      "file": "tests\\installer-recovery-timeout.ps1",
+      "sha256": "B6943D48C83CD90254B2BF59EBC1A37386771AEA909E2C146652BD4AEC297D38",
+      "errors": 0,
+      "warnings": 39,
+      "rules": [
+        {
+          "Name": "PSAvoidOverwritingBuiltInCmdlets",
+          "Count": 4
+        },
+        {
+          "Name": "PSReviewUnusedParameter",
+          "Count": 18
+        },
+        {
+          "Name": "PSUseApprovedVerbs",
+          "Count": 2
+        },
+        {
+          "Name": "PSUseShouldProcessForStateChangingFunctions",
+          "Count": 12
+        },
+        {
+          "Name": "PSUseSingularNouns",
+          "Count": 3
+        }
+      ]
+    },
+    {
+      "file": "tests\\installer-uninstall-maintenance.ps1",
+      "sha256": "C17D7F48E3A65B3E17208B09815FA1B3172E60151FE04BF396D8300AA6814751",
+      "errors": 0,
+      "warnings": 2,
+      "rules": [
+        {
+          "Name": "PSUseApprovedVerbs",
+          "Count": 1
+        },
+        {
+          "Name": "PSUseDeclaredVarsMoreThanAssignments",
+          "Count": 1
+        }
+      ]
+    },
+    {
+      "file": "tests\\installer-receipt-events.ps1",
+      "sha256": "82AF44C6A1E9F72011FE958BB7C2168C7FDBB9FEC4553DE8A05A6422DB7B053A",
+      "errors": 0,
+      "warnings": 2,
+      "rules": [
+        {
+          "Name": "PSReviewUnusedParameter",
+          "Count": 2
+        }
+      ]
+    },
+    {
+      "file": "tests\\installer-protected-upgrade.ps1",
+      "sha256": "F46E28AAF2E6792F4F0A3CD6B32E537EED76C4EA775D3A9B17A58CE967E318EB",
+      "errors": 0,
+      "warnings": 3,
+      "rules": [
+        {
+          "Name": "PSReviewUnusedParameter",
+          "Count": 2
+        },
+        {
+          "Name": "PSUseDeclaredVarsMoreThanAssignments",
+          "Count": 1
+        }
+      ]
+    },
+    {
+      "file": "tests\\installer-worker-restoration.ps1",
+      "sha256": "D342CFDCD203FFF04F2C74906B650C477CA81342282FC5845BA6B5790429E04E",
+      "errors": 0,
+      "warnings": 5,
+      "rules": [
+        {
+          "Name": "PSReviewUnusedParameter",
+          "Count": 4
+        },
+        {
+          "Name": "PSUseShouldProcessForStateChangingFunctions",
+          "Count": 1
+        }
+      ]
+    }
+  ]
+}

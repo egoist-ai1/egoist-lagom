@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "observedAtUtc": "2026-09-30T18:06:53.0582252Z",
+  "scope": "One read-only SCM snapshot; running is not protocol readiness or continuous uptime",
+  "installedVersion": "3.7.9",
+  "services": [
+    {
+      "Name": "EgoistShieldCore",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 4904
+    },
+    {
+      "Name": "EgoistShieldSystemDoH",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 47196
+    },
+    {
+      "Name": "EgoistShieldTelegramProxy",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 4920
+    },
+    {
+      "Name": "EgoistShieldZapret",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 36072
+    }
+  ],
+  "maintenanceMarkerPresent": false,
+  "serviceMutations": 0,
+  "dnsWrites": 0
+}

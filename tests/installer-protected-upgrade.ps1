@@ -20,6 +20,11 @@ function Test-RunningOwnedSystemDoh { return $false }
 function Test-CanonicalInstallerTarget { param($Root) return $true }
 function Test-EmptyPlainDirectory { param($Root) return $false }
 function Test-VerifiedCanonicalInstalledApplication { param($Root) return (Test-InstallRootIdentified $Root) }
+function Assert-InstallerMaintenanceBootRecovery {
+  param($StageDirectory)
+  if ($script:bootMissing) { throw 'Fixture protected boot registration is missing.' }
+  return [pscustomobject]@{verified=$true;owner='EgoistShield';schemaVersion=1;stage=$StageDirectory}
+}
 function Require {param([bool]$Value,[string]$Message)if(-not $Value){throw $Message}}
 $previousStage=$env:EGOIST_PROTECTED_REINSTALL_STAGE
 try {
@@ -41,6 +46,10 @@ try {
   $heartbeat=@{workerPid=$PID;workerStartTicks=$worker.StartTime.Ticks}
   $heartbeat | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stage 'heartbeat.json') -Encoding utf8
   $env:EGOIST_PROTECTED_REINSTALL_STAGE=$stage
+  $script:bootMissing=$true
+  Require (-not (Test-VerifiedProtectedReinstall)) 'An old worker stage without verified boot recovery bypassed the new installer.'
+  $script:bootMissing=$false
+  Write-Output 'PASS: legacy worker without protected boot recovery cannot bypass the new installer'
   Require (Test-VerifiedProtectedReinstall) 'Exact live protected-stage evidence was rejected.'
   Require (Test-InstallMayStopOwnedRuntimes) 'Protected upgrade was blocked.'
   Write-Output 'PASS: exact installer hash, backup marker and live worker evidence permit protected upgrade'
@@ -53,5 +62,5 @@ try {
   [IO.File]::WriteAllText($installer,'changed candidate')
   Require (-not (Test-VerifiedProtectedReinstall)) 'Changed installer hash was accepted.'
   Write-Output 'PASS: changed installer content cannot bypass protected-upgrade guard'
-  Write-Output 'Protected upgrade checks: 5 passed; no service/registry/network writes'
+  Write-Output 'Protected upgrade checks: 6 passed; no service/registry/network writes; boot registration proof is a controlled boundary'
 } finally {$env:EGOIST_PROTECTED_REINSTALL_STAGE=$previousStage}

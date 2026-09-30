@@ -117,6 +117,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $coreAssembly = Join-Path $coreOutput 'EgoistShield.Service.dll'
           if (-not (Test-Path -LiteralPath $coreAssembly -PathType Leaf)) { throw 'Actual Core assembly for the log guard regression is missing' }
+          dotnet $coreAssembly --self-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet run --project tests/OwnedWrapperLogMaintenanceRegression -c Release -- --work $env:LAGOM_TEST_TEMP --core $coreAssembly
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run Windows PowerShell installer safety regressions

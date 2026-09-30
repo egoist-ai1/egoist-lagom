@@ -11,6 +11,28 @@
   [int]$GuardMaxSeconds = 600
 )
 
+$ErrorActionPreference = "Stop"
+$maintenanceHelper = Join-Path $PSScriptRoot "service-maintenance.ps1"
+if (-not (Test-Path -LiteralPath $maintenanceHelper -PathType Leaf)) {
+  throw "Required installer service maintenance helper is missing. No cleanup was performed."
+}
+. $maintenanceHelper
+foreach ($requiredFunction in @("Invoke-InstallerSc", "Get-InstallerServicePolicy", "Set-InstallerServiceStartMode", "Stop-InstallerOwnedService", "Get-InstallerServiceState", "Suspend-InstallerServiceRestarts", "Restore-InstallerServiceStartModes")) {
+  if (-not (Get-Command -Name $requiredFunction -CommandType Function -ErrorAction SilentlyContinue)) {
+    throw "Required installer service maintenance function is missing: $requiredFunction. No cleanup was performed."
+  }
+}
+$bootRecoveryHelper = Join-Path $PSScriptRoot "maintenance-boot-recovery.ps1"
+if (-not (Test-Path -LiteralPath $bootRecoveryHelper -PathType Leaf)) {
+  throw "Required installer boot recovery helper is missing. No cleanup was performed."
+}
+. $bootRecoveryHelper
+foreach ($requiredFunction in @("Register-InstallerMaintenanceBootRecovery", "Assert-InstallerMaintenanceBootRecovery", "Unregister-InstallerMaintenanceBootRecovery")) {
+  if (-not (Get-Command -Name $requiredFunction -CommandType Function -ErrorAction SilentlyContinue)) {
+    throw "Required installer boot recovery function is missing: $requiredFunction. No cleanup was performed."
+  }
+}
+
 # ============================================================================
 # Ownership-aware очистка Egoist Shield.
 #
@@ -394,6 +416,7 @@ function Get-ServiceRecordFromRegistry {
       startName = [string]$key.GetValue("ObjectName", "LocalSystem")
       serviceType = [string]$key.GetValue("Type", 0)
       state = if ($service) { [string]$service.Status } else { "Unknown" }
+      delayedAutoStart = ([int]$key.GetValue("DelayedAutoStart", 0) -ne 0)
     }
   } catch {
     return $null
@@ -439,25 +462,9 @@ function Stop-OwnedService {
     }
   }
 
-  & sc.exe stop $Name | Out-Null
-
-  $stopDeadline = (Get-Date).AddSeconds(15)
-  while ((Get-Date) -lt $stopDeadline) {
-    $current = Get-Service -Name $Name -ErrorAction SilentlyContinue
-    if (-not $current -or $current.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Stopped) { break }
-    Start-Sleep -Milliseconds 250
-  }
-
-  $remainingService = Get-Service -Name $Name -ErrorAction SilentlyContinue
-  $remaining = if ($remainingService -and
-      $remainingService.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Stopped) {
-    Get-CimInstance Win32_Service -Filter "Name='$Name'" -ErrorAction SilentlyContinue
-  } else { $null }
-  if ($remaining -and [int]$remaining.ProcessId -gt 0) {
-    # ImagePath has already passed the ownership proof above. If a broken
-    # service ignores SCM stop, terminate only its proven process.
-    Stop-Process -Id ([int]$remaining.ProcessId) -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Milliseconds 500
+  Stop-InstallerOwnedService $Name {
+    param($path)
+    Test-OwnedPath (Get-ExecutableFromCommandLine $path)
   }
 
   if ($Delete) {
@@ -573,7 +580,7 @@ function Stop-AllProcessesFromOwnedRoots {
 
 function Stop-AllServicesFromOwnedRoots {
   $known = @($ownedServices + $legacyOwnedServices + $sharedNameServices)
-  foreach ($service in @(Get-CimInstance Win32_Service -ErrorAction SilentlyContinue)) {
+  foreach ($service in @(Get-CimInstance Win32_Service -ErrorAction Stop -OperationTimeoutSec 3)) {
     $name = [string]$service.Name
     if (-not $name -or $known -contains $name) { continue }
     $executable = Get-ExecutableFromCommandLine ([string]$service.PathName)
@@ -640,9 +647,13 @@ function Test-VerifiedProtectedReinstall {
   $stage = $env:EGOIST_PROTECTED_REINSTALL_STAGE
   if (-not $stage) { return $false }
   try {
+    $bootRecovery = Assert-InstallerMaintenanceBootRecovery -StageDirectory $stage
+    if ($bootRecovery.verified -ne $true -or $bootRecovery.owner -ne 'EgoistShield' -or $bootRecovery.schemaVersion -ne 1 -or
+        -not [string]::Equals([string]$bootRecovery.stage, [IO.Path]::GetFullPath($stage).TrimEnd('\'), [StringComparison]::OrdinalIgnoreCase)) { return $false }
     $stage = [IO.Path]::GetFullPath($stage).TrimEnd('\')
     $state = Get-Content -LiteralPath (Join-Path $stage 'state.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
-    $receiptBase = if ($state.PSObject.Properties['receiptBase']) { [string]$state.receiptBase } else { Join-Path $programDataRoot 'EgoistShieldInstaller\DeferredRuns' }
+    $receiptBase = [IO.Path]::GetDirectoryName([string]$bootRecovery.stage)
+    if ($state.PSObject.Properties['receiptBase'] -and -not [string]::Equals([string]$state.receiptBase, $receiptBase, [StringComparison]::OrdinalIgnoreCase)) { return $false }
     $base = [IO.Path]::GetFullPath($receiptBase).TrimEnd('\')
     if ([IO.Path]::GetDirectoryName($stage) -ne $base) { return $false }
     foreach ($path in @($base, $stage)) {
@@ -695,7 +706,37 @@ function Test-InstallMayStopOwnedRuntimes {
   return $false
 }
 
+function Enter-UninstallMaintenanceLease {
+  $lease = New-Object Threading.Mutex($false, 'Global\EgoistShield.DeferredReinstall')
+  $acquired = $false
+  try {
+    try { $acquired = $lease.WaitOne(0) }
+    catch [Threading.AbandonedMutexException] { $acquired = $true }
+    if (-not $acquired) { throw 'UNINSTALL_UPDATE_BUSY: A protected update or recovery is still active.' }
+    $pendingMarker = Join-Path (Get-InstallerBootRecoveryCommonDataRoot) 'EgoistShield\installer\service-maintenance.json'
+    if ((Test-Path -LiteralPath $pendingMarker) -or (Test-Path -LiteralPath $serviceBackupManifestPath)) {
+      throw 'UNINSTALL_RECOVERY_PENDING: Restore the interrupted update before uninstalling; its services and recovery registration were preserved.'
+    }
+    return $lease
+  } catch {
+    if ($acquired) { $lease.ReleaseMutex() }
+    $lease.Dispose()
+    throw
+  }
+}
+
 function Stop-AllOwnedRuntimes {
+  if ($Phase -ne "Uninstall") {
+    Backup-OwnedServiceRegistrations $Services
+    $snapshot = @(ConvertFrom-JsonCollectionCompat (
+      Get-Content -LiteralPath $serviceBackupManifestPath -Raw -ErrorAction Stop))
+    Suspend-InstallerServiceRestarts -Records $snapshot -SnapshotPath $serviceBackupManifestPath -OwnPath {
+      param($path)
+      Test-OwnedPath (Get-ExecutableFromCommandLine $path)
+    } -StopCore { param($name) Stop-OwnedService $name $false }
+  } else {
+    Stop-OwnedService "EgoistShieldCore" $false
+  }
   foreach ($service in $legacyOwnedServices) { Stop-OwnedService $service $true }
   foreach ($service in $sharedNameServices) { Stop-OwnedService $service $true }
   foreach ($service in $ownedServices) { Stop-OwnedService $service $false }
@@ -756,35 +797,46 @@ function Remove-IncompatibleOwnedServices {
 
 function Get-VerifiedOwnedServiceRecords {
   $records = New-Object System.Collections.Generic.List[object]
-  foreach ($service in @(Get-CimInstance Win32_Service -ErrorAction SilentlyContinue)) {
+  # Discovery must complete before the first startup change. An unavailable
+  # provider cannot safely be treated as an empty original service snapshot.
+  foreach ($service in @(Get-CimInstance Win32_Service -ErrorAction Stop -OperationTimeoutSec 3)) {
     $name = [string]$service.Name
     $known = ($ownedServices + $legacyOwnedServices + $sharedNameServices) -contains $name
     $exclusive = Test-ExclusiveOwnedServiceName $name
-    if (-not $known -and -not $exclusive) { continue }
     $executable = Get-ExecutableFromCommandLine ([string]$service.PathName)
+    if (-not $known -and -not $exclusive -and (-not $executable -or -not (Test-OwnedPath $executable))) { continue }
     if ($executable -and -not (Test-OwnedPath $executable)) {
       Write-Warning "Service $name uses an EgoistShield-compatible name but points outside owned roots; it is not part of the upgrade transaction."
       continue
     }
-    if (-not $exclusive -and -not $executable) { continue }
+    if (-not $executable -and (-not $known -or -not $exclusive)) { continue }
+    if ([string]$service.StartName -notin @("LocalSystem", "NT AUTHORITY\SYSTEM")) {
+      throw "SERVICE_ACCOUNT_UNSUPPORTED: $name uses a custom service account; registry export cannot preserve its credentials."
+    }
+    $policy = Get-InstallerServicePolicy $name
+    if (-not $policy) { throw "Cannot read startup policy for owned service $name." }
     $records.Add([pscustomobject]@{
       name = $name
       displayName = [string]$service.DisplayName
       pathName = [string]$service.PathName
-      startMode = [string]$service.StartMode
+      startMode = [string]$policy.startMode
       startName = [string]$service.StartName
       serviceType = [string]$service.ServiceType
       state = [string]$service.State
+      delayedAutoStart = [bool]$policy.delayedAutoStart
     })
   }
-  # Preserve a canonical Automatic Telegram service even if Win32_Service is
-  # temporarily unavailable. This is the exact user opt-in that an in-place
+  # Preserve a canonical Automatic Telegram registration omitted from an
+  # otherwise successful CIM enumeration. This is the user opt-in an in-place
   # upgrade must not silently erase; the registry path remains ownership-gated.
   if (-not @($records | Where-Object { [string]$_.name -eq $telegramProxyServiceName })) {
     $telegram = Get-ServiceRecordFromRegistry $telegramProxyServiceName
     if ($telegram) {
       $executable = Get-ExecutableFromCommandLine ([string]$telegram.pathName)
       if ($executable -and (Test-OwnedPath $executable)) {
+        if ([string]$telegram.startName -notin @("LocalSystem", "NT AUTHORITY\SYSTEM")) {
+          throw "SERVICE_ACCOUNT_UNSUPPORTED: Telegram Proxy credentials cannot be preserved by registry export."
+        }
         $records.Add($telegram)
       } else {
         Write-Warning "Telegram Proxy service registration was not backed up because its ImagePath is not owned."
@@ -813,6 +865,7 @@ function Backup-OwnedServiceRegistrations {
       displayName = $service.displayName
       pathName = $service.pathName
       startMode = $service.startMode
+      delayedAutoStart = [bool]($service.PSObject.Properties['delayedAutoStart'] -and $service.delayedAutoStart)
       startName = $service.startName
       serviceType = $service.serviceType
       wasRunning = ($service.state -eq "Running" -or $running -contains $service.name)
@@ -842,7 +895,7 @@ function Restore-OwnedServiceRegistrations {
   $records = @(ConvertFrom-JsonCollectionCompat (
     Get-Content -LiteralPath $serviceBackupManifestPath -Raw -ErrorAction Stop))
   foreach ($record in $records) {
-    if ([string]$record.name -notmatch '^[A-Za-z0-9_.-]+$' -or
+    if (-not [string]$record.name -or [string]$record.name -match '[/\\]' -or
         [string]$record.fileName -notmatch '^service-\d+\.reg$') {
       throw "Invalid owned service backup record."
     }
@@ -875,9 +928,15 @@ function Restore-OwnedServiceRegistrations {
     if ($LASTEXITCODE -ne 0) { throw "Failed to import service backup for $($record.name)." }
   }
 
-  foreach ($record in $records) {
-    if ($record.wasRunning -eq $true) {
-      & sc.exe start ([string]$record.name) | Out-Null
+  Restore-InstallerServiceStartModes $records {
+    param($path)
+    Test-OwnedPath (Get-ExecutableFromCommandLine $path)
+  }
+  foreach ($record in @($records | Sort-Object { [string]$_.name -eq "EgoistShieldCore" })) {
+    if ($record.wasRunning -eq $true -and $record.startMode -ne "Disabled") {
+      [void](Invoke-CheckedExternal (Join-Path $env:SystemRoot "System32\sc.exe") @(
+        "start", [string]$record.name
+      ) "restore-service-start-$($record.name)" @(0, 1056))
     }
   }
   Remove-Item -LiteralPath $serviceBackupDirectory -Recurse -Force -ErrorAction Stop
@@ -3732,6 +3791,7 @@ switch ($Phase) {
     # ModernInstaller calls this phase before NSIS. Keep the same fail-closed
     # guard here so an older or alternate wrapper cannot create a DNS outage.
     if (-not (Test-InstallMayStopOwnedRuntimes)) { exit 54 }
+    Repair-UpgradeStateAccess
     $running = Get-RunningOwnedServiceNames
     Stop-AllOwnedRuntimes
     Unload-OwnedWinDivertDriver
@@ -3746,7 +3806,11 @@ switch ($Phase) {
     exit 0
   }
   "StartServices" {
-    Start-OwnedServices $Services
+    if (Test-Path -LiteralPath $serviceBackupManifestPath -PathType Leaf) {
+      Restore-OwnedServiceRegistrations
+    } else {
+      Start-OwnedServices $Services
+    }
     Write-Output "SERVICES: restored"
     exit 0
   }
@@ -3862,6 +3926,10 @@ switch ($Phase) {
     exit 0
   }
   "Uninstall" {
+    $uninstallLease = $null
+    try { $uninstallLease = Enter-UninstallMaintenanceLease }
+    catch { Write-Error $_.Exception.Message -ErrorAction Continue; exit 59 }
+    try {
     Stop-AllOwnedRuntimes
     try { Invoke-CoreServiceOfflineRecovery } catch { Write-Warning $_ }
     # Удаление committed native DoH выполняется до каталогов ProgramData:
@@ -3879,6 +3947,10 @@ switch ($Phase) {
     Remove-OwnedStartupArtifacts
     Remove-OwnedShortcuts
     Remove-OwnedRuntimeDirectories
+    } finally {
+      $uninstallLease.ReleaseMutex()
+      $uninstallLease.Dispose()
+    }
   }
 }
 

@@ -1,0 +1,115 @@
+{
+  "checkedAt": "2026-09-30T11:32:26.680740+00:00",
+  "scope": "Read-only bounded primary vendor documents and public GitHub metadata. No executable downloads or target probing.",
+  "results": [
+    {
+      "name": "electron-security",
+      "url": "https://www.electronjs.org/docs/latest/tutorial/security",
+      "readback": false,
+      "error": "TimeoutError: The read operation timed out"
+    },
+    {
+      "name": "electron-fuses",
+      "url": "https://www.electronjs.org/docs/latest/tutorial/fuses",
+      "readback": false,
+      "error": "TimeoutError: The read operation timed out"
+    },
+    {
+      "name": "electron-latest",
+      "url": "https://api.github.com/repos/electron/electron/releases/latest",
+      "status": 200,
+      "bytes": 124893,
+      "sha256": "ae5798da64c16cf33d13051b84a784465b4cfaa92fccaa95cbb180dbd92a75c5",
+      "readback": true,
+      "release": {
+        "tag_name": "v44.5.1",
+        "published_at": "2026-09-30T02:12:03Z",
+        "html_url": "https://github.com/electron/electron/releases/tag/v44.5.1",
+        "prerelease": false,
+        "draft": false
+      }
+    },
+    {
+      "name": "electron-pinned",
+      "url": "https://api.github.com/repos/electron/electron/releases/tags/v44.4.5",
+      "status": 200,
+      "bytes": 124928,
+      "sha256": "ec07c70a715e070ce51a7c9f1803b49399ebe1f62984365388f4bc1ba25214c2",
+      "readback": true,
+      "release": {
+        "tag_name": "v44.4.5",
+        "published_at": "2026-09-23T06:45:03Z",
+        "html_url": "https://github.com/electron/electron/releases/tag/v44.4.5",
+        "prerelease": false,
+        "draft": false
+      }
+    },
+    {
+      "name": "apache-security",
+      "url": "https://logging.apache.org/security.html",
+      "status": 200,
+      "bytes": 107900,
+      "sha256": "0312d5703e5b22a97d11de32ad56b36affc5b2c6fef867187071c98b43ce3caf",
+      "readback": true
+    },
+    {
+      "name": "apache-support",
+      "url": "https://logging.apache.org/log4net/download.html",
+      "status": 200,
+      "bytes": 13369,
+      "sha256": "efae212aa006569ecfcf3435424b6ff193cf893f69b4297c30230eb8368e1c66",
+      "readback": true
+    },
+    {
+      "name": "dotnet-support",
+      "url": "https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core",
+      "status": 200,
+      "bytes": 233528,
+      "sha256": "f196273e210341928748e145e04100817bd736b3b3076b99b3e68ddf1aca8206",
+      "readback": true
+    },
+    {
+      "name": "xray-latest",
+      "url": "https://api.github.com/repos/XTLS/Xray-core/releases/latest",
+      "status": 200,
+      "bytes": 121495,
+      "sha256": "99bd35eba785daac4952a43e8ea33b6137acbd1559459482561db4c9a4d24af4",
+      "readback": true,
+      "release": {
+        "tag_name": "v26.3.27",
+        "published_at": "2026-03-27T17:51:11Z",
+        "html_url": "https://github.com/XTLS/Xray-core/releases/tag/v26.3.27",
+        "prerelease": false,
+        "draft": false
+      }
+    },
+    {
+      "name": "sing-box-latest",
+      "url": "https://api.github.com/repos/SagerNet/sing-box/releases/latest",
+      "status": 200,
+      "bytes": 283354,
+      "sha256": "6c3a22234eb119771a179a830d4968e0b687d3c20585d33b3453f660d33a8f2e",
+      "readback": true,
+      "release": {
+        "tag_name": "v1.14.2",
+        "published_at": "2026-09-24T11:47:08Z",
+        "html_url": "https://github.com/SagerNet/sing-box/releases/tag/v1.14.2",
+        "prerelease": false,
+        "draft": false
+      }
+    },
+    {
+      "name": "features-node-options",
+      "url": "https://www.electronjs.org/docs/latest/api/environment-variables",
+      "readback": false,
+      "error": "TimeoutError: The read operation timed out"
+    },
+    {
+      "name": "microsoft-runasinvoker",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/win7appqual/fixing-compatibility-problems-with-your-program",
+      "readback": false,
+      "error": "HTTPError: HTTP Error 404: Not Found"
+    }
+  ],
+  "coverage": "partial"
+}

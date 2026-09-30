@@ -1,0 +1,2716 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-09-30T11:48:03.052Z",
+  "project": "Egoist Lagom",
+  "version": "3.8.0",
+  "commit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "scope": {
+    "sourceAudit": true,
+    "actualModuleOwnFilesystemFixture": true,
+    "realWindowsMutations": false,
+    "GUIAcceptance": false,
+    "externalNetworkStress": false,
+    "sourceChanges": false,
+    "privateUserStateRead": false
+  },
+  "sourceSnapshots": [
+    {
+      "file": "scripts/build.mjs",
+      "bytes": 12009,
+      "sha256": "319bd58181992c64c98325c3b19ad1bf0c283c9a94da3f70c68565c0493afc7b"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "bytes": 652349,
+      "sha256": "baacbd72b9bbec6bbce7e94c3fb8d9addda47e88e6cde3d6926c649737fa00d7"
+    },
+    {
+      "file": "src/recovered/renderer.css",
+      "bytes": 143077,
+      "sha256": "fcbd72b6254116f5a81d941718320502ab2aa6b31a69fdca2936d8a05d999aaa"
+    },
+    {
+      "file": "src/brand/CompactRuby.jsx",
+      "bytes": 23982,
+      "sha256": "ca1bc9453f3b93a921f76cdec2cdae95edad86c82c7d9b026ec6588eea5a0f0d"
+    },
+    {
+      "file": "src/brand/ShieldWidget.jsx",
+      "bytes": 16473,
+      "sha256": "cb0b34255de4e5a4b256ea262e96d84f79fd253c08af61d902ee7859bc082162"
+    },
+    {
+      "file": "src/recovered/preload.cjs",
+      "bytes": 12332,
+      "sha256": "516fe01d9693d75fbf46cf20c1dbbbf597ab53335c569a62ae3dcc7084a61b3d"
+    },
+    {
+      "file": "src/shield-connection-controller.js",
+      "bytes": 16067,
+      "sha256": "2ad2456f68b0ef1a379470c834de4250b9007b554486efd4ea38a875ed4d9a05"
+    },
+    {
+      "file": "src/component-protocol.js",
+      "bytes": 3975,
+      "sha256": "f56e144cff495683c3dd9a52ea232c61c0353f7d75b11059c3ccac39df997da6"
+    },
+    {
+      "file": "src/component-facade.js",
+      "bytes": 5008,
+      "sha256": "d33bc90ce1dbc673866feafa74813a0503d0cf8e2d3f12b7317f0603301557e8"
+    },
+    {
+      "file": "src/component-worker-entry.js",
+      "bytes": 2868,
+      "sha256": "ab5e6974684a203e8047d13e4198b8b48ef07fc9743d93ffc2084371fd930e2b"
+    },
+    {
+      "file": "src/recovered/electron/main.js",
+      "bytes": 53707,
+      "sha256": "e0c97f01e7bc391dd5721ec7fcd606beb796f9b33b778270990886223dfcde49"
+    },
+    {
+      "file": "src/recovered/electron/ipc/state-store.js",
+      "bytes": 18697,
+      "sha256": "5a1273aea418a4928c65a7b49c4440a24d52dc55bc422ac572abc6c2bde34e1c"
+    },
+    {
+      "file": "src/recovered/electron/ipc/handlers-system.js",
+      "bytes": 70573,
+      "sha256": "a97ea28a035e8f316c80194388abf91ff1ccd87e4aefe21924cfad8ee3b58182"
+    },
+    {
+      "file": "src/recovered/electron/ipc/handlers-vpn.js",
+      "bytes": 64395,
+      "sha256": "22e3c77494fb0ef685fcd9697f6fe12557da4b872e24da93d0b593f260c9e5ce"
+    },
+    {
+      "file": "src/recovered/electron/ipc/handlers-import.js",
+      "bytes": 12648,
+      "sha256": "f29cf1cbe7e54e4aa43e76b8353967faa24cbbe8284ec432003f44509c2f9a73"
+    },
+    {
+      "file": "src/recovered/electron/ipc/handlers-zapret.js",
+      "bytes": 13969,
+      "sha256": "57a12d329ebaacad2a0aa76a862ef3c41cbf63ace091df5cb4e6e2f35beb0c99"
+    },
+    {
+      "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+      "bytes": 2034,
+      "sha256": "f72332e206682306004afe9e68843686f6e2fa50c0a8b28b8aed3d29f2d689f2"
+    },
+    {
+      "file": "src/recovered/electron/ipc/handlers.js",
+      "bytes": 8914,
+      "sha256": "b2f41e3910d50486c92494b96e578e8671e8207165370cfa45ce4dce07ad8adb"
+    },
+    {
+      "file": "src/recovered/electron/ipc/diagnostics-redaction.js",
+      "bytes": 3330,
+      "sha256": "e00223f19371fbe30088aaf4a2fcb421763d43288eef6c5c4614abe5017dcea0"
+    },
+    {
+      "file": "src/recovered/electron/ipc/handlers-health.js",
+      "bytes": 16155,
+      "sha256": "c6d2cd00b911ae2754894e7b74f93790c7f08d819eeb2d2eee8e363ab167a32a"
+    },
+    {
+      "file": "src/recovered/electron/ipc/handlers-logs.js",
+      "bytes": 3147,
+      "sha256": "618cc45dd53c70fcf0bd7de257234efd8b3fe8f217aa3187beb4ff3af410cb3a"
+    },
+    {
+      "file": "src/recovered/electron/ipc/logger.js",
+      "bytes": 4764,
+      "sha256": "b908af2094730a1782e82a165011e3ad635738f5c7f5260224ea9493904c83d1"
+    },
+    {
+      "file": "src/recovered/electron/ipc/trusted-ipc.js",
+      "bytes": 2919,
+      "sha256": "986cade4f337aa84f80e4d2225e37348bc64e1f6caaad2e4d9ea2710946486af"
+    },
+    {
+      "file": "src/recovered/electron/ipc/port-utils.js",
+      "bytes": 14104,
+      "sha256": "32353bb7641f3212d27118cc9a7e19ce4276341e2ac38b66a6e9c0635c305e98"
+    },
+    {
+      "file": "src/recovered/electron/ipc/zapret-manager.js",
+      "bytes": 132502,
+      "sha256": "ffc62cdd5103045620cabba6c0c90b8890e38688dbd61cc0531a7830fd942d73"
+    },
+    {
+      "file": "src/recovered/electron/ipc/telegram-proxy-manager.js",
+      "bytes": 79063,
+      "sha256": "fe4d8c49ff791d1c4c5f05db29b1735e1ef241ef45a8193ed66bc89c5affe39c"
+    },
+    {
+      "file": "src/recovered/electron/ipc/system-doh-service-manager.js",
+      "bytes": 51715,
+      "sha256": "5197b43d1e6e7388b5eb73352b282660e4895d4b1f1faeff5f273d5ec3f37a98"
+    },
+    {
+      "file": "src/recovered/electron/ipc/system-doh-manager.js",
+      "bytes": 10853,
+      "sha256": "31cc0bceab2a4cfc7109fc33a4cd897a7fd217ca052a832f5738b2ddba13f6f1"
+    },
+    {
+      "file": "src/recovered/electron/ipc/vpn-manager.js",
+      "bytes": 62677,
+      "sha256": "1adb0a913f528dbfc654920764c8fcd6cc06803b6a0e966bce6f6073be2e5978"
+    },
+    {
+      "file": "src/recovered/electron/ipc/network-combinator-manager.js",
+      "bytes": 10521,
+      "sha256": "d664d3492e3077fc5d36e3e7ed94118f45f9b8fecd6ec3848afae21ddcd6a236"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/ComponentWorker.cs",
+      "bytes": 11049,
+      "sha256": "8a5a9bf014d0aefba20e043fba25c0957b67ceb2b633f81f6e7044d822508699"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/OperationDispatcher.cs",
+      "bytes": 83885,
+      "sha256": "113186fa323da22eea05dd3de18e8f4c70413a5b655de2720fab9e5bc92916b9"
+    }
+  ],
+  "preloadContract": {
+    "methods": 117,
+    "uniqueChannels": 117,
+    "missingHandlers": [],
+    "duplicates": [],
+    "inventoryTechnique": "preload evaluated against invoke-recording VM; main literal handlers indexed statically; callback subscriptions excluded from invoke count"
+  },
+  "featureRows": [
+    {
+      "id": "F01",
+      "surface": "Мини-щит: подключить",
+      "execution": "`shield:connect` → `ShieldConnectionController` → координатор → Zapret/DNS/TG",
+      "observed": "Выбор профиля, запуск собственного winws; DNS running + verified; TG service/listener readiness; откат только вновь запущенных частей при неудаче",
+      "backgroundAndGap": "Установленные службы продолжаются. Это не VPN и не подтверждение доступности всех сайтов"
+    },
+    {
+      "id": "F02",
+      "surface": "Мини-щит: отключить",
+      "execution": "`shield:disconnect` → восстановление owned DNS, остановка TG, standalone и службы Zapret",
+      "observed": "Readback остановки перед успешным результатом",
+      "backgroundAndGap": "Явное отключение снимает соответствующий автозапуск. Scope шире одного профиля"
+    },
+    {
+      "id": "F03",
+      "surface": "Мини-щит: отменить",
+      "execution": "`shield:cancel` → отмена автоподбора + проверки cancellation между шагами",
+      "observed": "Операция не объявляет успех после отмены; откат может требовать внимания",
+      "backgroundAndGap": "Отмена посреди реальной SCM/установки ещё требует Windows-приёмки"
+    },
+    {
+      "id": "F04",
+      "surface": "Мини-щит: DNS / TG",
+      "execution": "`system-doh:apply/reset`; `telegram-proxy:start/stop`; localStorage",
+      "observed": "При активном щите меняет компонент и читает статус; при выключенном щите переключает намерение «включить при подключении»",
+      "backgroundAndGap": "Один и тот же switch обозначает намерение или реальную активность; требуется явная подпись"
+    },
+    {
+      "id": "F05",
+      "surface": "Мини-щит: статус",
+      "execution": "`shield:status` + `shield:progress`",
+      "observed": "Компонентные статусы, ошибки чтения, блокировка действий при неизвестном состоянии; generation защищает от старых ответов",
+      "backgroundAndGap": "Polling 4 с видимо / 10 с скрыто. Это не автономный watchdog приложения"
+    },
+    {
+      "id": "F06",
+      "surface": "Полный Обзор: маршрут",
+      "execution": "`vpn:connect/disconnect` → VpnRuntimeManager",
+      "observed": "Runtime, локальный proxy, проверенный внешний egress; `wm` требует connected + egressVerified",
+      "backgroundAndGap": "При полном выходе маршрут отключается. Для reconnect/auto-connect нужен процесс приложения"
+    },
+    {
+      "id": "F07",
+      "surface": "Выбрать сервер на Обзоре",
+      "execution": "`state:set`",
+      "observed": "Сохраняет выбранный node ID для следующего подключения",
+      "backgroundAndGap": "Полный снимок вместо точечного изменения: FC-01"
+    },
+    {
+      "id": "F08",
+      "surface": "Обзор: DNS",
+      "execution": "`system-doh:apply/reset`",
+      "observed": "Проверенный System DoH, выбор native/local пути; owned rollback",
+      "backgroundAndGap": "Native DNS/собственная служба продолжается без GUI"
+    },
+    {
+      "id": "F09",
+      "surface": "Обзор: Профили switch",
+      "execution": "`zapret:start-standalone`, `stop-service`, `stop-standalone`",
+      "observed": "Запуск/остановка owned процесса",
+      "backgroundAndGap": "Включение использует standalone и может отключить автозапуск уже установленной службы: FC-03"
+    },
+    {
+      "id": "F10",
+      "surface": "Обзор: Telegram switch",
+      "execution": "`telegram-proxy:start/stop`",
+      "observed": "Windows путь start делегирует установленной службе, listener readiness",
+      "backgroundAndGap": "Установленная служба независима от GUI; явный stop отключает её автозапуск"
+    },
+    {
+      "id": "F11",
+      "surface": "Внешний IP, провайдер, регион",
+      "execution": "`vpn:get-my-ip`, network/health snapshots; verified egress предпочтительнее",
+      "observed": "Измеренный IP и доступные сведения; отсутствующие данные показываются отдельно",
+      "backgroundAndGap": "После изменения маршрута сведения до следующего обновления могут быть устаревшими; общий max-age пока не задан"
+    },
+    {
+      "id": "F12",
+      "surface": "Трафик",
+      "execution": "`traffic-update` → реальные Xray stats / sing-box stream",
+      "observed": "Только полученный числовой sample; при отсутствии sample «Нет данных», не выдуманный ноль",
+      "backgroundAndGap": "Main пропускает скрытое/минимизированное окно, сериализует sample, сбрасывает generation при смене сессии"
+    },
+    {
+      "id": "F13",
+      "surface": "Скорость и отмена",
+      "execution": "`vpn:speedtest`, progress, `vpn:speedtest-cancel`",
+      "observed": "Реальные download/upload/latency через route; отмена владеет своими sockets",
+      "backgroundAndGap": "Это отдельное измерение, не месячная стабильность и не скорость всех сайтов"
+    },
+    {
+      "id": "F14",
+      "surface": "Проверить выход / защиту",
+      "execution": "`vpn:route-probe` + `vpn:dns-leak-test`",
+      "observed": "Egress/proxy/route/DNS проверки с понятным ограничением; возможен inconclusive",
+      "backgroundAndGap": "Результат snapshot; необходимы checkedAt, инвалидирование при смене сети и ясная неполнота DNS leak проверки"
+    },
+    {
+      "id": "F15",
+      "surface": "Повторно применить маршрут",
+      "execution": "`vpn:reapply-route`",
+      "observed": "Точечное восстановление own proxy активной сессии",
+      "backgroundAndGap": "Требует приложения и активного runtime; не изменяет весь стек"
+    },
+    {
+      "id": "F16",
+      "surface": "Восстановить интернет",
+      "execution": "`system:internet-fix` → owned repair + connectivity probes",
+      "observed": "Откат только своих proxy/firewall/runtime изменений, DNS cache flush, проверка связности",
+      "backgroundAndGap": "DNS и TG сохраняются; UI показывает scope в подтверждении. Конфликтные сторонние компоненты не убиваются этим действием"
+    },
+    {
+      "id": "F17",
+      "surface": "Импорт с буфера / Ctrl+V",
+      "execution": "`system:read-clipboard` + `import:text` → resolver/parsers",
+      "observed": "URI/JSON/Clash/subscription parsing, explicit issues; подтверждённый atomic import",
+      "backgroundAndGap": "Чтение только по действию. Файл и pickFile доступны через API, видимой файловой кнопки в текущем экране нет"
+    },
+    {
+      "id": "F18",
+      "surface": "Обновить подписки",
+      "execution": "`subscription:refresh-all` / `refresh-one` → bounded fetch + parser + StateStore.update",
+      "observed": "Ограниченные HTTP budgets, до 4 запросов параллельно, сохранение старых узлов при пустом/ошибочном результате",
+      "backgroundAndGap": "Выполняется в приложении; UI refresh-all обновляет все enabled подписки"
+    },
+    {
+      "id": "F19",
+      "surface": "Подписка: имя, срок, трафик, удаление",
+      "execution": "`subscription:delete`; rename доступен в API",
+      "observed": "Удаляет подписку по URL и её узлы; не рвёт runtime автоматически",
+      "backgroundAndGap": "Панель смешивает первую подписку и провайдера активного узла: FC-09. Нет выбора цели и Undo/подтверждения"
+    },
+    {
+      "id": "F20",
+      "surface": "Сервер: выбор / избранное / сортировка",
+      "execution": "`state:set`; сортировка локальная",
+      "observed": "Реальные импортированные узлы, metadata.favorite, TCP latency",
+      "backgroundAndGap": "Полный снимок: FC-01. Полная DOM-карта всех узлов, виртуализации/поиска нет"
+    },
+    {
+      "id": "F21",
+      "surface": "Серверы: пинг",
+      "execution": "`vpn:ping` → measureTcpLatency",
+      "observed": "TCP-connect к конкретному server:port, не ICMP и не health всего маршрута",
+      "backgroundAndGap": "До 60 одновременно каждые 10 с плюс второй ранний batch; цикл не проверяет document.hidden, нет отмены in-flight при уходе с экрана"
+    },
+    {
+      "id": "F22",
+      "surface": "Пинг активного сервера",
+      "execution": "`vpn:ping-active-proxy`",
+      "observed": "Медиана трёх TCP-connect до выбранного узла, cache по processGeneration/node; coalescing",
+      "backgroundAndGap": "Не задержка Telegram/игры/всех сайтов. UI effect пропускает скрытое окно"
+    },
+    {
+      "id": "F23",
+      "surface": "Ручной DNS / пресеты",
+      "execution": "`system:set-dns-servers/reset-dns-servers` → Core owned DNS transaction",
+      "observed": "Применение к активным физическим адаптерам, readback/probes/rollback",
+      "backgroundAndGap": "Системная конфигурация продолжает действовать без GUI; Core следит за owned adapters"
+    },
+    {
+      "id": "F24",
+      "surface": "DNS-ссылка",
+      "execution": "`system-doh:apply` → secure DNS parser/native bootstrap/local Xray",
+      "observed": "Общий HTTPS DoH, loopback ownership, строгий upstream HTTPS; custom non-443 уходит в локальный путь",
+      "backgroundAndGap": "Общий DoT не реализован; UI умеет конвертировать только Gravityless DoT-hostname: FC-08"
+    },
+    {
+      "id": "F25",
+      "surface": "DNS: текущий адрес и диагностика",
+      "execution": "`system:dns-controller-status`, `dns-diagnostics`, `system-doh:status`",
+      "observed": "Настройки активных адаптеров, named probes, режим native/local, verified",
+      "backgroundAndGap": "Часть режима берётся из сохранённого intent; прежний dnsCheck может пережить следующую мутацию до delayed refresh"
+    },
+    {
+      "id": "F26",
+      "surface": "Перепроверить / отключить DoH",
+      "execution": "`system-doh:restart/reset`",
+      "observed": "Повторное применение/проверка либо owned восстановление; pending adapter rollback блокирует остановку единственного resolver",
+      "backgroundAndGap": "Установленный local resolver/Windows DNS остаются самостоятельными"
+    },
+    {
+      "id": "F27",
+      "surface": "Профили: выбор и автоподбор",
+      "execution": "`zapret:list-profiles`, `auto-select`, progress, `cancel-auto-select`",
+      "observed": "Реальные проверки доступности набора targets, partial/cancelled history не выдаётся за полный выбор",
+      "backgroundAndGap": "Служба и DNS могут меняться; Core сериализует execution. Не доказывает все сайты/UDP voice/всех провайдеров"
+    },
+    {
+      "id": "F28",
+      "surface": "Профили: история / маршруты",
+      "execution": "`zapret:status`, `get-user-lists`, `save-user-lists`",
+      "observed": "История на диске/в UI, bounded compact results, domain/IP/CIDR списки",
+      "backgroundAndGap": "При активном VPN соответствующие изменения заблокированы после получения coordinated lock"
+    },
+    {
+      "id": "F29",
+      "surface": "Профили: обычный запуск",
+      "execution": "`zapret:start-standalone/restart-standalone/stop-standalone`",
+      "observed": "Detached owned winws и подтверждение PID/process readiness",
+      "backgroundAndGap": "Не SCM auto-start/recovery. UI обещание «остановится вместе с приложением» не согласуется с detached worker жизненным циклом; нужно отдельное испытание exit/crash"
+    },
+    {
+      "id": "F30",
+      "surface": "Профили: фоновая служба",
+      "execution": "`zapret:install-service/set-service-profile/start-service/stop-service/remove-service`",
+      "observed": "Owned wrapper/SCM и winws readiness; explicit start восстанавливает Auto, explicit stop Disabled",
+      "backgroundAndGap": "Продолжается без GUI и стартует после reboot при Auto. SCM healthy ≠ доступность всех целевых сайтов"
+    },
+    {
+      "id": "F31",
+      "surface": "Профили: игровой фильтр / IPSet",
+      "execution": "`set-game-filter-mode/set-ipset-mode/update-ipset-list`",
+      "observed": "Запись соответствующих runtime flags/lists; validation",
+      "backgroundAndGap": "Эффект требует проверки конкретного профиля/игры; UI не измеряет packet-loss/jitter"
+    },
+    {
+      "id": "F32",
+      "surface": "Flowseal update",
+      "execution": "`zapret:check-updates/install-core-update/install-core-version`",
+      "observed": "Защищённый runtime update, integrity и version readback, сохранение lists",
+      "backgroundAndGap": "Реальная rollback/update/reboot матрица на отдельной Windows ещё нужна"
+    },
+    {
+      "id": "F33",
+      "surface": "Кэш Discord / reset WinWS",
+      "execution": "`zapret:clean-discord-cache/reset-network-state`",
+      "observed": "Явно предупреждённый scope: закрытие названных Discord-клиентов/owned Zapret, cache/driver cleanup",
+      "backgroundAndGap": "Не фоновая оптимизация. Кнопки опаснее обычной настройки и должны оставаться в обслуживании"
+    },
+    {
+      "id": "F34",
+      "surface": "Telegram: конфигурация",
+      "execution": "`telegram-proxy:save-config` → schema + protected worker config",
+      "observed": "Loopback address, port, secret, limits; frontend сохраняет dirty draft при внешнем изменении",
+      "backgroundAndGap": "Хороший образец разделения draft/readback; сохранение выполняется перед install/start/openLink"
+    },
+    {
+      "id": "F35",
+      "surface": "Telegram: служба / управление",
+      "execution": "install/start/stop/restart/remove-service",
+      "observed": "SCM + ownership listener proof, endpoint availability; installed service остаётся при application shutdown",
+      "backgroundAndGap": "Стабильная локальная готовность не доказывает доставку сообщения в реальном Telegram-клиенте"
+    },
+    {
+      "id": "F36",
+      "surface": "Telegram: добавление в клиент",
+      "execution": "`telegram-proxy:open-link`",
+      "observed": "Открытие локальной proxy-ссылки в зарегистрированном клиенте",
+      "backgroundAndGap": "Не доказывает, что пользователь подтвердил применение и клиент использует proxy"
+    },
+    {
+      "id": "F37",
+      "surface": "Telegram: route/logs/update",
+      "execution": "`status/tail-logs/open-logs/check-updates/install-update`",
+      "observed": "Route/connection counters, bounded log tail, совместимый bundled headless runtime",
+      "backgroundAndGap": "Latest upstream desktop asset не устанавливается как service; UI должен различать upstream и installable"
+    },
+    {
+      "id": "F38",
+      "surface": "Настройки: startup/tray",
+      "execution": "`state:set` → syncWindowsLoginItemSettings",
+      "observed": "Login item + rollback при неудаче записи, persist window behavior",
+      "backgroundAndGap": "GUI auto-start нужен для VPN/обновления, а не уже установленных служб; мини-подключение всё ещё принудительно меняет три этих настройки: FC-07"
+    },
+    {
+      "id": "F39",
+      "surface": "Настройки: auto-connect/reconnect",
+      "execution": "`state:set`; main boot DNS probe + reconnectSupervisor",
+      "observed": "Восстановление последнего маршрута и повторы с ограничениями",
+      "backgroundAndGap": "Без процесса приложения не работает. Startup readiness пока проверяет только DNS, а не интернет/captive portal"
+    },
+    {
+      "id": "F40",
+      "surface": "Настройки: уведомления/HWID",
+      "execution": "`state:set` → Notification checks / subscription fetch",
+      "observed": "Настройка notification gate; HWID default off, явный opt-in",
+      "backgroundAndGap": "Не подтверждено отсутствие всех сторонних runtime logs с персональными адресами"
+    },
+    {
+      "id": "F41",
+      "surface": "Обновление приложения",
+      "execution": "`updater:*` → signed registry/manifest/download/installer handoff",
+      "observed": "Root-pinned trust, anti-rollback/revocation/checksum, visible phases/errors",
+      "backgroundAndGap": "Работает при запущенном приложении/трее; автономного GUI-less updater нет. Для 3.7.7 нужна ручная миграция"
+    },
+    {
+      "id": "F42",
+      "surface": "Логи / диагностика",
+      "execution": "`logs:*`, `health:*`, `diagnostics:export-bundle`",
+      "observed": "Локальные logs/statuses/summary, JSON redaction, архив; diagnostic debug window ограничен",
+      "backgroundAndGap": "Path-based DNS credentials пока не скрываются: FC-02. 7-дневная очистка вызывается при startup/settings, а не непрерывным daemon timer"
+    },
+    {
+      "id": "F43",
+      "surface": "Версия / окно / мини / About",
+      "execution": "`app:*`, `window:*`",
+      "observed": "Реальная package version/date, native window mode, zoom policy, close/tray behavior",
+      "backgroundAndGap": "Recovery renderer отдельный от продолжения SCM служб; max/min geometry — в UI-аудите"
+    },
+    {
+      "id": "F44",
+      "surface": "Network plan API",
+      "execution": "`network:inspect/plan/approve/apply/rollback/verify/diagnose`",
+      "observed": "Inspect + coordination реальных действий; plan/approve есть, apply/rollback возвращают applied:false",
+      "backgroundAndGap": "Plan API не исполняет Windows-операции; verify проверяет plan/approval, не внешний сеть. В текущем UI plan workflow отсутствует"
+    },
+    {
+      "id": "F45",
+      "surface": "Legacy/advanced API",
+      "execution": "runtime install/update, process list/icon, usage history, TUN/process/domain rules",
+      "observed": "Методы/данные существуют, protocol matrix ограничивает runtime capabilities; killSwitch при sanitize принудительно false",
+      "backgroundAndGap": "Наличие поля или IPC не является обещанием текущей видимой функции. Не добавлять весь API в UI ради числа настроек"
+    }
+  ],
+  "findings": [
+    {
+      "id": "FC-01",
+      "priority": "P1",
+      "evidenceLevel": "reproduced",
+      "summary": "Stale full state replacement can remove a later imported node from memory and disk",
+      "sources": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11341
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11170
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11179
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 150
+        },
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 690
+        },
+        {
+          "file": "src/recovered/electron/ipc/state-store.js",
+          "line": 188
+        }
+      ]
+    },
+    {
+      "id": "FC-02",
+      "priority": "P1",
+      "evidenceLevel": "reproduced",
+      "summary": "DNS URL path credentials remain in diagnostic text and object export",
+      "sources": [
+        {
+          "file": "src/recovered/electron/ipc/diagnostics-redaction.js",
+          "line": 10
+        },
+        {
+          "file": "src/recovered/electron/ipc/handlers-health.js",
+          "line": 246
+        }
+      ]
+    },
+    {
+      "id": "FC-03",
+      "priority": "P1",
+      "evidenceLevel": "authored-handler-reproduced-in-vm",
+      "summary": "Overview quick enable chooses standalone and disables installed service autostart",
+      "sources": [
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 126
+        },
+        {
+          "file": "src/recovered/electron/ipc/zapret-manager.js",
+          "line": 991
+        }
+      ]
+    },
+    {
+      "id": "FC-09",
+      "priority": "P1",
+      "evidenceLevel": "source-proven",
+      "summary": "Subscription details and deletion target first subscription while provider follows active node",
+      "sources": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11133
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11194
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11621
+        }
+      ]
+    },
+    {
+      "id": "FC-04",
+      "priority": "P2",
+      "evidenceLevel": "source-proven-usability-gap",
+      "summary": "Mini shield and full overview Connect perform different operations; planned switches reuse actual state semantics",
+      "sources": [
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 93
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 251
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 108
+        }
+      ]
+    },
+    {
+      "id": "FC-05",
+      "priority": "P2",
+      "evidenceLevel": "source-proven-coverage-gap",
+      "summary": "Full polling preserves earlier values on rejection without a shared freshness or read error contract",
+      "sources": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10722
+        }
+      ]
+    },
+    {
+      "id": "FC-06",
+      "priority": "P2",
+      "evidenceLevel": "source-proven-measurement-needed",
+      "summary": "Node ping batches and complete list rendering need large-library and hidden-window measurement",
+      "sources": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11140
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 156
+        }
+      ]
+    },
+    {
+      "id": "FC-07",
+      "priority": "P2",
+      "evidenceLevel": "source-proven",
+      "summary": "Shield connection forces three launch/window preferences independently of service needs",
+      "sources": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1473
+        }
+      ]
+    },
+    {
+      "id": "FC-08",
+      "priority": "P2",
+      "evidenceLevel": "source-proven",
+      "summary": "DNS field advertises general DoT hostname but only Gravityless hostname conversion is implemented",
+      "sources": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11231
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11742
+        }
+      ]
+    },
+    {
+      "id": "FC-10",
+      "priority": "P2",
+      "evidenceLevel": "source-proven-contract-budget",
+      "summary": "Startup DNS-only readiness and egress timing comments exceed what checks prove",
+      "sources": [
+        {
+          "file": "src/recovered/electron/main.js",
+          "line": 897
+        },
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 20
+        },
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 842
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": "FC-01",
+      "invariant": "A preference save must preserve a node imported since the renderer snapshot",
+      "currentInvariantPass": false,
+      "reproduced": true,
+      "sourceModule": "electron/ipc/state-store",
+      "beforeNodeCount": 1,
+      "afterNodeCount": 0,
+      "onDiskAfterNodeCount": 0
+    },
+    {
+      "id": "FC-02",
+      "invariant": "Diagnostic output must hide DNS URL path credentials",
+      "currentInvariantPass": false,
+      "reproduced": true,
+      "objectKeysChecked": [
+        "settings.systemDohUrl",
+        "settings.customDnsUrl"
+      ],
+      "textChecked": true,
+      "syntheticSentinelOnly": true
+    },
+    {
+      "id": "FC-03",
+      "invariant": "Overview quick enable must preserve an installed persistent Zapret service mode",
+      "currentInvariantPass": false,
+      "reproduced": true,
+      "selectedMethods": [
+        {
+          "method": "startStandalone",
+          "profile": "OwnFixture"
+        }
+      ],
+      "boundary": "actual authored handler in VM, IPC calls intercepted; no real Windows mutation performed"
+    },
+    {
+      "id": "FC-API",
+      "invariant": "Every preload invoke channel has a main handler",
+      "currentInvariantPass": true,
+      "preloadInvokeMethods": 117,
+      "uniqueChannels": 117,
+      "missing": [],
+      "duplicateHandlers": []
+    }
+  ],
+  "ipcCatalog": [
+    {
+      "api": "shield.status",
+      "channel": "shield:status",
+      "authoredReferences": [
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 42
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 42
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1486
+        }
+      ]
+    },
+    {
+      "api": "shield.connect",
+      "channel": "shield:connect",
+      "authoredReferences": [
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 147
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 147
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1487
+        }
+      ]
+    },
+    {
+      "api": "shield.disconnect",
+      "channel": "shield:disconnect",
+      "authoredReferences": [
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 146
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 146
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1488
+        }
+      ]
+    },
+    {
+      "api": "shield.cancel",
+      "channel": "shield:cancel",
+      "authoredReferences": [
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 204
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 204
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1489
+        }
+      ]
+    },
+    {
+      "api": "state.get",
+      "channel": "state:get",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 687
+        }
+      ]
+    },
+    {
+      "api": "state.set",
+      "channel": "state:set",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11170
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11170
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11179
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11179
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11341
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11341
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 150
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 150
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 690
+        }
+      ]
+    },
+    {
+      "api": "import.text",
+      "channel": "import:text",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11183
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11183
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-import.js",
+          "line": 145
+        }
+      ]
+    },
+    {
+      "api": "import.file",
+      "channel": "import:file",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-import.js",
+          "line": 153
+        }
+      ]
+    },
+    {
+      "api": "subscription.refreshOne",
+      "channel": "subscription:refresh-one",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-import.js",
+          "line": 165
+        }
+      ]
+    },
+    {
+      "api": "subscription.refreshAll",
+      "channel": "subscription:refresh-all",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11190
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11190
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-import.js",
+          "line": 200
+        }
+      ]
+    },
+    {
+      "api": "subscription.rename",
+      "channel": "subscription:rename",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-import.js",
+          "line": 262
+        }
+      ]
+    },
+    {
+      "api": "subscription.delete",
+      "channel": "subscription:delete",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11196
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11196
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-import.js",
+          "line": 278
+        }
+      ]
+    },
+    {
+      "api": "node.rename",
+      "channel": "node:rename",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-import.js",
+          "line": 294
+        }
+      ]
+    },
+    {
+      "api": "network.inspect",
+      "channel": "network:inspect",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-network-combinator.js",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "api": "network.plan",
+      "channel": "network:plan",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-network-combinator.js",
+          "line": 25
+        }
+      ]
+    },
+    {
+      "api": "network.approve",
+      "channel": "network:approve",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-network-combinator.js",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "api": "network.apply",
+      "channel": "network:apply",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-network-combinator.js",
+          "line": 27
+        }
+      ]
+    },
+    {
+      "api": "network.rollback",
+      "channel": "network:rollback",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-network-combinator.js",
+          "line": 28
+        }
+      ]
+    },
+    {
+      "api": "network.verify",
+      "channel": "network:verify",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-network-combinator.js",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "api": "network.diagnose",
+      "channel": "network:diagnose",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-network-combinator.js",
+          "line": 30
+        }
+      ]
+    },
+    {
+      "api": "vpn.connect",
+      "channel": "vpn:connect",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10829
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10829
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11208
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11208
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 112
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 112
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 757
+        }
+      ]
+    },
+    {
+      "api": "vpn.disconnect",
+      "channel": "vpn:disconnect",
+      "authoredReferences": [
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 109
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 109
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 788
+        }
+      ]
+    },
+    {
+      "api": "vpn.status",
+      "channel": "vpn:status",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 865
+        }
+      ]
+    },
+    {
+      "api": "vpn.diagnose",
+      "channel": "vpn:diagnose",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 871
+        }
+      ]
+    },
+    {
+      "api": "vpn.stressTest",
+      "channel": "vpn:stress-test",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 898
+        }
+      ]
+    },
+    {
+      "api": "runtime.installXray",
+      "channel": "runtime:install-xray",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 777
+        }
+      ]
+    },
+    {
+      "api": "runtime.installAll",
+      "channel": "runtime:install-all",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 780
+        }
+      ]
+    },
+    {
+      "api": "runtime.checkUpdates",
+      "channel": "runtime:check-updates",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 783
+        }
+      ]
+    },
+    {
+      "api": "app.isAdmin",
+      "channel": "app:is-admin",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 725
+        }
+      ]
+    },
+    {
+      "api": "app.getVersion",
+      "channel": "app:get-version",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10890
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11365
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 726
+        }
+      ]
+    },
+    {
+      "api": "app.isFirstRun",
+      "channel": "app:is-first-run",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 766
+        }
+      ]
+    },
+    {
+      "api": "app.markFirstRunDone",
+      "channel": "app:mark-first-run-done",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 774
+        }
+      ]
+    },
+    {
+      "api": "system.pickFile",
+      "channel": "system:pick-file",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 786
+        }
+      ]
+    },
+    {
+      "api": "system.listProcesses",
+      "channel": "system:list-processes",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 799
+        }
+      ]
+    },
+    {
+      "api": "system.getAppIcon",
+      "channel": "system:get-app-icon",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 823
+        }
+      ]
+    },
+    {
+      "api": "system.ping",
+      "channel": "vpn:ping",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11149
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11149
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 1033
+        }
+      ]
+    },
+    {
+      "api": "system.pingActiveProxy",
+      "channel": "vpn:ping-active-proxy",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10765
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10765
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 1047
+        }
+      ]
+    },
+    {
+      "api": "system.speedtest",
+      "channel": "vpn:speedtest",
+      "authoredReferences": [
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 146
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 146
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 1477
+        }
+      ]
+    },
+    {
+      "api": "system.geoip",
+      "channel": "system:geoip",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 745
+        }
+      ]
+    },
+    {
+      "api": "system.internetFix",
+      "channel": "system:internet-fix",
+      "authoredReferences": [
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 134
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 134
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 904
+        }
+      ]
+    },
+    {
+      "api": "system.terminateConflicts",
+      "channel": "system:terminate-conflicts",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 864
+        }
+      ]
+    },
+    {
+      "api": "system.readClipboard",
+      "channel": "system:read-clipboard",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11181
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11181
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11232
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11232
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 837
+        }
+      ]
+    },
+    {
+      "api": "system.writeClipboard",
+      "channel": "system:write-clipboard",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 852
+        }
+      ]
+    },
+    {
+      "api": "system.setDnsServers",
+      "channel": "system:set-dns-servers",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11230
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11230
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1184
+        }
+      ]
+    },
+    {
+      "api": "system.resetDnsServers",
+      "channel": "system:reset-dns-servers",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11231
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11231
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1224
+        }
+      ]
+    },
+    {
+      "api": "system.dnsControllerStatus",
+      "channel": "system:dns-controller-status",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1041
+        }
+      ]
+    },
+    {
+      "api": "system.dnsDiagnostics",
+      "channel": "system:dns-diagnostics",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10879
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10879
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11241
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11241
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1094
+        }
+      ]
+    },
+    {
+      "api": "system.systemDohStatus",
+      "channel": "system-doh:status",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1262
+        }
+      ]
+    },
+    {
+      "api": "system.applySystemDoh",
+      "channel": "system-doh:apply",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11237
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11237
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 118
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 118
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 166
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 166
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1271
+        }
+      ]
+    },
+    {
+      "api": "system.resetSystemDoh",
+      "channel": "system-doh:reset",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11238
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11238
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 115
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 115
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 167
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 167
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1341
+        }
+      ]
+    },
+    {
+      "api": "system.restartSystemDoh",
+      "channel": "system-doh:restart",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11238
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11238
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1409
+        }
+      ]
+    },
+    {
+      "api": "system.getMyIp",
+      "channel": "vpn:get-my-ip",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 1098
+        }
+      ]
+    },
+    {
+      "api": "system.routeProbe",
+      "channel": "vpn:route-probe",
+      "authoredReferences": [
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 107
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 107
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 968
+        }
+      ]
+    },
+    {
+      "api": "system.dnsLeakTest",
+      "channel": "vpn:dns-leak-test",
+      "authoredReferences": [
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 107
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 107
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 1017
+        }
+      ]
+    },
+    {
+      "api": "system.reapplyRoute",
+      "channel": "vpn:reapply-route",
+      "authoredReferences": [
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 149
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 149
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 976
+        }
+      ]
+    },
+    {
+      "api": "system.cancelSpeedtest",
+      "channel": "vpn:speedtest-cancel",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10702
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-vpn.js",
+          "line": 1497
+        }
+      ]
+    },
+    {
+      "api": "window.minimize",
+      "channel": "window:minimize",
+      "authoredReferences": [
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 218
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1490
+        }
+      ]
+    },
+    {
+      "api": "window.toggleMaximize",
+      "channel": "window:toggle-maximize",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1494
+        }
+      ]
+    },
+    {
+      "api": "window.isMaximized",
+      "channel": "window:is-maximized",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1499
+        }
+      ]
+    },
+    {
+      "api": "window.close",
+      "channel": "window:close",
+      "authoredReferences": [
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 221
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1502
+        }
+      ]
+    },
+    {
+      "api": "window.setWidgetMode",
+      "channel": "window:set-widget-mode",
+      "authoredReferences": [
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 172
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 1506
+        }
+      ]
+    },
+    {
+      "api": "updater.checkAndInstall",
+      "channel": "updater:check-and-install",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11357
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11357
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/main.js",
+          "line": 159
+        }
+      ]
+    },
+    {
+      "api": "updater.openReleasePage",
+      "channel": "updater:open-release-page",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11358
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11358
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/main.js",
+          "line": 169
+        }
+      ]
+    },
+    {
+      "api": "updater.check",
+      "channel": "updater:check",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10863
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10863
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/main.js",
+          "line": 153
+        }
+      ]
+    },
+    {
+      "api": "updater.getLastResult",
+      "channel": "updater:last-result",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10856
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 10856
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/main.js",
+          "line": 174
+        }
+      ]
+    },
+    {
+      "api": "updater.setAuto",
+      "channel": "updater:set-auto",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11352
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11352
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/main.js",
+          "line": 196
+        }
+      ]
+    },
+    {
+      "api": "logs.getRecent",
+      "channel": "logs:get-recent",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-logs.js",
+          "line": 87
+        }
+      ]
+    },
+    {
+      "api": "logs.getRuntimeSummary",
+      "channel": "logs:get-runtime-summary",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-logs.js",
+          "line": 90
+        }
+      ]
+    },
+    {
+      "api": "logs.getPath",
+      "channel": "logs:get-path",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-logs.js",
+          "line": 93
+        }
+      ]
+    },
+    {
+      "api": "logs.openFolder",
+      "channel": "logs:open-folder",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11358
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11358
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-logs.js",
+          "line": 96
+        }
+      ]
+    },
+    {
+      "api": "health.getReport",
+      "channel": "health:get-report",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-health.js",
+          "line": 346
+        }
+      ]
+    },
+    {
+      "api": "health.runPerformanceProfile",
+      "channel": "health:run-performance-profile",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-health.js",
+          "line": 347
+        }
+      ]
+    },
+    {
+      "api": "diagnostics.exportBundle",
+      "channel": "diagnostics:export-bundle",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11358
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11358
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-health.js",
+          "line": 348
+        }
+      ]
+    },
+    {
+      "api": "usage.saveRecord",
+      "channel": "usage:save-record",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 730
+        }
+      ]
+    },
+    {
+      "api": "usage.getHistory",
+      "channel": "usage:get-history",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-system.js",
+          "line": 742
+        }
+      ]
+    },
+    {
+      "api": "zapret.status",
+      "channel": "zapret:status",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 99
+        }
+      ]
+    },
+    {
+      "api": "zapret.listProfiles",
+      "channel": "zapret:list-profiles",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 105
+        }
+      ]
+    },
+    {
+      "api": "zapret.dryRunProfile",
+      "channel": "zapret:dry-run-profile",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 108
+        }
+      ]
+    },
+    {
+      "api": "zapret.getUserLists",
+      "channel": "zapret:get-user-lists",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11266
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 113
+        }
+      ]
+    },
+    {
+      "api": "zapret.saveUserLists",
+      "channel": "zapret:save-user-lists",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11293
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11293
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 116
+        }
+      ]
+    },
+    {
+      "api": "zapret.installService",
+      "channel": "zapret:install-service",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11279
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11280
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11280
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 119
+        }
+      ]
+    },
+    {
+      "api": "zapret.setServiceProfile",
+      "channel": "zapret:set-service-profile",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11282
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11283
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11283
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 124
+        }
+      ]
+    },
+    {
+      "api": "zapret.startService",
+      "channel": "zapret:start-service",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11285
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11285
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 129
+        }
+      ]
+    },
+    {
+      "api": "zapret.stopService",
+      "channel": "zapret:stop-service",
+      "authoredReferences": [
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 122
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 122
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 132
+        }
+      ]
+    },
+    {
+      "api": "zapret.removeService",
+      "channel": "zapret:remove-service",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11288
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11288
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 135
+        }
+      ]
+    },
+    {
+      "api": "zapret.startStandalone",
+      "channel": "zapret:start-standalone",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11278
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11278
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11288
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11288
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 128
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 128
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 138
+        }
+      ]
+    },
+    {
+      "api": "zapret.restartStandalone",
+      "channel": "zapret:restart-standalone",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 143
+        }
+      ]
+    },
+    {
+      "api": "zapret.stopStandalone",
+      "channel": "zapret:stop-standalone",
+      "authoredReferences": [
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 123
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 123
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 148
+        }
+      ]
+    },
+    {
+      "api": "zapret.setGameFilterMode",
+      "channel": "zapret:set-game-filter-mode",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11293
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11293
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 151
+        }
+      ]
+    },
+    {
+      "api": "zapret.setIpsetMode",
+      "channel": "zapret:set-ipset-mode",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11293
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11293
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 154
+        }
+      ]
+    },
+    {
+      "api": "zapret.updateIpsetList",
+      "channel": "zapret:update-ipset-list",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11293
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11293
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 157
+        }
+      ]
+    },
+    {
+      "api": "zapret.setUpdateChecksEnabled",
+      "channel": "zapret:set-update-checks-enabled",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 160
+        }
+      ]
+    },
+    {
+      "api": "zapret.checkUpdates",
+      "channel": "zapret:check-updates",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11294
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11294
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 163
+        }
+      ]
+    },
+    {
+      "api": "zapret.installCoreUpdate",
+      "channel": "zapret:install-core-update",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11300
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11300
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 166
+        }
+      ]
+    },
+    {
+      "api": "zapret.installCoreVersion",
+      "channel": "zapret:install-core-version",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 169
+        }
+      ]
+    },
+    {
+      "api": "zapret.runCoreUpdater",
+      "channel": "zapret:run-core-updater",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 172
+        }
+      ]
+    },
+    {
+      "api": "zapret.resetNetworkState",
+      "channel": "zapret:reset-network-state",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11288
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11288
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 175
+        }
+      ]
+    },
+    {
+      "api": "zapret.diagnostics",
+      "channel": "zapret:diagnostics",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 178
+        }
+      ]
+    },
+    {
+      "api": "zapret.autoSelect",
+      "channel": "zapret:auto-select",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11275
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11275
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 181
+        }
+      ]
+    },
+    {
+      "api": "zapret.cancelAutoSelect",
+      "channel": "zapret:cancel-auto-select",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11277
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11277
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 207
+        }
+      ]
+    },
+    {
+      "api": "zapret.openServiceMenu",
+      "channel": "zapret:open-service-menu",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 211
+        }
+      ]
+    },
+    {
+      "api": "zapret.runFlowsealTests",
+      "channel": "zapret:run-flowseal-tests",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 214
+        }
+      ]
+    },
+    {
+      "api": "zapret.cleanDiscordCache",
+      "channel": "zapret:clean-discord-cache",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11288
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11288
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-zapret.js",
+          "line": 217
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.status",
+      "channel": "telegram-proxy:status",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.saveConfig",
+      "channel": "telegram-proxy:save-config",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11322
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11322
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 9
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.start",
+      "channel": "telegram-proxy:start",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11328
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11328
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 132
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 132
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 185
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 185
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.stop",
+      "channel": "telegram-proxy:stop",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11328
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11328
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 132
+        },
+        {
+          "file": "src/brand/CompactRuby.jsx",
+          "line": 132
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 186
+        },
+        {
+          "file": "src/brand/ShieldWidget.jsx",
+          "line": 186
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.restart",
+      "channel": "telegram-proxy:restart",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.installService",
+      "channel": "telegram-proxy:install-service",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11328
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11328
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.startService",
+      "channel": "telegram-proxy:start-service",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.stopService",
+      "channel": "telegram-proxy:stop-service",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.removeService",
+      "channel": "telegram-proxy:remove-service",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11330
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11330
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.checkUpdates",
+      "channel": "telegram-proxy:check-updates",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11325
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11325
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.installUpdate",
+      "channel": "telegram-proxy:install-update",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11326
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11326
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 18
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.openLink",
+      "channel": "telegram-proxy:open-link",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11328
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11328
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.openLogs",
+      "channel": "telegram-proxy:open-logs",
+      "authoredReferences": [
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11330
+        },
+        {
+          "file": "src/recovered/renderer.js",
+          "line": 11330
+        }
+      ],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 20
+        }
+      ]
+    },
+    {
+      "api": "telegramProxy.tailLogs",
+      "channel": "telegram-proxy:tail-logs",
+      "authoredReferences": [],
+      "handlers": [
+        {
+          "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+          "line": 21
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Invoke/handler coverage does not prove execution success or runtime permissions",
+    "VM action fixture observes selected method only; no SCM call performed",
+    "Existing regression files inspected, full 633 suite not rerun by this reviewer",
+    "User-dependent connectivity, Telegram delivery, reboot/install/crash Windows acceptance and continuous soak remain separate tests"
+  ]
+}

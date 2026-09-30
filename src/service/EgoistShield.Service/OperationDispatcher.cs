@@ -51,6 +51,7 @@ internal sealed class OperationDispatcher : IDisposable
 	private readonly Lazy<ComponentWorker> _componentWorker;
 	private readonly Func<JsonElement, bool, CancellationToken, Task<JsonElement>> _executeComponent;
 	private readonly OwnedServiceIntentStore _serviceIntents;
+	private readonly InstallerServiceMaintenance _installerMaintenance;
 	private readonly OwnedServiceSupervisor? _serviceSupervisor;
 	private readonly DnsBootstrapRefreshScheduler _bootstrapRefresh;
 	private readonly OwnedWrapperLogMaintenance? _wrapperLogMaintenance;
@@ -74,6 +75,7 @@ internal sealed class OperationDispatcher : IDisposable
 		_componentWorker = new Lazy<ComponentWorker>(() => new ComponentWorker(options.InstallRoot ?? throw new InvalidOperationException("Component operations require an installed product.")));
 		_executeComponent = componentExecutor ?? ((payload, query, token) => _componentWorker.Value.ExecuteAsync(payload, query, token));
 		_serviceIntents = new OwnedServiceIntentStore(options.StateRoot);
+		_installerMaintenance = new InstallerServiceMaintenance(options.StateRoot);
 		_bootstrapRefresh = new DnsBootstrapRefreshScheduler(options.StateRoot);
 		if (services != null && options.InstallRoot != null && !options.ConsoleMode)
 		{
@@ -101,6 +103,7 @@ internal sealed class OperationDispatcher : IDisposable
 			if (!await _mutationLock.WaitAsync(0, cancellationToken)) continue;
 			try
 			{
+				if (_installerMaintenance.IsActive()) continue;
 				// A crash marker is recovered by the transaction path, never bypassed
 				// by an independent health repair during partial network mutation.
 				if (await _journal.ReadActiveAsync(cancellationToken) != null) continue;
@@ -339,7 +342,16 @@ internal sealed class OperationDispatcher : IDisposable
 		return result;
 	}
 
-	public async Task<ServiceResponse> DispatchAsync(ServiceRequest request, ClientIdentity identity, CancellationToken cancellationToken = default(CancellationToken))
+	public Task<ServiceResponse> DispatchAsync(ServiceRequest request, ClientIdentity identity, CancellationToken cancellationToken = default(CancellationToken))
+		=> DispatchRequestAsync(request, identity, false, cancellationToken);
+
+	// Only the offline installer/uninstaller entry point can use this path. IPC
+	// callers cannot select an operation or opt out of the maintenance barrier.
+	internal Task<ServiceResponse> RestoreOwnedDnsOfflineAsync(ClientIdentity identity, CancellationToken cancellationToken = default)
+		=> DispatchRequestAsync(new ServiceRequest(1, "uninstall-dns:" + Guid.NewGuid().ToString("N"),
+			"dns.restore-owned", JsonDefaults.ToElement(new { })), identity, true, cancellationToken);
+
+	private async Task<ServiceResponse> DispatchRequestAsync(ServiceRequest request, ClientIdentity identity, bool offlineDnsRestore, CancellationToken cancellationToken)
 	{
 		long sequence = Interlocked.Increment(ref _sequence);
 		if (identity.IdentityProbe && request.Operation != "hello")
@@ -348,6 +360,11 @@ internal sealed class OperationDispatcher : IDisposable
 		}
 		string fingerprint = Fingerprint(request);
 		bool mutation = MutationOperations.Contains(request.Operation);
+		if (!offlineDnsRestore && _installerMaintenance.IsActive() && (mutation || request.Operation == "component.query"))
+		{
+			return ServiceResponse.Failure(request.RequestId, sequence, "INSTALLER_MAINTENANCE",
+				"An installer is preserving owned services; retry after installation or recovery completes.", retryable: true);
+		}
 		if (_responses.TryGetValue(request.RequestId, out CachedResponse value))
 		{
 			return (value.Fingerprint == fingerprint) ? value.Response : ServiceResponse.Failure(request.RequestId, sequence, "REQUEST_ID_REUSED", "The requestId was already used with a different request.");
@@ -368,7 +385,7 @@ internal sealed class OperationDispatcher : IDisposable
 		{
 			if (mutation)
 			{
-				return await DispatchMutationAsync(request, identity, sequence, fingerprint, cancellationToken);
+				return await DispatchMutationAsync(request, identity, sequence, fingerprint, offlineDnsRestore, cancellationToken);
 			}
 			ServiceResponse serviceResponse = await ExecuteAsync(request, identity, sequence, cancellationToken);
 			if (serviceResponse.Error?.Code != "REQUEST_IN_FLIGHT")
@@ -437,7 +454,13 @@ internal sealed class OperationDispatcher : IDisposable
 		}
 	}
 
-	private async Task<ServiceResponse> DispatchMutationAsync(ServiceRequest request, ClientIdentity identity, long sequence, string fingerprint, CancellationToken cancellationToken)
+	internal async Task WaitForInstallerMaintenanceAsync(CancellationToken cancellationToken)
+	{
+		while (_installerMaintenance.IsActive())
+			await Task.Delay(250, cancellationToken);
+	}
+
+	private async Task<ServiceResponse> DispatchMutationAsync(ServiceRequest request, ClientIdentity identity, long sequence, string fingerprint, bool offlineDnsRestore, CancellationToken cancellationToken)
 	{
 		bool isRepair = request.Operation == "network.repair-owned";
 		TimeSpan lockTimeout = isRepair ? TimeSpan.FromSeconds(3) : ServiceContract.MutationLockTimeout;
@@ -447,6 +470,11 @@ internal sealed class OperationDispatcher : IDisposable
 		}
 		try
 		{
+			if (!offlineDnsRestore && _installerMaintenance.IsActive())
+			{
+				return ServiceResponse.Failure(request.RequestId, sequence, "INSTALLER_MAINTENANCE",
+					"An installer is preserving owned services; retry after installation or recovery completes.", retryable: true);
+			}
 			ServiceResponse serviceResponse = await PrepareMutationSlotAsync(request, sequence, cancellationToken);
 			if ((object)serviceResponse != null)
 			{

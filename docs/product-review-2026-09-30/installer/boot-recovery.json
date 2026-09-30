@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "groupCount": 22,
+  "assertionCount": 490,
+  "groups": [
+    "protected registration and native COM argument contract",
+    "owned registration idempotency",
+    "mutable state contract",
+    "native Windows argv without launching a task action",
+    "canonical direct stage boundary",
+    "foreign task collision and legacy-present-without-inventory refusal",
+    "create-only collision race",
+    "scheduler read failure closes safely",
+    "registration failure preserves durable inventory",
+    "mandatory registration readback",
+    "worker/helper/module hash binding",
+    "inventory byte binding",
+    "state schema/owner/size gate",
+    "trusted file owners and writable/delete-child parent protection",
+    "real NTFS reparse rejection",
+    "scheduler XML and execution-policy tampering matrix",
+    "native task identity and ACL readback",
+    "bounded XML parsing without external entities",
+    "verified restoration and owned marker retirement gate",
+    "historical missing-task retirement",
+    "retirement replacement race",
+    "retirement failure preserves task"
+  ],
+  "controlledSchedulerCreateCalls": 38,
+  "controlledSchedulerDeleteCalls": 2,
+  "controlledComFactoryCalls": 182,
+  "productionModuleSha256": "94006d7d993f6b58ff6eff903d16cf2d968dd6c18f86eb66e0d31a11c0e6de42",
+  "nativeSchedulerReads": 0,
+  "nativeTaskCreates": 0,
+  "nativeTaskUpdates": 0,
+  "nativeTaskDeletes": 0,
+  "nativeTaskActions": 0,
+  "nativeScmMutations": 0,
+  "systemDnsWrites": 0,
+  "nativeFileAclWrites": 0,
+  "nativeHarmlessBoundaries": [
+    "real owned files/hash/flush/rename",
+    "actual NTFS junction",
+    "CommandLineToArgvW parser",
+    "WinPS5.1 FileStream ACL constructor reflection"
+  ],
+  "controlledBoundaries": [
+    "Schedule.Service COM factory",
+    "filesystem Get-Acl",
+    "native protected FileStream creation"
+  ],
+  "limits": [
+    "Task Scheduler registration/readback/startup/retry timing are not executed natively.",
+    "Filesystem owner/DACL proofs use actual .NET security descriptors returned by controlled Get-Acl; this does not prove native file protection.",
+    "Inventory security descriptor construction is production code; native ACL file creation is replaced with an ordinary owned-temp file stream.",
+    "Recovery task action is a deliberately non-executed harmless fixture; worker/service recovery integration and historical signed bootstrap require separate acceptance."
+  ],
+  "completedAtUtc": "2026-09-30T17:32:17.851146+00:00",
+  "finding": "R29",
+  "scope": "Boot helper controlled-boundary verification only; parent native XML and worker integration evidence are separate.",
+  "status": "source_module_verified_native_scheduling_reboot_and_historical_migration_pending",
+  "sourceHashes": {
+    "src/installer/maintenance-boot-recovery.ps1": "94006d7d993f6b58ff6eff903d16cf2d968dd6c18f86eb66e0d31a11c0e6de42",
+    "tests/installer-boot-recovery.ps1": "4d8387b73360009ef75d6ac86d63e9c307b4aad00cfad9c855a5f30ba4d15cbf",
+    "tests/installer-boot-recovery.test.mjs": "9124409c2d37c7b54b73b9d9de2fb6e14440b1f9325280e7d8cf140c2cc56b14"
+  },
+  "standaloneWinPsExitCode": 0,
+  "standaloneWinPsOutput": "installer boot recovery: 22 groups passed; 490 assertions; native scheduler reads/task mutations/actions 0; SCM/DNS/ACL writes 0",
+  "nodeTest": {
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 7268.4177,
+    "logSha256": "021a68353ca34da5768436eaab82cdfb439e0889930adb675e8112e1486fd833"
+  },
+  "analysis": {
+    "errorCount": 0,
+    "warningCount": 2,
+    "warnings": [
+      {
+        "Severity": 1,
+        "RuleName": "PSUseShouldProcessForStateChangingFunctions",
+        "Line": 115,
+        "Message": "Function 'New-InstallerBootRecoveryInventoryStream' has verb that could change system state. Therefore, the function has to support 'ShouldProcess'."
+      },
+      {
+        "Severity": 1,
+        "RuleName": "PSUseShouldProcessForStateChangingFunctions",
+        "Line": 169,
+        "Message": "Function 'New-InstallerBootRecoveryTaskXml' has verb that could change system state. Therefore, the function has to support 'ShouldProcess'."
+      }
+    ]
+  },
+  "integrationContract": {
+    "register": "Register-InstallerMaintenanceBootRecovery -StageDirectory STAGE, after durable snapshots and before maintenance marker/Disabled.",
+    "assert": "Assert-InstallerMaintenanceBootRecovery -StageDirectory STAGE, before worker/watchdog/boot recovery service changes.",
+    "retire": "Unregister-InstallerMaintenanceBootRecovery -StageDirectory STAGE -RestorationVerified:$true, after caller restoration verification and own marker removal.",
+    "lease": "Caller serializes product operations with Global\\EgoistShield.DeferredReinstall.",
+    "legacyRetirement": "Missing task is idempotent, including absent old inventory/module/stage. Present task without protected matching inventory is preserved.",
+    "preHandoffWindow": "Parent must distinguish a registered pre-handoff stage with no own marker from unresolved restoration; no unconditional success/retirement.",
+    "action": "canonical Windows System32 WinPS; -File canonical staged worker -Recover -StageDirectory STAGE; no GUI run-after."
+  },
+  "taskPolicy": {
+    "principalSid": "S-1-5-18",
+    "principalLogonType": 5,
+    "runLevel": "HighestAvailable",
+    "registrationFlags": 18,
+    "bootDelaySeconds": 30,
+    "executionTimeLimitSeconds": 1200,
+    "failureRestartCount": 3,
+    "failureRestartIntervalSeconds": 120,
+    "multipleInstances": "IgnoreNew",
+    "batteryRestriction": false,
+    "networkRestriction": false,
+    "idleRestriction": false,
+    "hidden": true,
+    "wakeToRun": false
+  },
+  "durability": {
+    "stage": "direct GUID under Windows CommonApplicationData/EgoistShieldInstaller/DeferredRuns",
+    "immutableHashes": [
+      "worker",
+      "service-maintenance helper",
+      "boot-recovery module"
+    ],
+    "inventory": "protected ownerBA FileSecurity, WriteThrough, Flush(true), rename, task metadata byte-hash binding",
+    "mutableState": "state content not hash pinned; protected path/owner/DACL/schema/product identity and4MiB limit",
+    "nativeDurabilityVerified": false
+  },
+  "historicalMigrationGate": {
+    "status": "open",
+    "versions": [
+      "3.7.8",
+      "3.7.9"
+    ],
+    "reason": "Older installed updater/helper can hand new Setup a stage with no checked boot metadata/task. Missing-task legacy retirement does not make that old handoff safe.",
+    "required": "Separately verified signed bootstrap/migration adapter; do not bypass new boot task trust checks."
+  },
+  "nativeAcceptancePending": [
+    "SYSTEM scheduled task registration/readback",
+    "native protected inventory/state file owner and DACL",
+    "boot trigger/retry/timeout behavior",
+    "reboot at Register/marker/Disabled/install/restore boundaries",
+    "service restoration and retirement without GUI",
+    "foreign collisions and late SCM restart queues",
+    "historical signed updater migration"
+  ],
+  "privilegedRaceLimit": "Task Scheduler has no compare-and-delete operation. Product mutex plus fresh identity and immediate XML/DACL comparison precede DeleteTask; privileged administrators remain outside the untrusted-user threat boundary.",
+  "primaryMicrosoftContracts": [
+    "https://learn.microsoft.com/en-us/windows/win32/taskschd/taskfolder-registertask",
+    "https://learn.microsoft.com/en-us/windows/win32/taskschd/registeredtask-setsecuritydescriptor",
+    "https://learn.microsoft.com/en-us/windows/win32/taskschd/boot-trigger-example--xml-",
+    "https://learn.microsoft.com/en-us/windows/win32/taskschd/tasksettings-executiontimelimit",
+    "https://learn.microsoft.com/en-us/windows/win32/taskschd/tasksettings-restartcount",
+    "https://learn.microsoft.com/en-us/windows/win32/taskschd/tasksettings-restartinterval",
+    "https://learn.microsoft.com/en-us/windows/win32/taskschd/tasksettings-disallowstartifonbatteries",
+    "https://learn.microsoft.com/en-us/windows/win32/taskschd/tasksettings-runonlyifnetworkavailable"
+  ],
+  "primaryContractsCheckedOn": "2026-09-30"
+}

@@ -1,0 +1,556 @@
+{
+  "schema_version": 1,
+  "research_date": "2026-09-30",
+  "generated_at_utc": "2026-09-30T11:44:58.285634+00:00",
+  "project": "Egoist Lagom",
+  "baseline_git_head": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "method": "Primary documentation/repository review and local source inspection; no competitor install or runtime uptime comparison.",
+  "sources": [
+    {
+      "id": "M01",
+      "title": "Mullvad VPN for Windows",
+      "publisher": "Mullvad VPN AB",
+      "url": "https://mullvad.net/en/download/vpn/windows",
+      "retrieved_date": "2026-09-30",
+      "locator": "Latest version",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Windows version 2026.5; platform-specific release selection.",
+      "runtime_verified": false
+    },
+    {
+      "id": "M02",
+      "title": "Mullvad architecture",
+      "publisher": "mullvad/mullvadvpn-app maintainers",
+      "url": "https://github.com/mullvad/mullvadvpn-app/blob/main/docs/architecture.md",
+      "retrieved_date": "2026-09-30",
+      "locator": "The daemon; Tunnel state machine; Detecting device offline / Windows",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Daemon owns lifecycle; states and route/power events are documented.",
+      "runtime_verified": false
+    },
+    {
+      "id": "M03",
+      "title": "Mullvad security",
+      "publisher": "mullvad/mullvadvpn-app maintainers",
+      "url": "https://github.com/mullvad/mullvadvpn-app/blob/main/docs/security.md",
+      "retrieved_date": "2026-09-30",
+      "locator": "Desktop vs mobile; App states",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Atomic firewall transitions and state-specific blocking contract.",
+      "runtime_verified": false
+    },
+    {
+      "id": "M04",
+      "title": "Using the Mullvad VPN app",
+      "publisher": "Mullvad VPN AB",
+      "url": "https://mullvad.net/en/help/using-mullvad-vpn-app",
+      "retrieved_date": "2026-09-30",
+      "locator": "Connection status; Connection details; Update the app / Windows",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Status details and staged update verification are visible to users.",
+      "runtime_verified": false,
+      "source_updated_date": "2026-09-18"
+    },
+    {
+      "id": "P01",
+      "title": "Proton advanced kill switch",
+      "publisher": "Proton AG",
+      "url": "https://protonvpn.com/support/advanced-kill-switch",
+      "retrieved_date": "2026-09-30",
+      "locator": "What is advanced kill switch; Windows; FAQ",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Accidental reconnect and persistent Windows filters are separate contracts.",
+      "runtime_verified": false
+    },
+    {
+      "id": "P02",
+      "title": "Proton Windows README",
+      "publisher": "ProtonVPN/win-app maintainers",
+      "url": "https://github.com/ProtonVPN/win-app/blob/master/README.md",
+      "retrieved_date": "2026-09-30",
+      "locator": "GUI application; Proton VPN Service",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "README describes GUI-managed service and older OpenVPN architecture.",
+      "runtime_verified": false,
+      "limitation": "Old architecture text remains in master README; do not infer latest 5.x headless lifecycle."
+    },
+    {
+      "id": "P03",
+      "title": "How do I check for updates?",
+      "publisher": "Proton AG",
+      "url": "https://protonvpn.com/support/vpn-update",
+      "retrieved_date": "2026-09-30",
+      "locator": "Windows",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "User-visible update action; no autonomous headless guarantee in this guide.",
+      "runtime_verified": false
+    },
+    {
+      "id": "A01",
+      "title": "AdGuard Windows overview",
+      "publisher": "Adguard Software Ltd.",
+      "url": "https://adguard.com/kb/adguard-for-windows/",
+      "retrieved_date": "2026-09-30",
+      "locator": "Home screen; Protection; Settings",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Home switch, modules and advanced settings are separated.",
+      "runtime_verified": false
+    },
+    {
+      "id": "A02",
+      "title": "AdGuard Windows versions",
+      "publisher": "Adguard Software Ltd.",
+      "url": "https://adguard.com/en/versions/windows/release.html",
+      "retrieved_date": "2026-09-30",
+      "locator": "8.0.1; 8.0.0; 7.12; 7.13",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Current version and older startup-filtering option; historical scope marked.",
+      "runtime_verified": false
+    },
+    {
+      "id": "A03",
+      "title": "AdGuard app management",
+      "publisher": "Adguard Software Ltd.",
+      "url": "https://adguard.com/kb/adguard-for-windows/app-management/",
+      "retrieved_date": "2026-09-30",
+      "locator": "How app filtering and routing work in v8.0",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Routing, filtering and HTTPS interception have distinct compatibility policies.",
+      "runtime_verified": false
+    },
+    {
+      "id": "A04",
+      "title": "AdGuard settings",
+      "publisher": "Adguard Software Ltd.",
+      "url": "https://adguard.com/kb/adguard-for-windows/settings/",
+      "retrieved_date": "2026-09-30",
+      "locator": "App settings; About",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Experienced-user settings are separated from main protection.",
+      "runtime_verified": false
+    },
+    {
+      "id": "A05",
+      "title": "AdGuard DNS leaks (archive)",
+      "publisher": "Adguard Software Ltd.",
+      "url": "https://adguard.com/kb/archive/adguard-for-windows/solving-problems/dns-leaks/",
+      "retrieved_date": "2026-09-30",
+      "locator": "Bootstrap DNS address; Fallback DNS server",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "System bootstrap/fallback can alter DNS privacy; archive is not v8 runtime proof.",
+      "runtime_verified": false,
+      "historical_or_archived": true
+    },
+    {
+      "id": "C01",
+      "title": "Clash Verge Rev documentation",
+      "publisher": "clash-verge-rev maintainers",
+      "url": "https://www.clashverge.dev/",
+      "retrieved_date": "2026-09-30",
+      "locator": "Features",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "System proxy/TUN, profiles, rules; distinct from provider VPN.",
+      "runtime_verified": false
+    },
+    {
+      "id": "C02",
+      "title": "Clash Verge Rev quickstart",
+      "publisher": "clash-verge-rev maintainers",
+      "url": "https://www.clashverge.dev/guide/quickstart.html",
+      "retrieved_date": "2026-09-30",
+      "locator": "Import subscription; Select node and mode; Enable proxy/TUN",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Onboarding and coverage of system proxy versus TUN.",
+      "runtime_verified": false
+    },
+    {
+      "id": "C03",
+      "title": "Clash Verge Rev privacy",
+      "publisher": "clash-verge-rev maintainers",
+      "url": "https://www.clashverge.dev/privacy.html",
+      "retrieved_date": "2026-09-30",
+      "locator": "Local data; App network connections; Update checks",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Network-request inventory, local secrets/log retention and Minisign verification.",
+      "runtime_verified": false,
+      "source_updated_date": "2026-09-09"
+    },
+    {
+      "id": "C04",
+      "title": "Clash Verge Rev Windows FAQ",
+      "publisher": "clash-verge-rev maintainers",
+      "url": "https://www.clashverge.dev/faq/windows.html",
+      "retrieved_date": "2026-09-30",
+      "locator": "TUN network issues; Network unavailable without Clash; Update install path",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Troubleshooting describes compatibility and stale system proxy issues.",
+      "runtime_verified": false
+    },
+    {
+      "id": "V01",
+      "title": "v2rayN README",
+      "publisher": "2dust/v2rayN maintainers",
+      "url": "https://github.com/2dust/v2rayN",
+      "retrieved_date": "2026-09-30",
+      "locator": "Supported cores; GPG Verification",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Third-party core GUI and signed release files.",
+      "runtime_verified": false
+    },
+    {
+      "id": "F01",
+      "title": "FlClash README",
+      "publisher": "chen08209/FlClash maintainers",
+      "url": "https://github.com/chen08209/FlClash",
+      "retrieved_date": "2026-09-30",
+      "locator": "Features",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Declared adaptive sizes, Material You and subscription interface.",
+      "runtime_verified": false
+    },
+    {
+      "id": "D01",
+      "title": "dnscrypt-proxy 2.1.18 README",
+      "publisher": "DNSCrypt maintainers",
+      "url": "https://github.com/DNSCrypt/dnscrypt-proxy/blob/2.1.18/README.md",
+      "retrieved_date": "2026-09-30",
+      "locator": "Features",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Encrypted DNS, cache, resolver selection and resolver-list updates.",
+      "runtime_verified": false
+    },
+    {
+      "id": "D02",
+      "title": "dnscrypt-proxy Windows installation",
+      "publisher": "DNSCrypt maintainers",
+      "url": "https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Installation-Windows",
+      "retrieved_date": "2026-09-30",
+      "locator": "System service; Backup server; Upgrading",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Service management, resolve check, backup privacy and upgrade procedure.",
+      "runtime_verified": false
+    },
+    {
+      "id": "N01",
+      "title": "NextDNS CLI README",
+      "publisher": "NextDNS maintainers",
+      "url": "https://github.com/nextdns/nextdns",
+      "retrieved_date": "2026-09-30",
+      "locator": "NextDNS CLI Client",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "DoH client with Windows support and no GUI; split horizon documented.",
+      "runtime_verified": false
+    },
+    {
+      "id": "N02",
+      "title": "NextDNS Windows instructions",
+      "publisher": "NextDNS maintainers",
+      "url": "https://github.com/nextdns/nextdns/wiki/Windows",
+      "retrieved_date": "2026-09-30",
+      "locator": "Official GUI App; Manual CLI install",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "GUI application and CLI are separate installation options.",
+      "runtime_verified": false
+    },
+    {
+      "id": "N03",
+      "title": "NextDNS CLI configuration",
+      "publisher": "NextDNS maintainers",
+      "url": "https://github.com/nextdns/nextdns/wiki/Configuration",
+      "retrieved_date": "2026-09-30",
+      "locator": "detect-captive-portals; forwarder; max-inflight-requests; timeout; cache-size",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Explicit fallback tradeoff and resource limits; CLI scope.",
+      "runtime_verified": false
+    },
+    {
+      "id": "N04",
+      "title": "Windows Client Mass Deployment Guide",
+      "publisher": "NextDNS Help Center",
+      "url": "https://help.nextdns.io/t/83hsj8t/windows-client-mass-deployment-guide",
+      "retrieved_date": "2026-09-30",
+      "locator": "Installation Properties",
+      "evidence_kind": "primary_source_claim",
+      "supported_claim": "Published MSI service/UI deployment options; historical guide, not latest runtime verification.",
+      "runtime_verified": false,
+      "published_at": "2022-11-18T15:54:12.250Z",
+      "limitation": "Historical help-center guide; author of original page not independently identified, so current package behavior remains unverified."
+    }
+  ],
+  "version_records": [
+    {
+      "product": "mullvad_desktop",
+      "tag": "2026.5",
+      "published_at_utc": "2026-09-14T06:02:38Z",
+      "url": "https://github.com/mullvad/mullvadvpn-app/releases/tag/2026.5",
+      "api_url": "https://api.github.com/repos/mullvad/mullvadvpn-app/releases/tags/2026.5",
+      "retrieved_at_utc": "2026-09-30T11:24:59.361484+00:00",
+      "api_response_sha256": "58b0e53a88fc706b2daaa393b03b9b3f378136b93a0a68e55b4e8777a46c6928",
+      "prerelease": false,
+      "windows_assets_observed": [
+        "MullvadVPN-2026.5.exe",
+        "MullvadVPN-2026.5.exe.asc",
+        "MullvadVPN-2026.5_arm64.exe",
+        "MullvadVPN-2026.5_arm64.exe.asc",
+        "MullvadVPN-2026.5_x64.exe",
+        "MullvadVPN-2026.5_x64.exe.asc"
+      ]
+    },
+    {
+      "product": "proton_windows",
+      "tag": "v5.1.8",
+      "published_at_utc": "2026-09-22T11:46:58Z",
+      "url": "https://github.com/ProtonVPN/win-app/releases/tag/v5.1.8",
+      "api_url": "https://api.github.com/repos/ProtonVPN/win-app/releases/latest",
+      "retrieved_at_utc": "2026-09-30T11:24:59.361484+00:00",
+      "api_response_sha256": "cb0b21e777d2f0c5d82c8f39bc9c6ca825cac11442d52a89b429d09a40fa3a5b",
+      "prerelease": false,
+      "windows_assets_observed": [
+        "ProtonVPN_v5.1.8_arm64.exe",
+        "ProtonVPN_v5.1.8_x64.exe"
+      ]
+    },
+    {
+      "product": "clash_verge_rev",
+      "tag": "v2.5.6",
+      "published_at_utc": "2026-09-26T04:11:55Z",
+      "url": "https://github.com/clash-verge-rev/clash-verge-rev/releases/tag/v2.5.6",
+      "api_url": "https://api.github.com/repos/clash-verge-rev/clash-verge-rev/releases/latest",
+      "retrieved_at_utc": "2026-09-30T11:24:59.361484+00:00",
+      "api_response_sha256": "71fce7fa85b651d3c6bef50003d867089516de3eed2bc8da3b3e8acc2db0e783",
+      "prerelease": false,
+      "windows_assets_observed": [
+        "Clash.Verge_2.5.6_arm64-setup.exe",
+        "Clash.Verge_2.5.6_arm64-setup.exe.sig",
+        "Clash.Verge_2.5.6_arm64_fixed_webview2-setup.exe",
+        "Clash.Verge_2.5.6_arm64_fixed_webview2-setup.exe.sig",
+        "Clash.Verge_2.5.6_x64-setup.exe",
+        "Clash.Verge_2.5.6_x64-setup.exe.sig",
+        "Clash.Verge_2.5.6_x64_fixed_webview2-setup.exe",
+        "Clash.Verge_2.5.6_x64_fixed_webview2-setup.exe.sig"
+      ]
+    },
+    {
+      "product": "v2rayN",
+      "tag": "7.24.9",
+      "published_at_utc": "2026-08-29T02:47:27Z",
+      "url": "https://github.com/2dust/v2rayN/releases/tag/7.24.9",
+      "api_url": "https://api.github.com/repos/2dust/v2rayN/releases/latest",
+      "retrieved_at_utc": "2026-09-30T11:24:59.361484+00:00",
+      "api_response_sha256": "4e8b486ac56f53388260a9092a807ff944b751d08faeaeba0c86abfbc688d74c",
+      "prerelease": false,
+      "windows_assets_observed": [
+        "v2rayN-windows-64-desktop.zip",
+        "v2rayN-windows-64-desktop.zip.sig",
+        "v2rayN-windows-64.zip",
+        "v2rayN-windows-64.zip.sig",
+        "v2rayN-windows-86-desktop.zip",
+        "v2rayN-windows-86-desktop.zip.sig",
+        "v2rayN-windows-86.zip",
+        "v2rayN-windows-86.zip.sig",
+        "v2rayN-windows-arm64-desktop.zip",
+        "v2rayN-windows-arm64-desktop.zip.sig",
+        "v2rayN-windows-arm64.zip",
+        "v2rayN-windows-arm64.zip.sig"
+      ]
+    },
+    {
+      "product": "dnscrypt_proxy",
+      "tag": "2.1.18",
+      "published_at_utc": "2026-07-18T12:14:35Z",
+      "url": "https://github.com/DNSCrypt/dnscrypt-proxy/releases/tag/2.1.18",
+      "api_url": "https://api.github.com/repos/DNSCrypt/dnscrypt-proxy/releases/latest",
+      "retrieved_at_utc": "2026-09-30T11:24:59.361484+00:00",
+      "api_response_sha256": "4704d5e362d4f520b24418dbdc04a750630237c2103f113ea805464550ffb4c3",
+      "prerelease": false,
+      "windows_assets_observed": [
+        "dnscrypt-proxy-win32-2.1.18.zip",
+        "dnscrypt-proxy-win32-2.1.18.zip.minisig",
+        "dnscrypt-proxy-win64-2.1.18.zip",
+        "dnscrypt-proxy-win64-2.1.18.zip.minisig",
+        "dnscrypt-proxy-winarm-2.1.18.zip",
+        "dnscrypt-proxy-winarm-2.1.18.zip.minisig",
+        "dnscrypt-proxy-x64-2.1.18.msi"
+      ]
+    },
+    {
+      "product": "nextdns_cli",
+      "tag": "v1.47.3",
+      "published_at_utc": "2026-06-03T18:46:57Z",
+      "url": "https://github.com/nextdns/nextdns/releases/tag/v1.47.3",
+      "api_url": "https://api.github.com/repos/nextdns/nextdns/releases/latest",
+      "retrieved_at_utc": "2026-09-30T11:24:59.361484+00:00",
+      "api_response_sha256": "e412ba050b7d65901344bd79447889f01cc98549a0b12cd02265b49a24116ff7",
+      "prerelease": false,
+      "windows_assets_observed": [
+        "nextdns_1.47.3_windows_386.zip",
+        "nextdns_1.47.3_windows_amd64.zip"
+      ]
+    },
+    {
+      "product": "flclash",
+      "tag": "v0.8.98",
+      "published_at_utc": "2026-09-14T03:20:30Z",
+      "url": "https://github.com/chen08209/FlClash/releases/tag/v0.8.98",
+      "api_url": "https://api.github.com/repos/chen08209/FlClash/releases/latest",
+      "retrieved_at_utc": "2026-09-30T11:24:59.361484+00:00",
+      "api_response_sha256": "b7c92c33234b6124b1c09217518ce3e69816521b7a0d688943e06f7b67a600f0",
+      "prerelease": false,
+      "windows_assets_observed": [
+        "FlClash-0.8.98-windows-amd64-setup.exe",
+        "FlClash-0.8.98-windows-amd64.zip",
+        "FlClash-0.8.98-windows-arm64-setup.exe",
+        "FlClash-0.8.98-windows-arm64.zip"
+      ]
+    },
+    {
+      "product": "adguard_windows",
+      "version": "8.0.1",
+      "published_date": "2026-09-09",
+      "published_time_unknown": true,
+      "url": "https://adguard.com/en/versions/windows/release.html",
+      "retrieved_date": "2026-09-30"
+    }
+  ],
+  "raw_primary_sources": [
+    {
+      "name": "dnscrypt-readme",
+      "url": "https://raw.githubusercontent.com/DNSCrypt/dnscrypt-proxy/2.1.18/README.md",
+      "retrieved_at_utc": "2026-09-30T11:30:32.675562+00:00",
+      "sha256": "8a8d525de5374b2d8cdfcd2df1f26ce764e6bc8cb6e3302f2c0e48d45a9bd562",
+      "bytes": 5952
+    },
+    {
+      "name": "nextdns-windows",
+      "url": "https://raw.githubusercontent.com/wiki/nextdns/nextdns/Windows.md",
+      "retrieved_at_utc": "2026-09-30T11:30:32.675562+00:00",
+      "sha256": "34cccf9008d4e62e1c2c647f55bd08134e357880fc0e213ea59f5ec45339e8ba",
+      "bytes": 533
+    },
+    {
+      "name": "nextdns-configuration",
+      "url": "https://raw.githubusercontent.com/wiki/nextdns/nextdns/Configuration.md",
+      "retrieved_at_utc": "2026-09-30T11:30:32.675562+00:00",
+      "sha256": "32e035870ee1af598d269b6880a352d91ef4766d301a6abf23ad795826b38cf3",
+      "bytes": 4750
+    }
+  ],
+  "local_sources": [
+    {
+      "path": "README.md",
+      "working_file_sha256": "283600a0f35931ada3fafdff39ed1ebe5005269c537ac442f11405e30cde61d9",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "Product scope and documented GUI/service boundaries",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "package.json",
+      "working_file_sha256": "4675708173101d3c631b3a89bc475aafe3f10d191d3f5abc96f25af5a4c49230",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "version 3.8.0; minimumAutoUpdateVersion 3.7.8",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "DESIGN.md",
+      "working_file_sha256": "000edd5776309b7dbc42d87e4855cdfb9920907f5c53b5fb1572b6048a9adcd5",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "Current monochrome interface contract",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "PRIVACY.md",
+      "working_file_sha256": "a80fba39be1cf696a55b42da882452428267660fb2e91562a289efcc61c06b55",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "Declared privacy contract, not a verified inventory of all requests",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers-vpn.js",
+      "working_file_sha256": "22e3c77494fb0ef685fcd9697f6fe12557da4b872e24da93d0b593f260c9e5ce",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "VPN lifecycle and diagnostic IPC",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers-system.js",
+      "working_file_sha256": "a97ea28a035e8f316c80194388abf91ff1ccd87e4aefe21924cfad8ee3b58182",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "DNS/DoH/window/shield IPC",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers-zapret.js",
+      "working_file_sha256": "57a12d329ebaacad2a0aa76a862ef3c41cbf63ace091df5cb4e6e2f35beb0c99",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "Zapret service/standalone/configuration IPC",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+      "working_file_sha256": "f72332e206682306004afe9e68843686f6e2fa50c0a8b28b8aed3d29f2d689f2",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "Telegram proxy lifecycle IPC",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers-network-combinator.js",
+      "working_file_sha256": "b75d94e4a297ca568a6c6c01c619bf28650b4536fcc627ac5e5c5c6199e1518f",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "Network plan IPC and lock identifiers",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "src/recovered/electron/ipc/vpn-reconnect-supervisor.js",
+      "working_file_sha256": "5d9ff7795154acda73b2981f66890b90047de22efd0aef5743bfc55e18d70ae0",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "Main-process supervisor, backoff, circuit, cancellation",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "src/recovered/electron/ipc/network-combinator-manager.js",
+      "working_file_sha256": "d664d3492e3077fc5d36e3e7ed94118f45f9b8fecd6ec3848afae21ddcd6a236",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "Plans return applied:false; coordination is separate",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceSupervisor.cs",
+      "working_file_sha256": "1d20965724a09fa3c2d009968b398c7fa90efd5512c6411837fc0889572eb878",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "owned-auto-services-and-local-listeners; remoteConnectivityVerified=false",
+      "runtime_verified_by_this_research": false
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceIntentStore.cs",
+      "working_file_sha256": "266d4b10c505f3716239268b07ed38babc2e71f5cd90ae4e2241cb792b299f18",
+      "evidence_kind": "local_source_observation",
+      "supported_claim": "Persisted owned-service running intent",
+      "runtime_verified_by_this_research": false
+    }
+  ],
+  "inferences": [
+    "Prioritize a single owner of desired and observed network state over more features.",
+    "Make GUI independence component-specific and visible; VPN currently needs the app.",
+    "A monochrome task interface should expose failure causes and partial component readiness.",
+    "Market release notes inform failure scenarios, not competitor failure rates or guaranteed uptime."
+  ],
+  "collection_limitations": [
+    "One later web batch failed with connection failure; subsequent web retry canceled.",
+    "Direct Python retrieval of two AdGuard detail pages timed out in TLS; existing successful overview/settings/app-management sources used.",
+    "PowerShell retry of the same two detail pages also timed out; no content from those attempts used.",
+    "Unverified candidate Clash Verge service-document path returned 404; not used as evidence of feature absence.",
+    "Some GitHub documentation follows main/master and may differ from released binaries.",
+    "AdGuard archive 7.x and historical NextDNS deployment guide are identified explicitly.",
+    "NextDNS Windows GUI version and latest headless lifecycle of Proton/CVR/v2rayN/FlClash not verified.",
+    "No market share, user interviews, paid subscriptions, comparative latency or month-long soak measurements."
+  ],
+  "validation": {
+    "json_serializable": true,
+    "source_ids_unique": true,
+    "report_url_count": 29,
+    "all_report_urls_catalogued": true,
+    "report_utf8_sha256": "a6fa61d9ae9ff99074c8e3fbf8575346725494a2964266e28f089a477ae3ee4f",
+    "report_trailing_whitespace": false,
+    "fresh_network_validation_of_every_url": false
+  }
+}

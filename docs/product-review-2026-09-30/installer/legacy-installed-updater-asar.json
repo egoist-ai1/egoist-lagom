@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "archivePath": "C:/Program Files/EgoistShield/resources/app.asar",
+  "installedVersion": "3.7.9",
+  "mainEntry": ".vite/build/main.js",
+  "mainSha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade",
+  "installedHelperConstructed": true,
+  "installedHelperLaunched": true,
+  "helperConstructionExcerpt": "didate.version,\n      installer: {\n        path: `updates/${candidate.assetName}`,\n        bytes: candidate.size,\n        sha256: candidate.sha256.toUpperCase()\n      }\n    },\n    helperPath: path.join(installerResources, \"invoke-final-silent-reinstall.ps1\"),\n    uiPath: path.join(installerResources, \"ModernInstaller.exe\"),\n    fontPath: path.join(",
+  "launchExcerpt": "file\",\n        \"-NonInteractive\",\n        \"-ExecutionPolicy\",\n        \"Bypass\",\n        \"-WindowStyle\",\n        \"Hidden\",\n        \"-File\",\n        launch.helperPath,\n        \"-InstallerPath\",\n        finalPath,\n        \"-IntegrityManifestPath\",\n        launch.manifestPath,\n        \"-ExpectedVersion\",\n        ",
+  "scope": "Read-only actual installed3.7.9 ASAR source; no app or helper execution",
+  "nativeWrites": 0
+}

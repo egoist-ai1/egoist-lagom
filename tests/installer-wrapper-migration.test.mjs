@@ -19,12 +19,13 @@ test('protected upgrade migrates verified stopped wrappers and restores their or
 
 test('worker and watchdog persist handoff before stops and gate rollback before handoff', async () => {
   const source = await fs.readFile(path.join(root, 'scripts', 'invoke-final-silent-reinstall.ps1'), 'utf8');
-  const worker = source.match(/function Invoke-WorkerMode[\s\S]*?\r?\n}\r?\n\r?\nif \(\$Watchdog\)/)?.[0] || '';
+  const worker = source.match(/function Invoke-WorkerMode[\s\S]*?\r?\n}\r?\n\r?\nif \(\$(?:Recover|Watchdog)\)/)?.[0] || '';
   assert.ok(worker.indexOf('Assert-SupportedServiceFramework') < worker.indexOf('$mutex ='));
   assert.ok(worker.indexOf('$state.handoffStarted = $true') < worker.indexOf('Stop-OwnedProcesses'));
+  assert.ok(worker.indexOf('Enter-InstallerServiceMaintenance') < worker.indexOf('$state.handoffStarted = $true'));
   assert.match(worker, /\$state\.handoffStarted = \$true\r?\n\s+Write-JsonAtomic[^\n]+\r?\n\s+Stop-OwnedProcesses/);
-  assert.match(worker, /if \(\$state\.handoffStarted -eq \$true\)/);
-  assert.match(source, /if \(-not \$state\.PSObject\.Properties\['handoffStarted'\] -or \$state\.handoffStarted -eq \$true\)/);
+  assert.match(worker, /if \(\$state\.handoffStarted -eq \$true -or \(Test-InstallerServiceMaintenanceOwner\)\)/);
+  assert.ok(source.includes('Invoke-InstallerRecoveryAttempts -State $state -Reason "Watchdog recovered'), 'Watchdog must use the bounded recovery loop.');
   const migration = worker.indexOf('Update-PreservedServiceWrappers');
   assert.ok(migration > worker.indexOf('Restore-PreservedState') && migration < worker.indexOf('Start-PreservedServices'));
 });

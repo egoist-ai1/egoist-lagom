@@ -1,4 +1,4 @@
-[CmdletBinding(DefaultParameterSetName = "Dispatch")]
+﻿[CmdletBinding(DefaultParameterSetName = "Dispatch")]
 param(
   [Parameter(ParameterSetName = "Dispatch", Mandatory = $true)]
   [string]$InstallerPath,
@@ -43,17 +43,32 @@ param(
   [switch]$Worker,
   [Parameter(ParameterSetName = "Watchdog", Mandatory = $true)]
   [switch]$Watchdog,
+  [Parameter(ParameterSetName = "Recover", Mandatory = $true)]
+  [switch]$Recover,
   [Parameter(ParameterSetName = "Worker", Mandatory = $true)]
   [Parameter(ParameterSetName = "Watchdog", Mandatory = $true)]
+  [Parameter(ParameterSetName = "Recover", Mandatory = $true)]
   [string]$StageDirectory
 )
 
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
 
-$nativeProgramFiles = if ([Environment]::Is64BitOperatingSystem -and $env:ProgramW6432) { $env:ProgramW6432 } else { $env:ProgramFiles }
+$script:ServiceMaintenanceScript = Join-Path $PSScriptRoot "service-maintenance.ps1"
+if (-not (Test-Path -LiteralPath $script:ServiceMaintenanceScript -PathType Leaf)) {
+  $script:ServiceMaintenanceScript = Join-Path $PSScriptRoot "..\src\installer\service-maintenance.ps1"
+}
+. $script:ServiceMaintenanceScript
+$script:BootRecoveryScript = Join-Path $PSScriptRoot "maintenance-boot-recovery.ps1"
+if (-not (Test-Path -LiteralPath $script:BootRecoveryScript -PathType Leaf)) {
+  $script:BootRecoveryScript = Join-Path $PSScriptRoot "..\src\installer\maintenance-boot-recovery.ps1"
+}
+. $script:BootRecoveryScript
+
+function Get-InstallerCommonDataRoot { return [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonApplicationData) }
+$nativeProgramFiles = [Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)
 $script:OwnedInstallRoot = [IO.Path]::GetFullPath("$nativeProgramFiles\EgoistShield").TrimEnd('\')
-$script:OwnedDataRoot = [IO.Path]::GetFullPath("$env:ProgramData\EgoistShield").TrimEnd('\')
+$script:OwnedDataRoot = [IO.Path]::GetFullPath((Join-Path (Get-InstallerCommonDataRoot) 'EgoistShield')).TrimEnd('\')
 $script:RuntimeRoot = Join-Path $script:OwnedDataRoot "Runtime"
 $script:OptionalServiceNames = @(
   "EgoistShieldSystemDoH",
@@ -102,6 +117,162 @@ function Get-FileSha256 {
   }
 }
 
+function ConvertTo-InstallerWindowsArgument {
+  param([AllowEmptyString()][string]$Value)
+  # ProcessStartInfo.Arguments uses Windows argv rules, including empty values
+  # and backslashes before embedded/final quotes. PowerShell 5.1's native call
+  # binder cannot preserve every ImagePath verbatim.
+  $quoted = [Text.StringBuilder]::new()
+  [void]$quoted.Append('"')
+  $slashes = 0
+  foreach ($character in $Value.ToCharArray()) {
+    if ($character -eq '\') { $slashes++; continue }
+    if ($character -eq '"') {
+      [void]$quoted.Append(('\' * (2 * $slashes + 1)))
+    } else {
+      [void]$quoted.Append(('\' * $slashes))
+    }
+    [void]$quoted.Append($character)
+    $slashes = 0
+  }
+  [void]$quoted.Append(('\' * (2 * $slashes)))
+  [void]$quoted.Append('"')
+  return $quoted.ToString()
+}
+
+function Invoke-InstallerNativeProcess {
+  param([string]$Executable, [string[]]$Arguments, [ValidateRange(1, 60)][int]$TimeoutSeconds = 30)
+  if (-not [IO.Path]::IsPathRooted($Executable) -or -not (Test-Path -LiteralPath $Executable -PathType Leaf)) {
+    throw "Installer native executable must be an existing absolute file."
+  }
+  $start = [Diagnostics.ProcessStartInfo]::new()
+  $start.FileName = $Executable
+  $start.Arguments = (@($Arguments | ForEach-Object { ConvertTo-InstallerWindowsArgument $_ }) -join ' ')
+  if ($start.Arguments.Length -gt 30000) { throw "Installer native arguments exceed their bound." }
+  $start.UseShellExecute = $false
+  $start.CreateNoWindow = $true
+  $start.RedirectStandardOutput = $true
+  $start.RedirectStandardError = $true
+  $start.StandardOutputEncoding = [Text.Encoding]::UTF8
+  $start.StandardErrorEncoding = [Text.Encoding]::UTF8
+  $process = [Diagnostics.Process]::new()
+  $process.StartInfo = $start
+  try {
+    if (-not $process.Start()) { throw "Installer native process did not start." }
+    $output = $process.StandardOutput.ReadToEndAsync()
+    $errors = $process.StandardError.ReadToEndAsync()
+    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+      # This object owns the exact child handle created above; no PID lookup.
+      $process.Kill()
+      [void]$process.WaitForExit(5000)
+      throw "Installer native process exceeded its timeout."
+    }
+    if (-not $output.Wait(5000) -or -not $errors.Wait(5000)) { throw "Installer native output did not close." }
+    return [pscustomobject]@{ exitCode = $process.ExitCode; output = $output.Result; errors = $errors.Result }
+  } finally { $process.Dispose() }
+}
+
+function Get-InstallerNativeTool {
+  param([ValidateSet('sc.exe', 'reg.exe')][string]$Name)
+  $directory = if ([Environment]::Is64BitOperatingSystem -and -not [Environment]::Is64BitProcess) { 'Sysnative' } else { 'System32' }
+  return Join-Path (Join-Path $env:SystemRoot $directory) $Name
+}
+
+function Invoke-PreservedRegistrationSc {
+  param([string[]]$Arguments)
+  $result = Invoke-InstallerNativeProcess -Executable (Get-InstallerNativeTool 'sc.exe') -Arguments $Arguments
+  if ($result.exitCode -ne 0) { throw "Preserved service SCM command failed ($($result.exitCode))." }
+}
+
+function Get-PreservedServiceRegistrationMetadata {
+  param([string]$Name)
+  $key = Get-Item -LiteralPath "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\$Name" -ErrorAction Stop
+  $unexpanded = [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames
+  foreach ($required in @('ImagePath', 'ObjectName', 'Type', 'ErrorControl')) {
+    if ($key.GetValueNames() -notcontains $required) { throw "SERVICE_REGISTRATION_UNSUPPORTED: $Name lacks $required." }
+  }
+  foreach ($number in @('Type', 'ErrorControl')) {
+    if ($key.GetValueKind($number) -ne [Microsoft.Win32.RegistryValueKind]::DWord) {
+      throw "SERVICE_REGISTRATION_UNSUPPORTED: $Name has invalid $number metadata."
+    }
+  }
+  foreach ($dependency in @('DependOnService', 'DependOnGroup')) {
+    if ($key.GetValueNames() -contains $dependency -and $key.GetValueKind($dependency) -ne [Microsoft.Win32.RegistryValueKind]::MultiString) {
+      throw "SERVICE_REGISTRATION_UNSUPPORTED: $Name has invalid dependency metadata."
+    }
+  }
+  return [pscustomobject]@{
+    schemaVersion = 1
+    binPath = [string]$key.GetValue('ImagePath', '', $unexpanded)
+    account = [string]$key.GetValue('ObjectName', '', $unexpanded)
+    type = [int]$key.GetValue('Type', -1)
+    errorControl = [int]$key.GetValue('ErrorControl', -1)
+    displayName = [string]$key.GetValue('DisplayName', $Name, $unexpanded)
+    group = [string]$key.GetValue('Group', '', $unexpanded)
+    dependencies = @($key.GetValue('DependOnService', [string[]]@(), $unexpanded))
+    dependencyGroups = @($key.GetValue('DependOnGroup', [string[]]@(), $unexpanded))
+  }
+}
+
+function Assert-PreservedServiceRegistration {
+  param([object]$Record)
+  $name = [string]$Record.name
+  if (-not $name -or $name.Length -gt 256 -or $name -match '[/\\"\x00-\x1f]') { throw "Invalid preserved service name." }
+  if (-not $Record.PSObject.Properties['registration']) {
+    throw "SERVICE_REGISTRATION_UNVERIFIED: $name has no checked SCM metadata; its backup was preserved."
+  }
+  $registration = $Record.registration
+  foreach ($field in @('schemaVersion', 'binPath', 'account', 'type', 'errorControl', 'displayName', 'group', 'dependencies', 'dependencyGroups')) {
+    if (-not $registration -or -not $registration.PSObject.Properties[$field]) {
+      throw "SERVICE_REGISTRATION_UNVERIFIED: $name lacks checked $field metadata."
+    }
+  }
+  if ($registration.schemaVersion -ne 1 -or [int]$registration.type -ne 16 -or
+      [string]$registration.account -notin @('LocalSystem', 'NT AUTHORITY\SYSTEM') -or
+      [int]$registration.errorControl -notin @(0, 1, 2, 3)) {
+    throw "SERVICE_REGISTRATION_UNSUPPORTED: $name requires an own-process LocalSystem registration."
+  }
+  if (-not [string]::Equals([string]$registration.binPath, [string]$Record.pathName, [StringComparison]::Ordinal) -or
+      -not (Test-OwnedServicePath ([string]$registration.binPath)) -or
+      [string]$registration.binPath -match '[\x00-\x1f]' -or
+      ([string]$registration.binPath).Length -gt 16384 -or
+      -not [string]$registration.displayName -or ([string]$registration.displayName).Length -gt 256 -or
+      [string]$registration.displayName -match '[\x00-\x1f]' -or
+      ([string]$registration.group).Length -gt 256 -or [string]$registration.group -match '[\x00-\x1f]') {
+    throw "SERVICE_REGISTRATION_UNVERIFIED: $name has invalid checked command or display metadata."
+  }
+  $command = ([string]$registration.binPath).Trim()
+  $executable = if ($command.StartsWith('"')) {
+    $end = $command.IndexOf('"', 1)
+    if ($end -le 1) { throw "Invalid preserved service executable." }
+    $command.Substring(1, $end - 1)
+  } else {
+    $match = [regex]::Match($command, '^(.*?\.exe)(?:\s|$)', 'IgnoreCase')
+    if (-not $match.Success -or $match.Groups[1].Value -match '\s') { throw "Unquoted preserved service executable is ambiguous." }
+    $match.Groups[1].Value
+  }
+  if (-not $executable.EndsWith('.exe', [StringComparison]::OrdinalIgnoreCase)) { throw "Unsupported preserved service executable." }
+  $dependencyNames = @($registration.dependencies) + @($registration.dependencyGroups)
+  if ($dependencyNames.Count -gt 64) { throw "Preserved service dependencies exceed their bound." }
+  foreach ($dependency in $dependencyNames) {
+    if (-not [string]$dependency -or ([string]$dependency).Length -gt 256 -or [string]$dependency -match '[/\\\x00-\x1f]') {
+      throw "Invalid preserved service dependency."
+    }
+  }
+  return [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($executable))
+}
+
+function Assert-CurrentPreservedServiceOwnership {
+  param([string]$Name, [switch]$RequirePresent)
+  $policy = Get-InstallerServicePolicy $Name
+  if (-not $policy) {
+    if ($RequirePresent) { throw "Preserved service $Name is missing." }
+    return $null
+  }
+  if (-not (Test-OwnedServicePath ([string]$policy.pathName))) { throw "Refusing to restore or start a foreign service $Name." }
+  return $policy
+}
+
 function Get-ServiceFrameworkRelease {
   $view = if ([Environment]::Is64BitOperatingSystem) { [Microsoft.Win32.RegistryView]::Registry64 } else { [Microsoft.Win32.RegistryView]::Registry32 }
   $registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, $view)
@@ -130,17 +301,103 @@ function Protect-StageDirectory {
   param([string]$Path)
   $item = Get-Item -LiteralPath $Path -ErrorAction Stop
   if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw "Deferred stage must not be a reparse point." }
-  & icacls.exe $Path /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw "Could not restrict deferred stage ACL." }
+  $administrators = New-Object Security.Principal.SecurityIdentifier('S-1-5-32-544')
+  $system = New-Object Security.Principal.SecurityIdentifier('S-1-5-18')
+  $security = New-Object Security.AccessControl.DirectorySecurity
+  $security.SetOwner($administrators)
+  $security.SetAccessRuleProtection($true, $false)
+  foreach ($identity in @($administrators, $system)) {
+    $rule = New-Object Security.AccessControl.FileSystemAccessRule($identity,
+      [Security.AccessControl.FileSystemRights]::FullControl,
+      ([Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [Security.AccessControl.InheritanceFlags]::ObjectInherit),
+      [Security.AccessControl.PropagationFlags]::None, [Security.AccessControl.AccessControlType]::Allow)
+    $security.AddAccessRule($rule)
+  }
+  Set-Acl -LiteralPath $Path -AclObject $security -ErrorAction Stop
+  $actual = Get-Acl -LiteralPath $Path -ErrorAction Stop
+  if (-not $actual.AreAccessRulesProtected -or $actual.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne 'S-1-5-32-544') {
+    throw "Protected installer directory ownership or inheritance readback failed."
+  }
+  foreach ($rule in $actual.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
+    if ($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and
+        $rule.IdentityReference.Value -notin @('S-1-5-18', 'S-1-5-32-544')) {
+      throw "Protected installer directory retained an untrusted access rule."
+    }
+  }
+}
+
+function New-InstallerProtectedFileSecurity {
+  $security = New-Object Security.AccessControl.FileSecurity
+  $security.SetOwner((New-Object Security.Principal.SecurityIdentifier('S-1-5-32-544')))
+  $security.SetAccessRuleProtection($true, $false)
+  foreach ($sid in @('S-1-5-18', 'S-1-5-32-544')) {
+    $rule = New-Object Security.AccessControl.FileSystemAccessRule(
+      (New-Object Security.Principal.SecurityIdentifier($sid)), [Security.AccessControl.FileSystemRights]::FullControl,
+      [Security.AccessControl.AccessControlType]::Allow)
+    $security.AddAccessRule($rule)
+  }
+  return $security
+}
+
+function Protect-InstallerStageFile {
+  param([string]$Path)
+  $item = Get-Item -LiteralPath $Path -ErrorAction Stop
+  if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+    throw "Protected installer file is not a plain file."
+  }
+  Set-Acl -LiteralPath $Path -AclObject (New-InstallerProtectedFileSecurity) -ErrorAction Stop
+  $actual = Get-Acl -LiteralPath $Path -ErrorAction Stop
+  if (-not $actual.AreAccessRulesProtected -or $actual.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne 'S-1-5-32-544') {
+    throw "Protected installer file ownership or inheritance readback failed."
+  }
+  foreach ($rule in $actual.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
+    if ($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and
+        $rule.IdentityReference.Value -notin @('S-1-5-18', 'S-1-5-32-544')) { throw "Protected installer file retained an untrusted access rule." }
+  }
+}
+
+function Protect-InstallerStageTree {
+  param([string]$Stage)
+  $stagePath = [IO.Path]::GetFullPath($Stage).TrimEnd('\')
+  $directories = New-Object 'Collections.Generic.List[string]'
+  $files = New-Object 'Collections.Generic.List[string]'
+  $pending = New-Object 'Collections.Generic.Stack[string]'
+  $pending.Push($stagePath)
+  while ($pending.Count -gt 0) {
+    $directory = $pending.Pop()
+    $item = Get-Item -LiteralPath $directory -Force -ErrorAction Stop
+    if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw "Installer backup tree contains a reparse point." }
+    $directories.Add($directory)
+    foreach ($child in @(Get-ChildItem -LiteralPath $directory -Force -ErrorAction Stop)) {
+      if (($child.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+          -not $child.FullName.StartsWith($stagePath + '\', [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Installer backup tree escaped its protected stage."
+      }
+      if ($child.PSIsContainer) { $pending.Push($child.FullName) } else { $files.Add($child.FullName) }
+    }
+    if ($directories.Count + $files.Count + $pending.Count -gt 100000) { throw "Installer backup tree exceeds its supported file bound." }
+  }
+  foreach ($directory in $directories) { Protect-StageDirectory -Path $directory }
+  foreach ($file in $files) { Protect-InstallerStageFile -Path $file }
 }
 
 function Write-JsonAtomic {
   param([string]$Path, [object]$Value)
   $directory = Split-Path -Parent $Path
   New-Item -ItemType Directory -Path $directory -Force -ErrorAction Stop | Out-Null
-  $temporary = "$Path.tmp"
-  $Value | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $temporary -Encoding UTF8 -Force -ErrorAction Stop
-  Move-Item -LiteralPath $temporary -Destination $Path -Force -ErrorAction Stop
+  $temporary = "$Path." + [Guid]::NewGuid().ToString('N') + '.tmp'
+  $security = New-InstallerProtectedFileSecurity
+  $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($Value | ConvertTo-Json -Depth 12))
+  try {
+    $stream = New-Object IO.FileStream($temporary, [IO.FileMode]::CreateNew,
+      [Security.AccessControl.FileSystemRights]::Write, [IO.FileShare]::None, 4096,
+      [IO.FileOptions]::WriteThrough, $security)
+    try { $stream.Write($bytes, 0, $bytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
+    if (Test-Path -LiteralPath $Path -PathType Leaf) { [IO.File]::Replace($temporary, $Path, [Management.Automation.Language.NullString]::Value) }
+    else { [IO.File]::Move($temporary, $Path) }
+  } finally {
+    if (Test-Path -LiteralPath $temporary -PathType Leaf) { Remove-Item -LiteralPath $temporary -Force -ErrorAction Stop }
+  }
 }
 
 function Write-BrandedInstallerStatus {
@@ -194,33 +451,65 @@ function Write-DesktopUpdateResult {
   } catch { Write-Warning "Update result could not be recorded: $($_.Exception.Message)" }
 }
 
+function New-InstallerReceiptMutexSecurity {
+  $security = New-Object Security.AccessControl.MutexSecurity
+  $security.SetAccessRuleProtection($true, $false)
+  $security.SetOwner((New-Object Security.Principal.SecurityIdentifier('S-1-5-32-544')))
+  foreach ($sid in @('S-1-5-18', 'S-1-5-32-544')) {
+    $identity = New-Object Security.Principal.SecurityIdentifier($sid)
+    $security.AddAccessRule((New-Object Security.AccessControl.MutexAccessRule($identity, 'FullControl', 'Allow')))
+  }
+  return $security
+}
+
+function Enter-InstallerReceiptLease {
+  $canonicalStage = [IO.Path]::GetFullPath($StageDirectory).TrimEnd('\').ToLowerInvariant()
+  $hasher = [Security.Cryptography.SHA256]::Create()
+  try { $stageId = [BitConverter]::ToString($hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes($canonicalStage))).Replace('-', '') }
+  finally { $hasher.Dispose() }
+  $created = $false
+  $lease = [Threading.Mutex]::new($false, "Global\EgoistShield.InstallerReceipt.$stageId", [ref]$created, (New-InstallerReceiptMutexSecurity))
+  try {
+    try { $acquired = $lease.WaitOne(5000) }
+    catch [Threading.AbandonedMutexException] { $acquired = $true }
+    if (-not $acquired) { throw "Installer receipt is busy; its pending event must not overwrite another writer." }
+    return $lease
+  } catch { $lease.Dispose(); throw }
+}
+
 function Add-ReceiptEvent {
   param([string]$Stage, [string]$Status, [string]$Message = "", [hashtable]$Data = @{})
-  $receiptPath = Join-Path $StageDirectory "receipt.json"
-  $receipt = if (Test-Path -LiteralPath $receiptPath -PathType Leaf) {
-    Get-Content -LiteralPath $receiptPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
-  } else {
-    [pscustomobject]@{
-      schemaVersion = 1
-      owner = "EgoistShield"
-      runId = Split-Path -Leaf $StageDirectory
-      createdAt = [DateTime]::UtcNow.ToString("o")
-      status = "created"
-      events = @()
+  $receiptLease = Enter-InstallerReceiptLease
+  try {
+    $receiptPath = Join-Path $StageDirectory "receipt.json"
+    $receipt = if (Test-Path -LiteralPath $receiptPath -PathType Leaf) {
+      Get-Content -LiteralPath $receiptPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    } else {
+      [pscustomobject]@{
+        schemaVersion = 1
+        owner = "EgoistShield"
+        runId = Split-Path -Leaf $StageDirectory
+        createdAt = [DateTime]::UtcNow.ToString("o")
+        status = "created"
+        events = @()
+      }
     }
+    $receiptEvent = [ordered]@{
+      at = [DateTime]::UtcNow.ToString("o")
+      stage = $Stage
+      status = $Status
+      message = $Message
+      data = $Data
+    }
+    $receipt.events = @($receipt.events) + [pscustomobject]$receiptEvent
+    $receipt.status = $Status
+    $receipt | Add-Member -NotePropertyName updatedAt -NotePropertyValue $receiptEvent.at -Force
+    Write-JsonAtomic -Path $receiptPath -Value $receipt
+    Write-BrandedInstallerStatus -Stage $Stage -Status $Status -Message $Message -Data $Data
+  } finally {
+    $receiptLease.ReleaseMutex()
+    $receiptLease.Dispose()
   }
-  $receiptEvent = [ordered]@{
-    at = [DateTime]::UtcNow.ToString("o")
-    stage = $Stage
-    status = $Status
-    message = $Message
-    data = $Data
-  }
-  $receipt.events = @($receipt.events) + [pscustomobject]$receiptEvent
-  $receipt.status = $Status
-  $receipt | Add-Member -NotePropertyName updatedAt -NotePropertyValue $receiptEvent.at -Force
-  Write-JsonAtomic -Path $receiptPath -Value $receipt
-  Write-BrandedInstallerStatus -Stage $Stage -Status $Status -Message $Message -Data $Data
 }
 
 function Write-Heartbeat {
@@ -235,6 +524,7 @@ function Write-Heartbeat {
     owner = "EgoistShield"
     workerPid = $PID
     workerStartTicks = $workerStartTicks
+    workerExecutable = [string](Get-Process -Id $PID -ErrorAction Stop).Path
     installerPid = $InstallerPid
     installerStartTicks = $installerStartTicks
     phase = $Phase
@@ -334,11 +624,27 @@ function Get-OwnedServiceSnapshot {
   $records = @()
   $registryDirectory = Join-Path $Stage "service-registry"
   New-Item -ItemType Directory -Path $registryDirectory -Force -ErrorAction Stop | Out-Null
-  foreach ($name in $script:AllServiceNames) {
-    $service = Get-CimInstance Win32_Service -Filter "Name='$name'" -ErrorAction SilentlyContinue
-    if (-not $service) { continue }
-    if (-not (Test-OwnedServicePath ([string]$service.PathName))) { throw "Service $name is not backed by an Egoist Shield-owned executable." }
-    $regFile = Join-Path $registryDirectory "$name.reg"
+  foreach ($service in @(Get-CimInstance Win32_Service -ErrorAction Stop -OperationTimeoutSec 3 | Sort-Object Name)) {
+    $name = [string]$service.Name
+    if (-not (Test-OwnedServicePath ([string]$service.PathName))) {
+      if ($script:AllServiceNames -contains $name) { throw "Service $name is not backed by an Egoist Shield-owned executable." }
+      continue
+    }
+    if ([string]$service.StartName -notin @("LocalSystem", "NT AUTHORITY\SYSTEM")) {
+      throw "SERVICE_ACCOUNT_UNSUPPORTED: $name uses a custom service account; its credentials cannot be preserved by registry export. No services have been stopped."
+    }
+    $policy = Get-InstallerServicePolicy $name
+    if (-not $policy) { throw "Could not read startup policy for $name." }
+    $registration = Get-PreservedServiceRegistrationMetadata $name
+    $checkedRecord = [pscustomobject]@{ name = $name; pathName = [string]$registration.binPath; registration = $registration }
+    [void](Assert-PreservedServiceRegistration $checkedRecord)
+    if (-not [string]::Equals([Environment]::ExpandEnvironmentVariables([string]$registration.binPath),
+        [Environment]::ExpandEnvironmentVariables([string]$service.PathName), [StringComparison]::Ordinal) -or
+        -not [string]::Equals([Environment]::ExpandEnvironmentVariables([string]$registration.binPath),
+        [string]$policy.pathName, [StringComparison]::Ordinal)) {
+      throw "Service registration changed during snapshot for $name; no services have been stopped."
+    }
+    $regFile = Join-Path $registryDirectory ("service-" + $records.Count + ".reg")
     & reg.exe export "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\$name" $regFile /y | Out-Null
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $regFile -PathType Leaf)) { throw "Could not export $name service registration." }
     $wrapperHash = ''
@@ -351,10 +657,13 @@ function Get-OwnedServiceSnapshot {
     }
     $records += [pscustomobject]@{
       name = $name
-      pathName = [string]$service.PathName
+      pathName = [string]$registration.binPath
       wasRunning = ([string]$service.State -eq "Running")
-      startMode = [string]$service.StartMode
+      startMode = [string]$policy.startMode
+      delayedAutoStart = [bool]$policy.delayedAutoStart
       registryFile = [IO.Path]::GetFileName($regFile)
+      registrySha256 = Get-FileSha256 $regFile
+      registration = $registration
       wrapperSha256 = $wrapperHash
     }
   }
@@ -431,13 +740,13 @@ function Restore-CriticalDnsState {
 function Restore-CriticalAdapterDns {
   param([object]$State)
   foreach ($record in @($State.criticalDns)) {
-    $matches = @(Get-NetAdapter -IncludeHidden -ErrorAction Stop |
+    $matchingAdapters = @(Get-NetAdapter -IncludeHidden -ErrorAction Stop |
       Where-Object { [string]$_.InterfaceGuid -eq [string]$record.interfaceGuid -and $_.Status -eq "Up" })
-    if ($matches.Count -ne 1) { throw "Critical DNS adapter is missing or changed." }
+    if ($matchingAdapters.Count -ne 1) { throw "Critical DNS adapter is missing or changed." }
     $expected = @($record.servers | ForEach-Object { [string]$_ })
     if ($expected.Count -eq 0) { throw "Critical DNS backup has no servers." }
-    Set-DnsClientServerAddress -InterfaceIndex $matches[0].ifIndex -ServerAddresses $expected -ErrorAction Stop
-    $readback = @((Get-DnsClientServerAddress -InterfaceIndex $matches[0].ifIndex -ErrorAction Stop |
+    Set-DnsClientServerAddress -InterfaceIndex $matchingAdapters[0].ifIndex -ServerAddresses $expected -ErrorAction Stop
+    $readback = @((Get-DnsClientServerAddress -InterfaceIndex $matchingAdapters[0].ifIndex -ErrorAction Stop |
       Select-Object -ExpandProperty ServerAddresses) | Where-Object { $_ })
     foreach ($address in $expected) {
       if ($readback -notcontains $address) { throw "Critical DNS adapter readback did not restore $address." }
@@ -470,10 +779,10 @@ function Restore-InstalledIdentity {
 
 function Reconcile-PreservedZapretProfile {
   param([object]$State)
-  $profile = [string]$State.zapretProfile
-  if (-not $profile) { return }
-  if ($profile -notmatch '^[A-Za-z0-9 ()_-]{1,80}$') { throw "Preserved Zapret profile name is invalid." }
-  $profileFile = Join-Path (Join-Path $script:RuntimeRoot "Zapret\core") ($profile + ".bat")
+  $preservedProfile = [string]$State.zapretProfile
+  if (-not $preservedProfile) { return }
+  if ($preservedProfile -notmatch '^[A-Za-z0-9 ()_-]{1,80}$') { throw "Preserved Zapret profile name is invalid." }
+  $profileFile = Join-Path (Join-Path $script:RuntimeRoot "Zapret\core") ($preservedProfile + ".bat")
   if (-not (Test-Path -LiteralPath $profileFile -PathType Leaf)) { throw "Preserved Zapret profile is missing after reinstall." }
   $profileRoot = Get-InteractiveProfileRoot
   if (-not $profileRoot) { return }
@@ -481,7 +790,7 @@ function Reconcile-PreservedZapretProfile {
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { return }
   $settings = Get-Content -LiteralPath $file -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if (-not $settings.settings) { throw "Shield user state has no settings object." }
-  $settings.settings.zapretProfile = $profile
+  $settings.settings.zapretProfile = $preservedProfile
   $temporary = "$file.profile.tmp"
   [IO.File]::WriteAllText($temporary, (($settings | ConvertTo-Json -Depth 70) + "`n"), [Text.UTF8Encoding]::new($false))
   [IO.File]::Replace($temporary, $file, (Join-Path $StageDirectory "zapret-profile-user-state.before.json"))
@@ -497,12 +806,102 @@ function Invoke-RobocopyDirectory {
 
 function Stop-OwnedServiceForInstall {
   param([string]$Name)
-  $service = Get-Service -Name $Name -ErrorAction SilentlyContinue
-  if (-not $service -or $service.Status -eq "Stopped") { return }
-  $record = Get-CimInstance Win32_Service -Filter "Name='$Name'" -ErrorAction Stop
-  if (-not (Test-OwnedServicePath ([string]$record.PathName))) { throw "Refusing to stop non-owned service $Name." }
-  Stop-Service -Name $Name -Force -ErrorAction Stop
-  $service.WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Stopped, [TimeSpan]::FromSeconds(30))
+  Stop-InstallerOwnedService $Name { param($path) Test-OwnedServicePath $path }
+}
+
+function Enter-InstallerServiceMaintenance {
+  $directory = Join-Path $script:OwnedDataRoot "installer"
+  [void](Assert-PlainWrapperMigrationPath -Path $directory -Root $script:OwnedDataRoot)
+  New-Item -ItemType Directory -Path $directory -Force -ErrorAction Stop | Out-Null
+  Protect-StageDirectory -Path $directory
+  $marker = Join-Path $directory "service-maintenance.json"
+  if (Test-Path -LiteralPath $marker -PathType Leaf) {
+    $existing = Get-Content -LiteralPath $marker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    if ($existing.schemaVersion -ne 1 -or $existing.owner -ne "EgoistShield" -or [string]$existing.stage -ne $StageDirectory) {
+      throw "Another service maintenance transaction requires recovery."
+    }
+    return
+  }
+  Write-JsonAtomic -Path $marker -Value @{schemaVersion=1;owner="EgoistShield";stage=$StageDirectory}
+}
+
+function Complete-InstallerServiceMaintenance {
+  $marker = Join-Path $script:OwnedDataRoot "installer\service-maintenance.json"
+  if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { return }
+  $existing = Get-Content -LiteralPath $marker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  if ($existing.owner -ne "EgoistShield" -or [string]$existing.stage -ne $StageDirectory) {
+    throw "Refusing to remove another service maintenance transaction."
+  }
+  Remove-Item -LiteralPath $marker -Force -ErrorAction Stop
+}
+
+function Get-InstallerServiceMaintenanceStatus {
+  $marker = Join-Path $script:OwnedDataRoot "installer\service-maintenance.json"
+  if (-not (Test-Path -LiteralPath $marker)) { return 'absent' }
+  [void](Assert-PlainWrapperMigrationPath -Path $marker -Root $script:OwnedDataRoot)
+  $item = Get-Item -LiteralPath $marker -ErrorAction Stop
+  if ($item.PSIsContainer -or $item.Length -gt 16384) { throw "Service maintenance marker is invalid or exceeds its limit." }
+  $existing = Get-Content -LiteralPath $marker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  if ($existing.schemaVersion -ne 1 -or $existing.owner -ne 'EgoistShield' -or
+      -not [IO.Path]::IsPathRooted([string]$existing.stage)) { throw "Service maintenance marker identity is unverified." }
+  if ([string]::Equals([string]$existing.stage, $StageDirectory, [StringComparison]::OrdinalIgnoreCase)) { return 'owned' }
+  return 'foreign'
+}
+
+function Test-InstallerServiceMaintenanceOwner {
+  return (Get-InstallerServiceMaintenanceStatus) -eq 'owned'
+}
+
+function Enter-DeferredReinstallRecoveryLease {
+  $lease = New-Object Threading.Mutex($false, "Global\EgoistShield.DeferredReinstall")
+  try {
+    try { $acquired = $lease.WaitOne(0) }
+    catch [Threading.AbandonedMutexException] { $acquired = $true }
+    if (-not $acquired) { throw "Protected reinstall is still active; recovery must not overlap its mutations." }
+    return $lease
+  } catch { $lease.Dispose(); throw }
+}
+
+function Get-ValidatedMaintenanceRecoveryState {
+  param([string]$Stage)
+  $deferredRoot = Join-Path (Get-InstallerCommonDataRoot) "EgoistShieldInstaller\DeferredRuns"
+  $previousStage = Assert-PlainWrapperMigrationPath -Path $Stage -Root $deferredRoot
+  $previousStatePath = Assert-PlainWrapperMigrationPath -Path (Join-Path $previousStage "state.json") -Root $previousStage
+  if ((Get-Item -LiteralPath $previousStatePath -ErrorAction Stop).Length -gt 4194304) { throw "Previous reinstall state exceeds its limit." }
+  $previous = Get-Content -LiteralPath $previousStatePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  if ($previous.schemaVersion -ne 1 -or $previous.owner -ne "EgoistShield") { throw "Unverified previous reinstall state." }
+  [void](Assert-PlainWrapperMigrationPath -Path ([string]$previous.installer) -Root $previousStage)
+  [void](Assert-PlainWrapperMigrationPath -Path ([string]$previous.manifest) -Root $previousStage)
+  [void](Get-ValidatedRelease -Installer ([string]$previous.installer) -Manifest ([string]$previous.manifest) -Version ([string]$previous.version) -Sha256 ([string]$previous.sha256) -AllowStagedPair)
+  foreach ($record in @($previous.services)) {
+    if (-not $record.name -or [string]$record.name -match '[/\\]' -or
+        [string]$record.registryFile -notmatch '^service-\d+\.reg$' -or
+        -not (Test-OwnedServicePath ([string]$record.pathName))) { throw "Unverified previous service snapshot." }
+    [void](Assert-PlainWrapperMigrationPath -Path (Join-Path (Join-Path $previousStage "service-registry") ([string]$record.registryFile)) -Root $previousStage)
+    [void](Assert-PreservedServiceRegistration -Record $record)
+    [void](Get-PreservedRegistryBackup -Record $record)
+  }
+  return $previous
+}
+
+function Resume-InterruptedServiceMaintenance {
+  $marker = Join-Path $script:OwnedDataRoot "installer\service-maintenance.json"
+  if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { return }
+  [void](Assert-PlainWrapperMigrationPath -Path $marker -Root $script:OwnedDataRoot)
+  if ((Get-Item -LiteralPath $marker -ErrorAction Stop).Length -gt 16384) { throw "Service maintenance marker exceeds its limit." }
+  $pending = Get-Content -LiteralPath $marker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  if ($pending.schemaVersion -ne 1 -or $pending.owner -ne "EgoistShield") { throw "Unverified service maintenance marker." }
+  $previousStage = [string]$pending.stage
+  # The caller holds the shared deferred-reinstall mutex. The same lease also
+  # serializes watchdog recovery, including a watchdog left by an older stage.
+  $StageDirectory = $previousStage
+  $previous = Get-ValidatedMaintenanceRecoveryState -Stage $previousStage
+  $previous.runAfter = $false
+  $resumed = Invoke-Recovery -State $previous -Reason "Resuming the preserved service state before a new reinstall."
+  if ($resumed -ne $true -or (Test-Path -LiteralPath $marker -PathType Leaf)) {
+    throw "Previous service maintenance still requires recovery; its original snapshot was preserved."
+  }
+  [void](Unregister-InstallerMaintenanceBootRecovery -StageDirectory $previousStage -RestorationVerified:$true)
 }
 
 function Stop-OwnedProcesses {
@@ -517,6 +916,14 @@ function Stop-OwnedProcesses {
 
 function Restore-PreservedState {
   param([object]$State)
+  $serviceRecords = @($State.services | Where-Object { $_.name -ne "EgoistShieldCore" })
+  # Reject unverifiable old stages and foreign name collisions before restoring
+  # files or DNS ownership. A stage without metadata is kept for manual recovery.
+  foreach ($record in $serviceRecords) {
+    [void](Assert-PreservedServiceRegistration $record)
+    [void](Get-PreservedRegistryBackup $record)
+    [void](Assert-CurrentPreservedServiceOwnership ([string]$record.name))
+  }
   $runtimeBackup = Join-Path $StageDirectory "runtime-backup"
   if (Test-Path -LiteralPath $runtimeBackup -PathType Container) {
     Invoke-RobocopyDirectory -Source $runtimeBackup -Destination $script:RuntimeRoot
@@ -529,22 +936,86 @@ function Restore-PreservedState {
     Copy-Item -LiteralPath $backup -Destination ([string]$record.source) -Force -ErrorAction Stop
   }
   Restore-CriticalDnsState -State $State
-  foreach ($record in @($State.services | Where-Object { $_.name -ne "EgoistShieldCore" })) {
-    $regFile = Join-Path (Join-Path $StageDirectory "service-registry") ([string]$record.registryFile)
-    if (-not (Test-Path -LiteralPath $regFile -PathType Leaf)) { throw "Service backup is missing for $($record.name)." }
-    if (-not (Get-Service -Name ([string]$record.name) -ErrorAction SilentlyContinue)) {
-      $pathName = ([string]$record.pathName).Trim().Trim('"')
-      if (-not (Test-OwnedServicePath $pathName) -or -not $pathName.EndsWith('.exe', [StringComparison]::OrdinalIgnoreCase) -or
-          -not (Test-Path -LiteralPath $pathName -PathType Leaf)) {
-        throw "Owned service wrapper is missing for $($record.name)."
+  foreach ($record in $serviceRecords) {
+    Restore-PreservedServiceRegistration $record
+  }
+}
+
+function Get-PreservedRegistryBackup {
+  param([object]$Record)
+  if ([string]$Record.registryFile -notmatch '^service-\d+\.reg$' -or
+      -not $Record.PSObject.Properties['registrySha256'] -or [string]$Record.registrySha256 -notmatch '^[0-9A-Fa-f]{64}$') {
+    throw "SERVICE_REGISTRATION_UNVERIFIED: $($Record.name) has no checked registry backup."
+  }
+  $file = Assert-PlainWrapperMigrationPath -Path (Join-Path (Join-Path $StageDirectory 'service-registry') ([string]$Record.registryFile)) -Root $StageDirectory
+  if (-not (Test-Path -LiteralPath $file -PathType Leaf) -or (Get-FileSha256 $file) -ne [string]$Record.registrySha256) {
+    throw "Preserved service registry backup failed checksum validation."
+  }
+  return $file
+}
+
+function New-DisabledServiceRegistryImport {
+  param([object]$Record)
+  $source = Get-PreservedRegistryBackup $Record
+  if ((Get-Item -LiteralPath $source -ErrorAction Stop).Length -gt 4194304) { throw "Preserved service registry backup exceeds its bound." }
+  $root = 'HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\' + [string]$Record.name
+  $inRoot = $false
+  $changed = 0
+  $lines = @([IO.File]::ReadAllLines($source))
+  for ($index = 0; $index -lt $lines.Count; $index++) {
+    if ($lines[$index].Trim() -match '^\[(.*)\]$') {
+      $section = $Matches[1]
+      if (-not $section.Equals($root, [StringComparison]::OrdinalIgnoreCase) -and
+          -not $section.StartsWith($root + '\', [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Preserved registry backup contains a foreign section."
       }
-      & $pathName install | Out-Null
-      if ($LASTEXITCODE -ne 0 -or -not (Get-Service -Name ([string]$record.name) -ErrorAction SilentlyContinue)) {
-        throw "Could not re-register $($record.name) with the service manager."
-      }
+      $inRoot = $section.Equals($root, [StringComparison]::OrdinalIgnoreCase)
+    } elseif ($inRoot -and $lines[$index] -match '^"Start"=dword:[0-9a-fA-F]{8}$') {
+      $lines[$index] = '"Start"=dword:00000004'
+      $changed++
     }
-    & reg.exe import $regFile | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Could not restore $($record.name) service registration." }
+  }
+  if ($changed -ne 1) { throw "Preserved registry backup has no unique startup entry." }
+  $destination = Assert-PlainWrapperMigrationPath -Path (Join-Path (Split-Path -Parent $source) ('maintenance-' + [string]$Record.registryFile)) -Root $StageDirectory
+  [IO.File]::WriteAllLines($destination, [string[]]$lines, [Text.Encoding]::Unicode)
+  return $destination
+}
+
+function Restore-PreservedServiceRegistration {
+  param([object]$Record)
+  $name = [string]$Record.name
+  $executable = Assert-PreservedServiceRegistration $Record
+  if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) { throw "Preserved service executable is missing for $name." }
+  $registration = $Record.registration
+  $import = New-DisabledServiceRegistryImport $Record
+  $current = Assert-CurrentPreservedServiceOwnership $name
+  $service = Get-InstallerServiceState $name
+  if ($service -and [string]$service.ServiceName -ne $name) { throw "Literal preserved service identity mismatch." }
+  if ($service -and -not $current) { throw "Preserved service $name has no verifiable registration." }
+  if ($service -and $service.Status -ne 'Stopped') { throw "Preserved service $name must remain stopped during registration restore." }
+  $action = if ($current -or $service) { 'config' } else { 'create' }
+  $errorMode = @('ignore', 'normal', 'severe', 'critical')[[int]$registration.errorControl]
+  $dependencies = @($registration.dependencies) + @($registration.dependencyGroups | ForEach-Object { '+' + [string]$_ })
+  $arguments = @($action, $name, 'binPath=', [string]$registration.binPath, 'type=', 'own',
+    'start=', 'disabled', 'error=', $errorMode, 'obj=', 'LocalSystem', 'DisplayName=', [string]$registration.displayName,
+    'group=', [string]$registration.group, 'depend=', ($dependencies -join '/'))
+  # Ownership is read again directly before each host mutation. The generated
+  # registry import retains Start=Disabled, including across a worker crash.
+  [void](Assert-CurrentPreservedServiceOwnership $name)
+  Invoke-PreservedRegistrationSc -Arguments $arguments
+  $configured = Assert-CurrentPreservedServiceOwnership $name -RequirePresent
+  if ($configured.startMode -ne 'Disabled' -or -not [string]::Equals(
+      [Environment]::ExpandEnvironmentVariables([string]$configured.pathName),
+      [Environment]::ExpandEnvironmentVariables([string]$registration.binPath), [StringComparison]::Ordinal)) {
+    throw "Could not re-register $name with the service manager: SCM registration readback failed."
+  }
+  $importResult = Invoke-InstallerNativeProcess -Executable (Get-InstallerNativeTool 'reg.exe') -Arguments @('import', $import)
+  if ($importResult.exitCode -ne 0) { throw "Could not import preserved service registration for $name." }
+  $restored = Assert-CurrentPreservedServiceOwnership $name -RequirePresent
+  if ($restored.startMode -ne 'Disabled' -or -not [string]::Equals(
+      [Environment]::ExpandEnvironmentVariables([string]$restored.pathName),
+      [Environment]::ExpandEnvironmentVariables([string]$registration.binPath), [StringComparison]::Ordinal)) {
+    throw "Preserved service $name did not retain its command and Disabled before resume."
   }
 }
 
@@ -805,21 +1276,30 @@ function Wait-OwnedTelegramProxyReady {
 
 function Start-PreservedServices {
   param([object]$State)
-  $runningNames = @($State.services | Where-Object { $_.wasRunning -eq $true } | ForEach-Object { [string]$_.name })
-  $startOrder = @("EgoistShieldSystemDoH", "EgoistShieldGravitylessDNS", "EgoistShieldCore", "EgoistShieldZapret", "EgoistShieldTelegramProxy")
+  $runningNames = @($State.services | Where-Object { $_.wasRunning -eq $true -and $_.startMode -ne "Disabled" } | ForEach-Object { [string]$_.name })
+  $core = @($State.services | Where-Object { $_.name -eq "EgoistShieldCore" })
+  $startCore = $core.Count -eq 0 -or ($core[0].wasRunning -eq $true -and $core[0].startMode -ne "Disabled")
+  $startOrder = @("EgoistShieldSystemDoH", "EgoistShieldGravitylessDNS", "EgoistShieldZapret", "EgoistShieldTelegramProxy")
+  $startOrder += @($runningNames | Where-Object { $_ -ne "EgoistShieldCore" -and $startOrder -notcontains $_ })
+  $startOrder += @("EgoistShieldCore")
   foreach ($name in $startOrder) {
+    if ($name -eq "EgoistShieldCore" -and -not $startCore) { continue }
     if ($runningNames -notcontains $name -and $name -ne "EgoistShieldCore") { continue }
-    $service = Get-Service -Name $name -ErrorAction SilentlyContinue
+    [void](Assert-CurrentPreservedServiceOwnership $name -RequirePresent)
+    $service = Get-InstallerServiceState $name
     if (-not $service) {
-      if ($runningNames -contains $name) { throw "Previously running service $name is missing after reinstall." }
-      continue
+      throw "Required preserved service $name is missing after reinstall."
     }
+    if ([string]$service.ServiceName -ne $name) { throw "Literal preserved service identity mismatch." }
     if ($service.Status -ne "Running") {
       $started = $false
       for ($attempt = 0; $attempt -lt 8; $attempt++) {
         try {
+          [void](Assert-CurrentPreservedServiceOwnership $name -RequirePresent)
           Start-Service -Name $name -ErrorAction Stop
-          $service = Get-Service -Name $name -ErrorAction Stop
+          [void](Assert-CurrentPreservedServiceOwnership $name -RequirePresent)
+          $service = Get-InstallerServiceState $name
+          if (-not $service -or [string]$service.ServiceName -ne $name) { throw "Literal preserved service identity mismatch." }
           $service.WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Running, [TimeSpan]::FromSeconds(35))
           $started = $true
           break
@@ -830,6 +1310,7 @@ function Start-PreservedServices {
       }
       if (-not $started) { throw "Service $name did not start after reinstall." }
     }
+    [void](Assert-CurrentPreservedServiceOwnership $name -RequirePresent)
     if ($name -eq "EgoistShieldSystemDoH" -and @($State.criticalDns).Count -gt 0) {
       if (-not (Test-LoopbackDnsReady -State $State)) { throw "SystemDoH did not recover before network services started." }
       Restore-CriticalAdapterDns -State $State
@@ -842,6 +1323,16 @@ function Start-PreservedServices {
         throw 'Telegram Proxy did not confirm an owned listener after reinstall; a foreign listener is not readiness.'
       }
     }
+  }
+}
+
+function Restore-PreservedServiceStartModes {
+  param([object]$State)
+  Restore-InstallerServiceStartModes @($State.services) { param($path) Test-OwnedServicePath $path }
+  if (@($State.services | Where-Object { $_.name -eq "EgoistShieldCore" }).Count -eq 0) {
+    # A missing old registration was created by NSIS, then stopped for the
+    # migration. It has no previous startup mode to restore.
+    Set-InstallerServiceStartMode "EgoistShieldCore" "Auto" $false { param($path) Test-OwnedServicePath $path }
   }
 }
 
@@ -889,9 +1380,9 @@ function Restore-CriticalOwnedDnsBaseline {
   $adapters = @(Get-NetAdapter -IncludeHidden -ErrorAction Stop)
   foreach ($record in @($State.criticalDns)) {
     $guid = [Guid]$record.interfaceGuid
-    $matches = @($adapters | Where-Object { [Guid]$_.InterfaceGuid -eq $guid })
+    $matchingAdapters = @($adapters | Where-Object { [Guid]$_.InterfaceGuid -eq $guid })
     $saved = @($metadata.originalAdapters | Where-Object { [Guid]$_.interfaceGuid -eq $guid })
-    if ($matches.Count -ne 1 -or $saved.Count -ne 1) { throw 'Protected DNS adapter or baseline is unavailable.' }
+    if ($matchingAdapters.Count -ne 1 -or $saved.Count -ne 1) { throw 'Protected DNS adapter or baseline is unavailable.' }
     $owned = @($metadata.servers)
     if ($metadata.PSObject.Properties['adapterServers']) {
       foreach ($entry in $metadata.adapterServers.PSObject.Properties) {
@@ -901,7 +1392,7 @@ function Restore-CriticalOwnedDnsBaseline {
     foreach ($address in @($record.servers)) {
       if ($owned -notcontains [string]$address) { throw 'Critical DNS snapshot contains an unowned resolver.' }
     }
-    $index = [int]$matches[0].ifIndex
+    $index = [int]$matchingAdapters[0].ifIndex
     $rows = @(Get-DnsClientServerAddress -InterfaceIndex $index -ErrorAction Stop)
     $current = @($rows | ForEach-Object { @($_.ServerAddresses) } | Where-Object { $_ })
     if (($current -join '|') -ne (@($record.servers) -join '|')) { throw 'DNS changed after the protected snapshot; baseline recovery was skipped.' }
@@ -937,9 +1428,19 @@ function Test-PayloadRollbackPending {
 
 function Invoke-Recovery {
   param([object]$State, [string]$Reason)
-  if ($State.PSObject.Properties['handoffStarted'] -and $State.handoffStarted -ne $true) {
+  $recoveryLease = Enter-DeferredReinstallRecoveryLease
+  try {
+  $maintenanceStatus = Get-InstallerServiceMaintenanceStatus
+  if ($maintenanceStatus -eq 'foreign') { throw "Another service maintenance stage is active; preserved state was not replayed." }
+  if ($State.PSObject.Properties['handoffStarted'] -and $State.handoffStarted -ne $true -and
+      $maintenanceStatus -eq 'absent') {
     Add-ReceiptEvent -Stage 'recovery' -Status 'recovery-not-needed' -Message 'Update failed before service handoff; no services or DNS were stopped.'
-    return
+    return $true
+  }
+  if ($State.PSObject.Properties['handoffStarted'] -and $State.handoffStarted -eq $true -and
+      $maintenanceStatus -eq 'absent') {
+    Add-ReceiptEvent -Stage 'recovery' -Status 'recovery-not-needed' -Message 'The service maintenance transaction is already closed; its preserved snapshot must not be replayed.'
+    return $true
   }
   Add-ReceiptEvent -Stage "recovery" -Status "recovering" -Message $Reason
   $recoveryErrors = @()
@@ -952,7 +1453,10 @@ function Invoke-Recovery {
   try { Restore-InstalledIdentity -State $State } catch { $recoveryErrors += "identity: $($_.Exception.Message)" }
   $payloadRollbackPending = Test-PayloadRollbackPending
   if ($payloadRollbackPending) { $recoveryErrors += 'payload-rollback-pending: Previous application files are preserved in quarantine; application rollback is not yet confirmed.' }
-  try { Start-PreservedServices -State $State } catch { $recoveryErrors += "services: $($_.Exception.Message)" }
+  try {
+    Restore-PreservedServiceStartModes -State $State
+    Start-PreservedServices -State $State
+  } catch { $recoveryErrors += "services: $($_.Exception.Message)" }
   if (Test-LoopbackDnsReady -State $State) {
     try { Restore-CriticalAdapterDns -State $State } catch { $recoveryErrors += "dns-adapter: $($_.Exception.Message)" }
   } else {
@@ -966,17 +1470,86 @@ function Invoke-Recovery {
   }
   if ($recoveryErrors.Count -gt 0) {
     Add-ReceiptEvent -Stage "recovery" -Status "recovery-warning" -Message ($recoveryErrors -join " | ")
+    return $false
   } else {
+    Complete-InstallerServiceMaintenance
     Add-ReceiptEvent -Stage "recovery" -Status "recovered" -Message "Previously active services and DNS were restored."
+    return $true
+  }
+  } finally {
+    $recoveryLease.ReleaseMutex()
+    $recoveryLease.Dispose()
   }
 }
 
+function Stop-VerifiedInstallerTransactionProcess {
+  param([int]$ProcessId, [int64]$StartTicks, [string]$Executable)
+  if ($ProcessId -le 0 -or $StartTicks -le 0 -or -not $Executable) { return $false }
+  if ($ProcessId -eq $PID) { throw "Refusing to terminate the recovery process itself." }
+  $process = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
+  if (-not $process) { return $true }
+  try {
+    # Cache the handle before checking identity. Kill/Wait then use this same
+    # process object rather than reopening a PID that Windows may have reused.
+    $heldHandle = $process.Handle
+    if ($null -eq $heldHandle -or $heldHandle -eq [IntPtr]::Zero) { throw "Installer process handle is unavailable." }
+    if ([int64]$process.StartTime.Ticks -ne $StartTicks) { return $true }
+    if (-not [string]::Equals([string]$process.Path, $Executable, [StringComparison]::OrdinalIgnoreCase)) {
+      throw "Installer process executable identity changed; termination was refused."
+    }
+    if (-not $process.HasExited) { $process.Kill() }
+    if (-not $process.WaitForExit(5000)) { throw "Verified installer process did not stop within its limit." }
+    return $true
+  } finally { $process.Dispose() }
+}
+
+function Assert-InstallerNotCancelled {
+  if (Test-Path -LiteralPath (Join-Path $StageDirectory "cancel.flag") -PathType Leaf) {
+    throw "Protected reinstall was cancelled after its watchdog deadline."
+  }
+}
+
+function Test-InstallerTransactionComplete {
+  return (Test-Path -LiteralPath (Join-Path $StageDirectory "complete.flag") -PathType Leaf) -and
+    (Get-InstallerServiceMaintenanceStatus) -eq 'absent'
+}
+
+function Write-PendingInstallerRecovery {
+  param([string]$Reason, [int]$Attempts)
+  Write-JsonAtomic -Path (Join-Path $StageDirectory "recovery-pending.json") -Value @{
+    schemaVersion = 1; owner = "EgoistShield"; stage = $StageDirectory
+    at = [DateTime]::UtcNow.ToString("o"); attempts = $Attempts; reason = $Reason
+  }
+  Add-ReceiptEvent -Stage "recovery" -Status "recovery-warning" -Message $Reason
+}
+
+function Invoke-InstallerRecoveryAttempts {
+  param([object]$State, [string]$Reason, [ValidateRange(1, 12)][int]$Attempts = 6,
+    [ValidateRange(0, 60)][int]$RetrySeconds = 10)
+  for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+    try {
+      $recovered = Invoke-Recovery -State $State -Reason $Reason
+      if ($recovered -eq $true -and -not (Test-InstallerServiceMaintenanceOwner)) {
+        $pendingPath = Join-Path $StageDirectory "recovery-pending.json"
+        if (Test-Path -LiteralPath $pendingPath -PathType Leaf) { Remove-Item -LiteralPath $pendingPath -Force -ErrorAction Stop }
+        return $true
+      }
+    } catch {
+      Write-PendingInstallerRecovery -Reason ("Recovery attempt ${attempt}: " + $_.Exception.Message) -Attempts $attempt
+    }
+    if ($attempt -lt $Attempts) { Start-Sleep -Seconds $RetrySeconds }
+  }
+  Write-PendingInstallerRecovery -Reason "Bounded recovery attempts were exhausted; the protected snapshot and recovery registration were retained." -Attempts $Attempts
+  return $false
+}
+
 function Invoke-WatchdogMode {
-  $statePath = Join-Path $StageDirectory "state.json"
+  if (Test-InstallerTransactionComplete) { return $true }
+  [void](Assert-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory)
   $deadlinePath = Join-Path $StageDirectory "watchdog-deadline.txt"
   $deadline = [DateTime]::Parse((Get-Content -LiteralPath $deadlinePath -Raw), [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind)
   while ([DateTime]::UtcNow -lt $deadline) {
-    if (Test-Path -LiteralPath (Join-Path $StageDirectory "complete.flag")) { return }
+    if (Test-InstallerTransactionComplete) { return $true }
     $heartbeatPath = Join-Path $StageDirectory "heartbeat.json"
     if (Test-Path -LiteralPath $heartbeatPath -PathType Leaf) {
       try {
@@ -987,27 +1560,65 @@ function Invoke-WatchdogMode {
     }
     Start-Sleep -Seconds 2
   }
-  if (Test-Path -LiteralPath (Join-Path $StageDirectory "complete.flag")) { return }
-  $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  if (Test-InstallerTransactionComplete) { return $true }
+  $state = Get-ValidatedMaintenanceRecoveryState -Stage $StageDirectory
   $heartbeatPath = Join-Path $StageDirectory "heartbeat.json"
-  if (Test-Path -LiteralPath $heartbeatPath -PathType Leaf) {
+  Set-Content -LiteralPath (Join-Path $StageDirectory "cancel.flag") -Value "watchdog-deadline" -Encoding ASCII -Force -ErrorAction Stop
+  # Give a responsive worker time to leave its mutation loop and recover while
+  # it still owns the lease. Escalation is limited to recorded exact identities.
+  for ($grace = 0; $grace -lt 5; $grace++) {
+    if (Test-InstallerTransactionComplete) { return $true }
+    if (-not (Test-Path -LiteralPath $heartbeatPath -PathType Leaf)) { break }
+    $heartbeat = Get-Content -LiteralPath $heartbeatPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $workerProcess = Get-Process -Id ([int]$heartbeat.workerPid) -ErrorAction SilentlyContinue
     try {
-      $heartbeat = Get-Content -LiteralPath $heartbeatPath -Raw | ConvertFrom-Json
-      $installerPid = [int]$heartbeat.installerPid
-      if ($installerPid -gt 0) {
-        $installerProcess = Get-Process -Id $installerPid -ErrorAction SilentlyContinue
-        if ($installerProcess -and [int64]$installerProcess.StartTime.Ticks -eq [int64]$heartbeat.installerStartTicks -and
-            [string]$installerProcess.Path -eq [string]$state.installer) {
-          Stop-Process -Id $installerPid -Force -ErrorAction SilentlyContinue
-        }
+      if (-not $workerProcess -or [int64]$workerProcess.StartTime.Ticks -ne [int64]$heartbeat.workerStartTicks) { break }
+    } finally { if ($workerProcess) { $workerProcess.Dispose() } }
+    Start-Sleep -Seconds 2
+  }
+  try {
+    if (Test-Path -LiteralPath $heartbeatPath -PathType Leaf) {
+      $heartbeat = Get-Content -LiteralPath $heartbeatPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+      if ($heartbeat.owner -ne "EgoistShield") { throw "Unverified installer heartbeat owner." }
+      if ([int]$heartbeat.installerPid -gt 0 -and
+          -not (Stop-VerifiedInstallerTransactionProcess -ProcessId ([int]$heartbeat.installerPid) -StartTicks ([int64]$heartbeat.installerStartTicks) -Executable ([string]$state.installer))) {
+        throw "Installer process identity is incomplete; recovery remains pending."
       }
-    } catch { Write-Verbose "Watchdog could not terminate the exact installer process: $($_.Exception.Message)" }
+      $workerExecutable = [IO.Path]::GetFullPath((Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"))
+      if (-not $heartbeat.PSObject.Properties['workerExecutable'] -or
+          -not [string]::Equals([string]$heartbeat.workerExecutable, $workerExecutable, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Unverified worker executable; recovery remains pending."
+      }
+      if (-not (Stop-VerifiedInstallerTransactionProcess -ProcessId ([int]$heartbeat.workerPid) -StartTicks ([int64]$heartbeat.workerStartTicks) -Executable $workerExecutable)) {
+        throw "Worker process identity is incomplete; recovery remains pending."
+      }
+    }
+  } catch {
+    Write-PendingInstallerRecovery -Reason $_.Exception.Message -Attempts 0
+    return $false
   }
-  if (-not $state.PSObject.Properties['handoffStarted'] -or $state.handoffStarted -eq $true) {
-    Invoke-Recovery -State $state -Reason "Watchdog recovered an interrupted or timed-out silent reinstall."
+  $state.runAfter = $false
+  $completionLease = $null
+  for ($attempt = 0; $attempt -lt 6; $attempt++) {
+    try { $completionLease = Enter-DeferredReinstallRecoveryLease; break }
+    catch {
+      if ($attempt -eq 5) { Write-PendingInstallerRecovery -Reason $_.Exception.Message -Attempts 6; return $false }
+      Start-Sleep -Seconds 10
+    }
   }
-  Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление прервалось. Результат восстановления служб и DNS сохранён в журнале установки."
-  Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "watchdog-recovered" -Encoding ASCII -Force
+  try {
+    if (Test-InstallerTransactionComplete) { return $true }
+    $recovered = Invoke-InstallerRecoveryAttempts -State $state -Reason "Watchdog recovered an interrupted or timed-out silent reinstall."
+    Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление прервалось. Результат восстановления служб и DNS сохранён в журнале установки."
+    if ($recovered -eq $true) {
+      [void](Unregister-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory -RestorationVerified:$true)
+      Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "watchdog-recovered" -Encoding ASCII -Force
+    }
+    return $recovered
+  } finally {
+    $completionLease.ReleaseMutex()
+    $completionLease.Dispose()
+  }
 }
 
 function Invoke-WorkerMode {
@@ -1017,7 +1628,9 @@ function Invoke-WorkerMode {
   $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   $release = Get-ValidatedRelease -Installer ([string]$state.installer) -Manifest ([string]$state.manifest) -Version ([string]$state.version) -Sha256 ([string]$state.sha256) -AllowStagedPair
   $mutex = New-Object Threading.Mutex($false, "Global\EgoistShield.DeferredReinstall")
-  if (-not $mutex.WaitOne(0)) {
+  try { $acquired = $mutex.WaitOne(0) }
+  catch [Threading.AbandonedMutexException] { $acquired = $true }
+  if (-not $acquired) {
     Add-ReceiptEvent -Stage "worker" -Status "failed" -Message "Another protected Egoist Shield reinstall is already running."
     Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "dispatch-failed" -Encoding ASCII -Force
     $mutex.Dispose()
@@ -1026,6 +1639,9 @@ function Invoke-WorkerMode {
   try {
     Add-ReceiptEvent -Stage "worker" -Status "waiting" -Message "Validated elevated worker is waiting before the final handoff."
     Start-Sleep -Seconds ([int]$state.delaySeconds)
+    Assert-InstallerNotCancelled
+    Resume-InterruptedServiceMaintenance
+    $state.handoffStarted = $false
     $state.services = @(Get-OwnedServiceSnapshot -Stage $StageDirectory)
     $state.userState = @(Backup-UserActivationState -Stage $StageDirectory)
     $state.criticalDns = @(Backup-CriticalDnsState -Stage $StageDirectory)
@@ -1036,18 +1652,30 @@ function Invoke-WorkerMode {
     $deadline = [DateTime]::UtcNow.AddSeconds([int]$state.watchdogTimeoutSeconds).ToString("o")
     Set-Content -LiteralPath (Join-Path $StageDirectory "watchdog-deadline.txt") -Value $deadline -Encoding ASCII -Force
     Write-Heartbeat -Stage $StageDirectory -Phase "preparing"
+    Protect-InstallerStageTree -Stage $StageDirectory
+    [void](Register-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory)
     $powerShell = Get-NativePowerShellPath
-    Start-Process -FilePath $powerShell -ArgumentList @("-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", (Join-Path $StageDirectory "invoke-final-silent-reinstall.ps1"), "-Watchdog", "-StageDirectory", $StageDirectory) -WindowStyle Hidden | Out-Null
+    $watchdogArguments = @("-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", (Join-Path $StageDirectory "invoke-final-silent-reinstall.ps1"), "-Watchdog", "-StageDirectory", $StageDirectory)
+    $watchdogCommandLine = ($watchdogArguments | ForEach-Object { ConvertTo-InstallerWindowsArgument ([string]$_) }) -join ' '
+    Start-Process -FilePath $powerShell -ArgumentList $watchdogCommandLine -WindowStyle Hidden | Out-Null
 
+    Assert-InstallerNotCancelled
+    Enter-InstallerServiceMaintenance
     $state.handoffStarted = $true
     Write-JsonAtomic -Path $statePath -Value $state
     Stop-OwnedProcesses
-    foreach ($name in @("EgoistShieldTelegramProxy", "EgoistShieldZapret", "EgoistShieldGravitylessDNS", "EgoistShieldCore")) {
+    Assert-InstallerNotCancelled
+    Suspend-InstallerServiceRestarts -Records @($state.services) -SnapshotPath $statePath -OwnPath {
+      param($path) Test-OwnedServicePath $path
+    } -StopCore { param($name) Stop-OwnedServiceForInstall -Name $name }
+    foreach ($name in @($state.services | Where-Object { $_.name -notin @("EgoistShieldCore", "EgoistShieldSystemDoH") } | ForEach-Object { $_.name })) {
+      Assert-InstallerNotCancelled
       Stop-OwnedServiceForInstall -Name $name
     }
     # SystemDoH is deliberately the last owned service stopped. Once this
     # succeeds, Windows may temporarily have only a silent loopback DNS entry.
     Stop-OwnedServiceForInstall -Name "EgoistShieldSystemDoH"
+    Assert-InstallerNotCancelled
     Add-ReceiptEvent -Stage "handoff" -Status "dns-stopped" -Message "SystemDoH was stopped last; silent installation is starting."
     Set-Content -LiteralPath (Join-Path $StageDirectory "backup-ready.flag") -Value "ready" -Encoding ASCII -Force
 
@@ -1060,6 +1688,7 @@ function Invoke-WorkerMode {
     }
     while (-not $installerProcess.HasExited) {
       Write-Heartbeat -Stage $StageDirectory -Phase "installer-running" -InstallerPid $installerProcess.Id
+      Assert-InstallerNotCancelled
       Start-Sleep -Seconds 2
       $installerProcess.Refresh()
     }
@@ -1068,12 +1697,14 @@ function Invoke-WorkerMode {
     if ($exitCode -ne 0) { throw "Silent installer failed with exit code $exitCode." }
 
     Write-Heartbeat -Stage $StageDirectory -Phase "restoring"
+    Assert-InstallerNotCancelled
     Stop-OwnedServiceForInstall -Name "EgoistShieldCore"
     Restore-PreservedState -State $state
     Update-PreservedRuntimeReliability -State $state
     Update-PreservedServiceWrappers -State $state
     Reconcile-PreservedZapretProfile -State $state
     Restore-InstalledIdentity -State $state
+    Restore-PreservedServiceStartModes -State $state
     Start-PreservedServices -State $state
     $installedExe = Join-Path $script:OwnedInstallRoot "EgoistShield.exe"
     if (-not (Test-Path -LiteralPath $installedExe -PathType Leaf)) { throw "Installed EgoistShield.exe is missing." }
@@ -1082,21 +1713,38 @@ function Invoke-WorkerMode {
     if (-not (Test-LoopbackDnsReady -State $state)) { throw "SystemDoH did not answer through 127.0.0.1 after reinstall." }
     Restore-CriticalAdapterDns -State $state
     if (-not (Test-LoopbackDnsReady -State $state)) { throw "Restored adapter DNS did not pass readback." }
+    Complete-InstallerServiceMaintenance
+    [void](Unregister-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory -RestorationVerified:$true)
     if ($state.runAfter -ne $false) { Start-InstalledDesktop -State $state }
     Add-ReceiptEvent -Stage "verify" -Status "succeeded" -Message "Installer, version, Core, preserved services and DNS passed readback." -Data @{ installedVersion = $installedVersion }
     Write-DesktopUpdateResult -State $state -Ok $true -Message "Обновление до $installedVersion установлено; службы и DNS проверены."
     Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "success" -Encoding ASCII -Force
   } catch {
+    $recoveryComplete = $false
     try {
+      if (Get-Variable -Name installerProcess -Scope Local -ErrorAction SilentlyContinue) {
+        if ($installerProcess -and -not $installerProcess.HasExited) {
+          if (-not (Stop-VerifiedInstallerTransactionProcess -ProcessId $installerProcess.Id -StartTicks ([int64]$installerProcess.StartTime.Ticks) -Executable ([string]$release.installer))) {
+            throw "Silent installer could not be stopped before recovery."
+          }
+        }
+      }
       $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
-      if ($state.handoffStarted -eq $true) {
-        Invoke-Recovery -State $state -Reason $_.Exception.Message
+      if ($state.handoffStarted -eq $true -or (Test-InstallerServiceMaintenanceOwner)) {
+        $recoveryComplete = Invoke-InstallerRecoveryAttempts -State $state -Reason $_.Exception.Message -Attempts 2 -RetrySeconds 2
+      } else {
+        $recoveryComplete = $true
       }
       Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление не завершилось. Результат восстановления служб и DNS сохранён в журнале установки."
     } catch {
       Add-ReceiptEvent -Stage "fatal" -Status "failed" -Message $_.Exception.Message
     }
-    Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "failed-recovered" -Encoding ASCII -Force
+    if ($recoveryComplete -eq $true -and -not (Test-InstallerServiceMaintenanceOwner)) {
+      [void](Unregister-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory -RestorationVerified:$true)
+      Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "failed-recovered" -Encoding ASCII -Force
+    } else {
+      Write-PendingInstallerRecovery -Reason "Worker stopped before verified recovery; watchdog/boot recovery must retry." -Attempts 2
+    }
     throw
   } finally {
     try { $mutex.ReleaseMutex() } catch { Write-Verbose "Deferred reinstall mutex was not owned: $($_.Exception.Message)" }
@@ -1104,9 +1752,16 @@ function Invoke-WorkerMode {
   }
 }
 
+if ($Recover) {
+  if (-not (Test-IsAdministrator)) { throw "Boot recovery requires a privileged service token." }
+  $StageDirectory = Resolve-FullPath -Path $StageDirectory -MustExist
+  if ((Invoke-WatchdogMode) -ne $true) { exit 1 }
+  exit 0
+}
+
 if ($Watchdog) {
   $StageDirectory = Resolve-FullPath -Path $StageDirectory -MustExist
-  Invoke-WatchdogMode
+  if ((Invoke-WatchdogMode) -ne $true) { exit 1 }
   exit 0
 }
 
@@ -1115,9 +1770,14 @@ if ($Worker) {
   try {
     Invoke-WorkerMode
   } catch {
-    if (-not (Test-Path -LiteralPath (Join-Path $StageDirectory "complete.flag"))) {
+    if (-not (Test-Path -LiteralPath (Join-Path $StageDirectory "complete.flag")) -and -not (Test-InstallerServiceMaintenanceOwner)) {
       try {
         Add-ReceiptEvent -Stage "worker" -Status "failed" -Message "Protected reinstall worker stopped before completion."
+      } catch {
+        Write-Warning "Worker receipt could not be recorded: $($_.Exception.Message)"
+        Write-BrandedInstallerStatus -Stage "worker" -Status "failed" -Message "Protected reinstall worker stopped before completion."
+      }
+      try {
         Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "worker-failed" -Encoding ASCII -Force
       } catch { Write-Warning "Worker failure could not be recorded: $($_.Exception.Message)" }
     }
@@ -1194,9 +1854,38 @@ if (-not [string]::IsNullOrWhiteSpace($RunAfterPath)) {
 }
 if ($NoRunAfter) { $runAfter = $false }
 
-if ([string]::IsNullOrWhiteSpace($ReceiptRoot)) { $ReceiptRoot = Join-Path $env:ProgramData "EgoistShieldInstaller\DeferredRuns" }
+if ([string]::IsNullOrWhiteSpace($ReceiptRoot)) { $ReceiptRoot = Join-Path (Get-InstallerCommonDataRoot) "EgoistShieldInstaller\DeferredRuns" }
 $receiptBase = Resolve-FullPath -Path $ReceiptRoot
+$canonicalReceiptBase = Resolve-FullPath -Path (Join-Path (Get-InstallerCommonDataRoot) "EgoistShieldInstaller\DeferredRuns")
+if (-not [string]::Equals($receiptBase, $canonicalReceiptBase, [StringComparison]::OrdinalIgnoreCase)) {
+  throw "Protected recovery requires the canonical installer receipt directory."
+}
+if (-not (Test-IsAdministrator)) {
+  $dispatchArguments = @('-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden',
+    '-File', $PSCommandPath, '-InstallerPath', $release.installer, '-ExpectedVersion', $ExpectedVersion,
+    '-DelaySeconds', [string]$DelaySeconds, '-WatchdogTimeoutSeconds', [string]$WatchdogTimeoutSeconds)
+  if ($EmbeddedRelease) { $dispatchArguments += '-EmbeddedRelease' }
+  else { $dispatchArguments += @('-IntegrityManifestPath', $IntegrityManifestPath, '-ExpectedSha256', $ExpectedSha256) }
+  $dispatchPathPairs = @(,@('FromVersion', $FromVersion))
+  if ($InstallerUiDirectory) { $dispatchPathPairs += ,@('InstallerUiDirectory', $InstallerUiDirectory) }
+  else { $dispatchPathPairs += @(@('InstallerUiPath', $InstallerUiPath), @('InstallerFontPath', $InstallerFontPath), @('HandoffSignalPath', $HandoffSignalPath), @('RunAfterPath', $RunAfterPath)) }
+  foreach ($pair in $dispatchPathPairs) {
+    if ([string]$pair[1]) { $dispatchArguments += @('-' + $pair[0], [string]$pair[1]) }
+  }
+  if ($NoRunAfter) { $dispatchArguments += '-NoRunAfter' }
+  if ($MinimizedAfter) { $dispatchArguments += '-MinimizedAfter' }
+  $dispatchCommandLine = ($dispatchArguments | ForEach-Object { ConvertTo-InstallerWindowsArgument ([string]$_) }) -join ' '
+  Start-Process -FilePath (Get-NativePowerShellPath) -ArgumentList $dispatchCommandLine -Verb RunAs -WindowStyle Hidden -ErrorAction Stop | Out-Null
+  [pscustomobject]@{ dispatched = $true; elevatedPreparationPending = $true; version = $release.version } | ConvertTo-Json
+  exit 0
+}
+$installerStageRoot = Split-Path -Parent $receiptBase
+[void](Assert-PlainWrapperMigrationPath -Path $installerStageRoot -Root (Get-InstallerCommonDataRoot))
+New-Item -ItemType Directory -Path $installerStageRoot -Force -ErrorAction Stop | Out-Null
+Protect-StageDirectory -Path $installerStageRoot
+[void](Assert-PlainWrapperMigrationPath -Path $receiptBase -Root $installerStageRoot)
 New-Item -ItemType Directory -Path $receiptBase -Force -ErrorAction Stop | Out-Null
+Protect-StageDirectory -Path $receiptBase
 $StageDirectory = Join-Path $receiptBase ([Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $StageDirectory -Force -ErrorAction Stop | Out-Null
 Protect-StageDirectory -Path $StageDirectory
@@ -1219,10 +1908,15 @@ if ($release.manifest) {
   })
 }
 Copy-Item -LiteralPath $PSCommandPath -Destination $stagedScript -Force -ErrorAction Stop
+Copy-Item -LiteralPath $script:ServiceMaintenanceScript -Destination (Join-Path $StageDirectory "service-maintenance.ps1") -Force -ErrorAction Stop
+Copy-Item -LiteralPath $script:BootRecoveryScript -Destination (Join-Path $StageDirectory "maintenance-boot-recovery.ps1") -Force -ErrorAction Stop
 if ($brandedUi) {
   Copy-Item -LiteralPath $InstallerUiPath -Destination (Join-Path $StageDirectory "ModernInstaller.exe") -Force -ErrorAction Stop
   Copy-Item -LiteralPath $InstallerFontPath -Destination (Join-Path $StageDirectory "Unbounded.ttf") -Force -ErrorAction Stop
   if ($RunAfterPath) { Copy-Item -LiteralPath $RunAfterPath -Destination (Join-Path $StageDirectory "run_after.txt") -Force -ErrorAction Stop }
+}
+foreach ($stagedFile in @(Get-ChildItem -LiteralPath $StageDirectory -File -ErrorAction Stop)) {
+  Protect-InstallerStageFile -Path $stagedFile.FullName
 }
 if ((Get-FileSha256 $stagedInstaller) -ne $release.sha256) { throw "Staged installer failed SHA-256 readback." }
 $state = [ordered]@{
@@ -1252,9 +1946,11 @@ Write-JsonAtomic -Path (Join-Path $StageDirectory "state.json") -Value $state
 Add-ReceiptEvent -Stage "dispatch" -Status "dispatched" -Message "Installer was validated and staged; elevated worker will perform the final handoff." -Data @{ version = $release.version; sha256 = $release.sha256 }
 $powerShell = Get-NativePowerShellPath
 $workerArguments = @("-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", $stagedScript, "-Worker", "-StageDirectory", $StageDirectory)
+$workerCommandLine = ($workerArguments | ForEach-Object { ConvertTo-InstallerWindowsArgument ([string]$_) }) -join ' '
 try {
   if ($brandedUi) {
-    $uiProcess = Start-Process -FilePath (Join-Path $StageDirectory "ModernInstaller.exe") -ArgumentList @($StageDirectory, "--monitor") -PassThru
+    $uiCommandLine = (@($StageDirectory, '--monitor') | ForEach-Object { ConvertTo-InstallerWindowsArgument ([string]$_) }) -join ' '
+    $uiProcess = Start-Process -FilePath (Join-Path $StageDirectory "ModernInstaller.exe") -ArgumentList $uiCommandLine -PassThru
     $readyFlag = Join-Path $StageDirectory "ui-ready.flag"
     $readyDeadline = [DateTime]::UtcNow.AddSeconds(15)
     while (-not (Test-Path -LiteralPath $readyFlag -PathType Leaf)) {
@@ -1265,9 +1961,9 @@ try {
     }
   }
   if (Test-IsAdministrator) {
-    Start-Process -FilePath $powerShell -ArgumentList $workerArguments -WindowStyle Hidden | Out-Null
+    Start-Process -FilePath $powerShell -ArgumentList $workerCommandLine -WindowStyle Hidden | Out-Null
   } else {
-    Start-Process -FilePath $powerShell -ArgumentList $workerArguments -Verb RunAs -WindowStyle Hidden | Out-Null
+    Start-Process -FilePath $powerShell -ArgumentList $workerCommandLine -Verb RunAs -WindowStyle Hidden | Out-Null
   }
   if ($brandedUi) {
     [IO.File]::WriteAllText($HandoffSignalPath, $StageDirectory, [Text.UTF8Encoding]::new($false))
