@@ -22,12 +22,13 @@ internal sealed class WindowsServiceListenerSnapshot
     private readonly Func<int, CancellationToken, ServiceListenerSnapshot?> _collect;
 
     internal WindowsServiceListenerSnapshot(string serviceName,
-        Func<int, CancellationToken, ServiceListenerSnapshot?>? collect = null)
+        Func<int, CancellationToken, ServiceListenerSnapshot?>? collect = null, int? managedProcessId = null)
     {
         if (serviceName is not ("EgoistShieldTelegramProxy" or "EgoistShieldVpn"))
             throw new ArgumentException("Native snapshot requires an owned TCP service.");
         _serviceName = serviceName;
-        _collect = collect ?? ((port, token) => Collect(_serviceName, port, token));
+        if (managedProcessId is <= 0) throw new ArgumentException("Managed process identity must be positive.");
+        _collect = collect ?? ((port, token) => Collect(_serviceName, port, token, managedProcessId));
     }
 
     internal async Task<ServiceListenerSnapshot?> ReadAsync(int port, CancellationToken cancellationToken)
@@ -50,15 +51,16 @@ internal sealed class WindowsServiceListenerSnapshot
         return await read.WaitAsync(cancellationToken);
     }
 
-    private static ServiceListenerSnapshot Collect(string serviceName, int port, CancellationToken token)
+    private static ServiceListenerSnapshot Collect(string serviceName, int port, CancellationToken token, int? managedProcessId)
     {
         if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
         token.ThrowIfCancellationRequested();
         using var manager = Native.OpenSCManager(null, null, 1);
         if (manager.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
         using var service = Native.OpenService(manager, serviceName, 4);
-        if (service.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
-        var before = ReadService(service, token);
+        bool absent = service.IsInvalid;
+        if (absent && Marshal.GetLastWin32Error() != 1060) throw new Win32Exception(Marshal.GetLastWin32Error());
+        var before = absent ? new Native.ServiceStatus { CurrentState = 1 } : ReadService(service, token);
         var handles = new Dictionary<int, SafeProcessHandle>();
         try
         {
@@ -66,6 +68,7 @@ internal sealed class WindowsServiceListenerSnapshot
             var listeners = ReadListeners(port, token);
             var needed = new HashSet<int>();
             if (before.ProcessId > 0) needed.Add(checked((int)before.ProcessId));
+            if (managedProcessId is int managed) needed.Add(managed);
             foreach (var listener in listeners)
             {
                 int cursor = listener.OwningProcess;
@@ -81,9 +84,9 @@ internal sealed class WindowsServiceListenerSnapshot
             {
                 token.ThrowIfCancellationRequested();
                 parents.TryGetValue(processId, out int parent);
-                var handle = Native.OpenProcess(0x1000U | (processId == before.ProcessId ? 0x100000U : 0U), false, processId);
+                var handle = Native.OpenProcess(0x1000U | 0x100000U, false, processId);
                 handles.Add(processId, handle);
-                if (handle.IsInvalid)
+                if (handle.IsInvalid || !IsProcessAlive(handle))
                 {
                     rows.Add(new(processId, parent, null, null));
                     continue;
@@ -97,11 +100,21 @@ internal sealed class WindowsServiceListenerSnapshot
                 if (Native.QueryFullProcessImageName(handle, 0, path, ref length)) executable = path.ToString();
                 rows.Add(new(processId, parent, born, executable));
             }
-            var after = ReadService(service, token);
+            var after = before;
+            if (absent)
+            {
+                using var check = Native.OpenService(manager, serviceName, 4);
+                if (!check.IsInvalid || Marshal.GetLastWin32Error() != 1060)
+                    throw new IOException("Owned service registration changed during listener capture.");
+            }
+            else after = ReadService(service, token);
             bool stable = before.ProcessId == after.ProcessId && before.CurrentState == after.CurrentState;
             if (before.ProcessId > 0)
                 stable &= handles.TryGetValue(checked((int)before.ProcessId), out var root) && !root.IsInvalid &&
-                    Native.WaitForSingleObject(root, 0) == 258;
+                    IsProcessAlive(root);
+            if (managedProcessId is int managedRoot)
+                stable &= handles.TryGetValue(managedRoot, out var managedHandle) && !managedHandle.IsInvalid &&
+                    IsProcessAlive(managedHandle);
             token.ThrowIfCancellationRequested();
             return new(checked((int)before.ProcessId), State(before.CurrentState), rows.ToArray(), listeners, stable);
         }
@@ -122,6 +135,8 @@ internal sealed class WindowsServiceListenerSnapshot
     private static string State(uint value) => value switch
     { 1 => "Stopped", 2 => "Start Pending", 3 => "Stop Pending", 4 => "Running",
       5 => "Continue Pending", 6 => "Pause Pending", 7 => "Paused", _ => "Unknown" };
+
+    private static bool IsProcessAlive(SafeProcessHandle handle) => Native.WaitForSingleObject(handle, 0) == 258;
 
     private static Dictionary<int, int> ReadParents(CancellationToken token)
     {
@@ -150,6 +165,42 @@ internal sealed class WindowsServiceListenerSnapshot
 
     internal static int ReadParentProcessId(int processId, CancellationToken cancellationToken) =>
         ReadParents(cancellationToken).GetValueOrDefault(processId);
+
+    internal static ListenerProcess[] ReadWinwsProcesses(CancellationToken token)
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
+        token.ThrowIfCancellationRequested();
+        using var snapshot = Native.CreateToolhelp32Snapshot(2, 0);
+        if (snapshot.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+        var entry = new Native.ProcessEntry { Size = (uint)Marshal.SizeOf<Native.ProcessEntry>() };
+        if (!Native.Process32First(snapshot, ref entry)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        var rows = new List<ListenerProcess>();
+        int count = 0;
+        do
+        {
+            token.ThrowIfCancellationRequested();
+            if (++count > 65536) throw new InvalidDataException("Process snapshot exceeds its bound.");
+            if (!string.Equals(entry.FileName, "winws.exe", StringComparison.OrdinalIgnoreCase)) continue;
+            if (rows.Count >= 128 || entry.ProcessId is 0 or > int.MaxValue || entry.ParentProcessId > int.MaxValue)
+                throw new InvalidDataException("WinWS process snapshot exceeds its bound.");
+            int processId = checked((int)entry.ProcessId);
+            using var handle = Native.OpenProcess(0x1000U | 0x100000U, false, processId);
+            if (handle.IsInvalid || !IsProcessAlive(handle) ||
+                !Native.GetProcessTimes(handle, out var created, out _, out _, out _))
+            { rows.Add(new(processId, checked((int)entry.ParentProcessId), null, null)); continue; }
+            var executable = new StringBuilder(32768);
+            int length = executable.Capacity;
+            if (!Native.QueryFullProcessImageName(handle, 0, executable, ref length))
+            { rows.Add(new(processId, checked((int)entry.ParentProcessId), null, null)); continue; }
+            if (!Path.GetFileName(executable.ToString()).Equals("winws.exe", StringComparison.OrdinalIgnoreCase) ||
+                !IsProcessAlive(handle))
+            { rows.Add(new(processId, checked((int)entry.ParentProcessId), null, null)); continue; }
+            var born = DateTimeOffset.FromFileTime(unchecked((long)(((ulong)created.High << 32) | created.Low))).ToUniversalTime();
+            rows.Add(new(processId, checked((int)entry.ParentProcessId), born, executable.ToString()));
+        } while (Native.Process32Next(snapshot, ref entry));
+        if (Marshal.GetLastWin32Error() != 18) throw new Win32Exception(Marshal.GetLastWin32Error());
+        return rows.ToArray();
+    }
 
     internal static ListenerEndpoint[] ReadListeners(int port, CancellationToken token)
     {

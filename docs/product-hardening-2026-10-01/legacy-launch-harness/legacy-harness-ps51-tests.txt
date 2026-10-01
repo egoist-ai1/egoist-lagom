@@ -1,0 +1,34 @@
+✔ native CIM retry returns a complete snapshot and refuses terminal partial reads (767.5923ms)
+✔ terminal GUI errors end the wait immediately while transient observations retain retry behavior (483.1235ms)
+✔ installer diagnostics preserve actual own log bytes and refuse oversized logs (387.8098ms)
+✔ signed Setup and source Core diagnostics refuse a physical host before reading inputs or compiling (858.6396ms)
+✔ GUI failure diagnostics read only the launched profile log and retain actual bytes within the bound (588.7068ms)
+✔ native runtime resolution selects the first real PATH result when two applications share a name (260.2728ms)
+✔ native ACL diagnostics capture actual owner and each raw ACE without changing permissions (296.0611ms)
+✔ archive Windows path guard refuses traversal, ADS, devices, wildcard and NSIS-variable escapes (1.3082ms)
+✔ archive listing accepts original-style folders and rejects unsafe links, collisions and size ambiguity (0.6651ms)
+✔ complete inert inventory detects changed, removed and added payload files and linked objects (32.8355ms)
+✔ real signed original manifests cannot authorize changed installer bytes or a tampered manifest (30.1776ms)
+✔ native baseline CLI refuses the actual nonhosted local environment before touching the supplied work (73.3216ms)
+✔ PowerShell library is pure and refuses the actual nonhosted host before restoration mutation (262.0195ms)
+✔ the compatibility recipe refuses the actual nonhosted host before any registry lookup (268.3135ms)
+✔ official legacy versions select separate immutable installer/helper pins and reject aliases (1.3745ms)
+✔ original installer network prerequisite rejects missing, failed, partial or duplicate family reads without mutation (301.1908ms)
+✔ both original signed legacy manifests are accepted only for the explicitly selected version (3.5172ms)
+✔ candidate minimum version is compared with the selected legacy version, not a fixed 3.7.9 (1.1462ms)
+✔ legacy gate verifies original real signed metadata with the project pinned public root (2.3912ms)
+✔ legacy gate refuses registry rollback, key replacement and revoked-key revival (1.7378ms)
+✔ pure source-binding boundary requires both signed fields and exact integrity bytes (0.627ms)
+✔ legacy PowerShell library import performs no native query or mutation and observer matches exact scope (281.5668ms)
+✔ inert legacy snapshot retries a failed cold query, discards partial rows and preserves complete foreign inventory (297.3536ms)
+✔ inert legacy snapshot never returns empty or partial state after failed, nonterminating, empty or malformed CIM reads (266.9912ms)
+✔ inert legacy snapshot keeps foreign service/Task comparison strict and refuses Task errors (343.4103ms)
+✔ real legacy script and helper reject a non-hosted process before input or native mutation (1317.3902ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3693.8897

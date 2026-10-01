@@ -1470,52 +1470,66 @@ var TelegramProxyManager = class {
 	}
 	async queryListenerOwnership(port, host, { serviceRunning = false, managedState = null, timeoutMs = 4000 } = {}) {
 		try {
-			if (serviceRunning) return await this.queryNativeServiceListenerOwnership(port, host, timeoutMs);
-			const script = buildTelegramProxyListenerOwnershipScript(port, host, {
-				serviceRunning,
-				wrapperPath: path.join(this.appDataDir, "service-wrapper", TG_WS_PROXY_SERVICE_EXE_NAME),
-				managedPid: managedState?.pid,
-				managedStartedAt: managedState?.startedAt,
-				managedRuntimePaths: TG_WS_PROXY_MANAGED_CANDIDATES.map((name) => path.join(this.runtimeDir, name))
-			});
-			const { stdout } = await execFileAsync$3(resolveWindowsExecutable("powershell.exe"), ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script], { windowsHide: true, timeout: Math.max(1, Math.min(4000, timeoutMs)), maxBuffer: 64 * 1024 });
-			const value = JSON.parse(stdout.trim());
-			if (!["none", "owned", "foreign"].includes(value?.state)) throw new Error("Invalid listener ownership result");
-			if (value.state !== "none" && (!Number.isInteger(value.ownerPid) || value.ownerPid <= 0)) throw new Error("Invalid listener process identity");
-			return { state: value.state, ownerPid: value.ownerPid ?? null, ownerName: typeof value.ownerName === "string" ? value.ownerName.replace(/[\x00-\x1f]/g, "").slice(0, 80) : null };
+			return await this.queryNativeServiceListenerOwnership(port, host, timeoutMs, { serviceRunning, managedState });
 		} catch {
 			return { state: "unknown", ownerPid: null, ownerName: null };
 		}
 	}
-	async queryNativeServiceListenerOwnership(port, host, timeoutMs) {
+	async queryNativeServiceListenerOwnership(port, host, timeoutMs, { serviceRunning = false, managedState = null } = {}) {
 		const unknown = { state: "unknown", ownerPid: null, ownerName: null };
 		if (!Number.isInteger(port) || port < 1 || port > 65535 || typeof host !== "string" || !isLoopbackHost(host)) return unknown;
 		const deadline = Date.now() + Math.max(1, Math.min(4000, timeoutMs));
 		const executable = path.join(this.resourcesPath, "core-service", "win-x64", "EgoistShield.Service.exe");
 		const wrapperPath = path.resolve(this.appDataDir, "service-wrapper", TG_WS_PROXY_SERVICE_EXE_NAME).toLowerCase();
+		const managedPaths = TG_WS_PROXY_MANAGED_CANDIDATES.map((name) => path.resolve(this.runtimeDir, name).toLowerCase());
+		const savedStart = managedState == null ? null : Date.parse(managedState.startedAt);
+		if (managedState != null && (!Number.isInteger(managedState.pid) || managedState.pid <= 0 || managedState.pid > 2147483647 || !Number.isSafeInteger(savedStart) || savedStart <= 0)) return unknown;
+		const args = ["--telegram-listener-snapshot", "--port", String(port)];
+		if (managedState != null) args.push("--managed-pid", String(managedState.pid), "--managed-started-at", String(savedStart));
 		const address = host.trim().toLowerCase().replace(/^\[|\]$/g, "");
 		let prior = null;
 		for (let read = 0; read < 2; read++) {
 			const remaining = deadline - Date.now();
 			if (remaining <= 0) return unknown;
-			const { stdout } = await execFileAsync$3(executable, ["--telegram-listener-snapshot", "--port", String(port)], { windowsHide: true, timeout: remaining, maxBuffer: 64 * 1024 });
+			const { stdout } = await execFileAsync$3(executable, args, { windowsHide: true, timeout: remaining, maxBuffer: 64 * 1024 });
 			const value = JSON.parse(stdout.trim());
-			if (value?.schemaVersion !== 1 || value.operation !== "telegram-listener-snapshot" || value.serviceName !== TG_WS_PROXY_SERVICE_NAME || value.port !== port || value.snapshotAvailable !== true || value.stable !== true || value.serviceState !== "Running" || value.rootProcessPathVerified !== true) return unknown;
+			if (value?.schemaVersion !== 2 || value.operation !== "telegram-listener-snapshot" || value.serviceName !== TG_WS_PROXY_SERVICE_NAME || value.port !== port || value.snapshotAvailable !== true || value.stable !== true || !["Running", "Stopped"].includes(value.serviceState)) return unknown;
+			if (serviceRunning && value.serviceState !== "Running") return unknown;
 			const rows = value.snapshot?.processes;
-			if (!Array.isArray(rows) || rows.length > 128 || !Array.isArray(value.snapshot.listeners) || value.snapshot.listeners.length > 128) return unknown;
+			if (!Array.isArray(rows) || rows.length > 128 || rows.some((row) => !row || !Number.isInteger(row.processId) || row.processId <= 0 || !Number.isInteger(row.parentProcessId) || row.parentProcessId < 0) || new Set(rows.map((row) => row.processId)).size !== rows.length || !Array.isArray(value.snapshot.listeners) || value.snapshot.listeners.length > 128 || value.snapshot.serviceProcessId !== value.serviceProcessId || value.snapshot.serviceState !== value.serviceState || value.snapshot.stable !== true) return unknown;
+			if (value.snapshot.listeners.some((row) => !row || row.localPort !== port || !Number.isInteger(row.owningProcess) || row.owningProcess <= 0 || typeof row.localAddress !== "string" || !["127.0.0.1", "::1", "0.0.0.0", "::"].includes(row.localAddress) && isIP(row.localAddress) === 0)) return unknown;
 			const roots = rows.filter((row) => row.processId === value.serviceProcessId);
 			const root = roots.length === 1 ? roots[0] : null;
-			if (!Number.isInteger(value.serviceProcessId) || value.serviceProcessId <= 0 || !root || typeof root.executablePath !== "string" || path.resolve(root.executablePath).toLowerCase() !== wrapperPath || !Number.isFinite(Date.parse(root.createdAt))) return unknown;
+			if (!Number.isInteger(value.serviceProcessId) || value.serviceProcessId < 0) return unknown;
+			if (value.serviceState === "Running" && (value.serviceProcessId <= 0 || value.rootProcessPathVerified !== true || !root || typeof root.executablePath !== "string" || path.resolve(root.executablePath).toLowerCase() !== wrapperPath || !Number.isFinite(Date.parse(root.createdAt)) || value.rootProcessCreatedAt !== root.createdAt)) return unknown;
+			if (value.serviceState === "Stopped" && value.serviceProcessId !== 0) return unknown;
+			const managedRoot = managedState == null ? null : rows.find((row) => row.processId === managedState.pid);
+			if (managedState != null && (value.managedProcessId !== managedState.pid || value.managedIdentityVerified !== true || !managedRoot || typeof managedRoot.executablePath !== "string" || !managedPaths.includes(path.resolve(managedRoot.executablePath).toLowerCase()) || !Number.isFinite(Date.parse(managedRoot.createdAt)) || Date.parse(managedRoot.createdAt) < savedStart - 30000 || Date.parse(managedRoot.createdAt) > savedStart + 5000 || value.managedRootCreatedAt !== managedRoot.createdAt)) return unknown;
 			const families = address === "localhost" ? [value.ipv4, value.ipv6] : [address === "::1" ? value.ipv6 : value.ipv4];
 			if (families.some((family) => !family || !["owned", "foreign", "missing", "unknown"].includes(family.state))) return unknown;
 			const selected = families.find((family) => family.state === "foreign") ?? families.find((family) => family.state === "unknown") ?? families.find((family) => family.state === "owned") ?? families[0];
 			if (selected.state === "unknown") return unknown;
 			if (selected.state !== "missing" && (!Number.isInteger(selected.ownerPid) || selected.ownerPid <= 0)) return unknown;
 			const result = { state: selected.state === "missing" ? "none" : selected.state, ownerPid: selected.ownerPid ?? null, ownerName: typeof selected.ownerName === "string" ? selected.ownerName.replace(/[\x00-\x1f]/g, "").slice(0, 80) : null };
-			if (result.state === "foreign") return result;
-			const owner = result.state === "owned" ? rows.find((row) => row.processId === result.ownerPid) : null;
-			if (result.state === "owned" && (!owner || !Number.isFinite(Date.parse(owner.createdAt)) || Date.parse(owner.createdAt) < Date.parse(root.createdAt) || selected.ownerCreatedAt !== owner.createdAt)) return unknown;
-			const identity = JSON.stringify([result.state, value.serviceProcessId, root.createdAt, result.ownerPid, owner?.createdAt ?? null]);
+			const owner = result.state === "none" ? null : rows.find((row) => row.processId === result.ownerPid);
+			if (result.state !== "none" && (!owner || typeof owner.executablePath !== "string" || !path.isAbsolute(owner.executablePath) || !Number.isFinite(Date.parse(owner.createdAt)) || selected.ownerCreatedAt !== owner.createdAt)) return unknown;
+			if (result.state === "owned") {
+				const proofRoot = selected.rootPid === root?.processId ? root : selected.rootPid === managedRoot?.processId ? managedRoot : null;
+				if (!proofRoot || selected.rootCreatedAt !== proofRoot.createdAt || Date.parse(owner.createdAt) < Date.parse(proofRoot.createdAt)) return unknown;
+				let cursor = owner;
+				const seen = new Set();
+				for (let depth = 0; depth < 32 && cursor.processId !== proofRoot.processId; depth++) {
+					if (seen.has(cursor.processId)) return unknown;
+					seen.add(cursor.processId);
+					const parent = rows.find((row) => row.processId === cursor.parentProcessId);
+					if (!parent || !Number.isFinite(Date.parse(parent.createdAt)) || Date.parse(parent.createdAt) > Date.parse(cursor.createdAt)) return unknown;
+					cursor = parent;
+				}
+				if (cursor.processId !== proofRoot.processId) return unknown;
+			}
+			const identity = JSON.stringify([result.state, value.serviceState, value.serviceProcessId, root?.createdAt ?? null, result.ownerPid, owner?.createdAt ?? null,
+				rows.map((row) => [row.processId, row.parentProcessId, row.createdAt, row.executablePath]).sort((left, right) => left[0] - right[0]),
+				value.snapshot.listeners.map((row) => [row.localAddress, row.localPort, row.owningProcess]).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)))]);
 			if (prior && prior.identity !== identity) return unknown;
 			prior = { identity, result };
 		}

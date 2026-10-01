@@ -1,0 +1,7 @@
+[6960:1001/114848.261:ERROR:content\browser\gpu\gpu_process_host.cc:990] GPU process launch failed: error_code=18
+[6960:1001/114848.262:ERROR:content\browser\gpu\gpu_process_host.cc:990] GPU process launch failed: error_code=18
+[6960:1001/114848.275:ERROR:content\browser\gpu\gpu_process_host.cc:990] GPU process launch failed: error_code=18
+[6960:1001/114848.291:ERROR:content\browser\gpu\gpu_process_host.cc:990] GPU process launch failed: error_code=18
+[6960:1001/114848.303:ERROR:content\browser\gpu\gpu_process_host.cc:990] GPU process launch failed: error_code=18
+[6960:1001/114848.311:ERROR:content\browser\gpu\gpu_process_host.cc:990] GPU process launch failed: error_code=18
+[6960:1001/114848.311:FATAL:content\browser\gpu\gpu_data_manager_impl_private.cc:417] GPU process isn't usable. Goodbye.

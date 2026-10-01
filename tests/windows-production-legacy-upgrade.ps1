@@ -383,6 +383,24 @@ function Invoke-NativeLegacyUpgrade {
     [void](Assert-NativeService 'EgoistShieldCore' $script:Core -Running);$script:Receipt.oldCorePolicy=Get-NativeRecoveryPolicy 'EgoistShieldCore'
     Assert-NativeNoGui;Assert-NativeNetworkPreserved 'old-native-baseline'
     $script:Receipt.oldInstalledTrust=Invoke-LegacyArtifactVerification -Label 'old-installed-authentication' -Installed
+    if($RestoreAuthenticatedBaseline){
+      $launchLibrary=Join-Path $PSScriptRoot 'windows-legacy-launch-diagnostic.ps1'
+      Assert-NativeOrdinaryPath $launchLibrary -Leaf
+      . $launchLibrary -LibraryOnly
+      $expectedGui=@($script:Receipt.restoredLegacyBaseline.authenticatedExtraction.payload|Where-Object path -ceq 'EgoistShield.exe')
+      if($expectedGui.Count -ne 1){throw 'Original GUI authentication inventory is incomplete.'}
+      $launchEvidence=Join-Path $script:Work 'legacy-launch-observation'
+      if(Test-Path -LiteralPath $launchEvidence){throw 'Legacy launch observation must be fresh.'}
+      [void][IO.Directory]::CreateDirectory($launchEvidence)
+      $launchReceipt=Invoke-LegacyLaunchDiagnostic -InstalledGuiPath (Join-Path $script:InstallRoot 'EgoistShield.exe') -ExpectedGuiSha256 $expectedGui[0].sha256 -ExpectedOldVersion $ExpectedOldVersion -WorkRoot $script:Work -EvidenceDirectory $launchEvidence -ExpectedSourceCommit $environment.GITHUB_SHA
+      [void](Assert-NativePathWithin $launchReceipt $launchEvidence)
+      $launchData=Read-LegacyHarnessJson -Path $launchReceipt -MaximumBytes 1048576
+      $exportedLaunchReceipt=Join-Path $script:Evidence 'legacy-launch-diagnostic.json'
+      if(Test-Path -LiteralPath $exportedLaunchReceipt){throw 'Legacy launch diagnostic export already exists.'}
+      Copy-Item -LiteralPath $launchReceipt -Destination $exportedLaunchReceipt -ErrorAction Stop
+      $script:Receipt.originalLaunchDiagnostic=[ordered]@{file='legacy-launch-diagnostic.json';sha256=(Get-FileHash -LiteralPath $exportedLaunchReceipt -Algorithm SHA256).Hash.ToLowerInvariant();data=$launchData}
+      Save-NativeReceipt
+    }
     $gui=Invoke-LegacyGui;$port=[int]$gui.port
     $script:Receipt.oldTelegramPolicy=Get-NativeRecoveryPolicy 'EgoistShieldTelegramProxy';$script:Receipt.oldTelegramWithoutGui=Assert-NativeTelegramEndpoint $port
     $configPath=Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json';$configHash=(Get-FileHash -LiteralPath $configPath -Algorithm SHA256).Hash

@@ -3,6 +3,49 @@ param([switch]$LibraryOnly)
 Set-StrictMode -Version 2.0
 $script:NativeLegacyBaselineNodeHelper=Join-Path $PSScriptRoot 'windows-native-legacy-baseline.mjs'
 
+function Set-RestoredOriginalCompatibility {
+  [CmdletBinding()]
+  param([ValidateSet('3.7.8','3.7.9')][string]$OriginalVersion,[string]$GuiPath)
+  $guardEnvironment=@{}
+  foreach($name in @('GITHUB_ACTIONS','CI','RUNNER_ENVIRONMENT','RUNNER_OS','GITHUB_REPOSITORY','GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','GITHUB_SHA')){$guardEnvironment[$name]=[Environment]::GetEnvironmentVariable($name)}
+  $onWindows=[Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT
+  $isAdministrator=$onWindows -and ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+  $errors=@(Get-NativeAcceptanceEnvironmentErrors -Environment $guardEnvironment -Administrator $isAdministrator -Windows $onWindows)
+  if($errors.Count -ne 0){throw 'Original compatibility restoration host guard refused before registry lookup or mutation.'}
+  $canonicalGui=Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'EgoistShield\EgoistShield.exe'
+  if([IO.Path]::GetFullPath($GuiPath) -ine $canonicalGui){throw 'Original compatibility restoration requires the canonical authenticated GUI.'}
+  [void](Assert-NativeAdministratorOwned -Path $canonicalGui -InstallationPath)
+  $sourceCommit=if($OriginalVersion -ceq '3.7.8'){'5df9a590a83ce86e98575d62807ebfca5939b88e'}else{'d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2'}
+  $subKey='Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers'
+  $expected='~ RUNASADMIN'
+  $rows=@()
+  foreach($hive in @([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryHive]::CurrentUser)){
+    foreach($view in @([Microsoft.Win32.RegistryView]::Registry64,[Microsoft.Win32.RegistryView]::Registry32)){
+      $base=$null;$key=$null
+      try{
+        $base=[Microsoft.Win32.RegistryKey]::OpenBaseKey($hive,$view);$key=$base.OpenSubKey($subKey,$false)
+        $previous=if($null -ne $key){$key.GetValue($canonicalGui,$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)}else{$null}
+        if($null -ne $previous -and ($previous -isnot [string] -or $previous -cne $expected)){throw 'Original compatibility restoration found a conflicting pre-existing value; nothing was written.'}
+        $rows+=[ordered]@{hive=$hive.ToString();view=$view.ToString();name=$canonicalGui;before=$previous;expected=$expected}
+      }finally{if($null -ne $key){$key.Dispose()};if($null -ne $base){$base.Dispose()}}
+    }
+  }
+  foreach($row in $rows){
+    $base=$null;$key=$null
+    try{
+      $hive=[Microsoft.Win32.RegistryHive][Enum]::Parse([Microsoft.Win32.RegistryHive],$row.hive)
+      $view=[Microsoft.Win32.RegistryView][Enum]::Parse([Microsoft.Win32.RegistryView],$row.view)
+      $base=[Microsoft.Win32.RegistryKey]::OpenBaseKey($hive,$view);$key=$base.CreateSubKey($subKey,$true)
+      Add-NativeMutation -Kind 'restore-original-appcompat-value' -Target ($row.hive+' '+$row.view+' '+$canonicalGui) -Purpose 'Restore the exact historical NSIS RUNASADMIN recipe for this authenticated old GUI; no sandbox override.'
+      $key.SetValue($canonicalGui,$expected,[Microsoft.Win32.RegistryValueKind]::String);$key.Flush()
+      $actual=$key.GetValue($canonicalGui,$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+      if($actual -isnot [string] -or $actual -cne $expected -or $key.GetValueKind($canonicalGui) -ne [Microsoft.Win32.RegistryValueKind]::String){throw 'Original compatibility value readback differs.'}
+      $row.after=$actual;$row.readbackConfirmed=$true
+    }finally{if($null -ne $key){$key.Dispose()};if($null -ne $base){$base.Dispose()}}
+  }
+  return [ordered]@{kind='restored-original-nsis-compatibility-recipe';sourceCommit=$sourceCommit;sourcePath='src/installer/setup.nsi';originalVersion=$OriginalVersion;value=$expected;rows=$rows;originalSetupExecuted=$false;completeNsisRegistrationsRestored=$false;gpuFailureFixed=$false;sourceRecipeIsAuthenticatedInstallerBytecode=$false}
+}
+
 function Invoke-RestoredLegacyBaseline {
   [CmdletBinding()]
   param(
@@ -78,6 +121,7 @@ function Invoke-RestoredLegacyBaseline {
     [IO.File]::WriteAllText($identityPath,(@{id=$identityId;version=$metadataVersion}|ConvertTo-Json -Compress),[Text.UTF8Encoding]::new($false))
     $baselineReceipt.generatedMetadata=@([ordered]@{path='resources/installation.json';bytes=(Get-Item -LiteralPath $identityPath).Length;sha256=(Get-FileHash -LiteralPath $identityPath -Algorithm SHA256).Hash.ToLowerInvariant();sourceRecipe=$prepared.sourceRecipe;id=$identityId;version=$metadataVersion;authenticatedPackageVersion=$OriginalVersion;versionSource='exact-original-PostInstall-recipe';signedPayload=$false})
     [void](Assert-NativeAdministratorOwned -Path $canonical -InstallationPath)
+    $baselineReceipt.originalCompatibilityRecipe=Set-RestoredOriginalCompatibility -OriginalVersion $OriginalVersion -GuiPath (Join-Path $canonical 'EgoistShield.exe')
     $cleanup=Join-Path $canonical 'resources\installer\owned-cleanup.ps1'
     if((Get-FileHash -LiteralPath $cleanup -Algorithm SHA256).Hash -ine 'c7eca1981c0aa2eb237f1db29c0acfa2fe62a0756ef292efb97339815011f44e'){throw 'Original Core registration phase bytes changed.'}
     Add-NativeMutation -Kind 'original-core-registration-phase' -Target $cleanup -Purpose 'Execute unchanged authenticated InstallCoreService phase: original Core configure and actual SCM recovery registration.'

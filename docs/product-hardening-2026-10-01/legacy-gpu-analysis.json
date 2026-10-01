@@ -1,0 +1,630 @@
+{
+  "schemaVersion": 1,
+  "kind": "read-only-authenticated-legacy-gpu-analysis",
+  "createdAtUtc": "2026-10-01T13:17:56.5050901+00:00",
+  "runId": "36856686510",
+  "sourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+  "nativeAcceptancePassed": false,
+  "remediationTested": false,
+  "decision": {
+    "restoreRunAsInvokerAsOriginalState": "NO-GO",
+    "faithfulRunAsAdminRegistrationRestoration": "GO only as disclosed baseline completeness, not a proven GPU remedy",
+    "rootCause": "GPU target creation fails; exact Win32 cause unavailable",
+    "sameHostBlindRetry": "NO-GO",
+    "smallestFaithfulRoute": "Genuine disposable compatible Windows x64 desktop/UAC environment; unchanged old GUI/helper/native functionality gates"
+  },
+  "observations": [
+    {
+      "originalVersion": "3.7.8",
+      "nativeResult": "failed",
+      "candidateSourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+      "harnessSourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+      "host": {
+        "computerName": "runnervmdlhio",
+        "administrator": true,
+        "runnerEnvironment": "github-hosted",
+        "runId": "36856686510",
+        "runAttempt": "1",
+        "os": "Microsoft Windows NT 10.0.20348.0",
+        "imageOS": "win22",
+        "imageVersion": "20260927.320.1"
+      },
+      "baselineResult": "baseline-ready",
+      "originalSetupExecuted": false,
+      "originalNsisRegistrationsRestored": false,
+      "gui": {
+        "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f6ed-9826-7ef0-ba34-167179cb5463\\work\\actual-original378-inert-v1\\original-extracted\\EgoistShield.exe",
+        "bytes": 224089088,
+        "sha256": "1f7e25830864a04589805254d32c84c8ded7b0e8b2c74a0b7c11c2eee49e80da"
+      },
+      "executionLevel": "requireAdministrator",
+      "manifest": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\"><asmv3:application xmlns:asmv3=\"urn:schemas-microsoft-com:asm.v3\"><asmv3:windowsSettings xmlns=\"http://schemas.microsoft.com/SMI/2005/WindowsSettings\"><disableWindowFiltering xmlns=\"http://schemas.microsoft.com/SMI/2011/WindowsSettings\">true</disableWindowFiltering></asmv3:windowsSettings><asmv3:windowsSettings xmlns=\"http://schemas.microsoft.com/SMI/2005/WindowsSettings\"><dpiAware>true/pm</dpiAware></asmv3:windowsSettings></asmv3:application><trustInfo xmlns=\"urn:schemas-microsoft-com:asm.v3\"><security><requestedPrivileges><requestedExecutionLevel level=\"requireAdministrator\" uiAccess=\"false\" /></requestedPrivileges></security></trustInfo><dependency><dependentAssembly><assemblyIdentity type=\"win32\" name=\"Microsoft.Windows.Common-Controls\" version=\"6.0.0.0\" processorArchitecture=\"*\" publicKeyToken=\"6595b64144ccf1df\" language=\"*\" /></dependentAssembly></dependency><compatibility xmlns=\"urn:schemas-microsoft-com:compatibility.v1\"><application><supportedOS Id=\"{e2011457-1546-43c5-a5fe-008deee3d3f0}\" /><supportedOS Id=\"{35138b9a-5d96-4fbd-8e2d-a2440225f93a}\" /><supportedOS Id=\"{4a2f28e3-53b9-4441-ba9c-d69d4a4a6e38}\" /><supportedOS Id=\"{1f676c76-80e1-4239-95bb-83d0f6d0da78}\" /><supportedOS Id=\"{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}\" /><maxversiontested Id=\"10.0.18362.0\" /></application></compatibility></assembly><!--Padding to make filesize even multiple of 4 XX -->",
+      "manifestReadMethod": "LoadLibraryExW(DATAFILE|IMAGE_RESOURCE=0x22); no entry point execution",
+      "electronVersionFile": "41.10.4",
+      "chromiumSourceVersion": "146.0.7680.216",
+      "electronProvenancePresent": false,
+      "fileVersion": "3.7.8",
+      "guiExitCode": -2147483645,
+      "guiExited": true,
+      "nativeControls": 0,
+      "gpuCreateProcessFailureCount": 6,
+      "cacheSharingViolationReported": false,
+      "oldCorePolicy": {
+        "start": 2,
+        "resetSeconds": 86400,
+        "nonCrash": 1,
+        "actions": [
+          {
+            "type": 1,
+            "delayMs": 5000
+          },
+          {
+            "type": 1,
+            "delayMs": 15000
+          },
+          {
+            "type": 1,
+            "delayMs": 30000
+          }
+        ]
+      },
+      "win32LastErrorCaptured": false,
+      "stderr": "[6960:1001/114848.261:ERROR:content\\browser\\gpu\\gpu_process_host.cc:990] GPU process launch failed: error_code=18\r\n[6960:1001/114848.262:ERROR:content\\browser\\gpu\\gpu_process_host.cc:990] GPU process launch failed: error_code=18\r\n[6960:1001/114848.275:ERROR:content\\browser\\gpu\\gpu_process_host.cc:990] GPU process launch failed: error_code=18\r\n[6960:1001/114848.291:ERROR:content\\browser\\gpu\\gpu_process_host.cc:990] GPU process launch failed: error_code=18\r\n[6960:1001/114848.303:ERROR:content\\browser\\gpu\\gpu_process_host.cc:990] GPU process launch failed: error_code=18\r\n[6960:1001/114848.311:ERROR:content\\browser\\gpu\\gpu_process_host.cc:990] GPU process launch failed: error_code=18\r\n[6960:1001/114848.311:FATAL:content\\browser\\gpu\\gpu_data_manager_impl_private.cc:417] GPU process isn't usable. Goodbye.\r\n",
+      "originalHelper": {
+        "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f6ed-9826-7ef0-ba34-167179cb5463\\work\\actual-original378-inert-v1\\original-extracted\\resources\\installer\\owned-cleanup.ps1",
+        "bytes": 190567,
+        "sha256": "c7eca1981c0aa2eb237f1db29c0acfa2fe62a0756ef292efb97339815011f44e"
+      },
+      "originalHelperAppCompatTokens": []
+    },
+    {
+      "originalVersion": "3.7.9",
+      "nativeResult": "failed",
+      "candidateSourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+      "harnessSourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+      "host": {
+        "computerName": "runnervmdlhio",
+        "administrator": true,
+        "runnerEnvironment": "github-hosted",
+        "runId": "36856686510",
+        "runAttempt": "1",
+        "os": "Microsoft Windows NT 10.0.20348.0",
+        "imageOS": "win22",
+        "imageVersion": "20260927.320.1"
+      },
+      "baselineResult": "baseline-ready",
+      "originalSetupExecuted": false,
+      "originalNsisRegistrationsRestored": false,
+      "gui": {
+        "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f6ed-9826-7ef0-ba34-167179cb5463\\work\\actual-original379-inert-v2\\original-extracted\\EgoistShield.exe",
+        "bytes": 246368256,
+        "sha256": "a031b05eb84a0526ca09e98f1ca1e9145567121190be6b83b5b3c2fe2805192b"
+      },
+      "executionLevel": "requireAdministrator",
+      "manifest": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\"><asmv3:application xmlns:asmv3=\"urn:schemas-microsoft-com:asm.v3\"><asmv3:windowsSettings xmlns=\"http://schemas.microsoft.com/SMI/2005/WindowsSettings\"><disableWindowFiltering xmlns=\"http://schemas.microsoft.com/SMI/2011/WindowsSettings\">true</disableWindowFiltering></asmv3:windowsSettings><asmv3:windowsSettings xmlns=\"http://schemas.microsoft.com/SMI/2005/WindowsSettings\"><dpiAware>true/pm</dpiAware></asmv3:windowsSettings></asmv3:application><trustInfo xmlns=\"urn:schemas-microsoft-com:asm.v3\"><security><requestedPrivileges><requestedExecutionLevel level=\"requireAdministrator\" uiAccess=\"false\" /></requestedPrivileges></security></trustInfo><dependency><dependentAssembly><assemblyIdentity type=\"win32\" name=\"Microsoft.Windows.Common-Controls\" version=\"6.0.0.0\" processorArchitecture=\"*\" publicKeyToken=\"6595b64144ccf1df\" language=\"*\" /></dependentAssembly></dependency><compatibility xmlns=\"urn:schemas-microsoft-com:compatibility.v1\"><application><supportedOS Id=\"{e2011457-1546-43c5-a5fe-008deee3d3f0}\" /><supportedOS Id=\"{35138b9a-5d96-4fbd-8e2d-a2440225f93a}\" /><supportedOS Id=\"{4a2f28e3-53b9-4441-ba9c-d69d4a4a6e38}\" /><supportedOS Id=\"{1f676c76-80e1-4239-95bb-83d0f6d0da78}\" /><supportedOS Id=\"{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}\" /><maxversiontested Id=\"10.0.18362.0\" /></application></compatibility></assembly><!--Padding to make filesize even multiple of 4 XX -->",
+      "manifestReadMethod": "LoadLibraryExW(DATAFILE|IMAGE_RESOURCE=0x22); no entry point execution",
+      "electronVersionFile": "44.4.5",
+      "chromiumSourceVersion": "152.0.7977.130",
+      "electronProvenancePresent": true,
+      "fileVersion": "3.7.9",
+      "guiExitCode": -2147483645,
+      "guiExited": true,
+      "nativeControls": 0,
+      "gpuCreateProcessFailureCount": 9,
+      "cacheSharingViolationReported": true,
+      "oldCorePolicy": {
+        "start": 2,
+        "resetSeconds": 86400,
+        "nonCrash": 1,
+        "actions": [
+          {
+            "type": 1,
+            "delayMs": 5000
+          },
+          {
+            "type": 1,
+            "delayMs": 15000
+          },
+          {
+            "type": 1,
+            "delayMs": 30000
+          }
+        ]
+      },
+      "win32LastErrorCaptured": false,
+      "stderr": "[3100:1001/114923.008:ERROR:content\\browser\\gpu\\gpu_process_host.cc:1029] GPU process launch failed: error_code=18\r\n[3100:1001/114923.008:ERROR:components\\viz\\host\\persistent_cache_sandboxed_file_factory.cc:153] Failed to open persistent cache files in directory \"C:\\Users\\runneradmin\\AppData\\Roaming\\Egoist Shield\\GPUPersistentCache\\DawnGraphiteCache\\JDILZQMYHSFMNNX7CM2QEGAFD2VTODWT\", error: 0: The process cannot access the file because it is being used by another process. (0x20)\r\n[3100:1001/114923.102:ERROR:content\\browser\\gpu\\gpu_process_host.cc:1029] GPU process launch failed: error_code=18\r\n[3100:1001/114923.118:ERROR:content\\browser\\gpu\\gpu_process_host.cc:1029] GPU process launch failed: error_code=18\r\n[3100:1001/114923.118:ERROR:components\\viz\\host\\persistent_cache_sandboxed_file_factory.cc:153] Failed to open persistent cache files in directory \"C:\\Users\\runneradmin\\AppData\\Roaming\\Egoist Shield\\GPUPersistentCache\\DawnGraphiteCache\\JDILZQMYHSFMNNX7CM2QEGAFD2VTODWT\", error: 0: The process cannot access the file because it is being used by another process. (0x20)\r\n[3100:1001/114923.133:ERROR:content\\browser\\gpu\\gpu_process_host.cc:1029] GPU process launch failed: error_code=18\r\n[3100:1001/114923.133:ERROR:content\\browser\\gpu\\gpu_process_host.cc:1029] GPU process launch failed: error_code=18\r\n[3100:1001/114923.133:ERROR:components\\viz\\host\\persistent_cache_sandboxed_file_factory.cc:153] Failed to open persistent cache files in directory \"C:\\Users\\runneradmin\\AppData\\Roaming\\Egoist Shield\\GPUPersistentCache\\DawnGraphiteCache\\JDILZQMYHSFMNNX7CM2QEGAFD2VTODWT\", error: 0: The process cannot access the file because it is being used by another process. (0x20)\r\n[3100:1001/114923.149:ERROR:content\\browser\\gpu\\gpu_process_host.cc:1029] GPU process launch failed: error_code=18\r\n[3100:1001/114923.165:ERROR:content\\browser\\gpu\\gpu_process_host.cc:1029] GPU process launch failed: error_code=18\r\n[3100:1001/114923.165:ERROR:components\\viz\\host\\persistent_cache_sandboxed_file_factory.cc:153] Failed to open persistent cache files in directory \"C:\\Users\\runneradmin\\AppData\\Roaming\\Egoist Shield\\GPUPersistentCache\\DawnGraphiteCache\\JDILZQMYHSFMNNX7CM2QEGAFD2VTODWT\", error: 0: The process cannot access the file because it is being used by another process. (0x20)\r\n[3100:1001/114923.165:ERROR:content\\browser\\gpu\\gpu_process_host.cc:1029] GPU process launch failed: error_code=18\r\n[3100:1001/114923.180:ERROR:content\\browser\\gpu\\gpu_process_host.cc:1029] GPU process launch failed: error_code=18\r\n[3100:1001/114923.180:FATAL:content\\browser\\gpu\\gpu_data_manager_impl_private.cc:417] GPU process isn't usable. Goodbye.\r\n",
+      "originalHelper": {
+        "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f6ed-9826-7ef0-ba34-167179cb5463\\work\\actual-original379-inert-v2\\original-extracted\\resources\\installer\\owned-cleanup.ps1",
+        "bytes": 190567,
+        "sha256": "c7eca1981c0aa2eb237f1db29c0acfa2fe62a0756ef292efb97339815011f44e"
+      },
+      "originalHelperAppCompatTokens": []
+    }
+  ],
+  "originalNsisSourceRecipes": [
+    {
+      "sourceRef": "5df9a59",
+      "sourceCommit": "5df9a590a83ce86e98575d62807ebfca5939b88e",
+      "packageVersion": "3.7.8",
+      "path": "src/installer/setup.nsi",
+      "normalizedUtf8LfSha256": "90962faa6c595d7288fceb7285adc3dd1098cec23c1d84f23eff47511eab3756",
+      "appCompatWrites": [
+        {
+          "line": 272,
+          "text": "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 273,
+          "text": "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 275,
+          "text": "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 276,
+          "text": "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        }
+      ],
+      "runAsInvokerPresent": false,
+      "sourceIsAuthenticatedSetupBytecode": false,
+      "installationSequence": [
+        {
+          "line": 272,
+          "text": "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 273,
+          "text": "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 275,
+          "text": "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 276,
+          "text": "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 285,
+          "text": "  !insertmacro RunPhase InstallCoreService"
+        },
+        {
+          "line": 299,
+          "text": "  !insertmacro RunPhase PostInstall"
+        }
+      ]
+    },
+    {
+      "sourceRef": "v3.7.9",
+      "sourceCommit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+      "packageVersion": "3.7.9",
+      "path": "src/installer/setup.nsi",
+      "normalizedUtf8LfSha256": "ebd988c9cdbac2155ae4cd3847beaa0cc7f5c2cfeb4f226eb4c250414bfe5691",
+      "appCompatWrites": [
+        {
+          "line": 274,
+          "text": "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 275,
+          "text": "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 277,
+          "text": "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 278,
+          "text": "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        }
+      ],
+      "runAsInvokerPresent": false,
+      "sourceIsAuthenticatedSetupBytecode": false,
+      "installationSequence": [
+        {
+          "line": 274,
+          "text": "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 275,
+          "text": "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 277,
+          "text": "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 278,
+          "text": "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+        },
+        {
+          "line": 287,
+          "text": "  !insertmacro RunPhase InstallCoreService"
+        },
+        {
+          "line": 301,
+          "text": "  !insertmacro RunPhase PostInstall"
+        }
+      ]
+    }
+  ],
+  "scopedPhysicalReadback": {
+    "scope": "Only canonical installed GUI file metadata/hash and exact AppCompat value; no process launch",
+    "gui": {
+      "path": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+      "bytes": 246368256,
+      "sha256": "a031b05eb84a0526ca09e98f1ca1e9145567121190be6b83b5b3c2fe2805192b"
+    },
+    "fileVersion": "3.7.9",
+    "layers": [
+      {
+        "hive": "LocalMachine",
+        "view": "Registry64",
+        "value": "~ RUNASADMIN"
+      },
+      {
+        "hive": "LocalMachine",
+        "view": "Registry32",
+        "value": "~ RUNASADMIN"
+      },
+      {
+        "hive": "CurrentUser",
+        "view": "Registry64",
+        "value": "~ RUNASADMIN"
+      },
+      {
+        "hive": "CurrentUser",
+        "view": "Registry32",
+        "value": "~ RUNASADMIN"
+      }
+    ],
+    "compatEnvironment": {
+      "process": null,
+      "user": null,
+      "machine": null
+    },
+    "registryWrites": 0,
+    "physicalProcessLaunches": 0
+  },
+  "evidence": [
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old378\\native\\windows-production-legacy-upgrade.json",
+      "bytes": 237319,
+      "sha256": "3feca153cdf9cb4e986fa41119d59ca2bc940e2e4e8d24a9462caf98de0ba6a7"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old378\\native\\old-gui.stderr.txt",
+      "bytes": 812,
+      "sha256": "a2589fdcfc1e54887c650b8043f01de93ee7200e1543bbc200b5bb540b5432f0"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old378\\native\\old-gui.stdout.txt",
+      "bytes": 652,
+      "sha256": "1b79ec72a52145ddfdc7441a99bbe06c29d647f4acd4717103a5d905afb0b876"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old378\\native\\old-gui-main.log",
+      "bytes": 762,
+      "sha256": "37e788182acf48672e051fb510897beddd84afd06bd7e990761e0e78b8b06206"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old378\\native\\old-gui-failure-observation.json",
+      "bytes": 379,
+      "sha256": "2bdfa0deaf733aada6201f955cef995d14716473767f2408bef7b17a43ea6391"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old378\\native\\old-installed-authentication.json",
+      "bytes": 3047,
+      "sha256": "680df645c97aa0c336017d618e6574085ecd1bfc42d57cc2bc2c1a07e95e9cf6"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old378\\native\\restored-original-3.7.8\\restored-legacy-baseline.json",
+      "bytes": 139842,
+      "sha256": "88029d4fb83822325b5e58a6599e3808dc5f9ab28c8b501d470b0d45e18612dd"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old378\\native\\restored-original-3.7.8\\prepared-original.json",
+      "bytes": 63006,
+      "sha256": "650b905a126b10619ea1c69ca1ab9b020c67a39cb5e5504c358a749479e8d934"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old378\\native\\restored-original-3.7.8\\payload-after-core.json",
+      "bytes": 29848,
+      "sha256": "125b4d7f34484e08bd3a21065a95e51f267f18bdf66a235defff6a5aa9cd9af9"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old379\\native\\windows-production-legacy-upgrade.json",
+      "bytes": 236816,
+      "sha256": "d4df89b726d77a53499d6e358f2967ea3e2cc07dbc57e020321fa60a1ef09229"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old379\\native\\old-gui.stderr.txt",
+      "bytes": 2642,
+      "sha256": "85b0b8d3f975426cc24705e0c944f87d59c9d9c92e26670664f955e5d209c8cf"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old379\\native\\old-gui.stdout.txt",
+      "bytes": 652,
+      "sha256": "5579db3ca937bfd4131aa05bef3d6f7bb734afcae4ec541642c3abe37a8f4650"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old379\\native\\old-gui-main.log",
+      "bytes": 762,
+      "sha256": "09feff71a22f8762f2296ba0c1e241655df89a4a565db20f309ddc7c2cec0c5a"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old379\\native\\old-gui-failure-observation.json",
+      "bytes": 379,
+      "sha256": "0a0ffbd1aa8dff01a1226d85f13b3cb3015172f8e1010c5ecbcfed25fd5a8687"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old379\\native\\old-installed-authentication.json",
+      "bytes": 3047,
+      "sha256": "e4ec396cd2287710e9e482eab9e97f36065a1ee357ab8d8322ee73c9d5c9362f"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old379\\native\\restored-original-3.7.9\\restored-legacy-baseline.json",
+      "bytes": 139294,
+      "sha256": "4b3227956cf28e0ee7f2b00dc259295add3deaa845250cc06ca0e54bffb9179f"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old379\\native\\restored-original-3.7.9\\prepared-original.json",
+      "bytes": 62772,
+      "sha256": "02f39a77715c04724d9a320f74403e76c87b23a91355ee687d7d8f0f0f79dc1c"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-9617624-failures\\old379\\native\\restored-original-3.7.9\\payload-after-core.json",
+      "bytes": 29731,
+      "sha256": "f01a58724fe0a1612e2101c122e7b9849fa1b1c4b5e3e240d085502972c851c4"
+    }
+  ],
+  "confirmedFacts": [
+    "Both original GUI PE manifests request requireAdministrator.",
+    "Neither authenticated original cleanup helper includes an AppCompat or RUNASINVOKER override.",
+    "Historical 3.7.8 source commit 5df9a59 and tag v3.7.9 write ~ RUNASADMIN in HKLM/HKCU for both registry views; v3.7.8 tag is absent.",
+    "Physical installed authenticated 3.7.9 has ~ RUNASADMIN in all four scoped AppCompat values and no __COMPAT_LAYER environment override.",
+    "Native baseline restoration and actual Core recovery readback succeeded before both old GUI processes failed.",
+    "Chromium sandbox result 18 means SBOX_ERROR_CREATE_PROCESS; actual CreateProcessAsUserW GetLastError is separate.",
+    "3.7.8 fails without the persistent-cache sharing error seen in 3.7.9; cache lock does not explain the shared failure."
+  ],
+  "inferences": [
+    "requireAdministrator with restricted GPU tokens on Windows Server is a plausible environment-sensitive cause, supported by a historical first-hand Electron Builder reproducer; not established as this run exact root cause.",
+    "Missing NSIS RUNASADMIN/shortcut/ARP state makes the restored fixture incomplete, but there is no evidence adding it cures restricted GPU process creation."
+  ],
+  "unknowns": [
+    "Actual underlying Win32 last_error from the failed GPU CreateProcessAsUserW call.",
+    "Actual runner EnableLUA, ConsentPromptBehaviorAdmin, FilterAdministratorToken and process TokenElevationType/integrity/session/desktop.",
+    "Runtime Layers values and process __COMPAT_LAYER on the failed runner.",
+    "Whether byte-for-byte old GUI works on a compatible disposable Windows desktop with faithful original registrations.",
+    "Compiled original Setup NSIS bytecode registration instructions were not decompiled; source tag recipes and physical readback agree but are separate provenance."
+  ],
+  "nativeLastErrorDiagnostic": {
+    "kind": "proposed-diagnostic-only-Microsoft-x64-debugger",
+    "executed": false,
+    "acceptance": false,
+    "maximumSeconds": 120,
+    "maximumRelevantLaunches": 2,
+    "preconditions": [
+      "Existing standard disposable hosted/admin/clean guards pass; exact old payload and canonical executable authenticated.",
+      "Resolve genuine x64 CDB/WinDbg and Microsoft symbols; record tool identity/hash/version. Availability is not assumed.",
+      "Read UAC/token/session/desktop/AppCompat/environment metadata and preserve pre/post executable hashes. No postmortem-debugger or IFEO registry registration."
+    ],
+    "method": [
+      "Launch the original canonical GUI under CDB with the same application arguments/environment/working directory; debugger switches precede executable, no sandbox/GPU/elevation override switches are passed to the GUI.",
+      "At initial break resolve the actual OS CreateProcessAsUserW symbol/forwarder via x advapi32!*CreateProcessAsUserW* and x kernelbase!*CreateProcessAsUserW*. Use ba e 1 hardware execution breakpoint at actual API entry, not software bp.",
+      "At entry record PID/TID, x64 RDX application and R8 command-line text bounded to 4KiB. Select the authenticated same executable command containing --type=gpu-process; record return address poi(@rsp).",
+      "Set a one-shot hardware execution breakpoint at that return address scoped to the same user-mode thread with the documented ~Thread ba syntax; continue with g. Do not use gu, software return breakpoints, target-code writes, DLL injection or calls inside target.",
+      "On that exact return before next caller instruction, capture EAX and !gle for the same thread; if EAX=0, this is the native last error immediately following the actual GPU CreateProcessAsUserW failure. Record bounded stack/module/thread attribution, then clear own hardware breakpoints.",
+      "Fail closed on unresolved symbols, missed API return, mismatched thread/target, timeout or missing LastError. Stop only owned diagnostic processes through the existing bounded cleanup; record the diagnostic independently and rerun ordinary undebugged GUI/UIA/helper acceptance after remediation."
+    ],
+    "limits": [
+      "Debugger changes timing and creates a debugged process; it is diagnostic evidence only, never GUI/helper acceptance.",
+      "Only processor debug registers are used for breakpoints; signed old file and instruction bytes are not patched.",
+      "Actual runner launch failure has not yet been captured with this procedure. Error 18 alone does not prove Win32 740, 5 or 1314.",
+      "Any debugged successful child also does not prove a normal child succeeds; ordinary acceptance is mandatory."
+    ],
+    "selectedForCurrentImplementation": false,
+    "note": "Unexecuted debugger alternative to capture actual GPU caller lastError if needed later; no CDB installation was performed or is currently proposed for dispatch. The implemented sampled native boundary helper is the immediate next diagnostic."
+  },
+  "exactNextActions": [
+    "Parent runs the frozen diagnostic source in a genuine disposable hosted job after authenticated full old payload restore and explicitly recorded original ~ RUNASADMIN layer restoration; obtain/export the actual suspended-launch receipt.",
+    "Read native UAC/token/AppCompat and per-call immediate error with stage attribution. Do not relabel it as the actual Chromium GPU lastError.",
+    "Run the same ordinary unchanged old GUI/UIA/Telegram/original-helper upgrade gate; keep failures and old clean Setup unavailability recorded.",
+    "If the ordinary old GUI still fails, use a genuine disposable Windows desktop x64/UAC environment or a separately approved actual-GPU hardware debugger capture; keep real host identity and unchanged old binary/sandbox policy.",
+    "No release/old GUI/helper acceptance until the normal native gate actually completes."
+  ],
+  "sources": [
+    {
+      "supports": "Chromium 146.0.7680.216 mapping",
+      "url": "https://raw.githubusercontent.com/electron/electron/v41.10.4/DEPS",
+      "title": "Electron 41.10.4 Chromium dependency"
+    },
+    {
+      "supports": "Chromium 152.0.7977.130 mapping",
+      "url": "https://raw.githubusercontent.com/electron/electron/v44.4.5/DEPS",
+      "title": "Electron 44.4.5 Chromium dependency"
+    },
+    {
+      "supports": "SBOX_ERROR_CREATE_PROCESS=18",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/146.0.7680.216/sandbox/win/src/sandbox_types.h",
+      "title": "Chromium 146 Windows sandbox result codes"
+    },
+    {
+      "supports": "SBOX_ERROR_CREATE_PROCESS=18",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/152.0.7977.130/sandbox/win/src/sandbox_types.h",
+      "title": "Chromium 152 Windows sandbox result codes"
+    },
+    {
+      "supports": "CreateProcessAsUserW uses lockdown token and separate Win32 last_error",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/146.0.7680.216/sandbox/win/src/broker_services.cc",
+      "title": "Chromium 146 sandbox process creation"
+    },
+    {
+      "supports": "CreateProcessAsUserW uses lockdown token and separate Win32 last_error",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/152.0.7977.130/sandbox/win/src/broker_services.cc",
+      "title": "Chromium 152 sandbox process creation"
+    },
+    {
+      "supports": "Historical reproduction, not current runtime acceptance or root cause proof",
+      "url": "https://github.com/electron-userland/electron-builder/issues/5439",
+      "title": "Historic first-hand Windows Server requireAdministrator reproducer"
+    },
+    {
+      "supports": "Current source sets ConsentPromptBehaviorAdmin=0; it is not this runner actual registry readback and does not itself show EnableLUA=0",
+      "url": "https://raw.githubusercontent.com/actions/runner-images/main/images/windows/scripts/build/Configure-BaseImage.ps1",
+      "title": "GitHub runner image base configuration"
+    },
+    {
+      "supports": "Multiple native token/privilege/desktop failure conditions require actual Win32 error",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessasuserw",
+      "title": "Microsoft CreateProcessAsUserW contract"
+    },
+    {
+      "supports": "Hardware execution breakpoint, one-shot and user-mode thread-scoped syntax",
+      "url": "https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/ba--break-on-access-",
+      "title": "Microsoft hardware processor breakpoint ba"
+    },
+    {
+      "supports": "Current-thread LastError readback",
+      "url": "https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/-gle",
+      "title": "Microsoft debugger !gle"
+    },
+    {
+      "supports": "Bounded scripted diagnostic launch and logging; no automatic postmortem registry registration",
+      "url": "https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/cdb-command-line-options",
+      "title": "Microsoft CDB command-line contract"
+    },
+    {
+      "supports": "First four integer/pointer arguments RCX RDX R8 R9",
+      "url": "https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-170",
+      "title": "Microsoft x64 calling convention"
+    }
+  ],
+  "limitations": [
+    "This task performed data mapping/hash/source/receipt reads only; no original binary, Setup, GUI, SCM or helper entry point was executed.",
+    "No intentional physical registry/network/adapter writes, workflow dispatch or publication; no original GUI/Setup/SCM/helper executed. Early isolated SDK first-run certificate store effects were not measured; subsequent builds suppress generation and restore process environment.",
+    "Original clean Setup compatibility remains unavailable/failed, restored baseline GUI/helper acceptance remains failed; no release acceptance or long-duration stability claim."
+  ],
+  "authenticatedOriginalPostInstallTrace": {
+    "originalCleanupSha256": "c7eca1981c0aa2eb237f1db29c0acfa2fe62a0756ef292efb97339815011f44e",
+    "sameCleanupBytesBothVersions": true,
+    "path": "resources/installer/owned-cleanup.ps1",
+    "trace": [
+      "NSIS source first writes original RUNASADMIN layers/administrative shortcuts, then invokes InstallCoreService and PostInstall in that order; exact source line order is retained per profile.",
+      "Original PostInstall performs original DNS/optional-component cleanup and writes installation.json with a fresh GUID and literal version 3.7.8.",
+      "Original PostInstall then verifies runtime, handles quarantine and owned startup artifacts. It contains no AppCompat/RunAsInvoker registry override."
+    ],
+    "postInstallExecutedInRestoredBaseline": false,
+    "generatedMetadataRecipe": "Write-Utf8NoBomFile -Path (Join-Path $installRoot \"resources\\installation.json\") -Content (@{ id = [Guid]::NewGuid().ToString(); version = \"3.7.8\" } | ConvertTo-Json -Compress)"
+  },
+  "implementedNativeBoundaryDiagnostic": {
+    "kind": "native-legacy-suspended-launch-boundary-diagnostic",
+    "sourceFiles": [
+      {
+        "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\windows-legacy-launch-diagnostic.cs",
+        "bytes": 28340,
+        "sha256": "c7853234a80b0298165ba5c3d6678ca2a103557bd77dce1751daead1599055f5"
+      },
+      {
+        "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\windows-legacy-launch-diagnostic.ps1",
+        "bytes": 10582,
+        "sha256": "8d43df9bb488b85a08dbac8951e9c88839257c3c6d0119eae32ba38461747557"
+      },
+      {
+        "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\windows-legacy-launch-diagnostic.test.mjs",
+        "bytes": 3636,
+        "sha256": "e5bf7dc22c3ee85487d4caf6b31ff003c7d7ad3b8d3d4b1214e70fec4350dabe"
+      }
+    ],
+    "entrypoint": "Invoke-LegacyLaunchDiagnostic -InstalledGuiPath -ExpectedGuiSha256 -ExpectedOldVersion -WorkRoot -EvidenceDirectory -ExpectedSourceCommit",
+    "import": "Dot-source tests/windows-legacy-launch-diagnostic.ps1 -LibraryOnly; unique alias leaves caller LibraryOnly/Mode/Work/Receipt unchanged.",
+    "returns": "One absolute receipt path. Parent exports the bounded receipt and hash.",
+    "localNativeProductAttempts": 0,
+    "actualNativeExecutionPending": true,
+    "acceptance": false,
+    "actualChromiumGpuErrorCaptured": false,
+    "guards": [
+      "Real GitHub-hosted Windows/admin/repository/run metadata required before product lookup in both adapter and executable.",
+      "Fixed original 3.7.8/3.7.9 canonical GUI SHA256/bytes/version; ordinary administrator-owned Program Files path.",
+      "Work and evidence nested under actual RUNNER_TEMP; receipt nested under evidence.",
+      "Actual SDK exactly global.json 10.0.401; explicit missing SHIELD_DOTNET fails; obj/bin/home only in provided owned work."
+    ],
+    "operation": [
+      "Read current/linked/restricted-primary token proof, UAC policy and exact canonical AppCompat values.",
+      "Sample CreateProcessAsUserW with CREATE_SUSPENDED|CREATE_UNICODE_ENVIRONMENT|DETACHED_PROCESS and no application arguments; immediate Marshal.GetLastPInvokeError.",
+      "Record actual per-call stage/token/native failure, or pre-execution success.",
+      "Keep only own returned process/thread handles, attach kill-on-close job, terminate before execution, verify held child exit; no ResumeThread exists.",
+      "Hold authenticated GUI read lock across attempts and compare pre/post SHA256."
+    ],
+    "limits": [
+      "Sampled restricted token is not Chromium actual lockdown/AppContainer/mitigation/environment policy.",
+      "Error 740/1314/5 here is the error of the sampled API call, not automatically the historical GPU call.",
+      "Suspended process creation success is not GUI/renderer/TG/helper acceptance.",
+      "No original GUI/SCM/network/registry mutation was executed locally by this diagnostic. SDK first-run store effects from early builds were not measured; final build explicitly suppressed development certificate generation."
+    ]
+  },
+  "localValidation": {
+    "build": {
+      "sdkVersion": "10.0.401",
+      "buildLog": {
+        "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f6ed-9826-7ef0-ba34-167179cb5463\\work\\legacy-launch-diagnostic-4199b94ed1a24687a6f358c5b0577b7d\\build.txt",
+        "bytes": 1507,
+        "sha256": "f596b39d77f32304032017096eef4a2eb7141dbfff9e49259e41b65fb7cd2bdc"
+      },
+      "zeroWarnings": true,
+      "zeroErrors": true,
+      "text": "\r\nВас приветствует .NET 10.0!\r\n---------------------\r\nВерсия пакета SDK: 10.0.401\r\n\r\n----------------\r\nКак написать свое первое приложение: https://aka.ms/dotnet-hello-world\r\nУзнать о новых возможностях: https://aka.ms/dotnet-whats-new\r\nПросмотреть документацию: https://aka.ms/dotnet-docs\r\nСообщить о проблемах и найти исходный код на GitHub: https://github.com/dotnet/core\r\nДля просмотра доступных команд введите команду \"dotnet --help\" или посетите следующую страницу: https://aka.ms/dotnet-cli.\r\n--------------------------------------------------------------------------------------\r\n  Определение проектов для восстановления...\r\n  Восстановлен C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f6ed-9826-7ef0-ba34-167179cb5463\\work\\legacy-launch-diagnostic-4199b94ed1a24687a6f358c5b0577b7d\\LegacyLaunchDiagnostic.csproj (за 50 мс).\r\n  LegacyLaunchDiagnostic -> C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f6ed-9826-7ef0-ba34-167179cb5463\\work\\legacy-launch-diagnostic-4199b94ed1a24687a6f358c5b0577b7d\\bin\\Release\\net10.0-windows\\LegacyLaunchDiagnostic.dll\r\n\r\nСборка успешно завершена.\r\n    Предупреждений: 0\r\n    Ошибок: 0\r\n\r\nПрошло времени 00:00:01.00\r\n"
+    },
+    "managedSelfTest": {
+      "kind": "managed-legacy-launch-diagnostic-self-test",
+      "checks": 20,
+      "nativeCalls": 0,
+      "productLookup": false,
+      "acceptance": false
+    },
+    "managedSelfTestEvidence": {
+      "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f6ed-9826-7ef0-ba34-167179cb5463\\work\\legacy-launch-self-test-final.json",
+      "bytes": 122,
+      "sha256": "169c9f44be14d77282a4d25768ff711b025d8455f34a26c3a5b5b42d0e94df67"
+    },
+    "focusedNode": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "evidence": {
+        "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f6ed-9826-7ef0-ba34-167179cb5463\\work\\legacy-launch-focused-tests.txt",
+        "bytes": 488,
+        "sha256": "19a2c6ddd73c4322161c428388f040c2eabd7990afee2f4424df3626041c6f70"
+      },
+      "text": "鳢ₔ桴⁥楤条潮瑳捩挠湡潮⁴敲畳敭漠⁲牧湡⁴捡散瑰湡散琠⁯⁡慳灭敬⁤牰捯獥⁳〨㤮㈳洸⥳਍鳢ₔ潐敷卲敨汬氠扩慲祲椠灭牯⁴牰獥牥敶⁳桴⁥慣汬牥愠摮爠晥獵獥愠瀠票楳慣⁬潨瑳戠晥牯⁥牰摯捵⁴潬歯灵⠠㐲⸴㔱㐱獭ഩ钜倠睯牥桓汥⁬⸵‱慰獲獥琠敨愠慤瑰牥眠瑩潨瑵爠湵楮杮瀠潲畤瑣挠摯⁥ㄨ㤲㐮㔸洹⥳਍鳢ₔ湡攠灸楬楣汴⁹業獳湩⁧䑓⁋獩爠橥捥整⁤楷桴畯⁴慦汬湩⁧慢正琠⁯䅐䡔⠠㈲⸵㈸㐰獭ഩ름琠獥獴㐠਍蓢₹畳瑩獥〠਍蓢₹慰獳㐠਍蓢₹慦汩〠਍蓢₹慣据汥敬⁤ര름猠楫灰摥〠਍蓢₹潴潤〠਍蓢₹畤慲楴湯浟⁳㔶⸱㜷㠶਍"
+    },
+    "powerShell": {
+      "windowsPowerShell51": "5.1.26100.9168",
+      "powerShell7": "7.6.5",
+      "parseErrors51": 0,
+      "parseErrors7": 0,
+      "libraryIsolationAndPhysicalGuard": "passed",
+      "sdkEnvironmentRestoration": "All seven actual process environment values compared before/after final build; passed, including absent variables."
+    },
+    "sdkEnvironment": {
+      "isolatedCliHome": true,
+      "telemetryOptOut": true,
+      "generateAspNetCertificate": false,
+      "skipFirstTimeExperience": true,
+      "initialBuildCertificateStoreEffectsMeasured": false
+    },
+    "scriptAnalyzer": {
+      "errors": 0,
+      "warnings": [
+        {
+          "rule": "PSUseSingularNouns",
+          "function": "Get-LegacyLaunchDiagnosticEnvironmentErrors",
+          "meaning": "Naming-only plural noun warning; intentionally kept consistent with existing guard interface."
+        }
+      ]
+    },
+    "nativeSuspendedProductCalls": 0,
+    "hostedRunDispatched": false
+  }
+}

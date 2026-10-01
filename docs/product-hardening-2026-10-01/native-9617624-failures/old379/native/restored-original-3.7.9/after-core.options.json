@@ -1,0 +1,13 @@
+{
+  "preparedReceipt": "D:\\a\\_temp\\lagom-legacy-native-36856686510-1\\restored-original-3.7.9\\prepared-original.json",
+  "installationRoot": "C:\\Program Files\\EgoistShield",
+  "generatedMetadata": [
+    {
+      "path": "resources/installation.json",
+      "bytes": 63,
+      "sha256": "e473329836df15e70a63fbaaf198ff847221546322441151e3c7fed2878bdfe8"
+    }
+  ],
+  "sourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+  "output": "D:\\a\\_temp\\lagom-legacy-native-36856686510-1\\restored-original-3.7.9\\payload-after-core.json"
+}

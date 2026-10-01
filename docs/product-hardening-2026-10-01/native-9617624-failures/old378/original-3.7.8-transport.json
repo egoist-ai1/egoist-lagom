@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "transport": "original-signed-local-generation",
+  "oldVersion": "3.7.8",
+  "publishedOriginVerified": false,
+  "sourceReleaseId": 400907438,
+  "sourceReleaseIdRole": "transport-draft",
+  "draftApiStatusVerifiedByTransporter": false,
+  "harnessSourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+  "harnessSourceCommitOrigin": "GITHUB_SHA observed at staging; not a legacy generation commit",
+  "stagedAtUtc": "2026-10-01T11:48:16.064Z",
+  "sourceAssetNames": [
+    "legacy-local-EgoistShield-Setup-3.7.8.exe",
+    "legacy-local-3.7.8-release-manifest.json",
+    "legacy-local-3.7.8-release-manifest.json.sig"
+  ],
+  "rootSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+  "originalRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+  "originalManifestSha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3",
+  "crypto": "Original byte equality and existing pinned-root Ed25519 verification",
+  "files": [
+    {
+      "name": "EgoistShield-Setup-3.7.8.exe",
+      "bytes": 194405835,
+      "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "sha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61"
+    },
+    {
+      "name": "release-manifest.json",
+      "bytes": 785,
+      "sha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3",
+      "sha512": "e641d56a223bcacf6d3c5ead4154320b43c39cbc4730531e45bb615c23659597d057a644214d84844c5699e751de5f3bd187caa82d576cf5d71c9c7f02864d3f"
+    },
+    {
+      "name": "release-manifest.json.sig",
+      "bytes": 89,
+      "sha256": "c6b36d487342ab878e3428e1487a6e60e4599740574c22c090445f0b96eecb37",
+      "sha512": "341367541cb4a1bb5edec728cfa16ca239eaea52a4fcdc1de60b2118cfc5b4d81345a102011d1f61b1b2748bbba3be709e94e90a7e7882eb96ad9ce4b950fee5"
+    },
+    {
+      "name": "release-key-registry.json",
+      "bytes": 1100,
+      "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+      "sha512": "bded048a60b337c800daa8006d0613d42489612d939117b5852d10df6dc8f475f46d5060b55eec89d5769845c41f9c40ff29b755b9b1f3750b361d10a44dba3b"
+    },
+    {
+      "name": "release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de",
+      "sha512": "b14a4e0a0984b9aa9c7ace9c6d8b38b7b88f79d47ff0a717d9bad9d7b5a288065cac84b1373c850b1e82d83ee1f7c373c8cdeba90d9ff9f6d5b60945cba0aff1"
+    }
+  ],
+  "installerExecuted": false,
+  "publicFeedDiscoveryTested": false
+}

@@ -1,0 +1,9 @@
+{
+  "oldVersion": "3.7.9",
+  "oldAssets": "D:\\a\\_temp\\lagom-signed-legacy-3.7.9\\old",
+  "candidateAssets": "D:\\a\\_temp\\lagom-signed-legacy-3.7.9\\candidate",
+  "integrityPath": "D:\\a\\_temp\\lagom-signed-legacy-3.7.9\\candidate\\package-integrity.json",
+  "sourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+  "output": "D:\\a\\_temp\\lagom-legacy-native-36856686510-1\\old-installed-authentication.json",
+  "installedRoot": "C:\\Program Files\\EgoistShield"
+}

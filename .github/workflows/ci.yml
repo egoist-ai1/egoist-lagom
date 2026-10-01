@@ -68,6 +68,7 @@ jobs:
         env:
           DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
           DIAGNOSTIC_ALL_VERSIONS: ${{ inputs.diagnostic_all_versions }}
+          DIAGNOSTIC_LEGACY_RESTORE: ${{ inputs.legacy_baseline_restore }}
           DIAGNOSTIC_LEGACY_ONLY: ${{ inputs.diagnostic_legacy_only }}
           CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
         shell: pwsh
@@ -75,16 +76,19 @@ jobs:
           ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
           if ($env:DIAGNOSTIC_LEGACY_ONLY -eq 'true' -and $env:DIAGNOSTIC_ALL_VERSIONS -ne 'true') { throw 'Legacy-only diagnostics require the authenticated original-version selection.' }
           if ($env:DIAGNOSTIC_ALL_VERSIONS -eq 'true' -and ($env:DIAGNOSTIC_RELEASE_ID -eq '' -or $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true')) { throw 'Original version diagnostics require an authenticated signed candidate.' }
+          if ($env:DIAGNOSTIC_LEGACY_RESTORE -cnotin @('true','false')) { throw 'Invalid diagnostic restoration selection.' }
+          if ($env:DIAGNOSTIC_LEGACY_RESTORE -eq 'true' -and $env:DIAGNOSTIC_ALL_VERSIONS -ne 'true') { throw 'Restored launch diagnostics require authenticated original versions.' }
           if ($env:DIAGNOSTIC_RELEASE_ID -ne '' -and $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { throw 'Choose either signed Setup or source Core diagnostics.' }
       - name: Read the Core diagnostic SDK
-        if: ${{ inputs.core_configuration_diagnostic }}
+        if: ${{ inputs.core_configuration_diagnostic || inputs.legacy_baseline_restore }}
         id: diagnostic-sdk
         env:
           DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+          CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
         shell: pwsh
         run: |
           ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
-          if ($env:DIAGNOSTIC_RELEASE_ID -ne '') { throw 'Choose either signed Setup or source Core diagnostics.' }
+          if ($env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true' -and $env:DIAGNOSTIC_RELEASE_ID -ne '') { throw 'Choose either signed Setup or source Core diagnostics.' }
           $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
           if ($sdkPin -notmatch '^\d+\.\d+\.\d+$') { throw 'An exact diagnostic SDK is required.' }
           "version=$sdkPin" >> $env:GITHUB_OUTPUT
@@ -92,7 +96,7 @@ jobs:
           "DOTNET_CLI_TELEMETRY_OPTOUT=1" >> $env:GITHUB_ENV
           "DOTNET_NOLOGO=1" >> $env:GITHUB_ENV
       - name: Use the exact Core diagnostic SDK
-        if: ${{ inputs.core_configuration_diagnostic }}
+        if: ${{ inputs.core_configuration_diagnostic || inputs.legacy_baseline_restore }}
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ steps.diagnostic-sdk.outputs.version }}
@@ -172,10 +176,16 @@ jobs:
         env:
           CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
           DIAGNOSTIC_ALL_VERSIONS: ${{ inputs.diagnostic_all_versions }}
+          DIAGNOSTIC_LEGACY_RESTORE: ${{ inputs.legacy_baseline_restore }}
         shell: pwsh
         run: |
+          if ($env:DOTNET_INSTALL_DIR) { $env:SHIELD_DOTNET = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe' }
           if ($env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -CoreConfigurationOnly }
-          elseif ($env:LAGOM_DIAGNOSTIC_OLD_ASSETS) { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS -OriginalAssetsDirectory $env:LAGOM_DIAGNOSTIC_OLD_ASSETS -OriginalVersion $env:LAGOM_DIAGNOSTIC_OLD_VERSION -GuiFailureDiagnostic }
+          elseif ($env:LAGOM_DIAGNOSTIC_OLD_ASSETS) {
+            if ($env:DIAGNOSTIC_LEGACY_RESTORE -cnotin @('true','false')) { throw 'Invalid diagnostic baseline selection.' }
+            $diagnosticOptions = @{ SignedCandidateAssetsDirectory=$env:LAGOM_DIAGNOSTIC_ASSETS; OriginalAssetsDirectory=$env:LAGOM_DIAGNOSTIC_OLD_ASSETS; OriginalVersion=$env:LAGOM_DIAGNOSTIC_OLD_VERSION; GuiFailureDiagnostic=$true; RestoreAuthenticatedBaseline=($env:DIAGNOSTIC_LEGACY_RESTORE -ceq 'true') }
+            ./tests/windows-installer-diagnostics.ps1 @diagnosticOptions
+          }
           elseif ($env:LAGOM_DIAGNOSTIC_ASSETS -and $env:DIAGNOSTIC_ALL_VERSIONS -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS -GuiFailureDiagnostic }
           elseif ($env:LAGOM_DIAGNOSTIC_ASSETS) { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS }
           else { ./tests/windows-installer-diagnostics.ps1 }

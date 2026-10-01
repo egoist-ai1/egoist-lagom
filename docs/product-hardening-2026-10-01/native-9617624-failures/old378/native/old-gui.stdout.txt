@@ -1,0 +1,8 @@
+
+[11:48:47] [info]  [paths] Runtime=production, userData=C:\Users\<user>\AppData\Roaming\Egoist Shield
+[11:48:47] [info]  [boot] createMainWindow:start
+[11:48:47] [info]  [boot] paths preload=C:\Program Files\EgoistShield\resources\app.asar\.vite\build\preload.js, renderer=C:\Program Files\EgoistShield\resources\app.asar\.vite\renderer\main_window\index.html, icon=C:\Program Files\EgoistShield\resources\brand\icon.ico, minimized=false
+[11:48:47] [info]  [boot] ipc security guards installed
+[11:48:47] [info]  [boot] creating BrowserWindow
+[11:48:48] [info]  [boot] BrowserWindow created
+[11:48:48] [info]  [boot] creating StateStore and managers

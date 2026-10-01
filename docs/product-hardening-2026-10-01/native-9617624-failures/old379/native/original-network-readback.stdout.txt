@@ -1,0 +1,151 @@
+{
+    "powerShell":  "5.1.20348.5622",
+    "networkMutations":  0,
+    "queries":  [
+                    {
+                        "index":  2,
+                        "guid":  "{6FEA7371-4A0B-4034-B8C3-E6619CBBA3BE}",
+                        "name":  "Ethernet 4",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "failed",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Mellanox ConnectX-4 Lx Virtual Ethernet Adapter",
+                                                "PnPDeviceID":  "PCI\\VEN_15B3\u0026DEV_1016\u0026SUBSYS_019015B3\u0026REV_80\\5\u002687c8adc\u00260\u00262",
+                                                "DriverDescription":  "Mellanox ConnectX-4 Lx Virtual Ethernet Adapter",
+                                                "DriverProvider":  "Mellanox Technologies Ltd.",
+                                                "DriverFileName":  "mlx5.sys",
+                                                "DriverVersion":  "23.4.26054.1",
+                                                "Virtual":  false,
+                                                "HardwareInterface":  true,
+                                                "LinkSpeed":  "50 Gbps"
+                                            },
+                        "error":  "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 2)) AND ((AddressFamily = 2)). Verify query parameters and retry.",
+                        "errorId":  "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+                        "hresult":  -2146233087,
+                        "elapsedMilliseconds":  1268.8092000000001
+                    },
+                    {
+                        "index":  2,
+                        "guid":  "{6FEA7371-4A0B-4034-B8C3-E6619CBBA3BE}",
+                        "name":  "Ethernet 4",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "failed",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Mellanox ConnectX-4 Lx Virtual Ethernet Adapter",
+                                                "PnPDeviceID":  "PCI\\VEN_15B3\u0026DEV_1016\u0026SUBSYS_019015B3\u0026REV_80\\5\u002687c8adc\u00260\u00262",
+                                                "DriverDescription":  "Mellanox ConnectX-4 Lx Virtual Ethernet Adapter",
+                                                "DriverProvider":  "Mellanox Technologies Ltd.",
+                                                "DriverFileName":  "mlx5.sys",
+                                                "DriverVersion":  "23.4.26054.1",
+                                                "Virtual":  false,
+                                                "HardwareInterface":  true,
+                                                "LinkSpeed":  "50 Gbps"
+                                            },
+                        "error":  "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 2)) AND ((AddressFamily = 23)). Verify query parameters and retry.",
+                        "errorId":  "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+                        "hresult":  -2146233087,
+                        "elapsedMilliseconds":  12.9204
+                    },
+                    {
+                        "index":  11,
+                        "guid":  "{3805424F-55DB-4E69-88F3-9073E9120B34}",
+                        "name":  "vEthernet (nat)",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "complete",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Hyper-V Virtual Ethernet Adapter",
+                                                "PnPDeviceID":  null,
+                                                "DriverDescription":  null,
+                                                "DriverProvider":  null,
+                                                "DriverFileName":  null,
+                                                "DriverVersion":  null,
+                                                "Virtual":  true,
+                                                "HardwareInterface":  false,
+                                                "LinkSpeed":  "10 Gbps"
+                                            },
+                        "records":  1,
+                        "addresses":  [
+
+                                      ],
+                        "elapsedMilliseconds":  254.87390000000002
+                    },
+                    {
+                        "index":  11,
+                        "guid":  "{3805424F-55DB-4E69-88F3-9073E9120B34}",
+                        "name":  "vEthernet (nat)",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "complete",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Hyper-V Virtual Ethernet Adapter",
+                                                "PnPDeviceID":  null,
+                                                "DriverDescription":  null,
+                                                "DriverProvider":  null,
+                                                "DriverFileName":  null,
+                                                "DriverVersion":  null,
+                                                "Virtual":  true,
+                                                "HardwareInterface":  false,
+                                                "LinkSpeed":  "10 Gbps"
+                                            },
+                        "records":  1,
+                        "addresses":  [
+                                          "fec0:0:0:ffff::1",
+                                          "fec0:0:0:ffff::2",
+                                          "fec0:0:0:ffff::3"
+                                      ],
+                        "elapsedMilliseconds":  15.564400000000001
+                    },
+                    {
+                        "index":  14,
+                        "guid":  "{7BE6FD02-8224-4816-B7C8-1A90B3F67F32}",
+                        "name":  "Ethernet 3",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "complete",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Microsoft Hyper-V Network Adapter #3",
+                                                "PnPDeviceID":  "VMBUS\\{f8615163-df3e-46c5-913f-f2d2f965ed0e}\\{3833c5ec-3d4c-3833-c5ec-3d4c3833c5ec}",
+                                                "DriverDescription":  "Microsoft Hyper-V Network Adapter",
+                                                "DriverProvider":  "Microsoft",
+                                                "DriverFileName":  "netvsc.sys",
+                                                "DriverVersion":  "10.0.20348.5386",
+                                                "Virtual":  false,
+                                                "HardwareInterface":  true,
+                                                "LinkSpeed":  "50 Gbps"
+                                            },
+                        "records":  1,
+                        "addresses":  [
+                                          "168.63.129.16"
+                                      ],
+                        "elapsedMilliseconds":  13.462900000000001
+                    },
+                    {
+                        "index":  14,
+                        "guid":  "{7BE6FD02-8224-4816-B7C8-1A90B3F67F32}",
+                        "name":  "Ethernet 3",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "complete",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Microsoft Hyper-V Network Adapter #3",
+                                                "PnPDeviceID":  "VMBUS\\{f8615163-df3e-46c5-913f-f2d2f965ed0e}\\{3833c5ec-3d4c-3833-c5ec-3d4c3833c5ec}",
+                                                "DriverDescription":  "Microsoft Hyper-V Network Adapter",
+                                                "DriverProvider":  "Microsoft",
+                                                "DriverFileName":  "netvsc.sys",
+                                                "DriverVersion":  "10.0.20348.5386",
+                                                "Virtual":  false,
+                                                "HardwareInterface":  true,
+                                                "LinkSpeed":  "50 Gbps"
+                                            },
+                        "records":  1,
+                        "addresses":  [
+
+                                      ],
+                        "elapsedMilliseconds":  32.365300000000005
+                    }
+                ],
+    "kind":  "read-only-legacy-dns-query-diagnostic"
+}

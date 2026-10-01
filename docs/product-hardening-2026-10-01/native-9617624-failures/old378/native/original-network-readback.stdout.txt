@@ -1,0 +1,151 @@
+{
+    "powerShell":  "5.1.20348.5622",
+    "networkMutations":  0,
+    "queries":  [
+                    {
+                        "index":  2,
+                        "guid":  "{12A9E355-8A8B-43A4-9001-E1B0B6DED6BC}",
+                        "name":  "Ethernet 4",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "failed",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Microsoft Azure Network Adapter",
+                                                "PnPDeviceID":  "mana_bus\\VEN_1414\u0026ROLE_004c\\6\u002613fe4004\u00260\u00263833c5d921dd",
+                                                "DriverDescription":  "Microsoft Azure Network Adapter",
+                                                "DriverProvider":  "Microsoft",
+                                                "DriverFileName":  "mana.sys",
+                                                "DriverVersion":  "2.0.18.52",
+                                                "Virtual":  false,
+                                                "HardwareInterface":  true,
+                                                "LinkSpeed":  "200 Gbps"
+                                            },
+                        "error":  "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 2)) AND ((AddressFamily = 2)). Verify query parameters and retry.",
+                        "errorId":  "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+                        "hresult":  -2146233087,
+                        "elapsedMilliseconds":  600.7639
+                    },
+                    {
+                        "index":  2,
+                        "guid":  "{12A9E355-8A8B-43A4-9001-E1B0B6DED6BC}",
+                        "name":  "Ethernet 4",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "failed",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Microsoft Azure Network Adapter",
+                                                "PnPDeviceID":  "mana_bus\\VEN_1414\u0026ROLE_004c\\6\u002613fe4004\u00260\u00263833c5d921dd",
+                                                "DriverDescription":  "Microsoft Azure Network Adapter",
+                                                "DriverProvider":  "Microsoft",
+                                                "DriverFileName":  "mana.sys",
+                                                "DriverVersion":  "2.0.18.52",
+                                                "Virtual":  false,
+                                                "HardwareInterface":  true,
+                                                "LinkSpeed":  "200 Gbps"
+                                            },
+                        "error":  "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 2)) AND ((AddressFamily = 23)). Verify query parameters and retry.",
+                        "errorId":  "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+                        "hresult":  -2146233087,
+                        "elapsedMilliseconds":  9.3443
+                    },
+                    {
+                        "index":  11,
+                        "guid":  "{A48C331F-0C79-4227-8C09-149D29835A79}",
+                        "name":  "vEthernet (nat)",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "complete",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Hyper-V Virtual Ethernet Adapter",
+                                                "PnPDeviceID":  null,
+                                                "DriverDescription":  null,
+                                                "DriverProvider":  null,
+                                                "DriverFileName":  null,
+                                                "DriverVersion":  null,
+                                                "Virtual":  true,
+                                                "HardwareInterface":  false,
+                                                "LinkSpeed":  "10 Gbps"
+                                            },
+                        "records":  1,
+                        "addresses":  [
+
+                                      ],
+                        "elapsedMilliseconds":  72.9786
+                    },
+                    {
+                        "index":  11,
+                        "guid":  "{A48C331F-0C79-4227-8C09-149D29835A79}",
+                        "name":  "vEthernet (nat)",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "complete",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Hyper-V Virtual Ethernet Adapter",
+                                                "PnPDeviceID":  null,
+                                                "DriverDescription":  null,
+                                                "DriverProvider":  null,
+                                                "DriverFileName":  null,
+                                                "DriverVersion":  null,
+                                                "Virtual":  true,
+                                                "HardwareInterface":  false,
+                                                "LinkSpeed":  "10 Gbps"
+                                            },
+                        "records":  1,
+                        "addresses":  [
+                                          "fec0:0:0:ffff::1",
+                                          "fec0:0:0:ffff::2",
+                                          "fec0:0:0:ffff::3"
+                                      ],
+                        "elapsedMilliseconds":  14.116800000000001
+                    },
+                    {
+                        "index":  14,
+                        "guid":  "{AF656D85-7109-4879-BBC5-681410192D55}",
+                        "name":  "Ethernet 3",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "complete",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Microsoft Hyper-V Network Adapter #3",
+                                                "PnPDeviceID":  "VMBUS\\{f8615163-df3e-46c5-913f-f2d2f965ed0e}\\{f8615163-0000-1000-2000-3833c5d921dd}",
+                                                "DriverDescription":  "Microsoft Hyper-V Network Adapter",
+                                                "DriverProvider":  "Microsoft",
+                                                "DriverFileName":  "netvsc.sys",
+                                                "DriverVersion":  "10.0.20348.5386",
+                                                "Virtual":  false,
+                                                "HardwareInterface":  true,
+                                                "LinkSpeed":  "200 Gbps"
+                                            },
+                        "records":  1,
+                        "addresses":  [
+                                          "168.63.129.16"
+                                      ],
+                        "elapsedMilliseconds":  24.8623
+                    },
+                    {
+                        "index":  14,
+                        "guid":  "{AF656D85-7109-4879-BBC5-681410192D55}",
+                        "name":  "Ethernet 3",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "complete",
+                        "adapterIdentity":  {
+                                                "InterfaceDescription":  "Microsoft Hyper-V Network Adapter #3",
+                                                "PnPDeviceID":  "VMBUS\\{f8615163-df3e-46c5-913f-f2d2f965ed0e}\\{f8615163-0000-1000-2000-3833c5d921dd}",
+                                                "DriverDescription":  "Microsoft Hyper-V Network Adapter",
+                                                "DriverProvider":  "Microsoft",
+                                                "DriverFileName":  "netvsc.sys",
+                                                "DriverVersion":  "10.0.20348.5386",
+                                                "Virtual":  false,
+                                                "HardwareInterface":  true,
+                                                "LinkSpeed":  "200 Gbps"
+                                            },
+                        "records":  1,
+                        "addresses":  [
+
+                                      ],
+                        "elapsedMilliseconds":  17.884
+                    }
+                ],
+    "kind":  "read-only-legacy-dns-query-diagnostic"
+}

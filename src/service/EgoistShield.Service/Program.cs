@@ -10,7 +10,7 @@ namespace EgoistShield.Service;
 
 internal static class Program
 {
-	private sealed record ParsedArguments(bool ConsoleMode, bool AllowDevClient, bool SelfTest, bool RecoverActive, bool RemoveNativeDoh, bool RestoreOwnedDns, bool NotifySystemProxy, bool CheckAdmin, bool VerifyPipeServer, string? PipeName, string? ServiceName, string? StateRoot, string? InstallRoot, string? ConfigureInstallRoot, bool TelegramListenerSnapshot, int? SnapshotPort)
+	private sealed record ParsedArguments(bool ConsoleMode, bool AllowDevClient, bool SelfTest, bool RecoverActive, bool RemoveNativeDoh, bool RestoreOwnedDns, bool NotifySystemProxy, bool CheckAdmin, bool VerifyPipeServer, string? PipeName, string? ServiceName, string? StateRoot, string? InstallRoot, string? ConfigureInstallRoot, bool TelegramListenerSnapshot, int? SnapshotPort, int? ManagedProcessId, DateTimeOffset? ManagedStartedAt)
 	{
 		public static ParsedArguments Parse(string[] args)
 		{
@@ -25,6 +25,8 @@ internal static class Program
 			bool verifyPipeServer = false;
 			bool telegramListenerSnapshot = false;
 			int? snapshotPort = null;
+			int? managedProcessId = null;
+			DateTimeOffset? managedStartedAt = null;
 			string pipeName = null;
 			string serviceName = null;
 			string stateRoot = null;
@@ -69,6 +71,16 @@ internal static class Program
 						throw new ArgumentException("--port requires a decimal port from 1 to 65535.");
 					snapshotPort = port;
 					break;
+				case "--managed-pid":
+					if (!int.TryParse(ReadValue(args, ref i, "--managed-pid"), NumberStyles.None, CultureInfo.InvariantCulture, out int managedPid) || managedPid <= 0)
+						throw new ArgumentException("--managed-pid requires a positive decimal process identity.");
+					managedProcessId = managedPid;
+					break;
+				case "--managed-started-at":
+					if (!long.TryParse(ReadValue(args, ref i, "--managed-started-at"), NumberStyles.None, CultureInfo.InvariantCulture, out long startedAt) || startedAt <= 0 || startedAt > 253402300799999)
+						throw new ArgumentException("--managed-started-at requires a valid Unix millisecond timestamp.");
+					managedStartedAt = DateTimeOffset.FromUnixTimeMilliseconds(startedAt);
+					break;
 				case "--pipe-name":
 					pipeName = ReadValue(args, ref i, "--pipe-name");
 					break;
@@ -97,11 +109,12 @@ internal static class Program
 			{
 				throw new ArgumentException("--allow-dev-client is valid only with --console.");
 			}
-			if (telegramListenerSnapshot && (snapshotPort == null || args.Length != 3))
-				throw new ArgumentException("Use only --telegram-listener-snapshot --port <port> for read-only inspection.");
-			if (!telegramListenerSnapshot && snapshotPort != null)
-				throw new ArgumentException("--port is valid only with --telegram-listener-snapshot.");
-			return new ParsedArguments(flag, flag2, selfTest, recoverActive, removeNativeDoh, restoreOwnedDns, notifySystemProxy, checkAdmin, verifyPipeServer, pipeName, serviceName, stateRoot, installRoot, configureInstallRoot, telegramListenerSnapshot, snapshotPort);
+			bool managed = managedProcessId != null || managedStartedAt != null;
+			if (telegramListenerSnapshot && (snapshotPort == null || args.Length != (managed ? 7 : 3) || managed && (managedProcessId == null || managedStartedAt == null)))
+				throw new ArgumentException("Use only the read-only Telegram snapshot, port and optional paired managed process identity.");
+			if (!telegramListenerSnapshot && (snapshotPort != null || managed))
+				throw new ArgumentException("Listener arguments are valid only with --telegram-listener-snapshot.");
+			return new ParsedArguments(flag, flag2, selfTest, recoverActive, removeNativeDoh, restoreOwnedDns, notifySystemProxy, checkAdmin, verifyPipeServer, pipeName, serviceName, stateRoot, installRoot, configureInstallRoot, telegramListenerSnapshot, snapshotPort, managedProcessId, managedStartedAt);
 		}
 
 		private static string ReadValue(string[] args, ref int index, string name)
@@ -126,9 +139,11 @@ internal static class Program
 				return VpnRuntimeHost.RunAsync();
 			if (args.Length == 1 && args[0] == "--vpn-service-status")
 				return VpnServiceStatusCommand.RunAsync();
+			if (args.Length == 1 && args[0] == "--winws-process-snapshot")
+				return WinwsProcessSnapshotCommand.RunAsync();
 			ParsedArguments parsed = ParsedArguments.Parse(args);
 			if (parsed.TelegramListenerSnapshot)
-				return TelegramListenerSnapshotCommand.RunAsync(parsed.SnapshotPort!.Value);
+				return TelegramListenerSnapshotCommand.RunAsync(parsed.SnapshotPort!.Value, parsed.ManagedProcessId, parsed.ManagedStartedAt);
 			if (parsed.VerifyPipeServer && !parsed.CheckAdmin && !parsed.SelfTest)
 			{
 				return VerifyPipeServerAsync(parsed);

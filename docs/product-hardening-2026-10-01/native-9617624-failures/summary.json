@@ -1,0 +1,893 @@
+{
+  "sourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+  "runId": 36856686510,
+  "releaseId": 400907438,
+  "result": "failed",
+  "releaseAcceptance": false,
+  "observed": {
+    "fresh": {
+      "result": "failed",
+      "error": "Actual native observation timed out: Telegram installed through genuine GUI control (Actual SCM service missing or ambiguous: EgoistShieldTelegramProxy)",
+      "host": {
+        "computerName": "runnervm99s1a",
+        "os": "Microsoft Windows NT 10.0.26100.0",
+        "powershell": "7.6.6",
+        "administrator": true,
+        "runnerEnvironment": "github-hosted",
+        "githubRunId": "36856686510",
+        "githubRunAttempt": "1"
+      },
+      "checks": [
+        {
+          "name": "actual-generated-setup-clean-install",
+          "ok": true,
+          "milliseconds": 56103.5
+        },
+        {
+          "name": "actual-installed-payload-fuses-asar-worker-inventory-acls-and-no-forced-elevation",
+          "ok": true,
+          "receipt": "installed-payload.json"
+        }
+      ],
+      "originalOldCleanSetupExecuted": null,
+      "restoredBaselineResult": null,
+      "networkReadbacks": [
+        {
+          "phase": "clean-install",
+          "preserved": true,
+          "snapshot": {
+            "dns": [
+              {
+                "index": 1,
+                "family": 2,
+                "servers": []
+              },
+              {
+                "index": 1,
+                "family": 23,
+                "servers": [
+                  "fec0:0:0:ffff::1",
+                  "fec0:0:0:ffff::2",
+                  "fec0:0:0:ffff::3"
+                ]
+              },
+              {
+                "index": 11,
+                "family": 2,
+                "servers": []
+              },
+              {
+                "index": 11,
+                "family": 23,
+                "servers": [
+                  "fec0:0:0:ffff::1",
+                  "fec0:0:0:ffff::2",
+                  "fec0:0:0:ffff::3"
+                ]
+              },
+              {
+                "index": 14,
+                "family": 2,
+                "servers": [
+                  "168.63.129.16"
+                ]
+              },
+              {
+                "index": 14,
+                "family": 23,
+                "servers": []
+              }
+            ],
+            "defaultRoutes": [
+              {
+                "index": 14,
+                "prefix": "0.0.0.0/0",
+                "nextHop": "10.1.0.1",
+                "metric": 1,
+                "protocol": "NetMgmt"
+              }
+            ],
+            "ipv6Bindings": [
+              {
+                "Name": "Ethernet 3",
+                "Enabled": true
+              },
+              {
+                "Name": "vEthernet (nat)",
+                "Enabled": true
+              }
+            ],
+            "userProxy": {
+              "ProxyEnable": 0,
+              "ProxyServer": null,
+              "ProxyOverride": null,
+              "AutoConfigURL": null
+            },
+            "winHttp": {
+              "WinHttpSettings": [
+                24,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "DefaultConnectionSettings": null
+            }
+          }
+        }
+      ]
+    },
+    "old378": {
+      "result": "failed",
+      "error": "Old GUI exited before its native window was ready (exit -2147483645).",
+      "host": {
+        "computerName": "runnervmdlhio",
+        "administrator": true,
+        "runnerEnvironment": "github-hosted",
+        "runId": "36856686510",
+        "runAttempt": "1",
+        "os": "Microsoft Windows NT 10.0.20348.0",
+        "imageOS": "win22",
+        "imageVersion": "20260927.320.1"
+      },
+      "checks": [],
+      "originalOldCleanSetupExecuted": false,
+      "restoredBaselineResult": "baseline-ready",
+      "networkReadbacks": [
+        {
+          "phase": "old-native-baseline",
+          "preserved": true,
+          "snapshot": {
+            "dns": [
+              {
+                "index": 1,
+                "family": 2,
+                "servers": []
+              },
+              {
+                "index": 1,
+                "family": 23,
+                "servers": [
+                  "fec0:0:0:ffff::1",
+                  "fec0:0:0:ffff::2",
+                  "fec0:0:0:ffff::3"
+                ]
+              },
+              {
+                "index": 11,
+                "family": 2,
+                "servers": []
+              },
+              {
+                "index": 11,
+                "family": 23,
+                "servers": [
+                  "fec0:0:0:ffff::1",
+                  "fec0:0:0:ffff::2",
+                  "fec0:0:0:ffff::3"
+                ]
+              },
+              {
+                "index": 14,
+                "family": 2,
+                "servers": [
+                  "168.63.129.16"
+                ]
+              },
+              {
+                "index": 14,
+                "family": 23,
+                "servers": []
+              }
+            ],
+            "defaultRoutes": [
+              {
+                "index": 14,
+                "prefix": "0.0.0.0/0",
+                "nextHop": "10.1.0.1",
+                "metric": 0,
+                "protocol": "NetMgmt"
+              }
+            ],
+            "ipv6Bindings": [
+              {
+                "Name": "Ethernet 3",
+                "Enabled": true
+              },
+              {
+                "Name": "vEthernet (nat)",
+                "Enabled": true
+              }
+            ],
+            "userProxy": {
+              "ProxyEnable": 0,
+              "ProxyServer": null,
+              "ProxyOverride": null,
+              "AutoConfigURL": null
+            },
+            "winHttp": {
+              "WinHttpSettings": [
+                24,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "DefaultConnectionSettings": null
+            }
+          }
+        }
+      ]
+    },
+    "old379": {
+      "result": "failed",
+      "error": "Old GUI exited before its native window was ready (exit -2147483645).",
+      "host": {
+        "computerName": "runnervmdlhio",
+        "administrator": true,
+        "runnerEnvironment": "github-hosted",
+        "runId": "36856686510",
+        "runAttempt": "1",
+        "os": "Microsoft Windows NT 10.0.20348.0",
+        "imageOS": "win22",
+        "imageVersion": "20260927.320.1"
+      },
+      "checks": [],
+      "originalOldCleanSetupExecuted": false,
+      "restoredBaselineResult": "baseline-ready",
+      "networkReadbacks": [
+        {
+          "phase": "old-native-baseline",
+          "preserved": true,
+          "snapshot": {
+            "dns": [
+              {
+                "index": 1,
+                "family": 2,
+                "servers": []
+              },
+              {
+                "index": 1,
+                "family": 23,
+                "servers": [
+                  "fec0:0:0:ffff::1",
+                  "fec0:0:0:ffff::2",
+                  "fec0:0:0:ffff::3"
+                ]
+              },
+              {
+                "index": 11,
+                "family": 2,
+                "servers": []
+              },
+              {
+                "index": 11,
+                "family": 23,
+                "servers": [
+                  "fec0:0:0:ffff::1",
+                  "fec0:0:0:ffff::2",
+                  "fec0:0:0:ffff::3"
+                ]
+              },
+              {
+                "index": 14,
+                "family": 2,
+                "servers": [
+                  "168.63.129.16"
+                ]
+              },
+              {
+                "index": 14,
+                "family": 23,
+                "servers": []
+              }
+            ],
+            "defaultRoutes": [
+              {
+                "index": 14,
+                "prefix": "0.0.0.0/0",
+                "nextHop": "10.1.0.1",
+                "metric": 0,
+                "protocol": "NetMgmt"
+              }
+            ],
+            "ipv6Bindings": [
+              {
+                "Name": "Ethernet 3",
+                "Enabled": true
+              },
+              {
+                "Name": "vEthernet (nat)",
+                "Enabled": true
+              }
+            ],
+            "userProxy": {
+              "ProxyEnable": 0,
+              "ProxyServer": null,
+              "ProxyOverride": null,
+              "AutoConfigURL": null
+            },
+            "winHttp": {
+              "WinHttpSettings": [
+                24,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "DefaultConnectionSettings": null
+            }
+          }
+        }
+      ]
+    }
+  },
+  "files": [
+    {
+      "path": "fresh/download-identity.json",
+      "bytes": 293,
+      "sha256": "3b83ae116b25c686e08f7687be3773d88243aede6c6220fa85428526c7d25823"
+    },
+    {
+      "path": "fresh/native/clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fresh/native/clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fresh/native/core-service.log",
+      "bytes": 4680,
+      "sha256": "700cb1361c3711ffdf3b85d330910d866ec78f7cf175ace63f724b6beacb86bb"
+    },
+    {
+      "path": "fresh/native/gui-provision-after-invoke-failure-observation.json",
+      "bytes": 6625,
+      "sha256": "9da21c1f435c4a5959158a226dbc88344090ceffb080aaed7992af30b8080e5b"
+    },
+    {
+      "path": "fresh/native/gui-provision-after-invoke-main.log",
+      "bytes": 1883,
+      "sha256": "65671780afe0513f112f691669e4d64232401bc840ae3ef126dbd46b3b134ddb"
+    },
+    {
+      "path": "fresh/native/gui-provision-click-15s-failure-observation.json",
+      "bytes": 6759,
+      "sha256": "27f4d0d3b3d554f8f414b7085b783f16e307b6d003c91debbd798272664bd0db"
+    },
+    {
+      "path": "fresh/native/gui-provision-click-15s-main.log",
+      "bytes": 3815,
+      "sha256": "b673785c38705335fbc16a65ce337e998acc9f6acd2928e16e28657d41e672d1"
+    },
+    {
+      "path": "fresh/native/gui-provision-click-2s-failure-observation.json",
+      "bytes": 6617,
+      "sha256": "8fa93254f7776d512e36d15524ae1b327fce57cb85c84be1b58ef787f7fab228"
+    },
+    {
+      "path": "fresh/native/gui-provision-click-2s-main.log",
+      "bytes": 3484,
+      "sha256": "b6dc37b696807e885af12ea9aeea01c0331be095f45a056f4b0ba2ab489c3cd2"
+    },
+    {
+      "path": "fresh/native/gui-provision-click-45s-failure-observation.json",
+      "bytes": 6107,
+      "sha256": "330634cfd23f3d9f8b3691eebebcdd747b428c6ea2600345a01a225b53d5a691"
+    },
+    {
+      "path": "fresh/native/gui-provision-click-45s-main.log",
+      "bytes": 4934,
+      "sha256": "554ab3b316592e1b9337bdaf4a3c575ffeed93db03b6f16ffff8295540634fb3"
+    },
+    {
+      "path": "fresh/native/gui-provision-failure-observation.json",
+      "bytes": 6087,
+      "sha256": "275ec653b9295523e64fec36415f963b37d9eff2acc13953a82e8d12596a73ec"
+    },
+    {
+      "path": "fresh/native/gui-provision-main.log",
+      "bytes": 6447,
+      "sha256": "134e897379563a50836d14da3604a1526e5ae3aa8f17a81152bc07095824048a"
+    },
+    {
+      "path": "fresh/native/gui-provision.stderr.txt",
+      "bytes": 15514,
+      "sha256": "1d2705ce6309c75ad059bf23ed5b0e9699a0659e26aa7185ef08b7da12a4493e"
+    },
+    {
+      "path": "fresh/native/gui-provision.stdout.txt",
+      "bytes": 1621,
+      "sha256": "cc449123335057eb67a84e26dca109eb62e17f3a92b8f672ad4dc0847ef08265"
+    },
+    {
+      "path": "fresh/native/installed-payload.json",
+      "bytes": 20080,
+      "sha256": "dd535ddbbe605ac321d6cfd38cecea7ed0ef4927ea2e706b8e2f4a52904d529a"
+    },
+    {
+      "path": "fresh/native/installed-payload.options.json",
+      "bytes": 330,
+      "sha256": "9fc605bfe42e7dda0b314f010b01abc4b5a07e4b2754344b6897dfa2351287a2"
+    },
+    {
+      "path": "fresh/native/installed-payload.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fresh/native/installed-payload.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fresh/native/installer-upgrade-journal.jsonl",
+      "bytes": 7214,
+      "sha256": "2252baf5ed9c55b9f2296716e0982113858d5c1aa0e82c1f0aac39866c607775"
+    },
+    {
+      "path": "fresh/native/windows-production-acceptance.json",
+      "bytes": 12965,
+      "sha256": "538a465b6c255d02d07858dfc98c29dd1a40a365bc95ca2e150143aedc83cc10"
+    },
+    {
+      "path": "fresh/signed-fresh-authentication.json",
+      "bytes": 2707,
+      "sha256": "04d4bbbed2bc8f80da21e1299b972cc64ce79966ed8fdf072507776734d93145"
+    },
+    {
+      "path": "fresh/raw-artifact.zip",
+      "bytes": 29427,
+      "sha256": "14d3374a1c704e2f0e415b642b881f2c0605f2f7c690aadcc9be55ec48154188"
+    },
+    {
+      "path": "fresh/raw-job.txt",
+      "bytes": 31198,
+      "sha256": "aa95e860a7d928ad1f3080f15a9c817e99721625dd2a63e4ddbe3903a1058d42"
+    },
+    {
+      "path": "old378/native/authenticated-assets.options.json",
+      "bytes": 423,
+      "sha256": "1c7598fdf89b927d2702062dab20aa1b76b76dc748ce183044b03f62370f1cc4"
+    },
+    {
+      "path": "old378/native/authenticated-assets.json",
+      "bytes": 2707,
+      "sha256": "f8f71111962e3bb5a08d797d5206a113d169e126fb3c7e2fb8da53e2083e2726"
+    },
+    {
+      "path": "old378/download-identity.json",
+      "bytes": 306,
+      "sha256": "32d2ceacb68d05c0bfdc01d4372eb9b892a5430ea10965dd92c3dd1ef49cd890"
+    },
+    {
+      "path": "old378/native/authenticated-assets.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/authenticated-assets.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/installer-upgrade-journal.jsonl",
+      "bytes": 2179,
+      "sha256": "bce1b926709e6ee889b56754f75a9d5ab725e84c771dd1024d379e94a18b75d3"
+    },
+    {
+      "path": "old378/native/old-gui-failure-observation.json",
+      "bytes": 379,
+      "sha256": "2bdfa0deaf733aada6201f955cef995d14716473767f2408bef7b17a43ea6391"
+    },
+    {
+      "path": "old378/native/core-service.log",
+      "bytes": 103,
+      "sha256": "96ef72227c42a5d2e731edff8e96833d6c28df518815326fe7e255c1dcab1b93"
+    },
+    {
+      "path": "old378/native/old-gui-main.log",
+      "bytes": 762,
+      "sha256": "37e788182acf48672e051fb510897beddd84afd06bd7e990761e0e78b8b06206"
+    },
+    {
+      "path": "old378/native/old-gui.stderr.txt",
+      "bytes": 812,
+      "sha256": "a2589fdcfc1e54887c650b8043f01de93ee7200e1543bbc200b5bb540b5432f0"
+    },
+    {
+      "path": "old378/native/old-gui.stdout.txt",
+      "bytes": 652,
+      "sha256": "1b79ec72a52145ddfdc7441a99bbe06c29d647f4acd4717103a5d905afb0b876"
+    },
+    {
+      "path": "old378/native/old-installed-authentication.json",
+      "bytes": 3047,
+      "sha256": "680df645c97aa0c336017d618e6574085ecd1bfc42d57cc2bc2c1a07e95e9cf6"
+    },
+    {
+      "path": "old378/native/old-installed-authentication.options.json",
+      "bytes": 486,
+      "sha256": "3be150eed30ae61bc46f1e2bdc818ac61ee419f8598e031b4027b1892c26afdc"
+    },
+    {
+      "path": "old378/native/old-installed-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/old-installed-authentication.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/original-network-readback.ps1",
+      "bytes": 1856,
+      "sha256": "93c4f32d46728d2c8598918cfdf3d710deea433081e1a93575dba9f96c409767"
+    },
+    {
+      "path": "old378/native/original-network-readback.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/original-network-readback.stdout.txt",
+      "bytes": 9575,
+      "sha256": "bb5ee15203631a46e1892ded17a6cb9f0e1373d3a188c7718d15a0f608d69b4f"
+    },
+    {
+      "path": "old378/native/restore-3.7.8-authenticate-extract.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/restore-3.7.8-authenticate-extract.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/restore-3.7.8-original-core-phase.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/restore-3.7.8-payload-after-core.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/restore-3.7.8-original-core-phase.stdout.txt",
+      "bytes": 37,
+      "sha256": "ca345979a68f0e3d2eaae89ec3e09589395af78295e317fe3835a6548829dcc4"
+    },
+    {
+      "path": "old378/native/restore-3.7.8-payload-after-core.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/restore-3.7.8-payload-before-metadata.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/restore-3.7.8-payload-before-metadata.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/restored-original-3.7.8/after-core.options.json",
+      "bytes": 558,
+      "sha256": "2af133c393cd4c8dc0db27b251500cbdfc7dcf2c06ae53994af96505b331cd74"
+    },
+    {
+      "path": "old378/native/restored-original-3.7.8/before-metadata.options.json",
+      "bytes": 395,
+      "sha256": "6d670b1edcf081e6558138bf5a699adb2bcd8d64a3128829384a2f68996d303c"
+    },
+    {
+      "path": "old378/native/restored-original-3.7.8/original-archive-listing.txt",
+      "bytes": 31930,
+      "sha256": "0795550af0fe23c6090a7157dda22bd11d365f226c161fe0a53ba39173055e1a"
+    },
+    {
+      "path": "old378/native/restored-original-3.7.8/original-extraction.stdout.txt",
+      "bytes": 544,
+      "sha256": "1c7d714f7981da828f147d434083dc147a3f7b7f29fa5902a43b4427eed41400"
+    },
+    {
+      "path": "old378/native/restored-original-3.7.8/original-extraction.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/restored-original-3.7.8/payload-after-core.json",
+      "bytes": 29848,
+      "sha256": "125b4d7f34484e08bd3a21065a95e51f267f18bdf66a235defff6a5aa9cd9af9"
+    },
+    {
+      "path": "old378/native/restored-original-3.7.8/payload-before-metadata.json",
+      "bytes": 29686,
+      "sha256": "4f1242d6b3997440ad4bda528594021021dff8f25fddda13675a753d6a0bea12"
+    },
+    {
+      "path": "old378/native/restored-original-3.7.8/prepare.options.json",
+      "bytes": 736,
+      "sha256": "89b7aeab5a9da5d05434362014043d1b0269fcd7ad528ca4a796c4795572e1b7"
+    },
+    {
+      "path": "old378/native/restored-original-3.7.8/prepared-original.json",
+      "bytes": 63006,
+      "sha256": "650b905a126b10619ea1c69ca1ab9b020c67a39cb5e5504c358a749479e8d934"
+    },
+    {
+      "path": "old378/native/restored-original-3.7.8/restored-legacy-baseline.json",
+      "bytes": 139842,
+      "sha256": "88029d4fb83822325b5e58a6599e3808dc5f9ab28c8b501d470b0d45e18612dd"
+    },
+    {
+      "path": "old378/native/windows-production-legacy-upgrade.json",
+      "bytes": 237319,
+      "sha256": "3feca153cdf9cb4e986fa41119d59ca2bc940e2e4e8d24a9462caf98de0ba6a7"
+    },
+    {
+      "path": "old378/original-3.7.8-transport.json",
+      "bytes": 2637,
+      "sha256": "a448f5566d0515edbe8a73f8a1d9a608faf59afc088cd21d1612bb3ce986b2fe"
+    },
+    {
+      "path": "old378/raw-artifact.zip",
+      "bytes": 127763,
+      "sha256": "cbdea59aa8e652cf175d85e7ea3b9addb1a52738c99637add0a43defe21c9d02"
+    },
+    {
+      "path": "old378/raw-job.txt",
+      "bytes": 35701,
+      "sha256": "95029254ba6e6f1e7354de7fcc6f7775f857b151699db17d735717abc9566dae"
+    },
+    {
+      "path": "old379/download-identity.json",
+      "bytes": 304,
+      "sha256": "60e97c61b4aa22abf1a7647fd3ceed983d4b3d561ab7df34c50605f09ca9a883"
+    },
+    {
+      "path": "old379/native/authenticated-assets.json",
+      "bytes": 2707,
+      "sha256": "04d4bbbed2bc8f80da21e1299b972cc64ce79966ed8fdf072507776734d93145"
+    },
+    {
+      "path": "old379/native/authenticated-assets.options.json",
+      "bytes": 423,
+      "sha256": "8a7c74c69176192cedf56227177ead4d17c1c339763603a040f4ccdaa38e3acf"
+    },
+    {
+      "path": "old379/native/authenticated-assets.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/authenticated-assets.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/core-service.log",
+      "bytes": 103,
+      "sha256": "e7082ce7b0553eb106882ddf2c578f77a281254e5f30b9ec09934410e4ebbd5c"
+    },
+    {
+      "path": "old379/native/installer-upgrade-journal.jsonl",
+      "bytes": 2179,
+      "sha256": "e3a63ab45db5394f999def66cbe631c998975df2a779b966df1872e7c1b0ef7f"
+    },
+    {
+      "path": "old379/native/old-gui-failure-observation.json",
+      "bytes": 379,
+      "sha256": "0a0ffbd1aa8dff01a1226d85f13b3cb3015172f8e1010c5ecbcfed25fd5a8687"
+    },
+    {
+      "path": "old379/native/old-gui-main.log",
+      "bytes": 762,
+      "sha256": "09feff71a22f8762f2296ba0c1e241655df89a4a565db20f309ddc7c2cec0c5a"
+    },
+    {
+      "path": "old379/native/old-gui.stderr.txt",
+      "bytes": 2642,
+      "sha256": "85b0b8d3f975426cc24705e0c944f87d59c9d9c92e26670664f955e5d209c8cf"
+    },
+    {
+      "path": "old379/native/old-gui.stdout.txt",
+      "bytes": 652,
+      "sha256": "5579db3ca937bfd4131aa05bef3d6f7bb734afcae4ec541642c3abe37a8f4650"
+    },
+    {
+      "path": "old379/native/old-installed-authentication.json",
+      "bytes": 3047,
+      "sha256": "e4ec396cd2287710e9e482eab9e97f36065a1ee357ab8d8322ee73c9d5c9362f"
+    },
+    {
+      "path": "old379/native/old-installed-authentication.options.json",
+      "bytes": 486,
+      "sha256": "1e5d35535aff7ee40d22f9892676d6d29ff7ef93a81d1b331764eae46e1a87c1"
+    },
+    {
+      "path": "old379/native/old-installed-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/old-installed-authentication.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/original-network-readback.ps1",
+      "bytes": 1856,
+      "sha256": "93c4f32d46728d2c8598918cfdf3d710deea433081e1a93575dba9f96c409767"
+    },
+    {
+      "path": "old379/native/original-network-readback.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/original-network-readback.stdout.txt",
+      "bytes": 9750,
+      "sha256": "6d0dfdfbb6d5457c8076ed8e549f5c40722f4e79e7561c1bd94a87095845ce52"
+    },
+    {
+      "path": "old379/native/restore-3.7.9-authenticate-extract.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/restore-3.7.9-authenticate-extract.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/restore-3.7.9-original-core-phase.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/restore-3.7.9-original-core-phase.stdout.txt",
+      "bytes": 37,
+      "sha256": "ca345979a68f0e3d2eaae89ec3e09589395af78295e317fe3835a6548829dcc4"
+    },
+    {
+      "path": "old379/native/restore-3.7.9-payload-after-core.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/restore-3.7.9-payload-after-core.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/restore-3.7.9-payload-before-metadata.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/restore-3.7.9-payload-before-metadata.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/restored-original-3.7.9/after-core.options.json",
+      "bytes": 558,
+      "sha256": "a0d47909df6fe1ef3d8b4f8a41ee4c3610d69e6af9c498331e7e291c66ea92f8"
+    },
+    {
+      "path": "old379/native/restored-original-3.7.9/before-metadata.options.json",
+      "bytes": 395,
+      "sha256": "3f937af9881a96efbe4a519921f397d806e161f4fd02af7cb0aa4895a74ec09b"
+    },
+    {
+      "path": "old379/native/restored-original-3.7.9/original-archive-listing.txt",
+      "bytes": 31804,
+      "sha256": "20c4ef4d31c6e41cf9cb6183312d92aa93f2ad9ba72343547b63ebe4b2aaf9d4"
+    },
+    {
+      "path": "old379/native/restored-original-3.7.9/original-extraction.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/restored-original-3.7.9/original-extraction.stdout.txt",
+      "bytes": 544,
+      "sha256": "c894691a48ce94b8997d740e795ddd8aade41bd48af70205377892ac5075d89b"
+    },
+    {
+      "path": "old379/native/restored-original-3.7.9/payload-after-core.json",
+      "bytes": 29731,
+      "sha256": "f01a58724fe0a1612e2101c122e7b9849fa1b1c4b5e3e240d085502972c851c4"
+    },
+    {
+      "path": "old379/native/restored-original-3.7.9/payload-before-metadata.json",
+      "bytes": 29569,
+      "sha256": "c530d853c494fe07d3438558976f0887cca0e0a7181f48b8c8d83fed1ec6f121"
+    },
+    {
+      "path": "old379/native/restored-original-3.7.9/prepare.options.json",
+      "bytes": 736,
+      "sha256": "56e5268e10e0a810cf1065072ab556ab708ffed75130fd118cc22385a516d2ae"
+    },
+    {
+      "path": "old379/native/restored-original-3.7.9/prepared-original.json",
+      "bytes": 62772,
+      "sha256": "02f39a77715c04724d9a320f74403e76c87b23a91355ee687d7d8f0f0f79dc1c"
+    },
+    {
+      "path": "old379/native/restored-original-3.7.9/restored-legacy-baseline.json",
+      "bytes": 139294,
+      "sha256": "4b3227956cf28e0ee7f2b00dc259295add3deaa845250cc06ca0e54bffb9179f"
+    },
+    {
+      "path": "old379/native/windows-production-legacy-upgrade.json",
+      "bytes": 236816,
+      "sha256": "d4df89b726d77a53499d6e358f2967ea3e2cc07dbc57e020321fa60a1ef09229"
+    },
+    {
+      "path": "old379/raw-artifact.zip",
+      "bytes": 126584,
+      "sha256": "fdc11bb006c8d82e3cad3252f6284884d90281384ed65105e1f20494d865e896"
+    },
+    {
+      "path": "old379/raw-job.txt",
+      "bytes": 31367,
+      "sha256": "81b283068e019a577392909fed780ecea3073d67aa08b93f3eef9a2fb58ae919"
+    }
+  ],
+  "acceptedUtc": "2026-10-01T12:07:21.200764+00:00"
+}

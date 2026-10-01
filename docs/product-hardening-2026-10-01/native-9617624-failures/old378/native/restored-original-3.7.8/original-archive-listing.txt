@@ -1,0 +1,1620 @@
+Path = $PLUGINSDIR\System.dll
+Size = 12288
+Packed Size = 193995207
+Modified = 
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 0
+
+Path = $PLUGINSDIR\owned-cleanup.ps1
+Size = 190567
+Packed Size = 
+Modified = 2026-09-29 12:49:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 12292
+
+Path = resources\installer\owned-cleanup.ps1
+Size = 190567
+Packed Size = 
+Modified = 2026-09-29 12:49:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 12292
+
+Path = $PLUGINSDIR\invoke-final-silent-reinstall.ps1
+Size = 62614
+Packed Size = 
+Modified = 2026-09-29 12:49:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 202863
+
+Path = resources\installer\invoke-final-silent-reinstall.ps1
+Size = 62614
+Packed Size = 
+Modified = 2026-09-29 12:49:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 202863
+
+Path = $PLUGINSDIR\ModernInstaller.exe
+Size = 468992
+Packed Size = 
+Modified = 2026-09-29 12:49:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 265481
+
+Path = resources\installer\ModernInstaller.exe
+Size = 468992
+Packed Size = 
+Modified = 2026-09-29 12:49:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 265481
+
+Path = $PLUGINSDIR\Unbounded.ttf
+Size = 778272
+Packed Size = 
+Modified = 2026-09-11 18:02:14.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 734477
+
+Path = resources\installer\Unbounded.ttf
+Size = 778272
+Packed Size = 
+Modified = 2026-09-11 18:02:14.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 734477
+
+Path = $PLUGINSDIR\nsExec.dll
+Size = 7168
+Packed Size = 
+Modified = 
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 1512753
+
+Path = EgoistShield.exe
+Size = 224089088
+Packed Size = 
+Modified = 2026-09-29 12:49:30.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 1519925
+
+Path = LICENSE
+Size = 1096
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 225609017
+
+Path = LICENSES.chromium.html
+Size = 19475437
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 225610117
+
+Path = chrome_100_percent.pak
+Size = 116089
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 245085558
+
+Path = chrome_200_percent.pak
+Size = 187558
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 245201651
+
+Path = d3dcompiler_47.dll
+Size = 4741480
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 245389213
+
+Path = dxcompiler.dll
+Size = 25666560
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 250130697
+
+Path = dxil.dll
+Size = 1503600
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 275797261
+
+Path = ffmpeg.dll
+Size = 3096576
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 277300865
+
+Path = icudtl.dat
+Size = 10822192
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 280397445
+
+Path = libEGL.dll
+Size = 522752
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 291219641
+
+Path = libGLESv2.dll
+Size = 7965696
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 291742397
+
+Path = resources.pak
+Size = 6793929
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 299708097
+
+Path = snapshot_blob.bin
+Size = 341312
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 306502030
+
+Path = v8_context_snapshot.bin
+Size = 715208
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 306843346
+
+Path = version
+Size = 7
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 307558558
+
+Path = vk_swiftshader.dll
+Size = 5624320
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 307558569
+
+Path = vk_swiftshader_icd.json
+Size = 106
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 313182893
+
+Path = vulkan-1.dll
+Size = 954880
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 313183003
+
+Path = locales\af.pak
+Size = 610360
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 314137887
+
+Path = locales\am.pak
+Size = 989825
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 314748251
+
+Path = locales\ar.pak
+Size = 1092515
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 315738080
+
+Path = locales\bg.pak
+Size = 1129698
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 316830599
+
+Path = locales\bn.pak
+Size = 1456238
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 317960301
+
+Path = locales\ca.pak
+Size = 687263
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 319416543
+
+Path = locales\cs.pak
+Size = 713897
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 320103810
+
+Path = locales\da.pak
+Size = 642047
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 320817711
+
+Path = locales\de.pak
+Size = 688266
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 321459762
+
+Path = locales\el.pak
+Size = 1243082
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 322148032
+
+Path = locales\en-GB.pak
+Size = 556091
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 323391118
+
+Path = locales\en-US.pak
+Size = 562214
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 323947213
+
+Path = locales\es-419.pak
+Size = 678061
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 324509431
+
+Path = locales\es.pak
+Size = 674828
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 325187496
+
+Path = locales\et.pak
+Size = 616533
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 325862328
+
+Path = locales\fa.pak
+Size = 1020166
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 326478865
+
+Path = locales\fi.pak
+Size = 627354
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 327499035
+
+Path = locales\fil.pak
+Size = 711710
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 328126393
+
+Path = locales\fr.pak
+Size = 733552
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 328838107
+
+Path = locales\gu.pak
+Size = 1439086
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 329571663
+
+Path = locales\he.pak
+Size = 892715
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 331010753
+
+Path = locales\hi.pak
+Size = 1523238
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 331903472
+
+Path = locales\hr.pak
+Size = 687133
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 333426714
+
+Path = locales\hu.pak
+Size = 734494
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 334113851
+
+Path = locales\id.pak
+Size = 607206
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 334848349
+
+Path = locales\it.pak
+Size = 664037
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 335455559
+
+Path = locales\ja.pak
+Size = 810483
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 336119600
+
+Path = locales\kn.pak
+Size = 1651168
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 336930087
+
+Path = locales\ko.pak
+Size = 687538
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 338581259
+
+Path = locales\lt.pak
+Size = 747396
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 339268801
+
+Path = locales\lv.pak
+Size = 744633
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 340016201
+
+Path = locales\ml.pak
+Size = 1701775
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 340760838
+
+Path = locales\mr.pak
+Size = 1408749
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 342462617
+
+Path = locales\ms.pak
+Size = 639802
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 343871370
+
+Path = locales\nb.pak
+Size = 613091
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 344511176
+
+Path = locales\nl.pak
+Size = 638505
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 345124271
+
+Path = locales\pl.pak
+Size = 713495
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 345762780
+
+Path = locales\pt-BR.pak
+Size = 668362
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 346476279
+
+Path = locales\pt-PT.pak
+Size = 672043
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 347144645
+
+Path = locales\ro.pak
+Size = 697778
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 347816692
+
+Path = locales\ru.pak
+Size = 1156619
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 348514474
+
+Path = locales\sk.pak
+Size = 725683
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 349671097
+
+Path = locales\sl.pak
+Size = 695245
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 350396784
+
+Path = locales\sr.pak
+Size = 1069470
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 351092033
+
+Path = locales\sv.pak
+Size = 620034
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 352161507
+
+Path = locales\sw.pak
+Size = 655944
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 352781545
+
+Path = locales\ta.pak
+Size = 1692959
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 353437493
+
+Path = locales\te.pak
+Size = 1564565
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 355130456
+
+Path = locales\th.pak
+Size = 1313478
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 356695025
+
+Path = locales\tr.pak
+Size = 667628
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 358008507
+
+Path = locales\uk.pak
+Size = 1165026
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 358676139
+
+Path = locales\ur.pak
+Size = 1005046
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 359841169
+
+Path = locales\vi.pak
+Size = 793190
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 360846219
+
+Path = locales\zh-CN.pak
+Size = 567739
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 361639413
+
+Path = locales\zh-TW.pak
+Size = 560490
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 362207156
+
+Path = resources\app.asar
+Size = 11664308
+Packed Size = 
+Modified = 2026-09-29 12:49:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 362767650
+
+Path = resources\component-worker.cjs
+Size = 1859876
+Packed Size = 
+Modified = 2026-09-29 12:49:26.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 374431962
+
+Path = resources\elevate.exe
+Size = 107520
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 376291842
+
+Path = resources\brand\egoist-shield-icon-1024.png
+Size = 444920
+Packed Size = 
+Modified = 2026-09-11 17:02:04.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 376399366
+
+Path = resources\brand\icon.png
+Size = 444920
+Packed Size = 
+Modified = 2026-09-11 17:02:04.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 376399366
+
+Path = resources\brand\egoist-shield-icon-64.png
+Size = 4529
+Packed Size = 
+Modified = 2026-09-11 17:02:22.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 376844290
+
+Path = resources\brand\egoist-shield-logo.png
+Size = 678199
+Packed Size = 
+Modified = 2026-09-11 10:47:52.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 376848823
+
+Path = resources\brand\favicon.ico
+Size = 372526
+Packed Size = 
+Modified = 2026-09-11 17:02:54.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 377527026
+
+Path = resources\brand\icon.ico
+Size = 372526
+Packed Size = 
+Modified = 2026-09-11 17:02:54.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 377527026
+
+Path = resources\brand\installer-header.bmp
+Size = 25818
+Packed Size = 
+Modified = 2026-09-11 10:47:54.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 377899556
+
+Path = resources\brand\installer-sidebar.bmp
+Size = 154542
+Packed Size = 
+Modified = 2026-09-11 10:47:54.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 377925378
+
+Path = resources\brand\tray-connected.png
+Size = 1822
+Packed Size = 
+Modified = 2026-09-11 17:02:22.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 378079924
+
+Path = resources\brand\tray-default.png
+Size = 1822
+Packed Size = 
+Modified = 2026-09-11 17:02:22.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 378079924
+
+Path = resources\brand\tray-disconnected.png
+Size = 1822
+Packed Size = 
+Modified = 2026-09-11 17:02:22.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 378079924
+
+Path = resources\brand\tray-error.png
+Size = 1822
+Packed Size = 
+Modified = 2026-09-11 17:02:22.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 378079924
+
+Path = resources\brand\tray-icon.png
+Size = 1822
+Packed Size = 
+Modified = 2026-09-11 17:02:22.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 378079924
+
+Path = resources\core-service\win-x64\EgoistShield.Service.exe
+Size = 37894101
+Packed Size = 
+Modified = 2026-09-29 12:49:38.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 378081750
+
+Path = resources\core-service\win-x64\EgoistShield.Service.pdb
+Size = 105728
+Packed Size = 
+Modified = 2026-09-29 12:49:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 415975855
+
+Path = resources\gravityless-dns\dnscrypt-proxy.exe
+Size = 11823104
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 416081587
+
+Path = resources\gravityless-dns\dnscrypt-proxy.toml
+Size = 619
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 427904695
+
+Path = resources\gravityless-dns\manifest.json
+Size = 922
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 427905318
+
+Path = resources\installer\Unbounded-OFL.txt
+Size = 4390
+Packed Size = 
+Modified = 2026-09-12 13:39:20.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 427906244
+
+Path = resources\release\key-fingerprints.json
+Size = 316
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 427910638
+
+Path = resources\release\release-key-registry.json
+Size = 1100
+Packed Size = 
+Modified = 2026-09-29 12:02:00.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 427910958
+
+Path = resources\release\release-key-registry.json.sig
+Size = 89
+Packed Size = 
+Modified = 2026-09-29 12:02:00.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 427912062
+
+Path = resources\release\root-public-key.pem
+Size = 113
+Packed Size = 
+Modified = 2026-09-29 12:02:00.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 427912155
+
+Path = resources\runtime\manifest.json
+Size = 16441
+Packed Size = 
+Modified = 2026-09-29 12:49:28.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 427912272
+
+Path = resources\runtime\sing-box\VERSION.txt
+Size = 8
+Packed Size = 
+Modified = 2026-09-29 12:49:28.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 427928717
+
+Path = resources\runtime\sing-box\sing-box.exe
+Size = 81819136
+Packed Size = 
+Modified = 2026-09-07 19:58:16.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 427928729
+
+Path = resources\runtime\tg-ws-proxy\RUNTIME_FLAVOR.txt
+Size = 21
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 509747869
+
+Path = resources\runtime\tg-ws-proxy\VERSION.txt
+Size = 6
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 509747894
+
+Path = resources\runtime\tg-ws-proxy\egoistshield-tg-ws-proxy.exe
+Size = 12478791
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 509747904
+
+Path = resources\runtime\xray\VERSION.txt
+Size = 7
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 522226699
+
+Path = resources\runtime\xray\WINTUN-LICENSE.txt
+Size = 5431
+Packed Size = 
+Modified = 2026-09-08 10:29:50.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 522226710
+
+Path = resources\runtime\xray\geoip.dat
+Size = 19306491
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 522232145
+
+Path = resources\runtime\xray\geosite.dat
+Size = 10591668
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 541538640
+
+Path = resources\runtime\xray\wintun.dll
+Size = 427552
+Packed Size = 
+Modified = 2026-09-08 10:29:50.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 552130312
+
+Path = resources\runtime\xray\xray.exe
+Size = 35819008
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 552557868
+
+Path = resources\runtime\zapret\VERSION.txt
+Size = 7
+Packed Size = 
+Modified = 2026-09-29 12:49:28.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588376880
+
+Path = resources\runtime\zapret\core\general (ALT).bat
+Size = 3877
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588376891
+
+Path = resources\runtime\zapret\core\general (ALT10).bat
+Size = 3640
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588380772
+
+Path = resources\runtime\zapret\core\general (ALT11).bat
+Size = 4297
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588384416
+
+Path = resources\runtime\zapret\core\general (ALT12).bat
+Size = 4166
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588388717
+
+Path = resources\runtime\zapret\core\general (ALT13).bat
+Size = 3948
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588392887
+
+Path = resources\runtime\zapret\core\general (ALT2).bat
+Size = 3372
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588396839
+
+Path = resources\runtime\zapret\core\general (ALT3).bat
+Size = 3644
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588400215
+
+Path = resources\runtime\zapret\core\general (ALT4).bat
+Size = 3887
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588403863
+
+Path = resources\runtime\zapret\core\general (ALT5).bat
+Size = 2149
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588407754
+
+Path = resources\runtime\zapret\core\general (ALT6).bat
+Size = 3372
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588409907
+
+Path = resources\runtime\zapret\core\general (ALT7).bat
+Size = 3131
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588413283
+
+Path = resources\runtime\zapret\core\general (ALT8).bat
+Size = 3488
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588416418
+
+Path = resources\runtime\zapret\core\general (ALT9).bat
+Size = 3208
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588419910
+
+Path = resources\runtime\zapret\core\general (EGOIST MIX).bat
+Size = 4140
+Packed Size = 
+Modified = 2026-09-29 10:42:06.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588423122
+
+Path = resources\runtime\zapret\core\general (EXP).bat
+Size = 4275
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588427266
+
+Path = resources\runtime\zapret\core\general (FAKE TLS AUTO ALT).bat
+Size = 3795
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588431545
+
+Path = resources\runtime\zapret\core\general (FAKE TLS AUTO ALT2).bat
+Size = 4360
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588435344
+
+Path = resources\runtime\zapret\core\general (FAKE TLS AUTO ALT3).bat
+Size = 4145
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588439708
+
+Path = resources\runtime\zapret\core\general (FAKE TLS AUTO).bat
+Size = 4017
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588443857
+
+Path = resources\runtime\zapret\core\general (SIMPLE FAKE ALT).bat
+Size = 3821
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588447878
+
+Path = resources\runtime\zapret\core\general (SIMPLE FAKE ALT2).bat
+Size = 3609
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588451703
+
+Path = resources\runtime\zapret\core\general (SIMPLE FAKE).bat
+Size = 3497
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588455316
+
+Path = resources\runtime\zapret\core\general.bat
+Size = 3351
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588458817
+
+Path = resources\runtime\zapret\core\service.bat
+Size = 38930
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588462172
+
+Path = resources\runtime\zapret\core\bin\ACTIVE_DISCORD_UDP.bin
+Size = 1200
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588501106
+
+Path = resources\runtime\zapret\core\bin\quic_initial_steamcommunity_com.bin
+Size = 1200
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588501106
+
+Path = resources\runtime\zapret\core\bin\ACTIVE_GAME_UDP.bin
+Size = 1250
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588502310
+
+Path = resources\runtime\zapret\core\bin\quic_initial_4pda_to.bin
+Size = 1250
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588502310
+
+Path = resources\runtime\zapret\core\bin\WinDivert.dll
+Size = 47616
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588503564
+
+Path = resources\runtime\zapret\core\bin\WinDivert64.sys
+Size = 94144
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588551184
+
+Path = resources\runtime\zapret\core\bin\cygwin1.dll
+Size = 2954293
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 588645332
+
+Path = resources\runtime\zapret\core\bin\quic_initial_5ka_ru.bin
+Size = 1250
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591599629
+
+Path = resources\runtime\zapret\core\bin\quic_initial_rutube_ru.bin
+Size = 1357
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591600883
+
+Path = resources\runtime\zapret\core\bin\quic_initial_tencent_com.bin
+Size = 1231
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591602244
+
+Path = resources\runtime\zapret\core\bin\quic_initial_www_google_com.bin
+Size = 1200
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591603479
+
+Path = resources\runtime\zapret\core\bin\stun.bin
+Size = 100
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591604683
+
+Path = resources\runtime\zapret\core\bin\stun2.bin
+Size = 120
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591604787
+
+Path = resources\runtime\zapret\core\bin\tls_clienthello_4pda_to.bin
+Size = 284
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591604911
+
+Path = resources\runtime\zapret\core\bin\tls_clienthello_5ka_ru.bin
+Size = 654
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591605199
+
+Path = resources\runtime\zapret\core\bin\tls_clienthello_max_ru.bin
+Size = 664
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591605857
+
+Path = resources\runtime\zapret\core\bin\tls_clienthello_sochi_park.bin
+Size = 244
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591606525
+
+Path = resources\runtime\zapret\core\bin\tls_clienthello_www_google_com.bin
+Size = 681
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591606773
+
+Path = resources\runtime\zapret\core\bin\tls_clienthello_www_sferum_ru.bin
+Size = 661
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591607458
+
+Path = resources\runtime\zapret\core\bin\winws.exe
+Size = 203776
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591608123
+
+Path = resources\runtime\zapret\core\lists\ipset-all.txt
+Size = 18
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591811903
+
+Path = resources\runtime\zapret\core\lists\ipset-all.txt.backup
+Size = 556312
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 591811925
+
+Path = resources\runtime\zapret\core\lists\ipset-exclude.txt
+Size = 135
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 592368241
+
+Path = resources\runtime\zapret\core\lists\list-egoist-discord.txt
+Size = 411
+Packed Size = 
+Modified = 2026-09-29 10:42:06.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 592368380
+
+Path = resources\runtime\zapret\core\lists\list-exclude.txt
+Size = 1716
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 592368795
+
+Path = resources\runtime\zapret\core\lists\list-general.txt
+Size = 1067
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 592370515
+
+Path = resources\runtime\zapret\core\lists\list-google.txt
+Size = 453
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 592371586
+
+Path = resources\runtime\zapret\core\utils\check_updates.enabled
+Size = 9
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 592372043
+
+Path = resources\runtime\zapret\core\utils\targets.txt
+Size = 1206
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 592372056
+
+Path = resources\runtime\zapret\core\utils\test zapret.ps1
+Size = 41693
+Packed Size = 
+Modified = 2026-09-20 05:46:32.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 592373266
+
+Path = resources\runtime\zapret\service-wrapper\egoistshield-zapret-service.exe
+Size = 18243033
+Packed Size = 
+Modified = 2026-08-10 20:26:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 592414963
+
+Path = resources\runtime\zapret\service-wrapper\egoistshield-zapret-service.xml
+Size = 7115
+Packed Size = 
+Modified = 2026-09-29 10:55:36.0000000
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 610658000
+
+Path = Uninstall Egoist Shield.exe
+Size = 
+Packed Size = 
+Modified = 
+Attributes = 
+Method = LZMA:23
+Solid = +
+Offset = 610665119
+

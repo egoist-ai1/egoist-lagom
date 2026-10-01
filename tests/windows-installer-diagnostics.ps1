@@ -1,9 +1,11 @@
 [CmdletBinding()]
-param([switch]$LibraryOnly,[string]$SignedCandidateAssetsDirectory='',[switch]$CoreConfigurationOnly,[string]$OriginalAssetsDirectory='',[ValidateSet('','3.7.8','3.7.9')][string]$OriginalVersion='',[switch]$GuiFailureDiagnostic)
+param([switch]$LibraryOnly,[string]$SignedCandidateAssetsDirectory='',[switch]$CoreConfigurationOnly,[string]$OriginalAssetsDirectory='',[ValidateSet('','3.7.8','3.7.9')][string]$OriginalVersion='',[switch]$GuiFailureDiagnostic,[switch]$RestoreAuthenticatedBaseline)
 Set-StrictMode -Version 2.0
 $ErrorActionPreference='Stop'
 
 if($LibraryOnly){return}
+$diagnosticRestore=[bool]$RestoreAuthenticatedBaseline
+if($diagnosticRestore -and (-not $OriginalVersion -or -not $GuiFailureDiagnostic)){throw 'Restored diagnostics require an explicit original version and GUI failure diagnostic.'}
 if($CoreConfigurationOnly -and $SignedCandidateAssetsDirectory){throw 'Choose either signed Setup or source Core diagnostics.'}
 # Use the real hosted guard entry point before any directory or machine write.
 & (Join-Path $PSScriptRoot 'windows-production-acceptance.ps1') -Mode GuardOnly
@@ -93,17 +95,33 @@ try{
       $version=$OriginalVersion;$receipt.kind='real-original-signed-setup-gui-failure-diagnostic'
       $receipt.originalVersion=$OriginalVersion
       . (Join-Path $PSScriptRoot 'windows-production-legacy-upgrade.ps1') -ExpectedOldVersion $OriginalVersion -LibraryOnly
-      [void](Read-LegacyNetworkCompatibility)
+      [void](Read-LegacyNetworkCompatibility -ProbeOnly:$diagnosticRestore)
     }
     Assert-NativeOrdinaryPath -Path $installer -Leaf
     $receipt.installer=@{version=$version;sha256=(Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash;bytes=(Get-Item -LiteralPath $installer).Length}
-    $receipt.installerExecuted=$true
-    $phase=Invoke-NativeBounded -Executable $installer -Arguments @('/S') -Label 'signed-diagnostic-clean-install' -TimeoutSeconds 600
-    $receipt.install=$phase;$receipt.result='signed-setup-installed-diagnostic-only'
+    if($diagnosticRestore){
+      $script:Evidence=Join-Path $script:Work 'restored-native-evidence';[void][IO.Directory]::CreateDirectory($script:Evidence)
+      . (Join-Path $PSScriptRoot 'windows-native-legacy-baseline.ps1') -LibraryOnly
+      $auth=$receipt.originalAuthenticated.old
+      $receipt.restoredLegacyBaseline=Invoke-RestoredLegacyBaseline -OriginalVersion $OriginalVersion -AuthenticatedInstaller $installer -ExpectedInstallerSha256 $auth.sha256 -ExpectedInstallerSha512 $auth.sha512 -ExpectedInstallerBytes $auth.size -InstallationRoot $script:InstallRoot -WorkDirectory $script:Work -EvidenceDirectory $script:Evidence -NodePath $node -PowerShellPath $script:NativePowerShell
+      $receipt.kind='restored-authenticated-original-launch-diagnostic';$receipt.originalSetupExecuted=$false;$receipt.result='restored-original-baseline-diagnostic-only'
+    }else{
+      $receipt.installerExecuted=$true
+      $phase=Invoke-NativeBounded -Executable $installer -Arguments @('/S') -Label 'signed-diagnostic-clean-install' -TimeoutSeconds 600
+      $receipt.install=$phase;$receipt.result='signed-setup-installed-diagnostic-only'
+    }
     $receipt.installedAcl=@(foreach($relative in @('','EgoistShield.exe','EgoistShield.Worker.exe','resources','resources\app.asar','resources\component-worker.cjs','resources\worker-host-integrity.json','resources\core-service\win-x64\EgoistShield.Service.exe')){$path=Join-Path $script:InstallRoot $relative;if(Test-Path -LiteralPath $path){Get-NativePathAclSnapshot $path}})
     if($GuiFailureDiagnostic){
       if($OriginalVersion){
         . (Join-Path $PSScriptRoot 'windows-production-legacy-upgrade.ps1') -ExpectedOldVersion $OriginalVersion -LibraryOnly
+        if($diagnosticRestore){
+          . (Join-Path $PSScriptRoot 'windows-legacy-launch-diagnostic.ps1') -LibraryOnly
+          $expectedGui=@($receipt.restoredLegacyBaseline.authenticatedExtraction.payload|Where-Object path -ceq 'EgoistShield.exe')
+          if($expectedGui.Count -ne 1){throw 'Original GUI authentication inventory is incomplete.'}
+          $launchReceipt=Invoke-LegacyLaunchDiagnostic -InstalledGuiPath (Join-Path $script:InstallRoot 'EgoistShield.exe') -ExpectedGuiSha256 $expectedGui[0].sha256 -ExpectedOldVersion $OriginalVersion -WorkRoot $script:Work -EvidenceDirectory $script:Evidence -ExpectedSourceCommit $env:GITHUB_SHA
+          $launchData=Read-LegacyHarnessJson -Path $launchReceipt -MaximumBytes 1048576
+          $receipt.originalLaunchDiagnostic=[ordered]@{file=$launchReceipt;sha256=(Get-FileHash -LiteralPath $launchReceipt -Algorithm SHA256).Hash.ToLowerInvariant();data=$launchData}
+        }
         [void](Invoke-LegacyGui)
       }else{[void](Invoke-NativeGui -Action 'provision-telegram' -Label 'diagnostic-gui')}
       $receipt.result='signed-setup-gui-diagnostic-only'

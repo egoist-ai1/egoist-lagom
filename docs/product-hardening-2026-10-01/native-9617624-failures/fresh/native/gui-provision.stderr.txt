@@ -1,0 +1,151 @@
+[11:49:34] [warn]  [dns-diagnostics] Current DNS server read failed; retrying in 5s. Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+    at genericNodeError (node:internal/errors:986:15)
+    at wrappedFn (node:internal/errors:540:14)
+    at ChildProcess.exithandler (node:child_process:417:12)
+    at ChildProcess.emit (node:events:514:28)
+    at maybeClose (node:internal/child_process:1141:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:306:5)
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12030, timeoutMs=12000, pid=3068, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'health:get-report': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12030, timeoutMs=12000, pid=3068, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'telegram-proxy:install-service': CoreServiceRequestError: Не удалось проверить владельца порта Telegram Proxy 127.0.0.1:1443; запуск отменён.
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+[11:49:43] [warn]  [window] console-message level=warning <connection-uri> [activity] APP-ACTION: Error invoking remote method 'telegram-proxy:install-service': CoreServiceRequestError: Не удалось проверить владельца порта Telegram Proxy 127.0.0.1:1443; запуск отменён.
+[11:49:51] [warn]  [updates] Managed component check failed: CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12023, timeoutMs=12000, pid=2676, stdoutBytes=0, stderrBytes=0
+CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12023, timeoutMs=12000, pid=2676, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (<connection-uri>
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (<connection-uri>
+[11:49:54] [error] [boot] background recovery failed: Error: Timed out inspecting network owners before mutation: dns:boot-recovery
+Error: Timed out inspecting network owners before mutation: dns:boot-recovery
+    at Timeout.<anonymous> (<connection-uri>
+    at listOnTimeout (node:internal/timers:685:17)
+    at process.processTimers (node:internal/timers:618:7)
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12025, timeoutMs=12000, pid=5804, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12019, timeoutMs=12000, pid=8468, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12021, timeoutMs=12000, pid=9100, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12029, timeoutMs=12000, pid=5740, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12047, timeoutMs=12000, pid=7672, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12032, timeoutMs=12000, pid=2168, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12028, timeoutMs=12000, pid=6492, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12022, timeoutMs=12000, pid=3352, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12021, timeoutMs=12000, pid=2460, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12025, timeoutMs=12000, pid=1252, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+[11:53:16] [warn]  [dns-diagnostics] Current DNS server read failed; retrying in 5s. Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+    at genericNodeError (node:internal/errors:986:15)
+    at wrappedFn (node:internal/errors:540:14)
+    at ChildProcess.exithandler (node:child_process:417:12)
+    at ChildProcess.emit (node:events:514:28)
+    at maybeClose (node:internal/child_process:1141:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:306:5)
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12038, timeoutMs=12000, pid=6724, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}

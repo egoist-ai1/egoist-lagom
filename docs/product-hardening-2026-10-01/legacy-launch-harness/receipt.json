@@ -1,0 +1,68 @@
+{
+  "kind": "legacy-launch-harness-working-source-validation",
+  "historicalRecipes": [
+    {
+      "version": "3.7.8",
+      "sourceCommit": "5df9a590a83ce86e98575d62807ebfca5939b88e",
+      "sourcePath": "src/installer/setup.nsi",
+      "sourceSha256": "90962faa6c595d7288fceb7285adc3dd1098cec23c1d84f23eff47511eab3756",
+      "exactWriteRegStrLines": [
+        "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\"",
+        "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\"",
+        "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\"",
+        "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+      ],
+      "authenticatedInstallerBytecodeReconstructed": false
+    },
+    {
+      "version": "3.7.9",
+      "sourceCommit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+      "sourcePath": "src/installer/setup.nsi",
+      "sourceSha256": "ebd988c9cdbac2155ae4cd3847beaa0cc7f5c2cfeb4f226eb4c250414bfe5691",
+      "exactWriteRegStrLines": [
+        "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\"",
+        "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\"",
+        "  WriteRegStr HKLM \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\"",
+        "  WriteRegStr HKCU \"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers\" \"$INSTDIR\\EgoistShield.exe\" \"~ RUNASADMIN\""
+      ],
+      "authenticatedInstallerBytecodeReconstructed": false
+    }
+  ],
+  "localTests": {
+    "powerShell7": {
+      "total": 26,
+      "pass": 26,
+      "fail": 0,
+      "skip": 0
+    },
+    "windowsPowerShell51": {
+      "total": 26,
+      "pass": 26,
+      "fail": 0,
+      "skip": 0
+    }
+  },
+  "actionlintExitCode": 0,
+  "localRegistryWrites": 0,
+  "originalSetupExecuted": false,
+  "newHostedCompatibilityRestorationExecuted": false,
+  "gpuFailureFixed": false,
+  "releaseAcceptance": false,
+  "rawEvidence": [
+    {
+      "file": "legacy-harness-target-tests.txt",
+      "bytes": 3031,
+      "sha256": "5ce1fe300a3475336e05ba263f90cd251e6131ed8f3665b3c751861bf7ff12aa"
+    },
+    {
+      "file": "legacy-harness-ps51-tests.txt",
+      "bytes": 3033,
+      "sha256": "2333cd088c8d508cbffa1bf4f378eac1e89e70285e59c1d91ce7bf723989ecea"
+    },
+    {
+      "file": "legacy-launch-workflow-actionlint.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

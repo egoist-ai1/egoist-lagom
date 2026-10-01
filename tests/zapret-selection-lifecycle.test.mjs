@@ -160,9 +160,17 @@ test('external conflict detection rejects without deleting a host service', asyn
 });
 
 test('unavailable process inventory is a failure, not evidence that all processes stopped', async () => {
-  const { manager } = fixture();
-  manager.execPowerShell = async () => { throw new Error('CIM access denied'); };
-  await assert.rejects(manager.listWinwsProcesses(), /CIM access denied/);
+  const failure = Object.assign(new Error('private native fixture failure'), { code: 'EACCES' });
+  const { manager } = fixture({ execFile: async (_exe, args) => {
+    assert.deepEqual(Array.from(args), ['--winws-process-snapshot']);
+    throw failure;
+  } });
+  await assert.rejects(manager.listWinwsProcesses(), error => error.cause === failure &&
+    error.nativeQueryDiagnostic.code === 'EACCES' && !error.message.includes('private native fixture'));
+  const partial = fixture({ execFile: async () => ({ stdout: JSON.stringify({ schemaVersion: 1,
+    operation: 'winws-process-snapshot', processName: 'winws.exe', snapshotAvailable: true,
+    identityComplete: false, processes: [] }) }) });
+  await assert.rejects(partial.manager.listWinwsProcesses(), /native snapshot failed/);
 });
 
 test('auto-select tests every profile twice, then recommends without starting a winner', async () => {

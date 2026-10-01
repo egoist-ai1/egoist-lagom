@@ -1,0 +1,362 @@
+﻿2026-10-01T11:47:26.2527661Z Current runner version: '2.337.0'
+2026-10-01T11:47:26.2545935Z ##[group]Runner Image Provisioner
+2026-10-01T11:47:26.2546434Z Hosted Compute Agent
+2026-10-01T11:47:26.2546727Z Version: 20260901.588
+2026-10-01T11:47:26.2547042Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+2026-10-01T11:47:26.2547427Z Build Date: 2026-09-01T19:56:44Z
+2026-10-01T11:47:26.2547768Z Worker ID: {422f5596-3e0e-4705-91ad-ffedc21d99ed}
+2026-10-01T11:47:26.2548142Z Azure Region: centralus
+2026-10-01T11:47:26.2548437Z ##[endgroup]
+2026-10-01T11:47:26.2549196Z ##[group]Operating System
+2026-10-01T11:47:26.2549533Z Microsoft Windows Server 2022
+2026-10-01T11:47:26.2549834Z 10.0.20348
+2026-10-01T11:47:26.2550088Z Datacenter
+2026-10-01T11:47:26.2550353Z ##[endgroup]
+2026-10-01T11:47:26.2550624Z ##[group]Runner Image
+2026-10-01T11:47:26.2550933Z Image: windows-2022
+2026-10-01T11:47:26.2551209Z Version: 20260927.320.1
+2026-10-01T11:47:26.2552271Z Included Software: https://github.com/actions/runner-images/blob/win22/20260927.320/images/windows/Windows2022-Readme.md
+2026-10-01T11:47:26.2553065Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20260927.320
+2026-10-01T11:47:26.2553553Z ##[endgroup]
+2026-10-01T11:47:26.2554157Z ##[group]GITHUB_TOKEN Permissions
+2026-10-01T11:47:26.2555206Z Contents: write
+2026-10-01T11:47:26.2555502Z Metadata: read
+2026-10-01T11:47:26.2555771Z ##[endgroup]
+2026-10-01T11:47:26.2557125Z Secret source: Actions
+2026-10-01T11:47:26.2557587Z Cache mode: write
+2026-10-01T11:47:26.2557977Z Prepare workflow directory
+2026-10-01T11:47:26.2797318Z Prepare all required actions
+2026-10-01T11:47:26.2829051Z Getting action download info
+2026-10-01T11:47:26.5800785Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-01T11:47:26.6620374Z Download action repository 'actions/setup-dotnet@v6' (SHA:a98b56852c35b8e3190ac28c8c2271da59106c68)
+2026-10-01T11:47:27.1077548Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-10-01T11:47:27.2180744Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-01T11:47:27.6103777Z Complete job name: legacy (3.7.8)
+2026-10-01T11:47:27.7280040Z ##[group]Run actions/checkout@v4
+2026-10-01T11:47:27.7280722Z with:
+2026-10-01T11:47:27.7280936Z   persist-credentials: false
+2026-10-01T11:47:27.7281199Z   repository: egoist-ai1/egoist-lagom
+2026-10-01T11:47:27.7283379Z   token: ***
+2026-10-01T11:47:27.7283581Z   ssh-strict: true
+2026-10-01T11:47:27.7283787Z   ssh-user: git
+2026-10-01T11:47:27.7283986Z   clean: true
+2026-10-01T11:47:27.7284198Z   sparse-checkout-cone-mode: true
+2026-10-01T11:47:27.7284449Z   fetch-depth: 1
+2026-10-01T11:47:27.7284653Z   fetch-tags: false
+2026-10-01T11:47:27.7284864Z   show-progress: true
+2026-10-01T11:47:27.7285077Z   lfs: false
+2026-10-01T11:47:27.7285269Z   submodules: false
+2026-10-01T11:47:27.7285490Z   set-safe-directory: true
+2026-10-01T11:47:27.7285758Z   allow-unsafe-pr-checkout: false
+2026-10-01T11:47:27.7286097Z ##[endgroup]
+2026-10-01T11:47:27.8251173Z Syncing repository: egoist-ai1/egoist-lagom
+2026-10-01T11:47:27.8252174Z ##[group]Getting Git version info
+2026-10-01T11:47:27.8252571Z Working directory is 'D:\a\egoist-lagom\egoist-lagom'
+2026-10-01T11:47:27.8838906Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-10-01T11:47:28.2560898Z git version 2.55.0.windows.5
+2026-10-01T11:47:28.2587697Z ##[endgroup]
+2026-10-01T11:47:28.2599894Z Temporarily overriding HOME='D:\a\_temp\cd27cc6b-765c-4d0c-b888-bdd46ea5bd80' before making global git config changes
+2026-10-01T11:47:28.2600665Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-01T11:47:28.2606592Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\egoist-lagom\egoist-lagom
+2026-10-01T11:47:28.3084277Z Deleting the contents of 'D:\a\egoist-lagom\egoist-lagom'
+2026-10-01T11:47:28.3087811Z ##[group]Initializing the repository
+2026-10-01T11:47:28.3094369Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\egoist-lagom\egoist-lagom
+2026-10-01T11:47:28.3760685Z Initialized empty Git repository in D:/a/egoist-lagom/egoist-lagom/.git/
+2026-10-01T11:47:28.3791563Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/egoist-ai1/egoist-lagom
+2026-10-01T11:47:28.4229550Z ##[endgroup]
+2026-10-01T11:47:28.4230076Z ##[group]Disabling automatic garbage collection
+2026-10-01T11:47:28.4236450Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-10-01T11:47:28.4393053Z ##[endgroup]
+2026-10-01T11:47:28.4393567Z ##[group]Setting up auth
+2026-10-01T11:47:28.4401323Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-01T11:47:28.4563267Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-01T11:47:29.6369133Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-01T11:47:29.6535708Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-01T11:47:29.9793208Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-01T11:47:29.9964479Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-01T11:47:30.3704857Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-10-01T11:47:30.3945417Z ##[endgroup]
+2026-10-01T11:47:30.3946099Z ##[group]Fetching the repository
+2026-10-01T11:47:30.4000501Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +9617624b888d9e8bd2b1df1e60ca4a21947f5c2d:refs/remotes/origin/codex/lagom-production-audit
+2026-10-01T11:47:32.7082641Z From https://github.com/egoist-ai1/egoist-lagom
+2026-10-01T11:47:32.7140680Z  * [new ref]         9617624b888d9e8bd2b1df1e60ca4a21947f5c2d -> origin/codex/lagom-production-audit
+2026-10-01T11:47:32.7142560Z ##[endgroup]
+2026-10-01T11:47:32.7142923Z ##[group]Determining the checkout info
+2026-10-01T11:47:32.7143269Z ##[endgroup]
+2026-10-01T11:47:32.7143803Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-10-01T11:47:32.7441923Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-10-01T11:47:32.7602346Z ##[group]Checking out the ref
+2026-10-01T11:47:32.7608706Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B codex/lagom-production-audit refs/remotes/origin/codex/lagom-production-audit
+2026-10-01T11:47:33.1004607Z Switched to a new branch 'codex/lagom-production-audit'
+2026-10-01T11:47:33.1061347Z branch 'codex/lagom-production-audit' set up to track 'origin/codex/lagom-production-audit'.
+2026-10-01T11:47:33.1116950Z ##[endgroup]
+2026-10-01T11:47:33.1358214Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-10-01T11:47:33.1499841Z 9617624b888d9e8bd2b1df1e60ca4a21947f5c2d
+2026-10-01T11:47:33.1526294Z ##[group]Removing auth
+2026-10-01T11:47:33.1532094Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-01T11:47:33.1692622Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-01T11:47:33.5236308Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-01T11:47:33.5374965Z http.https://github.com/.extraheader
+2026-10-01T11:47:33.5400005Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-10-01T11:47:33.5559696Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-01T11:47:33.8863757Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-01T11:47:33.9029562Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-01T11:47:34.2195714Z ##[endgroup]
+2026-10-01T11:47:34.2443206Z ##[group]Run $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+2026-10-01T11:47:34.2443752Z [36;1m$sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version[0m
+2026-10-01T11:47:34.2444082Z [36;1mif ($sdkPin -notmatch '^\d+\.\d+\.\d+$') { throw 'An exact SDK is required.' }[0m
+2026-10-01T11:47:34.2444336Z [36;1m"version=$sdkPin" >> $env:GITHUB_OUTPUT[0m
+2026-10-01T11:47:34.2444622Z [36;1m"DOTNET_INSTALL_DIR=$(Join-Path $env:RUNNER_TEMP 'lagom-signed-legacy-dotnet')" >> $env:GITHUB_ENV[0m
+2026-10-01T11:47:34.2736109Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T11:47:34.2736343Z ##[endgroup]
+2026-10-01T11:47:34.5831700Z ##[group]Run actions/setup-dotnet@v6
+2026-10-01T11:47:34.5831907Z with:
+2026-10-01T11:47:34.5832019Z   dotnet-version: 10.0.401
+2026-10-01T11:47:34.5832148Z   cache: false
+2026-10-01T11:47:34.5832246Z env:
+2026-10-01T11:47:34.5832384Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-signed-legacy-dotnet
+2026-10-01T11:47:34.5832556Z ##[endgroup]
+2026-10-01T11:47:34.7314944Z [command]"C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -Sta -NoProfile -NonInteractive -ExecutionPolicy Unrestricted -Command & 'D:\a\_actions\actions\setup-dotnet\v6\externals\install-dotnet.ps1' -SkipNonVersionedFiles -Runtime dotnet -Channel LTS
+2026-10-01T11:47:36.4634981Z dotnet-install: Downloaded file https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.12/dotnet-runtime-10.0.12-win-x64.zip size is 36960258 bytes.
+2026-10-01T11:47:36.4636534Z dotnet-install: Either downloaded or local package size can not be measured. One of them may be corrupted.
+2026-10-01T11:47:36.4654278Z dotnet-install: Extracting the archive.
+2026-10-01T11:47:36.8550525Z dotnet-install: Adding to current process PATH: "D:\a\_temp\lagom-signed-legacy-dotnet\". Note: This change will not be visible if PowerShell was run as a child process.
+2026-10-01T11:47:36.8564227Z dotnet-install: Note that the script does not ensure your Windows version is supported during the installation.
+2026-10-01T11:47:36.8596870Z dotnet-install: To check the list of supported versions, go to https://learn.microsoft.com/dotnet/core/install/windows#supported-versions
+2026-10-01T11:47:36.8600743Z dotnet-install: Installed version is 10.0.12
+2026-10-01T11:47:36.8604455Z dotnet-install: Installation finished
+2026-10-01T11:47:36.9425634Z [command]"C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -Sta -NoProfile -NonInteractive -ExecutionPolicy Unrestricted -Command & 'D:\a\_actions\actions\setup-dotnet\v6\externals\install-dotnet.ps1' -SkipNonVersionedFiles -Version 10.0.401
+2026-10-01T11:47:44.1224311Z dotnet-install: Downloaded file https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.401/dotnet-sdk-10.0.401-win-x64.zip size is 300608304 bytes.
+2026-10-01T11:47:44.1227852Z dotnet-install: Either downloaded or local package size can not be measured. One of them may be corrupted.
+2026-10-01T11:47:44.1245378Z dotnet-install: Extracting the archive.
+2026-10-01T11:47:50.3373611Z dotnet-install: Adding to current process PATH: "D:\a\_temp\lagom-signed-legacy-dotnet\". Note: This change will not be visible if PowerShell was run as a child process.
+2026-10-01T11:47:50.3384672Z dotnet-install: Note that the script does not ensure your Windows version is supported during the installation.
+2026-10-01T11:47:50.3387815Z dotnet-install: To check the list of supported versions, go to https://learn.microsoft.com/dotnet/core/install/windows#supported-versions
+2026-10-01T11:47:50.3391311Z dotnet-install: Installed version is 10.0.401
+2026-10-01T11:47:50.3394512Z dotnet-install: Installation finished
+2026-10-01T11:47:50.4195516Z ##[group]Run actions/setup-node@v4
+2026-10-01T11:47:50.4195710Z with:
+2026-10-01T11:47:50.4195821Z   node-version: 24
+2026-10-01T11:47:50.4195927Z   cache: npm
+2026-10-01T11:47:50.4196033Z   always-auth: false
+2026-10-01T11:47:50.4196145Z   check-latest: false
+2026-10-01T11:47:50.4197626Z   token: ***
+2026-10-01T11:47:50.4197731Z env:
+2026-10-01T11:47:50.4197880Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-signed-legacy-dotnet
+2026-10-01T11:47:50.4198102Z   DOTNET_ROOT: D:\a\_temp\lagom-signed-legacy-dotnet
+2026-10-01T11:47:50.4198262Z ##[endgroup]
+2026-10-01T11:47:50.5349915Z Found in cache @ C:\hostedtoolcache\windows\node\24.21.0\x64
+2026-10-01T11:47:50.5354648Z (node:4748) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-01T11:47:50.5355034Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-01T11:47:50.5356752Z ##[group]Environment details
+2026-10-01T11:47:55.0239862Z node: v24.21.0
+2026-10-01T11:47:55.0240054Z npm: 11.19.0
+2026-10-01T11:47:55.0240161Z yarn: 1.22.22
+2026-10-01T11:47:55.0240554Z ##[endgroup]
+2026-10-01T11:47:55.0599194Z [command]C:\Windows\system32\cmd.exe /D /S /C "C:\hostedtoolcache\windows\node\24.21.0\x64\npm.cmd config get cache"
+2026-10-01T11:47:55.4795881Z C:\npm\cache
+2026-10-01T11:47:55.7697381Z Cache hit for: node-cache-Windows-x64-npm-cefcb963e52f6ab6cc3c573f31716317af42fd41e48706b5eb594ab15860b8f2
+2026-10-01T11:47:55.7771237Z (node:4748) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-01T11:47:56.5332081Z Received 8686140 of 8686140 (100.0%), 13.5 MBs/sec
+2026-10-01T11:47:56.5333393Z Cache Size: ~8 MB (8686140 B)
+2026-10-01T11:47:56.5352257Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/31fc6cf6-98fa-4cc2-9fed-d7503f84842f/cache.tzst -P -C D:/a/egoist-lagom/egoist-lagom --force-local --use-compress-program "zstd -d"
+2026-10-01T11:47:56.9659207Z Cache restored successfully
+2026-10-01T11:47:56.9671892Z Cache restored from key: node-cache-Windows-x64-npm-cefcb963e52f6ab6cc3c573f31716317af42fd41e48706b5eb594ab15860b8f2
+2026-10-01T11:47:56.9906013Z ##[group]Run npm ci
+2026-10-01T11:47:56.9906216Z [36;1mnpm ci[0m
+2026-10-01T11:47:56.9906373Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T11:47:56.9930475Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T11:47:56.9930675Z env:
+2026-10-01T11:47:56.9930840Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-signed-legacy-dotnet
+2026-10-01T11:47:56.9931055Z   DOTNET_ROOT: D:\a\_temp\lagom-signed-legacy-dotnet
+2026-10-01T11:47:56.9931225Z ##[endgroup]
+2026-10-01T11:47:58.8772152Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+2026-10-01T11:47:58.9144320Z npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+2026-10-01T11:47:58.9410037Z npm warn deprecated rcedit@5.0.2: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+2026-10-01T11:47:59.5878615Z 
+2026-10-01T11:47:59.5879353Z added 33 packages, and audited 34 packages in 2s
+2026-10-01T11:47:59.5879604Z 
+2026-10-01T11:47:59.5880210Z 8 packages are looking for funding
+2026-10-01T11:47:59.5880481Z   run `npm fund` for details
+2026-10-01T11:47:59.5886370Z 
+2026-10-01T11:47:59.5886654Z found 0 vulnerabilities
+2026-10-01T11:47:59.5895611Z npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+2026-10-01T11:47:59.5896193Z npm warn install-scripts   esbuild@0.25.12 (postinstall: node install.js)
+2026-10-01T11:47:59.5896541Z npm warn install-scripts
+2026-10-01T11:47:59.5897135Z npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+2026-10-01T11:48:00.8537271Z ##[group]Run if ($env:SIGNED_LEGACY_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Invalid signed release ID.' }
+2026-10-01T11:48:00.8537807Z [36;1mif ($env:SIGNED_LEGACY_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Invalid signed release ID.' }[0m
+2026-10-01T11:48:00.8538115Z [36;1m$oldVersion = $env:SIGNED_OLD_VERSION[0m
+2026-10-01T11:48:00.8538431Z [36;1mif ($oldVersion -cnotin @('3.7.8', '3.7.9')) { throw 'Only the two authenticated supported old versions may be tested.' }[0m
+2026-10-01T11:48:00.8538803Z [36;1m$version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version[0m
+2026-10-01T11:48:00.8539115Z [36;1mif ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid candidate version.' }[0m
+2026-10-01T11:48:00.8539343Z [36;1m$oldRelease = $null[0m
+2026-10-01T11:48:00.8539488Z [36;1mif ($oldVersion -ceq '3.7.9') {[0m
+2026-10-01T11:48:00.8539747Z [36;1m  $oldReleaseText = gh api 'repos/egoist-ai1/egoist-lagom/releases/tags/v3.7.9'[0m
+2026-10-01T11:48:00.8540010Z [36;1m  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T11:48:00.8540212Z [36;1m  $oldRelease = $oldReleaseText | ConvertFrom-Json[0m
+2026-10-01T11:48:00.8540638Z [36;1m  if ($oldRelease.tag_name -cne 'v3.7.9' -or $oldRelease.draft -or -not $oldRelease.published_at) { throw 'The old 3.7.9 release must match the exact published generation.' }[0m
+2026-10-01T11:48:00.8541005Z [36;1m}[0m
+2026-10-01T11:48:00.8541236Z [36;1m$candidateText = gh api ("repos/egoist-ai1/egoist-lagom/releases/" + $env:SIGNED_LEGACY_RELEASE_ID)[0m
+2026-10-01T11:48:00.8541533Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T11:48:00.8541747Z [36;1m$candidateRelease = $candidateText | ConvertFrom-Json[0m
+2026-10-01T11:48:00.8542161Z [36;1mif ($candidateRelease.tag_name -cne "v$version" -or [string]$candidateRelease.id -cne $env:SIGNED_LEGACY_RELEASE_ID) { throw 'The candidate release identity differs.' }[0m
+2026-10-01T11:48:00.8542680Z [36;1m$tagSelectionText = gh release view "v$version" --repo 'egoist-ai1/egoist-lagom' --json databaseId,tagName,isDraft[0m
+2026-10-01T11:48:00.8543000Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T11:48:00.8543210Z [36;1m$tagSelection = $tagSelectionText | ConvertFrom-Json[0m
+2026-10-01T11:48:00.8543764Z [36;1mif ([string]$tagSelection.databaseId -cne $env:SIGNED_LEGACY_RELEASE_ID -or $tagSelection.tagName -cne $candidateRelease.tag_name -or $tagSelection.isDraft -ne $candidateRelease.draft) { throw 'Candidate tag resolves to a different release.' }[0m
+2026-10-01T11:48:00.8544372Z [36;1m$legacyWork = Join-Path $env:RUNNER_TEMP ("lagom-signed-legacy-" + $oldVersion)[0m
+2026-10-01T11:48:00.8544714Z [36;1mif (Test-Path -LiteralPath $legacyWork) { throw 'Signed acceptance work directory must be fresh.' }[0m
+2026-10-01T11:48:00.8544992Z [36;1m$oldAssets = Join-Path $legacyWork 'old'[0m
+2026-10-01T11:48:00.8545203Z [36;1m$candidateAssets = Join-Path $legacyWork 'candidate'[0m
+2026-10-01T11:48:00.8545407Z [36;1m$evidence = Join-Path $legacyWork 'evidence'[0m
+2026-10-01T11:48:00.8545653Z [36;1mNew-Item -ItemType Directory -Path $candidateAssets, $evidence -Force | Out-Null[0m
+2026-10-01T11:48:00.8547044Z [36;1mgh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $candidateAssets --pattern "EgoistShield-Setup-$version.exe" --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig' --pattern 'package-integrity.json'[0m
+2026-10-01T11:48:00.8547727Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T11:48:00.8547929Z [36;1m$oldTransport = 'published-original-release'[0m
+2026-10-01T11:48:00.8548110Z [36;1m$oldReleaseId = $null[0m
+2026-10-01T11:48:00.8548255Z [36;1mif ($oldVersion -ceq '3.7.8') {[0m
+2026-10-01T11:48:00.8548461Z [36;1m  # The authenticated original 3.7.8 generation exists locally; its[0m
+2026-10-01T11:48:00.8549709Z [36;1m  # canonical signed URL is not evidence of a published old release.[0m
+2026-10-01T11:48:00.8550367Z [36;1m  gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $candidateAssets --pattern 'legacy-local-EgoistShield-Setup-3.7.8.exe' --pattern 'legacy-local-3.7.8-release-manifest.json' --pattern 'legacy-local-3.7.8-release-manifest.json.sig'[0m
+2026-10-01T11:48:00.8550959Z [36;1m  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T11:48:00.8551432Z [36;1m  node tests/windows-legacy-local-transport.mjs stage --sidecars $candidateAssets --candidate-registry $candidateAssets --old-assets $oldAssets --source-release-id $env:SIGNED_LEGACY_RELEASE_ID[0m
+2026-10-01T11:48:00.8551896Z [36;1m  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T11:48:00.8552247Z [36;1m  Copy-Item -LiteralPath (Join-Path $oldAssets 'provenance.json') -Destination (Join-Path $evidence 'original-3.7.8-transport.json')[0m
+2026-10-01T11:48:00.8552607Z [36;1m  $oldTransport = 'original-signed-local-generation'[0m
+2026-10-01T11:48:00.8552788Z [36;1m} else {[0m
+2026-10-01T11:48:00.8552947Z [36;1m  New-Item -ItemType Directory -Path $oldAssets | Out-Null[0m
+2026-10-01T11:48:00.8553574Z [36;1m  gh release download 'v3.7.9' --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern 'EgoistShield-Setup-3.7.9.exe' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'[0m
+2026-10-01T11:48:00.8554168Z [36;1m  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T11:48:00.8554348Z [36;1m  $oldReleaseId = $oldRelease.id[0m
+2026-10-01T11:48:00.8554497Z [36;1m}[0m
+2026-10-01T11:48:00.8555259Z [36;1m@{ oldVersion = $oldVersion; oldReleaseId = $oldReleaseId; oldTransport = $oldTransport; publishedOldOriginVerified = ($oldVersion -ceq '3.7.9'); candidateReleaseId = $candidateRelease.id; sourceCommit = $env:GITHUB_SHA; candidateTag = $candidateRelease.tag_name; candidateDraft = $candidateRelease.draft } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'download-identity.json') -Encoding utf8[0m
+2026-10-01T11:48:00.8556079Z [36;1m"LAGOM_LEGACY_WORK=$legacyWork" >> $env:GITHUB_ENV[0m
+2026-10-01T11:48:00.8580453Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T11:48:00.8580643Z env:
+2026-10-01T11:48:00.8580800Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-signed-legacy-dotnet
+2026-10-01T11:48:00.8581008Z   DOTNET_ROOT: D:\a\_temp\lagom-signed-legacy-dotnet
+2026-10-01T11:48:00.8582671Z   GH_TOKEN: ***
+2026-10-01T11:48:00.8582796Z   SIGNED_LEGACY_RELEASE_ID: 400907438
+2026-10-01T11:48:00.8582939Z   SIGNED_OLD_VERSION: 3.7.8
+2026-10-01T11:48:00.8583064Z ##[endgroup]
+2026-10-01T11:48:16.0698685Z {
+2026-10-01T11:48:16.0698950Z   "ok": true,
+2026-10-01T11:48:16.0699223Z   "schemaVersion": 1,
+2026-10-01T11:48:16.0699518Z   "transport": "original-signed-local-generation",
+2026-10-01T11:48:16.0699819Z   "oldVersion": "3.7.8",
+2026-10-01T11:48:16.0700099Z   "publishedOriginVerified": false,
+2026-10-01T11:48:16.0700359Z   "sourceReleaseId": 400907438,
+2026-10-01T11:48:16.0700620Z   "sourceReleaseIdRole": "transport-draft",
+2026-10-01T11:48:16.0701211Z   "draftApiStatusVerifiedByTransporter": false,
+2026-10-01T11:48:16.0701607Z   "harnessSourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+2026-10-01T11:48:16.0702162Z   "harnessSourceCommitOrigin": "GITHUB_SHA observed at staging; not a legacy generation commit",
+2026-10-01T11:48:16.0702600Z   "stagedAtUtc": "2026-10-01T11:48:16.064Z",
+2026-10-01T11:48:16.0702853Z   "sourceAssetNames": [
+2026-10-01T11:48:16.0703136Z     "legacy-local-EgoistShield-Setup-3.7.8.exe",
+2026-10-01T11:48:16.0703463Z     "legacy-local-3.7.8-release-manifest.json",
+2026-10-01T11:48:16.0703843Z     "legacy-local-3.7.8-release-manifest.json.sig"
+2026-10-01T11:48:16.0704090Z   ],
+2026-10-01T11:48:16.0704444Z   "rootSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+2026-10-01T11:48:16.0705929Z   "originalRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+2026-10-01T11:48:16.0706681Z   "originalManifestSha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3",
+2026-10-01T11:48:16.0707268Z   "crypto": "Original byte equality and existing pinned-root Ed25519 verification",
+2026-10-01T11:48:16.0707680Z   "files": [
+2026-10-01T11:48:16.0707850Z     {
+2026-10-01T11:48:16.0708084Z       "name": "EgoistShield-Setup-3.7.8.exe",
+2026-10-01T11:48:16.0708353Z       "bytes": 194405835,
+2026-10-01T11:48:16.0708727Z       "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+2026-10-01T11:48:16.0709550Z       "sha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61"
+2026-10-01T11:48:16.0710139Z     },
+2026-10-01T11:48:16.0710299Z     {
+2026-10-01T11:48:16.0710519Z       "name": "release-manifest.json",
+2026-10-01T11:48:16.0710789Z       "bytes": 785,
+2026-10-01T11:48:16.0711156Z       "sha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3",
+2026-10-01T11:48:16.0711968Z       "sha512": "e641d56a223bcacf6d3c5ead4154320b43c39cbc4730531e45bb615c23659597d057a644214d84844c5699e751de5f3bd187caa82d576cf5d71c9c7f02864d3f"
+2026-10-01T11:48:16.0712564Z     },
+2026-10-01T11:48:16.0712829Z     {
+2026-10-01T11:48:16.0713050Z       "name": "release-manifest.json.sig",
+2026-10-01T11:48:16.0713304Z       "bytes": 89,
+2026-10-01T11:48:16.0713671Z       "sha256": "c6b36d487342ab878e3428e1487a6e60e4599740574c22c090445f0b96eecb37",
+2026-10-01T11:48:16.0714505Z       "sha512": "341367541cb4a1bb5edec728cfa16ca239eaea52a4fcdc1de60b2118cfc5b4d81345a102011d1f61b1b2748bbba3be709e94e90a7e7882eb96ad9ce4b950fee5"
+2026-10-01T11:48:16.0715104Z     },
+2026-10-01T11:48:16.0715263Z     {
+2026-10-01T11:48:16.0715485Z       "name": "release-key-registry.json",
+2026-10-01T11:48:16.0715748Z       "bytes": 1100,
+2026-10-01T11:48:16.0716141Z       "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+2026-10-01T11:48:16.0716967Z       "sha512": "bded048a60b337c800daa8006d0613d42489612d939117b5852d10df6dc8f475f46d5060b55eec89d5769845c41f9c40ff29b755b9b1f3750b361d10a44dba3b"
+2026-10-01T11:48:16.0717560Z     },
+2026-10-01T11:48:16.0717721Z     {
+2026-10-01T11:48:16.0717957Z       "name": "release-key-registry.json.sig",
+2026-10-01T11:48:16.0718230Z       "bytes": 89,
+2026-10-01T11:48:16.0718596Z       "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de",
+2026-10-01T11:48:16.0719450Z       "sha512": "b14a4e0a0984b9aa9c7ace9c6d8b38b7b88f79d47ff0a717d9bad9d7b5a288065cac84b1373c850b1e82d83ee1f7c373c8cdeba90d9ff9f6d5b60945cba0aff1"
+2026-10-01T11:48:16.0720057Z     }
+2026-10-01T11:48:16.0720211Z   ],
+2026-10-01T11:48:16.0720399Z   "installerExecuted": false,
+2026-10-01T11:48:16.0720671Z   "publicFeedDiscoveryTested": false
+2026-10-01T11:48:16.0720915Z }
+2026-10-01T11:48:16.1436223Z ##[group]Run if ($env:LAGOM_LEGACY_RESTORE -cnotin @('true','false')) { throw 'Invalid legacy baseline selection.' }
+2026-10-01T11:48:16.1436710Z [36;1mif ($env:LAGOM_LEGACY_RESTORE -cnotin @('true','false')) { throw 'Invalid legacy baseline selection.' }[0m
+2026-10-01T11:48:16.1437221Z [36;1m$env:SHIELD_DOTNET = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'[0m
+2026-10-01T11:48:16.1437480Z [36;1m$oldAssets = Join-Path $env:LAGOM_LEGACY_WORK 'old'[0m
+2026-10-01T11:48:16.1437725Z [36;1m$candidateAssets = Join-Path $env:LAGOM_LEGACY_WORK 'candidate'[0m
+2026-10-01T11:48:16.1438708Z [36;1m$legacyOptions = @{ ExpectedOldVersion=$env:LAGOM_OLD_VERSION; OldReleaseAssetsDirectory=$oldAssets; CandidateReleaseAssetsDirectory=$candidateAssets; IntegrityManifestPath=(Join-Path $candidateAssets 'package-integrity.json'); ExpectedSourceCommit=$env:GITHUB_SHA; EvidenceDirectory=(Join-Path $env:LAGOM_LEGACY_WORK 'evidence\native'); RestoreAuthenticatedBaseline=($env:LAGOM_LEGACY_RESTORE -ceq 'true') }[0m
+2026-10-01T11:48:16.1439640Z [36;1m./tests/windows-production-legacy-upgrade.ps1 @legacyOptions[0m
+2026-10-01T11:48:16.1439888Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T11:48:16.1464682Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T11:48:16.1464973Z env:
+2026-10-01T11:48:16.1465150Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-signed-legacy-dotnet
+2026-10-01T11:48:16.1465373Z   DOTNET_ROOT: D:\a\_temp\lagom-signed-legacy-dotnet
+2026-10-01T11:48:16.1465583Z   LAGOM_LEGACY_WORK: D:\a\_temp\lagom-signed-legacy-3.7.8
+2026-10-01T11:48:16.1465768Z   LAGOM_LEGACY_RESTORE: true
+2026-10-01T11:48:16.1465911Z   LAGOM_OLD_VERSION: 3.7.8
+2026-10-01T11:48:16.1466042Z ##[endgroup]
+2026-10-01T11:48:48.6231327Z [31;1mException: [0mD:\a\egoist-lagom\egoist-lagom\tests\windows-production-legacy-upgrade.ps1:148[0m
+2026-10-01T11:48:48.6231951Z [31;1m[0m[36;1mLine |[0m
+2026-10-01T11:48:48.6232701Z [31;1m[0m[36;1m[36;1m 148 | [0m … .HasExited){[36;1mthrow "Old GUI exited before its native window was ready [0m …[0m
+2026-10-01T11:48:48.6233456Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+2026-10-01T11:48:48.6234234Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mOld GUI exited before its native window was ready (exit -2147483645).[0m
+2026-10-01T11:48:48.6505169Z ##[error]Process completed with exit code 1.
+2026-10-01T11:48:48.6646936Z ##[group]Run actions/upload-artifact@v4
+2026-10-01T11:48:48.6647293Z with:
+2026-10-01T11:48:48.6647694Z   name: lagom-signed-legacy-3.7.8-acceptance-9617624b888d9e8bd2b1df1e60ca4a21947f5c2d
+2026-10-01T11:48:48.6648004Z   retention-days: 7
+2026-10-01T11:48:48.6648166Z   if-no-files-found: warn
+2026-10-01T11:48:48.6648375Z   path: D:\a\_temp/lagom-signed-legacy-3.7.8/evidence
+2026-10-01T11:48:48.6648587Z   compression-level: 6
+2026-10-01T11:48:48.6648776Z   overwrite: false
+2026-10-01T11:48:48.6648938Z   include-hidden-files: false
+2026-10-01T11:48:48.6649105Z env:
+2026-10-01T11:48:48.6649301Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-signed-legacy-dotnet
+2026-10-01T11:48:48.6649566Z   DOTNET_ROOT: D:\a\_temp\lagom-signed-legacy-dotnet
+2026-10-01T11:48:48.6649837Z   LAGOM_LEGACY_WORK: D:\a\_temp\lagom-signed-legacy-3.7.8
+2026-10-01T11:48:48.6650052Z ##[endgroup]
+2026-10-01T11:48:48.8050866Z (node:6856) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-01T11:48:48.8051436Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-01T11:48:48.8149622Z With the provided path, there will be 38 files uploaded
+2026-10-01T11:48:48.8152937Z Artifact name is valid!
+2026-10-01T11:48:48.8153805Z Root directory input is valid!
+2026-10-01T11:48:49.0940390Z Beginning upload of artifact content to blob storage
+2026-10-01T11:48:49.2220201Z (node:6856) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-01T11:48:49.4958744Z Uploaded bytes 127763
+2026-10-01T11:48:49.5439282Z Finished uploading artifact content to blob storage!
+2026-10-01T11:48:49.5440707Z SHA256 digest of uploaded artifact zip is cbdea59aa8e652cf175d85e7ea3b9addb1a52738c99637add0a43defe21c9d02
+2026-10-01T11:48:49.5441778Z Finalizing artifact upload
+2026-10-01T11:48:49.7634340Z Artifact lagom-signed-legacy-3.7.8-acceptance-9617624b888d9e8bd2b1df1e60ca4a21947f5c2d.zip successfully finalized. Artifact ID 11159645372
+2026-10-01T11:48:49.7635513Z Artifact lagom-signed-legacy-3.7.8-acceptance-9617624b888d9e8bd2b1df1e60ca4a21947f5c2d has been successfully uploaded! Final size is 127763 bytes. Artifact ID is 11159645372
+2026-10-01T11:48:49.7644194Z Artifact download URL: https://github.com/egoist-ai1/egoist-lagom/actions/runs/36856686510/artifacts/11159645372
+2026-10-01T11:48:49.7929303Z Post job cleanup.
+2026-10-01T11:48:49.9129576Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-10-01T11:48:49.9304581Z git version 2.55.0.windows.5
+2026-10-01T11:48:49.9349805Z Temporarily overriding HOME='D:\a\_temp\d2cab89b-dff9-48f8-bbaa-8579e1425978' before making global git config changes
+2026-10-01T11:48:49.9351095Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-01T11:48:49.9358657Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\egoist-lagom\egoist-lagom
+2026-10-01T11:48:49.9567914Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-01T11:48:49.9771390Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-01T11:48:50.4551799Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-01T11:48:50.4734735Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-01T11:48:50.8647098Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-01T11:48:50.8840877Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-01T11:48:51.2294686Z Cleaning up orphan processes
+2026-10-01T11:48:51.2610040Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

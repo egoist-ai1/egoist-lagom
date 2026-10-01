@@ -1,0 +1,443 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-10-01T13:41:55.078422+00:00",
+  "taskId": "01a0f75d-1042-7df1-9e68-86e8c4a49415",
+  "project": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom",
+  "baseHead": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+  "sourceState": "uncommitted scoped freeze; parent integration and sealed release remain pending",
+  "productionFrozen": true,
+  "ownedSources": [
+    {
+      "path": "src/service/EgoistShield.Service/WindowsServiceListenerSnapshot.cs",
+      "sha256": "a85748fb3630794043d5fc88f11c872aad5d343d99b38f37261641712ef1c379",
+      "bytes": 19336,
+      "sha256LfNormalized": "a85748fb3630794043d5fc88f11c872aad5d343d99b38f37261641712ef1c379"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/TelegramListenerSnapshotCommand.cs",
+      "sha256": "44af45ecfd113e0ef4eeb3eeae61fed838e0b6e995c1cefcaa9676f0f81d562e",
+      "bytes": 7823,
+      "sha256LfNormalized": "44af45ecfd113e0ef4eeb3eeae61fed838e0b6e995c1cefcaa9676f0f81d562e"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/Program.cs",
+      "sha256": "66e15e519d3ea1243da8cd706aff7fe8aa7a4b74806f0c5327649280259d7977",
+      "bytes": 9748,
+      "sha256LfNormalized": "66e15e519d3ea1243da8cd706aff7fe8aa7a4b74806f0c5327649280259d7977"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/WinwsProcessSnapshotCommand.cs",
+      "sha256": "7499792dc20249b5da61704f69fc44fb78455f458fceed7ac04dd724ec5e795b",
+      "bytes": 1599,
+      "sha256LfNormalized": "7499792dc20249b5da61704f69fc44fb78455f458fceed7ac04dd724ec5e795b"
+    },
+    {
+      "path": "src/recovered/electron/ipc/telegram-proxy-manager.js",
+      "sha256": "63296162c5942d6f5b914be94538997b2f27832b515c2da08bb75c4c84fa5b3b",
+      "bytes": 81391,
+      "sha256LfNormalized": "63296162c5942d6f5b914be94538997b2f27832b515c2da08bb75c4c84fa5b3b"
+    },
+    {
+      "path": "src/recovered/electron/ipc/zapret-manager.js",
+      "sha256": "3e48d9a6f282ceeacd7039e9852a8790e70180fd56f3413566db77bdbf264fd1",
+      "bytes": 136553,
+      "sha256LfNormalized": "0bac1e27caa8817f850b5da09a309311a6b1efebe1559b6cc09c25db2290af20"
+    },
+    {
+      "path": "tests/zapret-query-diagnostics.test.mjs",
+      "sha256": "bba602b3c00c3b60c93c9abbfc3d87829b75e1fee639f8f60687a678f91faaa9",
+      "bytes": 7513,
+      "sha256LfNormalized": "bba602b3c00c3b60c93c9abbfc3d87829b75e1fee639f8f60687a678f91faaa9"
+    },
+    {
+      "path": "tests/telegram-listener-ownership.test.mjs",
+      "sha256": "11f1630e96f60c73518f9441e5284c509aff40fc6738cd3dfeecf6a3caeaad46",
+      "bytes": 16291,
+      "sha256LfNormalized": "11f1630e96f60c73518f9441e5284c509aff40fc6738cd3dfeecf6a3caeaad46"
+    },
+    {
+      "path": "tests/zapret-selection-lifecycle.test.mjs",
+      "sha256": "3c54e9a9bc60d3922f0e7cda1f9e3e0eacb2d63b374ebed61c016951b68a7523",
+      "bytes": 20244,
+      "sha256LfNormalized": "b5b3afdee6728165ce2f6539779e382a7bdf5923f581754a788be71b0d6cfeb1"
+    },
+    {
+      "path": "tests/native-process-query.test.mjs",
+      "sha256": "6d8efe1e2fee1d3950ecf416fa4cbfab932bac7df6e2f093a145a94555c4b74f",
+      "bytes": 12001,
+      "sha256LfNormalized": "6d8efe1e2fee1d3950ecf416fa4cbfab932bac7df6e2f093a145a94555c4b74f"
+    },
+    {
+      "path": "tests/NativeQueryRegression/NativeQueryRegression.csproj",
+      "sha256": "0f0ce100d6e887eb2bb15b2f8870cba6ff5f455124118ffd9c314b0cbc07aab5",
+      "bytes": 836,
+      "sha256LfNormalized": "0f0ce100d6e887eb2bb15b2f8870cba6ff5f455124118ffd9c314b0cbc07aab5"
+    },
+    {
+      "path": "tests/NativeQueryRegression/Program.cs",
+      "sha256": "fffd7bcc21bde0a9503b7e4f0818c3b78539271af205eddea74ed23b9ed9f88e",
+      "bytes": 12611,
+      "sha256LfNormalized": "fffd7bcc21bde0a9503b7e4f0818c3b78539271af205eddea74ed23b9ed9f88e"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/final-native-exe-compile.txt",
+      "sha256": "1df2ad08a7498c3f149877dc74525cac5b3168da9f2a100805ca462d9d94d484",
+      "bytes": 135708
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/final-native-exe-proof.txt",
+      "sha256": "e370a4fc12a644c84f03d451940f17d2e4be11647ebc1e0dd428256d1e80983d",
+      "bytes": 2356
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-cli-exe-final.txt",
+      "sha256": "34359f3a6fa49d1ebc0bcd5d581998aa9e96734ccce27962f1406e82b4d05ac3",
+      "bytes": 2297
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-compile.txt",
+      "sha256": "1f49233caabf2153c30b0ebc9e9f5de5c9ab24655882251ac1b2b6876fdc1dfc",
+      "bytes": 136808
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-final-green.txt",
+      "sha256": "aaee546c4c37fbaaba537df2008d3de8d5cc4e60506272c30c8d0ecc6f566b2e",
+      "bytes": 13171
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-focused-v2-compile-failed.txt",
+      "sha256": "6d33fc6b31cdb57e75741779435d21072e187d26306e3503805664e5412fd03b",
+      "bytes": 136823
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-focused-v2.txt",
+      "sha256": "1f350c39256d3bc3617d9f776045762bf2adc6d68b8d65f38ba84e8896f02b21",
+      "bytes": 9046
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-focused-v3.txt",
+      "sha256": "a735e78626c79d104e5830716fdc9e85288b58c48d4471935e969400e164bb95",
+      "bytes": 7918
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-focused.txt",
+      "sha256": "b4f40e6c8317bc42f8ae74312c11e935fa6c137f86a8377328e1bef9dd61b204",
+      "bytes": 10221
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-lifecycle-obsolete-red.txt",
+      "sha256": "5d8bb7cbb096b2a3aae48d699e223d1ceadf1aaea65ffcb22b21f698f7a4f729",
+      "bytes": 7181
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-real-final.txt",
+      "sha256": "f5fa368d760aa9d98aa2eca6098b050d89faa7c99d82bcc6c9798c8e0f341063",
+      "bytes": 770
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-real-v3.txt",
+      "sha256": "f5fa368d760aa9d98aa2eca6098b050d89faa7c99d82bcc6c9798c8e0f341063",
+      "bytes": 770
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-real-v4.txt",
+      "sha256": "02590d5de241db774143b21471e76bc7b8a2508ad0e5d590f8fd599e5d60bec3",
+      "bytes": 927
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-real.txt",
+      "sha256": "46db466c14fb80b9558fbc4a8573570d5072a7248c6b5c9008360c19b134bc8c",
+      "bytes": 775
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-routing-red.mjs",
+      "sha256": "7059b2d283c7ae4db08aa1ccf78c71a018fa5c68fb00f68bb3b8b895f35b269f",
+      "bytes": 2611
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-proof/native-query-routing-red.txt",
+      "sha256": "b49bcc652263eec3fc87c5cbb273996a15a170e3f6e4bbba91e6c58235292cc0",
+      "bytes": 3684
+    }
+  ],
+  "confirmedDefects": [
+    "Telegram native listener snapshot was gated by running SCM state; absent/stopped service pre-install query still depended on PowerShell CIM/TCP commands.",
+    "WinWS process enumeration depended on Get-CimInstance in a measured failing Core path.",
+    "Blank WinWS path/command line could imply ownership when serviceRunning was true."
+  ],
+  "notEstablished": [
+    "Cause of original PowerShell/CIM hang and GUI DNS failure.",
+    "All services installed/healthy under SYSTEM after reboot or upgrade.",
+    "Months-long uptime, remote reachability or final sealed release behavior."
+  ],
+  "changes": [
+    "All Telegram listener checks use fixed native schema-v2 CLI, including absent/stopped SCM; actual TCP rows must be read.",
+    "Fixed WinWS schema-v1 CLI captures only exact winws.exe Toolhelp rows, executable paths and creation times.",
+    "OpenProcess QUERY_LIMITED_INFORMATION|SYNCHRONIZE handles and WaitForSingleObject WAIT_TIMEOUT prove held processes are alive; running exit FILETIME is not used.",
+    "Unreadable matching WinWS identities remain explicit partial rows; JS requires identityComplete===true and validates every row.",
+    "Paired managed PID/saved-start CLI arguments have fixed approved executable paths and birth checks; foreign/partial/changed identities never become owned.",
+    "Telegram validates ancestry and creation times and fingerprints all endpoint rows across two snapshots.",
+    "Existing safe failure metadata and actual harmless child diagnostic coverage remain; no timeout/environment widening in product code."
+  ],
+  "tests": [
+    {
+      "evidence": "docs/product-hardening-2026-10-01/native-query-proof/native-query-routing-red.txt",
+      "stage": "inert pre-fix routing/ownership RED",
+      "observedExitCode": 1,
+      "tests": 4,
+      "pass": 1,
+      "fail": 3,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 60.104
+    },
+    {
+      "evidence": "docs/product-hardening-2026-10-01/native-query-proof/native-query-focused.txt",
+      "stage": "isolated test launcher compile failure",
+      "observedExitCode": 1,
+      "tests": 33,
+      "pass": 32,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 2248.521
+    },
+    {
+      "evidence": "docs/product-hardening-2026-10-01/native-query-proof/native-query-focused-v2.txt",
+      "stage": "isolated test launcher compile failure",
+      "observedExitCode": 1,
+      "tests": 33,
+      "pass": 32,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 2106.5365
+    },
+    {
+      "evidence": "docs/product-hardening-2026-10-01/native-query-proof/native-query-focused-v3.txt",
+      "stage": "intermediate focused GREEN",
+      "observedExitCode": 0,
+      "tests": 33,
+      "pass": 33,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 2324.7462
+    },
+    {
+      "evidence": "docs/product-hardening-2026-10-01/native-query-proof/native-query-lifecycle-obsolete-red.txt",
+      "stage": "obsolete PowerShell-injection fixture RED",
+      "observedExitCode": 1,
+      "tests": 23,
+      "pass": 22,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 11429.6961
+    },
+    {
+      "evidence": "docs/product-hardening-2026-10-01/native-query-proof/native-query-final-green.txt",
+      "stage": "final production-source four-file GREEN",
+      "observedExitCode": 0,
+      "tests": 56,
+      "pass": 56,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 11489.9583
+    },
+    {
+      "evidence": "docs/product-hardening-2026-10-01/native-query-proof/native-query-cli-exe-final.txt",
+      "stage": "final real EXE invocation focused GREEN",
+      "observedExitCode": 0,
+      "tests": 9,
+      "pass": 9,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 3851.8002
+    }
+  ],
+  "compile": {
+    "observedExitCode": 0,
+    "warnings": 136,
+    "errors": 0,
+    "elapsed": "00:00:02.83",
+    "warningsSuppressed": false,
+    "sdk": "10.0.401",
+    "evidence": "docs/product-hardening-2026-10-01/native-query-proof/final-native-exe-compile.txt"
+  },
+  "actualNativeProof": {
+    "kind": "actual-harmless-native-query-regression",
+    "checks": [
+      {
+        "name": "harmless child starts",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "readiness belongs to held child",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "native Toolhelp/path/creation identifies actual owned child",
+        "passed": true,
+        "elapsedMs": 10.9355
+      },
+      {
+        "name": "native IPv4 table identifies actual listener PID",
+        "passed": true,
+        "elapsedMs": 1.8121
+      },
+      {
+        "name": "native IPv6 table identifies actual listener PID",
+        "passed": true,
+        "elapsedMs": 1.6107
+      },
+      {
+        "name": "native capture retains actual held child independently of unreadable SCM root",
+        "passed": true,
+        "elapsedMs": 30.5927
+      },
+      {
+        "name": "actual unreadable SYSTEM SCM root remains unknown without escalation",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "inert stopped-SCM classifier accepts actual child only with explicit fixture path",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "wrong managed path remains unknown",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "changed managed creation time remains unknown",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "real listener is foreign without any approved root",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "partial managed identity cannot become owned",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "unavailable snapshot remains unknown",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "actual fixed WinWS CLI reads harmless native child",
+        "passed": true,
+        "elapsedMs": 97.9391
+      },
+      {
+        "name": "actual CLI marks unreadable identities explicitly rather than dropping rows",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "actual Telegram CLI refuses unapproved physical fixture path",
+        "passed": true,
+        "elapsedMs": 115.4028
+      },
+      {
+        "name": "fixed WinWS CLI forbids arbitrary query arguments",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "read-only listener CLI forbids service mode composition",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "cancelled fixed process capture stops",
+        "passed": true
+      },
+      {
+        "name": "owned child exits and closes listeners",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "closed actual listener is removed from native table",
+        "passed": true,
+        "elapsedMs": null
+      }
+    ],
+    "actualNativeApis": true,
+    "administrator": false,
+    "scmWrites": false,
+    "dnsWrites": false,
+    "registryWrites": false,
+    "serviceInstallationVerified": false,
+    "remoteConnectivityVerified": false
+  },
+  "actualScmObservation": {
+    "phase": "held-fixture-capture",
+    "available": true,
+    "stable": false,
+    "ownedChildRow": true,
+    "ownedBirthMatches": true,
+    "scmState": "Running",
+    "scmRootReadable": false
+  },
+  "isolatedBinaryBindings": [
+    {
+      "kind": "isolated regression executable; not installed/sealed release artifact",
+      "file": "NativeQueryRegression.exe",
+      "sha256": "8938df112ac4301fa58d68fd14607d270d036968ed6793f7fe8b0edc4427f6bf",
+      "bytes": 162304
+    },
+    {
+      "kind": "isolated regression executable; not installed/sealed release artifact",
+      "file": "NativeQueryRegression.dll",
+      "sha256": "4faa80b62e83b2ae3df772919e90e191afcde7f1494d38eba51e7cc3804f4ec9",
+      "bytes": 780800
+    }
+  ],
+  "scope": {
+    "privilegeEscalation": false,
+    "scmWrites": false,
+    "dnsWrites": false,
+    "registryWrites": false,
+    "guiInteraction": false,
+    "serviceInstall": false,
+    "sharedPackageBuild": false,
+    "publication": false,
+    "loopbackEphemeralListeners": true,
+    "onlyOwnChildrenTerminated": true
+  },
+  "inertFixtureBoundary": "Stopped-SCM classifier check changes SCM state/PID/stability in an inert object only; real child path/birth/TCP rows remain. It is not proof of stopped/absent physical SCM install.",
+  "sdkCertificateUncertainty": "First isolated SDK invocation printed the standard ASP.NET development-certificate installed welcome message. Actual certificate creation versus reuse was not verified; no certificate deletion/store changes performed. Final launcher suppresses first-use certificate generation; helper environment is task-local.",
+  "remainingReleaseGates": [
+    "Parent complete integration tests and source commit; then build/seal from that exact commit.",
+    "Run exact candidate native status/install/upgrade/rollback evidence under the intended Core worker SYSTEM authority.",
+    "Confirm service recovery maintenance suspension and reboot without GUI; confirm DNS path independently.",
+    "Do not call original signed-961 failures cleared or publish/install candidate on this scoped proof alone."
+  ],
+  "primaryContracts": [
+    "https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getextendedtcptable",
+    "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-queryfullprocessimagenamew",
+    "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getprocesstimes"
+  ]
+}

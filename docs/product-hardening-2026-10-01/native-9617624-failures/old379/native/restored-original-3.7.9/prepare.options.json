@@ -1,0 +1,11 @@
+{
+  "originalVersion": "3.7.9",
+  "installer": "D:\\a\\_temp\\lagom-signed-legacy-3.7.9\\old\\EgoistShield-Setup-3.7.9.exe",
+  "expectedSha256": "eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+  "expectedSha512": "46ac50c71106432eb09d3cf8e47e6b7b402c4b7e1746214ed72dace268dc421b9d369faf37f10392e78c44039dd1a2f0f4415b6681bdc5cf4f0c6b3a83b041bc",
+  "expectedBytes": 206521508,
+  "workDirectory": "D:\\a\\_temp\\lagom-legacy-native-36856686510-1\\restored-original-3.7.9",
+  "sevenZipExecutable": "C:\\Program Files\\7-Zip\\7z.exe",
+  "sourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+  "output": "D:\\a\\_temp\\lagom-legacy-native-36856686510-1\\restored-original-3.7.9\\prepared-original.json"
+}

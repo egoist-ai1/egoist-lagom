@@ -1,0 +1,87 @@
+TAP version 13
+# {"kind":"inert-source-routing-check","commandCalls":["powershell.exe","powershell.exe"],"physicalOsQueries":false,"scmMutations":false,"networkMutations":false,"nativeApiExecuted":false}
+# Subtest: native read-only listener path must also serve not-installed service preflight
+not ok 1 - native read-only listener path must also serve not-installed service preflight
+  ---
+  duration_ms: 1.085
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f75d-1042-7df1-9e68-86e8c4a49415\\work\\native-query-routing-red.mjs:17:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    direct native branch remains reachable when owned SCM service is absent or stopped
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/native-query-routing-red.mjs:22:12)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+  ...
+# Subtest: native read-only listener path must also serve stopped service preflight
+not ok 2 - native read-only listener path must also serve stopped service preflight
+  ---
+  duration_ms: 0.1879
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f75d-1042-7df1-9e68-86e8c4a49415\\work\\native-query-routing-red.mjs:17:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    direct native branch remains reachable when owned SCM service is absent or stopped
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/native-query-routing-red.mjs:22:12)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: running-service native path is already reachable with unavailable WinPS
+ok 3 - running-service native path is already reachable with unavailable WinPS
+  ---
+  duration_ms: 0.1297
+  type: 'test'
+  ...
+# Subtest: unknown WinWS executable identity must never become owned solely because service runs
+not ok 4 - unknown WinWS executable identity must never become owned solely because service runs
+  ---
+  duration_ms: 2.1244
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f75d-1042-7df1-9e68-86e8c4a49415\\work\\native-query-routing-red.mjs:35:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/native-query-routing-red.mjs:41:10)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1382:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+    Test.postRun (node:internal/test_runner/test:1522:19)
+    Test.run (node:internal/test_runner/test:1447:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 1
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 60.104

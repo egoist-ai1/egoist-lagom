@@ -1,0 +1,172 @@
+TAP version 13
+# Subtest: HTTP errors cannot pass endpoint checks; curl ignores inherited proxies and config
+ok 1 - HTTP errors cannot pass endpoint checks; curl ignores inherited proxies and config
+  ---
+  duration_ms: 7.5525
+  type: 'test'
+  ...
+# Subtest: voice probe uses only a valid recent Discord media endpoint and distinguishes TLS from media
+ok 2 - voice probe uses only a valid recent Discord media endpoint and distinguishes TLS from media
+  ---
+  duration_ms: 1.6759
+  type: 'test'
+  ...
+# Subtest: a forced TLS fallback cannot hide a failed default-client endpoint check
+ok 3 - a forced TLS fallback cannot hide a failed default-client endpoint check
+  ---
+  duration_ms: 1.3674
+  type: 'test'
+  ...
+# Subtest: automatic sweep probes only ordinary HTTPS for Discord and YouTube
+ok 4 - automatic sweep probes only ordinary HTTPS for Discord and YouTube
+  ---
+  duration_ms: 0.9215
+  type: 'test'
+  ...
+# Subtest: image/CDN and DNS reachability alone cannot produce a usable profile
+ok 5 - image/CDN and DNS reachability alone cannot produce a usable profile
+  ---
+  duration_ms: 0.9844
+  type: 'test'
+  ...
+# Subtest: ownership requires exact executable identity, not a command-line reference or neighbouring folder
+ok 6 - ownership requires exact executable identity, not a command-line reference or neighbouring folder
+  ---
+  duration_ms: 1.4257
+  type: 'test'
+  ...
+# Subtest: standalone cleanup ignores a recycled PID in its saved state
+ok 7 - standalone cleanup ignores a recycled PID in its saved state
+  ---
+  duration_ms: 1.0045
+  type: 'test'
+  ...
+# Subtest: an unkillable owned process aborts cleanup without clearing recovery state
+ok 8 - an unkillable owned process aborts cleanup without clearing recovery state
+  ---
+  duration_ms: 125.5629
+  type: 'test'
+  ...
+# Subtest: external conflict detection rejects without deleting a host service
+ok 9 - external conflict detection rejects without deleting a host service
+  ---
+  duration_ms: 1.3523
+  type: 'test'
+  ...
+# Subtest: unavailable process inventory is a failure, not evidence that all processes stopped
+not ok 10 - unavailable process inventory is a failure, not evidence that all processes stopped
+  ---
+  duration_ms: 2.1674
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\zapret-selection-lifecycle.test.mjs:162:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /CIM access denied/. Input:
+    
+    'Error: Не удалось проверить процессы winws.exe: native snapshot failed: kind=invalid-snapshot, code=unknown, killed=false, signal=null, elapsedMs=0, timeoutMs=12000, pid=null, stdoutBytes=null, stderrBytes=null'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'Не удалось проверить процессы winws.exe: native snapshot failed: kind=invalid-snapshot, code=unknown, killed=false, signal=null, elapsedMs=0, timeoutMs=12000, pid=null, stdoutBytes=null, stderrBytes=null'
+  stack: |-
+    ZapretManager.listWinwsProcesses (evalmachine.<anonymous>:2281:20)
+    async waitForActual (node:assert:646:5)
+    async strict.rejects (node:assert:769:25)
+    async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/zapret-selection-lifecycle.test.mjs:165:3)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/zapret-selection-lifecycle.test.mjs:165:3)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: auto-select tests every profile twice, then recommends without starting a winner
+ok 11 - auto-select tests every profile twice, then recommends without starting a winner
+  ---
+  duration_ms: 622.8504
+  type: 'test'
+  ...
+# Subtest: auto-select rejects a one-pass success and continues until a candidate repeats it
+ok 12 - auto-select rejects a one-pass success and continues until a candidate repeats it
+  ---
+  duration_ms: 616.9836
+  type: 'test'
+  ...
+# Subtest: a full 23-profile report ranks complete coverage before lower latency
+ok 13 - a full 23-profile report ranks complete coverage before lower latency
+  ---
+  duration_ms: 7138.4166
+  type: 'test'
+  ...
+# Subtest: auto-select restores the previously running service, never the recommended profile
+ok 14 - auto-select restores the previously running service, never the recommended profile
+  ---
+  duration_ms: 602.4595
+  type: 'test'
+  ...
+# Subtest: auto-select does not advance or save a winner after cleanup failure
+ok 15 - auto-select does not advance or save a winner after cleanup failure
+  ---
+  duration_ms: 312.914
+  type: 'test'
+  ...
+# Subtest: failed sweep preparation restarts a service it already stopped
+ok 16 - failed sweep preparation restarts a service it already stopped
+  ---
+  duration_ms: 1.5663
+  type: 'test'
+  ...
+# Subtest: cancel during a pending start never launches another candidate or retains a winner
+ok 17 - cancel during a pending start never launches another candidate or retains a winner
+  ---
+  duration_ms: 1.5229
+  type: 'test'
+  ...
+# Subtest: a process that exits during HTTPS checks cannot be selected
+ok 18 - a process that exits during HTTPS checks cannot be selected
+  ---
+  duration_ms: 623.0882
+  type: 'test'
+  ...
+# Subtest: renderer callback and memory read failures cannot leave the selection lock stuck
+ok 19 - renderer callback and memory read failures cannot leave the selection lock stuck
+  ---
+  duration_ms: 621.0239
+  type: 'test'
+  ...
+# Subtest: endpoint probe concurrency is bounded and preserves input order
+ok 20 - endpoint probe concurrency is bounded and preserves input order
+  ---
+  duration_ms: 76.7968
+  type: 'test'
+  ...
+# Subtest: spawn error is consumed and rejected, without an unhandled EventEmitter error
+ok 21 - spawn error is consumed and rejected, without an unhandled EventEmitter error
+  ---
+  duration_ms: 611.5093
+  type: 'test'
+  ...
+# Subtest: explicit disconnect disables autostart while internal suspension preserves startup policy
+ok 22 - explicit disconnect disables autostart while internal suspension preserves startup policy
+  ---
+  duration_ms: 2.0173
+  type: 'test'
+  ...
+# Subtest: starting a service enables autostart and requires its winws child before reporting success
+ok 23 - starting a service enables autostart and requires its winws child before reporting success
+  ---
+  duration_ms: 2.23
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 22
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11429.6961

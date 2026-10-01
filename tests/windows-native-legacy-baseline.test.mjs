@@ -80,3 +80,11 @@ test('PowerShell library is pure and refuses the actual nonhosted host before re
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.match(result.stdout, /actual-local-host-refused/);
 });
+
+test('the compatibility recipe refuses the actual nonhosted host before any registry lookup', { skip: process.platform !== 'win32' || process.env.RUNNER_ENVIRONMENT === 'github-hosted' }, () => {
+  const command = `. '${path.resolve('tests/windows-production-acceptance.ps1').replaceAll("'", "''")}' -LibraryOnly; . '${path.resolve('tests/windows-native-legacy-baseline.ps1').replaceAll("'", "''")}' -LibraryOnly; try { Set-RestoredOriginalCompatibility -OriginalVersion '3.7.9' -GuiPath 'C:\\never\\EgoistShield.exe'; exit 2 } catch { if($_.Exception.Message -notmatch 'host guard refused before registry lookup or mutation'){Write-Error $_;exit 3};Write-Output 'actual-local-registry-guard-refused';exit 0 }`;
+  const result = spawnSync(process.env.SHIELD_ACCEPTANCE_POWERSHELL || 'pwsh', ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', command], { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+  assert.equal(result.error, undefined, String(result.error));
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /actual-local-registry-guard-refused/);
+});

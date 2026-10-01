@@ -1,0 +1,14 @@
+[3100:1001/114923.008:ERROR:content\browser\gpu\gpu_process_host.cc:1029] GPU process launch failed: error_code=18
+[3100:1001/114923.008:ERROR:components\viz\host\persistent_cache_sandboxed_file_factory.cc:153] Failed to open persistent cache files in directory "C:\Users\runneradmin\AppData\Roaming\Egoist Shield\GPUPersistentCache\DawnGraphiteCache\JDILZQMYHSFMNNX7CM2QEGAFD2VTODWT", error: 0: The process cannot access the file because it is being used by another process. (0x20)
+[3100:1001/114923.102:ERROR:content\browser\gpu\gpu_process_host.cc:1029] GPU process launch failed: error_code=18
+[3100:1001/114923.118:ERROR:content\browser\gpu\gpu_process_host.cc:1029] GPU process launch failed: error_code=18
+[3100:1001/114923.118:ERROR:components\viz\host\persistent_cache_sandboxed_file_factory.cc:153] Failed to open persistent cache files in directory "C:\Users\runneradmin\AppData\Roaming\Egoist Shield\GPUPersistentCache\DawnGraphiteCache\JDILZQMYHSFMNNX7CM2QEGAFD2VTODWT", error: 0: The process cannot access the file because it is being used by another process. (0x20)
+[3100:1001/114923.133:ERROR:content\browser\gpu\gpu_process_host.cc:1029] GPU process launch failed: error_code=18
+[3100:1001/114923.133:ERROR:content\browser\gpu\gpu_process_host.cc:1029] GPU process launch failed: error_code=18
+[3100:1001/114923.133:ERROR:components\viz\host\persistent_cache_sandboxed_file_factory.cc:153] Failed to open persistent cache files in directory "C:\Users\runneradmin\AppData\Roaming\Egoist Shield\GPUPersistentCache\DawnGraphiteCache\JDILZQMYHSFMNNX7CM2QEGAFD2VTODWT", error: 0: The process cannot access the file because it is being used by another process. (0x20)
+[3100:1001/114923.149:ERROR:content\browser\gpu\gpu_process_host.cc:1029] GPU process launch failed: error_code=18
+[3100:1001/114923.165:ERROR:content\browser\gpu\gpu_process_host.cc:1029] GPU process launch failed: error_code=18
+[3100:1001/114923.165:ERROR:components\viz\host\persistent_cache_sandboxed_file_factory.cc:153] Failed to open persistent cache files in directory "C:\Users\runneradmin\AppData\Roaming\Egoist Shield\GPUPersistentCache\DawnGraphiteCache\JDILZQMYHSFMNNX7CM2QEGAFD2VTODWT", error: 0: The process cannot access the file because it is being used by another process. (0x20)
+[3100:1001/114923.165:ERROR:content\browser\gpu\gpu_process_host.cc:1029] GPU process launch failed: error_code=18
+[3100:1001/114923.180:ERROR:content\browser\gpu\gpu_process_host.cc:1029] GPU process launch failed: error_code=18
+[3100:1001/114923.180:FATAL:content\browser\gpu\gpu_data_manager_impl_private.cc:417] GPU process isn't usable. Goodbye.

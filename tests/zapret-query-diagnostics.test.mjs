@@ -64,11 +64,11 @@ function assertSafe(error) {
   assert.doesNotMatch(JSON.stringify(error), /synthetic-sensitive-/);
 }
 
-test('actual harmless child exit retains metadata and original cause through WinWS wrapper', async () => {
+test('actual harmless PowerShell-boundary child exit retains metadata and original cause', async () => {
   const { manager, observed } = fixture('exit');
-  const error = await rejected(() => manager.listWinwsProcesses());
+  const error = await rejected(() => manager.execPowerShell('synthetic input ' + marker, 12000));
   assertSafe(error);
-  const execution = error.cause;
+  const execution = error;
   assert.equal(execution.name, 'PowerShellExecutionError');
   assert.equal(execution.cause, observed.originalError);
   assert.equal(execution.powerShellDiagnostic.kind, 'exit');
@@ -85,7 +85,7 @@ test('actual harmless child exit retains metadata and original cause through Win
   assert.equal(Object.hasOwn(observed.calls[0].options, 'env'), false);
   assert.equal(Object.hasOwn(observed.calls[0].options, 'cwd'), false);
   assert.equal(observed.calls[0].args.slice(0, 3).join(' '), '-NoProfile -NonInteractive -Command');
-  assert.match(observed.calls[0].args[3], /Get-CimInstance Win32_Process -Filter "Name='winws\.exe'"/);
+  assert.equal(observed.calls[0].args[3], 'synthetic input ' + marker);
 });
 
 test('actual own child timeout differs from nonzero exit without claiming provider cause', async () => {
@@ -103,30 +103,29 @@ test('actual own child timeout differs from nonzero exit without claiming provid
 
 test('actual nonexistent own executable spawn failure has no PID and no path disclosure', async () => {
   const { manager, observed } = fixture('spawn');
-  const error = await rejected(() => manager.listWinwsProcesses());
+  const error = await rejected(() => manager.execPowerShell('synthetic-spawn', 12000));
   assertSafe(error);
-  assert.equal(error.cause.cause, observed.originalError);
-  assert.equal(error.cause.powerShellDiagnostic.kind, 'spawn');
-  assert.equal(error.cause.powerShellDiagnostic.code, 'ENOENT');
-  assert.equal(error.cause.powerShellDiagnostic.pid, null);
-  assert.equal(error.cause.powerShellDiagnostic.killed, false);
+  assert.equal(error.cause, observed.originalError);
+  assert.equal(error.powerShellDiagnostic.kind, 'spawn');
+  assert.equal(error.powerShellDiagnostic.code, 'ENOENT');
+  assert.equal(error.powerShellDiagnostic.pid, null);
+  assert.equal(error.powerShellDiagnostic.killed, false);
   assert.match(error.message, /kind=spawn.*code=ENOENT.*pid=null/);
 });
 
 test('actual output-limit failure is distinct from timeout and never emits captured output', async () => {
   const { manager } = fixture('output-limit');
-  const error = await rejected(() => manager.listWinwsProcesses());
+  const error = await rejected(() => manager.execPowerShell('synthetic-output-limit', 12000));
   assertSafe(error);
-  assert.equal(error.cause.powerShellDiagnostic.kind, 'output-limit');
-  assert.equal(error.cause.powerShellDiagnostic.code, 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER');
-  assert.ok(error.cause.powerShellDiagnostic.stdoutBytes > 0);
+  assert.equal(error.powerShellDiagnostic.kind, 'output-limit');
+  assert.equal(error.powerShellDiagnostic.code, 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER');
+  assert.ok(error.powerShellDiagnostic.stdoutBytes > 0);
 });
 
-test('successful own child keeps stdout and WinWS empty-result semantics unchanged', async () => {
+test('successful own PowerShell-boundary child keeps stdout unchanged', async () => {
   const { manager, observed } = fixture('success');
   assert.equal(await manager.execPowerShell('synthetic-success'), '[]');
   assert.equal(observed.calls[0].options.timeout, 8000);
-  assert.equal((await manager.listWinwsProcesses()).length, 0);
 });
 
 test('invalid JSON output is a fixed safe parse error while preserving SyntaxError cause', async () => {
@@ -134,7 +133,7 @@ test('invalid JSON output is a fixed safe parse error while preserving SyntaxErr
   const error = await rejected(() => manager.listWinwsProcesses());
   assertSafe(error);
   assert.equal(error.cause.name, 'SyntaxError');
-  assert.match(error.message, /JSON/);
+  assert.equal(error.nativeQueryDiagnostic.kind, 'invalid-json');
 });
 
 test('unrecognized error string fields are not reflected into public diagnostics', async () => {
@@ -142,11 +141,11 @@ test('unrecognized error string fields are not reflected into public diagnostics
     code: marker, signal: marker, stdout: marker, stderr: marker, killed: false,
   });
   const { manager } = fixture('unused', () => Promise.reject(nativeError));
-  const error = await rejected(() => manager.listWinwsProcesses());
+  const error = await rejected(() => manager.execPowerShell('synthetic-unrecognized', 12000));
   assertSafe(error);
-  assert.equal(error.cause.cause, nativeError);
-  assert.equal(error.cause.powerShellDiagnostic.code, 'unknown');
-  assert.equal(error.cause.powerShellDiagnostic.signal, 'unknown');
-  assert.equal(error.cause.powerShellDiagnostic.kind, 'unknown');
-  assert.equal(error.cause.powerShellDiagnostic.pid, null);
+  assert.equal(error.cause, nativeError);
+  assert.equal(error.powerShellDiagnostic.code, 'unknown');
+  assert.equal(error.powerShellDiagnostic.signal, 'unknown');
+  assert.equal(error.powerShellDiagnostic.kind, 'unknown');
+  assert.equal(error.powerShellDiagnostic.pid, null);
 });

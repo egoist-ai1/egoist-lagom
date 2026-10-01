@@ -1,0 +1,5 @@
+Unhandled exception. System.ComponentModel.Win32Exception (5): Отказано в доступе.
+   at EgoistShield.Service.WindowsServiceListenerSnapshot.ReadWinwsProcesses(CancellationToken token) in C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\src\service\EgoistShield.Service\WindowsServiceListenerSnapshot.cs:line 185
+   at NativeQueryRegression.Program.Main(String[] args) in C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeQueryRegression\Program.cs:line 51
+   at NativeQueryRegression.Program.Main(String[] args) in C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeQueryRegression\Program.cs:line 115
+   at NativeQueryRegression.Program.<Main>(String[] args)

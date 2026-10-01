@@ -1,0 +1,35 @@
+{
+  "kind": "integrated-legacy-harness-local-validation",
+  "counts": {
+    "pass": 30,
+    "cancelled": 0,
+    "tests": 30,
+    "skipped": 0,
+    "todo": 0,
+    "fail": 0
+  },
+  "recordedExitCode": 0,
+  "rawFile": "integrated-final-30.txt",
+  "rawSha256": "8ccfa7f96b923a35fda8f065c8ef7e6d4552c92e03103e998414aed41e5c58c8",
+  "testFiles": [
+    {
+      "path": "tests/windows-legacy-launch-diagnostic.test.mjs",
+      "sha256": "e5bf7dc22c3ee85487d4caf6b31ff003c7d7ad3b8d3d4b1214e70fec4350dabe"
+    },
+    {
+      "path": "tests/windows-native-legacy-baseline.test.mjs",
+      "sha256": "ea70ab2f613f95f6dbb59825acbc7817c4c7c095b0c1c9aa1dfc8975781e6aa2"
+    },
+    {
+      "path": "tests/windows-production-legacy-guard.test.mjs",
+      "sha256": "c855cfb7117ad4342d050a35e890b724576a7a75f7218a8df7c5fe52de276080"
+    },
+    {
+      "path": "tests/windows-installer-diagnostic.test.mjs",
+      "sha256": "4336fdb0f24c9f76483af97b4fc2840a6ff17f8676a0a2fcf32f1668c3456fde"
+    }
+  ],
+  "hostedRestorationExecuted": false,
+  "originalGuiExecuted": false,
+  "nativeAcceptance": false
+}

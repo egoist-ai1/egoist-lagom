@@ -1,0 +1,325 @@
+{
+  "total_count": 5,
+  "jobs": [
+    {
+      "id": 110346031677,
+      "run_id": 36855227843,
+      "workflow_name": "Checks",
+      "head_branch": "codex/lagom-production-audit",
+      "run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36855227843",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORmCXB88AAAAZsSLSPQ",
+      "head_sha": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/jobs/110346031677",
+      "html_url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36855227843/job/110346031677",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-10-01T11:25:04Z",
+      "started_at": "2026-10-01T11:25:05Z",
+      "completed_at": "2026-10-01T11:32:38Z",
+      "name": "test",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-01T11:25:06Z",
+          "completed_at": "2026-10-01T11:25:08Z"
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-01T11:25:08Z",
+          "completed_at": "2026-10-01T11:25:17Z"
+        },
+        {
+          "name": "Validate manual acceptance inputs",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3,
+          "started_at": "2026-10-01T11:25:17Z",
+          "completed_at": "2026-10-01T11:25:17Z"
+        },
+        {
+          "name": "Read the pinned SDK",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-01T11:25:17Z",
+          "completed_at": "2026-10-01T11:25:18Z"
+        },
+        {
+          "name": "Use Node.js 24",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-01T11:25:18Z",
+          "completed_at": "2026-10-01T11:25:26Z"
+        },
+        {
+          "name": "Use .NET for Core regression tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-01T11:25:26Z",
+          "completed_at": "2026-10-01T11:26:06Z"
+        },
+        {
+          "name": "Use Python for offline release preflight",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-01T11:26:06Z",
+          "completed_at": "2026-10-01T11:26:06Z"
+        },
+        {
+          "name": "Prepare isolated test directories",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-01T11:26:06Z",
+          "completed_at": "2026-10-01T11:26:07Z"
+        },
+        {
+          "name": "Install dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-01T11:26:07Z",
+          "completed_at": "2026-10-01T11:26:12Z"
+        },
+        {
+          "name": "Build generated bundles",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-01T11:26:12Z",
+          "completed_at": "2026-10-01T11:26:14Z"
+        },
+        {
+          "name": "Install NSIS for installer regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-10-01T11:26:14Z",
+          "completed_at": "2026-10-01T11:26:27Z"
+        },
+        {
+          "name": "Run tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-10-01T11:26:27Z",
+          "completed_at": "2026-10-01T11:27:45Z"
+        },
+        {
+          "name": "Run Core fault and recovery regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-10-01T11:27:45Z",
+          "completed_at": "2026-10-01T11:28:27Z"
+        },
+        {
+          "name": "Run Core persistence and crash stress against frozen sources",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-10-01T11:28:27Z",
+          "completed_at": "2026-10-01T11:31:45Z"
+        },
+        {
+          "name": "Run Core owner and protected-file ACL regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-10-01T11:31:45Z",
+          "completed_at": "2026-10-01T11:31:52Z"
+        },
+        {
+          "name": "Preserve actual Core owner regression diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-10-01T11:31:52Z",
+          "completed_at": "2026-10-01T11:31:53Z"
+        },
+        {
+          "name": "Run owned wrapper log filesystem and Core integration regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-10-01T11:31:53Z",
+          "completed_at": "2026-10-01T11:32:31Z"
+        },
+        {
+          "name": "Run Windows PowerShell installer safety regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-10-01T11:32:31Z",
+          "completed_at": "2026-10-01T11:32:33Z"
+        },
+        {
+          "name": "Post Use Python for offline release preflight",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 33,
+          "started_at": "2026-10-01T11:32:33Z",
+          "completed_at": "2026-10-01T11:32:33Z"
+        },
+        {
+          "name": "Post Use .NET for Core regression tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 34,
+          "started_at": "2026-10-01T11:32:33Z",
+          "completed_at": "2026-10-01T11:32:33Z"
+        },
+        {
+          "name": "Post Use Node.js 24",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 35,
+          "started_at": "2026-10-01T11:32:33Z",
+          "completed_at": "2026-10-01T11:32:33Z"
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 36,
+          "started_at": "2026-10-01T11:32:33Z",
+          "completed_at": "2026-10-01T11:32:36Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 37,
+          "started_at": "2026-10-01T11:32:36Z",
+          "completed_at": "2026-10-01T11:32:36Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/check-runs/110346031677",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": 1000000270,
+      "runner_name": "GitHub Actions 1000000270",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 110346033794,
+      "run_id": 36855227843,
+      "workflow_name": "Checks",
+      "head_branch": "codex/lagom-production-audit",
+      "run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36855227843",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORmCXB88AAAAZsSLagg",
+      "head_sha": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/jobs/110346033794",
+      "html_url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36855227843/job/110346033794",
+      "status": "completed",
+      "conclusion": "skipped",
+      "created_at": "2026-10-01T11:25:04Z",
+      "started_at": "2026-10-01T11:25:04Z",
+      "completed_at": "2026-10-01T11:25:03Z",
+      "name": "installer-diagnostics",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/check-runs/110346033794",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": null,
+      "runner_name": null,
+      "runner_group_id": null,
+      "runner_group_name": null
+    },
+    {
+      "id": 110348586943,
+      "run_id": 36855227843,
+      "workflow_name": "Checks",
+      "head_branch": "codex/lagom-production-audit",
+      "run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36855227843",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORmCXB88AAAAZsUnPvw",
+      "head_sha": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/jobs/110348586943",
+      "html_url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36855227843/job/110348586943",
+      "status": "completed",
+      "conclusion": "skipped",
+      "created_at": "2026-10-01T11:32:39Z",
+      "started_at": "2026-10-01T11:32:39Z",
+      "completed_at": "2026-10-01T11:32:38Z",
+      "name": "legacy (${{ matrix.old_version }})",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/check-runs/110348586943",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": null,
+      "runner_name": null,
+      "runner_group_id": null,
+      "runner_group_name": null
+    },
+    {
+      "id": 110348587218,
+      "run_id": 36855227843,
+      "workflow_name": "Checks",
+      "head_branch": "codex/lagom-production-audit",
+      "run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36855227843",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORmCXB88AAAAZsUnQ0g",
+      "head_sha": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/jobs/110348587218",
+      "html_url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36855227843/job/110348587218",
+      "status": "completed",
+      "conclusion": "skipped",
+      "created_at": "2026-10-01T11:32:39Z",
+      "started_at": "2026-10-01T11:32:39Z",
+      "completed_at": "2026-10-01T11:32:38Z",
+      "name": "signed-candidate",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/check-runs/110348587218",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": null,
+      "runner_name": null,
+      "runner_group_id": null,
+      "runner_group_name": null
+    },
+    {
+      "id": 110348587600,
+      "run_id": 36855227843,
+      "workflow_name": "Checks",
+      "head_branch": "codex/lagom-production-audit",
+      "run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36855227843",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORmCXB88AAAAZsUnSUA",
+      "head_sha": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/jobs/110348587600",
+      "html_url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36855227843/job/110348587600",
+      "status": "completed",
+      "conclusion": "skipped",
+      "created_at": "2026-10-01T11:32:39Z",
+      "started_at": "2026-10-01T11:32:39Z",
+      "completed_at": "2026-10-01T11:32:38Z",
+      "name": "candidate",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/check-runs/110348587600",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": null,
+      "runner_name": null,
+      "runner_group_id": null,
+      "runner_group_name": null
+    }
+  ]
+}
