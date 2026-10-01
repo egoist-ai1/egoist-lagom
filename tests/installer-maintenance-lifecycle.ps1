@@ -29,6 +29,8 @@ $script:sharedNameServices=@('Proxy')
 $script:telegramProxyServiceName='EgoistShieldTelegramProxy'
 $script:readbackFails=$false
 $script:customAccount=$false
+$script:guiStartupEvents=New-Object 'Collections.Generic.List[string]'
+$script:guiStartupSuspended=$false
 function Require([bool]$Value,[string]$Message) { if (-not $Value) { throw $Message } }
 function Expect-Refused([scriptblock]$Action,[string]$Pattern) {
   $message=$null;try { & $Action } catch { $message=$_.Exception.Message }
@@ -40,6 +42,18 @@ function sc.exe { throw 'Forbidden native SCM boundary.' }
 function reg.exe { throw 'Forbidden registry write.' }
 function Stop-Process { throw 'Forbidden host process termination.' }
 function Protect-StageDirectory {param($Path) $script:events.Add('protect')}
+# Startup-task adapters are inert boundaries. The real helper import/ownership
+# behavior is tested separately; this fixture records production hook ordering.
+function Suspend-OwnedGuiLoginStartup {
+  Require (Test-InstallerServiceMaintenanceOwner) 'GUI startup suspension must follow this trusted maintenance marker.'
+  $script:guiStartupSuspended=$true
+  $script:guiStartupEvents.Add('suspend:'+([IO.Path]::GetFileName($StageDirectory)))
+}
+function Resume-OwnedGuiLoginStartup {
+  Require ((Get-InstallerServiceMaintenanceStatus) -eq 'absent') 'GUI startup resumed before the maintenance marker was removed.'
+  $script:guiStartupSuspended=$false
+  $script:guiStartupEvents.Add('resume:'+([IO.Path]::GetFileName($StageDirectory)))
+}
 function New-InstallerProtectedFileSecurity {
   # A limited test token cannot assign Administrators ownership. The actual
   # protected-file constructor is verified separately; only this ACL boundary
@@ -50,7 +64,12 @@ function New-InstallerProtectedFileSecurity {
   $security.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($identity,'FullControl','Allow')))
   return $security
 }
-function Unregister-InstallerMaintenanceBootRecovery {param($StageDirectory,$RestorationVerified)}
+function Unregister-InstallerMaintenanceBootRecovery {
+  param($StageDirectory,$RestorationVerified)
+  Require ([bool]$RestorationVerified) 'Boot recovery may only retire after verified restoration.'
+  Require (-not $script:guiStartupSuspended) 'Boot recovery retired before GUI startup intent was restored.'
+  $script:guiStartupEvents.Add('boot-retire:'+([IO.Path]::GetFileName($StageDirectory)))
+}
 function Register-InstallerMaintenanceBootRecovery {param($StageDirectory)}
   function Protect-InstallerStageTree {param($Stage)}
 function Assert-PlainWrapperMigrationPath {
@@ -122,17 +141,23 @@ Expect-Refused { Get-VerifiedOwnedServiceRecords } '*SERVICE_ACCOUNT_UNSUPPORTED
 Write-Output 'PASS: owned arbitrary alias backed up, foreign names excluded, failed enumeration not treated as empty'
 Write-Output 'PASS: custom credentials are rejected before destructive service recreation'
 
+$script:guiStartupEvents.Clear()
 Enter-InstallerServiceMaintenance
 Require (Test-InstallerServiceMaintenanceOwner) 'Created marker is not bound to this stage.'
 Enter-InstallerServiceMaintenance
 Require (Test-InstallerServiceMaintenanceOwner) 'Repeated entry lost the original lease.'
+Require (($script:guiStartupEvents -join ',') -eq 'suspend:new-stage,suspend:new-stage' -and $script:guiStartupSuspended) 'Repeated entry did not suspend after the trusted marker.'
 $originalStage=$script:StageDirectory
 $script:StageDirectory=Join-Path $root 'other-stage'
 Expect-Refused { Enter-InstallerServiceMaintenance } '*requires recovery*'
 Expect-Refused { Complete-InstallerServiceMaintenance } '*another service maintenance*'
+Require ($script:guiStartupEvents.Count -eq 2 -and $script:guiStartupSuspended) 'Foreign stage changed GUI startup intent.'
 $script:StageDirectory=$originalStage
 Complete-InstallerServiceMaintenance
 Require (-not (Test-InstallerServiceMaintenanceOwner)) 'Committed marker remained.'
+Require (($script:guiStartupEvents -join ',') -eq 'suspend:new-stage,suspend:new-stage,resume:new-stage' -and -not $script:guiStartupSuspended) 'Completion did not remove the marker before resuming GUI startup.'
+Complete-InstallerServiceMaintenance
+Require (($script:guiStartupEvents -join ',') -eq 'suspend:new-stage,suspend:new-stage,resume:new-stage,resume:new-stage') 'Already-closed completion did not retry restored startup intent.'
 Write-Output 'PASS: marker entry is idempotent; another stage cannot acquire or remove it'
 
 $markerPath=Join-Path $script:OwnedDataRoot 'installer\service-maintenance.json'
@@ -214,11 +239,14 @@ try {
     if ($script:resumeClears) { Complete-InstallerServiceMaintenance; return $true }
     return $false
   }
+  $startupCallsBeforeFailure=$script:guiStartupEvents.Count
   Expect-Refused { Resume-InterruptedServiceMaintenance } '*still requires recovery*'
   Require ($script:resumeCalls -eq 1 -and $script:StageDirectory -eq $originalStage) 'Failed old-stage recovery changed the new stage or was skipped.'
+  Require ($script:guiStartupEvents.Count -eq $startupCallsBeforeFailure -and $script:guiStartupSuspended) 'Failed old-stage recovery resumed startup or retired boot recovery.'
   $script:resumeClears=$true
   Resume-InterruptedServiceMaintenance
   Require ($script:resumeCalls -eq 2 -and $script:StageDirectory -eq $originalStage) 'Retry did not finish old-stage recovery before new snapshots.'
+  Require (($script:guiStartupEvents[$script:guiStartupEvents.Count-2]+','+$script:guiStartupEvents[$script:guiStartupEvents.Count-1]) -eq 'resume:previous,boot-retire:previous' -and -not $script:guiStartupSuspended) 'Validated retry did not resume before retiring its boot recovery.'
   Resume-InterruptedServiceMaintenance
   Require ($script:resumeCalls -eq 2) 'Completed old-stage recovery was replayed unnecessarily.'
   Write-Output 'PASS: failed recovery preserves marker; later validated retry resumes original stage without GUI'
@@ -272,6 +300,7 @@ try {
   Expect-Refused { Invoke-WorkerMode } '*Fixture handoff state write failed*'
   Require ($script:writeFault -and $script:watchdogLaunches -eq 1) 'Fixture did not reach marker-before-state-write ordering.'
   Require ($script:workerRecoveryCalls -eq 1 -and -not (Test-InstallerServiceMaintenanceOwner)) 'Worker stranded its own marker before durable handoff.'
+  Require (($script:guiStartupEvents[$script:guiStartupEvents.Count-2]+','+$script:guiStartupEvents[$script:guiStartupEvents.Count-1]) -eq 'resume:marker-write-failure,boot-retire:marker-write-failure' -and -not $script:guiStartupSuspended) 'Recovered durable-write failure lost GUI startup/boot retirement ordering.'
   Require (Test-Path -LiteralPath (Join-Path $script:StageDirectory 'complete.flag')) 'Recovered failure was not recorded.'
 }
 Write-Output 'PASS: actual worker recovers its acquired marker when durable handoff state writing fails'
