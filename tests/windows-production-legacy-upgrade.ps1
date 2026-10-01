@@ -85,13 +85,15 @@ function Invoke-LegacyGui {
   [void](Assert-NativeAdministratorOwned $gui -InstallationPath)
   if(-not (Test-LegacyHarnessProductVersion ([string](Get-Item -LiteralPath $gui).VersionInfo.ProductVersion) $ExpectedOldVersion)){throw "Actual GUI is not the authenticated old $ExpectedOldVersion."}
   $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$gui;$info.WorkingDirectory=$script:InstallRoot;$info.UseShellExecute=$false;$info.CreateNoWindow=$true
+  $info.RedirectStandardOutput=$true;$info.RedirectStandardError=$true
   foreach($name in @($info.Environment.Keys)){if($name -match '^(ELECTRON_RUN_AS_NODE|NODE_OPTIONS|NODE_PATH|LAGOM_TEST_USER_DATA_DIR|SHIELD_.*|EGOIST_.*)$'){[void]$info.Environment.Remove($name)}}
   $info.Environment['NODE_ENV']='production'
-  $child=[Diagnostics.Process]::new();$child.StartInfo=$info;$started=$false;$closed=$false
+  $child=[Diagnostics.Process]::new();$child.StartInfo=$info;$started=$false;$closed=$false;$root=$null;$stdout=$null;$stderr=$null
   Add-NativeMutation -Kind 'old-canonical-gui-native-uia' -Target $gui -Purpose "Provision actual Telegram background service through shipped $ExpectedOldVersion controls, then normally close GUI."
   try{
     $started=$child.Start();if(-not $started){throw 'Actual old GUI did not start.'}
-    $hwnd=Wait-NativeCondition -Condition {$child.Refresh();if($child.HasExited){throw 'Old GUI exited before its native window was ready.'};if($child.MainWindowHandle -ne [IntPtr]::Zero){return $child.MainWindowHandle}} -Label 'Old canonical GUI native window' -TimeoutSeconds 90
+    $stdout=$child.StandardOutput.ReadToEndAsync();$stderr=$child.StandardError.ReadToEndAsync()
+    $hwnd=Wait-NativeCondition -Condition {$child.Refresh();if($child.HasExited){throw "Old GUI exited before its native window was ready (exit $($child.ExitCode))."};if($child.MainWindowHandle -ne [IntPtr]::Zero){return $child.MainWindowHandle}} -Label 'Old canonical GUI native window' -TimeoutSeconds 90 -StopOnError
     if($child.MainModule.FileName -ine $gui){throw 'Old GUI process path changed.'}
     $root=[Windows.Automation.AutomationElement]::FromHandle($hwnd)
     if(-not $root -or $root.Current.ProcessId -ne $child.Id){throw 'Old UIAutomation root does not belong to the launched GUI.'}
@@ -104,9 +106,18 @@ function Invoke-LegacyGui {
     $navigation=Get-NativeTelegramNavigation -FindButton $findButton -Label 'Actual old Telegram navigation control'
     ([Windows.Automation.InvokePattern]$navigation.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
     $install=Wait-NativeCondition -Condition {& $findButton 'Установить фоновую службу'} -Label 'Actual old Telegram background install control' -TimeoutSeconds 90
+    Add-NativeMutation -Kind 'old-telegram-native-invoke' -Target 'EgoistShieldTelegramProxy' -Purpose ("Invoke shipped old install control in exact GUI PID "+$child.Id)
     ([Windows.Automation.InvokePattern]$install.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
+    Save-NativeGuiFailureObservation -Process $child -Root $root -Label 'old-gui-after-invoke'
     $wrapper=Join-Path $script:DataRoot 'Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe'
-    [void](Wait-NativeCondition -Condition {Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running} -Label 'Actual old GUI provisioned Telegram SCM service' -TimeoutSeconds 240)
+    $capture=[ordered]@{watch=[Diagnostics.Stopwatch]::StartNew();next=2}
+    [void](Wait-NativeCondition -Condition {
+      if($capture.next -le 45 -and $capture.watch.Elapsed.TotalSeconds -ge $capture.next){
+        Save-NativeGuiFailureObservation -Process $child -Root $root -Label ('old-gui-click-'+$capture.next+'s')
+        $capture.next=if($capture.next -eq 2){15}elseif($capture.next -eq 15){45}else{999}
+      }
+      Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running
+    } -Label 'Actual old GUI provisioned Telegram SCM service' -TimeoutSeconds 240)
     $config=Read-LegacyHarnessJson (Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json')
     $port=[int]$config.port
     $endpoint=Assert-NativeTelegramEndpoint $port
@@ -117,7 +128,16 @@ function Invoke-LegacyGui {
     Assert-NativeNoGui
     $result=[ordered]@{version=$ExpectedOldVersion;processId=$child.Id;arguments=@();automation='native UIAutomation InvokePattern/WindowPattern';productionOverride=$false;exitCode=$child.ExitCode;port=$port;host=[string]$config.host;endpoint=$endpoint}
     $script:Receipt.gui+=$result;Save-NativeReceipt;return $result
-  }finally{if($started -and -not $closed -and -not $child.HasExited){$child.Kill();[void]$child.WaitForExit(5000)};$child.Dispose()}
+  }catch{
+    if($started){try{Save-NativeGuiFailureObservation -Process $child -Root $root -Label 'old-gui'}catch{Write-Warning ('Old GUI observation unavailable: '+$_.Exception.Message)}}
+    throw
+  }finally{
+    if($started -and -not $closed -and -not $child.HasExited){$child.Kill();[void]$child.WaitForExit(5000)}
+    foreach($stream in @(@{task=$stdout;name='stdout'},@{task=$stderr;name='stderr'})){
+      if($stream.task -and $stream.task.IsCompletedSuccessfully){$text=$stream.task.GetAwaiter().GetResult();if($text.Length -gt 1048576){$text=$text.Substring(0,1048576)+"`n[diagnostic truncated after 1 MiB]"};[IO.File]::WriteAllText((Join-Path $script:Work ('old-gui.'+$stream.name+'.txt')),$text,[Text.UTF8Encoding]::new($false))}
+    }
+    $child.Dispose()
+  }
 }
 function Assert-LegacyNativeBootTask {
   param([string]$Stage)
@@ -303,6 +323,7 @@ function Invoke-NativeLegacyUpgrade {
     $script:Receipt.result='passed-bounded-genuine-legacy-helper-upgrade'
   }catch{$primaryError=$_;$script:Receipt.result='failed';$script:Receipt.error=$_.Exception.Message}
   finally{
+    $script:Receipt.installerDiagnostics=@(Copy-NativeInstallerDiagnostics)
     $script:Receipt.completedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');$script:Receipt.uninstalled=$uninstalled
     $script:Receipt.cleanupDisposition=if($uninstalled){'Actual product uninstaller completed.'}else{'Failure evidence retained. No force cleanup races active old/new workers or watchdogs; disposable runner is retired by Actions.'}
     Save-NativeReceipt

@@ -1,0 +1,274 @@
+{
+  "sourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "releaseId": 400757269,
+  "runId": 36834226795,
+  "releaseReady": false,
+  "physicalLocalSetupExecuted": false,
+  "cases": {
+    "fresh": {
+      "jobId": 110279863034,
+      "artifactId": 11148742808,
+      "result": "failed",
+      "error": "Actual native observation timed out: Telegram installed through genuine GUI control (Actual SCM service missing or ambiguous: EgoistShieldTelegramProxy)",
+      "checks": [
+        {
+          "name": "actual-generated-setup-clean-install",
+          "ok": true,
+          "milliseconds": 59018.55
+        },
+        {
+          "name": "actual-installed-payload-fuses-asar-worker-inventory-acls-and-no-forced-elevation",
+          "ok": true,
+          "receipt": "installed-payload.json"
+        }
+      ],
+      "mutations": [
+        {
+          "atUtc": "2026-10-01T08:13:45.2204818+00:00",
+          "kind": "setup-clean-install",
+          "target": "C:\\Program Files\\EgoistShield",
+          "purpose": "Actual generated candidate silent installation."
+        },
+        {
+          "atUtc": "2026-10-01T08:14:50.8287610+00:00",
+          "kind": "canonical-gui-native-uia",
+          "target": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+          "purpose": "provision-telegram"
+        }
+      ]
+    },
+    "old378": {
+      "jobId": 110279863044,
+      "artifactId": 11149380254,
+      "result": "failed",
+      "error": "Actual native observation timed out: Old canonical GUI native window (Old GUI exited before its native window was ready.)",
+      "checks": [],
+      "mutations": [
+        {
+          "atUtc": "2026-10-01T08:13:50.1482889+00:00",
+          "kind": "official-old-setup-clean-install",
+          "target": "C:\\Program Files\\EgoistShield",
+          "purpose": "Actual original public 3.7.8 installer, authenticated before execution."
+        },
+        {
+          "atUtc": "2026-10-01T08:14:34.7233398+00:00",
+          "kind": "old-canonical-gui-native-uia",
+          "target": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+          "purpose": "Provision actual Telegram background service through shipped 3.7.8 controls, then normally close GUI."
+        }
+      ]
+    },
+    "old379": {
+      "jobId": 110279863127,
+      "artifactId": 11149026027,
+      "result": "failed",
+      "error": "Native child failed (41): official-old-clean-install; see owned stdout/stderr.",
+      "checks": [],
+      "mutations": [
+        {
+          "atUtc": "2026-10-01T08:13:56.6347788+00:00",
+          "kind": "official-old-setup-clean-install",
+          "target": "C:\\Program Files\\EgoistShield",
+          "purpose": "Actual original public 3.7.9 installer, authenticated before execution."
+        }
+      ]
+    }
+  },
+  "files": [
+    {
+      "path": "fresh/raw-artifact.zip",
+      "bytes": 13723,
+      "sha256": "44748e615a285351c981c56be2329d5acd1c02f35eee2e6e50dfb585f285b240"
+    },
+    {
+      "path": "fresh/raw-job.txt",
+      "bytes": 31198,
+      "sha256": "7f81e65e1307df626f643d030a4e71ddd91a348b36bf9b1c468bd62172eb9110"
+    },
+    {
+      "path": "fresh/download-identity.json",
+      "bytes": 293,
+      "sha256": "e62ac606e55d4cb31b5ac69894d7c660180d3cc1e0e20f706ef4b195ceb35ad3"
+    },
+    {
+      "path": "fresh/native/clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fresh/native/clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fresh/native/core-service.log",
+      "bytes": 7215,
+      "sha256": "2b28bd85f79a22dcf032017062b2d4a4e1e64295ab237143cdaee13b985f7892"
+    },
+    {
+      "path": "fresh/native/installed-payload.json",
+      "bytes": 20080,
+      "sha256": "731a56fb330cd643a4bfc63b1f35a4bebd691dcdf4f990fc6a142d7abad37585"
+    },
+    {
+      "path": "fresh/native/installed-payload.options.json",
+      "bytes": 330,
+      "sha256": "aececc627b45033a637f83d93dd543ff65bb5ac0b286794f9be927de796634f5"
+    },
+    {
+      "path": "fresh/native/installed-payload.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fresh/native/installed-payload.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fresh/native/installer-upgrade-journal.jsonl",
+      "bytes": 7214,
+      "sha256": "cd5bf3a80ce781b864327fb8d4204c449d8348abaf0cfb1817251523b9f0cd11"
+    },
+    {
+      "path": "fresh/native/windows-production-acceptance.json",
+      "bytes": 12746,
+      "sha256": "150845ddac982ea9fd6d42f6b100434b6a87b19a860bb755f53e42299cdbb665"
+    },
+    {
+      "path": "fresh/signed-fresh-authentication.json",
+      "bytes": 2707,
+      "sha256": "7aca395a68f2a53f354a27311669fd4f6e293378f6e11008e6669df5239412e1"
+    },
+    {
+      "path": "old378/raw-artifact.zip",
+      "bytes": 16602,
+      "sha256": "62080df606727b5c47afeb5a7b85b9f7bb07048f66113e91a55471f10461b48d"
+    },
+    {
+      "path": "old378/raw-job.txt",
+      "bytes": 35431,
+      "sha256": "8e771b20b531f0668c7b21ca406c25fb90a63548cbcbff8622e3c57498f377cd"
+    },
+    {
+      "path": "old378/native/authenticated-assets.json",
+      "bytes": 2707,
+      "sha256": "b3192c8e627561f4099f1cf39af959d68556bbabe29379899db518460dccbf93"
+    },
+    {
+      "path": "old378/download-identity.json",
+      "bytes": 306,
+      "sha256": "d54a2346917b6b7cbffc8d17322d6fcededccda3d3cdcc999f1f972b85484f46"
+    },
+    {
+      "path": "old378/native/authenticated-assets.options.json",
+      "bytes": 423,
+      "sha256": "367fc94ae67078454af021917410fa2749db75f70f470228d6032b212aca40f6"
+    },
+    {
+      "path": "old378/native/authenticated-assets.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/authenticated-assets.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/official-old-clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/official-old-clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/old-installed-authentication.json",
+      "bytes": 3047,
+      "sha256": "260729f61a661375a2c7c629b35b61fe5eb621f1fc2a1ed505a12b16c1099126"
+    },
+    {
+      "path": "old378/native/old-installed-authentication.options.json",
+      "bytes": 486,
+      "sha256": "d569af52f07f39bed580825b682e1aacb79692c7d58af3551a6d44256e7512e4"
+    },
+    {
+      "path": "old378/native/old-installed-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/old-installed-authentication.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/native/windows-production-legacy-upgrade.json",
+      "bytes": 92828,
+      "sha256": "fba359b21412f3746c0e1771faa6f7a1a6e25224972d3636cbd9028209af5b47"
+    },
+    {
+      "path": "old378/original-3.7.8-transport.json",
+      "bytes": 2637,
+      "sha256": "d79eb40c082ddbd61dbbd97ad0831210b977c2b7801d47dff0ec362f3c5aeb9f"
+    },
+    {
+      "path": "old379/raw-artifact.zip",
+      "bytes": 12669,
+      "sha256": "09995344f926651619a3a6e066ded956ad3aef4893de9d288a2d2f92910e3d5d"
+    },
+    {
+      "path": "old379/raw-job.txt",
+      "bytes": 30939,
+      "sha256": "ae3f9ebed1b1f1881f76cab47ee2d19718c1ed386445202948ec3f04658616c9"
+    },
+    {
+      "path": "old379/download-identity.json",
+      "bytes": 304,
+      "sha256": "ea214079e8a5311703c4d435912df38d6abf4290e1f1769e20137a8a4a2fdcd5"
+    },
+    {
+      "path": "old379/native/authenticated-assets.json",
+      "bytes": 2707,
+      "sha256": "7aca395a68f2a53f354a27311669fd4f6e293378f6e11008e6669df5239412e1"
+    },
+    {
+      "path": "old379/native/authenticated-assets.options.json",
+      "bytes": 423,
+      "sha256": "81b6745b5b363d883584039404ec3c11adaac0fa588a14c6992f882c56867f0d"
+    },
+    {
+      "path": "old379/native/authenticated-assets.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/authenticated-assets.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/official-old-clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/official-old-clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/native/windows-production-legacy-upgrade.json",
+      "bytes": 86809,
+      "sha256": "b4131699719c458cf9f9d06c96e70d551526bc1b5f16b8b511b345c42c9fdb7f"
+    },
+    {
+      "path": "jobs.json",
+      "bytes": 23826,
+      "sha256": "58ef07db2efe9debdd8844532d7deba763cc0ba7ab44aa05fd290883d66a4c8b"
+    }
+  ]
+}

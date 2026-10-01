@@ -196,9 +196,9 @@ function Invoke-NativeBounded {
   }finally{$child.Dispose()}
 }
 function Wait-NativeCondition {
-  param([scriptblock]$Condition,[string]$Label,[int]$TimeoutSeconds=90)
+  param([scriptblock]$Condition,[string]$Label,[int]$TimeoutSeconds=90,[switch]$StopOnError)
   $watch=[Diagnostics.Stopwatch]::StartNew();$lastError=''
-  do{try{$value=& $Condition;if($value){return $value}}catch{$lastError=$_.Exception.Message};Start-Sleep -Milliseconds 250}while($watch.Elapsed.TotalSeconds -lt $TimeoutSeconds)
+  do{try{$value=& $Condition;if($value){return $value}}catch{if($StopOnError){throw};$lastError=$_.Exception.Message};Start-Sleep -Milliseconds 250}while($watch.Elapsed.TotalSeconds -lt $TimeoutSeconds)
   throw "Actual native observation timed out: $Label ($lastError)"
 }
 function Assert-NativeNetworkPreserved {
@@ -291,6 +291,50 @@ function Get-NativeTelegramNavigation {
   return Wait-NativeCondition -Condition {& $FindButton 'Telegram'} -Label ($Label+' actual Telegram navigation after opening dashboard') -TimeoutSeconds 60
 }
 
+function Copy-NativeGuiLog {
+  param([Diagnostics.ProcessStartInfo]$StartInfo,[ValidatePattern('^[a-z0-9-]+$')][string]$Label)
+  $record=[ordered]@{name=($Label+'-main.log');status='missing'}
+  try{
+    $appData=[string]$StartInfo.Environment['APPDATA']
+    if(-not $appData -or -not [IO.Path]::IsPathRooted($appData)){throw 'Actual GUI launch environment has no absolute APPDATA.'}
+    $source=Join-Path $appData 'Egoist Shield\logs\main.log'
+    [void](Assert-NativePathWithin $source $appData)
+    if(Test-Path -LiteralPath $source -PathType Leaf){
+      Assert-NativeOrdinaryPath -Path $source -Leaf
+      $bytes=(Get-Item -LiteralPath $source).Length
+      if($bytes -gt 6291456){throw 'GUI diagnostic log exceeded its explicit bound; original retained.'}
+      $destination=Join-Path $script:Work $record.name
+      [void](Assert-NativePathWithin $destination $script:Work)
+      Copy-Item -LiteralPath $source -Destination $destination -ErrorAction Stop
+      $record.status='captured';$record.bytes=(Get-Item -LiteralPath $destination).Length;$record.sha256=(Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+    }
+  }catch{$record.status='refused-or-unavailable';$record.error=$_.Exception.Message}
+  return $record
+}
+
+function Save-NativeGuiFailureObservation {
+  param([Diagnostics.Process]$Process,$Root,[ValidatePattern('^[a-z0-9-]+$')][string]$Label)
+  $record=[ordered]@{label=$Label;observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');processId=$Process.Id;mainLog=(Copy-NativeGuiLog -StartInfo $Process.StartInfo -Label $Label);controls=@();readbackErrors=@()}
+  try{$Process.Refresh();$record.exited=$Process.HasExited;if($Process.HasExited){$record.exitCode=$Process.ExitCode}else{$record.windowHandle=[long]$Process.MainWindowHandle}}catch{$record.readbackErrors+=$_.Exception.Message}
+  if($Root){
+    try{
+      if($Root.Current.ProcessId -ne $Process.Id){throw 'Observation root belongs to a different GUI.'}
+      $controls=$Root.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.Condition]::TrueCondition)
+      $record.totalElements=$controls.Count
+      for($index=0;$index -lt $controls.Count -and $record.controls.Count -lt 160;$index++){
+        $current=$controls[$index].Current
+        if($current.ControlType.ProgrammaticName -notin @('ControlType.Button','ControlType.Text','ControlType.Window')){continue}
+        $name=[string]$current.Name
+        if($name.Length -gt 512){$name=$name.Substring(0,512)}
+        $record.controls+=[ordered]@{type=$current.ControlType.ProgrammaticName;name=$name;enabled=$current.IsEnabled;offscreen=$current.IsOffscreen}
+      }
+    }catch{$record.readbackErrors+=$_.Exception.Message}
+  }
+  $file=Join-Path $script:Work ($Label+'-failure-observation.json')
+  [void](Assert-NativePathWithin $file $script:Work)
+  [IO.File]::WriteAllText($file,($record|ConvertTo-Json -Depth 8),[Text.UTF8Encoding]::new($false))
+}
+
 function Invoke-NativeGui {
   param([ValidateSet('provision-telegram','check-telegram')][string]$Action,[string]$Label)
   Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
@@ -298,14 +342,16 @@ function Invoke-NativeGui {
   [void](Assert-NativeAdministratorOwned $gui -InstallationPath)
   Add-NativeMutation -Kind 'canonical-gui-native-uia' -Target $gui -Purpose $Action
   $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$gui;$info.WorkingDirectory=$script:InstallRoot;$info.UseShellExecute=$false;$info.CreateNoWindow=$true
+  $info.RedirectStandardOutput=$true;$info.RedirectStandardError=$true
   foreach($name in @($info.Environment.Keys)){if($name -match '^(ELECTRON_RUN_AS_NODE|NODE_OPTIONS|NODE_PATH|LAGOM_TEST_USER_DATA_DIR|SHIELD_.*|EGOIST_.*)$'){[void]$info.Environment.Remove($name)}}
   $info.Environment['NODE_ENV']='production'
   # No remote debugger, renderer-accessibility flag, development path or special
   # Core authority is added. InvokePattern operates the actual shipped buttons.
-  $child=[Diagnostics.Process]::new();$child.StartInfo=$info;$closed=$false
+  $child=[Diagnostics.Process]::new();$child.StartInfo=$info;$closed=$false;$started=$false;$root=$null;$stdout=$null;$stderr=$null
   try{
-    if(-not $child.Start()){throw 'Canonical GUI did not start.'}
-    $hwnd=Wait-NativeCondition -Condition {$child.Refresh();if($child.HasExited){throw 'Canonical GUI exited before exposing a window.'};if($child.MainWindowHandle -ne [IntPtr]::Zero){return $child.MainWindowHandle}} -Label 'Canonical GUI native window' -TimeoutSeconds 90
+    $started=$child.Start();if(-not $started){throw 'Canonical GUI did not start.'}
+    $stdout=$child.StandardOutput.ReadToEndAsync();$stderr=$child.StandardError.ReadToEndAsync()
+    $hwnd=Wait-NativeCondition -Condition {$child.Refresh();if($child.HasExited){throw "Canonical GUI exited before exposing a window (exit $($child.ExitCode))."};if($child.MainWindowHandle -ne [IntPtr]::Zero){return $child.MainWindowHandle}} -Label 'Canonical GUI native window' -TimeoutSeconds 90 -StopOnError
     if($child.MainModule.FileName -ine $gui){throw 'Actual GUI executable identity changed.'}
     $root=[Windows.Automation.AutomationElement]::FromHandle($hwnd)
     if(-not $root -or $root.Current.ProcessId -ne $child.Id){throw 'Native UIA root does not belong to the exact launched GUI.'}
@@ -321,8 +367,17 @@ function Invoke-NativeGui {
     $wrapper=Join-Path $script:DataRoot 'Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe'
     if($Action -eq 'provision-telegram'){
       $installButton=Wait-NativeCondition -Condition {& $findButton 'Установить фоновую службу'} -Label 'Actual Telegram install control' -TimeoutSeconds 60
+      Add-NativeMutation -Kind 'telegram-native-invoke' -Target 'EgoistShieldTelegramProxy' -Purpose ("Invoke shipped install control in exact GUI PID "+$child.Id)
       ([Windows.Automation.InvokePattern]$installButton.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
-      [void](Wait-NativeCondition -Condition {Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running} -Label 'Telegram installed through genuine GUI control' -TimeoutSeconds 240)
+      Save-NativeGuiFailureObservation -Process $child -Root $root -Label ($Label+'-after-invoke')
+      $capture=[ordered]@{watch=[Diagnostics.Stopwatch]::StartNew();next=2}
+      [void](Wait-NativeCondition -Condition {
+        if($capture.next -le 45 -and $capture.watch.Elapsed.TotalSeconds -ge $capture.next){
+          Save-NativeGuiFailureObservation -Process $child -Root $root -Label ($Label+'-click-'+$capture.next+'s')
+          $capture.next=if($capture.next -eq 2){15}elseif($capture.next -eq 15){45}else{999}
+        }
+        Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running
+      } -Label 'Telegram installed through genuine GUI control' -TimeoutSeconds 240)
     }else{[void](Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running)}
     $config=Get-Content -LiteralPath (Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json') -Raw | ConvertFrom-Json
     $port=[int]$config.port
@@ -339,12 +394,19 @@ function Invoke-NativeGui {
     $result=[ordered]@{ok=$true;mode=$Action;mainProcessId=$child.Id;arguments=@();automation='native UIAutomation InvokePattern and WindowPattern';productionOverride=$false;coreWorker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;installResult=[ordered]@{serviceInstalled=$true;serviceRunning=$true;running=$true;portConflict=[ordered]@{port=$port;host=[string]$config.host}};exitCode=$child.ExitCode}
     $result | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $script:Work ($Label+'.json')) -Encoding utf8
     $script:Receipt.gui+=$result;Save-NativeReceipt;return $result
+  }catch{
+    if($started){try{Save-NativeGuiFailureObservation -Process $child -Root $root -Label $Label}catch{Write-Warning ('GUI observation unavailable: '+$_.Exception.Message)}}
+    throw
   }finally{
-    if(-not $closed -and -not $child.HasExited){
+    if($started -and -not $closed -and -not $child.HasExited){
       # Only the handle created in this function is canceled on test failure.
       # SCM processes and other GUIs are never selected for this cleanup.
       $child.Kill();[void]$child.WaitForExit(5000)
-    };$child.Dispose()
+    }
+    foreach($stream in @(@{task=$stdout;name='stdout'},@{task=$stderr;name='stderr'})){
+      if($stream.task -and $stream.task.IsCompletedSuccessfully){$text=$stream.task.GetAwaiter().GetResult();if($text.Length -gt 1048576){$text=$text.Substring(0,1048576)+"`n[diagnostic truncated after 1 MiB]"};[IO.File]::WriteAllText((Join-Path $script:Work ($Label+'.'+$stream.name+'.txt')),$text,[Text.UTF8Encoding]::new($false))}
+    }
+    $child.Dispose()
   }
 }
 function Invoke-NativeOrdinaryGui {

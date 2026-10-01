@@ -46,6 +46,23 @@ test('native CIM retry returns a complete snapshot and refuses terminal partial 
   assert.equal(result.liveMutations, 0);
 });
 
+test('terminal GUI errors end the wait immediately while transient observations retain retry behavior', { skip: process.platform !== 'win32' }, () => {
+  const result = run(`
+    $ErrorActionPreference='Stop';. '${library}' -LibraryOnly;
+    $watch=[Diagnostics.Stopwatch]::StartNew();$refused=$false;
+    try{Wait-NativeCondition -Condition {throw 'Terminal child exit fixture'} -Label 'terminal fixture' -TimeoutSeconds 5 -StopOnError}catch{
+      if($_.Exception.Message -cne 'Terminal child exit fixture'){throw};$refused=$true;
+    };
+    if(-not $refused -or $watch.Elapsed.TotalSeconds -ge 2){throw 'Terminal child exit was lost in retry wait'};
+    $script:calls=0;
+    $observed=Wait-NativeCondition -Condition {$script:calls++;if($script:calls -eq 1){throw 'Transient observation fixture'};return 'complete'} -Label 'transient fixture' -TimeoutSeconds 2;
+    if($observed -cne 'complete' -or $script:calls -ne 2){throw 'Transient retry changed'};
+    @{terminalPreserved=$true;transientRecovered=$true}|ConvertTo-Json -Compress;
+  `);
+  assert.equal(result.terminalPreserved, true);
+  assert.equal(result.transientRecovered, true);
+});
+
 test('installer diagnostics preserve actual own log bytes and refuse oversized logs', {
   skip: process.platform !== 'win32' || !process.env.LAGOM_TEST_TEMP,
 }, async () => {
@@ -85,7 +102,8 @@ test('installer diagnostics preserve actual own log bytes and refuse oversized l
 });
 
 test('signed Setup and source Core diagnostics refuse a physical host before reading inputs or compiling', { skip: process.platform !== 'win32' }, () => {
-  for (const parameters of [['-SignedCandidateAssetsDirectory', 'C:/nonexistent-diagnostic-fixture'], ['-CoreConfigurationOnly']]) {
+  for (const parameters of [['-SignedCandidateAssetsDirectory', 'C:/nonexistent-diagnostic-fixture'], ['-CoreConfigurationOnly'],
+    ['-SignedCandidateAssetsDirectory', 'C:/nonexistent-diagnostic-fixture', '-OriginalAssetsDirectory', 'C:/nonexistent-original-fixture', '-OriginalVersion', '3.7.8', '-GuiFailureDiagnostic']]) {
     const result = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-File',
       path.resolve('tests/windows-installer-diagnostics.ps1'), ...parameters], {
     env: { ...process.env, GITHUB_ACTIONS: 'false', RUNNER_ENVIRONMENT: 'self-hosted' },
@@ -94,6 +112,45 @@ test('signed Setup and source Core diagnostics refuse a physical host before rea
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /Native acceptance host guard refused before mutation/);
     assert.doesNotMatch(result.stderr, /nonexistent-diagnostic-fixture|DOTNET_INSTALL_DIR|core-diagnostic-publish/);
+  }
+});
+
+test('GUI failure diagnostics read only the launched profile log and retain actual bytes within the bound', {
+  skip: process.platform !== 'win32' || !process.env.LAGOM_TEST_TEMP,
+}, async () => {
+  const directory = await fs.mkdtemp(path.join(process.env.LAGOM_TEST_TEMP, 'gui-log-diagnostic-'));
+  const appData = path.join(directory, 'launch-profile');
+  const source = path.join(appData, 'Egoist Shield/logs/main.log');
+  const work = path.join(directory, 'evidence');
+  await fs.mkdir(path.dirname(source), { recursive: true });
+  await fs.mkdir(work);
+  const bytes = Buffer.from('[boot] app startup failed: inert diagnostic fixture\r\n');
+  await fs.writeFile(source, bytes);
+  try {
+    const captured = run(`
+      $ErrorActionPreference='Stop';
+      . '${library}' -LibraryOnly;
+      $script:Work='${quote(work)}';
+      $info=[Diagnostics.ProcessStartInfo]::new();$info.Environment['APPDATA']='${quote(appData)}';
+      Copy-NativeGuiLog -StartInfo $info -Label 'launched-profile'|ConvertTo-Json -Compress;
+    `);
+    assert.equal(captured.status, 'captured', JSON.stringify(captured));
+    assert.equal(captured.bytes, bytes.length);
+    assert.deepEqual(await fs.readFile(path.join(work, 'launched-profile-main.log')), bytes);
+    await fs.writeFile(source, Buffer.alloc(6291457, 46));
+    const refused = run(`
+      $ErrorActionPreference='Stop';
+      . '${library}' -LibraryOnly;
+      $script:Work='${quote(work)}';
+      $info=[Diagnostics.ProcessStartInfo]::new();$info.Environment['APPDATA']='${quote(appData)}';
+      Copy-NativeGuiLog -StartInfo $info -Label 'oversized-profile'|ConvertTo-Json -Compress;
+    `);
+    assert.equal(refused.status, 'refused-or-unavailable');
+    assert.match(refused.error, /exceeded its explicit bound/);
+    assert.deepEqual(await fs.readdir(work), ['launched-profile-main.log']);
+  } finally {
+    assert.equal(path.dirname(directory), path.resolve(process.env.LAGOM_TEST_TEMP));
+    await fs.rm(directory, { recursive: true, force: true });
   }
 });
 

@@ -1,0 +1,836 @@
+{
+  "schemaVersion": 1,
+  "scope": "Independent read-only investigation of actual signed fresh380 worker/CIM failure; no production changes or new native execution",
+  "releaseReady": false,
+  "observed": {
+    "frozenSourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+    "inputHashVerification": [
+      {
+        "projectRelativePath": "docs/product-hardening-2026-10-01/native-466862-failures/fresh/native/core-service.log",
+        "sha256": "2B28BD85F79A22DCF032017062B2D4A4E1E64295AB237143CDAEE13B985F7892",
+        "bytes": 7215,
+        "matchesAcceptedSummary": true
+      },
+      {
+        "projectRelativePath": "docs/product-hardening-2026-10-01/native-466862-failures/fresh/native/windows-production-acceptance.json",
+        "sha256": "150845DDAC982EA9FD6D42F6B100434B6A87B19A860BB755F53E42299CDBB665",
+        "bytes": 12746,
+        "matchesAcceptedSummary": true
+      },
+      {
+        "projectRelativePath": "docs/product-hardening-2026-10-01/native-466862-failures/fresh/native/installer-upgrade-journal.jsonl",
+        "sha256": "CD5BF3A80CE781B864327FB8D4204C449D8348ABAF0CFB1817251523B9F0CD11",
+        "bytes": 7214,
+        "matchesAcceptedSummary": true
+      },
+      {
+        "projectRelativePath": "docs/product-hardening-2026-10-01/native-466862-failures/fresh/native/installed-payload.json",
+        "sha256": "731A56FB330CD643A4BFC63B1F35A4BEBD691DCDF4F990FC6A142D7ABAD37585",
+        "bytes": 20080,
+        "matchesAcceptedSummary": true
+      },
+      {
+        "projectRelativePath": "docs/product-hardening-2026-10-01/native-466862-failures/fresh/raw-job.txt",
+        "sha256": "7F81E65E1307DF626F643D030A4E71DDD91A348B36BF9B1C468BD62172EB9110",
+        "bytes": 31198,
+        "matchesAcceptedSummary": true
+      },
+      {
+        "projectRelativePath": "docs/product-hardening-2026-10-01/native-466862-failures/fresh/raw-artifact.zip",
+        "sha256": "44748E615A285351C981C56BE2329D5ACD1C02F35EEE2E6E50DFB585F285B240",
+        "bytes": 13723,
+        "matchesAcceptedSummary": true
+      }
+    ],
+    "sourceHashVerification": [
+      {
+        "projectRelativePath": "src/service/EgoistShield.Service/ComponentWorker.cs",
+        "frozenGitBlobSha256": "F049C4C77992061C8752A5ABC2B5220D36A768418DC5C74C541D12471FB6642C",
+        "gitBlobBytes": 13619,
+        "currentWorktreeSha256": "F049C4C77992061C8752A5ABC2B5220D36A768418DC5C74C541D12471FB6642C",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/service/EgoistShield.Service/OperationDispatcher.cs",
+        "frozenGitBlobSha256": "37E4538C2AC091A30D52EDFF131AFA616877D39DDF1636CEA141361063EDB199",
+        "gitBlobBytes": 99266,
+        "currentWorktreeSha256": "37E4538C2AC091A30D52EDFF131AFA616877D39DDF1636CEA141361063EDB199",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/component-worker-entry.js",
+        "frozenGitBlobSha256": "BEC0EB0B410C7F33F652B0456F05FBB11069F043F6B254CDAE26E63F8FA71E94",
+        "gitBlobBytes": 3303,
+        "currentWorktreeSha256": "FB3597926702D802FA87A29BD10E5FD8D6A13DA532EB22A2DE3665930E527473",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/component-facade.js",
+        "frozenGitBlobSha256": "57810649B4736F81E499B1F34832D4E2DF024A8F8DCA7E5CFCCFFBFC1E4EFE94",
+        "gitBlobBytes": 5616,
+        "currentWorktreeSha256": "643410754F66F5197E930D51F8F60FB35FBE7C22B71C6141F07581D69B5F56DA",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/recovered/electron/ipc/zapret-manager.js",
+        "frozenGitBlobSha256": "3C16311163668678A6B7D9817933C4254F55479799172C88C51B49C992AA8D88",
+        "gitBlobBytes": 129629,
+        "currentWorktreeSha256": "FFC62CDD5103045620CABBA6C0C90B8890E38688DBD61CC0531A7830FD942D73",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/recovered/electron/ipc/windows-system-binaries.js",
+        "frozenGitBlobSha256": "6FE8B64F2F120463DE6FD58AC4A92F90399D785E46C7BF34518DC057C2851D49",
+        "gitBlobBytes": 1243,
+        "currentWorktreeSha256": "6FE8B64F2F120463DE6FD58AC4A92F90399D785E46C7BF34518DC057C2851D49",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/recovered/electron/ipc/port-utils.js",
+        "frozenGitBlobSha256": "32353BB7641F3212D27118CC9A7E19CE4276341E2AC38B66A6E9C0635C305E98",
+        "gitBlobBytes": 14104,
+        "currentWorktreeSha256": "32353BB7641F3212D27118CC9A7E19CE4276341E2AC38B66A6E9C0635C305E98",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/recovered/electron/ipc/handlers.js",
+        "frozenGitBlobSha256": "E089926A2C1FF7DEC2691CE0F7F2A54B21E89ED55937756E49E1251882516D21",
+        "gitBlobBytes": 9630,
+        "currentWorktreeSha256": "E089926A2C1FF7DEC2691CE0F7F2A54B21E89ED55937756E49E1251882516D21",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+        "frozenGitBlobSha256": "F72332E206682306004AFE9E68843686F6E2FA50C0A8B28B8AED3D29F2D689F2",
+        "gitBlobBytes": 2034,
+        "currentWorktreeSha256": "F72332E206682306004AFE9E68843686F6E2FA50C0A8B28B8AED3D29F2D689F2",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/recovered/electron/ipc/network-combinator-manager.js",
+        "frozenGitBlobSha256": "816D48D6FA2A1B378943C0436B84D9E19C67F1D81B922B03CB5FE17B02FB96D0",
+        "gitBlobBytes": 11577,
+        "currentWorktreeSha256": "35FE0BA9D2BB7AB3F0BAF64AF205E5DA292AD1282A2F308D442443AD5A89FF3A",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/recovered/electron/ipc/ipc-schemas.js",
+        "frozenGitBlobSha256": "5A3363F0CD6DA4D356CA31CEFB0E4412369FCDF890597C4AB53623F336393A38",
+        "gitBlobBytes": 12445,
+        "currentWorktreeSha256": "5A3363F0CD6DA4D356CA31CEFB0E4412369FCDF890597C4AB53623F336393A38",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/recovered/renderer.js",
+        "frozenGitBlobSha256": "9E05041F0EFA329BFE6A55622291DEC66A7A8F6C17526F9290FB216BDACE8438",
+        "gitBlobBytes": 659429,
+        "currentWorktreeSha256": "83C23387E581151EAE23BCF2F2F945A8DC0C3D1FD18AA67145B6A6D6370F3D5A",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/recovered/electron/main.js",
+        "frozenGitBlobSha256": "D3D539BE3298F104B77377510E0751A4A709BA887248362CFEAEB9EDAACC51D6",
+        "gitBlobBytes": 54080,
+        "currentWorktreeSha256": "AB540A132A2603896106681813C60C3C0CBD303310612B6FEF4EB3052E758ED1",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/native-runtime-trust.js",
+        "frozenGitBlobSha256": "1EEA805829755A49BFDF481B12DD5B8658C0101FEE7C59AD5C53673444F4EDFE",
+        "gitBlobBytes": 17714,
+        "currentWorktreeSha256": "1EEA805829755A49BFDF481B12DD5B8658C0101FEE7C59AD5C53673444F4EDFE",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "src/brand/ShieldWidget.jsx",
+        "frozenGitBlobSha256": "A397BA972C158680E2754418F8A23234E71A8CC751B63B89BA10761256B61FA3",
+        "gitBlobBytes": 18968,
+        "currentWorktreeSha256": "B504B5B73CA63DB296B456F6C3C56C3F37BFD1C006053ADD63B0CBBFCE8DC46A",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "scripts/electron-runtime.json",
+        "frozenGitBlobSha256": "7039F1CBE5BDC29558BAA8B053167465F0FD21E22FD48DE02389D0765B54FF07",
+        "gitBlobBytes": 1563,
+        "currentWorktreeSha256": "7039F1CBE5BDC29558BAA8B053167465F0FD21E22FD48DE02389D0765B54FF07",
+        "normalizedWorktreeMatchesFrozen": true
+      },
+      {
+        "projectRelativePath": "tests/windows-production-acceptance.ps1",
+        "frozenGitBlobSha256": "5BB62B9AEA28C5BDF38EFA7A4E12128BD75DB90DA19D392721543D19CB64B8D2",
+        "gitBlobBytes": 64456,
+        "currentWorktreeSha256": "8868428B579B70CACFC8E547675596A57E974DFD435BF9430E2B5743DFDE85E6",
+        "normalizedWorktreeMatchesFrozen": false
+      }
+    ],
+    "acceptedRun": 36834226795,
+    "freshCase": {
+      "jobId": 110279863034,
+      "artifactId": 11148742808,
+      "result": "failed",
+      "error": "Actual native observation timed out: Telegram installed through genuine GUI control (Actual SCM service missing or ambiguous: EgoistShieldTelegramProxy)",
+      "checks": [
+        {
+          "name": "actual-generated-setup-clean-install",
+          "ok": true,
+          "milliseconds": 59018.55
+        },
+        {
+          "name": "actual-installed-payload-fuses-asar-worker-inventory-acls-and-no-forced-elevation",
+          "ok": true,
+          "receipt": "installed-payload.json"
+        }
+      ],
+      "mutations": [
+        {
+          "atUtc": "2026-10-01T08:13:45.2204818+00:00",
+          "kind": "setup-clean-install",
+          "target": "C:\\Program Files\\EgoistShield",
+          "purpose": "Actual generated candidate silent installation."
+        },
+        {
+          "atUtc": "2026-10-01T08:14:50.8287610+00:00",
+          "kind": "canonical-gui-native-uia",
+          "target": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+          "purpose": "provision-telegram"
+        }
+      ]
+    },
+    "actualHost": {
+      "computerName": "runnervmfi6oq",
+      "os": "Microsoft Windows NT 10.0.26100.0",
+      "powershell": "7.6.6",
+      "administrator": true,
+      "runnerEnvironment": "github-hosted",
+      "githubRunId": "36834226795",
+      "githubRunAttempt": "1"
+    },
+    "core": {
+      "scm": {
+        "Name": "EgoistShieldCore",
+        "State": "Running",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Program Files\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe",
+        "ProcessId": 2004
+      },
+      "process": {
+        "processId": 2004,
+        "parentProcessId": 976,
+        "executable": "C:\\Program Files\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe",
+        "createdUtc": "2026-10-01T08:14:40.3358080+00:00"
+      }
+    },
+    "installedPayloadVerified": {
+      "ok": true,
+      "inventoryVerified": [
+        "chrome_100_percent.pak",
+        "chrome_200_percent.pak",
+        "d3dcompiler_47.dll",
+        "dxcompiler.dll",
+        "dxil.dll",
+        "EgoistShield.exe",
+        "EgoistShield.Worker.exe",
+        "ffmpeg.dll",
+        "icudtl.dat",
+        "LICENSE",
+        "LICENSES.chromium.html",
+        "locales/af.pak",
+        "locales/am.pak",
+        "locales/ar.pak",
+        "locales/bg.pak",
+        "locales/bn.pak",
+        "locales/ca.pak",
+        "locales/cs.pak",
+        "locales/da.pak",
+        "locales/de.pak",
+        "locales/el.pak",
+        "locales/en-GB.pak",
+        "locales/en-US.pak",
+        "locales/es-419.pak",
+        "locales/es.pak",
+        "locales/et.pak",
+        "locales/fa.pak",
+        "locales/fi.pak",
+        "locales/fil.pak",
+        "locales/fr.pak",
+        "locales/gu.pak",
+        "locales/he.pak",
+        "locales/hi.pak",
+        "locales/hr.pak",
+        "locales/hu.pak",
+        "locales/id.pak",
+        "locales/it.pak",
+        "locales/ja.pak",
+        "locales/kn.pak",
+        "locales/ko.pak",
+        "locales/lt.pak",
+        "locales/lv.pak",
+        "locales/ml.pak",
+        "locales/mr.pak",
+        "locales/ms.pak",
+        "locales/nb.pak",
+        "locales/nl.pak",
+        "locales/pl.pak",
+        "locales/pt-BR.pak",
+        "locales/pt-PT.pak",
+        "locales/ro.pak",
+        "locales/ru.pak",
+        "locales/sk.pak",
+        "locales/sl.pak",
+        "locales/sr.pak",
+        "locales/sv.pak",
+        "locales/sw.pak",
+        "locales/ta.pak",
+        "locales/te.pak",
+        "locales/th.pak",
+        "locales/tr.pak",
+        "locales/uk.pak",
+        "locales/ur.pak",
+        "locales/vi.pak",
+        "locales/zh-CN.pak",
+        "locales/zh-TW.pak",
+        "resources.pak",
+        "resources/app.asar",
+        "resources/component-worker.cjs",
+        "resources/core-service/win-x64/EgoistShield.Service.exe",
+        "resources/runtime/manifest.json",
+        "resources/runtime/sing-box/LICENSE",
+        "resources/runtime/sing-box/sing-box.exe",
+        "resources/runtime/sing-box/VERSION.txt",
+        "resources/runtime/tg-ws-proxy/egoistshield-tg-ws-proxy.exe",
+        "resources/runtime/xray/geoip.dat",
+        "resources/runtime/xray/geosite.dat",
+        "resources/runtime/xray/VERSION.txt",
+        "resources/runtime/xray/WINTUN-LICENSE.txt",
+        "resources/runtime/xray/wintun.dll",
+        "resources/runtime/xray/xray.exe",
+        "resources/runtime/zapret/core/bin/ACTIVE_DISCORD_UDP.bin",
+        "resources/runtime/zapret/core/bin/ACTIVE_GAME_UDP.bin",
+        "resources/runtime/zapret/core/bin/cygwin1.dll",
+        "resources/runtime/zapret/core/bin/quic_initial_4pda_to.bin",
+        "resources/runtime/zapret/core/bin/quic_initial_5ka_ru.bin",
+        "resources/runtime/zapret/core/bin/quic_initial_rutube_ru.bin",
+        "resources/runtime/zapret/core/bin/quic_initial_steamcommunity_com.bin",
+        "resources/runtime/zapret/core/bin/quic_initial_tencent_com.bin",
+        "resources/runtime/zapret/core/bin/quic_initial_www_google_com.bin",
+        "resources/runtime/zapret/core/bin/stun.bin",
+        "resources/runtime/zapret/core/bin/stun2.bin",
+        "resources/runtime/zapret/core/bin/tls_clienthello_4pda_to.bin",
+        "resources/runtime/zapret/core/bin/tls_clienthello_5ka_ru.bin",
+        "resources/runtime/zapret/core/bin/tls_clienthello_max_ru.bin",
+        "resources/runtime/zapret/core/bin/tls_clienthello_sochi_park.bin",
+        "resources/runtime/zapret/core/bin/tls_clienthello_www_google_com.bin",
+        "resources/runtime/zapret/core/bin/tls_clienthello_www_sferum_ru.bin",
+        "resources/runtime/zapret/core/bin/WinDivert.dll",
+        "resources/runtime/zapret/core/bin/WinDivert64.sys",
+        "resources/runtime/zapret/core/bin/winws.exe",
+        "resources/runtime/zapret/core/general (ALT).bat",
+        "resources/runtime/zapret/core/general (ALT10).bat",
+        "resources/runtime/zapret/core/general (ALT11).bat",
+        "resources/runtime/zapret/core/general (ALT12).bat",
+        "resources/runtime/zapret/core/general (ALT13).bat",
+        "resources/runtime/zapret/core/general (ALT2).bat",
+        "resources/runtime/zapret/core/general (ALT3).bat",
+        "resources/runtime/zapret/core/general (ALT4).bat",
+        "resources/runtime/zapret/core/general (ALT5).bat",
+        "resources/runtime/zapret/core/general (ALT6).bat",
+        "resources/runtime/zapret/core/general (ALT7).bat",
+        "resources/runtime/zapret/core/general (ALT8).bat",
+        "resources/runtime/zapret/core/general (ALT9).bat",
+        "resources/runtime/zapret/core/general (EGOIST MIX).bat",
+        "resources/runtime/zapret/core/general (EXP).bat",
+        "resources/runtime/zapret/core/general (FAKE TLS AUTO ALT).bat",
+        "resources/runtime/zapret/core/general (FAKE TLS AUTO ALT2).bat",
+        "resources/runtime/zapret/core/general (FAKE TLS AUTO ALT3).bat",
+        "resources/runtime/zapret/core/general (FAKE TLS AUTO).bat",
+        "resources/runtime/zapret/core/general (SIMPLE FAKE ALT).bat",
+        "resources/runtime/zapret/core/general (SIMPLE FAKE ALT2).bat",
+        "resources/runtime/zapret/core/general (SIMPLE FAKE).bat",
+        "resources/runtime/zapret/core/general.bat",
+        "resources/runtime/zapret/core/lists/ipset-all.txt",
+        "resources/runtime/zapret/core/lists/ipset-all.txt.backup",
+        "resources/runtime/zapret/core/lists/ipset-exclude.txt",
+        "resources/runtime/zapret/core/lists/list-egoist-discord.txt",
+        "resources/runtime/zapret/core/lists/list-exclude.txt",
+        "resources/runtime/zapret/core/lists/list-general.txt",
+        "resources/runtime/zapret/core/lists/list-google.txt",
+        "resources/runtime/zapret/core/service.bat",
+        "resources/runtime/zapret/core/utils/check_updates.enabled",
+        "resources/runtime/zapret/core/utils/targets.txt",
+        "resources/runtime/zapret/core/utils/test zapret.ps1",
+        "resources/runtime/zapret/service-wrapper/egoistshield-zapret-service.exe",
+        "resources/runtime/zapret/service-wrapper/egoistshield-zapret-service.xml",
+        "resources/runtime/zapret/VERSION.txt",
+        "snapshot_blob.bin",
+        "v8_context_snapshot.bin",
+        "version",
+        "vk_swiftshader_icd.json",
+        "vk_swiftshader.dll",
+        "vulkan-1.dll"
+      ]
+    },
+    "coreQueryErrors": [
+      {
+        "line": 2,
+        "atUtc": "2026-10-01T08:15:07.446706+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 4,
+        "atUtc": "2026-10-01T08:15:19.578027+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 6,
+        "atUtc": "2026-10-01T08:15:31.792054+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 8,
+        "atUtc": "2026-10-01T08:15:49.739763+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 10,
+        "atUtc": "2026-10-01T08:16:07.673027+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 12,
+        "atUtc": "2026-10-01T08:16:28.756335+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 14,
+        "atUtc": "2026-10-01T08:16:43.750640+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 16,
+        "atUtc": "2026-10-01T08:17:07.061576+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 18,
+        "atUtc": "2026-10-01T08:17:19.801825+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 20,
+        "atUtc": "2026-10-01T08:17:37.792697+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 22,
+        "atUtc": "2026-10-01T08:17:58.455738+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 24,
+        "atUtc": "2026-10-01T08:18:16.859289+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 26,
+        "atUtc": "2026-10-01T08:18:31.752910+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      },
+      {
+        "line": 28,
+        "atUtc": "2026-10-01T08:18:53.279015+00:00",
+        "exception": "InvalidOperationException",
+        "visibleChildError": "Command failed",
+        "componentByUniqueSourceMessage": "Zapret",
+        "childExecutable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "queryFilter": "Name='winws.exe'",
+        "originalChildCode": null,
+        "originalChildKilled": null,
+        "originalChildSignal": null,
+        "originalStdoutBytes": null,
+        "originalStderrBytes": null
+      }
+    ],
+    "errorInterarrivalSeconds": {
+      "count": 14,
+      "firstUtc": "2026-10-01T08:15:07.446706+00:00",
+      "lastUtc": "2026-10-01T08:18:53.279015+00:00",
+      "intervals": [
+        12.131321,
+        12.214027,
+        17.947709,
+        17.933264,
+        21.083308,
+        14.994305,
+        23.310936,
+        12.740249,
+        17.990872,
+        20.663041,
+        18.403551,
+        14.893621,
+        21.526105
+      ],
+      "minimum": 12.131321,
+      "median": 17.947709,
+      "maximum": 23.310936
+    },
+    "originalChildExitMetadataAvailable": false,
+    "successfulGuiResultCaptured": false,
+    "rendererLocations": {
+      "emptySecretInitialDraft": [
+        10649
+      ],
+      "saveBeforeInstall": [
+        11352
+      ],
+      "saveConfigSchema": [
+        11350
+      ],
+      "installButtonHandler": [
+        11356
+      ]
+    },
+    "performed": {
+      "projectExistingEdits": 0,
+      "setupLaunches": 0,
+      "scmDnsRegistryTasksMutations": 0,
+      "processKills": 0,
+      "nativeLocalCimReproduction": false,
+      "externalApiMutations": 0
+    }
+  },
+  "established": [
+    "Actual fresh Setup0, installed payload/inventory verified, Core LocalSystem Running Auto; Telegram SCM service absent at native timeout",
+    "14 exact WinWS process-query errors from frozen Zapret status code; original child failure fields not retained",
+    "Zapret child execFile budget12000ms; CIM provider timeout not explicitly set",
+    "Worker environment explicitly cleared; original harness PowerShell7 PSModulePath is not directly inherited into Core child",
+    "Component queries bypass Core/main mutation queues and JS workerQueue, with only short stdin write lock",
+    "Actual inspector wrapper catches Zapret failures as degraded/warn and keeps packet-interception/windivert locks; those do not conflict with Telegram port-only mutation",
+    "Renderer waits for all status results before adopting Telegram config, exposes initial empty-secret draft, always saves before installing, and invalidates pending read generation when action begins"
+  ],
+  "notEstablished": [
+    "Actual child timeout vs startup/module-load/WMI native failure; code/killed/signal/elapsed and original byte counts are unavailable",
+    "Actual Telegram draft or UI validation failure at the recorded native Invoke",
+    "Direct rejection of Telegram by Zapret inspector; the source has a catch and no relevant lock overlap",
+    "Shared Core mutation-slot starvation or Core60s timeout/worker retirement in this artifact",
+    "CIM/environment repair, stable Telegram installation, reboot/long-soak/native release readiness"
+  ],
+  "sourcePointers": [
+    {
+      "path": "src/recovered/electron/ipc/zapret-manager.js",
+      "line": 2255,
+      "meaning": "Exact CIM query and12000ms child budget"
+    },
+    {
+      "path": "src/recovered/electron/ipc/zapret-manager.js",
+      "line": 2265,
+      "meaning": "Original child error reconstructed from message, metadata lost"
+    },
+    {
+      "path": "src/recovered/electron/ipc/zapret-manager.js",
+      "line": 2718,
+      "meaning": "Absolute WinPS direct execFile; no explicit env/cwd/signal"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ComponentWorker.cs",
+      "line": 173,
+      "meaning": "Explicit small worker environment"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ComponentWorker.cs",
+      "line": 89,
+      "meaning": "60s Core query deadline"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ComponentWorker.cs",
+      "line": 110,
+      "meaning": "Write lock released before response wait"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ComponentWorker.cs",
+      "line": 188,
+      "meaning": "Stderr drained and discarded"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ComponentWorker.cs",
+      "line": 251,
+      "meaning": "JS failure message becomes InvalidOperationException"
+    },
+    {
+      "path": "src/component-worker-entry.js",
+      "line": 32,
+      "meaning": "Redacted message-only generic error frame"
+    },
+    {
+      "path": "src/component-worker-entry.js",
+      "line": 49,
+      "meaning": "Queries execute outside mutation workerQueue"
+    },
+    {
+      "path": "src/recovered/electron/ipc/port-utils.js",
+      "line": 206,
+      "meaning": "Queries execute outside main mutation queue"
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+      "line": 9,
+      "meaning": "Save config coordinates then validates schema"
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+      "line": 13,
+      "meaning": "Install coordinates before invoking service operation"
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers.js",
+      "line": 98,
+      "meaning": "Zapret inspector wrapped by inspectModule"
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers.js",
+      "line": 178,
+      "meaning": "Inspector catch preserves conservative ownership"
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers.js",
+      "line": 200,
+      "meaning": "Per-module conservative locks"
+    },
+    {
+      "path": "src/recovered/electron/ipc/network-combinator-manager.js",
+      "line": 97,
+      "meaning": "Shared inspection awaits all already-wrapped inspectors"
+    },
+    {
+      "path": "src/recovered/electron/ipc/network-combinator-manager.js",
+      "line": 213,
+      "meaning": "Mutation awaits bounded inspection"
+    },
+    {
+      "path": "src/brand/ShieldWidget.jsx",
+      "line": 18,
+      "meaning": "Status batch awaits every fulfillment/rejection"
+    },
+    {
+      "path": "src/recovered/renderer.js",
+      "line": 10717,
+      "meaning": "Initial batch includes Telegram/Zapret/health/network"
+    },
+    {
+      "path": "src/recovered/renderer.js",
+      "line": 10729,
+      "meaning": "Telegram config adopted only after whole batch"
+    },
+    {
+      "path": "src/recovered/renderer.js",
+      "line": 10808,
+      "meaning": "Action invalidates pending read generation"
+    },
+    {
+      "path": "src/recovered/renderer.js",
+      "line": 11352,
+      "meaning": "Save config precedes install callback"
+    },
+    {
+      "path": "src/recovered/electron/ipc/ipc-schemas.js",
+      "line": 150,
+      "meaning": "Empty secret rejected"
+    },
+    {
+      "path": "tests/windows-production-acceptance.ps1",
+      "line": 323,
+      "meaning": "Frozen test invokes install directly; renderer performs save"
+    }
+  ],
+  "workerEnvironmentKeys": [
+    "ELECTRON_RUN_AS_NODE",
+    "NODE_ENV",
+    "ProgramData",
+    "SystemRoot",
+    "PATH",
+    "COMSPEC",
+    "TEMP",
+    "TMP"
+  ],
+  "minimalDiagnostic": [
+    {
+      "boundary": "same signed artifact native GUI",
+      "capture": [
+        "actual Invoke time",
+        "visible error/notification text",
+        "PID",
+        "bounded stdout/stderr",
+        "exit code"
+      ],
+      "decisiveResults": {
+        "secretValidationError": "SaveConfig rejected before service installation",
+        "inspectionDeadlineError": "Coordinator observation exceeded budget"
+      }
+    },
+    {
+      "boundary": "original JS execFile rejection before message reconstruction",
+      "capture": [
+        "request correlation",
+        "child PID",
+        "fixed executable",
+        "timeoutMs",
+        "elapsedMs",
+        "code",
+        "killed",
+        "signal",
+        "stdoutBytes",
+        "stderrBytes",
+        "bounded redacted stderr"
+      ],
+      "exclude": [
+        "raw stdout with process CommandLine",
+        "secrets and configuration",
+        "arbitrary runtime injection"
+      ],
+      "decisiveResults": {
+        "killedAndElapsedNear12000": "Actual child timeout",
+        "numericExitAndErrorText": "Native child failure",
+        "spawnCode": "Spawn failure"
+      }
+    },
+    {
+      "boundary": "only if needed, trusted narrow diagnostic execution in actual SYSTEM worker path",
+      "capture": [
+        "PowerShell started",
+        "CimCmdlets resolved",
+        "CIM returned",
+        "actual versions/token SID",
+        "allowlisted environment paths"
+      ],
+      "constraints": [
+        "Do not claim admin/PS7 as equivalent SYSTEM/WinPS proof",
+        "One-variable environment A/B only after classifying failure",
+        "Keep existing deadlines/ownership checks/no blind replay",
+        "No full inherited-environment restoration"
+      ]
+    }
+  ],
+  "primarySources": [
+    "https://nodejs.org/download/release/v24.19.0/docs/api/child_process.html#child_processexecfilefile-args-options-callback",
+    "https://learn.microsoft.com/en-us/powershell/module/cimcmdlets/get-ciminstance?view=powershell-5.1",
+    "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_psmodulepath?view=powershell-7.5"
+  ],
+  "nextOwner": "Root owns source/harness diagnostic and the next actual hosted capture; no production fix claimed by this report"
+}

@@ -23,6 +23,10 @@ on:
         description: Optional signed draft ID for diagnostic-only Setup execution with both source identities recorded
         type: string
         default: ''
+      diagnostic_all_versions:
+        description: Diagnose the signed candidate and authenticated original 3.7.8/3.7.9 without claiming release acceptance
+        type: boolean
+        default: false
       core_configuration_diagnostic:
         description: Diagnose exact-source Core configuration and protected ACLs on this disposable administrator host
         type: boolean
@@ -40,6 +44,10 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.installer_diagnostics }}
     runs-on: windows-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(inputs.diagnostic_all_versions && '["candidate","3.7.8","3.7.9"]' || '["candidate"]') }}
     permissions:
       # Draft downloads require repository push access, as in signed acceptance.
       contents: write
@@ -48,6 +56,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Validate diagnostic selection before writes
+        env:
+          DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+          DIAGNOSTIC_ALL_VERSIONS: ${{ inputs.diagnostic_all_versions }}
+          CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
+        shell: pwsh
+        run: |
+          ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          if ($env:DIAGNOSTIC_ALL_VERSIONS -eq 'true' -and ($env:DIAGNOSTIC_RELEASE_ID -eq '' -or $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true')) { throw 'Original version diagnostics require an authenticated signed candidate.' }
+          if ($env:DIAGNOSTIC_RELEASE_ID -ne '' -and $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { throw 'Choose either signed Setup or source Core diagnostics.' }
       - name: Read the Core diagnostic SDK
         if: ${{ inputs.core_configuration_diagnostic }}
         id: diagnostic-sdk
@@ -73,15 +91,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Install locked original verifier dependencies
+        if: ${{ inputs.diagnostic_release_id != '' && inputs.diagnostic_all_versions }}
+        shell: pwsh
+        run: |
+          npm ci --ignore-scripts --no-audit --fund=false --cache (Join-Path $env:RUNNER_TEMP 'lagom-diagnostic-npm-cache')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Download the exact authenticated diagnostic candidate
         if: ${{ inputs.diagnostic_release_id != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
           DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+          DIAGNOSTIC_VARIANT: ${{ matrix.variant }}
         shell: pwsh
         run: |
           ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
           if ($env:DIAGNOSTIC_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Invalid diagnostic release ID.' }
+          if ($env:DIAGNOSTIC_VARIANT -cnotin @('candidate','3.7.8','3.7.9')) { throw 'Invalid diagnostic version selection.' }
           $head = (git rev-parse HEAD).Trim()
           if ($LASTEXITCODE -ne 0 -or $head -cne $env:GITHUB_SHA) { throw 'Diagnostic harness checkout differs from the actual workflow SHA.' }
           $text = gh api ("repos/egoist-ai1/egoist-lagom/releases/" + $env:DIAGNOSTIC_RELEASE_ID)
@@ -112,17 +138,42 @@ jobs:
           node scripts/prepare-release-assets.mjs --dist $assets --verify-only true
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "LAGOM_DIAGNOSTIC_ASSETS=$assets" >> $env:GITHUB_ENV
+          if ($env:DIAGNOSTIC_VARIANT -cne 'candidate') {
+            $oldAssets = Join-Path $env:RUNNER_TEMP 'lagom-original-diagnostic-assets'
+            if (Test-Path -LiteralPath $oldAssets) { throw 'Original diagnostic assets must be fresh.' }
+            if ($env:DIAGNOSTIC_VARIANT -ceq '3.7.8') {
+              gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $assets --pattern 'legacy-local-EgoistShield-Setup-3.7.8.exe' --pattern 'legacy-local-3.7.8-release-manifest.json' --pattern 'legacy-local-3.7.8-release-manifest.json.sig'
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              node tests/windows-legacy-local-transport.mjs stage --sidecars $assets --candidate-registry $assets --old-assets $oldAssets --source-release-id $env:DIAGNOSTIC_RELEASE_ID
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            } else {
+              $oldReleaseText = gh api 'repos/egoist-ai1/egoist-lagom/releases/tags/v3.7.9'
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              $oldRelease = $oldReleaseText | ConvertFrom-Json
+              if ($oldRelease.tag_name -cne 'v3.7.9' -or $oldRelease.draft -or -not $oldRelease.published_at) { throw 'Original diagnostic 3.7.9 must be the published release.' }
+              New-Item -ItemType Directory -Path $oldAssets | Out-Null
+              gh release download 'v3.7.9' --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern 'EgoistShield-Setup-3.7.9.exe' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            }
+            "LAGOM_DIAGNOSTIC_OLD_ASSETS=$oldAssets" >> $env:GITHUB_ENV
+            "LAGOM_DIAGNOSTIC_OLD_VERSION=$env:DIAGNOSTIC_VARIANT" >> $env:GITHUB_ENV
+          }
       - name: Diagnose exact native installer phases
+        env:
+          CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
+          DIAGNOSTIC_ALL_VERSIONS: ${{ inputs.diagnostic_all_versions }}
         shell: pwsh
         run: |
-          if ('${{ inputs.core_configuration_diagnostic }}' -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -CoreConfigurationOnly }
+          if ($env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -CoreConfigurationOnly }
+          elseif ($env:LAGOM_DIAGNOSTIC_OLD_ASSETS) { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS -OriginalAssetsDirectory $env:LAGOM_DIAGNOSTIC_OLD_ASSETS -OriginalVersion $env:LAGOM_DIAGNOSTIC_OLD_VERSION -GuiFailureDiagnostic }
+          elseif ($env:LAGOM_DIAGNOSTIC_ASSETS -and $env:DIAGNOSTIC_ALL_VERSIONS -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS -GuiFailureDiagnostic }
           elseif ($env:LAGOM_DIAGNOSTIC_ASSETS) { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS }
           else { ./tests/windows-installer-diagnostics.ps1 }
       - name: Upload source phase diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: lagom-installer-diagnostics-${{ github.sha }}
+          name: lagom-installer-diagnostics-${{ github.sha }}-${{ matrix.variant }}
           retention-days: 7
           if-no-files-found: error
           path: ${{ runner.temp }}/lagom-installer-diagnostics

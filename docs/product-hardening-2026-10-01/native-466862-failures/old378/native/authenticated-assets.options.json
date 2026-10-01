@@ -1,0 +1,8 @@
+{
+  "oldVersion": "3.7.8",
+  "oldAssets": "D:\\a\\_temp\\lagom-signed-legacy-3.7.8\\old",
+  "candidateAssets": "D:\\a\\_temp\\lagom-signed-legacy-3.7.8\\candidate",
+  "integrityPath": "D:\\a\\_temp\\lagom-signed-legacy-3.7.8\\candidate\\package-integrity.json",
+  "sourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "output": "D:\\a\\_temp\\lagom-legacy-native-36834226795-1\\authenticated-assets.json"
+}
