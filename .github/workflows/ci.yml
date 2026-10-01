@@ -36,6 +36,9 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.installer_diagnostics }}
     runs-on: windows-latest
     timeout-minutes: 15
+    permissions:
+      # Draft downloads require repository push access, as in signed acceptance.
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
