@@ -379,6 +379,7 @@ function Invoke-NativeGui {
         Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running
       } -Label 'Telegram installed through genuine GUI control' -TimeoutSeconds 240)
     }else{[void](Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running)}
+    $completion=Wait-NativeTelegramGuiCompletion -FindButton $findButton -Process $child -Root $root -Label $Label
     $config=Get-Content -LiteralPath (Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json') -Raw | ConvertFrom-Json
     $port=[int]$config.port
     [void](Assert-NativeTelegramEndpoint -Port $port)
@@ -391,7 +392,7 @@ function Invoke-NativeGui {
     if(-not $root.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'Actual GUI does not expose the native window close pattern.'}
     ([Windows.Automation.WindowPattern]$pattern).Close()
     if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'GUI did not exit normally through the native close control.'};$closed=$true
-    $result=[ordered]@{ok=$true;mode=$Action;mainProcessId=$child.Id;arguments=@();automation='native UIAutomation InvokePattern and WindowPattern';productionOverride=$false;coreWorker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;installResult=[ordered]@{serviceInstalled=$true;serviceRunning=$true;running=$true;portConflict=[ordered]@{port=$port;host=[string]$config.host}};exitCode=$child.ExitCode}
+    $result=[ordered]@{ok=$true;mode=$Action;mainProcessId=$child.Id;arguments=@();automation='native UIAutomation InvokePattern and WindowPattern';operationCompletion=$completion;productionOverride=$false;coreWorker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;installResult=[ordered]@{serviceInstalled=$true;serviceRunning=$true;running=$true;portConflict=[ordered]@{port=$port;host=[string]$config.host}};exitCode=$child.ExitCode}
     $result | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $script:Work ($Label+'.json')) -Encoding utf8
     $script:Receipt.gui+=$result;Save-NativeReceipt;return $result
   }catch{
@@ -447,6 +448,7 @@ function Invoke-NativeOrdinaryGui {
     ([Windows.Automation.InvokePattern]$start.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
     $after=Wait-NativeCondition -Condition {Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running} -Label 'Real SCM Telegram start through ordinary GUI/Core IPC' -TimeoutSeconds 90
     if($after.process.processId -eq $before.process.processId -and $after.process.createdUtc -ceq $before.process.createdUtc){throw 'Ordinary GUI restart did not produce a new verified service identity.'}
+    $completion=Wait-NativeTelegramGuiCompletion -FindButton $findButton -Process $child -Root $root -Label 'Ordinary GUI'
     $configuration=Get-Content -LiteralPath (Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json') -Raw | ConvertFrom-Json
     $endpoint=Assert-NativeTelegramEndpoint -Port ([int]$configuration.port)
     $core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
@@ -458,7 +460,7 @@ function Invoke-NativeOrdinaryGui {
     if(-not $root.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'Ordinary GUI lacks native close pattern.'}
     ([Windows.Automation.WindowPattern]$pattern).Close()
     if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'Ordinary GUI did not exit normally.'};$closed=$true
-    $script:Receipt.ordinaryGui=[ordered]@{ok=$true;launch=$proof;actualProcess=$identity;automation='native UIAutomation InvokePattern and WindowPattern';before=$before;stopped=$stopped;after=$after;endpoint=$endpoint;worker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;exitCode=$child.ExitCode;cleanup=$null}
+    $script:Receipt.ordinaryGui=[ordered]@{ok=$true;launch=$proof;actualProcess=$identity;automation='native UIAutomation InvokePattern and WindowPattern';operationCompletion=$completion;before=$before;stopped=$stopped;after=$after;endpoint=$endpoint;worker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;exitCode=$child.ExitCode;cleanup=$null}
     Save-NativeReceipt
   }catch{$operationError=$_}
   finally{
@@ -519,28 +521,116 @@ function New-NativePrivateStateFixture {
   $script:Receipt.inactiveVpnFixture=[ordered]@{path=$file;sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash;actualVpnConnectionConfigured=$false;actualVpnServiceInstalled=$false}
   Save-NativeReceipt
 }
-function Assert-NativeTelegramEndpoint {
-  param([int]$Port)
-  if($Port -lt 1024 -or $Port -gt 65535){throw 'Invalid actual Telegram loopback port.'}
-  $wrapper=Join-Path $script:DataRoot 'Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe'
-  $service=Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running
-  $listeners=@(Get-NetTCPConnection -State Listen | Where-Object {$_.LocalPort -eq $Port})
-  if($listeners.Count -lt 1 -or @($listeners | Where-Object {$_.LocalAddress -notin @('127.0.0.1','::1')}).Count -ne 0){throw 'Telegram listener is absent or not loopback-only.'}
-  $byId=@{};foreach($row in @(Get-NativeCimSnapshot Win32_Process)){$byId[[int]$row.ProcessId]=$row}
+function Read-NativeTelegramEndpointSnapshot {
+  param([int]$Port,[int]$TimeoutMilliseconds)
+  # Existing child retirement/drain allowance is reserved inside the endpoint deadline.
+  $seconds=[Math]::Min(4,[Math]::Floor(($TimeoutMilliseconds-7000)/1000))
+  if($seconds -lt 1){throw 'Telegram endpoint deadline cannot admit another bounded snapshot.'}
+  $result=Invoke-NativeBounded -Executable $script:Core -Arguments @('--telegram-listener-snapshot','--port',[string]$Port) -Label ('telegram-listener-'+$Port) -TimeoutSeconds ([int]$seconds)
+  if([Text.Encoding]::UTF8.GetByteCount($result.stdout) -gt 65536){throw 'Telegram snapshot exceeded its output bound.'}
+  return $result.stdout | ConvertFrom-Json
+}
+function Test-NativeTelegramTcp {
+  param([int]$Port,[int]$TimeoutMilliseconds)
+  if($TimeoutMilliseconds -le 0){throw 'Telegram endpoint deadline expired before TCP.'}
+  $client=[Net.Sockets.TcpClient]::new()
+  try{return $client.ConnectAsync('127.0.0.1',$Port).Wait([Math]::Min(3000,$TimeoutMilliseconds)) -and $client.Connected}finally{$client.Dispose()}
+}
+function Get-NativeTelegramSnapshotState {
+  param($Value,[int]$Port,$Service)
+  if($Value.schemaVersion -ne 2 -or $Value.operation -cne 'telegram-listener-snapshot' -or $Value.serviceName -cne 'EgoistShieldTelegramProxy' -or $Value.port -ne $Port -or
+     $Value.snapshotAvailable -isnot [bool] -or -not $Value.snapshotAvailable -or $Value.stable -isnot [bool] -or -not $Value.stable -or
+     $Value.serviceState -cne 'Running' -or $Value.rootProcessPathVerified -isnot [bool] -or -not $Value.rootProcessPathVerified -or $Value.managedProcessId -ne $null){throw 'Unknown or incomplete actual Telegram native snapshot.'}
+  $snapshot=$Value.snapshot
+  if(-not $snapshot -or $snapshot.stable -isnot [bool] -or -not $snapshot.stable -or $snapshot.serviceState -cne 'Running' -or
+     $snapshot.serviceProcessId -ne $Value.serviceProcessId -or $Value.serviceProcessId -ne $Service.process.processId){throw 'Actual Telegram SCM process identity changed.'}
+  $rows=@($snapshot.processes);$listeners=@($snapshot.listeners)
+  if($rows.Count -gt 128 -or $listeners.Count -gt 128){throw 'Actual Telegram snapshot row bound exceeded.'}
+  $byId=@{}
+  foreach($row in $rows){
+    if(-not $row -or $row.processId -isnot [long] -and $row.processId -isnot [int] -or $row.processId -le 0 -or $row.processId -gt [int]::MaxValue -or $byId.ContainsKey([int]$row.processId)){throw 'Incomplete or duplicate actual Telegram process row.'}
+    $byId[[int]$row.processId]=$row
+  }
+  $root=$byId[[int]$Value.serviceProcessId]
+  $expected=Join-Path $script:DataRoot 'Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe'
+  if(-not $root -or $root.executablePath -ine $expected -or -not $root.createdAt -or -not $Value.rootProcessCreatedAt){throw 'Actual Telegram root path/birth proof is unavailable.'}
+  $birth=[DateTimeOffset]::Parse([string]$root.createdAt)
+  if($birth -ne [DateTimeOffset]::Parse([string]$Value.rootProcessCreatedAt) -or [Math]::Abs(($birth-[DateTimeOffset]::Parse([string]$Service.process.createdUtc)).Ticks) -gt 10){throw 'Actual Telegram root birth changed.'}
   foreach($listener in $listeners){
-    $current=[int]$listener.OwningProcess;$seen=[Collections.Generic.HashSet[int]]::new();$found=$false
+    if(-not $listener -or $listener.localPort -ne $Port -or $listener.localAddress -notin @('127.0.0.1','::1')){throw 'Actual Telegram listener is non-loopback or malformed.'}
+    $current=[int]$listener.owningProcess;$seen=[Collections.Generic.HashSet[int]]::new();$found=$false
     for($depth=0;$depth -lt 32 -and $current -gt 0;$depth++){
       if(-not $seen.Add($current) -or -not $byId.ContainsKey($current)){break};$row=$byId[$current]
-      if(-not $row.CreationDate -or $row.CreationDate -lt [DateTimeOffset]::Parse($service.process.createdUtc).UtcDateTime){break}
-      if($current -eq [int]$service.scm.ProcessId){$found=$true;break}
-      $parent=$byId[[int]$row.ParentProcessId]
-      if(-not $parent -or -not $parent.CreationDate -or $parent.CreationDate -gt $row.CreationDate){break};$current=[int]$row.ParentProcessId
+      if(-not $row.createdAt -or -not $row.executablePath -or [DateTimeOffset]::Parse([string]$row.createdAt) -lt $birth){break}
+      if($current -eq [int]$Value.serviceProcessId){$found=$true;break}
+      $parent=$byId[[int]$row.parentProcessId]
+      if(-not $parent -or -not $parent.createdAt -or [DateTimeOffset]::Parse([string]$parent.createdAt) -gt [DateTimeOffset]::Parse([string]$row.createdAt)){break};$current=[int]$row.parentProcessId
     }
-    if(-not $found){throw 'Telegram endpoint PID is not a verified actual SCM descendant.'}
+    if(-not $found){throw 'Actual Telegram endpoint owner/birth is not a verified SCM descendant.'}
   }
-  $client=[Net.Sockets.TcpClient]::new()
-  try{if(-not $client.ConnectAsync('127.0.0.1',$Port).Wait(3000) -or -not $client.Connected){throw 'Actual Telegram TCP readiness failed.'}}finally{$client.Dispose()}
-  return [ordered]@{service=$service;endpoints=@($listeners | Select-Object LocalAddress,LocalPort,OwningProcess);tcpConnected=$true}
+  if($Value.ownership -cne $Value.ipv4.state -or $Value.ipv6Ownership -cne $Value.ipv6.state){throw 'Contradictory Telegram family ownership.'}
+  foreach($family in @($Value.ipv4,$Value.ipv6)){
+    if($family.state -notin @('owned','missing')){throw 'Actual Telegram listener is foreign or ownership unknown.'}
+    if($family.state -eq 'owned' -and ($family.rootPid -ne $Value.serviceProcessId -or -not $family.rootCreatedAt -or
+      [DateTimeOffset]::Parse([string]$family.rootCreatedAt) -ne $birth -or -not $family.ownerCreatedAt -or
+      -not $byId.ContainsKey([int]$family.ownerPid) -or [DateTimeOffset]::Parse([string]$family.ownerCreatedAt) -ne [DateTimeOffset]::Parse([string]$byId[[int]$family.ownerPid].createdAt))){throw 'Incomplete actual Telegram family owner identity.'}
+  }
+  if($listeners.Count -eq 0){if($Value.ipv4.state -ne 'missing' -or $Value.ipv6.state -ne 'missing'){throw 'Contradictory Telegram absence proof.'};return 'pending'}
+  if($Value.ipv4.state -ne 'owned' -and $Value.ipv6.state -ne 'owned'){throw 'Actual Telegram listener ownership was not established.'}
+  return 'ready'
+}
+function Save-NativeTelegramEndpointObservation {
+  param([int]$Port,[string]$Result,[double]$ElapsedMilliseconds,$LastSnapshot,[string]$ErrorMessage='',[int]$TimeoutSeconds=30)
+  $record=[ordered]@{observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');port=$Port;result=$Result;endpointBudgetSeconds=$TimeoutSeconds;elapsedMilliseconds=[Math]::Round($ElapsedMilliseconds,2);lastSnapshot=$LastSnapshot;error=$ErrorMessage}
+  $previous=if($script:Receipt.Contains('telegramEndpointObservations')){@($script:Receipt.telegramEndpointObservations)}else{@()}
+  $script:Receipt.telegramEndpointObservations=@(@($previous)+@($record) | Select-Object -Last 16)
+  Save-NativeReceipt
+}
+function Assert-NativeTelegramEndpoint {
+  param([int]$Port,[ValidateRange(1,30)][int]$TimeoutSeconds=30)
+  if($Port -lt 1024 -or $Port -gt 65535){throw 'Invalid actual Telegram loopback port.'}
+  $wrapper=Join-Path $script:DataRoot 'Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe'
+  # Preserve the independent SCM path/account/startup gate before the bounded listener phase.
+  $service=Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running
+  $watch=[Diagnostics.Stopwatch]::StartNew();$last=$null
+  try{
+    do{
+      $remaining=[int]($TimeoutSeconds*1000-$watch.Elapsed.TotalMilliseconds)
+      if($remaining -le 0){throw 'Actual Telegram endpoint readiness deadline timed out.'}
+      $before=Read-NativeTelegramEndpointSnapshot -Port $Port -TimeoutMilliseconds $remaining
+      $last=$before.snapshot
+      if($watch.Elapsed.TotalMilliseconds -ge $TimeoutSeconds*1000){throw 'Actual Telegram endpoint readiness deadline timed out.'}
+      $state=Get-NativeTelegramSnapshotState -Value $before -Port $Port -Service $service
+      if($state -eq 'pending'){
+        $remaining=[int]($TimeoutSeconds*1000-$watch.Elapsed.TotalMilliseconds)
+        if($remaining -gt 0){Start-Sleep -Milliseconds ([Math]::Min(250,$remaining))};continue
+      }
+      $remaining=[int]($TimeoutSeconds*1000-$watch.Elapsed.TotalMilliseconds)
+      if(-not (Test-NativeTelegramTcp -Port $Port -TimeoutMilliseconds $remaining)){throw 'Actual Telegram TCP readiness failed.'}
+      $remaining=[int]($TimeoutSeconds*1000-$watch.Elapsed.TotalMilliseconds)
+      if($remaining -le 0){throw 'Actual Telegram endpoint deadline expired after TCP.'}
+      $after=Read-NativeTelegramEndpointSnapshot -Port $Port -TimeoutMilliseconds $remaining;$last=$after.snapshot
+      if((Get-NativeTelegramSnapshotState -Value $after -Port $Port -Service $service) -ne 'ready' -or $after.serviceProcessId -ne $before.serviceProcessId -or
+         [DateTimeOffset]::Parse([string]$after.rootProcessCreatedAt) -ne [DateTimeOffset]::Parse([string]$before.rootProcessCreatedAt)){throw 'Actual Telegram root/listener changed during TCP proof.'}
+      if($watch.Elapsed.TotalMilliseconds -ge $TimeoutSeconds*1000){throw 'Actual Telegram endpoint readiness deadline timed out.'}
+      Save-NativeTelegramEndpointObservation -Port $Port -Result 'ready' -ElapsedMilliseconds $watch.Elapsed.TotalMilliseconds -LastSnapshot $last -TimeoutSeconds $TimeoutSeconds
+      return [ordered]@{service=$service;endpoints=@($after.snapshot.listeners);tcpConnected=$true;nativeSnapshot=$after;readinessMilliseconds=[Math]::Round($watch.Elapsed.TotalMilliseconds,2)}
+    }while($watch.Elapsed.TotalMilliseconds -lt $TimeoutSeconds*1000)
+    throw 'Actual Telegram endpoint readiness deadline timed out.'
+  }catch{
+    $primary=$_
+    try{Save-NativeTelegramEndpointObservation -Port $Port -Result 'failed' -ElapsedMilliseconds $watch.Elapsed.TotalMilliseconds -LastSnapshot $last -ErrorMessage $primary.Exception.Message -TimeoutSeconds $TimeoutSeconds}catch{Write-Warning ('Telegram endpoint evidence unavailable: '+$_.Exception.Message)}
+    throw $primary
+  }
+}
+function Wait-NativeTelegramGuiCompletion {
+  param([scriptblock]$FindButton,$Process,$Root,[string]$Label,[ValidateRange(1,45)][int]$TimeoutSeconds=45)
+  return Wait-NativeCondition -Label ($Label+' actual Telegram operation completion') -TimeoutSeconds $TimeoutSeconds -StopOnError -Condition {
+    $Process.Refresh();if($Process.HasExited){throw 'Actual GUI exited before Telegram operation completion.'}
+    if($Root.Current.ProcessId -ne $Process.Id){throw 'Telegram completion observation root changed GUI identity.'}
+    $stop=& $FindButton 'Остановить'
+    if($stop -and $stop.Current.Name -ceq 'Остановить' -and $stop.Current.IsEnabled -and -not $stop.Current.IsOffscreen){return [ordered]@{name='Остановить';enabled=$true;processId=$Process.Id;observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}}
+  }
 }
 function Assert-NativeBootTask {
   param([string]$Stage)
