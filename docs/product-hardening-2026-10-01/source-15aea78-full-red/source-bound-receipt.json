@@ -1,0 +1,19 @@
+{
+  "exitCode": 1,
+  "sourceTree": "ca5283aad44f276743c35062201e51e7bec6c6b3",
+  "logSha256": "A3401E37D24B9A0D50CEF39E984D34798C42086BEEDB0C15AE006AE7D60F0983",
+  "sourceCommit": "15aea7863c8bfaa59fec2ac8c68924ef46ad12a7",
+  "headAfter": "15aea7863c8bfaa59fec2ac8c68924ef46ad12a7",
+  "logPath": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0ecbd-13aa-7e31-b730-4c521c792097\\work\\hardening\\full-node-source-15aea7863c8b.txt",
+  "finishedUtc": "2026-10-01T13:44:11.9422304+00:00",
+  "sourceUnchanged": true,
+  "counts": {
+    "cancelled": 0,
+    "pass": 931,
+    "skipped": 0,
+    "tests": 938,
+    "todo": 0,
+    "fail": 7
+  },
+  "startedUtc": "2026-10-01T13:43:45.7810099+00:00"
+}

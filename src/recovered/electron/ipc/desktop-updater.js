@@ -154,7 +154,7 @@ var DesktopUpdater = class {
 		});
 		return this.checkPromise;
 	}
-	async checkAndInstall() {
+	async checkAndInstall({ shouldContinue = null } = {}) {
 		if (this.installPromise) return {
 			ok: false,
 			phase: "blocked",
@@ -163,7 +163,7 @@ var DesktopUpdater = class {
 			failureCode: "busy",
 			retryable: true
 		};
-		this.installPromise = this.checkAndInstallInternal().finally(() => {
+		this.installPromise = this.checkAndInstallInternal(shouldContinue).finally(() => {
 			this.installPromise = null;
 		});
 		return this.installPromise;
@@ -306,13 +306,18 @@ var DesktopUpdater = class {
 			return result;
 		}
 	}
-	async checkAndInstallInternal() {
+	async checkAndInstallInternal(shouldContinue = null) {
 		const checked = await this.check();
 		if (!checked.ok || checked.phase !== "available" || !checked.candidate) return checked;
 		const candidate = checked.candidate;
 		let warnings = checked.warnings ?? [];
+		let helperLaunchCommitted = false;
 		const withWarnings = (message) => warnings.length ? `${message} ${warnings.join(" ")}` : message;
+		const assertContinuation = () => {
+			if (shouldContinue !== null && shouldContinue() !== true) throw new UpdaterError("cancelled", "Автоматическое обновление отменено: настройка изменена или приложение закрывается.", true);
+		};
 		try {
+			assertContinuation();
 			assertCanonicalCandidateUrl(candidate);
 			const partialPath = path.join(this.updatesDirectory(), `${candidate.assetName}.partial`);
 			const finalPath = path.join(this.updatesDirectory(), candidate.assetName);
@@ -324,7 +329,8 @@ var DesktopUpdater = class {
 				transferred: 0,
 				total: candidate.size
 			});
-			await this.downloadCandidateWithRetry(candidate, partialPath, warnings);
+			await this.downloadCandidateWithRetry(candidate, partialPath, warnings, assertContinuation);
+			assertContinuation();
 			emit(this.options, {
 				phase: "verifying",
 				message: withWarnings("Проверяем Ed25519, SHA-256, SHA-512 и размер…"),
@@ -351,7 +357,9 @@ var DesktopUpdater = class {
 				if (!(await promises.stat(required).catch(() => null))?.isFile()) throw new UpdaterError("installer-launch-failed", "В установленной версии отсутствует компонент защищённого обновления.", true);
 			}
 			await writeJsonAtomic(launch.manifestPath, launch.manifest);
+			assertContinuation();
 			if (this.options.canInstall && !(await this.options.canInstall())) throw new UpdaterError("busy", "Обновление отложено до отключения VPN и завершения изменений компонентов.", true);
+			assertContinuation();
 			emit(this.options, {
 				phase: "installing",
 				message: withWarnings("Запускаем защищённое обновление с видимым ходом установки…"),
@@ -364,8 +372,11 @@ var DesktopUpdater = class {
 				"-ExpectedSha256", candidate.sha256, "-InstallerUiPath", launch.uiPath, "-InstallerFontPath", launch.fontPath,
 				"-HandoffSignalPath", launch.signalPath, "-FromVersion", this.options.currentVersion, "-DelaySeconds", "8"];
 			if (this.options.restartMinimized?.()) args.push("-MinimizedAfter");
+			assertContinuation();
 			const child = spawn(powershell, args, { stdio: "ignore", windowsHide: true });
+			helperLaunchCommitted = Number.isInteger(child.pid) && child.pid > 0;
 			const exitCode = await new Promise((resolve, reject) => {
+				child.once("spawn", () => { helperLaunchCommitted = true; });
 				child.once("error", () => reject(new UpdaterError("installer-launch-failed", "Не удалось запустить защищённое обновление.", true)));
 				child.once("close", resolve);
 			});
@@ -391,7 +402,7 @@ var DesktopUpdater = class {
 				"download-failed",
 				"timeout",
 				"offline"
-			].includes(mapped.code)) await this.removeCandidateFiles(candidate).catch(() => void 0);
+			].includes(mapped.code) && !helperLaunchCommitted) await this.removeCandidateFiles(candidate).catch(() => void 0);
 			const result = failureResult(this.options.currentVersion, mapped);
 			emit(this.options, {
 				phase: result.phase,
@@ -401,12 +412,14 @@ var DesktopUpdater = class {
 			return result;
 		}
 	}
-	async downloadCandidateWithRetry(candidate, partialPath, warnings = []) {
+	async downloadCandidateWithRetry(candidate, partialPath, warnings = [], assertContinuation = null) {
 		for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt += 1) {
 			try {
-				await this.downloadCandidate(candidate, partialPath, warnings);
+				assertContinuation?.();
+				await this.downloadCandidate(candidate, partialPath, warnings, assertContinuation);
 				return;
 			} catch (error) {
+				assertContinuation?.();
 				const mapped = mapUnknownError(error);
 				if (!["download-failed", "timeout", "offline"].includes(mapped.code) || attempt === DOWNLOAD_ATTEMPTS) throw mapped;
 				const transferred = Math.min(candidate.size, (await promises.stat(partialPath).catch(() => null))?.size ?? 0);
@@ -422,7 +435,7 @@ var DesktopUpdater = class {
 			}
 		}
 	}
-	async downloadCandidate(candidate, partialPath, warnings = []) {
+	async downloadCandidate(candidate, partialPath, warnings = [], assertContinuation = null) {
 		await promises.mkdir(this.updatesDirectory(), { recursive: true });
 		const metadataPath = `${partialPath}.json`;
 		let metadata = await readJsonFile(metadataPath);
@@ -506,12 +519,14 @@ var DesktopUpdater = class {
 			}, DOWNLOAD_TIMEOUT_MS);
 			refreshIdleTimeout();
 			while (true) {
+				assertContinuation?.();
 				let chunk;
 				try {
 					chunk = await reader.read();
 				} catch {
 					throw new UpdaterError("download-failed", "Соединение загрузки прервалось; сохранённая часть будет проверена и использована при повторе.", true);
 				}
+				assertContinuation?.();
 				const { done, value } = chunk;
 				if (done) break;
 				if (!value) continue;

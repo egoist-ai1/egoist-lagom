@@ -105,6 +105,19 @@ function Get-NativePowerShellPath {
   return (Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe")
 }
 
+function Wait-InstallerElevatedPreparation {
+  param(
+    [Parameter(Mandatory = $true)][ValidateNotNull()][Diagnostics.Process]$Process,
+    [ValidateRange(1, 300)][int]$TimeoutSeconds = 300
+  )
+  # Wait on this held preparation process, not the subsequently dispatched worker tree.
+  if (-not $Process.WaitForExit($TimeoutSeconds * 1000)) {
+    throw "Elevated installer preparation exceeded its readiness deadline."
+  }
+  $Process.Refresh()
+  return $Process.ExitCode
+}
+
 function Get-FileSha256 {
   param([string]$Path)
   $stream = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
@@ -2073,9 +2086,16 @@ if (-not (Test-IsAdministrator)) {
   if ($NoRunAfter) { $dispatchArguments += '-NoRunAfter' }
   if ($MinimizedAfter) { $dispatchArguments += '-MinimizedAfter' }
   $dispatchCommandLine = ($dispatchArguments | ForEach-Object { ConvertTo-InstallerWindowsArgument ([string]$_) }) -join ' '
-  Start-Process -FilePath (Get-NativePowerShellPath) -ArgumentList $dispatchCommandLine -Verb RunAs -WindowStyle Hidden -ErrorAction Stop | Out-Null
-  [pscustomobject]@{ dispatched = $true; elevatedPreparationPending = $true; version = $release.version } | ConvertTo-Json
-  exit 0
+  $elevatedPreparation = $null
+  try {
+    $elevatedPreparation = Start-Process -FilePath (Get-NativePowerShellPath) -ArgumentList $dispatchCommandLine -Verb RunAs -WindowStyle Hidden -PassThru -ErrorAction Stop
+    $preparationExitCode = Wait-InstallerElevatedPreparation -Process $elevatedPreparation
+    if ($preparationExitCode -ne 0) { exit $preparationExitCode }
+    [pscustomobject]@{ dispatched = $true; elevatedPreparationCompleted = $true; version = $release.version } | ConvertTo-Json
+    exit 0
+  } finally {
+    if ($null -ne $elevatedPreparation) { $elevatedPreparation.Dispose() }
+  }
 }
 $installerStageRoot = Split-Path -Parent $receiptBase
 [void](Assert-PlainWrapperMigrationPath -Path $installerStageRoot -Root (Get-InstallerCommonDataRoot))

@@ -1,0 +1,146 @@
+✖ service readiness uses two fresh native proofs within one deadline (4.6162ms)
+✔ native query failure stays unknown without a permissive fallback (0.9669ms)
+✖ foreign IPv6 cannot be hidden behind an owned IPv4 localhost listener (1.0439ms)
+✖ an explicit IPv6 endpoint uses its own ownership proof (0.9204ms)
+✔ native ownership rejects wrong operation (0.8165ms)
+✔ native ownership rejects wrong port (0.869ms)
+✔ native ownership rejects unverified root path (1.1421ms)
+✔ native ownership rejects foreign wrapper path (0.9691ms)
+✔ native ownership rejects unstable SCM root (1.0644ms)
+✔ native ownership rejects unknown address family (0.8839ms)
+✔ native ownership rejects missing process birth (1.3737ms)
+✔ native ownership rejects recycled service root (1.1187ms)
+✔ native ownership rejects recycled listener owner (0.9835ms)
+✔ native ownership rejects changing listener (1.2026ms)
+✖ stopped service and standalone mode retain the saved process PowerShell guard (0.8455ms)
+✖ native missing port needs two stable reads and a contradictory TCP result stays unknown (1.0271ms)
+✖ Telegram start-pending waits for SCM before requiring native running ownership (514.8149ms)
+✖ Telegram pending-to-running still refuses an actual foreign ownership response (507.6374ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 11
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1107.4326
+
+✖ failing tests:
+
+test at tests\telegram-native-listener.test.mjs:42:1
+✖ service readiness uses two fresh native proofs within one deadline (4.6162ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'unknown' !== 'owned'
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-native-listener.test.mjs:45:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'unknown',
+    expected: 'owned',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\telegram-native-listener.test.mjs:66:1
+✖ foreign IPv6 cannot be hidden behind an owned IPv4 localhost listener (1.0439ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'unknown'
+  - 'foreign'
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-native-listener.test.mjs:70:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'unknown',
+    expected: 'foreign',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\telegram-native-listener.test.mjs:75:1
+✖ an explicit IPv6 endpoint uses its own ownership proof (0.9204ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'unknown' !== 'owned'
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-native-listener.test.mjs:78:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'unknown',
+    expected: 'owned',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\telegram-native-listener.test.mjs:101:1
+✖ stopped service and standalone mode retain the saved process PowerShell guard (0.8455ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'unknown' !== 'owned'
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-native-listener.test.mjs:103:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'unknown',
+    expected: 'owned',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\telegram-native-listener.test.mjs:108:1
+✖ native missing port needs two stable reads and a contradictory TCP result stays unknown (1.0271ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 2
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-native-listener.test.mjs:115:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\telegram-native-listener.test.mjs:118:1
+✖ Telegram start-pending waits for SCM before requiring native running ownership (514.8149ms)
+  Error: Не удалось проверить владельца порта Telegram Proxy 127.0.0.1:1445; запуск отменён.
+      at TelegramProxyManager.waitForServiceReady (evalmachine.<anonymous>:1462:76)
+      at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-native-listener.test.mjs:123:3)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests\telegram-native-listener.test.mjs:128:1
+✖ Telegram pending-to-running still refuses an actual foreign ownership response (507.6374ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Relay\.exe/. Input:
+  
+  'Error: Не удалось проверить владельца порта Telegram Proxy 127.0.0.1:1445; запуск отменён.'
+  
+      at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-native-listener.test.mjs:133:3)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: Не удалось проверить владельца порта Telegram Proxy 127.0.0.1:1445; запуск отменён.
+        at TelegramProxyManager.waitForServiceReady (evalmachine.<anonymous>:1462:76)
+        at async waitForActual (node:assert:646:5)
+        at async strict.rejects (node:assert:769:25)
+        at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-native-listener.test.mjs:133:3)
+        at async Test.run (node:internal/test_runner/test:1389:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:960:7),
+    expected: /Relay\.exe/,
+    operator: 'rejects',
+    diff: 'simple'
+  }

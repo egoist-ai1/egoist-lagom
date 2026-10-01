@@ -39,6 +39,10 @@ on:
         description: Signed draft ID for fresh installation and original 3.7.8/3.7.9 helper acceptance
         type: string
         default: ''
+      signed_current_only:
+        description: Limit signed native acceptance to the current candidate services, GUI and network
+        type: boolean
+        default: false
       legacy_baseline_restore:
         description: Test genuine old services/helpers from authenticated restored payload; this does not execute old clean Setup
         type: boolean
@@ -551,8 +555,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SIGNED_RELEASE_ID: ${{ inputs.signed_legacy_release_id }}
+          SIGNED_CURRENT_ONLY: ${{ inputs.signed_current_only }}
         run: |
           if ($env:SIGNED_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Invalid signed release ID.' }
+          if ($env:SIGNED_CURRENT_ONLY -cnotin @('true','false')) { throw 'Invalid current candidate selection.' }
           $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid candidate version.' }
           $releaseText = gh api ("repos/egoist-ai1/egoist-lagom/releases/" + $env:SIGNED_RELEASE_ID)
@@ -570,15 +576,20 @@ jobs:
           $candidateAssets = Join-Path $signedWork 'candidate'
           $evidence = Join-Path $signedWork 'evidence'
           New-Item -ItemType Directory -Path $oldAssets, $candidateAssets, $evidence -Force | Out-Null
-          gh release download 'v3.7.9' --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern 'EgoistShield-Setup-3.7.9.exe' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($env:SIGNED_CURRENT_ONLY -cne 'true') {
+            gh release download 'v3.7.9' --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern 'EgoistShield-Setup-3.7.9.exe' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
           gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $candidateAssets --pattern "EgoistShield-Setup-$version.exe" --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig' --pattern 'package-integrity.json'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $authWork = Join-Path $env:RUNNER_TEMP ("lagom-legacy-native-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT")
           New-Item -ItemType Directory -Path $authWork | Out-Null
           $options = Join-Path $authWork 'signed-fresh-authentication.options.json'
-          @{ oldVersion='3.7.9'; oldAssets=$oldAssets; candidateAssets=$candidateAssets; integrityPath=(Join-Path $candidateAssets 'package-integrity.json'); sourceCommit=$env:GITHUB_SHA; output=(Join-Path $authWork 'signed-fresh-authentication.json') } | ConvertTo-Json | Set-Content -LiteralPath $options -Encoding utf8
-          node tests/windows-production-legacy-upgrade.mjs verify-assets $options
+          $authenticationOptions = @{ candidateAssets=$candidateAssets; integrityPath=(Join-Path $candidateAssets 'package-integrity.json'); sourceCommit=$env:GITHUB_SHA; output=(Join-Path $authWork 'signed-fresh-authentication.json') }
+          $authenticationMode = 'verify-current-assets'
+          if ($env:SIGNED_CURRENT_ONLY -cne 'true') { $authenticationOptions.oldVersion='3.7.9'; $authenticationOptions.oldAssets=$oldAssets; $authenticationMode='verify-assets' }
+          $authenticationOptions | ConvertTo-Json | Set-Content -LiteralPath $options -Encoding utf8
+          node tests/windows-production-legacy-upgrade.mjs $authenticationMode $options
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item -LiteralPath (Join-Path $authWork 'signed-fresh-authentication.json') -Destination $evidence
           $integrityPath = Join-Path $candidateAssets 'package-integrity.json'
@@ -611,7 +622,7 @@ jobs:
 
   legacy:
     name: legacy (${{ matrix.old_version }})
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.signed_legacy_release_id != '' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.signed_legacy_release_id != '' && !inputs.signed_current_only }}
     needs: test
     strategy:
       fail-fast: false

@@ -1,0 +1,103 @@
+diff --git a/tests/windows-production-legacy-upgrade.mjs b/tests/windows-production-legacy-upgrade.mjs
+index 99c2137..4f4fbe5 100644
+--- a/tests/windows-production-legacy-upgrade.mjs
++++ b/tests/windows-production-legacy-upgrade.mjs
+@@ -37,8 +37,13 @@ export function decodeLegacySignature(bytes) {
+ }
+ 
+ export function authenticateLegacyRegistry(bytes, signature, rootBytes, now = Date.now()) {
++  return authenticateRegistryAtPinnedRoot(bytes, signature, rootBytes, pinnedRootSha256, now);
++}
++
++function authenticateRegistryAtPinnedRoot(bytes, signature, rootBytes, expectedRootSha256, now) {
+   assert.ok(bytes.length > 0 && bytes.length <= 256 * 1024, 'Registry exceeds its limit.');
+-  assert.equal(digest(rootBytes), pinnedRootSha256, 'Root is not the project/public legacy pinned root.');
++  assert.match(expectedRootSha256, /^[a-f0-9]{64}$/);
++  assert.equal(digest(rootBytes), expectedRootSha256, 'Root is not the pinned root.');
+   const root = createPublicKey(rootBytes);
+   assert.equal(root.asymmetricKeyType, 'ed25519');
+   assert.equal(verify(null, bytes, root, decodeLegacySignature(signature)), true, 'Invalid pinned-root registry signature.');
+@@ -162,6 +167,53 @@ function within(file, root) {
+     'Path escaped the disposable runner scope.');
+ }
+ 
++export function authenticateCurrentCandidateBytes(inputs, { now = Date.now(), expectedRootSha256 = pinnedRootSha256 } = {}) {
++  const bundledTrust = authenticateRegistryAtPinnedRoot(inputs.bundledRegistryBytes, inputs.bundledRegistrySignature,
++    inputs.rootBytes, expectedRootSha256, now);
++  const candidateTrust = authenticateRegistryAtPinnedRoot(inputs.candidateRegistryBytes, inputs.candidateRegistrySignature,
++    inputs.rootBytes, expectedRootSha256, now);
++  assertLegacyRegistrySuccessor(bundledTrust, candidateTrust);
++  const candidate = authenticateLegacyManifest(inputs.manifestBytes, inputs.manifestSignature, candidateTrust, '3.8.0', now);
++  assertSignedCandidateSource(candidate, inputs.integrityBytes, inputs.sourceCommit);
++  return { kind: 'current-candidate-authentication', candidate, sourceCommit: inputs.sourceCommit,
++    rootSha256: digest(inputs.rootBytes), bundledRegistrySha256: bundledTrust.digest,
++    candidateRegistrySha256: candidateTrust.digest, candidateManifestSha256: digest(inputs.manifestBytes),
++    integrityManifestSha256: digest(inputs.integrityBytes) };
++}
++
++export async function verifyCurrentCandidateInstaller(file, candidate) {
++  const actual = await hashes(file);
++  assert.deepEqual(actual, { sha256: candidate.sha256, sha512: candidate.sha512, bytes: candidate.size },
++    'Actual current installer differs from authenticated manifest.');
++  return actual;
++}
++
++export function assertCurrentCandidateOptions(options, { runnerTemp, work, sourceCommit }) {
++  assert.deepEqual(Object.keys(options).sort(), ['candidateAssets', 'integrityPath', 'output', 'sourceCommit'],
++    'Current authentication accepts only current candidate options.');
++  assert.match(options.sourceCommit, /^[a-f0-9]{40}$/);
++  assert.equal(options.sourceCommit, sourceCommit, 'Current candidate source differs from GITHUB_SHA.');
++  within(options.candidateAssets, runnerTemp);
++  within(options.integrityPath, runnerTemp);
++  within(options.output, work);
++}
++
++async function verifyCurrentAssets(options) {
++  const result = authenticateCurrentCandidateBytes({
++    rootBytes: await boundedRead(path.join(projectRoot, 'resources/release/root-public-key.pem'), 4096),
++    bundledRegistryBytes: await boundedRead(path.join(projectRoot, 'resources/release/release-key-registry.json'), 256 * 1024),
++    bundledRegistrySignature: await boundedRead(path.join(projectRoot, 'resources/release/release-key-registry.json.sig'), 1024),
++    candidateRegistryBytes: await boundedRead(path.join(options.candidateAssets, 'release-key-registry.json'), 256 * 1024),
++    candidateRegistrySignature: await boundedRead(path.join(options.candidateAssets, 'release-key-registry.json.sig'), 1024),
++    manifestBytes: await boundedRead(path.join(options.candidateAssets, 'release-manifest.json'), 128 * 1024),
++    manifestSignature: await boundedRead(path.join(options.candidateAssets, 'release-manifest.json.sig'), 1024),
++    integrityBytes: await boundedRead(options.integrityPath, 16 * 1024 * 1024),
++    sourceCommit: options.sourceCommit,
++  });
++  const installer = await verifyCurrentCandidateInstaller(path.join(options.candidateAssets, result.candidate.installerName), result.candidate);
++  return { ...result, installer, crypto: 'real Ed25519 over original bytes; project pinned root; no supplied CLI keys' };
++}
++
+ async function verifyAssets(options) {
+   const oldReleaseProfile = officialLegacyRelease(options.oldVersion);
+   const rootBytes = await boundedRead(path.join(projectRoot, 'resources/release/root-public-key.pem'), 4096);
+@@ -254,12 +306,18 @@ async function main() {
+   const errors = acceptanceEnvironmentErrors(process.env);
+   assert.equal(errors.length, 0, 'Disposable hosted runner guard refused: ' + errors.join(', '));
+   const [command, optionsPath] = process.argv.slice(2);
+-  assert.ok(['verify-assets', 'verify-payload'].includes(command));
++  assert.ok(['verify-assets', 'verify-current-assets', 'verify-payload'].includes(command));
++  assert.ok(typeof process.env.RUNNER_TEMP === 'string' && path.isAbsolute(process.env.RUNNER_TEMP), 'Absolute own RUNNER_TEMP required.');
+   const work = path.join(path.resolve(process.env.RUNNER_TEMP), `lagom-legacy-native-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`);
+   within(optionsPath, work);
+   const options = JSON.parse(await boundedRead(optionsPath, 16384));
+   within(options.output, work); within(options.integrityPath, process.env.RUNNER_TEMP);
+   assert.match(options.sourceCommit, /^[a-f0-9]{40}$/);
++  if (command === 'verify-current-assets') {
++    assert.equal(process.argv.slice(2).length, 2, 'Current authentication requires command and options.json only.');
++    assertCurrentCandidateOptions(options, { runnerTemp: process.env.RUNNER_TEMP, work, sourceCommit: process.env.GITHUB_SHA });
++    await ordinary(options.candidateAssets, true);
++  }
+   if (command === 'verify-assets') {
+     officialLegacyRelease(options.oldVersion);
+     within(options.oldAssets, process.env.RUNNER_TEMP); within(options.candidateAssets, process.env.RUNNER_TEMP);
+@@ -269,7 +327,8 @@ async function main() {
+     assert.equal(path.resolve(options.installedRoot).toLowerCase(), path.join(process.env.ProgramFiles, 'EgoistShield').toLowerCase());
+     await ordinary(options.installedRoot, true);
+   }
+-  const result = await (command === 'verify-assets' ? verifyAssets(options) : verifyPayload(options));
++  const result = await (command === 'verify-assets' ? verifyAssets(options)
++    : command === 'verify-current-assets' ? verifyCurrentAssets(options) : verifyPayload(options));
+   await fs.writeFile(options.output, JSON.stringify({ ok: true, ...result }, null, 2) + '\n', { flag: 'wx' });
+ }
+ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href)

@@ -1,0 +1,88 @@
+TAP version 13
+# Subtest: current candidate authenticates genuinely signed generated fixture with explicit inert root pin
+ok 1 - current candidate authenticates genuinely signed generated fixture with explicit inert root pin
+  ---
+  duration_ms: 4.6582
+  type: 'test'
+  ...
+# Subtest: project default root pin rejects generated fixture rather than importing a test trust override
+ok 2 - project default root pin rejects generated fixture rather than importing a test trust override
+  ---
+  duration_ms: 0.9941
+  type: 'test'
+  ...
+# Subtest: real bundled public registry authenticates under the immutable real project root
+ok 3 - real bundled public registry authenticates under the immutable real project root
+  ---
+  duration_ms: 6.5586
+  type: 'test'
+  ...
+# Subtest: current signed manifest tampering fails Ed25519 verification over original bytes
+ok 4 - current signed manifest tampering fails Ed25519 verification over original bytes
+  ---
+  duration_ms: 0.9237
+  type: 'test'
+  ...
+# Subtest: current signed integrity binding rejects changed original bytes
+ok 5 - current signed integrity binding rejects changed original bytes
+  ---
+  duration_ms: 0.8757
+  type: 'test'
+  ...
+# Subtest: current signed source commit cannot be substituted
+ok 6 - current signed source commit cannot be substituted
+  ---
+  duration_ms: 0.7685
+  type: 'test'
+  ...
+# Subtest: genuinely root-signed candidate registry rollback is rejected against bundled baseline
+ok 7 - genuinely root-signed candidate registry rollback is rejected against bundled baseline
+  ---
+  duration_ms: 0.5515
+  type: 'test'
+  ...
+# Subtest: current candidate registry tampering fails pinned-root signature verification
+ok 8 - current candidate registry tampering fails pinned-root signature verification
+  ---
+  duration_ms: 0.5314
+  type: 'test'
+  ...
+# Subtest: actual task-local installer stream verifies SHA256, SHA512 and byte count
+ok 9 - actual task-local installer stream verifies SHA256, SHA512 and byte count
+  ---
+  duration_ms: 9.7853
+  type: 'test'
+  ...
+# Subtest: current installer streaming refuses authenticated sha256 mismatch
+ok 10 - current installer streaming refuses authenticated sha256 mismatch
+  ---
+  duration_ms: 3.0562
+  type: 'test'
+  ...
+# Subtest: current installer streaming refuses authenticated sha512 mismatch
+ok 11 - current installer streaming refuses authenticated sha512 mismatch
+  ---
+  duration_ms: 3.4619
+  type: 'test'
+  ...
+# Subtest: current installer streaming refuses authenticated size mismatch
+ok 12 - current installer streaming refuses authenticated size mismatch
+  ---
+  duration_ms: 2.7983
+  type: 'test'
+  ...
+# Subtest: current CLI refuses physical/non-hosted process before options read or output write
+ok 13 - current CLI refuses physical/non-hosted process before options read or output write
+  ---
+  duration_ms: 66.36
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 171.6354

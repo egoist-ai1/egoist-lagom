@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-10-01T13:57:44.030186+00:00",
+  "baseHead": "15aea7863c8bfaa59fec2ac8c68924ef46ad12a7",
+  "frozen": true,
+  "ownedFiles": [
+    {
+      "path": "tests/windows-production-legacy-upgrade.mjs",
+      "sha256": "ff0568677b6071b3830816707c6fe4cda23016671c5860c3fb8f82a875b6612a",
+      "bytes": 21940,
+      "sha256LfNormalized": "ff0568677b6071b3830816707c6fe4cda23016671c5860c3fb8f82a875b6612a"
+    },
+    {
+      "path": "tests/windows-signed-current-assets.test.mjs",
+      "sha256": "e10d2948dc2f6f854b922f2f6cd30d615dd9149a2a8bd9434804490e7f44c879",
+      "bytes": 10270,
+      "sha256LfNormalized": "e10d2948dc2f6f854b922f2f6cd30d615dd9149a2a8bd9434804490e7f44c879"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/product-hardening-2026-10-01/current-candidate-authentication/authentication.patch",
+      "sha256": "e2aea564762a46e03ed9ecd3c8929a31a6886dfa5328dc7c2b6972fba753e788",
+      "bytes": 7056
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/current-candidate-authentication/final-14-pass.txt",
+      "sha256": "abda86a4fafb1a1e6ed27f7c01bedf14266dd2b7bf0ad8001f1259f344e16587",
+      "bytes": 3328
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/current-candidate-authentication/intermediate-13-pass.txt",
+      "sha256": "f23d70fb870fe9e726da89bfd8faab728f16740c768d93bf35e7dcd3506f12b3",
+      "bytes": 3056
+    }
+  ],
+  "diffCheck": "PASS",
+  "interface": {
+    "command": "node tests/windows-production-legacy-upgrade.mjs verify-current-assets <absolute-options.json>",
+    "options": [
+      "candidateAssets",
+      "integrityPath",
+      "sourceCommit",
+      "output"
+    ],
+    "workNamespace": "<absolute RUNNER_TEMP>/lagom-legacy-native-<GITHUB_RUN_ID>-<GITHUB_RUN_ATTEMPT>",
+    "sourceBinding": "options.sourceCommit must equal GITHUB_SHA exactly",
+    "oldAssetsRequired": false,
+    "oldVersionRequired": false,
+    "legacyDownloads": false,
+    "successFields": [
+      "ok=true",
+      "kind=current-candidate-authentication",
+      "candidate",
+      "sourceCommit",
+      "rootSha256",
+      "bundledRegistrySha256",
+      "candidateRegistrySha256",
+      "candidateManifestSha256",
+      "integrityManifestSha256",
+      "installer={sha256,sha512,bytes}"
+    ]
+  },
+  "trust": {
+    "rootPinSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+    "baseline": "resources/release/root-public-key.pem + release-key-registry.json/.sig",
+    "currentCandidateVersion": "3.8.0",
+    "registryRollback": "refused; successor retains existing key material and revoked state",
+    "manifest": "unchanged strict stable schema2, exact canonical URL/name/version/tag, Ed25519 signature/key validity",
+    "sourceIntegrity": "signed source commit and SHA256 of original integrity bytes bind installer SHA256/size/name",
+    "installer": "existing ordinary-path stream SHA256+SHA512+size validator",
+    "cliTrustOverride": false,
+    "pureTestOverride": "only exported pure authenticator accepts explicit fixture root digest; CLI always calls project-pin defaults"
+  },
+  "guards": [
+    "Actual Windows platform and existing GitHub-hosted environment criteria run before any input read/output write.",
+    "Absolute own RUNNER_TEMP and scoped work/options/output, scoped candidate/integrity, ordinary nonlinked paths.",
+    "Exact four current option keys reject oldAssets/oldVersion and supplied pin/trust overrides.",
+    "Output wx; refused existing destination is never replaced."
+  ],
+  "tests": {
+    "command": "node --test --test-reporter=tap tests/windows-signed-current-assets.test.mjs",
+    "observedExitCode": 0,
+    "tests": 14,
+    "pass": 14,
+    "fail": 0,
+    "skip": 0,
+    "durationMs": 162.0147,
+    "realProjectPinnedRoot": "actual public bundled registry signature verified under real pinned root",
+    "signedCandidatePositive": "real Ed25519 generated root/release keys with explicit inert fixture pin; 4096-byte synthetic installer",
+    "negativeCases": [
+      "default real project pin rejects generated fixture root",
+      "tampered manifest signature",
+      "tampered integrity original bytes",
+      "changed signed source",
+      "genuinely root-signed registry rollback",
+      "tampered registry signature",
+      "changed installer bytes",
+      "SHA256/SHA512/size mismatches",
+      "wrong GITHUB_SHA source",
+      "old options/trust override",
+      "escaping/relative paths",
+      "real local CLI non-hosted refusal before malformed input parsing or output writing"
+    ]
+  },
+  "limits": [
+    "No actual signed six-asset 3.8 candidate verified locally; parent hosted workflow must supply real bytes.",
+    "Synthetic payload is not a PE installer or Authenticode proof; existing manifest policy remains valid/not-signed.",
+    "Environment guard is the existing hosted-runner contract, not independent hardware/host attestation.",
+    "No physical service/DNS/registry/GUI mutation, old installer access/download, install/build/sign/publication or production updater changes.",
+    "Current-only helper authenticates 3.8.0; future updater behavior belongs to the separate production updater owner."
+  ]
+}

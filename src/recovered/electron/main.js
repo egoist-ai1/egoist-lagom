@@ -79,6 +79,7 @@ function cancelDeferredStartupTimers() {
 }
 var backgroundUpdateInFlight = false;
 var backgroundUpdateFailures = 0;
+var autoUpdatePreferenceGeneration = 0;
 async function canInstallDesktopUpdate() {
 	const idle = () => Boolean(globalNetworkCombinatorManager?.isMutationIdle()) && pendingBootRecovery.size === 0 && !componentUpdateInFlight;
 	if (!globalRuntimeManager || !idle()) return false;
@@ -111,10 +112,15 @@ function backgroundUpdateRetryDelay(result) {
 async function runBackgroundUpdateCheck() {
 	if (!autoUpdateEnabled || backgroundUpdateInFlight || isQuitting) return;
 	backgroundUpdateInFlight = true;
+	const preferenceGeneration = autoUpdatePreferenceGeneration;
 	let nextDelay = 86400 * 1e3;
 	let dispatched = false;
 	try {
 		const result = toPublicUpdateResult(await desktopUpdater.check());
+		if (preferenceGeneration !== autoUpdatePreferenceGeneration) {
+			nextDelay = 0;
+			return;
+		}
 		emitUpdateResult(result);
 		if (result.phase === "available" && result.latestVersion && autoUpdateEnabled && !desktopUpdater.installPromise) {
 			if (!(await canInstallDesktopUpdate())) {
@@ -128,9 +134,11 @@ async function runBackgroundUpdateCheck() {
 				body: `Доверенная версия ${result.latestVersion} загружается и будет установлена с сохранением сетевых настроек.`,
 				silent: true
 			}).show();
-			const installed = toPublicUpdateResult(await desktopUpdater.checkAndInstall());
+			const installed = toPublicUpdateResult(await desktopUpdater.checkAndInstall({
+				shouldContinue: () => autoUpdateEnabled && !isQuitting && preferenceGeneration === autoUpdatePreferenceGeneration
+			}));
 			emitUpdateResult(installed);
-			nextDelay = backgroundUpdateRetryDelay(installed);
+			nextDelay = installed.failureCode === "cancelled" ? 0 : backgroundUpdateRetryDelay(installed);
 			if (installed.phase === "restarting") {
 				dispatched = true;
 				scheduleDeferredStartup(() => {
@@ -205,8 +213,16 @@ ipcMain.handle("updater:last-result", async (event) => {
 ipcMain.handle("updater:set-auto", async (event, enabled) => {
 	assertTrustedIpcEvent(event);
 	if (typeof enabled !== "boolean") throw new TypeError("enabled must be boolean");
-	if (globalStateStore) await globalStateStore.patch({ settings: { autoUpdate: enabled } });
+	const previous = autoUpdateEnabled;
 	autoUpdateEnabled = enabled;
+	if (!enabled) autoUpdatePreferenceGeneration += 1;
+	const preferenceGeneration = autoUpdatePreferenceGeneration;
+	try {
+		if (globalStateStore) await globalStateStore.patch({ settings: { autoUpdate: enabled } });
+	} catch (error) {
+		if (autoUpdatePreferenceGeneration === preferenceGeneration && autoUpdateEnabled === enabled) autoUpdateEnabled = previous;
+		throw error;
+	}
 	logger.info(`[updater] autoCheck set to ${enabled}`);
 	if (!enabled && updateCheckInterval) {
 		clearTimeout(updateCheckInterval);
