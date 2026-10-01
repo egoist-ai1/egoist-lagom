@@ -45,6 +45,12 @@ function Resolve-NativeApplication {
   Assert-NativeOrdinaryPath -Path $executable -Leaf
   return $executable
 }
+function Get-NativePathAclSnapshot {
+  param([string]$Path)
+  Assert-NativeOrdinaryPath -Path $Path -Leaf:([IO.File]::Exists($Path))
+  $acl=Get-Acl -LiteralPath $Path
+  return [ordered]@{path=$Path;owner=$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value;sddl=$acl.Sddl;protected=$acl.AreAccessRulesProtected;canonical=$acl.AreAccessRulesCanonical;rules=@(foreach($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){[ordered]@{sid=$rule.IdentityReference.Value;rights=[int]$rule.FileSystemRights;type=[string]$rule.AccessControlType;inherited=$rule.IsInherited;inheritance=[int]$rule.InheritanceFlags;propagation=[int]$rule.PropagationFlags}})}
+}
 function Assert-NativeAdministratorOwned {
   param([string]$Path)
   Assert-NativeOrdinaryPath -Path $Path -Leaf:([IO.File]::Exists($Path))
@@ -53,7 +59,7 @@ function Assert-NativeAdministratorOwned {
   $write=[Security.AccessControl.FileSystemRights]::Write -bor [Security.AccessControl.FileSystemRights]::Delete -bor [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor [Security.AccessControl.FileSystemRights]::TakeOwnership
   foreach($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){
     if(($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0){continue}
-    if($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and $rule.IdentityReference.Value -notin $trusted -and ($rule.FileSystemRights -band $write) -ne 0){throw "Untrusted write/delete ACE: $Path"}
+    if($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and $rule.IdentityReference.Value -notin $trusted -and ($rule.FileSystemRights -band $write) -ne 0){throw "Untrusted write/delete ACE: $Path; SID=$($rule.IdentityReference.Value); rights=$([int]$rule.FileSystemRights); inherited=$($rule.IsInherited); SDDL=$($acl.Sddl)"}
   }
   return [ordered]@{path=$Path;owner=$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value;sddl=$acl.Sddl}
 }

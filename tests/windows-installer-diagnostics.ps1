@@ -78,6 +78,7 @@ try{
     $receipt.installerExecuted=$true
     $phase=Invoke-NativeBounded -Executable $installer -Arguments @('/S') -Label 'signed-diagnostic-clean-install' -TimeoutSeconds 600
     $receipt.install=$phase;$receipt.result='signed-setup-installed-diagnostic-only'
+    $receipt.installedAcl=@(foreach($relative in @('','EgoistShield.exe','EgoistShield.Worker.exe','resources','resources\app.asar','resources\component-worker.cjs','resources\worker-host-integrity.json','resources\core-service\win-x64\EgoistShield.Service.exe')){Get-NativePathAclSnapshot (Join-Path $script:InstallRoot $relative)})
   }else{
   $safety=Invoke-NativeBounded -Executable $script:NativePowerShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$helper,'-Phase','CheckInstallSafety','-InstallRoot',$script:InstallRoot) -Label 'source-check-install-safety' -TimeoutSeconds 120
   $receipt.safety=$safety

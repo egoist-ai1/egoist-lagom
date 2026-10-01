@@ -126,3 +126,34 @@ test('native runtime resolution selects the first real PATH result when two appl
     await fs.rm(directory, { recursive: true, force: true });
   }
 });
+
+test('native ACL diagnostics capture actual owner and each raw ACE without changing permissions', {
+  skip: process.platform !== 'win32' || !process.env.LAGOM_TEST_TEMP,
+}, async () => {
+  const directory = await fs.mkdtemp(path.join(process.env.LAGOM_TEST_TEMP, 'native-acl-readback-'));
+  try {
+    const result = run(`
+      $ErrorActionPreference='Stop';
+      . '${library}' -LibraryOnly;
+      $path='${quote(directory)}';
+      $before=Get-Acl -LiteralPath $path;
+      $snapshot=Get-NativePathAclSnapshot $path;
+      $after=Get-Acl -LiteralPath $path;
+      if($snapshot.path -cne $path -or $snapshot.sddl -cne $before.Sddl -or $after.Sddl -cne $before.Sddl){throw 'ACL snapshot changed or lost actual descriptor'};
+      if($snapshot.owner -cne $before.GetOwner([Security.Principal.SecurityIdentifier]).Value){throw 'ACL snapshot lost actual owner'};
+      $rules=@($before.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier]));
+      if($snapshot.rules.Count -ne $rules.Count){throw 'ACL snapshot lost an ACE'};
+      for($i=0;$i -lt $rules.Count;$i++){
+        $actual=$snapshot.rules[$i];$expected=$rules[$i];
+        if($actual.sid -cne $expected.IdentityReference.Value -or $actual.rights -ne [int]$expected.FileSystemRights -or $actual.type -cne [string]$expected.AccessControlType -or $actual.inherited -ne $expected.IsInherited -or $actual.inheritance -ne [int]$expected.InheritanceFlags -or $actual.propagation -ne [int]$expected.PropagationFlags){throw 'ACL snapshot changed an actual ACE'};
+      };
+      @{ok=$true;aceCount=$rules.Count;liveMutations=0}|ConvertTo-Json -Compress;
+    `);
+    assert.equal(result.ok, true);
+    assert.ok(result.aceCount > 0);
+    assert.equal(result.liveMutations, 0);
+  } finally {
+    assert.equal(path.dirname(directory), path.resolve(process.env.LAGOM_TEST_TEMP));
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});

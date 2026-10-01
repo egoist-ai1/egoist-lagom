@@ -637,7 +637,7 @@ jobs:
           $env:SHIELD_DOTNET = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'
           $oldAssets = Join-Path $env:LAGOM_LEGACY_WORK 'old'
           $candidateAssets = Join-Path $env:LAGOM_LEGACY_WORK 'candidate'
-          ./tests/windows-production-legacy-upgrade.ps1 -ExpectedOldVersion '${{ matrix.old_version }}' -OldReleaseAssetsDirectory $oldAssets -CandidateReleaseAssetsDirectory $candidateAssets -IntegrityManifestPath (Join-Path $candidateAssets 'package-integrity.json') -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:LAGOM_LEGACY_WORK 'evidence')
+          ./tests/windows-production-legacy-upgrade.ps1 -ExpectedOldVersion '${{ matrix.old_version }}' -OldReleaseAssetsDirectory $oldAssets -CandidateReleaseAssetsDirectory $candidateAssets -IntegrityManifestPath (Join-Path $candidateAssets 'package-integrity.json') -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:LAGOM_LEGACY_WORK 'evidence\native')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Upload signed legacy acceptance evidence
         if: ${{ always() }}
