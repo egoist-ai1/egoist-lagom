@@ -171,7 +171,7 @@ test('silent NSIS failure runs the production rollback function before exiting',
     let failure; try {await exec(path.join(dir,'test.exe'),['/S'],options);} catch(e){failure=e;}
     assert.equal(failure?.code,41);
     assert.equal(await fs.readFile(path.join(dir,'rolled-back.txt'),'utf8'),'rollback ran');
-  } finally {await fs.rm(dir,{recursive:true,force:true});}
+  } finally {await fs.rm(dir,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
 });
 
 test('runtime split recovery executes production functions and retains conflicting data', {skip:process.platform!=='win32'}, async()=>{
