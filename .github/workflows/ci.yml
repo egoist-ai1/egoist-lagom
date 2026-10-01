@@ -235,10 +235,23 @@ jobs:
           ./tests/core-persistence-production.ps1 -WorkRoot $env:LAGOM_TEST_TEMP -DotnetPath (Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe') -Case all
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run Core owner and protected-file ACL regressions
+        id: core-owner
         shell: pwsh
         run: |
           ./tests/core-owner-regression.ps1 -WorkRoot $env:LAGOM_TEST_TEMP -DotnetPath (Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preserve actual Core owner regression diagnostics
+        if: ${{ always() && steps.core-owner.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lagom-core-owner-regression-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/lagom-tests/core-owner-*/receipt.json
+            ${{ runner.temp }}/lagom-tests/core-owner-*/results.json
+            ${{ runner.temp }}/lagom-tests/core-owner-*/run.log
+            ${{ runner.temp }}/lagom-tests/core-owner-*/build.log
       - name: Run owned wrapper log filesystem and Core integration regressions
         shell: pwsh
         run: |

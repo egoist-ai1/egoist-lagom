@@ -3,6 +3,38 @@ param(
     [string]$DotnetPath = $env:SHIELD_DOTNET
 )
 $ErrorActionPreference = 'Stop'
+function Write-FailureLogTail([string]$Path) {
+    try {
+        if (-not [IO.File]::Exists($Path)) { Write-Output ('DIAGNOSTIC_LOG_MISSING=' + $Path); return }
+        $stream = [IO.FileStream]::new($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)
+        try {
+            $length = [int][Math]::Min(16384, $stream.Length)
+            [void]$stream.Seek(-$length, [IO.SeekOrigin]::End)
+            $buffer = [byte[]]::new($length)
+            $read = 0
+            while ($read -lt $length) {
+                $count = $stream.Read($buffer, $read, $length - $read)
+                if ($count -eq 0) { break }
+                $read += $count
+            }
+            Write-Output ('DIAGNOSTIC_LOG_TAIL=' + $Path + '; maxBytes=16384')
+            Write-Output ([Text.Encoding]::UTF8.GetString($buffer, 0, $read))
+        }
+        finally { $stream.Dispose() }
+    }
+    catch { Write-Output ('DIAGNOSTIC_LOG_READ_FAILED=' + $_.Exception.GetType().FullName) }
+}
+function Write-FailedGroups($Results) {
+    try {
+        if ($null -eq $Results) { Write-Output 'FAILED_GROUPS_UNAVAILABLE'; return }
+        $failed = @($Results.results | Where-Object { $_.passed -eq $false } | Select-Object name, error)
+        $text = ConvertTo-Json -InputObject $failed -Depth 6
+        if ($text.Length -gt 16384) { $text = $text.Substring(0, 16384) + "`n[truncated; see preserved results.json]" }
+        Write-Output ('FAILED_GROUP_COUNT=' + $failed.Count)
+        Write-Output $text
+    }
+    catch { Write-Output ('FAILED_GROUPS_READ_FAILED=' + $_.Exception.GetType().FullName) }
+}
 if (-not [IO.Path]::IsPathFullyQualified($WorkRoot)) { throw 'Use an absolute owned work root.' }
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $sdk = if ($DotnetPath) { $DotnetPath } else { Join-Path $projectRoot '.tools/dotnet-10.0.401/dotnet.exe' }
@@ -12,6 +44,7 @@ $actualSdk = (& $sdk --version | Out-String).Trim()
 if ($LASTEXITCODE -ne 0 -or $actualSdk -ne $requiredSdk) { throw "Expected SDK $requiredSdk; received $actualSdk." }
 $work = Join-Path ([IO.Path]::GetFullPath($WorkRoot)) ('core-owner-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
 [void][IO.Directory]::CreateDirectory($work)
+Write-Output ('OWNER_EVIDENCE_DIR=' + $work)
 $sourceRoot = Join-Path $work 'source'
 $hashes = @()
 $liveRoot = Join-Path $projectRoot 'src/service'
@@ -39,13 +72,26 @@ try {
     $env:TEMP = $work; $env:TMP = $work; $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
     & $sdk build $project -c Release --nologo *> (Join-Path $work 'build.log')
     $buildExitCode = $LASTEXITCODE
-    if ($buildExitCode -ne 0) { throw "Focused build failed; evidence preserved at $work/build.log" }
+    if ($buildExitCode -ne 0) {
+        Write-FailureLogTail (Join-Path $work 'build.log')
+        throw "Focused build failed; evidence preserved at $work/build.log"
+    }
     & (Join-Path $work 'bin/Release/net10.0-windows/CoreOwnerRegression.exe') $work *> (Join-Path $work 'run.log')
     $runExitCode = $LASTEXITCODE
     $receipt = @{schemaVersion=1; sdkVersion=$actualSdk; buildExitCode=$buildExitCode; runExitCode=$runExitCode; sourceHashes=$hashes; harnessSha256=(Get-FileHash -LiteralPath $harness -Algorithm SHA256).Hash; runnerSha256=(Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash}
-    if ([IO.File]::Exists((Join-Path $work 'results.json'))) { $receipt.results = Get-Content -LiteralPath (Join-Path $work 'results.json') -Raw | ConvertFrom-Json }
+    if ([IO.File]::Exists((Join-Path $work 'results.json'))) {
+        try {
+            if ((Get-Item -LiteralPath (Join-Path $work 'results.json')).Length -gt 1048576) { throw 'Focused results exceed the 1 MiB diagnostic limit.' }
+            $receipt.results = Get-Content -LiteralPath (Join-Path $work 'results.json') -Raw | ConvertFrom-Json
+        }
+        catch { $receipt.resultsReadError = $_.Exception.GetType().FullName }
+    }
     $receipt | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $work 'receipt.json') -Encoding utf8
     Write-Output ('EVIDENCE=' + (Join-Path $work 'receipt.json'))
-    if ($runExitCode -ne 0) { throw "Focused regressions failed; evidence preserved at $work/run.log" }
+    if ($runExitCode -ne 0) {
+        Write-FailedGroups $receipt.results
+        Write-FailureLogTail (Join-Path $work 'run.log')
+        throw "Focused regressions failed; evidence preserved at $work/run.log"
+    }
 }
 finally { foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') } }

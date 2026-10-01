@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "900d84aaa218d090b7b78904dcb03a720b67503d",
+  "runId": 36820418763,
+  "jobId": 110234591015,
+  "rawJobLogSha256": "004a76c334add98ebb6ec2cbc799c3b409431be0f974a2a3e82fceae65e8642f",
+  "rawJobLogBytes": 270499,
+  "overallPassed": false,
+  "node": {
+    "tests": 878,
+    "pass": 866,
+    "fail": 0,
+    "skipped": 12
+  },
+  "coreFaultGroups": 27,
+  "actualCoreFaultRuntime": ".NET 8.0.31",
+  "atomic": {
+    "writes": 10000,
+    "reads": 50000,
+    "falseMissing": 0,
+    "unavailable": 0,
+    "malformed": 0
+  },
+  "failureStep": "Run Core owner and protected-file ACL regressions",
+  "innerFailureCause": "unknown; harness redirected run log without printing or uploading it",
+  "productionDefectEstablishedByThisFailure": false,
+  "separateActualCoreAdministratorConfigurePassed": true,
+  "separateCoreConfigureRunId": 36820434838,
+  "releaseAcceptancePassed": false
+}

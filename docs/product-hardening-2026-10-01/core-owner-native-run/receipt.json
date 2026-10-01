@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "900d84aaa218d090b7b78904dcb03a720b67503d",
+  "runId": 36820434838,
+  "jobId": 110234655159,
+  "artifactId": 11143870109,
+  "artifactZipSha256": "4722364c1bffef2b461ffa96171af91c60e75dd7d5a48bb0108c077cb065d73b",
+  "coreBinary": {
+    "sha256": "2A148A750F9D60EF6329EE22E7A6D20F19A3DD585344B99A855BFA173F734123",
+    "sdk": "10.0.401",
+    "bytes": 37968844
+  },
+  "configureExitCode": 0,
+  "configureMilliseconds": 307.94,
+  "actualWindowsAdministratorConfigurationPassed": true,
+  "actualOwner": "S-1-5-32-544",
+  "configurationAcl": [
+    {
+      "path": "C:\\ProgramData\\EgoistShield",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-3162555376-3447873500-144036907-513D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)"
+    },
+    {
+      "path": "C:\\ProgramData\\EgoistShield\\Service",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-3162555376-3447873500-144036907-513D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)"
+    },
+    {
+      "path": "C:\\ProgramData\\EgoistShield\\Service\\service-config.json",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-3162555376-3447873500-144036907-513D:P(A;;FA;;;SY)(A;;FA;;;BA)"
+    },
+    {
+      "path": "C:\\ProgramData\\EgoistShield\\Service\\acl-hardening.marker",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-3162555376-3447873500-144036907-513D:P(A;;FA;;;SY)(A;;FA;;;BA)"
+    }
+  ],
+  "markerVersionVerified": "4",
+  "networkPreserved": true,
+  "productServicesRegistered": false,
+  "installerExecuted": false,
+  "nativeReleaseAcceptancePassed": false,
+  "files": [
+    {
+      "name": "core-diagnostic-configure.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "core-diagnostic-configure.stdout.txt",
+      "bytes": 56,
+      "sha256": "768af6fa77e054e58bb8e1724f7e785b5527b8357a2f320fb450ee4b68df490d"
+    },
+    {
+      "name": "core-diagnostic-publish.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "core-diagnostic-publish.stdout.txt",
+      "bytes": 36927,
+      "sha256": "09d32e012c5e19c87fceda5b43fd91a504684ecf3712354ba6e519912ad0bc5c"
+    },
+    {
+      "name": "core-diagnostic-restore.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "core-diagnostic-restore.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "core-diagnostic-sdk.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "core-diagnostic-sdk.stdout.txt",
+      "bytes": 10,
+      "sha256": "3db6bca4b50618b2e0d2d55d23b3d0541fe039ab6f731df0e9c47317b400ce52"
+    },
+    {
+      "name": "installer-diagnostic.json",
+      "bytes": 44372,
+      "sha256": "a9cad42fc5dc288e95fabba37e1278a5ccad4ff2e0a7f9bf8f18d0470a6b6921"
+    },
+    {
+      "name": "native-job.txt",
+      "bytes": 19851,
+      "sha256": "e5710d47c723fd29ce9aa383037c2a4dac0925f12b3f672a842ba606cfd5f7d0"
+    }
+  ]
+}

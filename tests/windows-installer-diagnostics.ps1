@@ -57,6 +57,8 @@ try{
       $receipt.configurationAcl+=$identity
     }
     if((Get-Content -LiteralPath (Join-Path $script:DataRoot 'Service\acl-hardening.marker') -Raw).Trim() -cne '4'){throw 'Core hardening marker did not complete the owner migration.'}
+    $pwsh=Resolve-NativeApplication 'pwsh'
+    $receipt.ownerRegression=Invoke-NativeBounded -Executable $pwsh -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-File',(Join-Path $PSScriptRoot 'core-owner-regression.ps1'),'-WorkRoot',$script:Work,'-DotnetPath',$dotnet) -Label 'core-diagnostic-owner-regression' -TimeoutSeconds 180
     Assert-NativeNoGui
     if(@(Get-NativeProductServices).Count -ne 0 -or @(Get-NativeProductTasks).Count -ne 0){throw 'Direct Core configure unexpectedly registered a service or Task.'}
     $receipt.result='source-core-configuration-and-acl-passed-diagnostic-only'
