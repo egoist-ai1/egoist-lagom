@@ -19,6 +19,10 @@ on:
         description: Capture actual source installer phase diagnostics on a clean disposable Windows runner
         type: boolean
         default: false
+      diagnostic_release_id:
+        description: Optional signed draft ID for diagnostic-only Setup execution with both source identities recorded
+        type: string
+        default: ''
       signed_legacy_release_id:
         description: Signed draft release ID for fresh installation and actual 3.7.9 updater acceptance
         type: string
@@ -31,15 +35,61 @@ jobs:
   installer-diagnostics:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.installer_diagnostics }}
     runs-on: windows-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Use Node.js for the signed diagnostic verifier
+        if: ${{ inputs.diagnostic_release_id != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Download the exact authenticated diagnostic candidate
+        if: ${{ inputs.diagnostic_release_id != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+        shell: pwsh
+        run: |
+          ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          if ($env:DIAGNOSTIC_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Invalid diagnostic release ID.' }
+          $head = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $head -cne $env:GITHUB_SHA) { throw 'Diagnostic harness checkout differs from the actual workflow SHA.' }
+          $text = gh api ("repos/egoist-ai1/egoist-lagom/releases/" + $env:DIAGNOSTIC_RELEASE_ID)
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $release = $text | ConvertFrom-Json
+          $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
+          if ([string]$release.id -cne $env:DIAGNOSTIC_RELEASE_ID -or -not $release.draft -or $release.tag_name -cne "v$version" -or $release.target_commitish -cnotmatch '^[a-f0-9]{40}$') { throw 'Diagnostic candidate must be an exact unpublished source-bound draft.' }
+          $selectionText = gh release view "v$version" --repo 'egoist-ai1/egoist-lagom' --json databaseId,tagName,isDraft
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $selection = $selectionText | ConvertFrom-Json
+          if ([string]$selection.databaseId -cne $env:DIAGNOSTIC_RELEASE_ID -or -not $selection.isDraft -or $selection.tagName -cne $release.tag_name) { throw 'Diagnostic tag resolves to different bytes.' }
+          $assets = Join-Path $env:RUNNER_TEMP 'lagom-signed-diagnostic-assets'
+          if (Test-Path -LiteralPath $assets) { throw 'Diagnostic asset directory must be fresh.' }
+          New-Item -ItemType Directory -Path $assets | Out-Null
+          gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $assets --pattern "EgoistShield-Setup-$version.exe" --pattern 'package-integrity.json' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $integrity = Get-Content -LiteralPath (Join-Path $assets 'package-integrity.json') -Raw | ConvertFrom-Json
+          if ($integrity.source.commit -cne $release.target_commitish) { throw 'Artifact source differs from the exact draft target.' }
+          # These aliases are local verifier inputs copied from authenticated
+          # bytes; they are never claimed to have been downloaded or published.
+          Copy-Item -LiteralPath (Join-Path $assets "EgoistShield-Setup-$version.exe") -Destination (Join-Path $assets 'Egoist-Lagom-Setup.exe')
+          Copy-Item -LiteralPath (Join-Path $assets 'release-manifest.json') -Destination (Join-Path $assets 'stable-channel.json')
+          Copy-Item -LiteralPath (Join-Path $assets 'release-manifest.json.sig') -Destination (Join-Path $assets 'stable-channel.json.sig')
+          Copy-Item -LiteralPath 'resources/release/root-public-key.pem' -Destination (Join-Path $assets 'root-public-key.pem')
+          $manifest = Get-Content -LiteralPath (Join-Path $assets 'release-manifest.json') -Raw | ConvertFrom-Json
+          [IO.File]::WriteAllText((Join-Path $assets "EgoistShield-Setup-$version.exe.sha256"), ($manifest.sha256 + "  EgoistShield-Setup-$version.exe`n"), [Text.UTF8Encoding]::new($false))
+          [IO.File]::WriteAllText((Join-Path $assets 'Egoist-Lagom-Setup.exe.sha256'), ($manifest.sha256 + "  Egoist-Lagom-Setup.exe`n"), [Text.UTF8Encoding]::new($false))
+          node scripts/prepare-release-assets.mjs --dist $assets --verify-only true
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "LAGOM_DIAGNOSTIC_ASSETS=$assets" >> $env:GITHUB_ENV
       - name: Diagnose exact native installer phases
         shell: pwsh
-        run: ./tests/windows-installer-diagnostics.ps1
+        run: |
+          if ($env:LAGOM_DIAGNOSTIC_ASSETS) { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS }
+          else { ./tests/windows-installer-diagnostics.ps1 }
       - name: Upload source phase diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@v4

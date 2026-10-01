@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-10-01T04:20:49.662749+00:00",
+  "artifactSourceCommit": "3dae559124015b74dfeaabb12e46621cfd6d4cdc",
+  "artifactSourceTree": "f28f569e42df1b185af899c61a6b0155a07765dd",
+  "runId": 36811362434,
+  "releaseId": 400629954,
+  "result": "failed",
+  "releaseReady": false,
+  "observations": {
+    "checks": "PR 847 passed, 11 skipped of 858; local prior source 858 passed without skips",
+    "coreStress": "actual hosted NTFS 10000 writes/50000 reads, falseMissing/unavailable/malformed all zero",
+    "freshSignedSetup": "actual signed bytes authenticated; Setup exited 43 at InstallCoreService before native GUI/DNS/TUN gates",
+    "legacy379": "CIM foreign service inventory timeout before Setup",
+    "legacy378": "public old tag 404 before Setup; original signed local generation retained"
+  },
+  "focusedChecks": {
+    "PS7": {
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0
+    },
+    "WindowsPowerShell51": {
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0
+    },
+    "actionlint": "passed",
+    "powershellParsers": "three changed files, zero errors"
+  },
+  "fixScope": "Test diagnostics and bounded complete inventory; product Core failure is not yet diagnosed",
+  "harnessWorkingTreeSources": [
+    {
+      "file": ".github/workflows/ci.yml",
+      "bytes": 36303,
+      "sha256": "19f978591d1d9b2646fad59a0da900988814da6d72861072cee9a4c4ed622266"
+    },
+    {
+      "file": "tests/windows-production-acceptance.ps1",
+      "bytes": 62347,
+      "sha256": "77bcc25bdc0dd405280bdc785ef8476b12aed147f31a46912ccf57a001cba90e"
+    },
+    {
+      "file": "tests/windows-installer-diagnostics.ps1",
+      "bytes": 6177,
+      "sha256": "f5f210545c55f9b2caabeaadc1f5508851d634966bc08340a74608d8d60b100d"
+    },
+    {
+      "file": "tests/windows-installer-diagnostic.test.mjs",
+      "bytes": 5514,
+      "sha256": "a13d3266606494e0559c99291420b5512e57a96395987e864946f5c8a21e8c31"
+    },
+    {
+      "file": "tests/windows-production-legacy-upgrade.ps1",
+      "bytes": 32949,
+      "sha256": "dbeb0a899dd41d9f380465b2a72a926573d29a825fdc23551d72b9aa862f38f6"
+    },
+    {
+      "file": "tests/windows-production-legacy-guard.test.mjs",
+      "bytes": 21278,
+      "sha256": "f54855e04b2c5f15863b43ee5c758a50ac5764d89a3bceda5c18b5d1d4b158fe"
+    }
+  ],
+  "evidence": [
+    {
+      "file": "pr-checks.txt",
+      "bytes": 319460,
+      "sha256": "68ca48463582ab5664ceae840cd2de8a5f8847fa57b900d1c9673d8838c1717f"
+    },
+    {
+      "file": "legacy-3.7.8.txt",
+      "bytes": 25731,
+      "sha256": "8cd8b6c752927d56347c2c079814a870c0349ae889a8230066fadf89099bbbfc"
+    },
+    {
+      "file": "legacy-3.7.9.txt",
+      "bytes": 28937,
+      "sha256": "ac14a911e1c0f6a36c7a3addbf6b4846b83635f56f7d07d5707e3fd27a78228c"
+    },
+    {
+      "file": "signed-candidate.txt",
+      "bytes": 30993,
+      "sha256": "80debdadf216976c4a9bfb62a2633af2f3b8f3f1d3cc07086e63bfccb55416e7"
+    },
+    {
+      "file": "candidate-artifact/download-identity.json",
+      "bytes": 293,
+      "sha256": "5c39bf7506c9dd3d92f7e53d705126e31da339ea59a92bcb76ab73a85b831b76"
+    },
+    {
+      "file": "candidate-artifact/native/clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "candidate-artifact/native/clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "candidate-artifact/native/windows-production-acceptance.json",
+      "bytes": 4769,
+      "sha256": "672faaa4df55457a7b8135f66fc6b5f750b7e8e6d5cf73c309c15e91bfab016d"
+    },
+    {
+      "file": "candidate-artifact/signed-fresh-authentication.json",
+      "bytes": 2707,
+      "sha256": "016aee74b9f4f011ffad944661dcd706a5e70fc0dc445dfeb32d9529b437ebb6"
+    },
+    {
+      "file": "legacy-3.7.9-artifact/download-identity.json",
+      "bytes": 216,
+      "sha256": "f8b0e0331eb0cfbf3ead90e27841f8b5f094001cbebbc309ed6e8cebcffdcb72"
+    },
+    {
+      "file": "focused-ps7.txt",
+      "bytes": 2162,
+      "sha256": "bf87bfba1c2130f199cbbae7008223ee01dd7a3a48bae176d25303af4a8ffe7f"
+    },
+    {
+      "file": "focused-ps51.txt",
+      "bytes": 1645,
+      "sha256": "f9ec4cbecf1886596b5b84b460955937df8230d6b20cccfe0c1928bc70017141"
+    }
+  ],
+  "physicalHostMutations": 0
+}

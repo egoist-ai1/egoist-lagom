@@ -59,15 +59,54 @@ function Get-NativeNetworkFingerprint {
   try{foreach($name in @('WinHttpSettings','DefaultConnectionSettings')){$bytes=if($key){$key.GetValue($name,$null)}else{$null};$winHttp[$name]=if($bytes -is [byte[]]){[Convert]::ToBase64String($bytes)}else{$bytes}}}finally{if($key){$key.Dispose()}}
   return [ordered]@{dns=$dns;defaultRoutes=$routes;ipv6Bindings=$bindings;userProxy=$proxy;winHttp=$winHttp}
 }
+function Get-NativeCimSnapshot {
+  param([ValidateSet('Win32_Service','Win32_Process')][string]$ClassName,[string]$Filter='')
+  for($attempt=1;$attempt -le 2;$attempt++){
+    try{
+      $query=@{ClassName=$ClassName;OperationTimeoutSec=30;ErrorAction='Stop'}
+      if($Filter){$query.Filter=$Filter}
+      return @(Get-CimInstance @query)
+    }catch{
+      if($attempt -eq 2){throw}
+      Start-Sleep -Milliseconds 250
+    }
+  }
+}
 function Get-NativeProductServices {
-  return @(Get-CimInstance Win32_Service -OperationTimeoutSec 5 | Where-Object {$_.Name -match '^(EgoistShield|EgoistLagom)' -or $_.Name -in @('zapret','SystemDoH','TGWSProxy','TelegramProxy')} | Sort-Object Name | Select-Object Name,State,StartMode,StartName,PathName,ProcessId)
+  $filter="Name LIKE 'EgoistShield%' OR Name LIKE 'EgoistLagom%' OR Name='zapret' OR Name='SystemDoH' OR Name='TGWSProxy' OR Name='TelegramProxy'"
+  return @(Get-NativeCimSnapshot Win32_Service -Filter $filter | Sort-Object Name | Select-Object Name,State,StartMode,StartName,PathName,ProcessId)
 }
 function Get-NativeProductTasks {
   return @(Get-ScheduledTask | Where-Object {$_.TaskName -match '(?i)Egoist(?:Shield|Lagom)'} | Sort-Object TaskPath,TaskName | Select-Object TaskName,TaskPath,State)
 }
+function Copy-NativeInstallerDiagnostics {
+  $captured=@()
+  $inputs=@(
+    @{source=(Join-Path $script:DataRoot 'installer\upgrade-journal.json');name='installer-upgrade-journal.jsonl';maximum=1048576},
+    @{source=(Join-Path $script:DataRoot 'Service\service.log');name='core-service.log';maximum=6291456},
+    @{source=(Join-Path $script:DataRoot 'Service\service.log.1');name='core-service.previous.log';maximum=6291456}
+  )
+  foreach($entry in $inputs){
+    $record=[ordered]@{name=$entry.name;status='missing'}
+    try{
+      [void](Assert-NativePathWithin $entry.source $script:DataRoot)
+      if(Test-Path -LiteralPath $entry.source -PathType Leaf){
+        Assert-NativeOrdinaryPath -Path $entry.source -Leaf
+        $bytes=(Get-Item -LiteralPath $entry.source).Length
+        if($bytes -gt $entry.maximum){throw 'Diagnostic file exceeded its explicit bound; original retained.'}
+        $destination=Join-Path $script:Work $entry.name
+        [void](Assert-NativePathWithin $destination $script:Work)
+        Copy-Item -LiteralPath $entry.source -Destination $destination -ErrorAction Stop
+        $record.status='captured';$record.bytes=(Get-Item -LiteralPath $destination).Length;$record.sha256=(Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+      }
+    }catch{$record.status='refused-or-unavailable';$record.error=$_.Exception.Message}
+    $captured+=$record
+  }
+  return $captured
+}
 function Get-NativeProcessIdentity {
   param([int]$ProcessId)
-  $row=Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -OperationTimeoutSec 5
+  $row=Get-NativeCimSnapshot Win32_Process -Filter "ProcessId = $ProcessId"
   if(-not $row -or -not $row.CreationDate -or -not $row.ExecutablePath){throw "Unreadable native process identity: $ProcessId"}
   return [ordered]@{processId=[int]$row.ProcessId;parentProcessId=[int]$row.ParentProcessId;executable=[string]$row.ExecutablePath;createdUtc=([DateTimeOffset]$row.CreationDate).ToUniversalTime().ToString('o')}
 }
@@ -142,7 +181,7 @@ function Assert-NativeNetworkPreserved {
   $script:Receipt.networkReadbacks+=[ordered]@{phase=$Label;preserved=($before -ceq $after);snapshot=$current};Save-NativeReceipt
   if($before -cne $after){throw "Runner DNS/default route/IPv6/proxy preservation failed: $Label"}
 }
-function Assert-NativeNoGui {if(@(Get-CimInstance Win32_Process -Filter "Name = 'EgoistShield.exe'" -OperationTimeoutSec 5).Count -ne 0){throw 'GUI remains after the actual close/quit control.'}}
+function Assert-NativeNoGui {if(@(Get-NativeCimSnapshot Win32_Process -Filter "Name = 'EgoistShield.exe'").Count -ne 0){throw 'GUI remains after the actual close/quit control.'}}
 
 function Get-NativePeResource {
   param([string]$Executable,[switch]$Integrity)
@@ -263,7 +302,7 @@ function Invoke-NativeGui {
     $port=[int]$config.port
     [void](Assert-NativeTelegramEndpoint -Port $port)
     $core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
-    $workers=@(Get-CimInstance Win32_Process -Filter "Name = 'EgoistShield.Worker.exe'" -OperationTimeoutSec 5 | Where-Object {$_.ExecutablePath -ieq (Join-Path $script:InstallRoot 'EgoistShield.Worker.exe') -and [int]$_.ParentProcessId -eq [int]$core.scm.ProcessId})
+    $workers=@(Get-NativeCimSnapshot Win32_Process -Filter "Name = 'EgoistShield.Worker.exe'" | Where-Object {$_.ExecutablePath -ieq (Join-Path $script:InstallRoot 'EgoistShield.Worker.exe') -and [int]$_.ParentProcessId -eq [int]$core.scm.ProcessId})
     if($workers.Count -ne 1){throw 'Genuine GUI IPC did not leave one exact protected Core worker.'}
     $owner=Invoke-CimMethod -InputObject $workers[0] -MethodName GetOwnerSid
     if($owner.ReturnValue -ne 0 -or $owner.Sid -ne 'S-1-5-18'){throw 'Actual protected component worker is not LocalSystem.'}
@@ -323,7 +362,7 @@ function Invoke-NativeOrdinaryGui {
     $configuration=Get-Content -LiteralPath (Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json') -Raw | ConvertFrom-Json
     $endpoint=Assert-NativeTelegramEndpoint -Port ([int]$configuration.port)
     $core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
-    $workers=@(Get-CimInstance Win32_Process -Filter "Name = 'EgoistShield.Worker.exe'" -OperationTimeoutSec 5 | Where-Object {$_.ExecutablePath -ieq (Join-Path $script:InstallRoot 'EgoistShield.Worker.exe') -and [int]$_.ParentProcessId -eq [int]$core.scm.ProcessId})
+    $workers=@(Get-NativeCimSnapshot Win32_Process -Filter "Name = 'EgoistShield.Worker.exe'" | Where-Object {$_.ExecutablePath -ieq (Join-Path $script:InstallRoot 'EgoistShield.Worker.exe') -and [int]$_.ParentProcessId -eq [int]$core.scm.ProcessId})
     if($workers.Count -ne 1){throw 'Ordinary GUI IPC did not use one exact protected Core worker.'}
     $owner=Invoke-CimMethod -InputObject $workers[0] -MethodName GetOwnerSid
     if($owner.ReturnValue -ne 0 -or $owner.Sid -ne 'S-1-5-18'){throw 'Ordinary GUI component operation was not executed by the LocalSystem worker.'}
@@ -399,7 +438,7 @@ function Assert-NativeTelegramEndpoint {
   $service=Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running
   $listeners=@(Get-NetTCPConnection -State Listen | Where-Object {$_.LocalPort -eq $Port})
   if($listeners.Count -lt 1 -or @($listeners | Where-Object {$_.LocalAddress -notin @('127.0.0.1','::1')}).Count -ne 0){throw 'Telegram listener is absent or not loopback-only.'}
-  $byId=@{};foreach($row in @(Get-CimInstance Win32_Process -OperationTimeoutSec 5)){$byId[[int]$row.ProcessId]=$row}
+  $byId=@{};foreach($row in @(Get-NativeCimSnapshot Win32_Process)){$byId[[int]$row.ProcessId]=$row}
   foreach($listener in $listeners){
     $current=[int]$listener.OwningProcess;$seen=[Collections.Generic.HashSet[int]]::new();$found=$false
     for($depth=0;$depth -lt 32 -and $current -gt 0;$depth++){
@@ -474,7 +513,7 @@ function Assert-NativeCleanStart {
   if(@(Get-NativeProductServices).Count -ne 0){throw 'Existing product/shared-name services make clean acceptance unsafe.'}
   if(@(Get-NativeProductTasks).Count -ne 0){throw 'Existing product Tasks make clean acceptance unsafe.'}
   foreach($target in @($script:InstallRoot,$script:DataRoot,$script:InstallerDataRoot,(Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Egoist Shield'),(Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'EgoistShield'))){if(Test-Path -LiteralPath $target){throw "Existing product directory makes acceptance unsafe: $target"}}
-  if(@(Get-CimInstance Win32_Process -OperationTimeoutSec 5 | Where-Object {$_.Name -match '^Egoist(?:Shield|Lagom)'}).Count -ne 0){throw 'Existing product processes make acceptance unsafe.'}
+  if(@(Get-NativeCimSnapshot Win32_Process | Where-Object {$_.Name -match '^Egoist(?:Shield|Lagom)'}).Count -ne 0){throw 'Existing product processes make acceptance unsafe.'}
   foreach($path in @('SOFTWARE\EgoistShield','SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EgoistShield')){
     $key=[Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($path)
     if($key){$key.Dispose();throw "Existing product registration makes acceptance unsafe: $path"}
@@ -619,6 +658,7 @@ function Invoke-NativeAcceptance {
   }catch{$primaryError=$_;$script:Receipt.result='failed';$script:Receipt.error=$_.Exception.Message}
   finally{
     $script:Receipt.finishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');$script:Receipt.actualUninstallCompleted=$uninstalled
+    $script:Receipt.installerDiagnostics=@(Copy-NativeInstallerDiagnostics)
     try{$script:Receipt.finalServices=Get-NativeProductServices;$script:Receipt.finalTasks=Get-NativeProductTasks}catch{$script:Receipt.finalReadbackError=$_.Exception.Message}
     Save-NativeReceipt
     foreach($file in @(Get-ChildItem -LiteralPath $script:Work -File)){Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $script:Evidence $file.Name) -Force}

@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "kind": "source-only-bounded-legacy-CIM-snapshot-fix",
+  "taskId": "01a0f42c-8e52-7810-89bf-5257f3e06d3e",
+  "observedAtUtc": "2026-10-01T07:05:39.7694529+03:00",
+  "baselineHead": "3dae559124015b74dfeaabb12e46621cfd6d4cdc",
+  "sourceFiles": [
+    {
+      "path": "tests\\windows-production-legacy-upgrade.ps1",
+      "sha256": "dbeb0a899dd41d9f380465b2a72a926573d29a825fdc23551d72b9aa862f38f6"
+    },
+    {
+      "path": "tests\\windows-production-legacy-guard.test.mjs",
+      "sha256": "f54855e04b2c5f15863b43ee5c758a50ac5764d89a3bceda5c18b5d1d4b158fe"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\legacy-cim-timeout.md",
+      "sha256": "b51adae2fb4e24bc54760048c731853ff580cb8ffa97089d3afac051a69c851b"
+    }
+  ],
+  "nativeFailure": {
+    "evidenceSource": "Parent actual signed CI diagnosis; no other-task runtime accessed",
+    "runId": "36811362434",
+    "sourceCommit": "3dae559124015b74dfeaabb12e46621cfd6d4cdc",
+    "legacy379Job": "110208640946",
+    "legacy379Failure": "Win32_Service5s Timed out before Setup",
+    "legacy378Job": "110208640920",
+    "legacy378Failure": "Public v3.7.8 release HTTP404 before Setup",
+    "freshJob": "110208641005",
+    "freshFailure": "Setup43 InstallCoreService; separate root-owned diagnosis"
+  },
+  "boundedServiceQuery": {
+    "class": "Win32_Service",
+    "properties": [
+      "Name",
+      "StartMode",
+      "StartName",
+      "PathName"
+    ],
+    "maximumAttempts": 2,
+    "operationTimeoutSeconds": 30,
+    "singleBackoffMilliseconds": 1000,
+    "terminatingErrors": true,
+    "terminalUnknownThrows": true,
+    "partialOrEmptyFallback": false,
+    "strictForeignComparisonPreserved": true,
+    "taskQueryFailureThrows": true,
+    "measuredNativeWallClock": false
+  },
+  "validation": {
+    "before": {
+      "boundaryTests": 3,
+      "passed": 1,
+      "failed": 2,
+      "skipped": 0,
+      "scope": "Actual pre-fix source, explicitly inert protocol fixtures"
+    },
+    "after": [
+      {
+        "shell": "PowerShell7.6.5",
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "shell": "WindowsPowerShell5.1",
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      }
+    ],
+    "parserAndAnalyzer": {
+      "parserErrors": [],
+      "sha256": "dbeb0a899dd41d9f380465b2a72a926573d29a825fdc23551d72b9aa862f38f6",
+      "analyzer": [],
+      "file": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\windows-production-legacy-upgrade.ps1"
+    },
+    "jsSyntax": true,
+    "scopedDiffCheck": true,
+    "nativeCimTaskQueries": 0,
+    "physicalProtectedWrites": 0,
+    "nativeInstallerOrGuiExecutions": 0,
+    "nativeRerun": false
+  },
+  "publicReadback": [
+    {
+      "uri": "https://api.github.com/repos/egoist-ai1/egoist-lagom/releases/tags/v3.7.8",
+      "observedAtUtc": "2026-10-01T06:56:16.6847417+03:00",
+      "authentication": "none; public REST read",
+      "httpStatus": 404,
+      "message": "Not Found"
+    },
+    {
+      "uri": "https://api.github.com/repos/egoist-ai1/egoist-lagom/releases/tags/v3.7.9",
+      "observedAtUtc": "2026-10-01T06:56:17.0723539+03:00",
+      "authentication": "none; public REST read",
+      "httpStatus": 200,
+      "message": "",
+      "releaseId": 399337228,
+      "tagName": "v3.7.9",
+      "draft": false,
+      "prerelease": false,
+      "publishedAt": "2026-09-29T16:38:52Z"
+    },
+    {
+      "uri": "https://api.github.com/repos/egoist-ai1/egoist-lagom/git/ref/tags/v3.7.8",
+      "observedAtUtc": "2026-10-01T06:56:17.4430476+03:00",
+      "authentication": "none; public REST read",
+      "httpStatus": 404,
+      "message": "Not Found"
+    }
+  ],
+  "authenticLocal378": [
+    {
+      "path": "dist\\EgoistShield-Setup-3.7.8.exe",
+      "bytes": 194405835,
+      "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927"
+    },
+    {
+      "path": ".local\\validated-installers\\3.7.8\\EgoistShield-Setup-3.7.8.exe",
+      "bytes": 194405835,
+      "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927"
+    }
+  ],
+  "original378Proof": "docs/product-hardening-2026-10-01/legacy-version-matrix/receipt.json; exact signed original generation, publication not implied",
+  "boundedFocusedLogs": [
+    {
+      "name": "legacy-cim-regression-before-ps7.txt",
+      "originalSha256": "9b8002adabd8525443027144f70c8100636f9531fbadf11594f5f0dcd7674640",
+      "summary": "✖ inert legacy snapshot retries a failed cold query, discards partial rows and preserves complete foreign inventory (809.9093ms)\n✖ inert legacy snapshot never returns empty or partial state after failed, nonterminating, empty or malformed CIM reads (665.3243ms)\n✔ inert legacy snapshot keeps foreign service/Task comparison strict and refuses Task errors (664.2864ms)\nℹ tests 3\nℹ suites 0\nℹ pass 1\nℹ fail 2\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 2218.9541\n\n✖ failing tests:\n\ntest at tests\\windows-production-legacy-guard.test.mjs:192:1\n✖ inert legacy snapshot retries a failed cold query, discards partial rows and preserves complete foreign inventory (809.9093ms)\n  AssertionError [ERR_ASSERTION]: \n  Exception: \n  Line |\n    24 |  : n -ne 'Stop'){throw 'CIM projection/timeout/error contract changed'};\n       |                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n       | CIM projection/timeout/error contract changed\n  \n  "
+    },
+    {
+      "name": "legacy-cim-focused-ps7.txt",
+      "originalSha256": "c638e884d10a6d3b3e8a9a5f5498977ed74f80fe4040e94468f147e216e50efb",
+      "summary": "✔ official legacy versions select separate immutable installer/helper pins and reject aliases (1.3843ms)\n✔ both original signed legacy manifests are accepted only for the explicitly selected version (4.0672ms)\n✔ candidate minimum version is compared with the selected legacy version, not a fixed 3.7.9 (0.7112ms)\n✔ legacy gate verifies original real signed metadata with the project pinned public root (3.1561ms)\n✔ legacy gate refuses registry rollback, key replacement and revoked-key revival (2.0955ms)\n✔ pure source-binding boundary requires both signed fields and exact integrity bytes (0.4648ms)\n✔ legacy PowerShell library import performs no native query or mutation and observer matches exact scope (895.2875ms)\n✔ inert legacy snapshot retries a failed cold query, discards partial rows and preserves complete foreign inventory (749.1509ms)\n✔ inert legacy snapshot never returns empty or partial state after failed, nonterminating, empty or malformed CIM reads (678.7884ms)\n✔ inert legacy snapshot keeps foreign service/Task comparison strict and refuses Task errors (733.497ms)\n✔ real legacy script and helper reject a non-hosted process before input or native mutation (2850.08ms)\nℹ tests 11\nℹ suites 0\nℹ pass 11\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 6016.0527\n"
+    },
+    {
+      "name": "legacy-cim-focused-ps51.txt",
+      "originalSha256": "799d4fa37da8835a6497ee60ec98b6431a589014e40aff5e9762ee68d1937516",
+      "summary": "✔ official legacy versions select separate immutable installer/helper pins and reject aliases (1.8882ms)\n✔ both original signed legacy manifests are accepted only for the explicitly selected version (4.0831ms)\n✔ candidate minimum version is compared with the selected legacy version, not a fixed 3.7.9 (0.801ms)\n✔ legacy gate verifies original real signed metadata with the project pinned public root (3.5984ms)\n✔ legacy gate refuses registry rollback, key replacement and revoked-key revival (1.9979ms)\n✔ pure source-binding boundary requires both signed fields and exact integrity bytes (0.7336ms)\n✔ legacy PowerShell library import performs no native query or mutation and observer matches exact scope (390.3694ms)\n✔ inert legacy snapshot retries a failed cold query, discards partial rows and preserves complete foreign inventory (352.7985ms)\n✔ inert legacy snapshot never returns empty or partial state after failed, nonterminating, empty or malformed CIM reads (336.2474ms)\n✔ inert legacy snapshot keeps foreign service/Task comparison strict and refuses Task errors (371.6447ms)\n✔ real legacy script and helper reject a non-hosted process before input or native mutation (1350.9189ms)\nℹ tests 11\nℹ suites 0\nℹ pass 11\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 2903.8811\n"
+    }
+  ],
+  "remainingGates": [
+    "Root native signed rerun",
+    "Root-owned authentic local378 sidecar provenance",
+    "Separate InstallCoreService Setup43 fix",
+    "Public feed/old GUI automatic update initiation",
+    "Reboot/interrupted recovery",
+    "Long soak/months"
+  ]
+}

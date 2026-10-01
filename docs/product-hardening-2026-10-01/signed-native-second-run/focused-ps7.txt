@@ -1,0 +1,27 @@
+✔ native CIM retry returns a complete snapshot and refuses terminal partial reads (1247.5366ms)
+✔ installer diagnostics preserve actual own log bytes and refuse oversized logs (698.643ms)
+✔ signed installer diagnostic refuses a physical host before reading candidate assets (705.0392ms)
+✔ native acceptance refuses missing or mismatched hosted runner identities (0.9059ms)
+✔ native payload readback refuses traversal, drive paths and alternate path separators (0.269ms)
+✔ PowerShell native acceptance host guard and path boundary perform no mutations (680.4017ms)
+✔ an actual native acceptance invocation refuses a non-hosted process before input or mutation (649.5512ms)
+✔ native child timeout retires its own process and retains bounded stdout, stderr and failure evidence (1704.3748ms)
+✔ official legacy versions select separate immutable installer/helper pins and reject aliases (1.3514ms)
+✔ both original signed legacy manifests are accepted only for the explicitly selected version (3.1667ms)
+✔ candidate minimum version is compared with the selected legacy version, not a fixed 3.7.9 (0.4874ms)
+✔ legacy gate verifies original real signed metadata with the project pinned public root (2.55ms)
+✔ legacy gate refuses registry rollback, key replacement and revoked-key revival (1.7782ms)
+✔ pure source-binding boundary requires both signed fields and exact integrity bytes (0.4927ms)
+✔ legacy PowerShell library import performs no native query or mutation and observer matches exact scope (676.0979ms)
+✔ inert legacy snapshot retries a failed cold query, discards partial rows and preserves complete foreign inventory (638.1505ms)
+✔ inert legacy snapshot never returns empty or partial state after failed, nonterminating, empty or malformed CIM reads (612.6828ms)
+✔ inert legacy snapshot keeps foreign service/Task comparison strict and refuses Task errors (654.5699ms)
+✔ real legacy script and helper reject a non-hosted process before input or native mutation (2833.1418ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11292.0077

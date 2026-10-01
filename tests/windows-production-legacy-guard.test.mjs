@@ -158,6 +158,120 @@ test('legacy PowerShell library import performs no native query or mutation and 
   assert.equal(JSON.parse(result.stdout).libraryOnly, true);
 });
 
+function runInertLegacySnapshotBoundary(body) {
+  const shell = process.env.LAGOM_TEST_POWERSHELL || path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const file = path.resolve('tests/windows-production-legacy-upgrade.ps1').replaceAll("'", "''");
+  const command = `
+    $ErrorActionPreference='Stop';$WarningPreference='SilentlyContinue';
+    function Get-CimInstance {throw 'Unexpected physical CIM query'}
+    function Get-ScheduledTask {throw 'Unexpected physical Task query'}
+    function New-Item {throw 'Unexpected physical mutation'}
+    function Start-Sleep {throw 'Unexpected real sleep in inert boundary'}
+    . '${file}' -LibraryOnly;
+    $script:fixtureCimReads=0;$script:fixtureTaskReads=0;$script:fixtureSleeps=0;
+    $script:fixtureServices=@(
+      [pscustomobject]@{Name='ZuluRunner';StartMode='Auto';StartName='LocalSystem';PathName='C:\\Zulu.exe'},
+      [pscustomobject]@{Name='EgoistShieldCore';StartMode='Auto';StartName='LocalSystem';PathName='C:\\Product.exe'},
+      [pscustomobject]@{Name='AlphaRunner';StartMode='Manual';StartName=$null;PathName='C:\\Alpha.exe'},
+      [pscustomobject]@{Name='egoistlagomFixture';StartMode='Auto';StartName='LocalSystem';PathName='C:\\Product2.exe'}
+    );
+    $script:fixtureTasks=@(
+      [pscustomobject]@{TaskPath='\\Runner\\';TaskName='ZuluTask'},
+      [pscustomobject]@{TaskPath='\\Product\\';TaskName='EgoistShieldRecovery'},
+      [pscustomobject]@{TaskPath='\\Runner\\';TaskName='AlphaTask'}
+    );
+    ${body}
+    @{ok=$true;boundary='inert protocol fixtures only';physicalQueries=0;physicalMutations=0}|ConvertTo-Json -Compress
+  `;
+  const result = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', command],
+    { windowsHide: true, encoding: 'utf8', timeout: 15000 });
+  assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
+  assert.equal(JSON.parse(result.stdout).ok, true);
+}
+
+test('inert legacy snapshot retries a failed cold query, discards partial rows and preserves complete foreign inventory', { skip: process.platform !== 'win32' }, () => {
+  runInertLegacySnapshotBoundary(`
+    function Get-CimInstance {
+      [CmdletBinding()]param([string]$ClassName,[string[]]$Property,[int]$OperationTimeoutSec)
+      $script:fixtureCimReads++;
+      if($ClassName -cne 'Win32_Service' -or ($Property -join ',') -cne 'Name,StartMode,StartName,PathName' -or $OperationTimeoutSec -ne 30 -or [string]$PSBoundParameters.ErrorAction -ne 'Stop'){throw 'CIM projection/timeout/error contract changed'};
+      if($script:fixtureCimReads -eq 1){
+        [pscustomobject]@{Name='PartialForeignRow';StartMode='Auto';StartName='LocalSystem';PathName='C:\\Partial.exe'};
+        throw [TimeoutException]::new('inert cold-query timeout');
+      };
+      $script:fixtureServices
+    }
+    function Get-ScheduledTask {[CmdletBinding()]param()
+      $script:fixtureTaskReads++;if([string]$PSBoundParameters.ErrorAction -ne 'Stop'){throw 'Task error contract changed'};$script:fixtureTasks
+    }
+    function Start-Sleep {param([int]$Milliseconds)
+      if($Milliseconds -ne 1000){throw 'Retry delay is not bounded to1000ms'};$script:fixtureSleeps++
+    }
+    $snapshot=Get-LegacyForeignRegistrationSnapshot;
+    if($script:fixtureCimReads -ne 2 -or $script:fixtureTaskReads -ne 1 -or $script:fixtureSleeps -ne 1){throw 'Cold query retry count changed'};
+    if(($snapshot.services.Name -join ',') -cne 'AlphaRunner,ZuluRunner'){throw 'Partial/product rows leaked or foreign services dropped'};
+    if(($snapshot.taskNames.TaskName -join ',') -cne 'AlphaTask,ZuluTask'){throw 'Foreign Tasks dropped or order changed'};
+    if($snapshot.services[0].PathName -cne 'C:\\Alpha.exe' -or $snapshot.services[0].StartMode -cne 'Manual' -or $null -ne $snapshot.services[0].StartName){throw 'Foreign registration fields were altered'};
+  `);
+});
+
+test('inert legacy snapshot never returns empty or partial state after failed, nonterminating, empty or malformed CIM reads', { skip: process.platform !== 'win32' }, () => {
+  runInertLegacySnapshotBoundary(`
+    function Get-CimInstance {[CmdletBinding()]param([string]$ClassName,[string[]]$Property,[int]$OperationTimeoutSec)
+      $script:fixtureCimReads++;
+      switch($script:fixtureFailure){
+        'empty' {return}
+        'malformed' {[pscustomobject]@{Name='BrokenRow'};return}
+        'nonterminating' {Write-Error 'inert nonterminating CIM error';return}
+        default {
+          [pscustomobject]@{Name='PartialForeignRow';StartMode='Auto';StartName='LocalSystem';PathName='C:\\Partial.exe'};
+          throw [TimeoutException]::new('inert persistent CIM timeout')
+        }
+      }
+    }
+    function Get-ScheduledTask {throw 'Task query continued after Unknown service inventory'}
+    function Start-Sleep {param([int]$Milliseconds)
+      if($Milliseconds -ne 1000){throw 'Retry delay changed'};$script:fixtureSleeps++
+    }
+    foreach($failure in @('terminating','nonterminating','empty','malformed')){
+      $script:fixtureFailure=$failure;$script:fixtureCimReads=0;$script:fixtureSleeps=0;$snapshot=$null;$refused=$false;
+      try{$snapshot=Get-LegacyForeignRegistrationSnapshot}catch{
+        if($_.Exception.Message -notmatch 'Foreign service inventory is unknown after 2 bounded CIM attempts'){throw};$refused=$true
+      };
+      if(-not $refused -or $null -ne $snapshot -or $script:fixtureCimReads -ne 2 -or $script:fixtureSleeps -ne 1){throw ('Unknown was converted into a usable snapshot: '+$failure)};
+    };
+  `);
+});
+
+test('inert legacy snapshot keeps foreign service/Task comparison strict and refuses Task errors', { skip: process.platform !== 'win32' }, () => {
+  runInertLegacySnapshotBoundary(`
+    function Get-CimInstance {[CmdletBinding()]param([string]$ClassName,[string[]]$Property,[int]$OperationTimeoutSec)
+      $script:fixtureCimReads++;$script:fixtureServices
+    }
+    function Get-ScheduledTask {[CmdletBinding()]param()
+      $script:fixtureTaskReads++;if($script:fixtureTaskFailure){Write-Error 'inert unavailable Task inventory';return};$script:fixtureTasks
+    }
+    function Save-NativeReceipt {$script:fixtureSaved++}
+    $script:fixtureTaskFailure=$false;$script:fixtureSaved=0;
+    $script:Receipt=[ordered]@{beforeForeignRegistrations=(Get-LegacyForeignRegistrationSnapshot);checks=@()};
+    Assert-LegacyForeignRegistrationsPreserved 'inert unchanged';
+    if($script:fixtureSaved -ne 1 -or $script:fixtureCimReads -ne 2 -or $script:fixtureTaskReads -ne 2){throw 'Successful read was retried or strict success was not recorded'};
+    foreach($field in @('Name','StartMode','StartName','PathName')){
+      $original=$script:fixtureServices[0].$field;$script:fixtureServices[0].$field='changed';$refused=$false;
+      try{Assert-LegacyForeignRegistrationsPreserved 'inert service change'}catch{if($_.Exception.Message -notmatch 'Unrelated service/task registrations changed'){throw};$refused=$true};
+      $script:fixtureServices[0].$field=$original;if(-not $refused){throw ('Foreign service change was ignored: '+$field)}
+    };
+    foreach($field in @('TaskName','TaskPath')){
+      $original=$script:fixtureTasks[0].$field;$script:fixtureTasks[0].$field='changed';$refused=$false;
+      try{Assert-LegacyForeignRegistrationsPreserved 'inert Task change'}catch{if($_.Exception.Message -notmatch 'Unrelated service/task registrations changed'){throw};$refused=$true};
+      $script:fixtureTasks[0].$field=$original;if(-not $refused){throw ('Foreign Task change was ignored: '+$field)}
+    };
+    $script:fixtureTaskFailure=$true;$snapshot=$null;$refused=$false;
+    try{$snapshot=Get-LegacyForeignRegistrationSnapshot}catch{if($_.Exception.Message -notmatch 'inert unavailable Task inventory'){throw};$refused=$true};
+    if(-not $refused -or $null -ne $snapshot -or $script:fixtureSaved -ne 1){throw 'Task unknown or changed registration was accepted'};
+  `);
+});
+
 test('real legacy script and helper reject a non-hosted process before input or native mutation', { skip: process.platform !== 'win32' }, () => {
   const shell = process.env.LAGOM_TEST_POWERSHELL || path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
   const env = { ...process.env, GITHUB_ACTIONS: 'false', RUNNER_ENVIRONMENT: 'self-hosted' };

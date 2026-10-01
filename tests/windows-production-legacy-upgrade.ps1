@@ -37,9 +37,28 @@ function Read-LegacyHarnessJson {
   return Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
 }
 function Get-LegacyForeignRegistrationSnapshot {
+  $services=$null
+  for($attempt=1;$attempt -le 2;$attempt++){
+    try{
+      $readServices=@(Get-CimInstance -ClassName Win32_Service -Property Name,StartMode,StartName,PathName -OperationTimeoutSec 30 -ErrorAction Stop)
+      if($readServices.Count -eq 0){throw 'Windows service inventory unexpectedly returned no rows.'}
+      foreach($row in $readServices){
+        foreach($property in @('Name','StartMode','StartName','PathName')){
+          if($null -eq $row -or -not $row.PSObject.Properties[$property]){throw 'Windows service inventory returned an incomplete row.'}
+        }
+        if($row.Name -isnot [string] -or [string]::IsNullOrWhiteSpace($row.Name)){throw 'Windows service inventory returned an invalid service identity.'}
+      }
+      $services=$readServices
+      break
+    }catch{
+      if($attempt -eq 2){throw [InvalidOperationException]::new('Foreign service inventory is unknown after 2 bounded CIM attempts; no registration snapshot is usable.', $_.Exception)}
+      Write-Warning ('Read-only foreign service inventory failed; retrying once after 1000ms: '+$_.Exception.Message)
+      Start-Sleep -Milliseconds 1000
+    }
+  }
   return [ordered]@{
-    services=@(Get-CimInstance Win32_Service -OperationTimeoutSec 5 | Where-Object {$_.Name -notmatch '^Egoist(?:Shield|Lagom)'} | Sort-Object Name | Select-Object Name,StartMode,StartName,PathName)
-    taskNames=@(Get-ScheduledTask | Where-Object {$_.TaskName -notmatch '(?i)Egoist(?:Shield|Lagom)'} | Sort-Object TaskPath,TaskName | Select-Object TaskPath,TaskName)
+    services=@($services | Where-Object {$_.Name -notmatch '^Egoist(?:Shield|Lagom)'} | Sort-Object Name | Select-Object Name,StartMode,StartName,PathName)
+    taskNames=@(Get-ScheduledTask -ErrorAction Stop | Where-Object {$_.TaskName -notmatch '(?i)Egoist(?:Shield|Lagom)'} | Sort-Object TaskPath,TaskName | Select-Object TaskPath,TaskName)
   }
 }
 function Assert-LegacyForeignRegistrationsPreserved {
