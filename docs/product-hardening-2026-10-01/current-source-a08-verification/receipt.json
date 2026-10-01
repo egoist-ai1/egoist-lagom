@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "a08e34f8acadf191a1d26b923b190ecc54d7dd9a",
+  "sourceTree": "43f6f418e8fd6e945904ce5d8d8b26164bd26c29",
+  "sourceCI": {
+    "runId": 36884093947,
+    "jobId": 110442872831,
+    "conclusion": "success",
+    "node": {
+      "tests": 984,
+      "pass": 969,
+      "fail": 0,
+      "skipped": 15
+    },
+    "coreReliabilityGroups": 27,
+    "nativeDohGroups": 22,
+    "corePersistenceGroups": 8,
+    "wrapperLogGroups": 10,
+    "atomicStress": {
+      "writes": 10000,
+      "reads": 50000,
+      "falseMissing": 0,
+      "unavailable": 0,
+      "malformed": 0
+    },
+    "crashStress": {
+      "ownHarmlessChildren": 32,
+      "replayExecutionsAfterCrash": 0
+    }
+  },
+  "localNode": {
+    "tests": 984,
+    "pass": 984,
+    "fail": 0,
+    "skipped": 0,
+    "sourceUnchanged": true
+  },
+  "productionCoreBuild": {
+    "errors": 0,
+    "warnings": 135
+  },
+  "acceptedFiles": [
+    {
+      "path": "github-job-110442872831.txt",
+      "bytes": 384686,
+      "sha256": "34db0ac39e8228fd13ce1d27f76ad242db15b9ac8651023bcab76ee3764b901d"
+    },
+    {
+      "path": "full-node-source-a08e34f8acad.txt",
+      "bytes": 231715,
+      "sha256": "1ac1a59cb0db0a2749c592a30e8d67861cbfd607aef33f617a5c7b5b1753622c"
+    },
+    {
+      "path": "full-node-source-a08e34f8acad.json",
+      "bytes": 727,
+      "sha256": "d46f5df94625feefb2da31fc6fd065ce7b010fdb4408ded1496501996910a44c"
+    },
+    {
+      "path": "native-cleanup-production-build-green.txt",
+      "bytes": 129692,
+      "sha256": "613804080b22b34b64576e1fb4679374793a1cdbb452a27570074fa4d5af2d14"
+    }
+  ],
+  "limitations": [
+    "Hosted Node has15 environment-gated skips; local exact-source suite has0 skips.",
+    "Stress cycles are bounded and do not prove uninterrupted months.",
+    "Actual signed native installation and local physical installation remain pending."
+  ]
+}

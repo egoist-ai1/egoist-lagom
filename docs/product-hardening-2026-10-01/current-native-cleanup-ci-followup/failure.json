@@ -1,0 +1,13 @@
+{
+  "sourceCommit": "a08e34f8acadf191a1d26b923b190ecc54d7dd9a",
+  "runId": 36886127931,
+  "jobId": 110449774322,
+  "conclusion": "failure",
+  "signedCandidateSkipped": true,
+  "file": {
+    "path": "github-job-110449774322.txt",
+    "bytes": 166961,
+    "sha256": "f445ea9feeeb1e821111127ecc0e42af60932283ee35fbd1b2c5a69007efd523"
+  },
+  "status": "Retained actual failure. No installer/local installation/publication executed."
+}

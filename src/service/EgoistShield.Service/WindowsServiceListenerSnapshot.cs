@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -232,7 +233,7 @@ internal sealed class WindowsServiceListenerSnapshot
                 }
                 try
                 {
-                    VerifyRuntimeIdentity(handle, item.Identity.ExecutablePath, item.Identity.CreatedAt);
+                    VerifyRuntimeIdentity(handle, item.Identity.ExecutablePath, item.Identity.CreatedAt, token);
                     terminators.Add((handle, item.Identity));
                 }
                 catch (IOException) when (Native.WaitForSingleObject(handle, 0) == 0) { handle.Dispose(); }
@@ -242,7 +243,7 @@ internal sealed class WindowsServiceListenerSnapshot
             {
                 token.ThrowIfCancellationRequested();
                 if (Native.WaitForSingleObject(item.Handle, 0) == 0) continue;
-                try { VerifyRuntimeIdentity(item.Handle, expected, item.Identity.CreatedAt); }
+                try { VerifyRuntimeIdentity(item.Handle, expected, item.Identity.CreatedAt, token); }
                 catch (IOException) when (Native.WaitForSingleObject(item.Handle, 0) == 0) { continue; }
                 if (!Native.TerminateProcess(item.Handle, 0))
                 {
@@ -279,9 +280,9 @@ internal sealed class WindowsServiceListenerSnapshot
         token.ThrowIfCancellationRequested();
     }
 
-    internal static void VerifyRuntimeIdentity(SafeProcessHandle handle, string expectedPath, DateTimeOffset expectedBirth)
+    internal static void VerifyRuntimeIdentity(SafeProcessHandle handle, string expectedPath, DateTimeOffset expectedBirth, CancellationToken token = default)
     {
-        var actual = ReadRuntimeIdentity(handle);
+        var actual = ReadRuntimeIdentity(handle, token);
         if (!string.Equals(actual.Path, Path.GetFullPath(expectedPath), StringComparison.OrdinalIgnoreCase) || actual.Born != expectedBirth)
             throw new InvalidDataException("Runtime process identity changed or is foreign.");
     }
@@ -293,19 +294,59 @@ internal sealed class WindowsServiceListenerSnapshot
         VerifyRuntimeIdentity(handle, expectedPath, expectedBirth);
     }
 
-    private static (string Path, DateTimeOffset Born) ReadRuntimeIdentity(SafeProcessHandle handle)
+    // The internal error-only seam cannot provide a successful path or birth.
+    // Production calls leave it null and always use the native image query.
+    internal static (string Path, DateTimeOffset Born) ReadRuntimeIdentity(SafeProcessHandle handle,
+        CancellationToken token = default, Func<int, int?>? imageQueryError = null)
     {
-        if (Native.WaitForSingleObject(handle, 0) != 258 ||
-            !Native.GetProcessTimes(handle, out var created, out _, out _, out _))
-            throw new IOException("Runtime process identity is unavailable.");
+        token.ThrowIfCancellationRequested();
+        uint wait = Native.WaitForSingleObject(handle, 0);
+        if (wait != 258) throw RuntimeIdentityFailure("wait", wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0, wait, 0);
+        bool times = Native.GetProcessTimes(handle, out var created, out _, out _, out _);
+        int timeError = times ? 0 : Marshal.GetLastWin32Error();
+        if (!times) throw RuntimeIdentityFailure("creation", timeError, Native.WaitForSingleObject(handle, 0), 0);
+        token.ThrowIfCancellationRequested();
+        var readClock = Stopwatch.StartNew();
+        for (int attempt = 1; ; attempt++)
+        {
+            token.ThrowIfCancellationRequested();
+            var image = ReadRuntimeImage(handle, imageQueryError?.Invoke(attempt));
+            token.ThrowIfCancellationRequested();
+            wait = Native.WaitForSingleObject(handle, 0);
+            int waitError = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+            token.ThrowIfCancellationRequested();
+            if (wait != 258)
+                throw RuntimeIdentityFailure(wait == 0 ? "image" : "wait", wait == 0 ? image.NativeError : waitError, wait, attempt);
+            if (!string.IsNullOrWhiteSpace(image.Path))
+            {
+                var born = DateTimeOffset.FromFileTime(unchecked((long)(((ulong)created.High << 32) | created.Low))).ToUniversalTime();
+                return (Path.GetFullPath(image.Path), born);
+            }
+            int remaining = 250 - (int)readClock.ElapsedMilliseconds;
+            if (remaining <= 0 || attempt >= 11)
+                throw RuntimeIdentityFailure("image", image.NativeError, wait, attempt);
+            // Image teardown may precede the process signal. Neither timeout nor
+            // missing path proves exit: wait/requery this same handle only.
+            token.ThrowIfCancellationRequested();
+            wait = Native.WaitForSingleObject(handle, (uint)Math.Min(25, remaining));
+            waitError = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+            token.ThrowIfCancellationRequested();
+            if (wait != 258)
+                throw RuntimeIdentityFailure(wait == 0 ? "image" : "wait", wait == 0 ? image.NativeError : waitError, wait, attempt);
+        }
+    }
+
+    private static (string? Path, int NativeError) ReadRuntimeImage(SafeProcessHandle handle, int? injectedError)
+    {
+        if (injectedError is int error) return (null, error);
         var path = new StringBuilder(32768);
         int length = path.Capacity;
-        if (!Native.QueryFullProcessImageName(handle, 0, path, ref length) ||
-            string.IsNullOrWhiteSpace(path.ToString()) || Native.WaitForSingleObject(handle, 0) != 258)
-            throw new IOException("Runtime executable identity is unavailable.");
-        var born = DateTimeOffset.FromFileTime(unchecked((long)(((ulong)created.High << 32) | created.Low))).ToUniversalTime();
-        return (Path.GetFullPath(path.ToString()), born);
+        if (!Native.QueryFullProcessImageName(handle, 0, path, ref length)) return (null, Marshal.GetLastWin32Error());
+        return (path.ToString(), 0);
     }
+
+    private static IOException RuntimeIdentityFailure(string stage, int nativeError, uint wait, int attempts) =>
+        new($"Runtime identity is unavailable (stage={stage}; win32={nativeError}; wait={wait}; attempts={attempts}).");
 
     private static List<(SafeProcessHandle Handle, RuntimeStoppedProcess Identity)> CaptureRuntimeProcesses(string expected, CancellationToken token)
     {
@@ -340,7 +381,7 @@ internal sealed class WindowsServiceListenerSnapshot
                     // use the runtime; unreadable/live unknown rows still refuse.
                     if (Native.WaitForSingleObject(handle, 0) == 0) { handle.Dispose(); continue; }
                     // A readable foreign same-name process is never granted terminate rights.
-                    var identity = ReadRuntimeIdentity(handle);
+                    var identity = ReadRuntimeIdentity(handle, token);
                     if (!string.Equals(identity.Path, expected, StringComparison.OrdinalIgnoreCase)) { handle.Dispose(); continue; }
                     held.Add((handle, new(pid, identity.Born, identity.Path)));
                 }

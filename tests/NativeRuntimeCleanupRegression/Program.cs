@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 using System.Text.Json;
 using EgoistShield.Service;
 
@@ -45,6 +47,48 @@ internal static class Program
             int ownPid = int.Parse(await owned.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(8)) ?? "0");
             int foreignPid = int.Parse(await foreign.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(8)) ?? "0");
             Require(ownPid == owned.Id && foreignPid == foreign.Id && !owned.HasExited && !foreign.HasExited, "readiness identifies held own children");
+            using var readDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+            int transientAttempts = 0;
+            var transientClock = Stopwatch.StartNew();
+            var recovered = WindowsServiceListenerSnapshot.ReadRuntimeIdentity(foreign.SafeHandle, readDeadline.Token,
+                attempt => { transientAttempts++; return attempt == 1 ? 5 : null; });
+            Require(recovered.Path == foreignPath && recovered.Born == new DateTimeOffset(foreign.StartTime.ToUniversalTime()) &&
+                transientAttempts >= 2 && !foreign.HasExited, "controlled image fault recovers only real path and birth on the same live held handle", transientClock.Elapsed.TotalMilliseconds);
+            int persistentAttempts = 0;
+            var persistentClock = Stopwatch.StartNew();
+            try
+            {
+                WindowsServiceListenerSnapshot.ReadRuntimeIdentity(foreign.SafeHandle, readDeadline.Token,
+                    attempt => { persistentAttempts++; return 5; });
+                throw new Exception("Persistent live unknown image must refuse.");
+            }
+            catch (IOException error)
+            {
+                Require(error.Message.Contains("stage=image") && error.Message.Contains("win32=5") && error.Message.Contains("wait=258") &&
+                    persistentAttempts >= 2 && persistentAttempts <= 11 && !foreign.HasExited,
+                    "controlled persistent image fault stays bounded and refuses actual live unknown process", persistentClock.Elapsed.TotalMilliseconds);
+            }
+            using var readCancellation = new CancellationTokenSource();
+            ExpectRefusal(() => WindowsServiceListenerSnapshot.ReadRuntimeIdentity(foreign.SafeHandle, readCancellation.Token,
+                attempt => { readCancellation.Cancel(); return 5; }), "controlled image retry observes cancellation without clearing ownership");
+            Require(!foreign.HasExited && !owned.HasExited, "all controlled query faults preserve real live own and foreign children");
+            using (var unreadableIdentity = OpenProcess(0x100000U, false, foreign.Id))
+            {
+                Require(!unreadableIdentity.IsInvalid, "actual own-child SYNCHRONIZE-only handle opens without changing process permissions");
+                int creationImageQueries = 0;
+                try
+                {
+                    WindowsServiceListenerSnapshot.ReadRuntimeIdentity(unreadableIdentity, readDeadline.Token,
+                        attempt => { creationImageQueries++; return null; });
+                    throw new Exception("Actual unavailable creation identity must refuse.");
+                }
+                catch (IOException error)
+                {
+                    Require(error.Message.Contains("stage=creation") && error.Message.Contains("win32=5") && error.Message.Contains("wait=258") &&
+                        creationImageQueries == 0 && !foreign.HasExited,
+                        "actual GetProcessTimes access denial refuses before image retry and keeps live process untouched");
+                }
+            }
             var birth = new DateTimeOffset(owned.StartTime.ToUniversalTime());
             WindowsServiceListenerSnapshot.VerifyRuntimeProcessIdentity(ownPid, ownedPath, birth);
             Require(true, "actual native handle path birth and liveness match owned child");
@@ -67,11 +111,29 @@ internal static class Program
             Require(replacementPid == restarted.Id && !restarted.HasExited, "replacement readiness identifies the held new child");
             ExpectRefusal(() => WindowsServiceListenerSnapshot.VerifyRuntimeQuiescent(ownedPath, deadline.Token), "actual replacement process makes publication quiescence fail closed");
             Require(!restarted.HasExited && !foreign.HasExited, "quiescence refusal preserves replacement and foreign child without kill loop");
-            await ExitOwnChild(restarted);
+            using var exitReadDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+            IOException? exitReadError = null;
+            try
+            {
+                WindowsServiceListenerSnapshot.ReadRuntimeIdentity(restarted.SafeHandle, exitReadDeadline.Token, attempt =>
+                {
+                    if (attempt == 1) restarted.StandardInput.WriteLine("exit");
+                    return 5;
+                });
+                throw new Exception("Exited image cannot be returned as a verified live identity.");
+            }
+            catch (IOException error) { exitReadError = error; }
+            Require(exitReadError.Message.Contains("stage=image") && exitReadError.Message.Contains("win32=5") &&
+                (exitReadError.Message.Contains("wait=0") || exitReadError.Message.Contains("wait=258")),
+                "controlled own-exit fault returns only actual exit proof or bounded live-unknown refusal");
+            // Fixture lifecycle can take longer under a loaded scheduler. No
+            // production success is inferred from exceeding the image budget.
+            await restarted.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(8));
+            using var quiescenceDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             clock.Restart();
-            Require(WindowsServiceListenerSnapshot.StopProcessesUsingExecutable(ownedPath, deadline.Token).Length == 0,
+            Require(WindowsServiceListenerSnapshot.StopProcessesUsingExecutable(ownedPath, quiescenceDeadline.Token).Length == 0,
                 "native recheck proves owned runtime quiescent without restarting a kill loop", clock.Elapsed.TotalMilliseconds);
-            Require(WindowsServiceListenerSnapshot.StopProcessesUsingExecutable(Path.Combine(root, "absent", name), deadline.Token).Length == 0 && !foreign.HasExited,
+            Require(WindowsServiceListenerSnapshot.StopProcessesUsingExecutable(Path.Combine(root, "absent", name), quiescenceDeadline.Token).Length == 0 && !foreign.HasExited,
                 "missing destination enumerates matching real rows and preserves foreign path");
             // Repeat actual exit/capture overlap while retaining the caller's
             // Process handle. A dead process may remain in a Toolhelp snapshot.
@@ -96,6 +158,7 @@ internal static class Program
             Require(await EgoistShield.Service.Program.Main(["--telegram-runtime-cleanup", "--runtime", "primary", "--console"]) != 0,
                 "actual CLI refuses mixed service mode before native cleanup");
             Console.WriteLine(JsonSerializer.Serialize(new { kind = "actual-harmless-native-runtime-cleanup", actualNativeApis = true, checks = Checks,
+                controlledApiErrorSeamUsed = true, fabricatedIdentityData = false,
                 scmWrites = false, dnsWrites = false, registryWrites = false, serviceInstallationVerified = false }));
             return 0;
         }
@@ -106,6 +169,10 @@ internal static class Program
             await ExitOwnChild(restarted);
         }
     }
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern SafeProcessHandle OpenProcess(uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, int processId);
+
     private static Process Child(string executable, string root)
     {
         var child = new Process { StartInfo = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true,

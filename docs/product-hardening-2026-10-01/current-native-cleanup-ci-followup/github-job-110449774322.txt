@@ -1,0 +1,1456 @@
+﻿2026-10-01T15:40:47.3421188Z Current runner version: '2.337.0'
+2026-10-01T15:40:47.3461520Z ##[group]Runner Image Provisioner
+2026-10-01T15:40:47.3462822Z Hosted Compute Agent
+2026-10-01T15:40:47.3463731Z Version: 20260901.588
+2026-10-01T15:40:47.3466408Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+2026-10-01T15:40:47.3468167Z Build Date: 2026-09-01T19:56:44Z
+2026-10-01T15:40:47.3469420Z Worker ID: {af98360b-a8ee-46b3-9def-74ea9ab78a1d}
+2026-10-01T15:40:47.3471147Z Azure Region: northcentralus
+2026-10-01T15:40:47.3472197Z ##[endgroup]
+2026-10-01T15:40:47.3475259Z ##[group]Operating System
+2026-10-01T15:40:47.3476362Z Microsoft Windows Server 2025
+2026-10-01T15:40:47.3477474Z 10.0.26100
+2026-10-01T15:40:47.3478330Z Datacenter
+2026-10-01T15:40:47.3479175Z ##[endgroup]
+2026-10-01T15:40:47.3480159Z ##[group]Runner Image
+2026-10-01T15:40:47.3481348Z Image: windows-2025-vs2026
+2026-10-01T15:40:47.3482990Z Version: 20260925.250.1
+2026-10-01T15:40:47.3487112Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260925.250/images/windows/Windows2025-VS2026-Readme.md
+2026-10-01T15:40:47.3491591Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260925.250
+2026-10-01T15:40:47.3494139Z ##[endgroup]
+2026-10-01T15:40:47.3496950Z ##[group]GITHUB_TOKEN Permissions
+2026-10-01T15:40:47.3501061Z Contents: read
+2026-10-01T15:40:47.3502700Z Metadata: read
+2026-10-01T15:40:47.3504353Z ##[endgroup]
+2026-10-01T15:40:47.3508858Z Secret source: Actions
+2026-10-01T15:40:47.3510540Z Cache mode: write
+2026-10-01T15:40:47.3511639Z Prepare workflow directory
+2026-10-01T15:40:47.4148820Z Prepare all required actions
+2026-10-01T15:40:47.4212988Z Getting action download info
+2026-10-01T15:40:47.7153329Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-01T15:40:47.8460307Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-10-01T15:40:48.0907760Z Download action repository 'actions/setup-dotnet@v6' (SHA:a98b56852c35b8e3190ac28c8c2271da59106c68)
+2026-10-01T15:40:48.5256285Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-10-01T15:40:48.6779329Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-01T15:40:49.1607151Z Complete job name: test
+2026-10-01T15:40:49.3696108Z ##[group]Run actions/checkout@v4
+2026-10-01T15:40:49.3697624Z with:
+2026-10-01T15:40:49.3698542Z   persist-credentials: false
+2026-10-01T15:40:49.3699678Z   repository: egoist-ai1/egoist-lagom
+2026-10-01T15:40:49.3708759Z   token: ***
+2026-10-01T15:40:49.3709502Z   ssh-strict: true
+2026-10-01T15:40:49.3710286Z   ssh-user: git
+2026-10-01T15:40:49.3711010Z   clean: true
+2026-10-01T15:40:49.3711770Z   sparse-checkout-cone-mode: true
+2026-10-01T15:40:49.3712684Z   fetch-depth: 1
+2026-10-01T15:40:49.3713410Z   fetch-tags: false
+2026-10-01T15:40:49.3714165Z   show-progress: true
+2026-10-01T15:40:49.3714968Z   lfs: false
+2026-10-01T15:40:49.3715670Z   submodules: false
+2026-10-01T15:40:49.3716439Z   set-safe-directory: true
+2026-10-01T15:40:49.3717312Z   allow-unsafe-pr-checkout: false
+2026-10-01T15:40:49.3718465Z env:
+2026-10-01T15:40:49.3719172Z   DOTNET_MULTILEVEL_LOOKUP: 0
+2026-10-01T15:40:49.3720052Z   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+2026-10-01T15:40:49.3720956Z   DOTNET_NOLOGO: 1
+2026-10-01T15:40:49.3722045Z ##[endgroup]
+2026-10-01T15:40:49.5247822Z Syncing repository: egoist-ai1/egoist-lagom
+2026-10-01T15:40:49.5250326Z ##[group]Getting Git version info
+2026-10-01T15:40:49.5251483Z Working directory is 'D:\a\egoist-lagom\egoist-lagom'
+2026-10-01T15:40:49.6269923Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-10-01T15:40:49.9683990Z git version 2.55.0.windows.5
+2026-10-01T15:40:49.9730563Z ##[endgroup]
+2026-10-01T15:40:49.9748839Z Temporarily overriding HOME='D:\a\_temp\11c82a03-72ac-44e0-a963-a7de2cdc1125' before making global git config changes
+2026-10-01T15:40:49.9759120Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-01T15:40:49.9761500Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\egoist-lagom\egoist-lagom
+2026-10-01T15:40:50.0383847Z Deleting the contents of 'D:\a\egoist-lagom\egoist-lagom'
+2026-10-01T15:40:50.0390032Z ##[group]Initializing the repository
+2026-10-01T15:40:50.0398818Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\egoist-lagom\egoist-lagom
+2026-10-01T15:40:50.1450870Z Initialized empty Git repository in D:/a/egoist-lagom/egoist-lagom/.git/
+2026-10-01T15:40:50.1496923Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/egoist-ai1/egoist-lagom
+2026-10-01T15:40:50.2384415Z ##[endgroup]
+2026-10-01T15:40:50.2386704Z ##[group]Disabling automatic garbage collection
+2026-10-01T15:40:50.2393265Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-10-01T15:40:50.2725845Z ##[endgroup]
+2026-10-01T15:40:50.2727994Z ##[group]Setting up auth
+2026-10-01T15:40:50.2737411Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-01T15:40:50.3126910Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-01T15:40:51.6674705Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-01T15:40:51.6970961Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-01T15:40:52.2482017Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-01T15:40:52.2786236Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-01T15:40:52.8081448Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-10-01T15:40:52.8400067Z ##[endgroup]
+2026-10-01T15:40:52.8403561Z ##[group]Fetching the repository
+2026-10-01T15:40:52.8415802Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +a08e34f8acadf191a1d26b923b190ecc54d7dd9a:refs/remotes/origin/codex/lagom-production-audit
+2026-10-01T15:40:55.3212684Z From https://github.com/egoist-ai1/egoist-lagom
+2026-10-01T15:40:55.3214691Z  * [new ref]         a08e34f8acadf191a1d26b923b190ecc54d7dd9a -> origin/codex/lagom-production-audit
+2026-10-01T15:40:55.3260056Z ##[endgroup]
+2026-10-01T15:40:55.3260588Z ##[group]Determining the checkout info
+2026-10-01T15:40:55.3262984Z ##[endgroup]
+2026-10-01T15:40:55.3277286Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-10-01T15:40:55.3725247Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-10-01T15:40:55.4079420Z ##[group]Checking out the ref
+2026-10-01T15:40:55.4088900Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B codex/lagom-production-audit refs/remotes/origin/codex/lagom-production-audit
+2026-10-01T15:40:56.2321577Z Switched to a new branch 'codex/lagom-production-audit'
+2026-10-01T15:40:56.2338378Z branch 'codex/lagom-production-audit' set up to track 'origin/codex/lagom-production-audit'.
+2026-10-01T15:40:56.2731607Z ##[endgroup]
+2026-10-01T15:40:56.2739505Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-10-01T15:40:56.2997561Z a08e34f8acadf191a1d26b923b190ecc54d7dd9a
+2026-10-01T15:40:56.3037188Z ##[group]Removing auth
+2026-10-01T15:40:56.3045066Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-01T15:40:56.3332648Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-01T15:40:56.9172970Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-01T15:40:56.9470507Z http.https://github.com/.extraheader
+2026-10-01T15:40:56.9518865Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-10-01T15:40:56.9841223Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-01T15:40:57.5297952Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-01T15:40:57.5610224Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-01T15:40:58.1212121Z ##[endgroup]
+2026-10-01T15:40:58.1613832Z ##[group]Run if ($env:NATIVE_ACCEPTANCE -eq 'true' -and $env:PACKAGE_CANDIDATE -ne 'true') { throw 'Native acceptance requires a packaged candidate.' }
+2026-10-01T15:40:58.1614936Z [36;1mif ($env:NATIVE_ACCEPTANCE -eq 'true' -and $env:PACKAGE_CANDIDATE -ne 'true') { throw 'Native acceptance requires a packaged candidate.' }[0m
+2026-10-01T15:40:58.1615957Z [36;1mif ($env:SIGNED_LEGACY_RELEASE_ID -and $env:SIGNED_LEGACY_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Signed legacy release ID must be an exact GitHub release ID.' }[0m
+2026-10-01T15:40:58.2284896Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T15:40:58.2285469Z env:
+2026-10-01T15:40:58.2285745Z   DOTNET_MULTILEVEL_LOOKUP: 0
+2026-10-01T15:40:58.2286125Z   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+2026-10-01T15:40:58.2286446Z   DOTNET_NOLOGO: 1
+2026-10-01T15:40:58.2286723Z   NATIVE_ACCEPTANCE: false
+2026-10-01T15:40:58.2287041Z   PACKAGE_CANDIDATE: false
+2026-10-01T15:40:58.2287417Z   SIGNED_LEGACY_RELEASE_ID: 401108956
+2026-10-01T15:40:58.2287760Z ##[endgroup]
+2026-10-01T15:40:58.7276382Z ##[group]Run $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+2026-10-01T15:40:58.7277176Z [36;1m$sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version[0m
+2026-10-01T15:40:58.7277819Z [36;1mif ($sdkPin -notmatch '^\d+\.\d+\.\d+$') { throw 'global.json must select an exact stable SDK' }[0m
+2026-10-01T15:40:58.7278294Z [36;1m"version=$sdkPin" >> $env:GITHUB_OUTPUT[0m
+2026-10-01T15:40:58.7278777Z [36;1m"DOTNET_INSTALL_DIR=$(Join-Path $env:RUNNER_TEMP 'lagom-checks-dotnet')" >> $env:GITHUB_ENV[0m
+2026-10-01T15:40:58.7350071Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T15:40:58.7350445Z env:
+2026-10-01T15:40:58.7350638Z   DOTNET_MULTILEVEL_LOOKUP: 0
+2026-10-01T15:40:58.7350882Z   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+2026-10-01T15:40:58.7351107Z   DOTNET_NOLOGO: 1
+2026-10-01T15:40:58.7351294Z ##[endgroup]
+2026-10-01T15:40:59.2125243Z ##[group]Run actions/setup-node@v4
+2026-10-01T15:40:59.2125577Z with:
+2026-10-01T15:40:59.2125765Z   node-version: 24
+2026-10-01T15:40:59.2125968Z   cache: npm
+2026-10-01T15:40:59.2126151Z   always-auth: false
+2026-10-01T15:40:59.2126361Z   check-latest: false
+2026-10-01T15:40:59.2128704Z   token: ***
+2026-10-01T15:40:59.2128889Z env:
+2026-10-01T15:40:59.2129073Z   DOTNET_MULTILEVEL_LOOKUP: 0
+2026-10-01T15:40:59.2129316Z   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+2026-10-01T15:40:59.2129552Z   DOTNET_NOLOGO: 1
+2026-10-01T15:40:59.2129789Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:40:59.2130079Z ##[endgroup]
+2026-10-01T15:40:59.4017745Z Found in cache @ C:\hostedtoolcache\windows\node\24.21.0\x64
+2026-10-01T15:40:59.4025551Z (node:8740) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-01T15:40:59.4026759Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-01T15:40:59.4029556Z ##[group]Environment details
+2026-10-01T15:41:17.2701981Z node: v24.21.0
+2026-10-01T15:41:17.2702352Z npm: 11.19.0
+2026-10-01T15:41:17.2702641Z yarn: 1.22.22
+2026-10-01T15:41:17.2703550Z ##[endgroup]
+2026-10-01T15:41:17.3549060Z [command]C:\Windows\system32\cmd.exe /D /S /C "C:\hostedtoolcache\windows\node\24.21.0\x64\npm.cmd config get cache"
+2026-10-01T15:41:18.3908261Z C:\npm\cache
+2026-10-01T15:41:18.7249074Z Cache hit for: node-cache-Windows-x64-npm-cefcb963e52f6ab6cc3c573f31716317af42fd41e48706b5eb594ab15860b8f2
+2026-10-01T15:41:18.7360387Z (node:8740) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-01T15:41:19.1237102Z Received 8686140 of 8686140 (100.0%), 29.9 MBs/sec
+2026-10-01T15:41:19.1237670Z Cache Size: ~8 MB (8686140 B)
+2026-10-01T15:41:19.1320325Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/a70bbde5-2ff8-4820-8905-79ab8d115436/cache.tzst -P -C D:/a/egoist-lagom/egoist-lagom --force-local --use-compress-program "zstd -d"
+2026-10-01T15:41:19.6322484Z Cache restored successfully
+2026-10-01T15:41:19.6339258Z Cache restored from key: node-cache-Windows-x64-npm-cefcb963e52f6ab6cc3c573f31716317af42fd41e48706b5eb594ab15860b8f2
+2026-10-01T15:41:19.6785983Z ##[group]Run actions/setup-dotnet@v6
+2026-10-01T15:41:19.6786336Z with:
+2026-10-01T15:41:19.6786555Z   dotnet-version: 8.0.x
+10.0.401
+
+2026-10-01T15:41:19.6786809Z   cache: false
+2026-10-01T15:41:19.6786993Z env:
+2026-10-01T15:41:19.6787178Z   DOTNET_MULTILEVEL_LOOKUP: 0
+2026-10-01T15:41:19.6787418Z   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+2026-10-01T15:41:19.6787679Z   DOTNET_NOLOGO: 1
+2026-10-01T15:41:19.6787945Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:41:19.6788246Z ##[endgroup]
+2026-10-01T15:41:19.9562267Z [command]"C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -Sta -NoProfile -NonInteractive -ExecutionPolicy Unrestricted -Command & 'D:\a\_actions\actions\setup-dotnet\v6\externals\install-dotnet.ps1' -SkipNonVersionedFiles -Runtime dotnet -Channel LTS
+2026-10-01T15:41:22.6191927Z dotnet-install: Downloaded file https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.12/dotnet-runtime-10.0.12-win-x64.zip size is 36960258 bytes.
+2026-10-01T15:41:22.6196333Z dotnet-install: Either downloaded or local package size can not be measured. One of them may be corrupted.
+2026-10-01T15:41:22.6220405Z dotnet-install: Extracting the archive.
+2026-10-01T15:41:23.3278985Z dotnet-install: Adding to current process PATH: "D:\a\_temp\lagom-checks-dotnet\". Note: This change will not be visible if PowerShell was run as a child process.
+2026-10-01T15:41:23.3298418Z dotnet-install: Note that the script does not ensure your Windows version is supported during the installation.
+2026-10-01T15:41:23.3308774Z dotnet-install: To check the list of supported versions, go to https://learn.microsoft.com/dotnet/core/install/windows#supported-versions
+2026-10-01T15:41:23.3319169Z dotnet-install: Installed version is 10.0.12
+2026-10-01T15:41:23.3323683Z dotnet-install: Installation finished
+2026-10-01T15:41:23.4972792Z [command]"C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -Sta -NoProfile -NonInteractive -ExecutionPolicy Unrestricted -Command & 'D:\a\_actions\actions\setup-dotnet\v6\externals\install-dotnet.ps1' -SkipNonVersionedFiles -Channel 8.0
+2026-10-01T15:41:29.3054114Z dotnet-install: Downloaded file https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.425/dotnet-sdk-8.0.425-win-x64.zip size is 285157731 bytes.
+2026-10-01T15:41:29.3061279Z dotnet-install: Either downloaded or local package size can not be measured. One of them may be corrupted.
+2026-10-01T15:41:29.3088107Z dotnet-install: Extracting the archive.
+2026-10-01T15:41:38.8211450Z dotnet-install: Adding to current process PATH: "D:\a\_temp\lagom-checks-dotnet\". Note: This change will not be visible if PowerShell was run as a child process.
+2026-10-01T15:41:38.8227504Z dotnet-install: Note that the script does not ensure your Windows version is supported during the installation.
+2026-10-01T15:41:38.8238813Z dotnet-install: To check the list of supported versions, go to https://learn.microsoft.com/dotnet/core/install/windows#supported-versions
+2026-10-01T15:41:38.8247962Z dotnet-install: Installed version is 8.0.425
+2026-10-01T15:41:38.8255655Z dotnet-install: Installation finished
+2026-10-01T15:41:38.9504052Z [command]"C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -Sta -NoProfile -NonInteractive -ExecutionPolicy Unrestricted -Command & 'D:\a\_actions\actions\setup-dotnet\v6\externals\install-dotnet.ps1' -SkipNonVersionedFiles -Runtime dotnet -Channel LTS
+2026-10-01T15:41:39.7177976Z dotnet-install: .NET Core Runtime with version '10.0.12' is already installed.
+2026-10-01T15:41:39.7242542Z dotnet-install: Adding to current process PATH: "D:\a\_temp\lagom-checks-dotnet\". Note: This change will not be visible if PowerShell was run as a child process.
+2026-10-01T15:41:39.8899870Z [command]"C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -Sta -NoProfile -NonInteractive -ExecutionPolicy Unrestricted -Command & 'D:\a\_actions\actions\setup-dotnet\v6\externals\install-dotnet.ps1' -SkipNonVersionedFiles -Version 10.0.401
+2026-10-01T15:41:45.8528466Z dotnet-install: Downloaded file https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.401/dotnet-sdk-10.0.401-win-x64.zip size is 300608304 bytes.
+2026-10-01T15:41:45.8530820Z dotnet-install: Either downloaded or local package size can not be measured. One of them may be corrupted.
+2026-10-01T15:41:45.8556162Z dotnet-install: Extracting the archive.
+2026-10-01T15:41:54.6735773Z dotnet-install: Adding to current process PATH: "D:\a\_temp\lagom-checks-dotnet\". Note: This change will not be visible if PowerShell was run as a child process.
+2026-10-01T15:41:54.6753008Z dotnet-install: Note that the script does not ensure your Windows version is supported during the installation.
+2026-10-01T15:41:54.6758726Z dotnet-install: To check the list of supported versions, go to https://learn.microsoft.com/dotnet/core/install/windows#supported-versions
+2026-10-01T15:41:54.6761582Z dotnet-install: Installed version is 10.0.401
+2026-10-01T15:41:54.6766587Z dotnet-install: Installation finished
+2026-10-01T15:41:54.7497706Z ##[group]Run actions/setup-python@v5
+2026-10-01T15:41:54.7498066Z with:
+2026-10-01T15:41:54.7498278Z   python-version: 3.12
+2026-10-01T15:41:54.7498511Z   check-latest: false
+2026-10-01T15:41:54.7500858Z   token: ***
+2026-10-01T15:41:54.7501076Z   update-environment: true
+2026-10-01T15:41:54.7501321Z   allow-prereleases: false
+2026-10-01T15:41:54.7501549Z   freethreaded: false
+2026-10-01T15:41:54.7501759Z env:
+2026-10-01T15:41:54.7501943Z   DOTNET_MULTILEVEL_LOOKUP: 0
+2026-10-01T15:41:54.7502210Z   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+2026-10-01T15:41:54.7502446Z   DOTNET_NOLOGO: 1
+2026-10-01T15:41:54.7502696Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:41:54.7503040Z   DOTNET_ROOT: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:41:54.7503318Z ##[endgroup]
+2026-10-01T15:41:54.9117607Z ##[group]Installed versions
+2026-10-01T15:41:54.9325017Z (node:4608) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-01T15:41:54.9326541Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-01T15:41:54.9327578Z Successfully set up CPython (3.12.10)
+2026-10-01T15:41:54.9328303Z ##[endgroup]
+2026-10-01T15:41:54.9600847Z ##[group]Run $testWork = Join-Path $env:RUNNER_TEMP 'lagom-tests'
+2026-10-01T15:41:54.9601473Z [36;1m$testWork = Join-Path $env:RUNNER_TEMP 'lagom-tests'[0m
+2026-10-01T15:41:54.9602014Z [36;1mNew-Item -ItemType Directory -Path $testWork -Force | Out-Null[0m
+2026-10-01T15:41:54.9603344Z [36;1m$dotnetPath = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'[0m
+2026-10-01T15:41:54.9603816Z [36;1m$actualSdk = & $dotnetPath --version[0m
+2026-10-01T15:41:54.9604219Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T15:41:54.9604760Z [36;1m$sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version[0m
+2026-10-01T15:41:54.9605499Z [36;1mif ($actualSdk.Trim() -ne $sdkPin) { throw "SDK mismatch: expected $sdkPin, received $actualSdk" }[0m
+2026-10-01T15:41:54.9606212Z [36;1m. ./scripts/resolve-git-openssl.ps1[0m
+2026-10-01T15:41:54.9607258Z [36;1m$gitApplicationPaths = @((Get-Command git -CommandType Application -ErrorAction Stop).Source)[0m
+2026-10-01T15:41:54.9607973Z [36;1m$opensslPath = Resolve-GitOpenSsl -GitApplicationPaths $gitApplicationPaths[0m
+2026-10-01T15:41:54.9608460Z [36;1m& $opensslPath version[0m
+2026-10-01T15:41:54.9608801Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T15:41:54.9609207Z [36;1m"LAGOM_TEST_TEMP=$testWork" >> $env:GITHUB_ENV[0m
+2026-10-01T15:41:54.9609688Z [36;1m"LAGOM_TEST_POWERSHELL=$(Join-Path $PSHOME 'pwsh.exe')" >> $env:GITHUB_ENV[0m
+2026-10-01T15:41:54.9610189Z [36;1m"LAGOM_DNS_TEST_WORK=$testWork" >> $env:GITHUB_ENV[0m
+2026-10-01T15:41:54.9610626Z [36;1m"LAGOM_DNS_TEST_OPENSSL=$opensslPath" >> $env:GITHUB_ENV[0m
+2026-10-01T15:41:54.9611070Z [36;1m"EGOIST_RELEASE_TEST_DIR=$testWork" >> $env:GITHUB_ENV[0m
+2026-10-01T15:41:54.9611591Z [36;1m"EGOIST_RELEASE_PYTHON=$env:pythonLocation\python.exe" >> $env:GITHUB_ENV[0m
+2026-10-01T15:41:54.9612114Z [36;1m"EGOIST_PACKAGING_TEST_DIR=$testWork" >> $env:GITHUB_ENV[0m
+2026-10-01T15:41:54.9612600Z [36;1m"SHIELD_PYTHON=$env:pythonLocation\python.exe" >> $env:GITHUB_ENV[0m
+2026-10-01T15:41:54.9613042Z [36;1m"TEMP=$testWork" >> $env:GITHUB_ENV[0m
+2026-10-01T15:41:54.9613364Z [36;1m"TMP=$testWork" >> $env:GITHUB_ENV[0m
+2026-10-01T15:41:54.9685771Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T15:41:54.9686155Z env:
+2026-10-01T15:41:54.9686363Z   DOTNET_MULTILEVEL_LOOKUP: 0
+2026-10-01T15:41:54.9686628Z   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+2026-10-01T15:41:54.9686881Z   DOTNET_NOLOGO: 1
+2026-10-01T15:41:54.9687135Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:41:54.9687482Z   DOTNET_ROOT: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:41:54.9687860Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:41:54.9688370Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.10\x64/lib/pkgconfig
+2026-10-01T15:41:54.9688854Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:41:54.9689293Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:41:54.9689735Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:41:54.9690084Z ##[endgroup]
+2026-10-01T15:41:58.4851734Z OpenSSL 3.5.7 9 Jun 2026 (Library: OpenSSL 3.5.7 9 Jun 2026)
+2026-10-01T15:41:58.5901175Z ##[group]Run npm ci
+2026-10-01T15:41:58.5901493Z [36;1mnpm ci[0m
+2026-10-01T15:41:58.5901780Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T15:41:58.5976876Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T15:41:58.5977243Z env:
+2026-10-01T15:41:58.5977442Z   DOTNET_MULTILEVEL_LOOKUP: 0
+2026-10-01T15:41:58.5977710Z   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+2026-10-01T15:41:58.5977954Z   DOTNET_NOLOGO: 1
+2026-10-01T15:41:58.5978209Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:41:58.5978541Z   DOTNET_ROOT: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:41:58.5978925Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:41:58.5979407Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.10\x64/lib/pkgconfig
+2026-10-01T15:41:58.5979870Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:41:58.5980534Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:41:58.5981193Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:41:58.5981554Z   LAGOM_TEST_TEMP: D:\a\_temp\lagom-tests
+2026-10-01T15:41:58.5981914Z   LAGOM_TEST_POWERSHELL: C:\Program Files\PowerShell\7\pwsh.exe
+2026-10-01T15:41:58.5982284Z   LAGOM_DNS_TEST_WORK: D:\a\_temp\lagom-tests
+2026-10-01T15:41:58.5982642Z   LAGOM_DNS_TEST_OPENSSL: C:\Program Files\Git\usr\bin\openssl.exe
+2026-10-01T15:41:58.5983013Z   EGOIST_RELEASE_TEST_DIR: D:\a\_temp\lagom-tests
+2026-10-01T15:41:58.5983431Z   EGOIST_RELEASE_PYTHON: C:\hostedtoolcache\windows\Python\3.12.10\x64\python.exe
+2026-10-01T15:41:58.5983861Z   EGOIST_PACKAGING_TEST_DIR: D:\a\_temp\lagom-tests
+2026-10-01T15:41:58.5984255Z   SHIELD_PYTHON: C:\hostedtoolcache\windows\Python\3.12.10\x64\python.exe
+2026-10-01T15:41:58.5996084Z   TEMP: D:\a\_temp\lagom-tests
+2026-10-01T15:41:58.5996420Z   TMP: D:\a\_temp\lagom-tests
+2026-10-01T15:41:58.5996820Z ##[endgroup]
+2026-10-01T15:42:03.3407202Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+2026-10-01T15:42:03.3631476Z npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+2026-10-01T15:42:03.4904963Z npm warn deprecated rcedit@5.0.2: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+2026-10-01T15:42:04.6425953Z 
+2026-10-01T15:42:04.6427875Z added 33 packages, and audited 34 packages in 5s
+2026-10-01T15:42:04.6428375Z 
+2026-10-01T15:42:04.6430124Z 8 packages are looking for funding
+2026-10-01T15:42:04.6431468Z   run `npm fund` for details
+2026-10-01T15:42:04.6441615Z 
+2026-10-01T15:42:04.6441912Z found 0 vulnerabilities
+2026-10-01T15:42:04.6457297Z npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+2026-10-01T15:42:04.6458089Z npm warn install-scripts   esbuild@0.25.12 (postinstall: node install.js)
+2026-10-01T15:42:04.6458587Z npm warn install-scripts
+2026-10-01T15:42:04.6459323Z npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+2026-10-01T15:42:04.9469324Z ##[group]Run npm run build
+2026-10-01T15:42:04.9469673Z [36;1mnpm run build[0m
+2026-10-01T15:42:04.9469971Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T15:42:04.9540708Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T15:42:04.9541073Z env:
+2026-10-01T15:42:04.9541275Z   DOTNET_MULTILEVEL_LOOKUP: 0
+2026-10-01T15:42:04.9541529Z   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+2026-10-01T15:42:04.9541770Z   DOTNET_NOLOGO: 1
+2026-10-01T15:42:04.9542020Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:42:04.9542361Z   DOTNET_ROOT: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:42:04.9542728Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:04.9543200Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.10\x64/lib/pkgconfig
+2026-10-01T15:42:04.9543659Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:04.9544095Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:04.9544499Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:04.9544834Z   LAGOM_TEST_TEMP: D:\a\_temp\lagom-tests
+2026-10-01T15:42:04.9545179Z   LAGOM_TEST_POWERSHELL: C:\Program Files\PowerShell\7\pwsh.exe
+2026-10-01T15:42:04.9545526Z   LAGOM_DNS_TEST_WORK: D:\a\_temp\lagom-tests
+2026-10-01T15:42:04.9545875Z   LAGOM_DNS_TEST_OPENSSL: C:\Program Files\Git\usr\bin\openssl.exe
+2026-10-01T15:42:04.9546237Z   EGOIST_RELEASE_TEST_DIR: D:\a\_temp\lagom-tests
+2026-10-01T15:42:04.9546822Z   EGOIST_RELEASE_PYTHON: C:\hostedtoolcache\windows\Python\3.12.10\x64\python.exe
+2026-10-01T15:42:04.9547246Z   EGOIST_PACKAGING_TEST_DIR: D:\a\_temp\lagom-tests
+2026-10-01T15:42:04.9547631Z   SHIELD_PYTHON: C:\hostedtoolcache\windows\Python\3.12.10\x64\python.exe
+2026-10-01T15:42:04.9547989Z   TEMP: D:\a\_temp\lagom-tests
+2026-10-01T15:42:04.9548224Z   TMP: D:\a\_temp\lagom-tests
+2026-10-01T15:42:04.9548446Z ##[endgroup]
+2026-10-01T15:42:05.6750557Z 
+2026-10-01T15:42:05.6751456Z > egoist-lagom-desktop@3.8.0 build
+2026-10-01T15:42:05.6752088Z > node scripts/build.mjs
+2026-10-01T15:42:05.6752391Z 
+2026-10-01T15:42:07.9860993Z Built desktop main, preload, recovered renderer and component worker.
+2026-10-01T15:42:08.0786343Z ##[group]Run choco install nsis --no-progress --yes
+2026-10-01T15:42:08.0786832Z [36;1mchoco install nsis --no-progress --yes[0m
+2026-10-01T15:42:08.0787192Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T15:42:08.0857453Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T15:42:08.0857832Z env:
+2026-10-01T15:42:08.0858039Z   DOTNET_MULTILEVEL_LOOKUP: 0
+2026-10-01T15:42:08.0858287Z   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+2026-10-01T15:42:08.0858518Z   DOTNET_NOLOGO: 1
+2026-10-01T15:42:08.0858765Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:42:08.0859097Z   DOTNET_ROOT: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:42:08.0859452Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:08.0859910Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.10\x64/lib/pkgconfig
+2026-10-01T15:42:08.0860355Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:08.0860791Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:08.0861194Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:08.0861529Z   LAGOM_TEST_TEMP: D:\a\_temp\lagom-tests
+2026-10-01T15:42:08.0862311Z   LAGOM_TEST_POWERSHELL: C:\Program Files\PowerShell\7\pwsh.exe
+2026-10-01T15:42:08.0862804Z   LAGOM_DNS_TEST_WORK: D:\a\_temp\lagom-tests
+2026-10-01T15:42:08.0863160Z   LAGOM_DNS_TEST_OPENSSL: C:\Program Files\Git\usr\bin\openssl.exe
+2026-10-01T15:42:08.0863525Z   EGOIST_RELEASE_TEST_DIR: D:\a\_temp\lagom-tests
+2026-10-01T15:42:08.0863932Z   EGOIST_RELEASE_PYTHON: C:\hostedtoolcache\windows\Python\3.12.10\x64\python.exe
+2026-10-01T15:42:08.0864362Z   EGOIST_PACKAGING_TEST_DIR: D:\a\_temp\lagom-tests
+2026-10-01T15:42:08.0864758Z   SHIELD_PYTHON: C:\hostedtoolcache\windows\Python\3.12.10\x64\python.exe
+2026-10-01T15:42:08.0865118Z   TEMP: D:\a\_temp\lagom-tests
+2026-10-01T15:42:08.0865353Z   TMP: D:\a\_temp\lagom-tests
+2026-10-01T15:42:08.0865576Z ##[endgroup]
+2026-10-01T15:42:16.0765277Z Chocolatey v2.7.4
+2026-10-01T15:42:16.5280087Z Installing the following packages:
+2026-10-01T15:42:16.5284770Z nsis
+2026-10-01T15:42:16.5288581Z By installing, you accept licenses for the packages.
+2026-10-01T15:42:24.4247268Z Downloading package from source 'https://community.chocolatey.org/api/v2/'
+2026-10-01T15:42:24.9438476Z 
+2026-10-01T15:42:24.9439204Z nsis.install v3.13.0 [Approved]
+2026-10-01T15:42:24.9647907Z nsis.install package files install completed. Performing other installation steps.
+2026-10-01T15:42:31.5578931Z Installing nsis.install...
+2026-10-01T15:42:34.4997508Z nsis.install has been installed.
+2026-10-01T15:42:34.7736225Z   nsis.install can be automatically uninstalled.
+2026-10-01T15:42:34.9714386Z  The install of nsis.install was successful.
+2026-10-01T15:42:34.9717219Z   Deployed to 'C:\Program Files (x86)\NSIS'
+2026-10-01T15:42:34.9852107Z Downloading package from source 'https://community.chocolatey.org/api/v2/'
+2026-10-01T15:42:35.0796535Z 
+2026-10-01T15:42:35.0797163Z nsis v3.13.0 [Approved]
+2026-10-01T15:42:35.0814808Z nsis package files install completed. Performing other installation steps.
+2026-10-01T15:42:35.2552881Z  The install of nsis was successful.
+2026-10-01T15:42:35.2556351Z   Deployed to 'C:\ProgramData\chocolatey\lib\nsis'
+2026-10-01T15:42:35.2834294Z 
+2026-10-01T15:42:35.2834766Z Chocolatey installed 2/2 packages. 
+2026-10-01T15:42:35.2835417Z  See the log for details (C:\ProgramData\chocolatey\logs\chocolatey.log).
+2026-10-01T15:42:35.4493124Z ##[group]Run npm test
+2026-10-01T15:42:35.4493454Z [36;1mnpm test[0m
+2026-10-01T15:42:35.4493749Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T15:42:35.4570311Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T15:42:35.4570693Z env:
+2026-10-01T15:42:35.4570896Z   DOTNET_MULTILEVEL_LOOKUP: 0
+2026-10-01T15:42:35.4571161Z   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+2026-10-01T15:42:35.4571394Z   DOTNET_NOLOGO: 1
+2026-10-01T15:42:35.4571647Z   DOTNET_INSTALL_DIR: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:42:35.4571996Z   DOTNET_ROOT: D:\a\_temp\lagom-checks-dotnet
+2026-10-01T15:42:35.4572391Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:35.4572878Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.10\x64/lib/pkgconfig
+2026-10-01T15:42:35.4573390Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:35.4574167Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:35.4574953Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-10-01T15:42:35.4575398Z   LAGOM_TEST_TEMP: D:\a\_temp\lagom-tests
+2026-10-01T15:42:35.4575761Z   LAGOM_TEST_POWERSHELL: C:\Program Files\PowerShell\7\pwsh.exe
+2026-10-01T15:42:35.4576117Z   LAGOM_DNS_TEST_WORK: D:\a\_temp\lagom-tests
+2026-10-01T15:42:35.4576471Z   LAGOM_DNS_TEST_OPENSSL: C:\Program Files\Git\usr\bin\openssl.exe
+2026-10-01T15:42:35.4576836Z   EGOIST_RELEASE_TEST_DIR: D:\a\_temp\lagom-tests
+2026-10-01T15:42:35.4577248Z   EGOIST_RELEASE_PYTHON: C:\hostedtoolcache\windows\Python\3.12.10\x64\python.exe
+2026-10-01T15:42:35.4577680Z   EGOIST_PACKAGING_TEST_DIR: D:\a\_temp\lagom-tests
+2026-10-01T15:42:35.4578066Z   SHIELD_PYTHON: C:\hostedtoolcache\windows\Python\3.12.10\x64\python.exe
+2026-10-01T15:42:35.4578436Z   TEMP: D:\a\_temp\lagom-tests
+2026-10-01T15:42:35.4578679Z   TMP: D:\a\_temp\lagom-tests
+2026-10-01T15:42:35.4578974Z   SHIELD_MAKENSIS: C:\\Program Files (x86)\\NSIS\\makensis.exe
+2026-10-01T15:42:35.4579288Z ##[endgroup]
+2026-10-01T15:42:36.1930266Z 
+2026-10-01T15:42:36.1930923Z > egoist-lagom-desktop@3.8.0 test
+2026-10-01T15:42:36.1931557Z > node --test tests/*.test.mjs
+2026-10-01T15:42:36.1931810Z 
+2026-10-01T15:42:36.5633594Z ✔ a validated process token check does not depend on net.exe session availability (8.3251ms)
+2026-10-01T15:42:36.5640600Z ✔ a validated ordinary-user result is cached (1.8816ms)
+2026-10-01T15:42:36.5645519Z ✔ a transient native checker failure fails closed without poisoning the admin cache (2.701ms)
+2026-10-01T15:42:36.5652260Z ✔ an unavailable native checker remains unknown rather than declaring an ordinary user (2.8599ms)
+2026-10-01T15:42:36.5657736Z ✔ malformed token result never poisons the privilege cache (1.3479ms)
+2026-10-01T15:42:36.5666281Z ✔ native admin CLI checks the current Windows token before service initialization (0.5847ms)
+2026-10-01T15:42:36.9464548Z ✔ automatic off during an actual partial stream cannot dispatch Setup or restart (392.9966ms)
+2026-10-01T15:42:36.9576933Z ✔ automatic quitting during a partial stream cannot dispatch Setup (11.4623ms)
+2026-10-01T15:42:37.0075798Z ✔ automatic preference is checked again after asynchronous VPN readiness (49.3709ms)
+2026-10-01T15:42:37.0228728Z ✔ manual update remains allowed when the automatic preference is off (15.2037ms)
+2026-10-01T15:42:37.0353178Z ✔ real automatic scheduler off then on never revives the previous download (12.6956ms)
+2026-10-01T15:42:37.0510661Z ✔ real automatic scheduler dispatches a completed permitted update once (15.1603ms)
+2026-10-01T15:42:37.0630891Z ✔ off takes effect before asynchronous settings persistence completes (12.6383ms)
+2026-10-01T15:42:40.2032422Z ✔ Shield DNS recovery preserves the manager receiver (2.0468ms)
+2026-10-01T15:42:40.2035620Z ✔ direct DNS preparation rejects an explicit failed restore even with a stopped readback (1.1126ms)
+2026-10-01T15:42:40.2045286Z ✔ direct DNS preparation requires affirmative verification for a remaining resolver (0.4021ms)
+2026-10-01T15:42:40.2047026Z ✔ shield DNS preparation requires affirmative verification for a remaining resolver (0.2883ms)
+2026-10-01T15:42:40.2049061Z ✔ Shield rolls back newly enabled DNS with missing verification instead of saving connected (49.1395ms)
+2026-10-01T15:42:40.2055266Z ✔ direct auto-select cancellation during DNS preparation never starts a probe (3.6659ms)
+2026-10-01T15:42:40.2059060Z ✔ auto-select budget survives 64 rows of escaped/Unicode text "漢" (439.19ms)
+2026-10-01T15:42:40.2061126Z ✔ auto-select budget survives 64 rows of escaped/Unicode text "\u0000" (801.4054ms)
+2026-10-01T15:42:40.2064290Z ✔ auto-select budget survives 64 rows of escaped/Unicode text "\ud800" (2336.5908ms)
+2026-10-01T15:42:40.2069021Z ✔ compaction keeps truthful target totals and marks any omitted previews (19.1733ms)
+2026-10-01T15:42:40.2251528Z ✔ Windows curl: a reachable large page must not fail profile selection because of its body size (251.3513ms)
+2026-10-01T15:42:40.2254143Z ✔ Windows curl: redirects resolve to final status; denied endpoints remain failures (66.2363ms)
+2026-10-01T15:42:40.2255631Z ✔ Windows curl: a server that rejects HEAD can still confirm a bounded GET (62.1567ms)
+2026-10-01T15:42:40.2257085Z ✔ Windows curl: cancellation ends a pending header probe instead of returning success (33.8212ms)
+2026-10-01T15:42:40.2258627Z ✔ transient background failures have bounded backoff and success resets it (5.7223ms)
+2026-10-01T15:42:40.2259914Z ✔ concurrent background triggers share one operation and one follow-up timer (1.7101ms)
+2026-10-01T15:42:40.2261142Z ✔ disabling updates or quitting during a check leaves no timer (3.4819ms)
+2026-10-01T15:42:40.2261918Z ✔ VPN connection and component update defer automatic installation (2.0605ms)
+2026-10-01T15:42:40.2262812Z ✔ update readiness rechecks queued mutations and boot recovery after async VPN status (1.2037ms)
+2026-10-01T15:42:40.2263739Z ✔ updates preserve a verified background VPN and refuse unknown or transitioning service state (8.7929ms)
+2026-10-01T15:42:40.2264589Z ✔ background VPN update readiness rechecks the mutation queue after its observation (1.1675ms)
+2026-10-01T15:42:40.2265399Z ✔ background exceptions are caught and invalid signatures are not immediately retried (1.398ms)
+2026-10-01T15:42:40.2266193Z ✔ successful metadata checks do not reset repeated installation-failure backoff (1.7894ms)
+2026-10-01T15:42:40.2266960Z ✔ minimized second launch never shows, restores or changes the active window (1.3674ms)
+2026-10-01T15:42:40.2267717Z ✔ signed update floor blocks an unsupported source version before installation (3.6686ms)
+2026-10-01T15:42:40.2268417Z ✔ a timed-out boot repair cannot overlap a new network action (20.9493ms)
+2026-10-01T15:42:42.5478561Z ✔ protected reinstall emits branded progress, success and failure states (673.5346ms)
+2026-10-01T15:42:42.5480126Z ✔ worker failure before service changes ends the branded monitor with an error (4494.6883ms)
+2026-10-01T15:42:42.9833998Z ✔ protected updater records a readable final result for the relaunched app (435.4574ms)
+2026-10-01T15:42:43.5906509Z ✔ pre-handoff worker failure remains visible when its diagnostic journal cannot be written (607.4438ms)
+2026-10-01T15:42:43.6019268Z ✔ CI Git OpenSSL resolution handles duplicate applications and native layouts, and rejects missing or invalid inputs (901.7667ms)
+2026-10-01T15:42:43.6024395Z ✔ desktop facade reaches native DoH when capability is explicit and local state is absent (5.9427ms)
+2026-10-01T15:42:43.6026166Z ✔ running and stopped saved local configurations retain their worker mode (3.2004ms)
+2026-10-01T15:42:43.6027710Z ✔ custom-port and unsupported new configurations use the authenticated worker (2.6072ms)
+2026-10-01T15:42:43.6029598Z ✔ unknown local state and conflicting managed modes refuse mutations (4.6267ms)
+2026-10-01T15:42:43.6030817Z ✔ active native custom-port transfer preserves DNS (1.6584ms)
+2026-10-01T15:42:43.6033341Z ✔ local status survives native inspection failure while mutations stay blocked (1.7381ms)
+2026-10-01T15:42:43.6034880Z ✔ concurrent native and custom-port selections inspect state in mutation order (2.0428ms)
+2026-10-01T15:42:43.6036323Z ✔ one renderer refresh shares pending component statuses before opening Core pipes (5.8365ms)
+2026-10-01T15:42:43.6037648Z ✔ failed status can be retried and forced reads keep their own request (2.9287ms)
+2026-10-01T15:42:43.6038880Z ✔ distinct status arguments and cancellation calls are never collapsed (1.5829ms)
+2026-10-01T15:42:43.6040298Z ✔ packaged DoH reconfiguration avoids a redundant restore while stop restores DNS once (2.7652ms)
+2026-10-01T15:42:43.6041714Z ✔ broker rejects arbitrary method, inherited property and command arguments (11.3313ms)
+2026-10-01T15:42:43.6043475Z ✔ query endpoint cannot invoke mutations and optional arguments are accepted (3.3827ms)
+2026-10-01T15:42:43.6044560Z ✔ DoH accepts HTTPS and loopback addresses only (1.89ms)
+2026-10-01T15:42:43.6046207Z ✔ auto-select accepts only a Discord voice endpoint from the interactive desktop (2.4995ms)
+2026-10-01T15:42:43.6047371Z ✔ desktop facade passes its fresh Discord voice target to the Core worker (1.687ms)
+2026-10-01T15:42:43.6048186Z ✔ built worker rejects malformed requests without performing system operations (193.6394ms)
+2026-10-01T15:42:43.6049302Z ✔ Core service exchange waits for a legitimate busy pipe instance (2809.124ms)
+2026-10-01T15:42:43.6050029Z ✔ interrupted update download resumes automatically in the same action (1073.5539ms)
+2026-10-01T15:42:43.6050656Z ✔ non-resumable update failure is not retried (0.8952ms)
+2026-10-01T15:42:43.6051297Z ✔ upstream resolution failure in a running resolver never resets adapter DNS (3.961ms)
+2026-10-01T15:42:43.6052118Z ✔ unknown service state preserves both static DNS and external loopback resolvers (3.4549ms)
+2026-10-01T15:42:43.6053173Z ✔ confirmed stopped resolvers restore only Core-owned original DNS (1.1081ms)
+2026-10-01T15:42:43.6053940Z ✔ an external answering loopback resolver is preserved after own services stop (0.8314ms)
+2026-10-01T15:42:43.6055215Z ✔ no ownership journal result is not reported as a successful recovery (0.8799ms)
+2026-10-01T15:42:43.6056675Z ✔ clipboard import awaits Electron44 text, filters unrelated text and retains its cooldown (3.3903ms)
+2026-10-01T15:42:43.6058164Z ✔ clipboard copy reports success only after the asynchronous write has completed (1.5199ms)
+2026-10-01T15:42:43.6059225Z ✔ clipboard rejection returns an actionable failure without logging user content (1.0175ms)
+2026-10-01T15:42:43.6059920Z ✔ clipboard copy validates text before making a system call (0.7892ms)
+2026-10-01T15:42:50.9260578Z ✔ official Electron pin records identical archive digest and immutable release sources (7.7119ms)
+2026-10-01T15:42:50.9261865Z ✔ offline verification authenticates every extracted runtime file against the pinned ZIP (9309.9853ms)
+2026-10-01T15:42:51.2236663Z ✔ offline cache rejects corrupt archive (297.4179ms)
+2026-10-01T15:42:51.5009312Z ✔ offline cache rejects modified extracted DLL (277.0721ms)
+2026-10-01T15:42:51.7985004Z ✔ offline cache rejects injected stale DLL (297.4228ms)
+2026-10-01T15:42:52.0323918Z ✔ offline cache rejects missing runtime locale (233.4607ms)
+2026-10-01T15:42:52.2509551Z ✔ offline cache rejects altered official checksum file (218.9003ms)
+2026-10-01T15:42:52.5053852Z ✔ offline cache rejects inconsistent GitHub asset digest (254.1831ms)
+2026-10-01T15:42:52.7189009Z ✔ offline cache rejects inconsistent publication date (213.2251ms)
+2026-10-01T15:42:52.9184252Z ✔ offline cache rejects oversized checksum file (199.4985ms)
+2026-10-01T15:42:53.1518309Z ✔ runtime ZIP rejects unsafe before staging (233.358ms)
+2026-10-01T15:42:53.4185416Z ✔ runtime ZIP rejects case-collision before staging (266.6055ms)
+2026-10-01T15:42:53.6619676Z ✔ runtime ZIP rejects symlink before staging (243.2174ms)
+2026-10-01T15:42:53.9456256Z ✔ runtime ZIP rejects wrong-version before staging (282.4627ms)
+2026-10-01T15:42:58.4097918Z ✔ staging uses all new runtime files and product resources without old runtime DLLs, ASAR or Core (4464.9887ms)
+2026-10-01T15:42:58.6883186Z ✔ staging rejects an injected runtime file even after an earlier successful verification (278.52ms)
+2026-10-01T15:42:58.6894302Z ✔ production packaging verifies the pin before replacing output and embeds runtime/ordinary GUI/version provenance (1.3169ms)
+2026-10-01T15:42:58.7036376Z ✔ ESM main bundles initialize eager yaml and undici through createRequire (945.3639ms)
+2026-10-01T15:42:58.7037936Z ﹣ deferred reinstall plan validates the exact release without touching services (0.9189ms) # SKIP
+2026-10-01T15:42:58.7039333Z ﹣ deferred reinstall rejects a checksum mismatch before dispatch (0.1244ms) # SKIP
+2026-10-01T15:42:58.7040762Z ﹣ embedded installer dispatch validates itself without an external manifest (0.1091ms) # SKIP
+2026-10-01T15:42:58.7042626Z ✔ embedded installer dispatch rejects a PE with the wrong product identity (521.3033ms)
+2026-10-01T15:42:58.7043960Z ✔ worker starts watchdog before service stops and stops SystemDoH last (4.1685ms)
+2026-10-01T15:42:58.7045433Z ✔ embedded dispatch stages a canonical versioned installer and generates the worker manifest (1.6463ms)
+2026-10-01T15:42:58.7046914Z ✔ production installer preserves hidden restart and checks an actual app root (529.1181ms)
+2026-10-01T15:42:59.9345401Z ✔ protected boot recovery registration preserves ownership, bounds and verified retirement (16136.5128ms)
+2026-10-01T15:42:59.9479585Z ✔ installer fails safely before interrupting a sole local DNS dependency (845.9252ms)
+2026-10-01T15:42:59.9481812Z ✔ full production NSIS source links the maintenance dependency against a harmless payload (1341.4449ms)
+2026-10-01T15:42:59.9483601Z ✔ packager compiles the production NSIS source explicitly as UTF-8 with a BOM (1.1627ms)
+2026-10-01T15:42:59.9485486Z ✔ direct interactive install hands a sole-local-DNS upgrade to the protected worker exactly once (1.522ms)
+2026-10-01T15:42:59.9487263Z ✔ interactive upgrade stays on branded surfaces during handoff and duplicate launch (1.321ms)
+2026-10-01T15:42:59.9488863Z ✔ production NSIS handoff passes the exact running installer and launch preference to its embedded helper (1193.922ms)
+2026-10-01T15:42:59.9490461Z ✔ production NSIS writes readable Unicode progress for the branded window (73.2775ms)
+2026-10-01T15:42:59.9491750Z ✔ 32-bit NSIS invokes the packaged cleanup directly through 64-bit PowerShell (931.438ms)
+2026-10-01T15:42:59.9493036Z ✔ silent NSIS failure runs the production rollback function before exiting (84.069ms)
+2026-10-01T15:42:59.9494416Z ✔ runtime split recovery executes production functions and retains conflicting data (2187.1212ms)
+2026-10-01T15:42:59.9496079Z ✔ installer force-stops legacy processes and services only when their executable is under an owned root (606.7813ms)
+2026-10-01T15:42:59.9497563Z ✔ NSIS install mutex rejects a second installer before its work begins (2132.3589ms)
+2026-10-01T15:42:59.9499061Z ✔ interactive installer rejects an active deferred worker before showing configuration (2256.7961ms)
+2026-10-01T15:43:02.4380326Z ✔ cleanup refuses a missing, damaged or incomplete required helper before continuing (6333.9525ms)
+2026-10-01T15:43:04.4976852Z ✔ legacy installer bridge preserves verified launch booleans and waits for the prior lease/watchdog (5730.78ms)
+2026-10-01T15:43:04.5138495Z ✔ production installer lifecycle preserves policies, ownership, maintenance lease and interrupted stage (2768.6359ms)
+2026-10-01T15:43:04.5140826Z ✔ installer baseline preserves absent DNS families and refuses provider failure (1123.7611ms)
+2026-10-01T15:43:04.5143189Z ✔ concurrent production installer receipt writers retain every committed event (1244.7608ms)
+2026-10-01T15:43:04.7579424Z ✔ recovery reports pending application rollback and preserves the desktop launch gate (1024.5974ms)
+2026-10-01T15:43:07.2891518Z ✔ production watchdog retries warnings and releases an exact owned hung worker before recovery (3080.5883ms)
+2026-10-01T15:43:07.3009279Z ✔ installer quiescence blocks queued recovery and restores verified original startup intent (2594.8192ms)
+2026-10-01T15:43:08.7354421Z ✔ WinPS preserves exact SCM argv and refuses unverifiable legacy registration restores (3872.1979ms)
+2026-10-01T15:43:12.4464002Z ✔ Windows upgrade rejects a reachable foreign Telegram listener (5160.8851ms)
+2026-10-01T15:43:12.4575194Z ✔ uninstall serializes with upgrades and preserves pending recovery before destructive work (890.0483ms)
+2026-10-01T15:43:16.5519724Z ✔ identity publication and manual reinstall use verified PE/runtime ownership (8212.415ms)
+2026-10-01T15:43:16.5608942Z ✔ unsafe refusal never dispatches, silent workers never recurse and framework gate precedes extraction (3.8319ms)
+2026-10-01T15:43:27.1773955Z ✔ actual cleanup safety phase distinguishes protected handoff, unsafe failure and first install (10622.5159ms)
+2026-10-01T15:43:27.1913319Z ✔ installer restores secret component directories before copying and requires observed owned VPN readiness (4817.0185ms)
+2026-10-01T15:43:27.1916185Z ✔ production worker restores the preserved profile and exact adapter DNS (686.3044ms)
+2026-10-01T15:43:27.1917775Z ✔ NSIS preserves extraction errors and restores the stable working directory for shortcuts (1.6863ms)
+2026-10-01T15:43:27.1919483Z ✔ actual NSIS releases its install-root CWD before the production rollback function renames it (224.7999ms)
+2026-10-01T15:43:27.1921871Z ✔ protected upgrade migrates verified stopped wrappers and restores their original bytes on failure (2483.6918ms)
+2026-10-01T15:43:27.1923853Z ✔ worker and watchdog persist handoff before stops and gate rollback before handoff (4.2395ms)
+2026-10-01T15:43:27.1925177Z ✔ rebranding keeps the established user settings directory (4.117ms)
+2026-10-01T15:43:27.1926603Z ✔ release manifest accepts only the versioned Shield installer at the canonical repository (4.007ms)
+2026-10-01T15:43:27.1928065Z ✔ desktop updater hands verified Setup to the protected branded installer (3.9185ms)
+2026-10-01T15:43:27.1929594Z ✔ a public release older than the installed app does not require a missing versioned asset (2.6138ms)
+2026-10-01T15:43:27.1931276Z ✔ enabled background updater installs an available trusted release and restarts only after dispatch (2.7154ms)
+2026-10-01T15:43:27.1933054Z ✔ automatic component updater coordinates Flowseal and Telegram Proxy and reports partial outcomes (2.6373ms)
+2026-10-01T15:43:27.1934789Z ✔ Shield preemption never evicts a live VPN mutation, even after its timestamp looks stale (32.4933ms)
+2026-10-01T15:43:27.1936172Z ✔ Shield preemption cannot bypass steady VPN ownership on timeout (23.241ms)
+2026-10-01T15:43:27.1937529Z ✔ Core mutations from separate clients are serialized before reaching the service (3.3601ms)
+2026-10-01T15:43:27.1938760Z ✔ Core mutation queue advances after a failed mutation (1.4483ms)
+2026-10-01T15:43:27.1940046Z ✔ Direct Zapret auto-select restores an unusable owned DNS resolver before probing (1.6282ms)
+2026-10-01T15:43:27.1941537Z ✔ Shield handoff waits for VPN owner and verifies stop before invoking the operation (1.9036ms)
+2026-10-01T15:43:27.1942926Z ✔ Shield handoff reports failed VPN stop and never runs the Shield mutation (1.558ms)
+2026-10-01T15:43:27.1944765Z ✔ Telegram ownership discovery failure never falls back to image-name killing or clears state (3.1233ms)
+2026-10-01T15:43:27.1946500Z ✔ Auto-select completion is compact enough for legacy Core envelopes while retaining the UI result (161.2907ms)
+2026-10-01T15:43:27.1948068Z ✔ Auto-select compaction enforces a byte budget for pathological diagnostics (141.0103ms)
+2026-10-01T15:43:27.1949463Z ✔ Component worker compacts only the completed Zapret auto-select response (6.6119ms)
+2026-10-01T15:43:27.1950583Z ✔ Built UI styles contain no red accent colors (3.7411ms)
+2026-10-01T15:43:27.1952362Z ✔ installer and background desktop PowerShell helpers never open visible console windows (6.1552ms)
+2026-10-01T15:43:27.1954966Z ✔ Generated DNS snapshot is valid Windows PowerShell syntax (227.6814ms)
+2026-10-01T15:43:27.1956427Z ✔ Installer uses one canonical path and never kills network processes by image name (2.7533ms)
+2026-10-01T15:43:27.1957799Z ✔ Installer cleanup recognizes current and legacy owned DNS journals (1.5681ms)
+2026-10-01T15:43:27.1959253Z ✔ a running Zapret wrapper without its worker is degraded and retains interception locks (2.9177ms)
+2026-10-01T15:43:27.1960720Z ✔ a running Telegram wrapper without its listener retains its port reservation (0.5577ms)
+2026-10-01T15:43:27.1962196Z ✔ confirmed ready runtimes are active while genuinely stopped runtimes release locks (0.6514ms)
+2026-10-01T15:43:27.1964062Z ✔ failed inspection preserves potential ownership instead of authorizing a conflict (0.8778ms)
+2026-10-01T15:43:27.1965577Z ✔ configured DoH with a failed verification is degraded and keeps DNS ownership (0.9007ms)
+2026-10-01T15:43:27.1967081Z ✔ an enabled background VPN retains route ownership until observed stopped and disabled (1.0356ms)
+2026-10-01T15:43:27.1968617Z ✔ background SOCKS readiness does not claim a Windows system proxy or GUI kill switch (1.946ms)
+2026-10-01T15:43:27.1970044Z ✔ Telegram not-installed preflight uses native TCP snapshot without PowerShell (9.8509ms)
+2026-10-01T15:43:27.1971489Z ✔ Telegram stopped preflight uses native TCP snapshot without PowerShell (2.3152ms)
+2026-10-01T15:43:27.1972926Z ✔ native Telegram running wrapper requires real path, birth and child ancestry proof (10.22ms)
+2026-10-01T15:43:27.1974473Z ✔ native managed Telegram proof uses fixed CLI PID/birth with exact allowed runtime path (7.7972ms)
+2026-10-01T15:43:27.1976001Z ✔ native foreign listener blocks service installation before any runtime publication (2.7248ms)
+2026-10-01T15:43:27.1977510Z ✔ native changed, malformed or unavailable listener proof never claims a free port (7.2387ms)
+2026-10-01T15:43:27.1979050Z ✔ WinWS empty and complete process sets use fixed native CLI without CIM or command lines (9.7386ms)
+2026-10-01T15:43:27.1980741Z ✔ WinWS unreadable, duplicated, malformed and unapproved rows fail closed without exposing output (14.8563ms)
+2026-10-01T15:43:27.1982427Z ✔ actual Windows native CLI/API probe uses only own harmless child and ephemeral listeners (10651.4943ms)
+2026-10-01T15:43:27.1984377Z ✔ route IP probe bounds a real stalled HTTP body, not just its headers (281.5119ms)
+2026-10-01T15:43:27.1985897Z ✔ route IP probe limits its response body before parsing (88.7797ms)
+2026-10-01T15:43:27.1987163Z ✔ route IP extraction rejects invalid addresses and explicit provider failure (3.6702ms)
+2026-10-01T15:43:27.1988509Z ✔ coordinator rejection completes manual reconnect supervisor state (11.7525ms)
+2026-10-01T15:43:27.1989829Z ✔ late manual connect result cannot rearm a cancelled reconnect generation (1.8969ms)
+2026-10-01T15:43:27.1991180Z ✔ caller cancellation interrupts Retry-After wait without another fetch (46.1308ms)
+2026-10-01T15:43:27.1992609Z ✔ HTTP retry allowlist is respected while default temporary-status retries remain (57.7349ms)
+2026-10-01T15:43:27.1993993Z ✔ state sanitization preserves exact subscription endpoint, URI, and SNI (2.483ms)
+2026-10-01T15:43:27.1995289Z ✔ Xray, sing-box and ping use exactly the configured server and TLS SNI (7.8645ms)
+2026-10-01T15:43:27.1996736Z ✔ SCM/CIM observation failure remains unknown instead of claiming no installed DNS service (2.6282ms)
+2026-10-01T15:43:27.1998206Z ✔ DNS status read started before invalidation cannot repopulate current cache (1.9756ms)
+2026-10-01T15:43:27.1999572Z ✔ a newer forced DNS status observation wins over an older still-pending read (2.1683ms)
+2026-10-01T15:43:27.2001041Z ✔ the real PowerShell CIM script distinguishes an empty result from an access failure (856.6219ms)
+2026-10-01T15:43:27.2002362Z ✔ network inspection reports its real supplied product version (3.2752ms)
+2026-10-01T15:43:27.2003884Z ✔ ping DoH fallback also bounds a stalled body after HTTP headers (232.1292ms)
+2026-10-01T15:43:27.2005897Z ✔ speed test cancellation interrupts its pending latency, download and upload sockets (94.2784ms)
+2026-10-01T15:43:27.2007353Z ✔ speed test cancellation also closes its pending proxy CONNECT request (17.8175ms)
+2026-10-01T15:43:27.2008932Z ✔ the registered cancel IPC closes only speed-test sockets and allows a fresh subsequent measurement (80.3597ms)
+2026-10-01T15:43:27.2010712Z ✔ subscription auto profile budget bounds a real stalled response and skips curl after cancellation (236.2592ms)
+2026-10-01T15:43:27.2012274Z ✔ subscription curl fallback shares the same total budget and abort signal (154.5629ms)
+2026-10-01T15:43:27.2013777Z ✔ subscription transport error logs and returned errors never expose secret URL paths (4.8775ms)
+2026-10-01T15:43:27.2015294Z ✔ an explicit deleted server ID fails without connecting to a different first server (6.6807ms)
+2026-10-01T15:43:27.2016752Z ✔ DNS readback must match each adapter even when every write reports success (1225.5399ms)
+2026-10-01T15:43:27.2017996Z ✔ DNS restoration follows the saved GUID to its new index (540.8964ms)
+2026-10-01T15:43:27.2019370Z ✔ a notification-only proxy retry keeps the journal until WinINet acknowledges restoration (5.3859ms)
+2026-10-01T15:43:27.2020772Z ✔ JSON and buffer helpers include body consumption in their timeout (75.7044ms)
+2026-10-01T15:43:27.2022817Z ✔ a body timeout retries the whole response and preserves the text result contract (74.9108ms)
+2026-10-01T15:43:27.2024883Z ✔ caller cancellation during body reading does not start another network attempt (3.0211ms)
+2026-10-01T15:43:27.2026247Z ✔ VPN suspension intent never bypasses an active Zapret mutation (30.1481ms)
+2026-10-01T15:43:27.2027729Z ✔ VPN exemption applies only to the Zapret owner and a declared suspension transition (53.7645ms)
+2026-10-01T15:43:28.0986698Z ✔ Telegram readiness requires its configured listener, even when SCM reports running (11.596ms)
+2026-10-01T15:43:28.0988928Z ✔ Telegram stop timeout does not kill workers behind a live SCM or claim success (3.8203ms)
+2026-10-01T15:43:28.0990433Z ✔ Telegram persistence repair preserves service registration (2.4089ms)
+2026-10-01T15:43:28.0992018Z ✔ Telegram restart preserves startup policy and closing the UI preserves an installed service (3.0015ms)
+2026-10-01T15:43:28.1030685Z ✔ Telegram start waits for an already starting SCM service without killing its emerging worker (2.915ms)
+2026-10-01T15:43:28.1033469Z ✔ Telegram discovery failures remain unknown instead of being treated as a missing service (2.9128ms)
+2026-10-01T15:43:28.1035649Z ✔ telegram-proxy-manager ignores a status sample that completes after cache invalidation (3.7472ms)
+2026-10-01T15:43:28.1037249Z ✔ zapret-manager ignores a status sample that completes after cache invalidation (6.0793ms)
+2026-10-01T15:43:28.1039292Z ✔ Zapret running wrapper without owned worker is explicitly unready (3.403ms)
+2026-10-01T15:43:28.1040236Z ✔ Zapret stop waits for a pending transition before allowing VPN handoff (3.0973ms)
+2026-10-01T15:43:28.1041702Z ✔ Zapret start waits for pending SCM startup before stale-process cleanup or another start (4.1132ms)
+2026-10-01T15:43:28.1042921Z ✔ Zapret profile selection preserves registration and does not restart an unchanged strategy (3.8182ms)
+2026-10-01T15:43:28.1044717Z ✔ Zapret failed strategy switch restores the previous running profile and configuration (2.5882ms)
+2026-10-01T15:43:28.1049089Z ✔ Zapret failed rollback reports both failures instead of promising restoration (3.701ms)
+2026-10-01T15:43:28.1050791Z ✔ VPN transient retry budget enters cooldown and recovers after a long outage (4.3998ms)
+2026-10-01T15:43:28.1052075Z ✔ VPN stale retry completion cannot release the new manual connection guard (1.6881ms)
+2026-10-01T15:43:28.1054216Z ✔ VPN auth failure requires user correction rather than periodic retries (1.5517ms)
+2026-10-01T15:43:28.1062940Z ✔ VPN runtime crashes use bounded cooldown rather than requiring a permanent manual reset (1.6164ms)
+2026-10-01T15:43:28.1065086Z ✔ coordinator deadline includes a hung read-only inspection and never invokes the mutation later (43.684ms)
+2026-10-01T15:43:28.1066858Z ✔ coordinator serializes a burst of network mutations without leaking locks or release waiters (484.313ms)
+2026-10-01T15:43:28.1068617Z ✔ Shield does not accept SCM running if the working component explicitly failed readiness (3.4765ms)
+2026-10-01T15:43:28.1070184Z ✔ Shield recovered live state clears a stale connection error while retaining the failed action (25.5584ms)
+2026-10-01T15:43:28.1071813Z ✔ Shield failed disconnect remains visible until every requested component is confirmed stopped (1.2142ms)
+2026-10-01T15:43:28.1073514Z ✔ VPN killed flag alone is not proof that the OS process has stopped (8.1597ms)
+2026-10-01T15:43:28.1074857Z ✔ VPN failed disconnect retains the active session for diagnosis and a safe stop retry (4.3089ms)
+2026-10-01T15:43:28.1076395Z ✔ VPN failed retired-session cleanup keeps its reference for the next cleanup attempt (10.2802ms)
+2026-10-01T15:43:28.1078104Z ✔ VPN signal-terminated process cleanup skips redundant kill and restores owned network settings (133.9649ms)
+2026-10-01T15:43:28.1079968Z ✔ VPN escalates termination through its exact child handle and verifies exit before restoring the proxy (3307.7451ms)
+2026-10-01T15:43:28.1081723Z ✔ shutdown deadline prevents subsequent service mutations after the UI has already quit (24.4105ms)
+2026-10-01T15:43:28.1083472Z ✔ VPN ninety-day virtual outage keeps one timer, bounded retry batches, and manual cancellation (3314.5952ms)
+2026-10-01T15:43:28.1085340Z ℹ 90 simulated days; 143009 failed reconnect calls; maximum queued retries: 1. No live network or elapsed-day soak.
+2026-10-01T15:43:28.1340731Z ✔ idle guard covers the asynchronous owner inspection before any lock is held (9.3309ms)
+2026-10-01T15:43:28.1342643Z ✔ idle guard includes a queued caller and remains busy when the first caller finishes (3.9778ms)
+2026-10-01T15:43:28.1344175Z ✔ finishing one independent mutation does not hide a still-running mutation (2.6611ms)
+2026-10-01T15:43:28.1345563Z ✔ steady service ownership is idle, but a caller waiting for it is not (22.1206ms)
+2026-10-01T15:43:28.1346923Z ✔ failed owner inspection releases the idle guard without calling the operation (2.3415ms)
+2026-10-01T15:43:28.1348616Z ✔ failed operation releases its existing locks and the whole-call idle guard (1.6137ms)
+2026-10-01T15:43:28.1349943Z ✔ boot-unready and malformed requests leave no outstanding idle guard (4.2408ms)
+2026-10-01T15:43:28.1351317Z ✔ boot readiness lost during inspection releases the guard before rejecting (1.9085ms)
+2026-10-01T15:43:28.1352819Z ✔ an inspection deadline releases the idle guard and a late reply cannot run the mutation (22.0742ms)
+2026-10-01T15:43:28.1354375Z ✔ owner inspection timeout identifies the pending provider without guessing ownership (28.5019ms)
+2026-10-01T15:43:28.1355885Z ✔ owner inspection diagnostics retain the failed provider and stable error ID (2.3692ms)
+2026-10-01T15:43:28.1357586Z ✔ network mutations wait for a steady VPN traffic route, while VPN disconnect can release its own proxy (41.3071ms)
+2026-10-01T15:43:28.1359376Z ✔ refresh merge keeps a user deletion and explicit deselection made while the request was pending (1.2905ms)
+2026-10-01T15:43:28.1361010Z ✔ import merge does not resurrect a subscription deleted while its network fetch was pending (0.4685ms)
+2026-10-01T15:43:28.1362293Z ✔ subscription requests omit HWID unless the user opted in (1.6086ms)
+2026-10-01T15:43:29.1123275Z ✔ production system-doh:apply accepts isAdmin=false through the confirmed Core contract (62.489ms)
+2026-10-01T15:43:29.1125855Z ✔ production system-doh:reset accepts isAdmin=false through the confirmed Core contract (21.8333ms)
+2026-10-01T15:43:29.1128841Z ✔ production system-doh:restart accepts isAdmin=false through the confirmed Core contract (19.2359ms)
+2026-10-01T15:43:29.1132550Z ✔ production system:set-dns-servers accepts isAdmin=false through the confirmed Core contract (16.8975ms)
+2026-10-01T15:43:29.1134827Z ✔ production system:reset-dns-servers accepts isAdmin=false through the confirmed Core contract (16.6044ms)
+2026-10-01T15:43:29.1136544Z ✔ production DNS refuses verifierAvailable before snapshots or teardown (3116.0837ms)
+2026-10-01T15:43:29.1720046Z ✔ production DNS refuses rejectHello before snapshots or teardown (64.0162ms)
+2026-10-01T15:43:29.2404575Z ✔ production DNS refuses unknownHello before snapshots or teardown (67.2667ms)
+2026-10-01T15:43:29.2839186Z ✔ a coreService property on an unwrapped DNS manager does not confer broker capability (35.0924ms)
+2026-10-01T15:43:29.3816363Z ✔ Core identity-probe, development-override, foreign PID and inner protocol replies cannot authorize DNS (105.7612ms)
+2026-10-01T15:43:29.4091214Z ✔ wrapped custom-port DNS uses only the fixed SystemDoH worker and typed DNS operation (27.5604ms)
+2026-10-01T15:43:29.4345187Z ✔ Core mutation failure preserves settings and never enables packaged direct fallback (25.5725ms)
+2026-10-01T15:43:29.4518615Z ✔ an unknown local DNS state fails without a worker or native mutation (17.2837ms)
+2026-10-01T15:43:29.5255129Z ✔ development direct DNS retains the administrative gate even with a wrapped Core client (73.6519ms)
+2026-10-01T15:43:29.5382926Z ✔ a replaced wrapped mutation is no longer recognized as a SystemDoH broker (12.8596ms)
+2026-10-01T15:43:32.6388332Z ✔ packaged administrative GUI also refuses missing Core without using a direct DNS path (3100.1118ms)
+2026-10-01T15:43:32.6638478Z ✔ only the existing administrative development path may use direct DNS fallback (25.3483ms)
+2026-10-01T15:43:32.6809399Z ✔ candidate source binding rejects modified and uncommitted inputs and detects a changed commit during packaging (1262.0255ms)
+2026-10-01T15:43:32.6811287Z ✔ diagnostic plan approval does not claim a network mutation, rollback, or connectivity verification (4.5557ms)
+2026-10-01T15:43:32.6812543Z ✔ unobserved component state stays unknown (2.0549ms)
+2026-10-01T15:43:32.6813607Z ✔ coordinator cache expires by elapsed time after wall clock rollback (3.1686ms)
+2026-10-01T15:43:32.6814965Z ✔ a forward wall clock correction does not prematurely cancel a bounded mutation (253.4892ms)
+2026-10-01T15:43:32.6816340Z ✔ diagnostic plan cache stays bounded across 2000 inputs and expires approvals (47.0095ms)
+2026-10-01T15:43:32.6817701Z ✔ the 129th coordinated mutation is refused while 128 operations are pending (148.7575ms)
+2026-10-01T15:43:32.6819200Z ✔ network plan IPC rejects unbounded or ambiguous intent before caching (2.5725ms)
+2026-10-01T15:43:32.6820811Z ✔ background VPN transitions can suspend steady Zapret while retaining mutual exclusion with live mutations (111.1409ms)
+2026-10-01T15:43:33.3911938Z ✔ shared download bounds a real missing-header response and retains the last good file (136.9392ms)
+2026-10-01T15:43:33.3913970Z ✔ shared download bounds a real stalled body and closes its connection (135.921ms)
+2026-10-01T15:43:33.3915425Z ✔ small real body drips cannot extend the total deadline (201.3639ms)
+2026-10-01T15:43:33.3918972Z ✔ caller cancellation after headers interrupts the body without publishing its partial file (43.9593ms)
+2026-10-01T15:43:33.3926348Z ✔ streaming byte caps reject a real chunked response before changing the last good file (23.151ms)
+2026-10-01T15:43:33.3928145Z ✔ open, ENOSPC, and zero-progress write failures close the reader and file before removing the stage (36.0128ms)
+2026-10-01T15:43:33.3930952Z ✔ a real failed publish leaves the previous file intact and removes its closed stage (21.5657ms)
+2026-10-01T15:43:33.3932712Z ✔ an actual exclusive-open collision preserves the preexisting stage and cancels the response (8.6292ms)
+2026-10-01T15:43:33.3936601Z ✔ reader-cleanup failure cannot suppress the write error or leave the actual file handle open (8.0266ms)
+2026-10-01T15:43:33.3938358Z ✔ short writes are completed, the file is flushed, and completion is emitted after publication (9.3584ms)
+2026-10-01T15:43:33.3941495Z ✔ declared and authenticated sizes must match bytes read before publication (42.5637ms)
+2026-10-01T15:43:33.3948530Z ✔ forbidden release URL and redirect destinations are rejected before they are requested (4.2228ms)
+2026-10-01T15:43:33.3956793Z ✔ authenticated GitHub CDN URLs retain their signed query and redirect chains are bounded (4.0441ms)
+2026-10-01T15:43:33.3959060Z ✔ cross-origin release redirects retain signed queries without forwarding account credentials (3.2779ms)
+2026-10-01T15:43:33.3961079Z ✔ actual desktop updater uses the shared redirect guard before any forbidden destination request (18.7673ms)
+2026-10-01T15:43:33.3962983Z ✔ release manifest accepts the exact canonical URL and rejects authority ambiguity (3.2167ms)
+2026-10-01T15:43:33.3965925Z ✔ trusted renderer URLs permit exactly the installed document without host or encoded ambiguity (5.4886ms)
+2026-10-01T15:43:33.3967866Z ✔ IPC accepts only the guarded main WebContents and its top frame (14.8503ms)
+2026-10-01T15:43:33.3970373Z ✔ runtime download timeout releases the queue and preserves the installed executable (178.2733ms)
+2026-10-01T15:43:33.3972780Z ✔ privileged runtime update refusal precedes local mutations, requests and candidate execution (1.7517ms)
+2026-10-01T15:43:33.3974847Z ✔ 64 actual concurrent HTTP downloads preserve last-good files across repeated stalls, overflow and cancellation (1047.025ms)
+2026-10-01T15:43:33.3977471Z ℹ {"transport":"native HTTP","operations":64,"successfulDownloads":16,"expectedBoundedFailures":48,"partialFilesAfter":0,"ownedServerSocketsAfter":0,"durationMs":1033.4238}
+2026-10-01T15:43:33.3979957Z ✔ 64 actual concurrent TLS downloads verify an own CA and preserve last-good files across repeated failures (2679.1253ms)
+2026-10-01T15:43:33.3982843Z ℹ {"transport":"native HTTPS with per-agent trusted own CA","operations":64,"successfulDownloads":16,"expectedBoundedFailures":48,"partialFilesAfter":0,"ownedServerSocketsAfter":0,"durationMs":1059.5167000000006}
+2026-10-01T15:43:33.4146978Z ✔ packaged runtime ignores test environment overrides (3.5905ms)
+2026-10-01T15:43:33.4148569Z ✔ production GUI accepts only finite normal launch flags (0.3249ms)
+2026-10-01T15:43:33.4150195Z ✔ invalid packaged launch exits before path, state or service initialization (2.4372ms)
+2026-10-01T15:43:33.4152036Z ✔ production importer reads supported URI protocols and preserves transport options (19.5107ms)
+2026-10-01T15:43:33.4153893Z ✔ production importer reads base64 subscriptions and Clash YAML without invented nodes (9.0756ms)
+2026-10-01T15:43:33.4156040Z ✔ installer generation paths preserve byte identity and GUI migration preserves unrelated compatibility flags (1104.3498ms)
+2026-10-01T15:43:33.4157937Z ✔ Windows GUI startup follows only the explicit autoStart preference (1.6651ms)
+2026-10-01T15:43:33.4159552Z ✔ enabling automatic connection cannot silently register a GUI login item (0.3548ms)
+2026-10-01T15:43:33.6222894Z ✔ DNS requires complete matching question and usable A records (5.0349ms)
+2026-10-01T15:43:33.6225165Z ✔ DNS compressed CNAME answers resolve the question chain and reject cycles (1.556ms)
+2026-10-01T15:43:33.6227437Z ✔ actual UDP ignores foreign source and bad packets, then accepts only its resolver response (89.9928ms)
+2026-10-01T15:43:33.6229593Z ✔ actual UDP malformed-only response times out and releases the socket (77.0927ms)
+2026-10-01T15:43:33.6231428Z ✔ actual fragmented DNS TCP accepts only a complete matching compressed answer and closes its connection (61.5347ms)
+2026-10-01T15:43:33.6233302Z ✔ actual DNS TCP rejects mismatched/truncated/excess frames and stops drip at an absolute deadline (124.4335ms)
+2026-10-01T15:43:33.6235361Z ✔ actual UDP and DNS TCP cancellation release every owned socket (157.1336ms)
+2026-10-01T15:43:33.6236559Z ℹ 64 actual DNS UDP/TCP cancellations; owned client UDP/server TCP sockets=0
+2026-10-01T15:43:33.6238141Z ✔ actual UDP stress rejects foreign, mismatched and compressed-cycle packets before valid answers (513.2093ms)
+2026-10-01T15:43:33.6241223Z ℹ {"requests":256,"successes":256,"malformedOrForeignPackets":1280,"totalPeerPackets":1536,"elapsedMs":509.966,"clientSocketsRemaining":0}
+2026-10-01T15:43:33.6242929Z ✔ TUN route coverage is unknown without observed Windows interface/routes (2.705ms)
+2026-10-01T15:43:33.6244005Z ✔ a shared TUN exit is not evidence of a bypass (1.1303ms)
+2026-10-01T15:43:33.6245712Z ✔ TUN route observations must include both distinct control destinations and matching prefixes (4.253ms)
+2026-10-01T15:43:33.6247548Z ✔ a foreign working DNS endpoint cannot declare our stopped or unknown service running (1.8795ms)
+2026-10-01T15:43:33.6249010Z ✔ IPv6 aliases do not report a changed exit and retain original display addresses (1.2563ms)
+2026-10-01T15:43:33.6250332Z ✔ network ports containing 401/403 do not disable automatic reconnect (2.0278ms)
+2026-10-01T15:43:33.6252172Z ✔ DNS resolver IPv6 aliases compare equally and expanded loopback stays a local forwarder (1.718ms)
+2026-10-01T15:43:33.6253956Z ✔ an external recursor address is an observation, not evidence of a managed DNS bypass or complete protection (1.0221ms)
+2026-10-01T15:43:33.6255463Z ✔ IPv4 and IPv6 observations do not by themselves prove a changed exit (0.9544ms)
+2026-10-01T15:43:33.6256853Z ✔ monotonic DNS freshness survives rollback/forward and discards late generations (1.3548ms)
+2026-10-01T15:43:33.6258184Z ✔ actual CONNECT drip cannot extend the absolute handshake budget (125.878ms)
+2026-10-01T15:43:33.6259484Z ℹ CONNECT elapsed=86.20 ms, deadline=70 ms, caller safety cutoff=350 ms, own server sockets=0
+2026-10-01T15:43:33.6260803Z ✔ actual stalled CONNECT cancellation stops every owned connection (134.8706ms)
+2026-10-01T15:43:33.6262291Z ℹ {"requests":64,"cancelled":64,"elapsedMs":131.426,"clientSocketsRemaining":0,"serverSocketsRemaining":0}
+2026-10-01T15:43:33.6263611Z ✔ actual chunked TLS download counts decoded payload only (549.5585ms)
+2026-10-01T15:43:33.6264986Z ✔ actual TLS fragmented chunks/extensions/trailers decode without counting framing (849.6551ms)
+2026-10-01T15:43:33.6266590Z ✔ actual TLS truncated/ambiguous/invalid framing does not produce a completed speed sample (403.0455ms)
+2026-10-01T15:43:34.1193850Z ✔ actual TLS download obeys requested payload cap and rejects a spent shared budget before succeeding (496.6402ms)
+2026-10-01T15:43:35.2265335Z ✔ actual TLS repeated framed downloads and cancellations leave no connection or budget reservations (1106.9809ms)
+2026-10-01T15:43:35.2270717Z ℹ {"requests":80,"completed":48,"malformedRejected":16,"cancelled":16,"decodedPayloadBytes":48000,"usedBudgetBytes":48600,"reservedBytesRemaining":0,"serverSocketsRemaining":0,"elapsedMs":515.471}
+2026-10-01T15:43:35.2613542Z ✔ R09: secret DNS path is hidden in diagnostic text and nested objects; operational data stays unchanged (3.2272ms)
+2026-10-01T15:43:35.2615612Z ✔ R09: URL path, query, hash, percent-encoded and non-HTTP DNS credentials are concealed (0.6241ms)
+2026-10-01T15:43:35.2617648Z ✔ R09: quoted assignments, nested secret objects and incomplete or long PEM blocks do not reveal material (0.4218ms)
+2026-10-01T15:43:35.2620056Z ✔ R09: actual electron-log hook sanitizes object keys, errors, deep and circular input without changing it (2.0674ms)
+2026-10-01T15:43:35.2621928Z ✔ R09: every entry of the actual locally exported ZIP omits the synthetic corpus (1451.9243ms)
+2026-10-01T15:43:35.2623681Z ✔ R09: archive failure and unavailable-log catch messages redact URL credentials and paths (11.2989ms)
+2026-10-01T15:43:35.5023995Z ✔ KnownDLL bootstrap accepts only a unanimous native System32 identity (3.7449ms)
+2026-10-01T15:43:35.5088930Z ✔ actual Windows token probe returns a verified boolean (977.3454ms)
+2026-10-01T15:43:35.5103626Z ✔ user runtime installation follows actual token and does not promise elevation (989.6943ms)
+2026-10-01T15:43:35.5122042Z ✔ privileged execution environment discards startup injection and resolves system paths from native lease (0.679ms)
+2026-10-01T15:43:35.5145186Z ✔ fuse parser rejects absent, duplicate, changed schema and malformed policy (0.7035ms)
+2026-10-01T15:43:35.5159746Z ✔ fuse mutation has exact readback for gui (8.485ms)
+2026-10-01T15:43:35.5184731Z ✔ fuse mutation has exact readback for worker (5.2232ms)
+2026-10-01T15:43:35.5192334Z ✔ fuse mutation refuses hardlinked files and removed configured fuses (5.4162ms)
+2026-10-01T15:43:35.5269507Z ✔ execution verifier rejects custom privilege paths and linked files before launch (8.4447ms)
+2026-10-01T15:43:36.0801106Z ✔ privileged bootstrap rejects user-owned fake verifier before executing it (552.9726ms)
+2026-10-01T15:43:36.1270212Z ✔ worker inventory authenticates actual files and refuses mutated upstream or linked native payload (48.0453ms)
+2026-10-01T15:43:36.1537087Z ✔ R02: stale complete snapshot is rejected and the acknowledged node stays on disk (20.7122ms)
+2026-10-01T15:43:36.1538526Z ✔ R02: complete replacement without a revision is refused (6.8005ms)
+2026-10-01T15:43:36.1539947Z ✔ R02: disk revision survives reopen and stale IPC settings conflict explicitly (25.694ms)
+2026-10-01T15:43:36.1541905Z ✔ R02: atomic settings, node and subscription operations preserve independent queued writes (20.5489ms)
+2026-10-01T15:43:36.1543686Z ✔ R02: node select, favorite, rename and deletion use fresh state while unrelated writes queue (29.9701ms)
+2026-10-01T15:43:36.1545169Z ✔ R02: failed disk write rolls back login item inside the serialized mutation (15.1857ms)
+2026-10-01T15:43:36.1546514Z ✔ R02: login item failure cannot publish settings or advance the disk revision (10.0653ms)
+2026-10-01T15:43:36.1548125Z ✔ R02: IPC rejects missing revisions, foreign setting fields and stale full state before login writes (20.1018ms)
+2026-10-01T15:43:36.1549698Z ✔ R06: confirmed second subscription ID deletes only that subscription and its nodes (19.384ms)
+2026-10-01T15:43:36.1551399Z ✔ R06: pending refresh cannot redirect or resurrect a confirmed deletion, including a same-URL replacement (32.6069ms)
+2026-10-01T15:43:36.1553022Z ✔ R02/R06: actual preload forwards only narrow payloads and captured subscription ID (3.2475ms)
+2026-10-01T15:43:36.1554663Z ✔ R20: shield connection persists only its profile and respects the explicit GUI startup preferences (19.108ms)
+2026-10-01T15:43:36.1556370Z ✔ R02: 120 interleaved acknowledged commands preserve every independent node and subscription (537.0884ms)
+2026-10-01T15:43:36.1558017Z ✔ failed component reads retain previous facts as stale and cannot confirm current readiness (1.8604ms)
+2026-10-01T15:43:36.1559543Z ✔ missing first result has unknown observation and no invented false running fact (0.5442ms)
+2026-10-01T15:43:36.1566680Z ✔ unknown shield component cannot be replaced by an enabled future preference (1.4079ms)
+2026-10-01T15:43:36.1568453Z ✔ subscription target is selected by stable ID and falls back to active node ownership (0.3716ms)
+2026-10-01T15:43:36.1569365Z ✔ quick DPI start preserves installed service mode and confirms post-command readiness (3.7895ms)
+2026-10-01T15:43:36.1570220Z ✔ mini separates actual DNS and Telegram switches from on-connect preferences (0.3632ms)
+2026-10-01T15:43:36.1571039Z ✔ renderer uses narrow mutation APIs and applies only the latest status generation (1.1933ms)
+2026-10-01T15:43:36.1571882Z ✔ settings conflicts retain fresh backend state and provide a concrete retry explanation (1.8067ms)
+2026-10-01T15:43:36.1572615Z ✔ DNS hostname alias declares the actual HTTPS DoH transport (4.0091ms)
+2026-10-01T15:43:36.1573626Z ✔ large server lists retain every stable ID in bounded pages and clamp removed pages (3.5699ms)
+2026-10-01T15:43:36.1575153Z ✔ server search reaches later pages with Cyrillic, address and protocol without changing original list (1.502ms)
+2026-10-01T15:43:36.1576787Z ✔ background VPN acknowledges commands only after fresh process and startup readback (2.888ms)
+2026-10-01T15:43:36.1578016Z ✔ a running DNS process without a confirmed DNS response remains unready (0.2958ms)
+2026-10-01T15:43:36.1579410Z ✔ DoH UI rejects unsupported DoT and malformed input and preserves the real HTTPS port and query (2.7713ms)
+2026-10-01T15:43:36.1580414Z ✔ UI settings values satisfy actual production schema and save only changed keys (6.7799ms)
+2026-10-01T15:43:36.1581298Z ✔ custom VPN DNS preserves the HTTPS port and query and rejects unsupported or ambiguous inputs (0.6947ms)
+2026-10-01T15:43:36.1582240Z ✔ plain domains and process basenames meet the real rule schema without accepting paths, URL or IP rules (5.0631ms)
+2026-10-01T15:43:36.1583280Z ✔ rule editing, deleting and ordering target stable IDs, preserve other rows, and reject stale or duplicate targets (2.7999ms)
+2026-10-01T15:43:36.1584496Z ✔ real rule action performs a fresh read and only one narrow CAS mutation, preserving the other rule array (3.2839ms)
+2026-10-01T15:43:36.1585519Z ✔ stale revision and failed or malformed writes cannot report saved success or trigger a retry overwrite (0.9538ms)
+2026-10-01T15:43:36.1586907Z ✔ routing controls have visible names, use native modal focus, and require a separate background snapshot apply (0.5458ms)
+2026-10-01T15:43:36.1587871Z ✔ component status distinguishes unavailable reads, unready processes and actual readiness (1.8162ms)
+2026-10-01T15:43:36.1588749Z ✔ traffic requires a real finite sample and never presents unknown traffic as measured zero (0.2472ms)
+2026-10-01T15:43:36.1589537Z ✔ horizontal tabs activate and focus the target, wrap arrows and honor Home/End (0.496ms)
+2026-10-01T15:43:36.1590430Z ✔ unrelated keys and empty tab lists leave normal keyboard behavior intact (0.4075ms)
+2026-10-01T15:43:36.1591360Z ✔ setting descriptions remain visible and switches describe their disabled reason accurately (11.5243ms)
+2026-10-01T15:43:36.2576259Z ✔ background status contract requires an actual observation and preserves unknown (9.0237ms)
+2026-10-01T15:43:36.2579874Z ✔ packaged VPN manager and handlers ignore every environment mock switch (7.0708ms)
+2026-10-01T15:43:36.2582299Z ✔ temporary connect fails before any teardown or preparation when background state cannot permit it (3.6702ms)
+2026-10-01T15:43:36.2584438Z ✔ manual background disconnect confirms disabled and stopped before returning idle (214.117ms)
+2026-10-01T15:43:36.2586862Z ✔ an unconfirmed background stop cannot declare disconnected or mutate the service again (3.2839ms)
+2026-10-01T15:43:36.2587953Z ✔ real GUI-owned harmless child and config stop on shutdown while background service and suspension remain (258.9102ms)
+2026-10-01T15:43:36.2588956Z ✔ GUI exit preserves an unknown background service instead of attempting a stop or Zapret restore (203.4227ms)
+2026-10-01T15:43:36.2589904Z ✔ background egress verification is bound to the observed instance and expires on monotonic time (4.4901ms)
+2026-10-01T15:43:36.2590836Z ✔ five background IPC contracts reject raw config, extra args and missing node before mutation (13.0009ms)
+2026-10-01T15:43:36.5139056Z ✔ background IPC snapshots selected node and rules, closes temporary mode and confirms fresh status (215.4889ms)
+2026-10-01T15:43:36.5141306Z ✔ invalid background snapshot and unavailable service cannot interrupt a temporary connection (15.0908ms)
+2026-10-01T15:43:36.5144587Z ✔ unknown service state blocks every mutation but is returned as unknown by the status IPC (6.8484ms)
+2026-10-01T15:43:36.5146440Z ✔ background stop/remove confirms Core readback and restores suspension only when both modes are inactive (8.9316ms)
+2026-10-01T15:43:36.5148342Z ✔ background TUN reapply refuses changing Windows system proxy (7.0032ms)
+2026-10-01T15:43:36.9397048Z ✔ failed background start restores Zapret only after a fresh confirmed inactive service readback (426.3347ms)
+2026-10-01T15:43:36.9648140Z ✔ GUI exit removes wake listeners and does not schedule another probe after shutdown (30.7042ms)
+2026-10-01T15:43:36.9828775Z ✔ R25: component accepts only the fixed background methods and mutations require serialization (9.4873ms)
+2026-10-01T15:43:36.9831627Z ✔ R25: protected snapshot uses TUN, fixed local port, unique interface and digest, without mutating GUI settings (2.4639ms)
+2026-10-01T15:43:36.9841744Z ✔ R25: custom runtime, GUI-only firewall, arbitrary config and oversized pipe input are rejected (8.6815ms)
+2026-10-01T15:43:36.9858552Z ✔ R25: unknown native observation stays unknown and changes no files or SCM commands (20.4715ms)
+2026-10-01T15:43:36.9860591Z ✔ R25: install persists the chosen snapshot, config and fixed wrapper before starting, then stop disables automatic startup (28.1457ms)
+2026-10-01T15:43:36.9868932Z ✔ R25: native config rejection preserves an already running old service and bytes (20.3202ms)
+2026-10-01T15:43:36.9880637Z ✔ R25: failed new start restores known old config, automatic policy and local readiness (43.549ms)
+2026-10-01T15:43:36.9890813Z ✔ R25: failed first start removes only the partially created service and does not retain a new intent snapshot (25.1187ms)
+2026-10-01T15:43:36.9901568Z ✔ R25: unconfirmed old stop never replaces old config and carries an unknown-outcome code (19.328ms)
+2026-10-01T15:43:36.9903155Z ✔ R25: removal keeps configuration if actual service removal is not confirmed (16.9578ms)
+2026-10-01T15:43:36.9904756Z ✔ R25: worker method queue prevents overlapping settings and service lifecycle effects (43.0658ms)
+2026-10-01T15:43:36.9907620Z ﹣ R25: actual pinned sing-box validates all nine generated protocol configurations without starting TUN (1.3243ms) # Native packaged sing-box is absent here; native candidate acceptance is required.
+2026-10-01T15:43:37.0040494Z ✔ update response and acquired file are released on early redirect failure (37.6482ms)
+2026-10-01T15:43:37.0044081Z ✔ update response and acquired file are released on early content-length failure (4.6892ms)
+2026-10-01T15:43:37.0051747Z ✔ update response and acquired file are released on early metadata-write failure (4.6571ms)
+2026-10-01T15:43:37.0063223Z ✔ update response and acquired file are released on early file-open failure (7.8505ms)
+2026-10-01T15:43:37.0075444Z ✔ update response and acquired file are released on early reader-acquisition failure (5.7888ms)
+2026-10-01T15:43:37.0078489Z ✔ REST trust failure signature-invalid is preserved and cannot downgrade to stable fallback (2.8576ms)
+2026-10-01T15:43:37.0081339Z ✔ REST trust failure key-unknown is preserved and cannot downgrade to stable fallback (1.8859ms)
+2026-10-01T15:43:37.0083433Z ✔ REST trust failure key-revoked is preserved and cannot downgrade to stable fallback (1.9623ms)
+2026-10-01T15:43:37.0085785Z ✔ REST trust failure anti-rollback is preserved and cannot downgrade to stable fallback (2.3213ms)
+2026-10-01T15:43:37.0087680Z ✔ REST trust failure manifest-invalid is preserved and cannot downgrade to stable fallback (2.1154ms)
+2026-10-01T15:43:37.0089807Z ✔ bootstrap and packaging share the same immutable component descriptor (4.3816ms)
+2026-10-01T15:43:37.0091886Z ✔ pinned wrapper binary authenticates ordinary bytes and rejects cache corruption (5.4271ms)
+2026-10-01T15:43:37.0095207Z ✔ native license input detects modified notice bytes before package copy (17.3764ms)
+2026-10-01T15:43:37.0097108Z ✔ authenticated component inventory includes original license bytes and accepts exact extracted files (196.9388ms)
+2026-10-01T15:43:37.0100522Z ✔ component inventory rejects changed despite a correct archive hash (203.6465ms)
+2026-10-01T15:43:37.0102027Z ✔ component inventory rejects extra despite a correct archive hash (187.7757ms)
+2026-10-01T15:43:37.0103613Z ✔ component inventory rejects case-collision despite a correct archive hash (171.8003ms)
+2026-10-01T15:43:37.0105967Z ✔ component inventory rejects escape despite a correct archive hash (181.6154ms)
+2026-10-01T15:43:37.2081526Z ✔ component inventory rejects ads despite a correct archive hash (195.3917ms)
+2026-10-01T15:43:37.4958557Z ✔ component copy rejects a changed source after its earlier successful authentication (241.3159ms)
+2026-10-01T15:43:37.4966065Z ✔ release source binding handles annotated tags and rejects changed commit, tree or target (58.3999ms)
+2026-10-01T15:43:37.9789699Z ✔ native-source tool authenticates Go h1 fixture, rejects changed bytes and validates preserved source links (492.1561ms)
+2026-10-01T15:43:38.1718432Z ✔ release verify_local accepts validated uppercase and lowercase source hashes while rejecting altered metadata (192.7057ms)
+2026-10-01T15:43:38.1889324Z ✔ prepares and verifies the v3.7.1 public alias without recovery or docs inputs (69.6589ms)
+2026-10-01T15:43:38.1891201Z ✔ wrong signing key fails before any metadata is changed (14.0513ms)
+2026-10-01T15:43:38.1892684Z ✔ new release metadata points to the versioned installer required by the updater (32.5407ms)
+2026-10-01T15:43:38.1894164Z ✔ release preparation rejects source trust that differs from the packaged trust receipt (15.3893ms)
+2026-10-01T15:43:38.1895781Z ✔ current signed releases bind exact source commit and integrity bytes and refuse later receipt replacement (33.4804ms)
+2026-10-01T15:43:38.1897385Z ✔ 3.8 and later release signing refuses missing or ambiguous source identity before output (18.8281ms)
+2026-10-01T15:43:38.1898653Z ✔ missing late input leaves no partial signed manifest (12.4871ms)
+2026-10-01T15:43:38.1899892Z ✔ tampered registry, installer and signed channel fail validation (32.1829ms)
+2026-10-01T15:43:38.1901511Z ✔ bootstrap preserves pinned trust and refuses a replacement root (22.1961ms)
+2026-10-01T15:43:38.1902861Z ✔ GitHub preflight verifies offline and rejects changed inputs before any API request (675.894ms)
+2026-10-01T15:43:42.3457443Z ✔ root-signed remote revocation blocks both release manifest and stable fallback (44.3992ms)
+2026-10-01T15:43:42.3460481Z ✔ root-signed rotation reaches client without adopting any remote root (17.4212ms)
+2026-10-01T15:43:42.3462323Z ✔ untrusted root signature is blocked without persisting remote bytes (13.2655ms)
+2026-10-01T15:43:42.3464025Z ✔ authenticated cached revocation survives offline restart with explicit freshness warning (18.7359ms)
+2026-10-01T15:43:42.3465762Z ✔ offline initial profile retains authentic bundled keys and warns about freshness (9.5482ms)
+2026-10-01T15:43:42.3467867Z ✔ cached registry is authenticated on every new read and corruption fails closed (25.0566ms)
+2026-10-01T15:43:42.3469858Z ✔ older signed generation and conflicting equal generation are rejected (21.9707ms)
+2026-10-01T15:43:42.3471711Z ✔ registry successor retains old IDs (10.3275ms)
+2026-10-01T15:43:42.3472780Z ✔ registry successor rejects changed material under same ID (11.3559ms)
+2026-10-01T15:43:42.3477367Z ✔ revoked key cannot be restored by a newer signed registry (21.9478ms)
+2026-10-01T15:43:42.3480100Z ✔ future registry is blocked with a clock explanation (10.7809ms)
+2026-10-01T15:43:42.3482093Z ✔ failed cache persistence blocks adopting a new registry and cleans temporary bytes (11.4705ms)
+2026-10-01T15:43:42.3483689Z ✔ unsafe redirect is blocked before target fetch and intermediate response is cancelled (7.3364ms)
+2026-10-01T15:43:42.3485087Z ✔ oversized headers are blocked and every acquired response is cancelled (6.5929ms)
+2026-10-01T15:43:42.3486379Z ✔ stalled registry body reaches deadline and cancels both owned readers (5009.0788ms)
+2026-10-01T15:43:42.3648199Z ✔ concurrent registry reads coalesce one fetch pair then independently authenticate next read (19.2027ms)
+2026-10-01T15:43:42.3719138Z ✔ missing explicit profile fails closed before any network or cache operation (7.1159ms)
+2026-10-01T15:43:42.3830005Z ✔ publication-time key expiry remains compatible for authentic historical releases (10.8458ms)
+2026-10-01T15:43:47.4311613Z ✔ real fetch streaming body stalls are aborted within the registry budget (5047.153ms)
+2026-10-01T15:43:47.4586281Z ✔ production updater blocks remote revoked key before stable fallback can mask it (28.0601ms)
+2026-10-01T15:43:47.4701289Z ✔ production updater preserves corrupt-cache failure when REST is unavailable (11.7691ms)
+2026-10-01T15:43:47.4791324Z ✔ production updater exposes unavailable registry freshness in its available message (9.0821ms)
+2026-10-01T15:43:47.4916167Z ✔ production updater can authenticate stable fallback after manifest transport failure (12.435ms)
+2026-10-01T15:43:47.5023435Z ✔ manifest timeout is reported truthfully and retryably rather than as an invalid signature (10.3999ms)
+2026-10-01T15:43:47.5479887Z ✔ timeout fixture drains pending registry persistence before removing its directory without new fetches (45.6998ms)
+2026-10-01T15:43:47.5623034Z ✔ pending release validation can change only its unpublished document while immutable assets stay frozen (103.4557ms)
+2026-10-01T15:43:47.5624940Z ✔ DNS UI accepts provider paths outside dns-query (1.3196ms)
+2026-10-01T15:43:47.5626218Z ✔ DNS UI preserves required query parameters (0.3147ms)
+2026-10-01T15:43:47.5627488Z ✔ DNS UI rejects cleartext and embedded credentials (1.021ms)
+2026-10-01T15:43:47.5636679Z ✔ renderer crash loops use backoff and at most three reloads in one minute (2.0393ms)
+2026-10-01T15:43:47.5638379Z ✔ a healthy renderer resets the failure burst only after a stable minute (0.4048ms)
+2026-10-01T15:43:47.5640262Z ✔ recovery ignores clean exits, coalesces duplicate events and never reloads a retired window (0.2787ms)
+2026-10-01T15:43:47.5643851Z ✔ production settings ignore the isolated test override and test paths must be absolute (2.5374ms)
+2026-10-01T15:43:47.5645954Z ✔ isolated validation shutdown never invokes system cleanup while production keeps all cleanup steps (3.0777ms)
+2026-10-01T15:43:47.5647614Z ✔ GUI exit preserves Zapret suspension for active or unobserved background VPN (3.2404ms)
+2026-10-01T15:43:47.5649123Z ✔ audit: DNS restore never falls back to a recycled index when its saved GUID is missing (340.8614ms)
+2026-10-01T15:43:47.5650457Z ✔ audit: DNS apply rejects a partial multi-adapter failure (452.0092ms)
+2026-10-01T15:43:47.5651741Z ✔ audit: failed proxy notification cannot be reported as successful enable (3.2326ms)
+2026-10-01T15:43:47.5655451Z ✔ audit: failed proxy restore notification keeps a retryable journal (1.7975ms)
+2026-10-01T15:43:47.5659604Z ✔ audit: response body is included in the network timeout budget (161.0404ms)
+2026-10-01T15:43:47.5663154Z ✔ audit: VPN may acquire the transition that suspends an already-running Zapret (2.932ms)
+2026-10-01T15:43:47.5664746Z ✔ a plain domain matches only the domain and its subdomains in both generated runtimes (3.8002ms)
+2026-10-01T15:43:47.5666900Z ✔ full, suffix, keyword and regex explicit rules retain their meaning rather than a literal prefix (1.1213ms)
+2026-10-01T15:43:47.5668650Z ✔ canonical host names retain IDNA labels and reject IP, CIDR, URL, wildcard and unknown prefixes (4.2615ms)
+2026-10-01T15:43:47.5670357Z ✔ engine-specific domain tokens remain explicit or fail preflight before any config is returned (0.61ms)
+2026-10-01T15:43:47.5672115Z ✔ rule order and route/reject actions are preserved without combining different match conditions (0.8557ms)
+2026-10-01T15:43:47.5674291Z ✔ process names apply only to TUN and unsupported process paths cannot masquerade as basenames (1.3505ms)
+2026-10-01T15:43:47.5676815Z ﹣ both actual pinned binaries accept supported route fields from stdin and reject invalid Go regex syntax (0.4679ms) # Pinned Windows runtime is absent; no native routing acceptance
+2026-10-01T15:43:47.5679776Z ﹣ both selected native stdin checks preserve the old child and write no temporary config or credential file (52.7172ms) # Pinned Windows runtime is absent; no native routing acceptance
+2026-10-01T15:43:47.5682176Z ✔ an actual owned child exiting before buffered stdin completes and oversized input fail before teardown (1195.2703ms)
+2026-10-01T15:43:47.5684569Z ﹣ actual loopback routing proves the same plain-domain boundary in both pinned cores (0.8915ms) # Pinned Windows runtime is absent; no native routing acceptance
+2026-10-01T15:43:47.5687287Z ﹣ actual loopback routing keeps full, keyword and regexp decisions distinct in both pinned cores (0.3878ms) # Pinned Windows runtime is absent; no native routing acceptance
+2026-10-01T15:43:47.5690846Z ﹣ actual Windows loopback process lookup distinguishes the owned node.exe client from another basename (0.3406ms) # Pinned Windows runtime is absent; no native routing acceptance
+2026-10-01T15:43:47.5693599Z ✔ failed runtime data copy preserves the entire old executable and data set (36.0552ms)
+2026-10-01T15:43:47.5695098Z ✔ failed directory publication restores the previous complete runtime (21.7877ms)
+2026-10-01T15:43:47.5696577Z ✔ runtime update preserves the signed TUN dependency when upstream omits it (21.6832ms)
+2026-10-01T15:43:47.5698111Z ✔ legacy runtime update obtains missing TUN dependency from the installed bundle (20.9165ms)
+2026-10-01T15:43:47.5699671Z ✔ interrupted runtime publication recovers offline from the previous directory (9.6719ms)
+2026-10-01T15:43:47.5701084Z ✔ stale latest-release metadata never downgrades the installed runtime (7.8869ms)
+2026-10-01T15:43:47.5702456Z ✔ runtime readiness stops polling when the child has already exited (4.0378ms)
+2026-10-01T15:43:47.5703930Z ✔ sc.exe state parsing accepts the captured Russian locale output and English output (2.804ms)
+2026-10-01T15:43:47.5705360Z ✔ sc.exe parser preserves pending, missing, and unknown fallback behaviour (2.1532ms)
+2026-10-01T15:43:47.5706829Z ✔ System DoH parses Russian running and pending states without falling back to CIM (1.2935ms)
+2026-10-01T15:43:47.5708374Z ✔ Telegram install throws cannot publish connected and rolls back new components (2.7686ms)
+2026-10-01T15:43:47.5710032Z ✔ Telegram install failed-result cannot publish connected and rolls back new components (0.3773ms)
+2026-10-01T15:43:47.5711685Z ✔ Telegram install not-running cannot publish connected and rolls back new components (0.3904ms)
+2026-10-01T15:43:47.5713686Z ✔ an existing Telegram proxy is not restarted or stopped by a failed connection (0.4662ms)
+2026-10-01T15:43:47.5715361Z ✔ verified Telegram service remains a successful connection when the client link cannot open (0.7696ms)
+2026-10-01T15:43:47.5716796Z ✔ Telegram stop throws cannot publish a successful disconnect (0.5904ms)
+2026-10-01T15:43:47.5718069Z ✔ Telegram stop failed-result cannot publish a successful disconnect (0.2271ms)
+2026-10-01T15:43:47.5719426Z ✔ Telegram stop still-running cannot publish a successful disconnect (0.9167ms)
+2026-10-01T15:43:47.5720645Z ✔ Telegram rollback that leaves a running proxy is reported (0.5373ms)
+2026-10-01T15:43:47.5721911Z ✔ failed Telegram status is visible alongside the last known snapshot (0.6388ms)
+2026-10-01T15:43:47.5723305Z ✔ Telegram status failure during preflight does not change any services (0.917ms)
+2026-10-01T15:43:47.5724671Z ✔ Telegram verification bypasses the cached pre-install status (0.3399ms)
+2026-10-01T15:43:47.5725990Z ✔ a partially successful Telegram installation is stopped on rollback (0.3137ms)
+2026-10-01T15:43:47.5727509Z ✔ an already running but explicitly unverified DNS cannot report a healthy connection (0.2476ms)
+2026-10-01T15:43:47.5729256Z ✔ one connection transaction selects, starts a verified service, then enables DNS and saves startup (3.2647ms)
+2026-10-01T15:43:47.5731784Z ✔ stopped owned DNS is restored before auto-select so probe hostnames resolve (0.4934ms)
+2026-10-01T15:43:47.5735234Z ✔ failed owned DNS restoration blocks auto-select instead of probing through a dead loopback (0.4189ms)
+2026-10-01T15:43:47.5736864Z ✔ unverified but running DoH service is preserved during auto-select preparation (0.454ms)
+2026-10-01T15:43:47.5738395Z ✔ unverified running owned DNS is repaired before auto-select when recovery is available (0.4931ms)
+2026-10-01T15:43:47.5739749Z ✔ unknown running DNS status is repaired before auto-select (0.6945ms)
+2026-10-01T15:43:47.5740893Z ✔ missing DNS readback blocks auto-select after recovery (0.4838ms)
+2026-10-01T15:43:47.5742390Z ✔ status keeps the last healthy component snapshot when a status probe is temporarily unavailable (0.4845ms)
+2026-10-01T15:43:47.5744009Z ✔ status returns an unavailable snapshot instead of rejecting when both probes fail (0.9941ms)
+2026-10-01T15:43:47.5745495Z ✔ double clicks share one promise and do not spawn a second candidate or service (0.6327ms)
+2026-10-01T15:43:47.5746800Z ✔ unconfirmed selection never falls back to an arbitrary profile (0.4067ms)
+2026-10-01T15:43:47.5748143Z ✔ a DNS result with ok:false is an error and rolls back the newly started service (0.4194ms)
+2026-10-01T15:43:47.5749655Z ✔ partial DNS apply failure attempts restoration and keeps bypass if restoration fails (0.4851ms)
+2026-10-01T15:43:47.5751131Z ✔ cancellation waits for the pending selection and never installs its winner (8.7024ms)
+2026-10-01T15:43:47.5752563Z ✔ DNS opt-out skips only DNS and disconnect restores DNS before stopping bypass (0.4299ms)
+2026-10-01T15:43:47.5753870Z ✔ failed DNS restoration leaves the bypass alive and allows a retry (0.4543ms)
+2026-10-01T15:43:47.5755470Z ✔ opening the app does not start deliberately stopped background services (2.8936ms)
+2026-10-01T15:43:47.5757120Z ✔ rules IPC persists only supplied array; trims its fields and keeps legacy opposite list and other state (40.2235ms)
+2026-10-01T15:43:47.5759143Z ✔ domain/process/settings requests sharing one revision conflict and explicit retries preserve every confirmed change (23.6328ms)
+2026-10-01T15:43:47.5760729Z ✔ both arrays commit atomically; explicit empty list clears only the named type (18.3631ms)
+2026-10-01T15:43:47.5762327Z ✔ rules acknowledge only after the real disk commit, with previous memory/disk visible during write barrier (18.5393ms)
+2026-10-01T15:43:47.5764094Z ✔ actual NTFS rename failure returns write failure and keeps memory/revision; repaired destination accepts retry (16.5145ms)
+2026-10-01T15:43:47.5765675Z ✔ malformed/foreign/prototype/accessor rules are rejected before any disk write or hook (15.6657ms)
+2026-10-01T15:43:47.5767321Z ✔ UTF-8 payload and per-type count bounds reject excess while valid 256-rule boundary persists (32.5243ms)
+2026-10-01T15:43:47.5769111Z ✔ queued store rule patch snapshots its own input and preserves intervening node/subscription updates (17.0645ms)
+2026-10-01T15:43:47.5770756Z ✔ direct store rules API also requires revision and refuses full snapshot fields (7.9431ms)
+2026-10-01T15:43:47.5772484Z ✔ 100 real queued commits with 40 explicit CAS conflicts retain rules/settings and every independent node/subscription (347.9751ms)
+2026-10-01T15:43:47.5774232Z ✔ actual preload forwards only patch and captured revision through the exact new channel (3.2676ms)
+2026-10-01T15:43:47.5775947Z ✔ fresh state has no automatic connection or DNS override (16.4192ms)
+2026-10-01T15:43:47.5777374Z ✔ a new installation disables old automatic connections in each user profile only once (20.0172ms)
+2026-10-01T15:43:47.5778774Z ✔ two concurrent settings changes with one revision cannot both commit (9.7942ms)
+2026-10-01T15:43:47.5779875Z ✔ valid backup survives recovery from a truncated primary (7.8342ms)
+2026-10-01T15:43:47.5780941Z ✔ syntactically valid but malformed state recovers from backup (7.8236ms)
+2026-10-01T15:43:47.5782185Z ✔ failed disk write leaves settings and revision unchanged (5.7593ms)
+2026-10-01T15:43:47.5783402Z ✔ rollback restores only its owned DNS and preserves a later external edit (1568.5637ms)
+2026-10-01T15:43:47.5784954Z ✔ rollback requires DNS readback even when netsh returns success (521.2814ms)
+2026-10-01T15:43:47.5786464Z ✔ rollback preserves an external IPv4 edit while independently restoring its owned IPv6 change (470.4531ms)
+2026-10-01T15:43:47.5788264Z ✔ transaction apply follows its captured GUID, excludes newly connected adapters and rejects index reuse (695.8075ms)
+2026-10-01T15:43:47.5789953Z ✔ DNS readback rejects additional unwanted resolvers and an incorrect priority (795.6641ms)
+2026-10-01T15:43:47.5791519Z ✔ a VPN-only network cannot enter the fallback snapshot route without a stable uplink (271.899ms)
+2026-10-01T15:43:47.5793126Z ✔ DNS journal is synced before rename and commit survives a temporarily locked journal file (5.5024ms)
+2026-10-01T15:43:47.5794630Z ✔ an unfinished or corrupt DNS journal cannot be overwritten by a new mutation (2.3872ms)
+2026-10-01T15:43:47.5796467Z ✔ a rollback marker write failure still restores adapter DNS rather than skipping recovery (2.0666ms)
+2026-10-01T15:43:47.5798049Z ✔ targeted adapter recovery snapshots only its targets and application remains serialized (530.4581ms)
+2026-10-01T15:43:47.5799732Z ✔ bootstrap maintenance skips unowned, stopped, literal and documented-provider configurations (11.7567ms)
+2026-10-01T15:43:47.5801360Z ✔ unchanged address sets do not restart and the attempt throttle persists across manager restarts (5.2381ms)
+2026-10-01T15:43:47.5803094Z ✔ bootstrap lookup, TLS preflight and runtime validation failures preserve the running configuration (9.7192ms)
+2026-10-01T15:43:47.5804867Z ✔ verified address rotation preserves every other config field and backs up before atomic replacement (6.5211ms)
+2026-10-01T15:43:47.5806595Z ✔ one hundred simultaneous maintenance requests cause one lookup and one verified service restart (12.7841ms)
+2026-10-01T15:43:47.5808176Z ✔ failed readiness rolls back the exact old config and verifies its restarted service (3.3164ms)
+2026-10-01T15:43:47.5809884Z ✔ an unavailable old upstream completes config rollback and can retry the next bootstrap rotation (3.8014ms)
+2026-10-01T15:43:47.5811709Z ✔ SCM stop/start failures restore config and can start the previous service even when it is already stopped (8.552ms)
+2026-10-01T15:43:47.5813382Z ✔ a failed atomic replacement preserves the old config without stopping its unchanged service (3.1897ms)
+2026-10-01T15:43:47.5814962Z ✔ rollback preserves an external config edit made while candidate readiness was being checked (3.2225ms)
+2026-10-01T15:43:47.5817012Z ✔ ownership checks require the expected SCM executable and exact protected runtime/config wrapper (1182.235ms)
+2026-10-01T15:43:47.5818737Z ✔ an interrupted owned bootstrap switch recovers without overwriting a later external config edit (3.4292ms)
+2026-10-01T15:43:47.5820312Z ✔ native bootstrap helper is read-only and adds IPv6 only when explicitly requested (2.6664ms)
+2026-10-01T15:43:47.5822823Z ﹣ real bundled Xray accepts the preserved candidate and rejects invalid candidates without service mutations (0.321ms) # Set task-owned LAGOM_DNS_TEST_WORK and LAGOM_XRAY_TEST_BINARY for real config validation
+2026-10-01T15:43:47.5825069Z ✔ candidate preflight enforces TLS hostname trust, pins lookup and preserves the selected URL (3322.4439ms)
+2026-10-01T15:43:47.5826998Z ℹ Local HTTPS lab: no system CA changes, no real adapters/services, candidate lookup pinned to loopback; trust injected only in test Agent.
+2026-10-01T15:43:47.5828699Z ✔ resolver health uses neutral domains independent of blocked applications (1.4688ms)
+2026-10-01T15:43:47.5830165Z ✔ DoH bootstrap uses pinned addresses without returning to the OS resolver or DNS inbound (1.4841ms)
+2026-10-01T15:43:47.5831596Z ✔ System DoH restores adapter ownership before stopping its resolver (1.9748ms)
+2026-10-01T15:43:47.5833116Z ✔ an absent owned adapter keeps its DNS resolver and recovery state alive (0.5827ms)
+2026-10-01T15:43:47.5834402Z ✔ failed ownership restoration propagates without deleting the resolver (0.981ms)
+2026-10-01T15:43:47.5836154Z ✔ applying the same upstream keeps the running local resolver online (0.6677ms)
+2026-10-01T15:43:47.5837378Z ✔ changing a running upstream fails before stopping its resolver (0.3005ms)
+2026-10-01T15:43:49.7400514Z ✔ native provider switch delegates one transaction without removing working DNS first (2.6917ms)
+2026-10-01T15:43:49.7446682Z ✔ failed native switch leaves restoration/removal untouched and retains previous provider (0.7783ms)
+2026-10-01T15:43:49.7448574Z ✔ same native URL is idempotent during failed health verification and cold recovery (0.7099ms)
+2026-10-01T15:43:49.7450773Z ✔ native-to-custom-port transition preserves working DNS until a safe transfer exists (0.2845ms)
+2026-10-01T15:43:49.7458222Z ✔ parallel forced status reads share one probe, and an older generation cannot poison the cache (0.4898ms)
+2026-10-01T15:43:49.7459991Z ✔ mutations on one DNS manager are serialized despite simultaneous UI requests (30.5824ms)
+2026-10-01T15:43:49.7461671Z ✔ failed SCM and CIM reads are unknown rather than proof that a DNS service is absent (1.2102ms)
+2026-10-01T15:43:49.7466804Z ✔ custom resolver config does not silently send queries to other DNS operators (1.163ms)
+2026-10-01T15:43:49.7468538Z ✔ explicit HTTPS fallback preserves order, pins its host and rejects plaintext (0.8898ms)
+2026-10-01T15:43:49.7470271Z ✔ known provider bootstrap works without an external lookup or the system resolver (0.6745ms)
+2026-10-01T15:43:49.7472069Z ✔ native provider IPv6 addresses require an explicit route flag and keep the selected operator (0.4126ms)
+2026-10-01T15:43:49.7474137Z ✔ failed encrypted bootstrap never falls through to plaintext or system DNS (2.4602ms)
+2026-10-01T15:43:49.7475817Z ✔ encrypted bootstrap bounds a stalled body and cancels it before retrying (2509.4763ms)
+2026-10-01T15:43:49.7477522Z ✔ local DNS advertises both loopbacks only when every listener was verified (0.9295ms)
+2026-10-01T15:43:49.7545380Z ✔ service wrapper bounds logs to 10 MiB per file and retries prolonged failures (0.468ms)
+2026-10-01T15:43:49.7557394Z ✔ readiness rejects wrong questions, truncation, incomplete records and header-only success (0.6018ms)
+2026-10-01T15:43:49.7559305Z ✔ localhost DNS probe load recovers after malformed, truncated and dropped responses (2216.8171ms)
+2026-10-01T15:43:49.7579954Z ﹣ installed Xray validates production config and survives bounded local TCP upstream faults (0.8956ms) # Set LAGOM_XRAY_TEST_BINARY and LAGOM_DNS_TEST_WORK to an installed runtime and this task work directory.
+2026-10-01T15:43:49.7622630Z ✔ packaged system-proxy notification uses the native helper without compiling PowerShell (4.0638ms)
+2026-10-01T15:43:49.7646652Z ✔ packaged helper reports a false notification result without falling back to PowerShell (1.108ms)
+2026-10-01T15:43:49.7651208Z ✔ packaged helper exit failure returns false without running a PowerShell compilation fallback (1.1668ms)
+2026-10-01T15:43:49.7658862Z ✔ a missing bundled helper retains the development PowerShell fallback (1.895ms)
+2026-10-01T15:43:49.7742661Z ✔ native service CLI exposes the bounded system-proxy notification command (0.3605ms)
+2026-10-01T15:43:49.7789753Z ✔ a whole-key registry query timeout aborts proxy enable before any registry mutation (6.7517ms)
+2026-10-01T15:43:49.7846389Z ✔ a successful whole-key query represents genuinely missing proxy values as absent (1.3041ms)
+2026-10-01T15:43:49.7849189Z ✔ a whole-key query canonicalizes case-insensitive registry value names (1.3162ms)
+2026-10-01T15:43:49.7907414Z ✔ ProxyEnable comparison treats decimal and hexadecimal DWORD text as equal (2.0031ms)
+2026-10-01T15:43:49.7910623Z ✔ a failed delete during disable keeps the rollback journal and reports failure (1.94ms)
+2026-10-01T15:43:49.7912910Z ✔ a failed enable rollback retains its journal when an attempted write may have committed (2.2256ms)
+2026-10-01T15:43:49.7917732Z ✔ a failed owned reconnect restores its pre-transaction proxy and preserves the original-session journal (2.7462ms)
+2026-10-01T15:43:49.7927585Z ✔ a restore failure leaves ProxyServer owned so a later retry can restore the user snapshot (1.7579ms)
+2026-10-01T15:43:49.7931717Z ✔ early full-batch Telegram adoption does not wait for unrelated getMyIp and performs one status read (27.3398ms)
+2026-10-01T15:43:49.7935836Z ✔ quick-batch Telegram adoption does not wait for an unrelated service (13.0847ms)
+2026-10-01T15:43:49.8062250Z ✔ initial delayed Telegram disables mutation buttons and callback sends no default config (14.9383ms)
+2026-10-01T15:43:49.8068187Z ✔ initial rejected status is unknown; genuine read-only retry restores config without any mutation (15.1292ms)
+2026-10-01T15:43:49.8112705Z ✔ stale/missing/malformed configuration never enables config mutations or paints cached autostart green (38.2808ms)
+2026-10-01T15:43:49.8128185Z ✔ authoritative pristine config installs without save even when runtime is not ready (12.5037ms)
+2026-10-01T15:43:49.8225968Z ✔ raw32 starting dd survives pristine and dirty UI callbacks, fingerprints and actual save handler; only valid34 prefix is stripped (17.3504ms)
+2026-10-01T15:43:49.8230034Z ✔ dirty draft saves only its actual config, verifies readback, then installs; untouched secret/port persist (13.9585ms)
+2026-10-01T15:43:49.8234376Z ✔ invalid dirty secret is not silently replaced by the old secret or sent to IPC (12.6505ms)
+2026-10-01T15:43:49.8242970Z ✔ rejected and resolved ok:false saves block install and preserve dirty draft for an explicit retry (29.4226ms)
+2026-10-01T15:43:49.8272418Z ✔ changed authoritative config and dirty draft require existing explicit conflict choice (13.2142ms)
+2026-10-01T15:43:49.8317984Z ✔ fresh preflight detects unseen backend config drift before writing dirty draft (12.4224ms)
+2026-10-01T15:43:49.8357137Z ✔ newer rejected retry cannot be replaced by an older successful batch in the same action generation (19.1909ms)
+2026-10-01T15:43:49.8366766Z ✔ late first read and retry cannot cross a newer runAction generation fence (16.2726ms)
+2026-10-01T15:43:49.8370690Z ✔ pending save locks advanced edits and repeated installation; stop/remove known service do not need a secret (26.2906ms)
+2026-10-01T15:43:49.8373720Z ✔ unconfirmed save reply and changed post-save readback retain dirty values and cannot proceed to installation (23.9254ms)
+2026-10-01T15:43:49.8377040Z ✔ repeated rejected retry exposes a useful inline error and performs no install or configuration write (11.9815ms)
+2026-10-01T15:43:49.8394055Z ✔ UI config validation agrees with actual IPC and manager bounds; malformed fingerprints are harmless (17.5677ms)
+2026-10-01T15:43:49.8472506Z ✔ actual busy polling effect does not supersede a dirty foreground preflight (13.4548ms)
+2026-10-01T15:43:49.8504388Z ✔ actual lifetime cleanup prevents pending status callbacks from adopting facts after unmount (12.2044ms)
+2026-10-01T15:43:49.8515363Z ✔ foreign Relay listener cannot make a running Telegram wrapper ready (6.4259ms)
+2026-10-01T15:43:49.8525337Z ✔ Telegram foreign-port preflight prevents runtime publication, stop and another spawn (2.9747ms)
+2026-10-01T15:43:49.8537902Z ✔ Telegram readiness wait rejects a foreign port even when SCM remains running (1.7181ms)
+2026-10-01T15:43:49.8595363Z ✔ Telegram unknown listener ownership blocks start without exposing command details (1.6065ms)
+2026-10-01T15:43:49.8597125Z ✔ an owned Telegram listener remains ready and preserves its configured port (2.3541ms)
+2026-10-01T15:43:49.8632047Z ✔ an unknown Telegram owner stays unready and does not claim the port is free (1.8066ms)
+2026-10-01T15:43:49.8640393Z ✔ current foreign or unknown Telegram ownership takes precedence over an old action error (4.0111ms)
+2026-10-01T15:43:49.8672977Z ✔ PowerShell ownership snapshot accepts the actual service grandchild and refuses foreign Relay (1128.8862ms)
+2026-10-01T15:43:49.8678934Z ✔ PowerShell IPv6 ownership cannot hide a foreign IPv4 listener behind localhost (1031.6829ms)
+2026-10-01T15:43:49.8688264Z ✔ PowerShell standalone ownership checks the saved process creation time and executable (737.619ms)
+2026-10-01T15:43:49.8690502Z ✔ Telegram CIM service fallback returns the service PID without assigning the PowerShell PID variable (224.3166ms)
+2026-10-01T15:43:49.8692676Z ✔ a changing Telegram listener snapshot is unknown rather than a free or ready port (2.0474ms)
+2026-10-01T15:43:49.8831588Z ✔ pending Telegram service reports unconfirmed readiness without a stale failure (1.9245ms)
+2026-10-01T15:43:49.8835904Z ✔ Zapret startStandalone disables a stopped automatic SCM registration before spawning (5.3636ms)
+2026-10-01T15:43:49.8912899Z ✔ Zapret restartStandalone disables a stopped automatic SCM registration before spawning (1.6872ms)
+2026-10-01T15:43:49.8942403Z ✔ Zapret unknown SCM state cannot enter standalone mode (1.6799ms)
+2026-10-01T15:43:49.9069304Z ✔ temporary VPN suspension preserves Zapret service startup mode (2.8079ms)
+2026-10-01T15:43:49.9109304Z ✔ service readiness uses two fresh native proofs within one deadline (8.3761ms)
+2026-10-01T15:43:49.9115544Z ✔ native query failure stays unknown without a permissive fallback (1.6555ms)
+2026-10-01T15:43:49.9122222Z ✔ foreign IPv6 cannot be hidden behind an owned IPv4 localhost listener (19.1011ms)
+2026-10-01T15:43:49.9128391Z ✔ an explicit IPv6 endpoint uses its own ownership proof (2.0314ms)
+2026-10-01T15:43:49.9133082Z ✔ native ownership rejects wrong operation (1.7142ms)
+2026-10-01T15:43:49.9151646Z ✔ native ownership rejects obsolete schema (2.107ms)
+2026-10-01T15:43:49.9159132Z ✔ native ownership rejects wrong port (2.7361ms)
+2026-10-01T15:43:49.9168233Z ✔ native ownership rejects contradictory SCM snapshot (1.8754ms)
+2026-10-01T15:43:49.9179786Z ✔ native ownership rejects unverified root path (1.8312ms)
+2026-10-01T15:43:49.9190530Z ✔ native ownership rejects foreign wrapper path (2.0358ms)
+2026-10-01T15:43:49.9192619Z ✔ native ownership rejects unstable SCM root (2.1134ms)
+2026-10-01T15:43:49.9194253Z ✔ native ownership rejects unknown address family (1.6846ms)
+2026-10-01T15:43:49.9195835Z ✔ native ownership rejects missing process birth (2.7132ms)
+2026-10-01T15:43:49.9214249Z ✔ native ownership rejects missing ancestry (1.4187ms)
+2026-10-01T15:43:49.9224216Z ✔ native ownership rejects recycled service root (1.5901ms)
+2026-10-01T15:43:49.9226745Z ✔ native ownership rejects recycled listener owner (1.4582ms)
+2026-10-01T15:43:49.9230076Z ✔ native ownership rejects changing listener (1.7529ms)
+2026-10-01T15:43:49.9234195Z ✔ stopped service and standalone mode require two native saved-process identity proofs (2.435ms)
+2026-10-01T15:43:49.9239747Z ✔ native missing port needs two stable reads and a contradictory TCP result stays unknown (3.2193ms)
+2026-10-01T15:43:49.9248413Z ✔ Telegram start-pending waits for SCM before requiring native running ownership (513.3984ms)
+2026-10-01T15:43:49.9251423Z ✔ Telegram pending-to-running still refuses an actual foreign ownership response (506.366ms)
+2026-10-01T15:43:49.9259217Z ✔ recent CF handshake failures degrade health even when runtime stats say err=0 (3.2597ms)
+2026-10-01T15:43:49.9270318Z ✔ old failures do not keep a healthy route degraded (0.5828ms)
+2026-10-01T15:43:55.1180800Z ✔ fresh runtime cleanup uses fixed native query/stop rather than CIM or broad PowerShell enumeration (6.1178ms)
+2026-10-01T15:43:55.1214494Z ✔ arbitrary runtime paths are refused before any child launch (1.9888ms)
+2026-10-01T15:43:55.1295667Z ✔ unknown cleanup cannot clear saved state or permit copy (2.7917ms)
+2026-10-01T15:43:55.1297173Z ✔ cleanup rejects contradictory or incomplete native proof p => p.schemaVersion = 2 (1.9844ms)
+2026-10-01T15:43:55.1318249Z ✔ cleanup rejects contradictory or incomplete native proof p => p.operation = 'other' (1.5693ms)
+2026-10-01T15:43:55.1361004Z ✔ cleanup rejects contradictory or incomplete native proof p => p.target = 'legacy' (1.6467ms)
+2026-10-01T15:43:55.1459020Z ✔ cleanup rejects contradictory or incomplete native proof p => p.runtimePath = 'C:\\Foreign\\egoistshield-tg-ws-proxy.exe' (1.6595ms)
+2026-10-01T15:43:55.1540881Z ✔ cleanup rejects contradictory or incomplete native proof p => p.quiescent = false (1.8338ms)
+2026-10-01T15:43:55.1598567Z ✔ cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:null,executablePath:target}] (1.9016ms)
+2026-10-01T15:43:55.1602855Z ✔ cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:'C:\\Foreign\\egoistshield-tg-ws-proxy.exe'}] (2.5967ms)
+2026-10-01T15:43:55.1606322Z ✔ cleanup rejects contradictory or incomplete native proof p => p.stopped = [1,2].map(() => ({processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:target})) (1.9146ms)
+2026-10-01T15:43:55.1611214Z ✔ legacy cleanup uses only fixed legacy token and validates exact resulting identity (1.5167ms)
+2026-10-01T15:43:55.1619924Z ✔ unknown cleanup prevents destination removal (1.358ms)
+2026-10-01T15:43:55.1623089Z ✖ actual Windows runtime cleanup terminates only exact-path held harmless child (6158.5426ms)
+2026-10-01T15:43:55.1631781Z ✔ raw leading dd: schema, saved config and both links preserve the same 16-byte secret (3.759ms)
+2026-10-01T15:43:55.1750768Z ✔ prefixed leading dd: schema, saved config and both links preserve the same 16-byte secret (0.8716ms)
+2026-10-01T15:43:55.1960181Z ✔ raw all dd: schema, saved config and both links preserve the same 16-byte secret (0.472ms)
+2026-10-01T15:43:55.1976988Z ✔ upper-case whitespace: schema, saved config and both links preserve the same 16-byte secret (0.4941ms)
+2026-10-01T15:43:55.2090186Z ✔ ordinary raw: schema, saved config and both links preserve the same 16-byte secret (0.4037ms)
+2026-10-01T15:43:55.2151657Z ✔ ordinary prefixed: schema, saved config and both links preserve the same 16-byte secret (0.5601ms)
+2026-10-01T15:43:55.2173147Z ✔ malformed, truncated and overlong secret inputs are still refused before saving (1.5008ms)
+2026-10-01T15:43:55.2222589Z ✔ UI rejects running SCM wrappers when the actual runtime is unavailable (1.6631ms)
+2026-10-01T15:43:55.2300998Z ✔ UI accepts confirmed runtime readiness and preserves older status compatibility (0.2733ms)
+2026-10-01T15:43:55.2331427Z ✔ UI distinguishes a running DNS worker from failed DNS verification (0.4295ms)
+2026-10-01T15:43:55.2366633Z ✔ stopping Telegram requires its background service to stop, even without a listener (2.5705ms)
+2026-10-01T15:43:55.2476516Z ✔ preload preserves successful update result payload and removes the listener (9.9809ms)
+2026-10-01T15:43:55.2527756Z ✔ ordinary dispatch propagates actual elevated-preparation boundary failure (1447.6259ms)
+2026-10-01T15:43:55.2629250Z ✔ ordinary dispatch reports success only after its actual preparation child completed (1010.411ms)
+2026-10-01T15:43:55.2644630Z ✔ preparation wait times out on a held process without accepting a signal file (2884.3805ms)
+2026-10-01T15:43:55.2668389Z ✔ failed held helper after actual spawn retains its verified installer and manifest (356.6505ms)
+2026-10-01T15:43:55.2736079Z ✔ failed native spawn without a child still removes the uncommitted candidate (18.5524ms)
+2026-10-01T15:43:55.2740436Z ✔ busy readiness before helper spawn still removes the uncommitted candidate (18.2516ms)
+2026-10-01T15:43:55.2819044Z ✔ interrupted response body resumes its exact verified byte range and releases readers (93.5356ms)
+2026-10-01T15:43:55.2867339Z ✔ a mismatched Content-Range fails once before appending any bytes (12.1005ms)
+2026-10-01T15:43:55.3008927Z ✔ a silent body is cancelled by the idle deadline and leaves no open reader (16.2413ms)
+2026-10-01T15:43:55.3010590Z ✔ native TUN replaces an incomplete managed Xray selected ahead of the bundle (74.8664ms)
+2026-10-01T15:43:55.3190669Z ✔ custom Xray without Wintun is rejected instead of being overwritten (7.3818ms)
+2026-10-01T15:43:55.3294704Z ✔ an invalid configured Xray path falls back to a ready bundled TUN runtime (17.1425ms)
+2026-10-01T15:43:55.3326527Z ✔ serializes a previous TUN session before preparing its replacement (baseline fails) (10.8857ms)
+2026-10-01T15:43:55.3355517Z ✔ keeps make-before-break handoff for proxy sessions, including proxy to TUN (6.443ms)
+2026-10-01T15:43:55.3359501Z ✔ failed serial TUN replacement releases dead proxy ownership (2.6912ms)
+2026-10-01T15:43:55.3430447Z ✔ retries the recorded Windows Xray TUN route failure once after serial cleanup (baseline fails) (1002.8257ms)
+2026-10-01T15:43:55.3463498Z ✔ stops after the second TUN route failure and releases network ownership (1018.8921ms)
+2026-10-01T15:43:55.3491398Z ✔ recognizes only the recorded Windows Xray TUN route initialization failure and skips generic fallback (5.5427ms)
+2026-10-01T15:43:55.3496337Z ✔ Windows 11: OS build >= 22000 detected as Windows 11 (2.6305ms)
+2026-10-01T15:43:55.3503417Z ✔ Windows 10: OS build < 22000 detected as Windows 10 (0.206ms)
+2026-10-01T15:43:55.3722514Z ✔ Windows 10/11: Adapter DNS override saves original DHCP config (1.1188ms)
+2026-10-01T15:43:55.3778294Z ✔ Windows 10/11: Adapter DNS restoration restores DHCP state (0.2552ms)
+2026-10-01T15:43:55.3825596Z ✔ Windows 10/11: Adapter DNS override saves original static IP DNS (0.217ms)
+2026-10-01T15:43:55.4027015Z ✔ Windows 10/11: Cache flush triggers DnsFlushResolverCache equivalent (0.2343ms)
+2026-10-01T15:43:55.4055913Z ✔ Windows 10/11: NRPT rules added for corporate split DNS (0.2299ms)
+2026-10-01T15:43:55.4092172Z ✔ Windows 10/11: NRPT rules completely flushed on disconnect (568.3191ms)
+2026-10-01T15:43:55.4094750Z ✔ Windows 10/11: Cloudflare DoH provider template and bootstrap IPs (0.3635ms)
+2026-10-01T15:43:55.4097755Z ✔ Windows 10/11: Google DoH provider template and bootstrap IPs (0.452ms)
+2026-10-01T15:43:55.4205463Z ✔ Windows 10/11: Quad9 DoH provider template and bootstrap IPs (0.3243ms)
+2026-10-01T15:43:55.4300000Z ✔ Windows 10/11: AdGuard DoH provider template and bootstrap IPs (0.2671ms)
+2026-10-01T15:43:55.4346017Z ✔ Windows 10/11: Local .local mDNS queries bypass DoH (0.2257ms)
+2026-10-01T15:43:55.4424727Z ✔ Windows 10/11: Local .lan queries bypass DoH (0.1671ms)
+2026-10-01T15:43:55.4499565Z ✔ Windows 10/11: Single-label NetBIOS names bypass DoH (0.209ms)
+2026-10-01T15:43:55.4530252Z ✔ Windows 10/11: Internet FQDN domains are routed through DoH (0.2333ms)
+2026-10-01T15:43:55.4587207Z ✔ Windows 10/11: Ranking DNS resolvers sorts by lowest latency (0.3299ms)
+2026-10-01T15:43:55.4590596Z ✔ Windows 10/11: Emergency DNS restore defaults to DHCP when original config missing (23.3599ms)
+2026-10-01T15:43:55.4592301Z ✔ Windows 10/11: Loopback 127.0.0.1 must be primary DNS server to intercept queries (2.5243ms)
+2026-10-01T15:43:55.4601486Z ✔ Windows 10/11: IPv6 DNS leak prevention replaces ISP IPv6 DNS with loopback or empty (14.7008ms)
+2026-10-01T15:44:12.1234956Z ✔ DNS provider contract is pinned to HTTPS URLs and documented v4/v6 pairs (1.9285ms)
+2026-10-01T15:44:12.1240764Z ✔ independent DNS wire preflight accepts matching positive reply and rejects incorrect protocol replies (2.8401ms)
+2026-10-01T15:44:12.1247052Z ✔ packet parser requires bidirectional TLS at actual approved resolver in the query window (1.8614ms)
+2026-10-01T15:44:12.1251724Z ✔ TCP443 without TLS, one direction, unrelated provider, or unrelated time cannot prove encrypted DNS (1.176ms)
+2026-10-01T15:44:12.1254715Z ✔ a matching plaintext TCP DNS probe makes TLS evidence fail (0.685ms)
+2026-10-01T15:44:12.1257927Z ✔ truncated blocks, unsupported links and oversized snapshots fail closed (0.8136ms)
+2026-10-01T15:44:12.1263270Z ✔ actual Run/GuardOnly/Guardian/Query invocation refuses physical non-hosted process before input or writes (5136.165ms)
+2026-10-01T15:44:12.1266086Z ✔ library import is inert and own native file/path boundary rejects reparse ancestors (13467.7991ms)
+2026-10-01T15:44:12.1390838Z ✔ installation ACL accepts exact TrustedInstaller only in canonical Program Files and refuses unsafe private descriptors (1116.7798ms)
+2026-10-01T15:44:12.1392833Z ✔ native CIM retry returns a complete snapshot and refuses terminal partial reads (1521.4257ms)
+2026-10-01T15:44:12.1394624Z ✔ terminal GUI errors end the wait immediately while transient observations retain retry behavior (1273.5965ms)
+2026-10-01T15:44:12.1395835Z ✔ installer diagnostics preserve actual own log bytes and refuse oversized logs (1092.3883ms)
+2026-10-01T15:44:12.1397068Z ✔ signed Setup and source Core diagnostics refuse a physical host before reading inputs or compiling (3020.6467ms)
+2026-10-01T15:44:12.1398375Z ✔ GUI failure diagnostics read only the launched profile log and retain actual bytes within the bound (1448.7063ms)
+2026-10-01T15:44:12.1399476Z ✔ native runtime resolution selects the first real PATH result when two applications share a name (788.3775ms)
+2026-10-01T15:44:12.1400526Z ✔ native ACL diagnostics capture actual owner and each raw ACE without changing permissions (986.331ms)
+2026-10-01T15:44:12.1401417Z ✔ the diagnostic cannot resume or grant acceptance to a sampled process (1.6192ms)
+2026-10-01T15:44:12.1402408Z ✔ PowerShell library import preserves the caller and refuses a physical host before product lookup (570.5061ms)
+2026-10-01T15:44:12.1403330Z ✔ PowerShell 5.1 parses the adapter without running product code (389.1232ms)
+2026-10-01T15:44:12.1404105Z ✔ an explicitly missing SDK is rejected without falling back to PATH (694.7306ms)
+2026-10-01T15:44:12.1404992Z ✔ preserved original 3.7.8 metadata authenticates against the real project pinned root (65.2201ms)
+2026-10-01T15:44:12.1406321Z ✔ tampered original manifest, signatures or candidate registry bytes are rejected (97.2208ms)
+2026-10-01T15:44:12.1407618Z ✔ same-value reserialization and a substituted version cannot replace original signed bytes (96.7117ms)
+2026-10-01T15:44:12.1409108Z ✔ metadata is strictly bounded binary input, with no supplied trust override (1.3763ms)
+2026-10-01T15:44:12.1410680Z ✔ inert installer fixture cannot be staged as authentic Setup and creates no destination (202.1291ms)
+2026-10-01T15:44:12.1412265Z ✔ unknown options, noncanonical draft IDs and escaped paths fail before staging (16.8377ms)
+2026-10-01T15:44:12.1413691Z ✔ staging rejects existing destinations, source overlap, and Windows path aliases (140.1453ms)
+2026-10-01T15:44:12.1414796Z ✔ exact sidecar set rejects missing, extra and case-substituted names (139.3732ms)
+2026-10-01T15:44:12.1415565Z ✔ candidate registry or old manifest corruption fails before copying any files (257.0437ms)
+2026-10-01T15:44:12.1416401Z ✔ hardlinked files, leaf directories and junction ancestors are rejected in own fixtures (32.8009ms)
+2026-10-01T15:44:12.1417224Z ✔ missing or oversized metadata is terminal and never produces a readiness receipt (26.5392ms)
+2026-10-01T15:44:12.1418109Z ✔ physical CLI guard refuses verify and stage before reading nonexistent inputs or writing paths (465.443ms)
+2026-10-01T15:44:12.1419311Z ﹣ actual original Setup is authenticated and exclusively copied unchanged, without execution (0.3736ms) # Original local Setup not present in this checkout.
+2026-10-01T15:44:12.1420405Z ✔ archive Windows path guard refuses traversal, ADS, devices, wildcard and NSIS-variable escapes (3.2776ms)
+2026-10-01T15:44:12.1421379Z ✔ archive listing accepts original-style folders and rejects unsafe links, collisions and size ambiguity (1.5046ms)
+2026-10-01T15:44:12.1422325Z ✔ complete inert inventory detects changed, removed and added payload files and linked objects (52.7771ms)
+2026-10-01T15:44:12.1423244Z ✔ real signed original manifests cannot authorize changed installer bytes or a tampered manifest (47.9352ms)
+2026-10-01T15:44:12.1424234Z ﹣ native baseline CLI refuses the actual nonhosted local environment before touching the supplied work (0.3788ms) # SKIP
+2026-10-01T15:44:12.1425212Z ﹣ PowerShell library is pure and refuses the actual nonhosted host before restoration mutation (0.1303ms) # SKIP
+2026-10-01T15:44:12.1426725Z ﹣ the compatibility recipe refuses the actual nonhosted host before any registry lookup (0.1619ms) # SKIP
+2026-10-01T15:44:12.1428839Z ✔ Process Tree: taskkill tree termination kills root and all descendant children (2.4562ms)
+2026-10-01T15:44:12.1429783Z ✔ Process Tree: Recycled PID protection prevents killing wrong process if PID reused (0.3131ms)
+2026-10-01T15:44:12.1430548Z ✔ Process Tree: Correct PID kill succeeds when process name matches (0.2541ms)
+2026-10-01T15:44:12.1431174Z ✔ File Lock Retry: EBUSY succeeds on subsequent attempt (16.5702ms)
+2026-10-01T15:44:12.1431747Z ✔ File Lock Retry: EACCES succeeds on subsequent attempt (9.6527ms)
+2026-10-01T15:44:12.1432412Z ✔ File Lock Retry: Non-retryable ENOENT fails immediately without retry (1.0917ms)
+2026-10-01T15:44:12.1433091Z ✔ File Lock Retry: Exhaustion after 12 attempts throws error (147.8355ms)
+2026-10-01T15:44:12.1433762Z ✔ NSIS Integrity Check: package corruption cannot bypass CRC validation (2.9952ms)
+2026-10-01T15:44:12.1434485Z ✔ Installer Fonts: GDI AddFontResourceEx FR_PRIVATE flag constant is 0x10 (0.3352ms)
+2026-10-01T15:44:12.1435136Z ✔ Installer Arch: RunningX64 check aborts on 32-bit OS (0.3897ms)
+2026-10-01T15:44:12.1435751Z ✔ Installer OS: AtLeastWin10 check aborts on Windows 7 / 8 (0.23ms)
+2026-10-01T15:44:12.1436426Z ✔ Atomic Swap: Successful swap moves candidate to final and cleans previous (0.1454ms)
+2026-10-01T15:44:12.1437126Z ✔ Atomic Swap: Rollback restores previous if candidate rename fails (0.093ms)
+2026-10-01T15:44:12.1437780Z ✔ Single Instance Mutex: Second instance detects existing mutex (0.1234ms)
+2026-10-01T15:44:12.1438417Z ✔ Windows Long Path: Paths exceeding 260 chars use \\?\ prefix (0.1155ms)
+2026-10-01T15:44:12.1439035Z ✔ Windows Installer: Flag file signaling starts installation (0.0837ms)
+2026-10-01T15:44:12.1439666Z ✔ Windows Installer: Flag file signaling cancels installation (0.1347ms)
+2026-10-01T15:44:12.1440325Z ✔ Process Memory Guard: Memory leak exceeding 1.5 GB flags termination (0.1424ms)
+2026-10-01T15:44:12.1440982Z ✔ Windows Token Elevation: Detect elevated administrator token (0.0828ms)
+2026-10-01T15:44:12.1441602Z ✔ Process Exit Code: Exit code 0 signals clean termination (0.0934ms)
+2026-10-01T15:44:12.1442283Z ✔ native acceptance refuses missing or mismatched hosted runner identities (2.1219ms)
+2026-10-01T15:44:12.1443076Z ✔ native payload readback refuses traversal, drive paths and alternate path separators (0.8562ms)
+2026-10-01T15:44:12.1444166Z ✔ PowerShell native acceptance host guard and path boundary perform no mutations (750.9448ms)
+2026-10-01T15:44:12.1445418Z ✔ an actual native acceptance invocation refuses a non-hosted process before input or mutation (859.712ms)
+2026-10-01T15:44:12.1446745Z ✔ native child timeout retires its own process and retains bounded stdout, stderr and failure evidence (2037.403ms)
+2026-10-01T15:44:12.1447685Z ✔ official legacy versions select separate immutable installer/helper pins and reject aliases (3.2475ms)
+2026-10-01T15:44:12.1448727Z ✔ original installer network prerequisite rejects missing, failed, partial or duplicate family reads without mutation (874.8164ms)
+2026-10-01T15:44:12.1449726Z ✔ both original signed legacy manifests are accepted only for the explicitly selected version (6.7009ms)
+2026-10-01T15:44:12.1450597Z ✔ candidate minimum version is compared with the selected legacy version, not a fixed 3.7.9 (1.3938ms)
+2026-10-01T15:44:12.1451444Z ✔ legacy gate verifies original real signed metadata with the project pinned public root (6.599ms)
+2026-10-01T15:44:12.1452246Z ✔ legacy gate refuses registry rollback, key replacement and revoked-key revival (5.223ms)
+2026-10-01T15:44:12.1453046Z ✔ pure source-binding boundary requires both signed fields and exact integrity bytes (1.4245ms)
+2026-10-01T15:44:12.1453971Z ✔ legacy PowerShell library import performs no native query or mutation and observer matches exact scope (992.1085ms)
+2026-10-01T15:44:12.1455012Z ✔ inert legacy snapshot retries a failed cold query, discards partial rows and preserves complete foreign inventory (886.4787ms)
+2026-10-01T15:44:12.1456753Z ✔ inert legacy snapshot never returns empty or partial state after failed, nonterminating, empty or malformed CIM reads (912.3523ms)
+2026-10-01T15:44:12.1457866Z ✔ inert legacy snapshot keeps foreign service/Task comparison strict and refuses Task errors (838.9067ms)
+2026-10-01T15:44:12.1458783Z ✔ real legacy script and helper reject a non-hosted process before input or native mutation (2985.9364ms)
+2026-10-01T15:44:12.1459644Z ✔ Windows 10/11: TUN metric takes strict precedence over physical Ethernet (metric 25) (3.2043ms)
+2026-10-01T15:44:12.1460400Z ✔ Windows 10/11: TUN metric takes strict precedence over Wi-Fi (metric 35) (0.212ms)
+2026-10-01T15:44:12.1461152Z ✔ Windows 10/11: TUN metric rejection if misconfigured higher than physical adapter (0.2002ms)
+2026-10-01T15:44:12.1461923Z ✔ Windows 10/11: Route table selects TUN gateway as lowest metric default route (0.4279ms)
+2026-10-01T15:44:12.1462647Z ✔ Windows 10/11: Private subnet 10.0.0.0/8 correctly recognized for bypass (0.2736ms)
+2026-10-01T15:44:12.1463366Z ✔ Windows 10/11: Private subnet 172.16.0.0/12 correctly recognized for bypass (0.2709ms)
+2026-10-01T15:44:12.1464094Z ✔ Windows 10/11: Private subnet 192.168.0.0/16 correctly recognized for bypass (0.2241ms)
+2026-10-01T15:44:12.1464781Z ✔ Windows 10/11: Loopback 127.0.0.1 correctly recognized for bypass (0.203ms)
+2026-10-01T15:44:12.1465399Z ✔ Windows 10/11: Public IP is not recognized as private subnet (0.2441ms)
+2026-10-01T15:44:12.1466444Z ✔ Windows 10/11: MTU clamping respects minimum 1280 bytes for IPv6 compliance (0.3694ms)
+2026-10-01T15:44:12.1467156Z ✔ Windows 10/11: MTU clamping caps at standard Ethernet 1500 bytes (0.381ms)
+2026-10-01T15:44:12.1467879Z ✔ Windows 10/11: MTU calculation for standard 1500 with 60 bytes overhead yields 1440 (0.2075ms)
+2026-10-01T15:44:12.1468606Z ✔ Windows 10/11: DNS server list sanitization strips invalid entries (1.6165ms)
+2026-10-01T15:44:12.1469251Z ✔ Windows 10/11: DNS server sanitization keeps local DoH proxies (0.1726ms)
+2026-10-01T15:44:12.1469956Z ✔ Windows 10/11: Route teardown flushes only routes belonging to TUN interface (0.3437ms)
+2026-10-01T15:44:12.1470700Z ✔ Windows 10/11: Modern Standby sleep/resume event does not leave orphan routes (0.3018ms)
+2026-10-01T15:44:12.1471454Z ✔ Windows 10/11: Rapid network change debouncing absorbs transient disconnects (54.2274ms)
+2026-10-01T15:44:12.1472363Z ✔ Windows 10/11: Interface metric conflict between two virtual adapters resolves in favor of active shield TUN (0.4534ms)
+2026-10-01T15:44:12.1473256Z ✔ Windows 10/11: IPv6 route blackholing prevents leaks when IPv6 is unconfigured (0.1841ms)
+2026-10-01T15:44:12.1474127Z ✔ Windows 10/11: DNS restore order retains secondary adapter DHCP settings when primary is released (0.201ms)
+2026-10-01T15:44:12.1474894Z ✔ Windows 10/11 SC: Parse Russian RUNNING state with PID and exit code (4.7136ms)
+2026-10-01T15:44:12.1475472Z ✔ Windows 10/11 SC: Parse Russian STOPPED state (0.4781ms)
+2026-10-01T15:44:12.1476003Z ✔ Windows 10/11 SC: Parse Russian START_PENDING state (0.2558ms)
+2026-10-01T15:44:12.1476541Z ✔ Windows 10/11 SC: Parse Russian STOP_PENDING state (0.2218ms)
+2026-10-01T15:44:12.1477059Z ✔ Windows 10/11 SC: Parse English RUNNING state (0.5667ms)
+2026-10-01T15:44:12.1477549Z ✔ Windows 10/11 SC: Parse English STOPPED state (0.2599ms)
+2026-10-01T15:44:12.1478106Z ✔ Windows 10/11 SC: Error 1053 timeout mapped to retry_or_abort (0.2764ms)
+2026-10-01T15:44:12.1478748Z ✔ Windows 10/11 SC: Error 1060 missing service mapped to not_installed (0.1863ms)
+2026-10-01T15:44:12.1479487Z ✔ Windows 10/11 SC: Error 1062 not started treated as already_stopped idempotent success (0.2405ms)
+2026-10-01T15:44:12.1480311Z ✔ Windows 10/11 SC: Error 1056 already running treated as already_running idempotent success (0.3705ms)
+2026-10-01T15:44:12.1481046Z ✔ Windows 10/11 SC: Error 5 access denied flagged as require_elevation (0.2824ms)
+2026-10-01T15:44:12.1481756Z ✔ Windows 10/11 SC: Polling ready state transitions from START_PENDING to RUNNING (0.2659ms)
+2026-10-01T15:44:12.1483171Z ✔ Windows 10/11 SC: Polling circuit breaker triggers when stuck in pending (0.2434ms)
+2026-10-01T15:44:12.1483868Z ✔ Windows 10/11 SC: Polling immediately detects early crash to STOPPED (0.1917ms)
+2026-10-01T15:44:12.1484691Z ✔ Windows 10/11 SC: Service binary path with spaces is safely quoted (0.2735ms)
+2026-10-01T15:44:12.1485335Z ✔ Windows 10/11 SC: Start type 2 maps to automatic boot startup (0.2107ms)
+2026-10-01T15:44:12.1486067Z ✔ Windows 10/11 SC: WinDivert driver dependency must be started before Zapret service (1.2178ms)
+2026-10-01T15:44:12.1487170Z ✔ Windows 10/11 SC: Recovery restart policy sets 5000ms delay (0.1445ms)
+2026-10-01T15:44:12.1487893Z ✔ Windows 10/11 SC: Non-interactive Session 0 isolation rejects desktop UI interaction (0.1342ms)
+2026-10-01T15:44:12.1488657Z ✔ Windows 10/11 SC: Fast Startup hybrid reboot triggers service state refresh (0.1859ms)
+2026-10-01T15:44:12.1489499Z ✔ current candidate authenticates genuinely signed generated fixture with explicit inert root pin (8.5662ms)
+2026-10-01T15:44:12.1490433Z ✔ project default root pin rejects generated fixture rather than importing a test trust override (2.0695ms)
+2026-10-01T15:44:12.1491289Z ✔ real bundled public registry authenticates under the immutable real project root (10.1441ms)
+2026-10-01T15:44:12.1492085Z ✔ current signed manifest tampering fails Ed25519 verification over original bytes (2.4061ms)
+2026-10-01T15:44:12.1492802Z ✔ current signed integrity binding rejects changed original bytes (2.2356ms)
+2026-10-01T15:44:12.1493395Z ✔ current signed source commit cannot be substituted (2.1068ms)
+2026-10-01T15:44:12.1494116Z ✔ genuinely root-signed candidate registry rollback is rejected against bundled baseline (1.3111ms)
+2026-10-01T15:44:12.1494927Z ✔ current candidate registry tampering fails pinned-root signature verification (1.2867ms)
+2026-10-01T15:44:12.1495800Z ✔ current options bind exact source and own runner paths without accepting legacy or trust overrides (2.8974ms)
+2026-10-01T15:44:12.1496624Z ✔ actual task-local installer stream verifies SHA256, SHA512 and byte count (13.8525ms)
+2026-10-01T15:44:12.1497330Z ✔ current installer streaming refuses authenticated sha256 mismatch (4.5532ms)
+2026-10-01T15:44:12.1498007Z ✔ current installer streaming refuses authenticated sha512 mismatch (5.5972ms)
+2026-10-01T15:44:12.1498694Z ✔ current installer streaming refuses authenticated size mismatch (4.3708ms)
+2026-10-01T15:44:12.1499449Z ✔ current CLI refuses physical/non-hosted process before options read or output write (129.179ms)
+2026-10-01T15:44:12.1500096Z ✔ Subscription: Parse VLESS Reality XHTTP URI (2.3155ms)
+2026-10-01T15:44:12.1500582Z ✔ Subscription: Parse VLESS WebSocket TLS URI (0.5093ms)
+2026-10-01T15:44:12.1501050Z ✔ Subscription: Parse Trojan URI with SNI (0.3507ms)
+2026-10-01T15:44:12.1501655Z ✔ Subscription: Unicode Russian server name correctly decoded from hash (0.2634ms)
+2026-10-01T15:44:12.1502295Z ✔ Subscription: Safe base64 decoding with missing padding (0.3397ms)
+2026-10-01T15:44:12.1502928Z ✔ Subscription: Safe base64 decoding with whitespace and newlines (0.2367ms)
+2026-10-01T15:44:12.1503555Z ✔ Subscription: Node fingerprint matches identical endpoints (0.1876ms)
+2026-10-01T15:44:12.1504179Z ✔ Subscription: Node fingerprint distinguishes different UUIDs (0.2268ms)
+2026-10-01T15:44:12.1504880Z ✔ Subscription: Deduplication removes identical nodes while preserving order (0.3545ms)
+2026-10-01T15:44:12.1505591Z ✔ Subscription: URL redaction masks secret subscription key in path (0.5533ms)
+2026-10-01T15:44:12.1506214Z ✔ Subscription: URL redaction masks credentials in node URL (0.3589ms)
+2026-10-01T15:44:12.1507199Z ✔ Subscription: Retry-After integer seconds parsed to milliseconds (0.2157ms)
+2026-10-01T15:44:12.1507816Z ✔ Subscription: Retry-After missing header returns 0 (0.1977ms)
+2026-10-01T15:44:12.1508434Z ✔ Subscription: IPv6 server address bracket format parsed correctly (0.1985ms)
+2026-10-01T15:44:12.1509154Z ✔ Subscription: Public key length check passes for 43 char base64url Reality key (0.2422ms)
+2026-10-01T15:44:12.1509931Z ✔ Subscription: Short ID (sid) hex validation (0.2526ms)
+2026-10-01T15:44:12.1510567Z ✔ Subscription: Reject expired subscription placeholder (0.2142ms)
+2026-10-01T15:44:12.1511269Z ✔ Subscription: Identity preservation keeps user-edited alias across refreshes (0.2741ms)
+2026-10-01T15:44:12.1511990Z ✔ Subscription: Empty input produces zero nodes without exception (0.8839ms)
+2026-10-01T15:44:12.1512693Z ✔ Subscription: Mixed protocol batch parsing separates VLESS and Trojan nodes (0.2682ms)
+2026-10-01T15:44:12.1513321Z ✔ Windows 10/11 Proxy: parseProxyEnable numeric 1 (2.2368ms)
+2026-10-01T15:44:12.1513847Z ✔ Windows 10/11 Proxy: parseProxyEnable string "1" (0.146ms)
+2026-10-01T15:44:12.1514418Z ✔ Windows 10/11 Proxy: parseProxyEnable hex string "0x00000001" (0.1262ms)
+2026-10-01T15:44:12.1515054Z ✔ Windows 10/11 Proxy: parseProxyEnable null or undefined returns 0 (0.1863ms)
+2026-10-01T15:44:12.1515800Z ✔ Windows 10/11 Proxy: Single proxy server 127.0.0.1:10809 parsed for all protocols (0.8576ms)
+2026-10-01T15:44:12.1516539Z ✔ Windows 10/11 Proxy: Multi-protocol proxy server string parsed correctly (0.3068ms)
+2026-10-01T15:44:12.1517270Z ✔ Windows 10/11 Proxy: ProxyOverride <local> bypasses dot-less internal hosts (0.2385ms)
+2026-10-01T15:44:12.1517975Z ✔ Windows 10/11 Proxy: ProxyOverride exact host match bypasses proxy (0.1721ms)
+2026-10-01T15:44:12.1518696Z ✔ Windows 10/11 Proxy: ProxyOverride wildcard prefix 127.* bypasses loopback IPs (0.2583ms)
+2026-10-01T15:44:12.1519499Z ✔ Windows 10/11 Proxy: ProxyOverride wildcard domain *.internal bypasses corporate sites (0.3587ms)
+2026-10-01T15:44:12.1520237Z ✔ Windows 10/11 Proxy: Journal records previous state before enable (0.4445ms)
+2026-10-01T15:44:12.1520844Z ✔ Windows 10/11 Proxy: Journal commit clears backup journal (0.2389ms)
+2026-10-01T15:44:12.1521578Z ✔ Windows 10/11 Proxy: Journal rollback restores original state after aborted transaction (0.2089ms)
+2026-10-01T15:44:12.1522355Z ✔ Windows 10/11 Proxy: WinINet INTERNET_OPTION_SETTINGS_CHANGED constant is 39 (0.146ms)
+2026-10-01T15:44:12.1523047Z ✔ Windows 10/11 Proxy: WinINet INTERNET_OPTION_REFRESH constant is 37 (0.3735ms)
+2026-10-01T15:44:12.1523744Z ✔ Windows 10/11 Proxy: PAC AutoConfigURL preservation during manual proxy (0.2573ms)
+2026-10-01T15:44:12.1524418Z ✔ Windows 10/11 Proxy: Per-user proxy policy allows user modification (0.1446ms)
+2026-10-01T15:44:12.1525121Z ✔ Windows 10/11 Proxy: WPAD auto-detect bit 0x08 masked off during manual proxy (0.2392ms)
+2026-10-01T15:44:12.1525912Z ✔ Windows 10/11 Proxy: Idempotent proxy disable does not overwrite original settings (0.3054ms)
+2026-10-01T15:44:12.1527129Z ✔ Windows 10/11 Proxy: Chromium/Edge dynamic proxy reload via WinINet notify without restart (0.246ms)
+2026-10-01T15:44:12.1528075Z ✔ isolated VPN native library retains real shared helper dependencies with inert CIM observations (999.7555ms)
+2026-10-01T15:44:12.1528931Z ✔ Orchestration: dns.restore-owned is a supported operation in Core Service (3.3616ms)
+2026-10-01T15:44:12.1529669Z ✔ Orchestration: Unsupported operation in Core Service throws clear error (1.0174ms)
+2026-10-01T15:44:12.1530497Z ✔ Orchestration: Auto-preemption in shield:coordinate safely accesses reconnectSupervisor (0.476ms)
+2026-10-01T15:44:12.1531305Z ✔ Orchestration: Auto-preemption succeeds even if reconnectSupervisor is null (0.3492ms)
+2026-10-01T15:44:12.1532114Z ✔ Orchestration: Stale mutation locks are fully released by forceReleaseStaleMutations (0.2969ms)
+2026-10-01T15:44:12.1532956Z ✔ Orchestration: Component facade interceptor calls restoreOwnedDns on SystemDoH stop (0.4971ms)
+2026-10-01T15:44:12.1533779Z ✔ Orchestration: VPN egress probe failure triggers automatic fallback node selection (1.5061ms)
+2026-10-01T15:44:12.1534642Z ✔ Orchestration: Make-before-break handoff binds secondary proxy port before closing primary (0.27ms)
+2026-10-01T15:44:12.1535515Z ✔ Orchestration: Zapret service suspension during VPN disconnect restores original profile (0.3922ms)
+2026-10-01T15:44:12.1536452Z ✔ Orchestration: Zapret standalone mode rejects starting if service is running (0.743ms)
+2026-10-01T15:44:12.1537226Z ✔ Orchestration: Telegram Proxy port 1443 conflict detection (0.3491ms)
+2026-10-01T15:44:12.1537950Z ✔ Orchestration: Internet emergency repair clears orphan winws and restores proxy (0.3136ms)
+2026-10-01T15:44:12.1538741Z ✔ Orchestration: Speedtest warmup selects higher stream count for high bandwidth (0.2724ms)
+2026-10-01T15:44:12.1539521Z ✔ Orchestration: Widget window mode dimensions: compact 360x520 vs full 1040x680 (0.1836ms)
+2026-10-01T15:44:12.1540205Z ✔ Orchestration: Red color zero tolerance verification in tokens (0.292ms)
+2026-10-01T15:44:12.1540848Z ✔ XHTTP VLESS remains an Xray config without invented Vision flow (3.9109ms)
+2026-10-01T15:44:12.1541572Z ✔ XHTTP and SplitHTTP keep their transport metadata and use the HTTP ALPN default (0.8071ms)
+2026-10-01T15:44:12.1542292Z ✔ sing-box rejects XHTTP instead of silently using another transport (1.1579ms)
+2026-10-01T15:44:12.1542968Z ✔ XHTTP requires Xray even when TUN and learned health prefer sing-box (0.5369ms)
+2026-10-01T15:44:12.1543622Z ✔ Xray TUN config applies process rules before domain rules (1.7743ms)
+2026-10-01T15:44:12.1544933Z ✔ history shows actual early-exit winner, retaining normalized catalogue status and aggregate probe counts (6.9097ms)
+2026-10-01T15:44:12.1546012Z ✔ explicit failed result cannot become successful from an all-good target preview; startup failures stay visible (3.4336ms)
+2026-10-01T15:44:12.1547052Z ✔ completed history round-trips localStorage and survives cancelled/empty attempts and stale refreshes (3.5088ms)
+2026-10-01T15:44:12.1547981Z ✔ actual renderer action preserves previous history while pending, cancelled, or throwing (4.6141ms)
+2026-10-01T15:44:12.1548895Z ✔ direct IPC selection persists on disk with renderer destroyed and is restored after handler reload (7.2359ms)
+2026-10-01T15:44:12.1549823Z ✔ widget saves failed selection evidence and successful probes before later connection failure (4.3933ms)
+2026-10-01T15:44:12.1550855Z ✔ bounded history retains all 64 result aggregates, omits previews honestly, caches reads and ignores malformed files (213.4319ms)
+2026-10-01T15:44:12.1551822Z ✔ cancel keeps last completed run; first partial cancellation retains completed error rows (5.7529ms)
+2026-10-01T15:44:12.1552730Z ✔ history disk failure logs a warning without failing widget connection or changing prior durable file (9.1133ms)
+2026-10-01T15:44:12.1553616Z ✔ tested Discord/YouTube hybrid uses a bundled hostlist and is first in auto-select order (5.1213ms)
+2026-10-01T15:44:12.1554437Z ✔ GameFilter defaults to narrow Discord and YouTube ports when no user flag exists (0.6094ms)
+2026-10-01T15:44:12.1555262Z ✔ actual harmless PowerShell-boundary child exit retains metadata and original cause (100.9937ms)
+2026-10-01T15:44:12.1556090Z ✔ actual own child timeout differs from nonzero exit without claiming provider cause (214.8719ms)
+2026-10-01T15:44:12.1556897Z ✔ actual nonexistent own executable spawn failure has no PID and no path disclosure (5.0235ms)
+2026-10-01T15:44:12.1557725Z ✔ actual output-limit failure is distinct from timeout and never emits captured output (82.965ms)
+2026-10-01T15:44:12.1558474Z ✔ successful own PowerShell-boundary child keeps stdout unchanged (102.6762ms)
+2026-10-01T15:44:12.1559232Z ✔ invalid JSON output is a fixed safe parse error while preserving SyntaxError cause (100.7698ms)
+2026-10-01T15:44:12.1560005Z ✔ unrecognized error string fields are not reflected into public diagnostics (2.2963ms)
+2026-10-01T15:44:17.4888324Z ✔ HTTP errors cannot pass endpoint checks; curl ignores inherited proxies and config (16.2564ms)
+2026-10-01T15:44:17.4890036Z ✔ voice probe uses only a valid recent Discord media endpoint and distinguishes TLS from media (4.1541ms)
+2026-10-01T15:44:17.4891491Z ✔ a forced TLS fallback cannot hide a failed default-client endpoint check (3.83ms)
+2026-10-01T15:44:17.4892930Z ✔ automatic sweep probes only ordinary HTTPS for Discord and YouTube (2.3301ms)
+2026-10-01T15:44:17.4894042Z ✔ image/CDN and DNS reachability alone cannot produce a usable profile (2.2589ms)
+2026-10-01T15:44:17.4895130Z ✔ ownership requires exact executable identity, not a command-line reference or neighbouring folder (3.8647ms)
+2026-10-01T15:44:17.4895946Z ✔ standalone cleanup ignores a recycled PID in its saved state (2.6685ms)
+2026-10-01T15:44:17.4896672Z ✔ an unkillable owned process aborts cleanup without clearing recovery state (124.6867ms)
+2026-10-01T15:44:17.4897401Z ✔ external conflict detection rejects without deleting a host service (2.3274ms)
+2026-10-01T15:44:17.4898166Z ✔ unavailable process inventory is a failure, not evidence that all processes stopped (5.344ms)
+2026-10-01T15:44:17.4898978Z ✔ auto-select tests every profile twice, then recommends without starting a winner (620.3625ms)
+2026-10-01T15:44:17.4899794Z ✔ auto-select rejects a one-pass success and continues until a candidate repeats it (618.9996ms)
+2026-10-01T15:44:17.4900565Z ✔ a full 23-profile report ranks complete coverage before lower latency (6996.294ms)
+2026-10-01T15:44:18.0929182Z ✔ auto-select restores the previously running service, never the recommended profile (603.1859ms)
+2026-10-01T15:44:18.4010237Z ✔ auto-select does not advance or save a winner after cleanup failure (304.7168ms)
+2026-10-01T15:44:18.4013442Z ✔ failed sweep preparation restarts a service it already stopped (2.0658ms)
+2026-10-01T15:44:18.4017671Z ✔ cancel during a pending start never launches another candidate or retains a winner (2.2855ms)
+2026-10-01T15:44:19.0076789Z ✔ a process that exits during HTTPS checks cannot be selected (606.4469ms)
+2026-10-01T15:44:19.6253978Z ✔ renderer callback and memory read failures cannot leave the selection lock stuck (617.3203ms)
+2026-10-01T15:44:19.6583088Z ✔ endpoint probe concurrency is bounded and preserves input order (33.0353ms)
+2026-10-01T15:44:20.2665812Z ✔ spawn error is consumed and rejected, without an unhandled EventEmitter error (603.3955ms)
+2026-10-01T15:44:20.2667654Z ✔ explicit disconnect disables autostart while internal suspension preserves startup policy (3.0484ms)
+2026-10-01T15:44:20.2669878Z ✔ starting a service enables autostart and requires its winws child before reporting success (3.5781ms)
+2026-10-01T15:44:20.2806263Z ✔ shutdown skips the idle worker status scan through the real facade and protocol (13.8552ms)
+2026-10-01T15:44:20.2807694Z ✔ ordinary idle restores preserve their status return contract (11.291ms)
+2026-10-01T15:44:20.2809316Z ✔ shutdown restores genuine worker suspension despite an idle desktop marker (7.1583ms)
+2026-10-01T15:44:20.2810630Z ✔ failed shutdown restoration retains the worker suspension marker (3.3689ms)
+2026-10-01T15:44:20.2811935Z ✔ shutdown options remain a strict boolean-only protocol object (9.7776ms)
+2026-10-01T15:44:20.2813310Z ✔ Zapret download failure leaves the running service untouched (31.7104ms)
+2026-10-01T15:44:20.2814747Z ✔ Zapret failed publication restores files and restarts the prior service (29.1998ms)
+2026-10-01T15:44:20.2816224Z ✔ Zapret successful update preserves user lists and only stops after download (31.9749ms)
+2026-10-01T15:44:20.2817753Z ✔ Zapret recovers a crash between moving the prior core and publishing the candidate (12.3546ms)
+2026-10-01T15:44:20.2819198Z ✔ Zapret provisioning does not overwrite an existing core when the bundle is newer (11.8244ms)
+2026-10-01T15:44:20.2820121Z ℹ tests 984
+2026-10-01T15:44:20.2820495Z ℹ suites 0
+2026-10-01T15:44:20.2820852Z ℹ pass 968
+2026-10-01T15:44:20.2821217Z ℹ fail 1
+2026-10-01T15:44:20.2821571Z ℹ cancelled 0
+2026-10-01T15:44:20.2821933Z ℹ skipped 15
+2026-10-01T15:44:20.2822330Z ℹ todo 0
+2026-10-01T15:44:20.2822777Z ℹ duration_ms 103925.0214
+2026-10-01T15:44:20.2837239Z 
+2026-10-01T15:44:20.2837585Z ✖ failing tests:
+2026-10-01T15:44:20.2837851Z 
+2026-10-01T15:44:20.2838282Z test at tests\telegram-runtime-cleanup.test.mjs:50:1
+2026-10-01T15:44:20.2840063Z ✖ actual Windows runtime cleanup terminates only exact-path held harmless child (6158.5426ms)
+2026-10-01T15:44:20.2841882Z   Error: Command failed: D:\a\_temp\lagom-tests\native-runtime-cleanup-VseiGn\bin\NativeRuntimeCleanupRegression.exe
+2026-10-01T15:44:20.2843401Z   Unhandled exception. System.IO.IOException: Runtime executable identity is unavailable.
+2026-10-01T15:44:20.2845875Z      at EgoistShield.Service.WindowsServiceListenerSnapshot.ReadRuntimeIdentity(SafeProcessHandle handle) in D:\a\egoist-lagom\egoist-lagom\src\service\EgoistShield.Service\WindowsServiceListenerSnapshot.cs:line 305
+2026-10-01T15:44:20.2849888Z      at EgoistShield.Service.WindowsServiceListenerSnapshot.CaptureRuntimeProcesses(String expected, CancellationToken token) in D:\a\egoist-lagom\egoist-lagom\src\service\EgoistShield.Service\WindowsServiceListenerSnapshot.cs:line 343
+2026-10-01T15:44:20.2853898Z      at EgoistShield.Service.WindowsServiceListenerSnapshot.StopProcessesUsingExecutable(String executablePath, CancellationToken token) in D:\a\egoist-lagom\egoist-lagom\src\service\EgoistShield.Service\WindowsServiceListenerSnapshot.cs:line 214
+2026-10-01T15:44:20.2857077Z      at NativeRuntimeCleanupRegression.Program.Main(String[] args) in D:\a\egoist-lagom\egoist-lagom\tests\NativeRuntimeCleanupRegression\Program.cs:line 72
+2026-10-01T15:44:20.2859271Z      at NativeRuntimeCleanupRegression.Program.Main(String[] args) in D:\a\egoist-lagom\egoist-lagom\tests\NativeRuntimeCleanupRegression\Program.cs:line 106
+2026-10-01T15:44:20.2860543Z      at NativeRuntimeCleanupRegression.Program.<Main>(String[] args)
+2026-10-01T15:44:20.2861060Z   
+2026-10-01T15:44:20.2861524Z       at genericNodeError (node:internal/errors:986:15)
+2026-10-01T15:44:20.2862183Z       at wrappedFn (node:internal/errors:540:14)
+2026-10-01T15:44:20.2862820Z       at ChildProcess.exithandler (node:child_process:417:12)
+2026-10-01T15:44:20.2863445Z       at ChildProcess.emit (node:events:514:28)
+2026-10-01T15:44:20.2864076Z       at maybeClose (node:internal/child_process:1141:16)
+2026-10-01T15:44:20.2867276Z       at ChildProcess._handle.onexit (node:internal/child_process:306:5) {
+2026-10-01T15:44:20.2867745Z     code: 3762504530,
+2026-10-01T15:44:20.2868000Z     killed: false,
+2026-10-01T15:44:20.2868227Z     signal: null,
+2026-10-01T15:44:20.2868796Z     cmd: 'D:\\a\\_temp\\lagom-tests\\native-runtime-cleanup-VseiGn\\bin\\NativeRuntimeCleanupRegression.exe',
+2026-10-01T15:44:20.2869313Z     stdout: '',
+2026-10-01T15:44:20.2874757Z     stderr: 'Unhandled exception. System.IO.IOException: Runtime executable identity is unavailable.\r\n   at EgoistShield.Service.WindowsServiceListenerSnapshot.ReadRuntimeIdentity(SafeProcessHandle handle) in D:\\a\\egoist-lagom\\egoist-lagom\\src\\service\\EgoistShield.Service\\WindowsServiceListenerSnapshot.cs:line 305\r\n   at EgoistShield.Service.WindowsServiceListenerSnapshot.CaptureRuntimeProcesses(String expected, CancellationToken token) in D:\\a\\egoist-lagom\\egoist-lagom\\src\\service\\EgoistShield.Service\\WindowsServiceListenerSnapshot.cs:line 343\r\n   at EgoistShield.Service.WindowsServiceListenerSnapshot.StopProcessesUsingExecutable(String executablePath, CancellationToken token) in D:\\a\\egoist-lagom\\egoist-lagom\\src\\service\\EgoistShield.Service\\WindowsServiceListenerSnapshot.cs:line 214\r\n   at NativeRuntimeCleanupRegression.Program.Main(String[] args) in D:\\a\\egoist-lagom\\egoist-lagom\\tests\\NativeRuntimeCleanupRegression\\Program.cs:line 72\r\n   at NativeRuntimeCleanupRegression.Program.Main(String[] args) in D:\\a\\egoist-lagom\\egoist-lagom\\tests\\NativeRuntimeCleanupRegression\\Program.cs:line 106\r\n   at NativeRuntimeCleanupRegression.Program.<Main>(String[] args)\r\n'
+2026-10-01T15:44:20.2879514Z   }
+2026-10-01T15:44:20.3445047Z ##[error]Process completed with exit code 1.
+2026-10-01T15:44:20.3718216Z Post job cleanup.
+2026-10-01T15:44:20.5704100Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-10-01T15:44:20.6059842Z git version 2.55.0.windows.5
+2026-10-01T15:44:20.6136872Z Temporarily overriding HOME='D:\a\_temp\49466954-2af6-4c36-86d2-ecda9bdc33e1' before making global git config changes
+2026-10-01T15:44:20.6138394Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-01T15:44:20.6152319Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\egoist-lagom\egoist-lagom
+2026-10-01T15:44:20.6498970Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-01T15:44:20.6805560Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-01T15:44:21.2376811Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-01T15:44:21.2690882Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-01T15:44:21.8121744Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-01T15:44:21.8424255Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-01T15:44:22.3991894Z Cleaning up orphan processes
+2026-10-01T15:44:22.4542667Z Terminate orphan process: pid (7496) (VBCSCompiler)
+2026-10-01T15:44:22.4643554Z Terminate orphan process: pid (7528) (conhost)
+2026-10-01T15:44:22.4655145Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4, actions/setup-python@v5. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
