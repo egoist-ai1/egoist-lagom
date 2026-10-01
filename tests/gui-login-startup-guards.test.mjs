@@ -17,5 +17,5 @@ test('GUI task ownership, mutation, suspension and pinned payload guards use iso
  for(const key of ['nativeTaskReads','nativeTaskCreates','nativeTaskUpdates','nativeTaskDeletes','nativeTaskActions','nativeAclWrites'])assert.equal(receipt[key],0,key);
 });
 test('source helper CLI refuses noncanonical invocation before native session/task operations', {skip:process.platform!=='win32'},async()=>{
- await assert.rejects(execute(ps,['-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',path.resolve('src/installer/gui-login-startup.ps1'),'-Operation','Verify'],{windowsHide:true,timeout:10_000}),error=>error.code===1&&/canonical installed helper/.test(error.stderr));
+ await assert.rejects(execute(ps,['-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',path.resolve('src/installer/gui-login-startup.ps1'),'-Operation','Verify'],{windowsHide:true,timeout:10_000}),error=>error.code===1&&/GUI\s+startup\s+requires\s+its\s+canonical\s+installed\s+helper\./.test(error.stderr));
 });

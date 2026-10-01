@@ -272,10 +272,28 @@ internal sealed class WindowsServiceListenerSnapshot
         }
     }
 
-    internal static void VerifyRuntimeQuiescent(string expectedPath, CancellationToken token)
+    // Default-null fixture lifecycle hook observes actual native rows; it cannot
+    // supply identity or liveness and is never selected by production commands.
+    internal static void VerifyRuntimeQuiescent(string expectedPath, CancellationToken token, Action? afterCapture = null)
     {
         var remaining = CaptureRuntimeProcesses(Path.GetFullPath(expectedPath), token);
-        try { if (remaining.Count != 0) throw new IOException("Runtime restarted during cleanup."); }
+        try
+        {
+            token.ThrowIfCancellationRequested();
+            afterCapture?.Invoke();
+            token.ThrowIfCancellationRequested();
+            foreach (var item in remaining)
+            {
+                token.ThrowIfCancellationRequested();
+                uint wait = Native.WaitForSingleObject(item.Handle, 0);
+                int error = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+                token.ThrowIfCancellationRequested();
+                if (wait == 0) continue;
+                if (wait == 258)
+                    throw new IOException($"Runtime restarted during cleanup (pid={item.Identity.ProcessId}; born={item.Identity.CreatedAt:O}; path={item.Identity.ExecutablePath}; wait={wait}).");
+                throw new Win32Exception(error, $"Runtime quiescence liveness is unavailable (wait={wait}).");
+            }
+        }
         finally { foreach (var item in remaining) item.Handle.Dispose(); }
         token.ThrowIfCancellationRequested();
     }
@@ -379,9 +397,18 @@ internal sealed class WindowsServiceListenerSnapshot
                     // Toolhelp may retain an exited process while another caller
                     // holds its handle. A signaled held handle proves it cannot
                     // use the runtime; unreadable/live unknown rows still refuse.
-                    if (Native.WaitForSingleObject(handle, 0) == 0) { handle.Dispose(); continue; }
+                    uint wait = Native.WaitForSingleObject(handle, 0);
+                    int error = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+                    token.ThrowIfCancellationRequested();
+                    if (wait == 0) { handle.Dispose(); continue; }
+                    if (wait != 258) throw new Win32Exception(error, $"Runtime candidate liveness is unavailable (wait={wait}).");
                     // A readable foreign same-name process is never granted terminate rights.
                     var identity = ReadRuntimeIdentity(handle, token);
+                    wait = Native.WaitForSingleObject(handle, 0);
+                    error = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+                    token.ThrowIfCancellationRequested();
+                    if (wait == 0) { handle.Dispose(); continue; }
+                    if (wait != 258) throw new Win32Exception(error, $"Runtime candidate liveness is unavailable after identity read (wait={wait}).");
                     if (!string.Equals(identity.Path, expected, StringComparison.OrdinalIgnoreCase)) { handle.Dispose(); continue; }
                     held.Add((handle, new(pid, identity.Born, identity.Path)));
                 }

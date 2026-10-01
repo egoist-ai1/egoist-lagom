@@ -8,6 +8,7 @@ namespace NativeRuntimeCleanupRegression;
 internal static class Program
 {
     private static readonly List<object> Checks = new();
+    private static readonly Dictionary<Process, SafeProcessHandle> CreatedHandles = new();
     internal static async Task<int> Main(string[] args)
     {
         if (args is ["--fixture-child"]) { Console.WriteLine(Environment.ProcessId); await Console.In.ReadLineAsync(); return 0; }
@@ -27,7 +28,7 @@ internal static class Program
         Directory.CreateDirectory(root);
         string foreignDir = Path.Combine(root, "foreign"); Directory.CreateDirectory(foreignDir);
         string self = Environment.ProcessPath!;
-        string name = "egoist-cleanup-fixture-" + Guid.NewGuid().ToString("N") + ".exe";
+        string name = "ec-" + Guid.NewGuid().ToString("N") + ".exe";
         string ownedDir = Path.Combine(root, "owned"); Directory.CreateDirectory(ownedDir);
         string ownedPath = Path.Combine(ownedDir, name);
         string foreignPath = Path.Combine(foreignDir, name);
@@ -41,16 +42,18 @@ internal static class Program
         using var owned = Child(ownedPath, root);
         using var foreign = Child(foreignPath, root);
         using var restarted = Child(ownedPath, root);
+        SafeProcessHandle? ownedHeld = null, foreignHeld = null, restartedHeld = null;
         try
         {
-            Require(owned.Start() && foreign.Start(), "two caller-owned harmless children start");
+            Require(StartOwnChild(owned) && StartOwnChild(foreign), "two caller-owned harmless children start");
+            ownedHeld = HoldOwnChild(owned); foreignHeld = HoldOwnChild(foreign);
             int ownPid = int.Parse(await owned.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(8)) ?? "0");
             int foreignPid = int.Parse(await foreign.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(8)) ?? "0");
             Require(ownPid == owned.Id && foreignPid == foreign.Id && !owned.HasExited && !foreign.HasExited, "readiness identifies held own children");
             using var readDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             int transientAttempts = 0;
             var transientClock = Stopwatch.StartNew();
-            var recovered = WindowsServiceListenerSnapshot.ReadRuntimeIdentity(foreign.SafeHandle, readDeadline.Token,
+            var recovered = WindowsServiceListenerSnapshot.ReadRuntimeIdentity(foreignHeld!, readDeadline.Token,
                 attempt => { transientAttempts++; return attempt == 1 ? 5 : null; });
             Require(recovered.Path == foreignPath && recovered.Born == new DateTimeOffset(foreign.StartTime.ToUniversalTime()) &&
                 transientAttempts >= 2 && !foreign.HasExited, "controlled image fault recovers only real path and birth on the same live held handle", transientClock.Elapsed.TotalMilliseconds);
@@ -58,7 +61,7 @@ internal static class Program
             var persistentClock = Stopwatch.StartNew();
             try
             {
-                WindowsServiceListenerSnapshot.ReadRuntimeIdentity(foreign.SafeHandle, readDeadline.Token,
+                WindowsServiceListenerSnapshot.ReadRuntimeIdentity(foreignHeld!, readDeadline.Token,
                     attempt => { persistentAttempts++; return 5; });
                 throw new Exception("Persistent live unknown image must refuse.");
             }
@@ -69,7 +72,7 @@ internal static class Program
                     "controlled persistent image fault stays bounded and refuses actual live unknown process", persistentClock.Elapsed.TotalMilliseconds);
             }
             using var readCancellation = new CancellationTokenSource();
-            ExpectRefusal(() => WindowsServiceListenerSnapshot.ReadRuntimeIdentity(foreign.SafeHandle, readCancellation.Token,
+            ExpectRefusal(() => WindowsServiceListenerSnapshot.ReadRuntimeIdentity(foreignHeld!, readCancellation.Token,
                 attempt => { readCancellation.Cancel(); return 5; }), "controlled image retry observes cancellation without clearing ownership");
             Require(!foreign.HasExited && !owned.HasExited, "all controlled query faults preserve real live own and foreign children");
             using (var unreadableIdentity = OpenProcess(0x100000U, false, foreign.Id))
@@ -106,7 +109,8 @@ internal static class Program
             Require(stopped.Length == 1 && stopped[0].ProcessId == ownPid && stopped[0].CreatedAt == birth && stopped[0].ExecutablePath == ownedPath,
                 "actual native cleanup stops exact held owned identity", elapsed);
             Require(!foreign.HasExited, "same-name foreign path child survives actual termination");
-            Require(restarted.Start(), "actual replacement child starts at the same owned executable path");
+            Require(StartOwnChild(restarted), "actual replacement child starts at the same owned executable path");
+            restartedHeld = HoldOwnChild(restarted);
             int replacementPid = int.Parse(await restarted.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(8)) ?? "0");
             Require(replacementPid == restarted.Id && !restarted.HasExited, "replacement readiness identifies the held new child");
             ExpectRefusal(() => WindowsServiceListenerSnapshot.VerifyRuntimeQuiescent(ownedPath, deadline.Token), "actual replacement process makes publication quiescence fail closed");
@@ -115,7 +119,7 @@ internal static class Program
             IOException? exitReadError = null;
             try
             {
-                WindowsServiceListenerSnapshot.ReadRuntimeIdentity(restarted.SafeHandle, exitReadDeadline.Token, attempt =>
+                WindowsServiceListenerSnapshot.ReadRuntimeIdentity(restartedHeld!, exitReadDeadline.Token, attempt =>
                 {
                     if (attempt == 1) restarted.StandardInput.WriteLine("exit");
                     return 5;
@@ -129,29 +133,77 @@ internal static class Program
             // Fixture lifecycle can take longer under a loaded scheduler. No
             // production success is inferred from exceeding the image budget.
             await restarted.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(8));
+            await ExitOwnChild(restarted, restartedHeld);
             using var quiescenceDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             clock.Restart();
             Require(WindowsServiceListenerSnapshot.StopProcessesUsingExecutable(ownedPath, quiescenceDeadline.Token).Length == 0,
                 "native recheck proves owned runtime quiescent without restarting a kill loop", clock.Elapsed.TotalMilliseconds);
             Require(WindowsServiceListenerSnapshot.StopProcessesUsingExecutable(Path.Combine(root, "absent", name), quiescenceDeadline.Token).Length == 0 && !foreign.HasExited,
                 "missing destination enumerates matching real rows and preserves foreign path");
+            using (var captured = Child(ownedPath, root))
+            {
+                SafeProcessHandle? capturedHeld = null;
+                try
+                {
+                    Require(StartOwnChild(captured), "controlled quiescence-gap own harmless child starts");
+                    capturedHeld = HoldOwnChild(captured);
+                    int capturedPid = int.Parse(await captured.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(8)) ?? "0");
+                    Require(capturedPid == captured.Id && WaitForSingleObject(capturedHeld!, 0) == 258,
+                        "controlled quiescence-gap readiness identifies actual live held child");
+                    var capturedBirth = new DateTimeOffset(captured.StartTime.ToUniversalTime());
+                    WindowsServiceListenerSnapshot.VerifyRuntimeProcessIdentity(capturedPid, ownedPath, capturedBirth);
+                    using var gapDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+                    bool callbackObserved = false;
+                    WindowsServiceListenerSnapshot.VerifyRuntimeQuiescent(ownedPath, gapDeadline.Token, () =>
+                    {
+                        callbackObserved = true;
+                        Require(WaitForSingleObject(capturedHeld!, 0) == 258,
+                            "controlled lifecycle gap begins with real live held child");
+                        ExitOwnChild(captured, capturedHeld).GetAwaiter().GetResult();
+                        uint signal = WaitForSingleObject(capturedHeld!, 0);
+                        Require(signal == 0, "controlled lifecycle gap exits exact own child and observes its native signal");
+                        Console.Error.WriteLine(JsonSerializer.Serialize(new { kind = "controlled-native-quiescence-gap",
+                            processId = capturedPid, createdAt = capturedBirth, executablePath = ownedPath, waitResult = signal,
+                            fabricatedIdentityData = false, liveForeignPreserved = !foreign.HasExited }));
+                    });
+                    Require(callbackObserved && WaitForSingleObject(capturedHeld!, 0) == 0 && !foreign.HasExited,
+                        "completed held identity is omitted at final quiescence without killing live foreign child");
+                }
+                finally { try { await ExitOwnChild(captured, capturedHeld); } finally { capturedHeld?.Dispose(); } }
+            }
+            using var gapCancellation = new CancellationTokenSource();
+            bool cancellationCallbackObserved = false;
+            try
+            {
+                WindowsServiceListenerSnapshot.VerifyRuntimeQuiescent(ownedPath, gapCancellation.Token,
+                    () => { cancellationCallbackObserved = true; gapCancellation.Cancel(); });
+                throw new Exception("Post-capture cancellation must refuse.");
+            }
+            catch (OperationCanceledException error) when (error.CancellationToken == gapCancellation.Token)
+            {
+                Require(cancellationCallbackObserved && gapCancellation.IsCancellationRequested,
+                    "post-capture cancellation refuses even when no live owned row remains");
+            }
+            Require(!foreign.HasExited, "post-capture cancellation preserves actual live foreign child");
             // Repeat actual exit/capture overlap while retaining the caller's
             // Process handle. A dead process may remain in a Toolhelp snapshot.
             for (int iteration = 0; iteration < 12; iteration++)
             {
                 using var retiring = Child(ownedPath, root);
+                SafeProcessHandle? retiringHeld = null;
                 try
                 {
-                    Require(retiring.Start(), "exit-race harmless child starts " + iteration);
+                    Require(StartOwnChild(retiring), "exit-race harmless child starts " + iteration);
+                    retiringHeld = HoldOwnChild(retiring);
                     int retiringPid = int.Parse(await retiring.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(8)) ?? "0");
                     Require(retiringPid == retiring.Id && !retiring.HasExited, "exit-race readiness belongs to held child " + iteration);
-                    await ExitOwnChild(retiring);
+                    await ExitOwnChild(retiring, retiringHeld);
                     using var cycleDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
                     WindowsServiceListenerSnapshot.VerifyRuntimeQuiescent(ownedPath, cycleDeadline.Token);
                     Require(WindowsServiceListenerSnapshot.StopProcessesUsingExecutable(ownedPath, cycleDeadline.Token).Length == 0 && !foreign.HasExited,
                         "actual exited-child capture preserves quiescence and live foreign process " + iteration);
                 }
-                finally { await ExitOwnChild(retiring); }
+                finally { try { await ExitOwnChild(retiring, retiringHeld); } finally { retiringHeld?.Dispose(); } }
             }
             Require(await EgoistShield.Service.Program.Main(["--telegram-runtime-cleanup", "--runtime", "C:\\Foreign\\arbitrary.exe"]) != 0,
                 "actual CLI refuses arbitrary target before native cleanup");
@@ -164,14 +216,36 @@ internal static class Program
         }
         finally
         {
-            await ExitOwnChild(owned);
-            await ExitOwnChild(foreign);
-            await ExitOwnChild(restarted);
+            try { await ExitOwnChild(owned, ownedHeld); }
+            finally
+            {
+                try { await ExitOwnChild(foreign, foreignHeld); }
+                finally
+                {
+                    try { await ExitOwnChild(restarted, restartedHeld); }
+                    finally { ownedHeld?.Dispose(); foreignHeld?.Dispose(); restartedHeld?.Dispose(); }
+                }
+            }
         }
     }
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern SafeProcessHandle OpenProcess(uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, int processId);
+
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern uint WaitForSingleObject(SafeProcessHandle handle, uint milliseconds);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool DuplicateHandle(IntPtr sourceProcess, SafeProcessHandle source, IntPtr targetProcess,
+        out SafeProcessHandle target, uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint options);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool TerminateProcess(SafeProcessHandle handle, uint exitCode);
+
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetProcessTimes(SafeProcessHandle handle, out long created, out long exited, out long kernel, out long user);
 
     private static Process Child(string executable, string root)
     {
@@ -179,11 +253,87 @@ internal static class Program
             WorkingDirectory = root, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true } };
         child.StartInfo.ArgumentList.Add("--fixture-child"); return child;
     }
-    private static async Task ExitOwnChild(Process child)
+    private static bool StartOwnChild(Process child)
     {
-        try { if (!child.HasExited) { await child.StandardInput.WriteLineAsync("exit"); await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3)); } }
-        catch (TimeoutException) { child.Kill(); await child.WaitForExitAsync(); }
-        catch (InvalidOperationException) { }
+        string executable = child.StartInfo.FileName;
+        if (!Path.IsPathFullyQualified(executable) || executable.Length > 240 || !File.Exists(executable))
+            throw new IOException("Own fixture executable must exist at a bounded ordinary absolute path.");
+        if (!child.Start()) return false;
+        SafeProcessHandle original = child.SafeHandle;
+        if (!DuplicateHandle((IntPtr)(-1), original, (IntPtr)(-1), out var created, 0, false, 2))
+        {
+            int error = Marshal.GetLastWin32Error(); created.Dispose();
+            TerminateProcess(original, 1); WaitForSingleObject(original, 3000);
+            throw new System.ComponentModel.Win32Exception(error, "Hold the exact created fixture process.");
+        }
+        CreatedHandles.Add(child, created); return true;
+    }
+    private static SafeProcessHandle HoldOwnChild(Process child)
+    {
+        var handle = OpenProcess(0x100000U | 0x1000U, false, child.Id);
+        try
+        {
+            if (handle.IsInvalid) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            WindowsServiceListenerSnapshot.VerifyRuntimeIdentity(handle, child.StartInfo.FileName, new DateTimeOffset(child.StartTime.ToUniversalTime()));
+            return handle;
+        }
+        catch { handle.Dispose(); throw; }
+    }
+    private static async Task ExitOwnChild(Process child, SafeProcessHandle? held)
+    {
+        CreatedHandles.TryGetValue(child, out SafeProcessHandle? created);
+        SafeProcessHandle? selected = held ?? created;
+        if (selected is null) return; // Start never created a fixture process.
+        var clock = Stopwatch.StartNew();
+        try
+        {
+            uint initial = WaitForSingleObject(selected, 0);
+            int initialError = initial == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+            if (initial == 0) return;
+            if (initial != 258) throw new System.ComponentModel.Win32Exception(initialError, "Own held fixture exit wait failed.");
+            if (!GetProcessTimes(selected, out long bornFileTime, out _, out _, out _))
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "Read exact held own-child birth before exit.");
+            var birth = DateTimeOffset.FromFileTime(bornFileTime).ToUniversalTime();
+            string executablePath = child.StartInfo.FileName;
+            if (!child.HasExited) await child.StandardInput.WriteLineAsync("exit");
+            await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
+            uint independentWait = WaitForSingleObject(selected, 0);
+            int independentError = independentWait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+            uint? wrapperWait = null; int? wrapperError = null; string? wrapperUnavailable = null;
+            try { wrapperWait = WaitForSingleObject(child.SafeHandle, 0); if (wrapperWait == uint.MaxValue) wrapperError = Marshal.GetLastWin32Error(); }
+            catch (InvalidOperationException error) { wrapperUnavailable = error.Message; }
+            Console.Error.WriteLine(JsonSerializer.Serialize(new { kind = "managed-exit-vs-held-native-signal", processId = child.Id,
+                createdAt = birth, executablePath, independentWait, independentError, wrapperWait, wrapperError, wrapperUnavailable,
+                elapsedMilliseconds = clock.Elapsed.TotalMilliseconds, observedAtUtc = DateTimeOffset.UtcNow }));
+            if (independentWait == 0) return;
+            if (independentWait != 258) throw new System.ComponentModel.Win32Exception(independentError, "Own independent exit wait failed.");
+            while (true)
+            {
+                int remaining = 3000 - (int)clock.ElapsedMilliseconds;
+                if (remaining <= 0) throw new TimeoutException("Own child native signal deadline exceeded.");
+                uint wait = WaitForSingleObject(selected, (uint)Math.Min(100, remaining));
+                int error = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+                if (wait == 0)
+                {
+                    Console.Error.WriteLine(JsonSerializer.Serialize(new { kind = "held-native-signal-after-managed-exit", processId = child.Id,
+                        createdAt = birth, executablePath, waitResult = wait, nativeError = 0, elapsedMilliseconds = clock.Elapsed.TotalMilliseconds,
+                        observedAtUtc = DateTimeOffset.UtcNow }));
+                    return;
+                }
+                if (wait != 258) throw new System.ComponentModel.Win32Exception(error, "Own held fixture signal failed.");
+            }
+        }
+        catch (TimeoutException)
+        {
+            if (created is null) throw new IOException("Own fixture creation handle is unavailable for timeout cleanup.");
+            bool terminated = TerminateProcess(created, 1);
+            int terminateError = terminated ? 0 : Marshal.GetLastWin32Error();
+            if (!terminated && WaitForSingleObject(created, 0) != 0)
+                throw new System.ComponentModel.Win32Exception(terminateError, "Terminate only the exact created fixture handle.");
+            uint wait = WaitForSingleObject(created, 3000);
+            if (wait != 0) throw new IOException("Own timeout cleanup did not produce a native process signal: " + wait);
+        }
+        finally { if (CreatedHandles.Remove(child, out var original)) original.Dispose(); }
     }
     private static void ExpectRefusal(Action action, string name)
     {
