@@ -1,7 +1,157 @@
 [CmdletBinding()]
-param([switch]$LibraryOnly,[string]$SignedCandidateAssetsDirectory='',[switch]$CoreConfigurationOnly,[string]$OriginalAssetsDirectory='',[ValidateSet('','3.7.8','3.7.9')][string]$OriginalVersion='',[switch]$GuiFailureDiagnostic,[switch]$RestoreAuthenticatedBaseline)
+param([switch]$LibraryOnly,[string]$SignedCandidateAssetsDirectory='',[switch]$CoreConfigurationOnly,[string]$OriginalAssetsDirectory='',[ValidateSet('','3.7.8','3.7.9')][string]$OriginalVersion='',[switch]$GuiFailureDiagnostic,[switch]$RestoreAuthenticatedBaseline,[switch]$OrdinaryGuiDiagnostic)
 Set-StrictMode -Version 2.0
 $ErrorActionPreference='Stop'
+
+
+function Assert-OrdinaryGuiDiagnosticSelection {
+  param([hashtable]$Selection)
+  if([string]$Selection.ORDINARY_GUI_DIAGNOSTIC -ceq 'false'){return}
+  if([string]$Selection.ORDINARY_GUI_DIAGNOSTIC -cne 'true'){throw 'Invalid ordinary GUI diagnostic selection.'}
+  if([string]$Selection.INSTALLER_DIAGNOSTICS -cne 'true' -or [string]$Selection.DIAGNOSTIC_RELEASE_ID -cnotmatch '^[1-9][0-9]{0,18}$' -or [string]$Selection.DIAGNOSTIC_VARIANT -cne 'candidate'){throw 'Ordinary GUI diagnostics require the exact authenticated current candidate.'}
+  foreach($name in @('DIAGNOSTIC_ALL_VERSIONS','DIAGNOSTIC_LEGACY_ONLY','CORE_CONFIGURATION_DIAGNOSTIC','DIAGNOSTIC_LEGACY_RESTORE','PACKAGE_CANDIDATE','NATIVE_ACCEPTANCE','SIGNED_CURRENT_ONLY')){
+    if([string]$Selection[$name] -cne 'false'){throw ('Ordinary GUI diagnostics refuse the conflicting selection: '+$name)}
+  }
+  if([string]$Selection.SIGNED_LEGACY_RELEASE_ID -cne ''){throw 'Ordinary GUI diagnostics refuse a legacy acceptance release.'}
+}
+function Get-OrdinaryGuiDiagnosticAllowedPaths {
+  return @('.github/workflows/ci.yml','tests/windows-installer-diagnostics.ps1','tests/windows-ordinary-gui.cs','tests/windows-ordinary-gui.ps1','tests/ordinary-gui-diagnostic-contract.test.mjs','tests/ordinary-gui-diagnostics.test.mjs')
+}
+function Get-OrdinaryGuiDiagnosticSourceProof {
+  param([string]$Project,$Manifest,[string]$HostedCommit)
+  $artifact=[string]$Manifest.source.commit;$artifactTree=[string]$Manifest.source.tree
+  if($HostedCommit -cnotmatch '^[a-f0-9]{40}$' -or $artifact -cnotmatch '^[a-f0-9]{40}$' -or $artifactTree -cnotmatch '^[a-f0-9]{40}$'){throw 'Diagnostic source identities must be exact commit/tree SHA values.'}
+  if([string]$Manifest.product -cne 'Egoist Lagom' -or [string]$Manifest.version -cne '3.8.0'){throw 'Ordinary GUI diagnostics accept only the current signed 3.8.0 artifact.'}
+  $head=(& git -C $Project rev-parse HEAD).Trim()
+  if($LASTEXITCODE -ne 0 -or $head -cne $HostedCommit){throw 'Diagnostic harness checkout differs from the actual workflow SHA.'}
+  $dirty=@(& git -C $Project status --porcelain --untracked-files=no)
+  if($LASTEXITCODE -ne 0 -or $dirty.Count -ne 0){throw 'Diagnostic harness tracked sources must be clean.'}
+  & git -C $Project cat-file -e ($artifact+'^{commit}') 2>$null
+  if($LASTEXITCODE -ne 0){
+    $origin=(& git -C $Project remote get-url origin).Trim()
+    if($LASTEXITCODE -ne 0 -or $origin -cnotmatch '^https://github[.]com/egoist-ai1/egoist-lagom(?:[.]git)?$'){throw 'Diagnostic source fetch requires the exact official repository.'}
+    $git=Resolve-NativeApplication 'git'
+    [void](Invoke-NativeBounded -Executable $git -Arguments @('-C',$Project,'fetch','--no-tags','--depth=1','origin',$artifact) -Label 'diagnostic-source-fetch' -TimeoutSeconds 60)
+  }
+  $resolved=(& git -C $Project rev-parse ($artifact+'^{commit}')).Trim()
+  if($LASTEXITCODE -ne 0 -or $resolved -cne $artifact){throw 'Fetched diagnostic artifact commit differs.'}
+  $observedTree=(& git -C $Project rev-parse ($artifact+'^{tree}')).Trim()
+  if($LASTEXITCODE -ne 0 -or $observedTree -cne $artifactTree){throw 'Diagnostic artifact tree differs from authenticated integrity.'}
+  $harnessTree=(& git -C $Project rev-parse ($HostedCommit+'^{tree}')).Trim()
+  if($LASTEXITCODE -ne 0 -or $harnessTree -cnotmatch '^[a-f0-9]{40}$'){throw 'Diagnostic harness tree is unavailable.'}
+  $changed=@(& git -C $Project diff --name-only --no-renames --no-ext-diff $artifact $HostedCommit --)
+  if($LASTEXITCODE -ne 0){throw 'Diagnostic source diff is unavailable.'}
+  $allowed=@(Get-OrdinaryGuiDiagnosticAllowedPaths)
+  foreach($name in $changed){if([string]$name -cnotin $allowed){throw ('Unreviewed production/toolchain/trust/diagnostic source difference: '+$name)}}
+  $after=(& git -C $Project rev-parse HEAD).Trim()
+  if($LASTEXITCODE -ne 0 -or $after -cne $HostedCommit){throw 'Diagnostic harness source changed during verification.'}
+  return [ordered]@{artifactSourceCommit=$artifact;artifactSourceTree=$artifactTree;harnessSourceCommit=$HostedCommit;harnessSourceTree=$harnessTree;changedPaths=@($changed);reviewedAllowedPaths=$allowed}
+}
+function Get-OrdinaryGuiDiagnosticFileReceipt {
+  param([string]$Path,[string]$Name)
+  Assert-NativeOrdinaryPath -Path $Path -Leaf
+  return [ordered]@{file=$Name;bytes=(Get-Item -LiteralPath $Path).Length;sha256=(Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash}
+}
+function Get-OrdinaryGuiDiagnosticBuildEvidence {
+  param([string]$WorkRoot)
+  $records=@()
+  foreach($directory in @(Get-ChildItem -LiteralPath $WorkRoot -Directory | Where-Object {$_.Name -cmatch '^ordinary-gui-[a-f0-9]{12}$'})){
+    Assert-NativeOrdinaryPath -Path $directory.FullName
+    $files=@()
+    foreach($relative in @('source-hashes.json','build.txt','run.stdout.txt','run.stderr.txt','bin/Release/net10.0-windows/OrdinaryGuiHarness.exe','bin/Release/net10.0-windows/OrdinaryGuiHarness.dll')){
+      $file=Join-Path $directory.FullName $relative
+      if(Test-Path -LiteralPath $file -PathType Leaf){$files+=Get-OrdinaryGuiDiagnosticFileReceipt -Path $file -Name $relative}
+    }
+    $sourcePath=Join-Path $directory.FullName 'source-hashes.json'
+    $sources=if(Test-Path -LiteralPath $sourcePath -PathType Leaf){@(Get-Content -LiteralPath $sourcePath -Raw | ConvertFrom-Json)}else{@()}
+    $records+=[ordered]@{directory=$directory.Name;files=$files;transitiveSourceHashes=$sources}
+  }
+  return $records
+}
+
+function New-OrdinaryGuiDiagnosticIntegrityCopy {
+  param([string]$ManifestPath,[string]$Workspace,[string]$ExpectedSha256,[string]$RunId,[string]$RunAttempt)
+  if($ExpectedSha256 -cnotmatch '^[a-f0-9]{64}$' -or $RunId -cnotmatch '^[1-9][0-9]*$' -or $RunAttempt -cnotmatch '^[1-9][0-9]*$'){throw 'Invalid signed diagnostic staging identity.'}
+  Assert-NativeOrdinaryPath -Path $ManifestPath -Leaf
+  Assert-NativeOrdinaryPath -Path $Workspace
+  $before=Get-OrdinaryGuiDiagnosticFileReceipt -Path $ManifestPath -Name 'original/package-integrity.json'
+  if($before.sha256.ToLowerInvariant() -cne $ExpectedSha256 -or $before.bytes -gt 16777216){throw 'Diagnostic original integrity differs from signed bytes.'}
+  $parent=Join-Path $Workspace 'dist'
+  if(Test-Path -LiteralPath $parent){Assert-NativeOrdinaryPath -Path $parent}else{[void][IO.Directory]::CreateDirectory($parent);Assert-NativeOrdinaryPath -Path $parent}
+  $directory=Assert-NativePathWithin -Path (Join-Path $parent ('ordinary-diag-'+$RunId+'-'+$RunAttempt)) -Root $Workspace
+  if(Test-Path -LiteralPath $directory){throw 'Diagnostic integrity staging must be fresh.'}
+  [void][IO.Directory]::CreateDirectory($directory);Assert-NativeOrdinaryPath -Path $directory
+  $copy=Join-Path $directory 'package-integrity.json'
+  $input=[IO.File]::Open($ManifestPath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  $output=$null
+  try{$output=[IO.File]::Open($copy,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None);$input.CopyTo($output);$output.Flush($true)}
+  finally{if($output){$output.Dispose()};$input.Dispose()}
+  $copied=Get-OrdinaryGuiDiagnosticFileReceipt -Path $copy -Name 'staged/package-integrity.json'
+  $after=Get-OrdinaryGuiDiagnosticFileReceipt -Path $ManifestPath -Name 'original/package-integrity.json'
+  if($after.sha256 -cne $before.sha256 -or $after.bytes -ne $before.bytes -or $copied.sha256 -cne $before.sha256 -or $copied.bytes -ne $before.bytes){throw 'Diagnostic integrity changed or its byte copy differs.'}
+  return [ordered]@{path=$copy;original=$after;copy=$copied;signedSha256=$ExpectedSha256}
+}
+
+function Invoke-OrdinaryGuiDiagnosticAttempt {
+  param($Receipt,[ValidateSet('original','instrumented')][string]$Label,[bool]$CaptureStandardStreams)
+  . (Join-Path $PSScriptRoot 'windows-ordinary-gui.ps1') -OrdinaryGuiLibraryOnly
+  Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+  $evidence=Join-Path $script:Work ('ordinary-'+$Label)
+  [void][IO.Directory]::CreateDirectory($evidence)
+  $attempt=[ordered]@{kind='actual-ordinary-gui-launch-diagnostic';releaseReady=$false;result='running';label=$Label;captureStandardStreams=$CaptureStandardStreams;artifactSourceCommit=$script:SourceCommit;harnessSourceCommit=$env:GITHUB_SHA;launch=$null;normalClose=$false;exitCode=$null;cleanup=$null;buildEvidence=@()}
+  $beforeBuilds=@(Get-ChildItem -LiteralPath $script:Work -Directory | Select-Object -ExpandProperty Name)
+  $lease=$null;$child=$null;$failure=$null
+  try{
+    $lease=Start-OrdinaryGuiLease -CanonicalInstalledGuiPath (Join-Path $script:InstallRoot 'EgoistShield.exe') -IntegrityManifestPath $Receipt.stagedIntegrity.path -ExpectedSourceCommit $script:SourceCommit -ExpectedHarnessSourceCommit $env:GITHUB_SHA -CaptureStandardStreams $CaptureStandardStreams -WorkRoot $script:Work -EvidenceDirectory $evidence
+    $proof=$lease.Receipt;$attempt.launch=$proof
+    if(([string]$proof.source.integrityManifestSha256).ToLowerInvariant() -cne $Receipt.stagedIntegrity.signedSha256 -or $proof.source.version -cne $script:Version){throw 'Ordinary GUI consumed integrity bytes/version different from the signed artifact.'}
+    if($proof.source.commit -cne $script:SourceCommit -or $proof.artifactSourceCommit -cne $script:SourceCommit -or $proof.harnessSourceCommit -cne $env:GITHUB_SHA -or @($proof.arguments).Count -ne 0){throw 'Ordinary GUI diagnostic launch/source proof differs.'}
+    $child=[Diagnostics.Process]::GetProcessById([int]$proof.processId)
+    if($child.HasExited -or $child.MainModule.FileName -ine (Join-Path $script:InstallRoot 'EgoistShield.exe') -or [Math]::Abs(($child.StartTime.ToUniversalTime()-[DateTimeOffset]::Parse($proof.startTimeUtc).UtcDateTime).TotalMilliseconds) -gt 20){throw 'Ordinary GUI diagnostic child identity changed before close.'}
+    $window=[Windows.Automation.AutomationElement]::FromHandle([IntPtr]([long]$proof.mainWindowHandle))
+    if(-not $window -or $window.Current.ProcessId -ne $child.Id){throw 'Diagnostic UIA window does not belong to the held ordinary GUI.'}
+    $pattern=$null
+    if(-not $window.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'Diagnostic ordinary GUI lacks a native close pattern.'}
+    ([Windows.Automation.WindowPattern]$pattern).Close()
+    if(-not $child.WaitForExit(30000)){throw 'Diagnostic ordinary GUI did not close within its held-process budget.'}
+    $attempt.exitCode=$child.ExitCode
+    if($child.ExitCode -ne 0){throw 'Diagnostic ordinary GUI exited with a nonzero code after native close.'}
+    $attempt.normalClose=$true;$attempt.result='ordinary-launch-and-normal-close-diagnostic-only'
+  }catch{$failure=$_;$attempt.result='failed';$attempt.error=$_.Exception.Message}
+  finally{
+    if($lease){
+      try{$attempt.cleanup=Stop-OrdinaryGuiLease -Lease $lease;if(-not $attempt.normalClose -or -not $attempt.cleanup.exitedNormally -or $attempt.cleanup.exitCode -ne 0){throw 'Diagnostic ordinary GUI lacks normal exit and zero-orphan cleanup.'}}
+      catch{if(-not $failure){$failure=$_;$attempt.result='failed';$attempt.error=$_.Exception.Message}}
+    }
+    if($child){$child.Dispose()}
+    try{
+      $attempt.buildEvidence=@(Get-OrdinaryGuiDiagnosticBuildEvidence -WorkRoot $script:Work | Where-Object {$_.directory -cnotin $beforeBuilds})
+      $attempt.integrityCopyAfter=Get-OrdinaryGuiDiagnosticFileReceipt -Path $Receipt.stagedIntegrity.path -Name 'staged/package-integrity.json'
+      if($attempt.integrityCopyAfter.sha256.ToLowerInvariant() -cne $Receipt.stagedIntegrity.signedSha256){throw 'Diagnostic integrity copy changed during ordinary launch.'}
+    }catch{if(-not $failure){$failure=$_;$attempt.result='failed';$attempt.error=$_.Exception.Message}else{$attempt.evidenceError=$_.Exception.Message}}
+  }
+  if(-not $failure){try{Assert-NativeNoGui}catch{$attempt.result='failed';$attempt.error=$_.Exception.Message}}
+  return $attempt
+}
+
+function Invoke-OrdinaryGuiLaunchDiagnostic {
+  param($Receipt)
+  $Receipt.ordinaryGui=[ordered]@{kind='actual-ordinary-gui-launch-diagnostic';releaseReady=$false;artifactSourceCommit=$script:SourceCommit;harnessSourceCommit=$env:GITHUB_SHA;result='running';attempts=@()}
+  $signedMetadata=Get-Content -LiteralPath (Join-Path $SignedCandidateAssetsDirectory 'release-manifest.json') -Raw | ConvertFrom-Json
+  $Receipt.stagedIntegrity=New-OrdinaryGuiDiagnosticIntegrityCopy -ManifestPath $script:ManifestPath -Workspace $env:GITHUB_WORKSPACE -ExpectedSha256 $signedMetadata.integrityManifestSha256 -RunId $env:GITHUB_RUN_ID -RunAttempt $env:GITHUB_RUN_ATTEMPT
+  $original=Invoke-OrdinaryGuiDiagnosticAttempt -Receipt $Receipt -Label 'original' -CaptureStandardStreams $false
+  $Receipt.ordinaryGui.attempts+=,$original
+  if($original.result -ceq 'ordinary-launch-and-normal-close-diagnostic-only'){
+    $Receipt.ordinaryGui.result='original-ordinary-launch-and-normal-close-diagnostic-only'
+    $Receipt.ordinaryGui.cause='Previous early exit not reproduced by this bounded original-style observation.'
+    return
+  }
+  $instrumented=Invoke-OrdinaryGuiDiagnosticAttempt -Receipt $Receipt -Label 'instrumented' -CaptureStandardStreams $true
+  $Receipt.ordinaryGui.attempts+=,$instrumented
+  $Receipt.ordinaryGui.result='original-launch-failed-with-instrumented-followup'
+  $Receipt.ordinaryGui.error=$original.error
+  throw ('Original-style ordinary GUI launch failed; separately instrumented follow-up retained: '+$original.error)
+}
 
 if($LibraryOnly){return}
 $diagnosticRestore=[bool]$RestoreAuthenticatedBaseline
@@ -10,6 +160,12 @@ if($CoreConfigurationOnly -and $SignedCandidateAssetsDirectory){throw 'Choose ei
 # Use the real hosted guard entry point before any directory or machine write.
 & (Join-Path $PSScriptRoot 'windows-production-acceptance.ps1') -Mode GuardOnly
 . (Join-Path $PSScriptRoot 'windows-production-acceptance.ps1') -LibraryOnly
+if($OrdinaryGuiDiagnostic){
+  if(-not $SignedCandidateAssetsDirectory -or $CoreConfigurationOnly -or $OriginalAssetsDirectory -or $OriginalVersion -or $GuiFailureDiagnostic -or $RestoreAuthenticatedBaseline){throw 'Ordinary GUI diagnostics require current authenticated candidate assets only.'}
+  $selection=@{}
+  foreach($name in @('ORDINARY_GUI_DIAGNOSTIC','INSTALLER_DIAGNOSTICS','DIAGNOSTIC_RELEASE_ID','DIAGNOSTIC_VARIANT','DIAGNOSTIC_ALL_VERSIONS','DIAGNOSTIC_LEGACY_ONLY','CORE_CONFIGURATION_DIAGNOSTIC','DIAGNOSTIC_LEGACY_RESTORE','PACKAGE_CANDIDATE','NATIVE_ACCEPTANCE','SIGNED_LEGACY_RELEASE_ID','SIGNED_CURRENT_ONLY')){$selection[$name]=[Environment]::GetEnvironmentVariable($name)}
+  Assert-OrdinaryGuiDiagnosticSelection -Selection $selection
+}
 if(($OriginalAssetsDirectory -or $OriginalVersion -or $GuiFailureDiagnostic) -and -not $SignedCandidateAssetsDirectory){throw 'Additional failure diagnostics require an authenticated signed candidate.'}
 if([bool]$OriginalAssetsDirectory -ne [bool]$OriginalVersion){throw 'Original diagnostic assets and version must be selected together.'}
 $project=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -28,6 +184,7 @@ Assert-NativeOrdinaryPath -Path $helper -Leaf
 $receipt=[ordered]@{kind='real-source-phase-installer-diagnostic';sourceCommit=$env:GITHUB_SHA;runId=$env:GITHUB_RUN_ID;os=[Environment]::OSVersion.VersionString;imageOS=$env:ImageOS;imageVersion=$env:ImageVersion;parentPowerShell=$PSVersionTable.PSVersion.ToString();cleanStart=$true;installerExecuted=$false;preInstallExecuted=$false;sourceHashes=@();mutations=@();gui=@();beforeNetwork=(Get-NativeNetworkFingerprint);beforeServices=(Get-NativeProductServices);beforeTasks=(Get-NativeProductTasks);result='running';releaseReady=$false}
 foreach($name in @('owned-cleanup.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1')){$path=Join-Path $project ('src\installer\'+$name);$receipt.sourceHashes+=[ordered]@{path=('src/installer/'+$name);sha256=(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash}}
 $receiptPath=Join-Path $script:Work 'installer-diagnostic.json'
+if($OrdinaryGuiDiagnostic){$script:Receipt=$receipt;$script:ReceiptPath=$receiptPath;$receipt.checks=@();$receipt.networkReadbacks=@()}
 $receipt | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $receiptPath -Encoding utf8
 $failure=$null
 try{
@@ -79,6 +236,21 @@ try{
     $installer=Join-Path $assets ('EgoistShield-Setup-'+$version+'.exe')
     $script:SourceCommit=$manifest.source.commit;$script:Version=$version;$script:ManifestPath=Join-Path $assets 'package-integrity.json';$script:Node=$node
     $script:Core=Join-Path $script:InstallRoot 'resources\core-service\win-x64\EgoistShield.Service.exe'
+
+    if($OrdinaryGuiDiagnostic){
+      $receipt.kind='real-signed-current-ordinary-gui-diagnostic'
+      $receipt.sourceProof=Get-OrdinaryGuiDiagnosticSourceProof -Project $project -Manifest $manifest -HostedCommit $env:GITHUB_SHA
+      $receipt.harnessSourceCommit=$receipt.sourceProof.harnessSourceCommit;$receipt.harnessSourceTree=$receipt.sourceProof.harnessSourceTree;$receipt.artifactSourceTree=$receipt.sourceProof.artifactSourceTree
+      $receipt.authenticatedAssets=@()
+      foreach($name in @(('EgoistShield-Setup-'+$version+'.exe'),'package-integrity.json','release-manifest.json','release-manifest.json.sig','release-key-registry.json','release-key-registry.json.sig')){$receipt.authenticatedAssets+=Get-OrdinaryGuiDiagnosticFileReceipt -Path (Join-Path $assets $name) -Name $name}
+      $receipt.harnessFileHashes=@()
+      foreach($name in @(Get-OrdinaryGuiDiagnosticAllowedPaths)){$receipt.harnessFileHashes+=Get-OrdinaryGuiDiagnosticFileReceipt -Path (Join-Path $project $name) -Name $name}
+      $dotnet=Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'
+      $sdk=Invoke-NativeBounded -Executable $dotnet -Arguments @('--version') -Label 'ordinary-diagnostic-sdk' -TimeoutSeconds 30
+      $pin=(Get-Content -LiteralPath (Join-Path $project 'global.json') -Raw | ConvertFrom-Json).sdk.version
+      if((Get-Content -LiteralPath (Join-Path $script:Work 'ordinary-diagnostic-sdk.stdout.txt') -Raw).Trim() -cne $pin){throw 'Ordinary diagnostic SDK differs from the project pin.'}
+      $receipt.harnessSdk=[ordered]@{version=$pin;readback=$sdk}
+    }
     if($OriginalVersion){
       $original=Assert-NativePathWithin $OriginalAssetsDirectory $env:RUNNER_TEMP
       Assert-NativeOrdinaryPath $original
@@ -111,6 +283,33 @@ try{
       $receipt.install=$phase;$receipt.result='signed-setup-installed-diagnostic-only'
     }
     $receipt.installedAcl=@(foreach($relative in @('','EgoistShield.exe','EgoistShield.Worker.exe','resources','resources\app.asar','resources\component-worker.cjs','resources\worker-host-integrity.json','resources\core-service\win-x64\EgoistShield.Service.exe')){$path=Join-Path $script:InstallRoot $relative;if(Test-Path -LiteralPath $path){Get-NativePathAclSnapshot $path}})
+
+    if($OrdinaryGuiDiagnostic){
+      $receipt.installedAcl=@(foreach($relative in @('','EgoistShield.exe','EgoistShield.Worker.exe','resources','resources\app.asar','resources\component-worker.cjs','resources\worker-host-integrity.json','resources\core-service\win-x64\EgoistShield.Service.exe')){Assert-NativeAdministratorOwned (Join-Path $script:InstallRoot $relative) -InstallationPath})
+      $verifyWork=Join-Path $env:RUNNER_TEMP ("lagom-legacy-native-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT")
+      if(Test-Path -LiteralPath $verifyWork){throw 'Ordinary diagnostic payload work must be fresh.'}
+      [void][IO.Directory]::CreateDirectory($verifyWork)
+      $verifyOutput=Join-Path $verifyWork 'installed-payload.json'
+      $optionsPath=Join-Path $verifyWork 'installed-payload.options.json'
+      $options=[ordered]@{installedRoot=$script:InstallRoot;integrityPath=$script:ManifestPath;sourceCommit=$script:SourceCommit;integritySha256=(Get-FileHash -LiteralPath $script:ManifestPath -Algorithm SHA256).Hash.ToLowerInvariant();installerSha256=$receipt.installer.sha256.ToLowerInvariant();output=$verifyOutput}
+      [IO.File]::WriteAllText($optionsPath,($options|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+      [void](Invoke-NativeBounded -Executable $node -Arguments @((Join-Path $PSScriptRoot 'windows-production-legacy-upgrade.mjs'),'verify-payload',$optionsPath) -Label 'ordinary-diagnostic-installed-payload' -TimeoutSeconds 180)
+      Copy-Item -LiteralPath $verifyOutput -Destination (Join-Path $script:Work 'installed-payload.json')
+      $receipt.installedPayload=Get-OrdinaryGuiDiagnosticFileReceipt -Path (Join-Path $script:Work 'installed-payload.json') -Name 'installed-payload.json'
+      $receipt.elevation=Assert-NativeGuiElevation
+      $receipt.core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
+      $receipt.corePolicy=Get-NativeRecoveryPolicy 'EgoistShieldCore'
+      Assert-NativeNoGui;Assert-NativeNetworkPreserved 'ordinary-diagnostic-clean-install'
+      $gui=Invoke-NativeGui -Action 'provision-telegram' -Label 'gui-provision';Assert-NativeNoGui
+      $port=[int]$gui.installResult.portConflict.port
+      $receipt.telegramWithoutGui=Assert-NativeTelegramEndpoint -Port $port
+      $receipt.telegramPolicy=Get-NativeRecoveryPolicy 'EgoistShieldTelegramProxy'
+      Assert-NativeNetworkPreserved 'ordinary-diagnostic-privileged-gui-close'
+      $receipt.precedingSequence='actual-authenticated-setup-payload-acl-core-privileged-gui-telegram-provision-normal-close-before-ordinary-launch'
+      $receipt.mutations+=@{kind='actual-ordinary-gui-launch-and-native-close';target='canonical installed GUI';scope='own held child/job only'}
+      Invoke-OrdinaryGuiLaunchDiagnostic -Receipt $receipt
+      $receipt.result='signed-current-ordinary-gui-diagnostic-only'
+    }
     if($GuiFailureDiagnostic){
       if($OriginalVersion){
         . (Join-Path $PSScriptRoot 'windows-production-legacy-upgrade.ps1') -ExpectedOldVersion $OriginalVersion -LibraryOnly

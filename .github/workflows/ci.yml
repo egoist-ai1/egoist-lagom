@@ -19,6 +19,10 @@ on:
         description: Capture actual source installer phase diagnostics on a clean disposable Windows runner
         type: boolean
         default: false
+      ordinary_gui_diagnostic:
+        description: Diagnose only the actual ordinary GUI from the authenticated current signed draft
+        type: boolean
+        default: false
       diagnostic_release_id:
         description: Optional signed draft ID for diagnostic-only Setup execution with both source identities recorded
         type: string
@@ -53,7 +57,7 @@ permissions:
 
 jobs:
   installer-diagnostics:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.installer_diagnostics }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.installer_diagnostics || inputs.ordinary_gui_diagnostic) }}
     runs-on: ${{ matrix.variant == 'candidate' && 'windows-latest' || 'windows-2022' }}
     timeout-minutes: 15
     strategy:
@@ -75,16 +79,27 @@ jobs:
           DIAGNOSTIC_LEGACY_RESTORE: ${{ inputs.legacy_baseline_restore }}
           DIAGNOSTIC_LEGACY_ONLY: ${{ inputs.diagnostic_legacy_only }}
           CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
+          ORDINARY_GUI_DIAGNOSTIC: ${{ inputs.ordinary_gui_diagnostic }}
+          INSTALLER_DIAGNOSTICS: ${{ inputs.installer_diagnostics }}
+          DIAGNOSTIC_VARIANT: candidate
+          PACKAGE_CANDIDATE: ${{ inputs.package_candidate }}
+          NATIVE_ACCEPTANCE: ${{ inputs.native_acceptance }}
+          SIGNED_LEGACY_RELEASE_ID: ${{ inputs.signed_legacy_release_id }}
+          SIGNED_CURRENT_ONLY: ${{ inputs.signed_current_only }}
         shell: pwsh
         run: |
           ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          . ./tests/windows-installer-diagnostics.ps1 -LibraryOnly
+          $ordinarySelection=@{}
+          foreach($name in @('ORDINARY_GUI_DIAGNOSTIC','INSTALLER_DIAGNOSTICS','DIAGNOSTIC_RELEASE_ID','DIAGNOSTIC_VARIANT','DIAGNOSTIC_ALL_VERSIONS','DIAGNOSTIC_LEGACY_ONLY','CORE_CONFIGURATION_DIAGNOSTIC','DIAGNOSTIC_LEGACY_RESTORE','PACKAGE_CANDIDATE','NATIVE_ACCEPTANCE','SIGNED_LEGACY_RELEASE_ID','SIGNED_CURRENT_ONLY')){$ordinarySelection[$name]=[Environment]::GetEnvironmentVariable($name)}
+          Assert-OrdinaryGuiDiagnosticSelection -Selection $ordinarySelection
           if ($env:DIAGNOSTIC_LEGACY_ONLY -eq 'true' -and $env:DIAGNOSTIC_ALL_VERSIONS -ne 'true') { throw 'Legacy-only diagnostics require the authenticated original-version selection.' }
           if ($env:DIAGNOSTIC_ALL_VERSIONS -eq 'true' -and ($env:DIAGNOSTIC_RELEASE_ID -eq '' -or $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true')) { throw 'Original version diagnostics require an authenticated signed candidate.' }
           if ($env:DIAGNOSTIC_LEGACY_RESTORE -cnotin @('true','false')) { throw 'Invalid diagnostic restoration selection.' }
           if ($env:DIAGNOSTIC_LEGACY_RESTORE -eq 'true' -and $env:DIAGNOSTIC_ALL_VERSIONS -ne 'true') { throw 'Restored launch diagnostics require authenticated original versions.' }
           if ($env:DIAGNOSTIC_RELEASE_ID -ne '' -and $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { throw 'Choose either signed Setup or source Core diagnostics.' }
       - name: Read the Core diagnostic SDK
-        if: ${{ inputs.core_configuration_diagnostic || inputs.legacy_baseline_restore }}
+        if: ${{ inputs.core_configuration_diagnostic || inputs.legacy_baseline_restore || inputs.ordinary_gui_diagnostic }}
         id: diagnostic-sdk
         env:
           DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
@@ -100,7 +115,7 @@ jobs:
           "DOTNET_CLI_TELEMETRY_OPTOUT=1" >> $env:GITHUB_ENV
           "DOTNET_NOLOGO=1" >> $env:GITHUB_ENV
       - name: Use the exact Core diagnostic SDK
-        if: ${{ inputs.core_configuration_diagnostic || inputs.legacy_baseline_restore }}
+        if: ${{ inputs.core_configuration_diagnostic || inputs.legacy_baseline_restore || inputs.ordinary_gui_diagnostic }}
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ steps.diagnostic-sdk.outputs.version }}
@@ -110,7 +125,7 @@ jobs:
         with:
           node-version: 24
       - name: Install locked original verifier dependencies
-        if: ${{ inputs.diagnostic_release_id != '' && inputs.diagnostic_all_versions }}
+        if: ${{ inputs.diagnostic_release_id != '' && (inputs.diagnostic_all_versions || inputs.ordinary_gui_diagnostic) }}
         shell: pwsh
         run: |
           npm ci --ignore-scripts --no-audit --fund=false --cache (Join-Path $env:RUNNER_TEMP 'lagom-diagnostic-npm-cache')
@@ -181,10 +196,20 @@ jobs:
           CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
           DIAGNOSTIC_ALL_VERSIONS: ${{ inputs.diagnostic_all_versions }}
           DIAGNOSTIC_LEGACY_RESTORE: ${{ inputs.legacy_baseline_restore }}
+          DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+          DIAGNOSTIC_LEGACY_ONLY: ${{ inputs.diagnostic_legacy_only }}
+          ORDINARY_GUI_DIAGNOSTIC: ${{ inputs.ordinary_gui_diagnostic }}
+          INSTALLER_DIAGNOSTICS: ${{ inputs.installer_diagnostics }}
+          DIAGNOSTIC_VARIANT: candidate
+          PACKAGE_CANDIDATE: ${{ inputs.package_candidate }}
+          NATIVE_ACCEPTANCE: ${{ inputs.native_acceptance }}
+          SIGNED_LEGACY_RELEASE_ID: ${{ inputs.signed_legacy_release_id }}
+          SIGNED_CURRENT_ONLY: ${{ inputs.signed_current_only }}
         shell: pwsh
         run: |
           if ($env:DOTNET_INSTALL_DIR) { $env:SHIELD_DOTNET = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe' }
-          if ($env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -CoreConfigurationOnly }
+          if ($env:ORDINARY_GUI_DIAGNOSTIC -ceq 'true') { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS -OrdinaryGuiDiagnostic }
+          elseif ($env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -CoreConfigurationOnly }
           elseif ($env:LAGOM_DIAGNOSTIC_OLD_ASSETS) {
             if ($env:DIAGNOSTIC_LEGACY_RESTORE -cnotin @('true','false')) { throw 'Invalid diagnostic baseline selection.' }
             $diagnosticOptions = @{ SignedCandidateAssetsDirectory=$env:LAGOM_DIAGNOSTIC_ASSETS; OriginalAssetsDirectory=$env:LAGOM_DIAGNOSTIC_OLD_ASSETS; OriginalVersion=$env:LAGOM_DIAGNOSTIC_OLD_VERSION; GuiFailureDiagnostic=$true; RestoreAuthenticatedBaseline=($env:DIAGNOSTIC_LEGACY_RESTORE -ceq 'true') }
@@ -221,8 +246,21 @@ jobs:
           NATIVE_ACCEPTANCE: ${{ inputs.native_acceptance }}
           PACKAGE_CANDIDATE: ${{ inputs.package_candidate }}
           SIGNED_LEGACY_RELEASE_ID: ${{ inputs.signed_legacy_release_id }}
+          ORDINARY_GUI_DIAGNOSTIC: ${{ inputs.ordinary_gui_diagnostic }}
+          INSTALLER_DIAGNOSTICS: ${{ inputs.installer_diagnostics }}
+          DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+          DIAGNOSTIC_VARIANT: candidate
+          DIAGNOSTIC_ALL_VERSIONS: ${{ inputs.diagnostic_all_versions }}
+          DIAGNOSTIC_LEGACY_ONLY: ${{ inputs.diagnostic_legacy_only }}
+          CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
+          DIAGNOSTIC_LEGACY_RESTORE: ${{ inputs.legacy_baseline_restore }}
+          SIGNED_CURRENT_ONLY: ${{ inputs.signed_current_only }}
         shell: pwsh
         run: |
+          . ./tests/windows-installer-diagnostics.ps1 -LibraryOnly
+          $ordinarySelection=@{}
+          foreach($name in @('ORDINARY_GUI_DIAGNOSTIC','INSTALLER_DIAGNOSTICS','DIAGNOSTIC_RELEASE_ID','DIAGNOSTIC_VARIANT','DIAGNOSTIC_ALL_VERSIONS','DIAGNOSTIC_LEGACY_ONLY','CORE_CONFIGURATION_DIAGNOSTIC','DIAGNOSTIC_LEGACY_RESTORE','PACKAGE_CANDIDATE','NATIVE_ACCEPTANCE','SIGNED_LEGACY_RELEASE_ID','SIGNED_CURRENT_ONLY')){$ordinarySelection[$name]=[Environment]::GetEnvironmentVariable($name)}
+          Assert-OrdinaryGuiDiagnosticSelection -Selection $ordinarySelection
           if ($env:NATIVE_ACCEPTANCE -eq 'true' -and $env:PACKAGE_CANDIDATE -ne 'true') { throw 'Native acceptance requires a packaged candidate.' }
           if ($env:SIGNED_LEGACY_RELEASE_ID -and $env:SIGNED_LEGACY_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Signed legacy release ID must be an exact GitHub release ID.' }
       - name: Read the pinned SDK

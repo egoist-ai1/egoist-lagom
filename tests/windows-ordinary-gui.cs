@@ -12,7 +12,7 @@ namespace OrdinaryGuiHarness;
 
 internal sealed record Options(string Mode, string WorkRoot, string ReceiptPath,
     string CanonicalInstalledGuiPath = "", string IntegrityManifestPath = "", string ExpectedSourceCommit = "",
-    int LeaseSeconds = 420, int WindowTimeoutSeconds = 90);
+    int LeaseSeconds = 420, int WindowTimeoutSeconds = 90, string ExpectedHarnessSourceCommit = "", bool CaptureStandardStreams = true);
 internal sealed record TokenProof(string UserSid, bool Elevated, bool AdministratorsEnabled,
     int IntegrityRid, string IntegritySid, int SessionId, int ElevationType, bool Restricted,
     bool UiAccess, int TokenType, bool HasRestrictions, string[] EnabledPrivileges)
@@ -33,6 +33,7 @@ internal static class Program
     private const uint TokenAccess = 0x000B; // QUERY | DUPLICATE | ASSIGN_PRIMARY
     private static int Main(string[] args)
     {
+        if (args.Length == 1 && args[0] == "--proof-exit-child") { Console.Write("ordinary-diag-stdout\n"); Console.Error.Write("ordinary-diag-stderr\n"); return 37; }
         if (args.Length == 1 && args[0] == "--proof-child") { Thread.Sleep(120000); return 0; }
         if (args.Length != 2 || args[0] != "--options") { Console.Error.WriteLine("Use the fixed options-file contract."); return 2; }
         Options? options = null;
@@ -68,11 +69,13 @@ internal static class Program
         if (File.Exists(options.ReceiptPath)) throw new IOException("A receipt already exists; inspect the previous attempt.");
         if (options.Mode is "self-test" or "fixture-guardian")
         {
-            if (options.CanonicalInstalledGuiPath.Length != 0 || options.IntegrityManifestPath.Length != 0 || options.ExpectedSourceCommit.Length != 0)
+            if (options.CanonicalInstalledGuiPath.Length != 0 || options.IntegrityManifestPath.Length != 0 || options.ExpectedSourceCommit.Length != 0 || options.ExpectedHarnessSourceCommit.Length != 0)
                 throw new InvalidDataException("Self-test cannot select any installed product.");
             return;
         }
-        HostedGuard(options.ExpectedSourceCommit);
+        HostedGuard(ResolveHarnessSourceCommit(options));
+        if (!options.CaptureStandardStreams && (options.ExpectedHarnessSourceCommit.Length == 0 || ResolveHarnessSourceCommit(options) == options.ExpectedSourceCommit))
+            throw new UnauthorizedAccessException("Original stream/inheritance mode requires explicit diagnostic harness source.");
         _ = Within(options.WorkRoot, Environment.GetEnvironmentVariable("RUNNER_TEMP")!);
         _ = Within(options.ReceiptPath, Environment.GetEnvironmentVariable("RUNNER_TEMP")!);
         _ = Within(options.IntegrityManifestPath, Environment.GetEnvironmentVariable("GITHUB_WORKSPACE")!);
@@ -82,6 +85,14 @@ internal static class Program
         OrdinaryPath(canonical, leaf: true);
     }
 
+    private static string ResolveHarnessSourceCommit(Options options)
+    {
+        string harness = options.ExpectedHarnessSourceCommit.Length == 0 ? options.ExpectedSourceCommit : options.ExpectedHarnessSourceCommit;
+        foreach (string commit in new[] { options.ExpectedSourceCommit, harness })
+            if (commit.Length != 40 || commit.Any(c => c is not (>= '0' and <= '9') and not (>= 'a' and <= 'f')))
+                throw new UnauthorizedAccessException("Artifact and harness source commits must be exact lowercase40hex.");
+        return harness;
+    }
     private static void HostedGuard(string expected)
     {
         foreach (var pair in new Dictionary<string, string> { ["GITHUB_ACTIONS"] = "true", ["CI"] = "true", ["RUNNER_ENVIRONMENT"] = "github-hosted", ["RUNNER_OS"] = "Windows", ["GITHUB_REPOSITORY"] = "egoist-ai1/egoist-lagom" })
@@ -108,15 +119,15 @@ internal static class Program
         using SafeKernelHandle parent = Native.OpenParent();
         using NativeJob job = NativeJob.Create();
         var attempts = new List<object>();
-        using LaunchedProcess child = LaunchWithOrdinaryToken(original, gui, "\"" + gui + "\"", root, options.WorkRoot, job, attempts, selfTest: false);
+        using LaunchedProcess child = LaunchWithOrdinaryToken(original, gui, "\"" + gui + "\"", root, options.WorkRoot, job, attempts, selfTest: false, captureStandardStreams: options.CaptureStandardStreams);
         string stopNonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
         string stopPath = Path.Combine(Path.GetDirectoryName(options.ReceiptPath)!, "stop-" + stopNonce + ".txt");
-        IntPtr window = IntPtr.Zero;
+        IntPtr window = IntPtr.Zero; var windowWatch = new Stopwatch();
         try
         {
             using (Process exactChild = Process.GetProcessById(child.Pid)) GuiLaunchPolicy.RequireMainProcess(exactChild);
             child.Resume();
-            var watch = Stopwatch.StartNew();
+            var watch = Stopwatch.StartNew(); windowWatch.Start();
             while (watch.Elapsed.TotalSeconds < options.WindowTimeoutSeconds && child.Alive)
             {
                 window = FindWindow(child.Pid);
@@ -127,25 +138,38 @@ internal static class Program
             var ready = new { schemaVersion = 1, stage = "launched", ok = true, productLaunched = true,
                 processId = child.Pid, startTimeUtc = child.StartUtc, executable = gui, arguments = Array.Empty<string>(),
                 mainWindowHandle = window.ToInt64(), token = child.Proof, tokenMethod = child.TokenMethod, launchApi = child.LaunchApi,
-                source, runnerToken = runner, attempts, stopPath, stopNonce, guardianProcessId = Environment.ProcessId,
+                source, artifactSourceCommit = options.ExpectedSourceCommit, harnessSourceCommit = ResolveHarnessSourceCommit(options),
+                diagnosticSourceMode = ResolveHarnessSourceCommit(options) != options.ExpectedSourceCommit, captureStandardStreams = options.CaptureStandardStreams,
+                launchEnvironment = child.LaunchEnvironment, desktop = Native.DesktopMetadata(child.ThreadId),
+                windowWaitElapsedMilliseconds = windowWatch.ElapsedMilliseconds, runnerToken = runner, attempts, stopPath, stopNonce, guardianProcessId = Environment.ProcessId,
                 leaseSeconds = options.LeaseSeconds, coreReady = (bool?)null, coreReadyEvidence = "UIA observation belongs to the caller; a visible window does not prove Core readiness." };
             Save(options.ReceiptPath, ready); Console.WriteLine(JsonSerializer.Serialize(ready)); Console.Out.Flush();
             while (child.Alive && Native.WaitForSingleObject(parent, 0) == 0x102 && watch.Elapsed.TotalSeconds < options.LeaseSeconds && !StopRequested(stopPath, stopNonce)) Thread.Sleep(100);
             bool exitedNormally = !child.Alive;
             uint? exitCode = exitedNormally ? child.ExitCode : null;
+            object originalChild = child.Observe();
             job.Terminate();
             bool noOrphans = job.WaitEmpty(10000);
+            object streams = child.Output.Finish();
             Save(options.ReceiptPath, new { schemaVersion = 1, stage = "completed", ok = noOrphans, launch = ready,
-                exitedNormally, exitCode, cleanup = new { scope = "only this launch's Job Object", noOrphans, activeProcesses = job.ActiveProcesses },
+                exitedNormally, exitCode, originalChild, streams, profileMainLog = Program.ProfileLog(child.LaunchEnvironment, child.StartUtc), cleanup = new { scope = "only this launch's Job Object", noOrphans, activeProcesses = job.ActiveProcesses },
                 actualInstalledOrdinaryGui = true, coreAuthorityAcceptance = "Must be supported by caller UIA/SCM receipt, not inferred from token or window." });
             return noOrphans ? 0 : 1;
         }
         catch (Exception error)
         {
-            job.Terminate(); bool noOrphans = job.WaitEmpty(10000);
+            object originalChild = child.Observe(); object desktop = Native.DesktopMetadata(child.ThreadId);
+            bool noOrphans = false; string? cleanupError = null;
+            try { job.Terminate(); noOrphans = job.WaitEmpty(10000); } catch (Exception cleanup) { cleanupError = cleanup.Message; }
+            object streams = child.Output.Finish();
             Save(options.ReceiptPath, new { schemaVersion = 1, stage = "failed", ok = false, productLaunched = true,
                 processId = child.Pid, startTimeUtc = child.StartUtc, token = child.Proof, error = error.Message,
-                cleanup = new { noOrphans, activeProcesses = job.ActiveProcesses } });
+                originalChild, cleanupChild = child.Observe(), windowWaitElapsedMilliseconds = windowWatch.ElapsedMilliseconds,
+                tokenMethod = child.TokenMethod, launchApi = child.LaunchApi, attempts, source,
+                artifactSourceCommit = options.ExpectedSourceCommit, harnessSourceCommit = ResolveHarnessSourceCommit(options),
+                diagnosticSourceMode = ResolveHarnessSourceCommit(options) != options.ExpectedSourceCommit, captureStandardStreams = options.CaptureStandardStreams,
+                launchEnvironment = child.LaunchEnvironment, desktop, streams, profileMainLog = Program.ProfileLog(child.LaunchEnvironment, child.StartUtc),
+                cleanup = new { noOrphans, activeProcesses = job.ActiveProcesses, error = cleanupError } });
             Console.Error.WriteLine(error.Message); return 1;
         }
     }
@@ -208,16 +232,49 @@ internal static class Program
             candidateCasesPassed &= passed;
             candidateCases.Add(new { method, passed, token = candidateChild.Proof, launchApi = candidateChild.LaunchApi, observedAlive, noOrphans = zero, activeProcesses = candidateJob.ActiveProcesses });
         }
+        object earlyExit = EarlyExitProof(options, original, out bool earlyExitPassed);
+        object originalEarlyExit = EarlyExitProof(options, original, out bool originalEarlyExitPassed, capture: false);
         object crash = CrashProof(options, out bool crashPassed);
-        var receipt = new { schemaVersion = 1, stage = "self-test", ok = aliveBefore && empty && child.Proof.Ordinary && candidateCasesPassed && crashPassed,
+        var receipt = new { schemaVersion = 1, stage = "self-test", ok = aliveBefore && empty && child.Proof.Ordinary && candidateCasesPassed && crashPassed && earlyExitPassed && originalEarlyExitPassed,
             productLaunched = false, runnerToken = current, token = child.Proof, tokenMethod = child.TokenMethod,
             launchApi = child.LaunchApi, processId = child.Pid, startTimeUtc = child.StartUtc, attempts,
-            aliveBeforeCleanup = aliveBefore, noOrphans = empty, activeProcesses = job.ActiveProcesses, candidateCases, guardianCrash = crash,
+            aliveBeforeCleanup = aliveBefore, noOrphans = empty, activeProcesses = job.ActiveProcesses, candidateCases, guardianCrash = crash, earlyExit, originalEarlyExit,
             installedGuiAcceptance = "not executed; own fixed harmless child only" };
         Save(options.ReceiptPath, receipt); Console.WriteLine(JsonSerializer.Serialize(receipt, Json));
         return receipt.ok ? 0 : 1;
     }
 
+    private static object EarlyExitProof(Options options, SafeAccessTokenHandle original, out bool passed, bool capture = true)
+    {
+        using NativeJob job = NativeJob.Create(); var attempts = new List<object>(); string executable = Environment.ProcessPath!;
+        using LaunchedProcess child = LaunchWithOrdinaryToken(original, executable, "\"" + executable + "\" --proof-exit-child", Path.GetDirectoryName(executable)!, options.WorkRoot, job, attempts, selfTest: true, captureStandardStreams: capture);
+        child.Resume(); uint wait = Native.WaitForSingleObject(child.Process, 10000);
+        ChildObservation before = child.Observe(); job.Terminate(); bool empty = job.WaitEmpty(10000); OutputProof streams = child.Output.Finish();
+        bool streamsAccepted = streams.CaptureAvailable ? streams.Stdout.Text == "ordinary-diag-stdout\n" && streams.Stderr.Text == "ordinary-diag-stderr\n" && streams.Stdout.Completed && streams.Stderr.Completed : !string.IsNullOrEmpty(streams.UnavailableReason);
+        passed = wait == 0 && before.WaitResult == 0 && before.ExitCode == 37 && empty && child.Proof.Ordinary && streamsAccepted;
+        return new { passed, productLaunched = false, processId = child.Pid, startTimeUtc = child.StartUtc, token = child.Proof,
+            tokenMethod = child.TokenMethod, launchApi = child.LaunchApi, originalChild = before, cleanupChild = child.Observe(), streams,
+            desktop = Native.DesktopMetadata(child.ThreadId), launchEnvironment = child.LaunchEnvironment, noOrphans = empty, activeProcesses = job.ActiveProcesses };
+    }
+    internal static Dictionary<string, string> EnvironmentMetadata(string block) => block.Split('\0', StringSplitOptions.RemoveEmptyEntries)
+        .Select(value => value.Split('=', 2)).Where(pair => pair.Length == 2 && pair[0] is "USERPROFILE" or "APPDATA" or "LOCALAPPDATA" or "TEMP" or "TMP")
+        .ToDictionary(pair => pair[0], pair => pair[1], StringComparer.OrdinalIgnoreCase);
+    internal static object ProfileLog(Dictionary<string, string> environment, string started)
+    {
+        string? path = null;
+        try
+        {
+            if (!environment.TryGetValue("APPDATA", out string? appData) || !Path.IsPathFullyQualified(appData) || appData.StartsWith(@"\\")) return new { status = "unavailable", reason = "No local canonical target APPDATA." };
+            path = Within(Path.Combine(appData, "Egoist Shield", "logs", "main.log"), appData);
+            if (!File.Exists(path)) return new { status = "missing", path };
+            OrdinaryPath(path, true); using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            long offset = Math.Max(0, file.Length - 32768); file.Seek(offset, SeekOrigin.Begin); byte[] bytes = new byte[32768]; int count = file.Read(bytes);
+            DateTime written = File.GetLastWriteTimeUtc(path);
+            return new { status = "available", path, modifiedSinceLaunch = written >= DateTime.Parse(started).ToUniversalTime(), lastWriteUtc = written,
+                bytes = count, truncated = offset != 0, text = Encoding.UTF8.GetString(bytes, 0, count), attribution = "Shared canonical profile log; not PID-bound." };
+        }
+        catch (Exception error) { return new { status = "unavailable", path, error = error.Message }; }
+    }
     private static int FixtureGuardian(Options options)
     {
         using SafeAccessTokenHandle original = OpenOwnToken();
@@ -274,7 +331,7 @@ internal static class Program
     }
 
     private static LaunchedProcess LaunchWithOrdinaryToken(SafeAccessTokenHandle original, string executable, string commandLine,
-        string directory, string work, NativeJob job, List<object> attempts, bool selfTest)
+        string directory, string work, NativeJob job, List<object> attempts, bool selfTest, bool captureStandardStreams = true)
     {
         TokenProof source = ReadToken(original);
         foreach (string method in new[] { "linked", "safer-normal-user", "restricted-lua" })
@@ -284,7 +341,7 @@ internal static class Program
                 using TokenCandidate candidate = MakeCandidate(original, method);
                 TokenProof proof = ReadToken(candidate.Handle);
                 if (!proof.Ordinary || proof.UserSid != source.UserSid || proof.SessionId != source.SessionId) throw new UnauthorizedAccessException("Candidate is not an ordinary medium token of the same interactive user.");
-                LaunchedProcess child = job.Start(candidate.Handle, executable, commandLine, directory, work, method, false, selfTest);
+                LaunchedProcess child = job.Start(candidate.Handle, executable, commandLine, directory, work, method, false, selfTest, captureStandardStreams);
                 attempts.Add(new { method, accepted = true, token = proof }); return child;
             }
             catch (Exception error) { attempts.Add(new { method, accepted = false, error = error.Message, nativeError = error is Win32Exception win32 ? win32.NativeErrorCode : (int?)null }); }
@@ -294,7 +351,7 @@ internal static class Program
         if (selfTest && source.Ordinary)
         {
             attempts.Add(new { method = "current-medium-fixture-only", accepted = true, limitation = "No alternate-token creation privilege on this host." });
-            return job.Start(original, executable, commandLine, directory, work, "current-medium-fixture-only", true, true);
+            return job.Start(original, executable, commandLine, directory, work, "current-medium-fixture-only", true, true, captureStandardStreams);
         }
         throw new UnauthorizedAccessException("No verified ordinary medium token could launch the child. No elevated fallback was attempted. " + JsonSerializer.Serialize(attempts));
     }
@@ -459,13 +516,91 @@ internal sealed class SafeKernelHandle : SafeHandleZeroOrMinusOneIsInvalid
     internal SafeKernelHandle(IntPtr value) : base(true) => SetHandle(value);
     protected override bool ReleaseHandle() => Native.CloseHandle(handle);
 }
+internal sealed record ChildObservation(uint WaitResult, int? WaitNativeError, uint? ExitCode, int? ExitCodeNativeError);
+internal sealed record CapturedStream(string Text, long ObservedBytes, bool Truncated, bool Completed, int? NativeError);
+internal sealed record OutputProof(bool CaptureAvailable, string? UnavailableReason, CapturedStream Stdout, CapturedStream Stderr);
+internal sealed class NativeChildOutput : IDisposable
+{
+    internal readonly SafeFileHandle Input, OutRead, OutWrite, ErrRead, ErrWrite;
+    private readonly CancellationTokenSource _stop = new(); private Task<CapturedStream>? _stdout, _stderr;
+    private bool _enabled; private string? _reason; private int _disposed;
+    internal IntPtr[] InheritedHandles => new[] { Input.DangerousGetHandle(), OutWrite.DangerousGetHandle(), ErrWrite.DangerousGetHandle() };
+    internal NativeChildOutput(bool create)
+    {
+        if (!create) { Input = new(IntPtr.Zero, false); OutRead = new(IntPtr.Zero, false); OutWrite = new(IntPtr.Zero, false); ErrRead = new(IntPtr.Zero, false); ErrWrite = new(IntPtr.Zero, false); return; }
+        var security = new Native.SecurityAttributes { Length = Marshal.SizeOf<Native.SecurityAttributes>(), Inherit = 1 };
+        Input = Native.CreateFile("NUL", 0x80000000, 3, ref security, 3, 0, IntPtr.Zero);
+        if (Input.IsInvalid) throw Native.Error("Open owned NUL stdin");
+        try
+        {
+            if (!Native.CreatePipe(out OutRead, out OutWrite, ref security, 4096) || !Native.CreatePipe(out ErrRead, out ErrWrite, ref security, 4096)) throw Native.Error("Create owned diagnostic pipes");
+            if (!Native.SetHandleInformation(OutRead, 1, 0) || !Native.SetHandleInformation(ErrRead, 1, 0)) throw Native.Error("Clear diagnostic read-handle inheritance");
+        }
+        catch { Input.Dispose(); OutRead?.Dispose(); OutWrite?.Dispose(); ErrRead?.Dispose(); ErrWrite?.Dispose(); throw; }
+    }
+    internal void Start(bool enabled, string? unavailable)
+    {
+        _enabled = enabled; _reason = unavailable;
+        Input.Dispose(); OutWrite.Dispose(); ErrWrite.Dispose();
+        if (enabled) { _stdout = Task.Run(() => Drain(OutRead)); _stderr = Task.Run(() => Drain(ErrRead)); }
+    }
+    private CapturedStream Drain(SafeFileHandle read)
+    {
+        using var kept = new MemoryStream(); byte[] buffer = new byte[4096]; long total = 0; int? error = null; bool completed = false;
+        try { while (!_stop.IsCancellationRequested)
+        {
+            if (!Native.PeekNamedPipe(read, IntPtr.Zero, 0, IntPtr.Zero, out uint available, IntPtr.Zero))
+            { int code = Marshal.GetLastWin32Error(); completed = code == 109; error = completed ? null : code; break; }
+            if (available == 0) { Thread.Sleep(20); continue; }
+            if (!Native.ReadFile(read, buffer, Math.Min(available, (uint)buffer.Length), out uint count, IntPtr.Zero)) { error = Marshal.GetLastWin32Error(); break; }
+            total += count; int keep = (int)Math.Min(count, 32768 - kept.Length); if (keep > 0) kept.Write(buffer, 0, keep);
+        }
+        } catch (Exception failure) { error = failure is Win32Exception native ? native.NativeErrorCode : failure.HResult; }
+        return new CapturedStream(Encoding.UTF8.GetString(kept.ToArray()), total, total > 32768, completed, error);
+    }
+    internal OutputProof Finish()
+    {
+        if (!_enabled) return new(false, _reason ?? "Capture was not started.", new("", 0, false, true, null), new("", 0, false, true, null));
+        Task[] tasks = new Task[] { _stdout!, _stderr! }; bool complete = false;
+        try { complete = Task.WaitAll(tasks, 2000); if (!complete) { _stop.Cancel(); complete = Task.WaitAll(tasks, 500); } }
+        catch (Exception failure) { _reason = "Owned diagnostic drain failed: " + failure.Message; _stop.Cancel(); }
+        return new(true, _reason ?? (complete ? null : "Owned pipe drains did not finish inside their bound."),
+            _stdout!.IsCompletedSuccessfully ? _stdout.Result : new("", 0, false, false, null), _stderr!.IsCompletedSuccessfully ? _stderr.Result : new("", 0, false, false, null));
+    }
+    public void Dispose() { if (Interlocked.Exchange(ref _disposed, 1) != 0) return; _stop.Cancel(); Input.Dispose(); OutWrite.Dispose(); ErrWrite.Dispose(); OutRead.Dispose(); ErrRead.Dispose(); _stop.Dispose(); }
+}
+internal sealed class NativeChildAttributes : IDisposable
+{
+    private readonly NativeBuffer _attributes, _job, _handles;
+    internal IntPtr Pointer => _attributes.Pointer;
+    internal NativeChildAttributes(SafeKernelHandle job, IntPtr[]? inherited)
+    {
+        int count = inherited is null ? 1 : 2; IntPtr bytes = IntPtr.Zero; Native.InitializeProcThreadAttributeList(IntPtr.Zero, count, 0, ref bytes);
+        _attributes = new NativeBuffer(checked((int)bytes)); _job = new NativeBuffer(IntPtr.Size); _handles = new NativeBuffer(3 * IntPtr.Size);
+        bool initialized = false;
+        try
+        {
+            if (!Native.InitializeProcThreadAttributeList(Pointer, count, 0, ref bytes)) throw Native.Error("Initialize atomic child attributes");
+            initialized = true; Marshal.WriteIntPtr(_job.Pointer, job.DangerousGetHandle());
+            if (!Native.UpdateProcThreadAttribute(Pointer, 0, (IntPtr)0x2000d, _job.Pointer, (IntPtr)IntPtr.Size, IntPtr.Zero, IntPtr.Zero)) throw Native.Error("Set atomic JOB_LIST");
+            if (inherited is not null)
+            {
+                for (int index = 0; index < inherited.Length; index++) Marshal.WriteIntPtr(_handles.Pointer, index * IntPtr.Size, inherited[index]);
+                if (!Native.UpdateProcThreadAttribute(Pointer, 0, (IntPtr)0x20002, _handles.Pointer, (IntPtr)(3 * IntPtr.Size), IntPtr.Zero, IntPtr.Zero)) throw Native.Error("Set exact standard-handle inheritance list");
+            }
+        }
+        catch { if (initialized) Native.DeleteProcThreadAttributeList(Pointer); _handles.Dispose(); _job.Dispose(); _attributes.Dispose(); throw; }
+    }
+    public void Dispose() { Native.DeleteProcThreadAttributeList(Pointer); _handles.Dispose(); _job.Dispose(); _attributes.Dispose(); }
+}
 internal sealed class LaunchedProcess : IDisposable
 {
     internal readonly SafeKernelHandle Process, Thread;
-    internal readonly int Pid; internal readonly string StartUtc, TokenMethod, LaunchApi; internal readonly TokenProof Proof;
-    internal LaunchedProcess(Native.ProcessInformation info, string method, string api, string executable)
+    internal readonly int Pid; internal readonly uint ThreadId; internal readonly string StartUtc, TokenMethod, LaunchApi; internal readonly TokenProof Proof;
+    internal readonly NativeChildOutput Output; internal readonly Dictionary<string, string> LaunchEnvironment;
+    internal LaunchedProcess(Native.ProcessInformation info, string method, string api, string executable, NativeChildOutput output, Dictionary<string, string> environment)
     {
-        Process = new(info.Process); Thread = new(info.Thread); Pid = checked((int)info.ProcessId); TokenMethod = method; LaunchApi = api;
+        Process = new(info.Process); Thread = new(info.Thread); Pid = checked((int)info.ProcessId); ThreadId = info.ThreadId; TokenMethod = method; LaunchApi = api; Output = output; LaunchEnvironment = environment;
         try
         {
             using SafeAccessTokenHandle token = Program.OpenChildToken(Process); Proof = Program.ReadToken(token);
@@ -477,10 +612,16 @@ internal sealed class LaunchedProcess : IDisposable
         }
         catch { Native.TerminateProcess(Process, 1); Dispose(); throw; }
     }
+    internal ChildObservation Observe()
+    {
+        uint wait = Native.WaitForSingleObject(Process, 0); int? waitError = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : null;
+        bool read = Native.GetExitCodeProcess(Process, out uint code); int? exitError = read ? null : Marshal.GetLastWin32Error();
+        return new(wait, waitError, read ? code : null, exitError);
+    }
     internal bool Alive => Native.WaitForSingleObject(Process, 0) == 0x102;
     internal uint ExitCode { get { if (!Native.GetExitCodeProcess(Process, out uint code)) throw Native.Error("Get child exit code"); return code; } }
     internal void Resume() { if (Native.ResumeThread(Thread) == uint.MaxValue) throw Native.Error("Resume verified ordinary child"); }
-    public void Dispose() { Thread.Dispose(); Process.Dispose(); }
+    public void Dispose() { Output.Dispose(); Thread.Dispose(); Process.Dispose(); }
 }
 internal sealed class NativeJob : IDisposable
 {
@@ -494,32 +635,36 @@ internal sealed class NativeJob : IDisposable
         if (!Native.SetInformationJobObject(handle, 9, ref limits, (uint)Marshal.SizeOf<Native.JobExtendedLimits>())) { handle.Dispose(); throw Native.Error("Set kill-on-close job"); }
         return new NativeJob(handle);
     }
-    internal LaunchedProcess Start(SafeAccessTokenHandle token, string executable, string commandLine, string directory, string work, string method, bool fixtureInherited, bool managedFixture)
+    internal LaunchedProcess Start(SafeAccessTokenHandle token, string executable, string commandLine, string directory, string work, string method, bool fixtureInherited, bool managedFixture, bool captureStandardStreams = true)
     {
-        IntPtr size = IntPtr.Zero; Native.InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref size);
-        using var attributes = new NativeBuffer(checked((int)size)); using var jobPointer = new NativeBuffer(IntPtr.Size);
-        if (!Native.InitializeProcThreadAttributeList(attributes.Pointer, 1, 0, ref size)) throw Native.Error("Initialize atomic child attributes");
+        var output = new NativeChildOutput(captureStandardStreams); bool transferred = false;
         try
         {
-            Marshal.WriteIntPtr(jobPointer.Pointer, _handle.DangerousGetHandle());
-            if (!Native.UpdateProcThreadAttribute(attributes.Pointer, 0, (IntPtr)0x2000d, jobPointer.Pointer, (IntPtr)IntPtr.Size, IntPtr.Zero, IntPtr.Zero)) throw Native.Error("Set atomic JOB_LIST");
-            var startup = new Native.StartupInfoEx { Startup = new Native.StartupInfo { Size = Marshal.SizeOf<Native.StartupInfoEx>() }, Attributes = attributes.Pointer };
+            using var attributes = new NativeChildAttributes(_handle, captureStandardStreams ? output.InheritedHandles : null);
+            var startup = new Native.StartupInfoEx { Startup = new Native.StartupInfo { Size = Marshal.SizeOf<Native.StartupInfoEx>(), Flags = captureStandardStreams ? 0x100u : 0u,
+                StandardInput = output.Input.DangerousGetHandle(), StandardOutput = output.OutWrite.DangerousGetHandle(), StandardError = output.ErrWrite.DangerousGetHandle() }, Attributes = attributes.Pointer };
             string environment = Program.EnvironmentBlock(token, work, managedFixture); IntPtr environmentPointer = Marshal.StringToHGlobalUni(environment);
             try
             {
                 const uint flags = 0x00080000 | 0x00000400 | 0x00000004; // EXTENDED | UNICODE | SUSPENDED
-                Native.ProcessInformation info; bool ok; string api;
-                if (fixtureInherited) { api = "CreateProcessW-fixture"; ok = Native.CreateProcess(executable, new StringBuilder(commandLine), IntPtr.Zero, IntPtr.Zero, false, flags | 0x08000000, environmentPointer, directory, ref startup, out info); }
+                Native.ProcessInformation info; bool ok; string api; bool captured = captureStandardStreams;
+                if (fixtureInherited) { api = "CreateProcessW-fixture"; ok = Native.CreateProcess(executable, new StringBuilder(commandLine), IntPtr.Zero, IntPtr.Zero, captureStandardStreams, flags | 0x08000000, environmentPointer, directory, ref startup, out info); }
                 else
                 {
                     api = "CreateProcessAsUserW";
-                    ok = Native.CreateProcessAsUser(token, executable, new StringBuilder(commandLine), IntPtr.Zero, IntPtr.Zero, false, flags, environmentPointer, directory, ref startup, out info);
+                    ok = Native.CreateProcessAsUser(token, executable, new StringBuilder(commandLine), IntPtr.Zero, IntPtr.Zero, captureStandardStreams, flags, environmentPointer, directory, ref startup, out info);
                     int error = ok ? 0 : Marshal.GetLastWin32Error();
                     if (!ok && error == 1314)
-                    { api = "CreateProcessWithTokenW"; ok = Native.CreateProcessWithToken(token, 0, executable, new StringBuilder(commandLine), flags, environmentPointer, directory, ref startup, out info); }
+                    {
+                        using var originalAttributes = new NativeChildAttributes(_handle, null);
+                        var originalStartup = new Native.StartupInfoEx { Startup = new Native.StartupInfo { Size = Marshal.SizeOf<Native.StartupInfoEx>() }, Attributes = originalAttributes.Pointer };
+                        api = "CreateProcessWithTokenW"; captured = false;
+                        ok = Native.CreateProcessWithToken(token, 0, executable, new StringBuilder(commandLine), flags, environmentPointer, directory, ref originalStartup, out info);
+                    }
                 }
                 if (!ok) throw Native.Error(api + " with atomic JOB_LIST");
-                var child = new LaunchedProcess(info, method, api, executable);
+                output.Start(captured, captured ? null : captureStandardStreams ? "Original CreateProcessWithTokenW fallback retained; no documented bInheritHandles/HANDLE_LIST contract." : "Capture disabled: original JOB_LIST-only, zero standard handles and inherit=false retained.");
+                var child = new LaunchedProcess(info, method, api, executable, output, Program.EnvironmentMetadata(environment)); transferred = true;
                 if (!Native.IsProcessInJob(child.Process, _handle, out bool contained) || !contained)
                 { Native.TerminateProcess(child.Process, 1); child.Dispose(); throw new UnauthorizedAccessException("Actual suspended child was not atomically assigned to the owned job."); }
                 TokenProof expected = Program.ReadToken(token);
@@ -529,7 +674,7 @@ internal sealed class NativeJob : IDisposable
             }
             finally { Marshal.FreeHGlobal(environmentPointer); }
         }
-        finally { Native.DeleteProcThreadAttributeList(attributes.Pointer); }
+        finally { if (!transferred) output.Dispose(); }
     }
     internal uint ActiveProcesses
     { get { if (!Native.QueryInformationJobObject(_handle, 1, out Native.JobAccounting accounting, (uint)Marshal.SizeOf<Native.JobAccounting>(), out _)) throw Native.Error("Read owned job accounting"); return accounting.ActiveProcesses; } }
@@ -540,6 +685,33 @@ internal sealed class NativeJob : IDisposable
 internal static class Native
 {
     internal static Win32Exception Error(string operation) => new(Marshal.GetLastWin32Error(), operation + " failed (Win32 " + Marshal.GetLastWin32Error() + ").");
+    [StructLayout(LayoutKind.Sequential)] internal struct SecurityAttributes { internal int Length; internal IntPtr Descriptor; internal int Inherit; }
+    internal static object DesktopMetadata(uint thread)
+    {
+        object Name(IntPtr value)
+        {
+            if (value == IntPtr.Zero) return new { name = (string?)null, nativeError = Marshal.GetLastWin32Error() };
+            var text = new StringBuilder(1024);
+            return GetUserObjectInformation(value, 2, text, (uint)(text.Capacity * 2), out _) ? (object)new { name = text.ToString(), nativeError = (int?)null } : new { name = (string?)null, nativeError = Marshal.GetLastWin32Error() };
+        }
+        return new { guardianWindowStation = Name(GetProcessWindowStation()), childThreadDesktop = Name(GetThreadDesktop(thread)), startupDesktop = "null (unchanged inherited default)" };
+    }
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)] internal static extern SafeFileHandle CreateFile(string name, uint access, uint share, ref SecurityAttributes security, uint creation, uint flags, IntPtr template);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern bool CreatePipe(out SafeFileHandle read, out SafeFileHandle write, ref SecurityAttributes security, uint size);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern bool SetHandleInformation(SafeFileHandle handle, uint mask, uint flags);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern bool PeekNamedPipe(SafeFileHandle pipe, IntPtr data, uint size, IntPtr read, out uint available, IntPtr left);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern bool ReadFile(SafeFileHandle file, [Out] byte[] data, uint length, out uint read, IntPtr overlapped);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr GetProcessWindowStation();
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr GetThreadDesktop(uint thread);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("user32.dll", EntryPoint = "GetUserObjectInformationW", CharSet = CharSet.Unicode, SetLastError = true)] private static extern bool GetUserObjectInformation(IntPtr value, int kind, StringBuilder text, uint bytes, out uint needed);
     [StructLayout(LayoutKind.Sequential)] internal struct SidAndAttributes { internal IntPtr Sid; internal uint Attributes; }
     [StructLayout(LayoutKind.Sequential)] internal struct Luid { internal uint Low; internal int High; }
     [StructLayout(LayoutKind.Sequential)] internal struct ProcessInformation { internal IntPtr Process, Thread; internal uint ProcessId, ThreadId; }
