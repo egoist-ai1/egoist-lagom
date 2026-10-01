@@ -1,0 +1,185 @@
+[08:58:59] [warn]  [dns-diagnostics] Current DNS server read failed; retrying in 5s. Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+    at genericNodeError (node:internal/errors:986:15)
+    at wrappedFn (node:internal/errors:540:14)
+    at ChildProcess.exithandler (node:child_process:417:12)
+    at ChildProcess.emit (node:events:514:28)
+    at maybeClose (node:internal/child_process:1141:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:306:5)
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'health:get-report': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'telegram-proxy:save-config': _ZodError: [
+  {
+    "code": "custom",
+    "message": "Secret должен быть 32 hex-символа без dd-префикса",
+    "path": [
+      "secret"
+    ]
+  }
+]
+    at get error (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:34466:23)
+    at _ZodObject.parse (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:34541:18)
+    at file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:45343:163
+    at NetworkCombinatorManager.runCoordinatedMutationWithLocks (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48422:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async NetworkCombinatorManager.runCoordinatedMutation (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48383:14)
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  issues: [
+    {
+      code: 'custom',
+      message: 'Secret должен быть 32 hex-символа без dd-префикса',
+      path: [Array]
+    }
+  ],
+  addIssue: [Function (anonymous)],
+  addIssues: [Function (anonymous)]
+}
+[08:59:04] [warn]  [window] console-message level=warning <connection-uri> [activity] APP-ACTION: Error invoking remote method 'telegram-proxy:save-config': [ { "code": "custom", "message": "Secret должен быть 32 hex-символа без dd-префикса", "path": [ "secret" ] } ]
+[08:59:16] [warn]  [updates] Managed component check failed: CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (<connection-uri>
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (<connection-uri>
+[08:59:19] [error] [boot] background recovery failed: Error: Timed out inspecting network owners before mutation: dns:boot-recovery
+Error: Timed out inspecting network owners before mutation: dns:boot-recovery
+    at Timeout.<anonymous> (<connection-uri>
+    at listOnTimeout (node:internal/timers:685:17)
+    at process.processTimers (node:internal/timers:618:7)
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+[09:02:43] [warn]  [dns-diagnostics] Current DNS server read failed; retrying in 5s. Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+    at genericNodeError (node:internal/errors:986:15)
+    at wrappedFn (node:internal/errors:540:14)
+    at ChildProcess.exithandler (node:child_process:417:12)
+    at ChildProcess.emit (node:events:514:28)
+    at maybeClose (node:internal/child_process:1141:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:306:5)
+Error occurred in handler for 'zapret:status': CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16)
+    at async file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:48072:20
+    at async Session.<anonymous> (node:electron/js2c/browser_init:1:118948) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}

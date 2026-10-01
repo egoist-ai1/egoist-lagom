@@ -49,6 +49,41 @@ test('official legacy versions select separate immutable installer/helper pins a
     assert.throws(() => officialLegacyRelease(invalid), /oldVersion must be exactly/);
 });
 
+test('original installer network prerequisite rejects missing, failed, partial or duplicate family reads without mutation', {
+  skip: process.platform !== 'win32',
+}, () => {
+  const file = path.resolve('tests/windows-production-legacy-upgrade.ps1').replaceAll("'", "''");
+  const shell = process.env.LAGOM_TEST_POWERSHELL || path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const result = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', `
+    $ErrorActionPreference='Stop';
+    function Get-CimInstance {throw 'Prerequisite validation queried the live host'};
+    function Get-NetAdapter {throw 'Prerequisite validation queried adapters'};
+    function Get-DnsClientServerAddress {throw 'Prerequisite validation queried DNS'};
+    . '${file}' -LibraryOnly;
+    $complete=@(
+      [pscustomobject]@{index=4;family='IPv4';result='complete';records=1;addresses=@()},
+      [pscustomobject]@{index=4;family='IPv6';result='complete';records=1;addresses=@()}
+    );
+    $report=[pscustomobject]@{kind='read-only-legacy-dns-query-diagnostic';networkMutations=0;queries=$complete};
+    Assert-LegacyNetworkCompatibility $report;
+    $invalid=@(@(),@($complete[0]),@($complete[0],$complete[0]),@($complete[0],$complete[1],$complete[1]),
+      @($complete[0],[pscustomobject]@{index=4;family='IPv6';result='failed';errorId='CmdletizationQuery_NotFound'}),
+      @($complete[0],[pscustomobject]@{index=4;family='IPv6';result='complete';records=0}));
+    $refused=0;
+    foreach($rows in $invalid){$report.queries=$rows;try{Assert-LegacyNetworkCompatibility $report;throw 'Invalid original network prerequisite accepted'}catch{if($_.Exception.Message -match 'Invalid original network prerequisite accepted'){throw};$refused++}};
+    if($refused -ne 6){throw 'Network prerequisite refusal count changed'};
+    $tokens=$null;$errors=$null;
+    [void][Management.Automation.Language.Parser]::ParseInput((Get-LegacyNetworkProbeSource),[ref]$tokens,[ref]$errors);
+    if($errors.Count){throw 'Generated read-only network probe does not parse'};
+    @{completeAccepted=$true;refused=$refused;liveMutations=0}|ConvertTo-Json -Compress;
+  `], { encoding: 'utf8', windowsHide: true, timeout: 20000 });
+  assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
+  const receipt = JSON.parse(result.stdout);
+  assert.equal(receipt.completeAccepted, true);
+  assert.equal(receipt.refused, 6);
+  assert.equal(receipt.liveMutations, 0);
+});
+
 test('both original signed legacy manifests are accepted only for the explicitly selected version', () => {
   const trust = authenticateLegacyRegistry(registryBytes, registrySignature, root);
   assert.equal(manifest379Bytes.length, 785);

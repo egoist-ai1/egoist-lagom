@@ -23,7 +23,7 @@ if(Test-Path -LiteralPath $script:Work){throw 'Diagnostic work already exists; i
 $script:NativePowerShell=Join-Path ([Environment]::GetFolderPath('Windows')) 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $helper=Join-Path $project 'src\installer\owned-cleanup.ps1'
 Assert-NativeOrdinaryPath -Path $helper -Leaf
-$receipt=[ordered]@{kind='real-source-phase-installer-diagnostic';sourceCommit=$env:GITHUB_SHA;runId=$env:GITHUB_RUN_ID;os=[Environment]::OSVersion.VersionString;parentPowerShell=$PSVersionTable.PSVersion.ToString();cleanStart=$true;installerExecuted=$false;preInstallExecuted=$false;sourceHashes=@();mutations=@();gui=@();beforeNetwork=(Get-NativeNetworkFingerprint);beforeServices=(Get-NativeProductServices);beforeTasks=(Get-NativeProductTasks);result='running';releaseReady=$false}
+$receipt=[ordered]@{kind='real-source-phase-installer-diagnostic';sourceCommit=$env:GITHUB_SHA;runId=$env:GITHUB_RUN_ID;os=[Environment]::OSVersion.VersionString;imageOS=$env:ImageOS;imageVersion=$env:ImageVersion;parentPowerShell=$PSVersionTable.PSVersion.ToString();cleanStart=$true;installerExecuted=$false;preInstallExecuted=$false;sourceHashes=@();mutations=@();gui=@();beforeNetwork=(Get-NativeNetworkFingerprint);beforeServices=(Get-NativeProductServices);beforeTasks=(Get-NativeProductTasks);result='running';releaseReady=$false}
 foreach($name in @('owned-cleanup.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1')){$path=Join-Path $project ('src\installer\'+$name);$receipt.sourceHashes+=[ordered]@{path=('src/installer/'+$name);sha256=(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash}}
 $receiptPath=Join-Path $script:Work 'installer-diagnostic.json'
 $receipt | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $receiptPath -Encoding utf8
@@ -92,6 +92,8 @@ try{
       $installer=Join-Path $original ('EgoistShield-Setup-'+$OriginalVersion+'.exe')
       $version=$OriginalVersion;$receipt.kind='real-original-signed-setup-gui-failure-diagnostic'
       $receipt.originalVersion=$OriginalVersion
+      . (Join-Path $PSScriptRoot 'windows-production-legacy-upgrade.ps1') -ExpectedOldVersion $OriginalVersion -LibraryOnly
+      [void](Read-LegacyNetworkCompatibility)
     }
     Assert-NativeOrdinaryPath -Path $installer -Leaf
     $receipt.installer=@{version=$version;sha256=(Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash;bytes=(Get-Item -LiteralPath $installer).Length}
@@ -119,36 +121,6 @@ try{
 }catch{$failure=$_;$receipt.result='failed';$receipt.error=$_.Exception.Message}
 finally{
   $receipt.installerDiagnostics=@(Copy-NativeInstallerDiagnostics)
-  if($OriginalVersion -ceq '3.7.9'){
-    try{
-      # Read the exact old uplink filter and per-family DNS queries without
-      # importing or executing any phase of the original installer helper.
-      $probe=Join-Path $script:Work 'original-network-readback.ps1'
-      $probeSource=@'
-$ErrorActionPreference='Stop'
-$rows=@()
-$adapters=@(Get-NetAdapter -ErrorAction Stop | Where-Object {
-  $identity=([string]$_.Name+' '+[string]$_.InterfaceDescription)
-  $_.Status -eq 'Up' -and $identity -notmatch 'WireGuard|Wintun|Cloudflare\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\s_-])(TAP|TUN)([\s_-]|$)|egoist-tun'
-} | Sort-Object ifIndex -Unique)
-if($adapters.Count -gt 16){throw 'Original DNS diagnostic adapter count exceeded its bound.'}
-foreach($adapter in $adapters){
-  foreach($family in @('IPv4','IPv6')){
-    $watch=[Diagnostics.Stopwatch]::StartNew()
-    $row=[ordered]@{index=$adapter.ifIndex;guid=[string]$adapter.InterfaceGuid;name=[string]$adapter.Name;status=[string]$adapter.Status;family=$family;result='running'}
-    try{
-      $values=@(Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily $family -ErrorAction Stop)
-      $row.result='complete';$row.records=$values.Count;$row.addresses=@($values|Select-Object -ExpandProperty ServerAddresses)
-    }catch{$row.result='failed';$row.error=$_.Exception.Message;$row.errorId=$_.FullyQualifiedErrorId;$row.hresult=$_.Exception.HResult}
-    $row.elapsedMilliseconds=$watch.Elapsed.TotalMilliseconds;$rows+=$row
-  }
-}
-@{kind='read-only-original379-dns-query-diagnostic';powerShell=$PSVersionTable.PSVersion.ToString();queries=$rows;networkMutations=0}|ConvertTo-Json -Depth 8
-'@
-      [IO.File]::WriteAllText($probe,$probeSource,[Text.UTF8Encoding]::new($true))
-      $receipt.originalNetworkDiagnostic=Invoke-NativeBounded -Executable $script:NativePowerShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$probe) -Label 'original-network-readback' -TimeoutSeconds 60
-    }catch{$receipt.originalNetworkDiagnosticError=$_.Exception.Message}
-  }
   try{$receipt.afterNetwork=Get-NativeNetworkFingerprint;$receipt.afterServices=Get-NativeProductServices;$receipt.afterTasks=Get-NativeProductTasks}catch{$receipt.finalReadbackError=$_.Exception.Message}
   if(-not $receipt.Contains('afterNetwork')){$receipt.afterNetwork=$null}
   $receipt.networkPreserved=(($receipt.beforeNetwork|ConvertTo-Json -Depth 12 -Compress) -ceq ($receipt.afterNetwork|ConvertTo-Json -Depth 12 -Compress))

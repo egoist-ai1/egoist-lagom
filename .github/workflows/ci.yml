@@ -27,6 +27,10 @@ on:
         description: Diagnose the signed candidate and authenticated original 3.7.8/3.7.9 without claiming release acceptance
         type: boolean
         default: false
+      diagnostic_legacy_only:
+        description: Limit authenticated diagnostics to original legacy versions on Windows Server 2022
+        type: boolean
+        default: false
       core_configuration_diagnostic:
         description: Diagnose exact-source Core configuration and protected ACLs on this disposable administrator host
         type: boolean
@@ -42,12 +46,12 @@ permissions:
 jobs:
   installer-diagnostics:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.installer_diagnostics }}
-    runs-on: windows-latest
+    runs-on: ${{ matrix.variant == 'candidate' && 'windows-latest' || 'windows-2022' }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        variant: ${{ fromJSON(inputs.diagnostic_all_versions && '["candidate","3.7.8","3.7.9"]' || '["candidate"]') }}
+        variant: ${{ fromJSON(inputs.diagnostic_all_versions && (inputs.diagnostic_legacy_only && '["3.7.8","3.7.9"]' || '["candidate","3.7.8","3.7.9"]') || '["candidate"]') }}
     permissions:
       # Draft downloads require repository push access, as in signed acceptance.
       contents: write
@@ -60,10 +64,12 @@ jobs:
         env:
           DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
           DIAGNOSTIC_ALL_VERSIONS: ${{ inputs.diagnostic_all_versions }}
+          DIAGNOSTIC_LEGACY_ONLY: ${{ inputs.diagnostic_legacy_only }}
           CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
         shell: pwsh
         run: |
           ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          if ($env:DIAGNOSTIC_LEGACY_ONLY -eq 'true' -and $env:DIAGNOSTIC_ALL_VERSIONS -ne 'true') { throw 'Legacy-only diagnostics require the authenticated original-version selection.' }
           if ($env:DIAGNOSTIC_ALL_VERSIONS -eq 'true' -and ($env:DIAGNOSTIC_RELEASE_ID -eq '' -or $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true')) { throw 'Original version diagnostics require an authenticated signed candidate.' }
           if ($env:DIAGNOSTIC_RELEASE_ID -ne '' -and $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { throw 'Choose either signed Setup or source Core diagnostics.' }
       - name: Read the Core diagnostic SDK
@@ -597,7 +603,7 @@ jobs:
       fail-fast: false
       matrix:
         old_version: ['3.7.8', '3.7.9']
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 45
     permissions:
       # This manually dispatched job reads the unpublished, source-bound draft.

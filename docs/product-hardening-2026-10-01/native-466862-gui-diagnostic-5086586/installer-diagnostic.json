@@ -1,0 +1,794 @@
+{
+  "kind": "real-signed-setup-failure-diagnostic",
+  "sourceCommit": "5086586140306a7401ebe6d52e94211b2278633e",
+  "runId": "36839550966",
+  "os": "Microsoft Windows NT 10.0.26100.0",
+  "parentPowerShell": "7.6.6",
+  "cleanStart": true,
+  "installerExecuted": true,
+  "preInstallExecuted": false,
+  "sourceHashes": [
+    {
+      "path": "src/installer/owned-cleanup.ps1",
+      "sha256": "9B131AC4F14C7C0D2677D899F8F1649029410A6E3FD0332593E00064419B89FB"
+    },
+    {
+      "path": "src/installer/service-maintenance.ps1",
+      "sha256": "D64BE23DD2075C74E753C05D1B6733ED3A74D3C96826017880CBE5FDD0A6BBE3"
+    },
+    {
+      "path": "src/installer/maintenance-boot-recovery.ps1",
+      "sha256": "BBE28F154A2E8330B55804E8828158F17721F4C6B106614FF2B7A8ADF0E33130"
+    }
+  ],
+  "mutations": [
+    {
+      "atUtc": "2026-10-01T08:58:47.0810245+00:00",
+      "kind": "canonical-gui-native-uia",
+      "target": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+      "purpose": "provision-telegram"
+    },
+    {
+      "atUtc": "2026-10-01T08:58:53.4139213+00:00",
+      "kind": "telegram-native-invoke",
+      "target": "EgoistShieldTelegramProxy",
+      "purpose": "Invoke shipped install control in exact GUI PID 4684"
+    }
+  ],
+  "gui": [],
+  "beforeNetwork": {
+    "dns": [
+      {
+        "index": 1,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 1,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 11,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 11,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 2,
+        "servers": [
+          "168.63.129.16"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 23,
+        "servers": []
+      }
+    ],
+    "defaultRoutes": [
+      {
+        "index": 14,
+        "prefix": "0.0.0.0/0",
+        "nextHop": "10.1.0.1",
+        "metric": 1,
+        "protocol": "NetMgmt"
+      }
+    ],
+    "ipv6Bindings": [
+      {
+        "Name": "Ethernet 3",
+        "Enabled": true
+      },
+      {
+        "Name": "vEthernet (nat)",
+        "Enabled": true
+      }
+    ],
+    "userProxy": {
+      "ProxyEnable": 0,
+      "ProxyServer": null,
+      "ProxyOverride": null,
+      "AutoConfigURL": null
+    },
+    "winHttp": {
+      "WinHttpSettings": [
+        24,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "DefaultConnectionSettings": null
+    }
+  },
+  "beforeServices": null,
+  "beforeTasks": null,
+  "result": "failed",
+  "releaseReady": false,
+  "artifactSourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "installer": {
+    "version": "3.8.0",
+    "sha256": "768953BFC01A64F1EA0C776246C0033C39C7C29ACD2AAFCBD48E08AD3C4E7B09",
+    "bytes": 277408236
+  },
+  "install": {
+    "exitCode": 0,
+    "elapsedMilliseconds": 57702.34,
+    "stdout": ""
+  },
+  "installedAcl": [
+    {
+      "path": "C:\\Program Files\\EgoistShield\\",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;CIIOID;GA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;ID;FA;;;SY)(A;OICIIOID;GA;;;SY)(A;ID;FA;;;BA)(A;OICIIOID;GA;;;BA)(A;ID;0x1200a9;;;BU)(A;OICIIOID;GXGR;;;BU)(A;OICIIOID;GA;;;CO)(A;ID;0x1200a9;;;AC)(A;OICIIOID;GXGR;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)(A;OICIIOID;GXGR;;;S-1-15-2-2)",
+      "protected": false,
+      "canonical": true,
+      "rules": [
+        {
+          "sid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+          "rights": 268435456,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 1,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-5-18",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-18",
+          "rights": 268435456,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "rights": 268435456,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": -1610612736,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-3-0",
+          "rights": 268435456,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-15-2-1",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-1",
+          "rights": -1610612736,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-15-2-2",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-2",
+          "rights": -1610612736,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        }
+      ]
+    },
+    {
+      "path": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+      "protected": false,
+      "canonical": true,
+      "rules": [
+        {
+          "sid": "S-1-5-18",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-1",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-2",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        }
+      ]
+    },
+    {
+      "path": "C:\\Program Files\\EgoistShield\\EgoistShield.Worker.exe",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+      "protected": false,
+      "canonical": true,
+      "rules": [
+        {
+          "sid": "S-1-5-18",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-1",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-2",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        }
+      ]
+    },
+    {
+      "path": "C:\\Program Files\\EgoistShield\\resources",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;CIIOID;GA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;ID;FA;;;SY)(A;OICIIOID;GA;;;SY)(A;ID;FA;;;BA)(A;OICIIOID;GA;;;BA)(A;ID;0x1200a9;;;BU)(A;OICIIOID;GXGR;;;BU)(A;OICIIOID;GA;;;CO)(A;ID;0x1200a9;;;AC)(A;OICIIOID;GXGR;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)(A;OICIIOID;GXGR;;;S-1-15-2-2)",
+      "protected": false,
+      "canonical": true,
+      "rules": [
+        {
+          "sid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+          "rights": 268435456,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 1,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-5-18",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-18",
+          "rights": 268435456,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "rights": 268435456,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": -1610612736,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-3-0",
+          "rights": 268435456,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-15-2-1",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-1",
+          "rights": -1610612736,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        },
+        {
+          "sid": "S-1-15-2-2",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-2",
+          "rights": -1610612736,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 3,
+          "propagation": 2
+        }
+      ]
+    },
+    {
+      "path": "C:\\Program Files\\EgoistShield\\resources\\app.asar",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+      "protected": false,
+      "canonical": true,
+      "rules": [
+        {
+          "sid": "S-1-5-18",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-1",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-2",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        }
+      ]
+    },
+    {
+      "path": "C:\\Program Files\\EgoistShield\\resources\\component-worker.cjs",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+      "protected": false,
+      "canonical": true,
+      "rules": [
+        {
+          "sid": "S-1-5-18",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-1",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-2",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        }
+      ]
+    },
+    {
+      "path": "C:\\Program Files\\EgoistShield\\resources\\worker-host-integrity.json",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+      "protected": false,
+      "canonical": true,
+      "rules": [
+        {
+          "sid": "S-1-5-18",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-1",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-2",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        }
+      ]
+    },
+    {
+      "path": "C:\\Program Files\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe",
+      "owner": "S-1-5-32-544",
+      "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+      "protected": false,
+      "canonical": true,
+      "rules": [
+        {
+          "sid": "S-1-5-18",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "rights": 2032127,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-1",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        },
+        {
+          "sid": "S-1-15-2-2",
+          "rights": 1179817,
+          "type": "Allow",
+          "inherited": true,
+          "inheritance": 0,
+          "propagation": 0
+        }
+      ]
+    }
+  ],
+  "error": "Actual native observation timed out: Telegram installed through genuine GUI control (Cannot validate argument on parameter 'Label'. The argument \"Telegram installed through genuine GUI control-click-2s\" does not match the \"^[a-z0-9-]+$\" pattern. Supply an argument that matches \"^[a-z0-9-]+$\" and try the command again.)",
+  "installerDiagnostics": [
+    {
+      "name": "installer-upgrade-journal.jsonl",
+      "status": "captured",
+      "bytes": 7214,
+      "sha256": "6B43005F568FEF2F2FEF19AF9BEDA2E9832FBEF31A0A659EA13BF84D69CDE33E"
+    },
+    {
+      "name": "core-service.log",
+      "status": "captured",
+      "bytes": 7215,
+      "sha256": "35AEF8D8E2058FE445E1726A0B23AC02D88B31B56838056C588A6E33B390D879"
+    },
+    {
+      "name": "core-service.previous.log",
+      "status": "missing"
+    }
+  ],
+  "afterNetwork": {
+    "dns": [
+      {
+        "index": 1,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 1,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 11,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 11,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 2,
+        "servers": [
+          "168.63.129.16"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 23,
+        "servers": []
+      }
+    ],
+    "defaultRoutes": [
+      {
+        "index": 14,
+        "prefix": "0.0.0.0/0",
+        "nextHop": "10.1.0.1",
+        "metric": 1,
+        "protocol": "NetMgmt"
+      }
+    ],
+    "ipv6Bindings": [
+      {
+        "Name": "Ethernet 3",
+        "Enabled": true
+      },
+      {
+        "Name": "vEthernet (nat)",
+        "Enabled": true
+      }
+    ],
+    "userProxy": {
+      "ProxyEnable": 0,
+      "ProxyServer": null,
+      "ProxyOverride": null,
+      "AutoConfigURL": null
+    },
+    "winHttp": {
+      "WinHttpSettings": [
+        24,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "DefaultConnectionSettings": null
+    }
+  },
+  "afterServices": {
+    "Name": "EgoistShieldCore",
+    "State": "Running",
+    "StartMode": "Auto",
+    "StartName": "LocalSystem",
+    "PathName": "C:\\Program Files\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe",
+    "ProcessId": 7272
+  },
+  "afterTasks": null,
+  "networkPreserved": true,
+  "finishedAtUtc": "2026-10-01T09:02:56.5849634+00:00"
+}

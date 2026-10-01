@@ -79,6 +79,52 @@ function Test-LegacyHarnessProductVersion {
   param([string]$ActualVersion,[ValidateSet('3.7.8','3.7.9')][string]$ExpectedVersion)
   return $ActualVersion -ceq $ExpectedVersion -or $ActualVersion -ceq ($ExpectedVersion+'.0')
 }
+function Get-LegacyNetworkProbeSource {
+  return @'
+$ErrorActionPreference='Stop'
+$rows=@()
+$adapters=@(Get-NetAdapter -ErrorAction Stop | Where-Object {
+  $identity=([string]$_.Name+' '+[string]$_.InterfaceDescription)
+  $_.Status -eq 'Up' -and $identity -notmatch 'WireGuard|Wintun|Cloudflare\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\s_-])(TAP|TUN)([\s_-]|$)|egoist-tun'
+} | Sort-Object ifIndex -Unique)
+if($adapters.Count -gt 16){throw 'Original DNS diagnostic adapter count exceeded its bound.'}
+foreach($adapter in $adapters){
+  foreach($family in @('IPv4','IPv6')){
+    $watch=[Diagnostics.Stopwatch]::StartNew()
+    $row=[ordered]@{index=$adapter.ifIndex;guid=[string]$adapter.InterfaceGuid;name=[string]$adapter.Name;status=[string]$adapter.Status;family=$family;result='running'}
+    try{
+      $values=@(Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily $family -ErrorAction Stop)
+      $row.result='complete';$row.records=$values.Count;$row.addresses=@($values|Select-Object -ExpandProperty ServerAddresses)
+    }catch{$row.result='failed';$row.error=$_.Exception.Message;$row.errorId=$_.FullyQualifiedErrorId;$row.hresult=$_.Exception.HResult}
+    $row.elapsedMilliseconds=$watch.Elapsed.TotalMilliseconds;$rows+=$row
+  }
+}
+@{kind='read-only-legacy-dns-query-diagnostic';powerShell=$PSVersionTable.PSVersion.ToString();queries=$rows;networkMutations=0}|ConvertTo-Json -Depth 8
+'@
+}
+function Assert-LegacyNetworkCompatibility {
+  param($Report)
+  if($Report.kind -cne 'read-only-legacy-dns-query-diagnostic' -or $Report.networkMutations -ne 0){throw 'Original installer network compatibility report is invalid.'}
+  $queries=@($Report.queries)
+  if($queries.Count -lt 2 -or $queries.Count -gt 32){throw 'Original installer network compatibility requires a complete uplink snapshot.'}
+  foreach($group in @($queries|Group-Object index)){
+    if([int]$group.Name -le 0 -or $group.Count -ne 2 -or @($group.Group|Where-Object {$_.family -ceq 'IPv4'}).Count -ne 1 -or @($group.Group|Where-Object {$_.family -ceq 'IPv6'}).Count -ne 1){throw 'Original installer network compatibility requires both address families for each unique uplink.'}
+    foreach($query in $group.Group){
+      if($query.result -cne 'complete' -or [int]$query.records -lt 1){throw 'Original installer network prerequisite failed: missing DNS client row or failed query; original bytes and adapter configuration were preserved.'}
+    }
+  }
+}
+function Read-LegacyNetworkCompatibility {
+  $probe=Join-Path $script:Work 'original-network-readback.ps1'
+  [void](Assert-NativePathWithin $probe $script:Work)
+  if(Test-Path -LiteralPath $probe){throw 'Original network prerequisite probe must be fresh.'}
+  [IO.File]::WriteAllText($probe,(Get-LegacyNetworkProbeSource),[Text.UTF8Encoding]::new($true))
+  [void](Invoke-NativeBounded -Executable $script:NativePowerShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$probe) -Label 'original-network-readback' -TimeoutSeconds 60)
+  $report=Read-LegacyHarnessJson (Join-Path $script:Work 'original-network-readback.stdout.txt')
+  $script:Receipt.oldNetworkCompatibility=$report;Save-NativeReceipt
+  Assert-LegacyNetworkCompatibility $report
+  return $report
+}
 function Invoke-LegacyGui {
   Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
   $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
@@ -282,12 +328,13 @@ function Invoke-NativeLegacyUpgrade {
   $ancestor=[IO.Path]::GetDirectoryName($script:Evidence);while(-not (Test-Path -LiteralPath $ancestor)){$ancestor=[IO.Path]::GetDirectoryName($ancestor)};Assert-NativeOrdinaryPath $ancestor
   New-Item -ItemType Directory -Path $script:Work,$script:Evidence | Out-Null
   $script:ReceiptPath=Join-Path $script:Work 'windows-production-legacy-upgrade.json'
-  $script:Receipt=[ordered]@{schemaVersion=1;kind=('actual-native-official-'+$ExpectedOldVersion+'-helper-upgrade');oldVersion=$ExpectedOldVersion;candidateVersion='3.8.0';candidateSourceCommit=$script:SourceCommit;harnessSourceCommit=$environment.GITHUB_SHA;startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');host=[ordered]@{computerName=$env:COMPUTERNAME;administrator=$administrator;runnerEnvironment=$env:RUNNER_ENVIRONMENT;runId=$env:GITHUB_RUN_ID;runAttempt=$env:GITHUB_RUN_ATTEMPT};result='running';cleanStartVerified=$true;releaseReady=$false;mutations=@();checks=@();gui=@();privateStateReadbacks=@();networkReadbacks=@();beforeNetwork=(Get-NativeNetworkFingerprint);beforeForeignRegistrations=(Get-LegacyForeignRegistrationSnapshot);releaseGates=@('Public/latest feed discovery and old GUI auto-update initiation','Actual reboot/interrupted recovery','3.7.7 trust compatibility','System DNS/TUN/WinDivert endpoints','Actual standard-user GUI token','Long-duration 72-hour/7-day/month-scale pilot')}
+  $script:Receipt=[ordered]@{schemaVersion=1;kind=('actual-native-official-'+$ExpectedOldVersion+'-helper-upgrade');oldVersion=$ExpectedOldVersion;candidateVersion='3.8.0';candidateSourceCommit=$script:SourceCommit;harnessSourceCommit=$environment.GITHUB_SHA;startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');host=[ordered]@{computerName=$env:COMPUTERNAME;administrator=$administrator;runnerEnvironment=$env:RUNNER_ENVIRONMENT;runId=$env:GITHUB_RUN_ID;runAttempt=$env:GITHUB_RUN_ATTEMPT;os=[Environment]::OSVersion.VersionString;imageOS=$env:ImageOS;imageVersion=$env:ImageVersion};result='running';cleanStartVerified=$true;releaseReady=$false;mutations=@();checks=@();gui=@();privateStateReadbacks=@();networkReadbacks=@();beforeNetwork=(Get-NativeNetworkFingerprint);beforeForeignRegistrations=(Get-LegacyForeignRegistrationSnapshot);releaseGates=@('Public/latest feed discovery and old GUI auto-update initiation','Actual reboot/interrupted recovery','3.7.7 trust compatibility','System DNS/TUN/WinDivert endpoints','Actual standard-user GUI token','Long-duration 72-hour/7-day/month-scale pilot')}
   $script:Receipt.harnessFiles=@(foreach($file in @($PSCommandPath,$script:LegacyNodeHelper,(Join-Path $PSScriptRoot 'windows-production-acceptance.ps1'),(Join-Path $PSScriptRoot 'windows-production-acceptance.mjs'))){[ordered]@{path=$file;sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()}});Save-NativeReceipt
   $primaryError=$null;$uninstalled=$false
   try{
     $script:AuthenticatedAssets=Invoke-LegacyArtifactVerification -Label 'authenticated-assets'
     $script:Receipt.authenticatedAssets=$script:AuthenticatedAssets;Save-NativeReceipt
+    [void](Read-LegacyNetworkCompatibility)
     $script:Installer=Join-Path $script:CandidateAssets 'EgoistShield-Setup-3.8.0.exe';$script:InstallerHash=[string]$script:AuthenticatedAssets.candidate.sha256
     $oldInstaller=Join-Path $script:OldAssets ('EgoistShield-Setup-'+$ExpectedOldVersion+'.exe')
     Add-NativeMutation -Kind 'official-old-setup-clean-install' -Target $script:InstallRoot -Purpose "Actual original public $ExpectedOldVersion installer, authenticated before execution."

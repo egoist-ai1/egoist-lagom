@@ -1,0 +1,92 @@
+{
+  "harnessSourceCommit": "5086586140306a7401ebe6d52e94211b2278633e",
+  "artifactSourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "releaseId": 400757269,
+  "runId": 36839550966,
+  "jobId": 110295100350,
+  "artifactId": 11151610266,
+  "releaseAcceptance": false,
+  "physicalHostMutations": 0,
+  "actualSetupExit": 0,
+  "realGuiInvoked": true,
+  "confirmedFailure": "Actual telegram-proxy:save-config rejected secret before Telegram service installation. Production payload was unchanged.",
+  "diagnosticHarnessFailure": "Actual native observation timed out: Telegram installed through genuine GUI control (Cannot validate argument on parameter 'Label'. The argument \"Telegram installed through genuine GUI control-click-2s\" does not match the \"^[a-z0-9-]+$\" pattern. Supply an argument that matches \"^[a-z0-9-]+$\" and try the command again.)",
+  "networkPreserved": true,
+  "files": [
+    {
+      "path": "core-service.log",
+      "bytes": 7215,
+      "sha256": "35aef8d8e2058fe445e1726a0b23ac02d88b31b56838056c588a6e33b390d879"
+    },
+    {
+      "path": "diagnostic-gui-after-invoke-failure-observation.json",
+      "bytes": 6488,
+      "sha256": "47ad6df77209a3c3fd85ed1dc666fe4641e82a2fe986f3d349193610f63d601f"
+    },
+    {
+      "path": "diagnostic-gui-after-invoke-main.log",
+      "bytes": 1883,
+      "sha256": "99bc3ca9eb32928666569d6b9941e45e2444c25d8124947165d1f31126ea3f4a"
+    },
+    {
+      "path": "diagnostic-gui-failure-observation.json",
+      "bytes": 5917,
+      "sha256": "8692b7f9edc05ad9216a2b54d900e78fbc266809081edde9157788689c94f2cb"
+    },
+    {
+      "path": "diagnostic-gui-main.log",
+      "bytes": 6822,
+      "sha256": "f115adc4cc8849026608fec0c63499c7c6a7b195d3bf81ccb7ae498b39b26669"
+    },
+    {
+      "path": "diagnostic-gui.stderr.txt",
+      "bytes": 19123,
+      "sha256": "cc371fa4885071e92e8ad464fba9d59c79b9346b961d19aed529db727cef5f2f"
+    },
+    {
+      "path": "diagnostic-gui.stdout.txt",
+      "bytes": 1621,
+      "sha256": "0c832e164f0fd9d6d79f05e0a558138f3d9f3296a47c63f9ce95366e79a0bede"
+    },
+    {
+      "path": "installer-diagnostic.json",
+      "bytes": 21312,
+      "sha256": "ede979da3fbb24b9418fc81412cde918e1f40de3331b55cc54d1c2065a9a3950"
+    },
+    {
+      "path": "installer-upgrade-journal.jsonl",
+      "bytes": 7214,
+      "sha256": "6b43005f568fef2f2fef19af9beda2e9832fbef31a0a659ea13bf84d69cde33e"
+    },
+    {
+      "path": "signed-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "signed-diagnostic-authentication.stdout.txt",
+      "bytes": 163,
+      "sha256": "04fda8faeee5f8b6a2c25945b30dc6ad73442bc39b3ee6bf20c1adbe45cecaa7"
+    },
+    {
+      "path": "signed-diagnostic-clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "signed-diagnostic-clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw-artifact.zip",
+      "bytes": 13011,
+      "sha256": "a2e06551b15f64870b6f50e540f0d8ce6867bc188d32bdfacd851b9565c55956"
+    },
+    {
+      "path": "raw-job.txt",
+      "bytes": 46443,
+      "sha256": "37da64a33a140b98e29be74e78b5931ee56552fd7a1fe4b8ee3a105271a1f8be"
+    }
+  ]
+}

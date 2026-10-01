@@ -370,10 +370,10 @@ function Invoke-NativeGui {
       Add-NativeMutation -Kind 'telegram-native-invoke' -Target 'EgoistShieldTelegramProxy' -Purpose ("Invoke shipped install control in exact GUI PID "+$child.Id)
       ([Windows.Automation.InvokePattern]$installButton.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
       Save-NativeGuiFailureObservation -Process $child -Root $root -Label ($Label+'-after-invoke')
-      $capture=[ordered]@{watch=[Diagnostics.Stopwatch]::StartNew();next=2}
+      $capture=[ordered]@{watch=[Diagnostics.Stopwatch]::StartNew();next=2;label=$Label}
       [void](Wait-NativeCondition -Condition {
         if($capture.next -le 45 -and $capture.watch.Elapsed.TotalSeconds -ge $capture.next){
-          Save-NativeGuiFailureObservation -Process $child -Root $root -Label ($Label+'-click-'+$capture.next+'s')
+          Save-NativeGuiFailureObservation -Process $child -Root $root -Label ($capture.label+'-click-'+$capture.next+'s')
           $capture.next=if($capture.next -eq 2){15}elseif($capture.next -eq 15){45}else{999}
         }
         Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running

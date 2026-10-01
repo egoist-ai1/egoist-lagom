@@ -1,0 +1,85 @@
+{
+    "powerShell":  "5.1.26100.33438",
+    "networkMutations":  0,
+    "queries":  [
+                    {
+                        "index":  4,
+                        "guid":  "{7B820E04-E2FF-4C51-88D8-8D113C363914}",
+                        "name":  "Ethernet 4",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "failed",
+                        "error":  "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 4)) AND ((AddressFamily = 2)). Verify query parameters and retry.",
+                        "errorId":  "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+                        "hresult":  -2146233087,
+                        "elapsedMilliseconds":  450.31370000000004
+                    },
+                    {
+                        "index":  4,
+                        "guid":  "{7B820E04-E2FF-4C51-88D8-8D113C363914}",
+                        "name":  "Ethernet 4",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "failed",
+                        "error":  "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 4)) AND ((AddressFamily = 23)). Verify query parameters and retry.",
+                        "errorId":  "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+                        "hresult":  -2146233087,
+                        "elapsedMilliseconds":  9.1806
+                    },
+                    {
+                        "index":  11,
+                        "guid":  "{E9315596-CF69-45A0-BE00-A55F88C44322}",
+                        "name":  "vEthernet (nat)",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "complete",
+                        "records":  1,
+                        "addresses":  [
+
+                                      ],
+                        "elapsedMilliseconds":  13.161800000000001
+                    },
+                    {
+                        "index":  11,
+                        "guid":  "{E9315596-CF69-45A0-BE00-A55F88C44322}",
+                        "name":  "vEthernet (nat)",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "complete",
+                        "records":  1,
+                        "addresses":  [
+                                          "fec0:0:0:ffff::1",
+                                          "fec0:0:0:ffff::2",
+                                          "fec0:0:0:ffff::3"
+                                      ],
+                        "elapsedMilliseconds":  10.783800000000001
+                    },
+                    {
+                        "index":  14,
+                        "guid":  "{63C341DF-2AD9-4C6B-86AA-A712AB4D3CE8}",
+                        "name":  "Ethernet 3",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "complete",
+                        "records":  1,
+                        "addresses":  [
+                                          "168.63.129.16"
+                                      ],
+                        "elapsedMilliseconds":  9.6415
+                    },
+                    {
+                        "index":  14,
+                        "guid":  "{63C341DF-2AD9-4C6B-86AA-A712AB4D3CE8}",
+                        "name":  "Ethernet 3",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "complete",
+                        "records":  1,
+                        "addresses":  [
+
+                                      ],
+                        "elapsedMilliseconds":  11.523900000000001
+                    }
+                ],
+    "kind":  "read-only-original379-dns-query-diagnostic"
+}

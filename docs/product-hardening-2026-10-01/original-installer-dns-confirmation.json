@@ -1,0 +1,389 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-10-01T09:16:19.0682341Z",
+  "taskId": "01a0f42c-8e52-7810-89bf-5257f3e06d3e",
+  "kind": "Read-only original-installer DNS failure confirmation and practical next native gate",
+  "harnessSourceCommit": "5086586140306a7401ebe6d52e94211b2278633e",
+  "artifactSourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "runId": 36839550966,
+  "transportDraftReleaseId": 400757269,
+  "acceptedDiagnosticCases": [
+    {
+      "originalVersion": "3.7.8",
+      "installerBytes": 194405835,
+      "installerSha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "setupExecuted": true,
+      "directSourcePhaseExecuted": false,
+      "result": "failed",
+      "error": "Native child failed (41): signed-diagnostic-clean-install; see owned stdout/stderr.",
+      "os": "Microsoft Windows NT 10.0.26100.0",
+      "lastPreInstallStage": "service-registrations-backed-up",
+      "services": 0,
+      "networkBaselineStageRecorded": false,
+      "rollbackStages": [
+        "installer-state-root-takeown",
+        "installer-state-child-takeown",
+        "installer-state-child-takeown",
+        "optional-runtime-restored",
+        "service-registrations-restored"
+      ],
+      "networkPreserved": true,
+      "nativeNetworkProbeRecorded": false
+    },
+    {
+      "originalVersion": "3.7.9",
+      "installerBytes": 206521508,
+      "installerSha256": "eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+      "setupExecuted": true,
+      "directSourcePhaseExecuted": false,
+      "result": "failed",
+      "error": "Native child failed (41): signed-diagnostic-clean-install; see owned stdout/stderr.",
+      "os": "Microsoft Windows NT 10.0.26100.0",
+      "lastPreInstallStage": "service-registrations-backed-up",
+      "services": 0,
+      "networkBaselineStageRecorded": false,
+      "rollbackStages": [
+        "installer-state-root-takeown",
+        "installer-state-child-takeown",
+        "installer-state-child-takeown",
+        "optional-runtime-restored",
+        "service-registrations-restored"
+      ],
+      "networkPreserved": true,
+      "nativeNetworkProbeRecorded": true
+    }
+  ],
+  "acceptedEvidenceHashes": [
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old378\\raw-artifact.zip",
+      "bytes": 5352,
+      "sha256": "55367eb5f93168e57582f44494672fc08356d7d6aa8ef13e03de291179630f52"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old378\\raw-job.txt",
+      "bytes": 34801,
+      "sha256": "0ab9e59bb0e28e593494519f97f1edcaba0cde1a16f3babe553dd22b6644df03"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old378\\installer-diagnostic.json",
+      "bytes": 8057,
+      "sha256": "acb795fad9991e766ed8a3ec0048e5cdc922d1efb008de13ec805aac80e94790"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old378\\installer-upgrade-journal.jsonl",
+      "bytes": 2368,
+      "sha256": "de766d799e0f5ddeab65640f7c1e62b7fd25ba79612b101ddea25b57c8c42e02"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old378\\original-authentication.json",
+      "bytes": 2707,
+      "sha256": "b3192c8e627561f4099f1cf39af959d68556bbabe29379899db518460dccbf93"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old378\\original-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old378\\original-diagnostic-authentication.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old378\\signed-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old378\\signed-diagnostic-authentication.stdout.txt",
+      "bytes": 163,
+      "sha256": "04fda8faeee5f8b6a2c25945b30dc6ad73442bc39b3ee6bf20c1adbe45cecaa7"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old378\\signed-diagnostic-clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old378\\signed-diagnostic-clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\raw-artifact.zip",
+      "bytes": 8048,
+      "sha256": "28cde221df26428037038049d29d4b3548be4b2e324cef5ba262f1998f52a6fb"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\raw-job.txt",
+      "bytes": 30474,
+      "sha256": "8f575c130ef862e8d530d7c4696ef440746666fbb8e9a717d4e25b0a4f9948af"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\original-authentication.json",
+      "bytes": 2707,
+      "sha256": "7aca395a68f2a53f354a27311669fd4f6e293378f6e11008e6669df5239412e1"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\installer-diagnostic.json",
+      "bytes": 12865,
+      "sha256": "9fb41bc77312572e03e612b15b6ac54676dc4b34af5108e635c43f224d97daad"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\installer-upgrade-journal.jsonl",
+      "bytes": 2368,
+      "sha256": "25a0d923891f55da2a364c894f74c05bf1264a2453f68375ee51e67a7385a207"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\original-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\original-diagnostic-authentication.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\original-network-readback.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\original-network-readback.ps1",
+      "bytes": 1408,
+      "sha256": "c2036ac4ea64c4c9a759d2108bc907cb175c9b7a6ed2f7090bc52a029899e52d"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\original-network-readback.stdout.txt",
+      "bytes": 4323,
+      "sha256": "dd8a1845766142ba46b0353908668b0fb53ad3d47c4038ba3f8aeb2836a6d7bb"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\signed-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\signed-diagnostic-authentication.stdout.txt",
+      "bytes": 163,
+      "sha256": "04fda8faeee5f8b6a2c25945b30dc6ad73442bc39b3ee6bf20c1adbe45cecaa7"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\signed-diagnostic-clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-original-diagnostics-5086586\\old379\\signed-diagnostic-clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "originalCleanupHelpers": [
+    {
+      "version": "3.7.8",
+      "member": "$PLUGINSDIR/owned-cleanup.ps1",
+      "bytes": 190567,
+      "sha256": "c7eca1981c0aa2eb237f1db29c0acfa2fe62a0756ef292efb97339815011f44e",
+      "installerExecutedInAnalysis": false,
+      "helperExecutedInAnalysis": false
+    },
+    {
+      "version": "3.7.9",
+      "member": "$PLUGINSDIR/owned-cleanup.ps1",
+      "bytes": 190567,
+      "sha256": "c7eca1981c0aa2eb237f1db29c0acfa2fe62a0756ef292efb97339815011f44e",
+      "installerExecutedInAnalysis": false,
+      "helperExecutedInAnalysis": false
+    }
+  ],
+  "actualOriginal379ReadOnlyQuery": {
+    "powerShell": "5.1.26100.33438",
+    "networkMutations": 0,
+    "queries": [
+      {
+        "index": 4,
+        "guid": "{7B820E04-E2FF-4C51-88D8-8D113C363914}",
+        "name": "Ethernet 4",
+        "status": "Up",
+        "family": "IPv4",
+        "result": "failed",
+        "error": "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 4)) AND ((AddressFamily = 2)). Verify query parameters and retry.",
+        "errorId": "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+        "hresult": -2146233087,
+        "elapsedMilliseconds": 450.31370000000004
+      },
+      {
+        "index": 4,
+        "guid": "{7B820E04-E2FF-4C51-88D8-8D113C363914}",
+        "name": "Ethernet 4",
+        "status": "Up",
+        "family": "IPv6",
+        "result": "failed",
+        "error": "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 4)) AND ((AddressFamily = 23)). Verify query parameters and retry.",
+        "errorId": "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+        "hresult": -2146233087,
+        "elapsedMilliseconds": 9.1806
+      },
+      {
+        "index": 11,
+        "guid": "{E9315596-CF69-45A0-BE00-A55F88C44322}",
+        "name": "vEthernet (nat)",
+        "status": "Up",
+        "family": "IPv4",
+        "result": "complete",
+        "records": 1,
+        "addresses": [],
+        "elapsedMilliseconds": 13.161800000000001
+      },
+      {
+        "index": 11,
+        "guid": "{E9315596-CF69-45A0-BE00-A55F88C44322}",
+        "name": "vEthernet (nat)",
+        "status": "Up",
+        "family": "IPv6",
+        "result": "complete",
+        "records": 1,
+        "addresses": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ],
+        "elapsedMilliseconds": 10.783800000000001
+      },
+      {
+        "index": 14,
+        "guid": "{63C341DF-2AD9-4C6B-86AA-A712AB4D3CE8}",
+        "name": "Ethernet 3",
+        "status": "Up",
+        "family": "IPv4",
+        "result": "complete",
+        "records": 1,
+        "addresses": [
+          "168.63.129.16"
+        ],
+        "elapsedMilliseconds": 9.6415
+      },
+      {
+        "index": 14,
+        "guid": "{63C341DF-2AD9-4C6B-86AA-A712AB4D3CE8}",
+        "name": "Ethernet 3",
+        "status": "Up",
+        "family": "IPv6",
+        "result": "complete",
+        "records": 1,
+        "addresses": [],
+        "elapsedMilliseconds": 11.523900000000001
+      }
+    ],
+    "kind": "read-only-original379-dns-query-diagnostic"
+  },
+  "causalAssessment": {
+    "measuredFailingOperation": "Exact original-family Get-DnsClientServerAddress query: Up Ethernet4 index4 bothIPv4/IPv6 CmdletizationQuery_NotFound",
+    "operationFailureNativeVerified": true,
+    "originalSharedSourceLines": [
+      1577,
+      1582,
+      1602,
+      1604,
+      3534,
+      3535,
+      3538
+    ],
+    "bothOldHelpersByteIdentical": true,
+    "installerInnerPreInstallStackCaptured": false,
+    "queryTiming": "after failed original Setup and journal capture",
+    "old378IndependentNetworkQueryCaptured": false,
+    "classification": "Deterministic old-query incompatibility on observed topology; consistent original installer phase failure. Exact thrown NSIS-child exception inferred, not a captured stack.",
+    "networkPreservedScope": "Measured DNS/routes/IPv6/proxy fingerprints, not all possible machine properties"
+  },
+  "primarySources": [
+    {
+      "title": "GitHub-hosted runners reference",
+      "url": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
+      "supportedClaims": [
+        "windows-2022 is supported standardx64 WindowsVM label",
+        "Each standard non-single-CPU hosted runner is a fresh VM"
+      ],
+      "notSupported": "No per-NIC DNS row guarantee"
+    },
+    {
+      "title": "actions/runner-images official README",
+      "url": "https://github.com/actions/runner-images/blob/main/README.md",
+      "supportedClaims": [
+        "windows-2022 maps WindowsServer2022 and current windows-latest maps Server2025",
+        "OSlabel avoids majorlatest migration, weekly imageupdates continue",
+        "Actualimage from Set up job; main changes after deployment"
+      ],
+      "notSupported": "Cannot pin a specific installed image build or topology by label"
+    },
+    {
+      "title": "Windows2022 official inventory",
+      "url": "https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md?plain=1",
+      "observedOs": "10.0.20348 Build5622",
+      "observedImageVersion": "20260920.314.1",
+      "nextJobImageGuaranteed": false
+    },
+    {
+      "title": "Windows2022 release20260927",
+      "url": "https://github.com/actions/runner-images/releases/tag/win22%2F20260927.320",
+      "observedImageVersion": "20260927.320.1",
+      "observedStatus": "Pre-release",
+      "nextJobImageGuaranteed": false
+    }
+  ],
+  "recommendedNextRun": {
+    "legacyRunsOn": "windows-2022",
+    "originalVersions": [
+      "3.7.8",
+      "3.7.9"
+    ],
+    "fresh380RunsOn": "windows-latest",
+    "windows2022ExecutedHere": false,
+    "compatibilityClaim": "Candidate realOS environment only, not a promised pass",
+    "steps": [
+      "Each fresh strict-owned legacy job records actualImage/OS/WinPS/runtime and fullcleanstart.",
+      "Before originalSetup, bounded read-only exactold uplinkfilter and bothfamily DNSqueries; require at least1row each. EmptyServerAddresses allowed; missing/error/timeout is explicit incompatible/Unknown gate failure.",
+      "Install actual unmodified pinned/signature-verified originalSetup; verifyinstalledpayload/Core/helperidentity.",
+      "Genuine ordinary allowed GUI/UIA createsTelegrambackground; readiness/privateACL thenGUIclose serviceproof.",
+      "Invoke actual originalinstalledhelper against sameauthenticated sourcebound signedcandidate; preserveNoRunAfter/privateTG/recoverypolicy/quiescence/network/foreignregistrations/uninstall tests.",
+      "Retain sourceSHA/asset/ownership guards and allfailureevidence; do not bypass sourcebinding due to different diagnostic harness/artifact commits."
+    ],
+    "incompatibleDisposition": "Explicit legacy prerequisite unavailable/failed, never an upgrade PASS",
+    "forbiddenChanges": [
+      "Old installer bytes/helper replacement",
+      "Manual payload install or emulated SCM",
+      "Disabling or changing foreign adapters/bindings/DNS",
+      "Fake installed state",
+      "Trust/signature/source/ownership bypass"
+    ]
+  },
+  "alternative": {
+    "firstChoice": false,
+    "purpose": "Only exact innercause if still needed",
+    "environment": "Separate strictly guarded disposable native Windowsjob",
+    "action": "Run exact authenticated original embeddedPreInstall with actual WinPS5.1 capture stdout/stderr and bounded recovery/networkreadback",
+    "productionScriptModified": false,
+    "canMutatePreparationState": true,
+    "countsAsOriginalInstallerAcceptance": false,
+    "countsAsActualUpgradeAcceptance": false
+  },
+  "limitations": [
+    "Server2022 image label does not guarantee compatibleadapterrows or any installer/Core/GUI/upgrade success",
+    "Observed originalSetup failures on currentServer2025 remain failures regardless of2022 outcome",
+    "Legacy2022 success doesnotprove oldSetup2025 or consumerWindows10/11",
+    "Public/latest feed discovery,3.7.7 compatibility/reboot/longsoak remain separate unproved gates",
+    "Native query is postfailure and onlyold379; exact innerPreInstall stack notcaptured"
+  ],
+  "mutationScope": [
+    "Two assigned new report files",
+    "Ownwork read-only originalEXE extraction and receipts"
+  ],
+  "productionEdits": 0,
+  "ciEdits": 0,
+  "physicalHostScmDnsTaskRegistryUiChanges": 0,
+  "nativeRunsInAnalysis": 0,
+  "externalWrites": 0,
+  "dispatches": 0
+}
