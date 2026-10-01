@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "version": "3.7.9",
+  "capturedAtUtc": "2026-10-01T07:00:33.501Z",
+  "provenance": "actual-installed-archive",
+  "installedRootAtCapture": "C:/Program Files/EgoistShield",
+  "sourceArchive": {
+    "path": "C:/Program Files/EgoistShield/resources/app.asar",
+    "bytes": 11689184,
+    "sha256": "0696d3f37b56e70fb6dd3cbbb4c14f820aeafe9931ef32a74787ffe6055d7711"
+  },
+  "main": {
+    "member": ".vite/build/main.js",
+    "bytes": 2545209,
+    "sha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade"
+  },
+  "preserved": [
+    {
+      "file": "trust.js",
+      "bytes": 16509,
+      "sha256": "3ef271144d65fe0f7e5b0d8b81e120605a59227d6e59e96b3d8c3db4d0eca125"
+    },
+    {
+      "file": "desktopPure.js",
+      "bytes": 6625,
+      "sha256": "5271a02eea5455d5953f3bd62c8c4a4bf9401469849e52bb030c1fd2d34cc215"
+    },
+    {
+      "file": "helpers.js",
+      "bytes": 2088,
+      "sha256": "cf178b03ef657b26aba3830717ff94125e73dd0ba21f118e1bb3708914692c10"
+    },
+    {
+      "file": "installerGate.js",
+      "bytes": 761,
+      "sha256": "1157ea97745a135417b42d236c5ee2c40f4c7500d0f89ff2e1671f0504e6d196"
+    },
+    {
+      "file": "root-public-key.pem",
+      "bytes": 113,
+      "sha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7"
+    },
+    {
+      "file": "release-key-registry.json",
+      "bytes": 1100,
+      "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc"
+    },
+    {
+      "file": "release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de"
+    }
+  ],
+  "noAppOrUpdaterLaunched": true,
+  "publicTrustSnapshotIsOriginalBundledBytes": true
+}
