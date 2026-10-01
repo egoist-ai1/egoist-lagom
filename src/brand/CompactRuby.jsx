@@ -21,6 +21,133 @@ function rubyServerPage(nodes,page,size=60){
   const start=current*size;
   return {page:current,pages,start,end:Math.min(start+size,nodes.length),total:nodes.length,rows:nodes.slice(start,start+size)};
 }
+function rubyVpnSettingsPatch(draft,previous){
+  if(!['global','selected'].includes(draft.routeMode))throw new Error('Выберите поддерживаемый режим маршрутизации.');
+  if(!['auto','secure','system','custom'].includes(draft.dnsMode))throw new Error('Выберите поддерживаемый DNS соединения.');
+  if(typeof draft.useTunMode!=='boolean')throw new Error('Выберите режим TUN.');
+  const next={routeMode:draft.routeMode,dnsMode:draft.dnsMode,useTunMode:draft.useTunMode};
+  if(draft.dnsMode==='custom'){
+    const raw=String(draft.customDnsUrl??'');
+    if(/[\x00-\x1f\x7f-\x9f\u2028\u2029]/u.test(raw))throw new Error('Укажите HTTPS-адрес DoH без управляющих символов.');
+    const value=raw.trim();
+    if(!value||/[\s\\<>\u200b-\u200f\u202a-\u202e\u2066-\u2069]/u.test(value))throw new Error('Укажите полный HTTPS-адрес DoH без пробелов.');
+    let url;try{url=new URL(value)}catch{throw new Error('Укажите полный HTTPS-адрес DoH.');}
+    if(url.protocol!=='https:'||!url.hostname||url.username||url.password||url.hash)throw new Error('Поддерживается HTTPS DoH без логина, пароля и фрагмента.');
+    next.customDnsUrl=value;
+  }
+  return Object.fromEntries(Object.entries(next).filter(([key,value])=>value!==previous[key]));
+}
+function rubyVpnRuleTarget(kind,value){
+  const raw=String(value??'');
+  if(/[\x00-\x1f\x7f-\x9f\u2028\u2029]/u.test(raw))throw new Error('В правиле недопустимы управляющие символы.');
+  const target=raw.trim();
+  if(kind==='process'){
+    if(!target||target.length>260||!/.+\.exe$/i.test(target)||/[\\/:*?"<>|\x00-\x1f\x7f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/u.test(target)||/[. ]$/.test(target)||target==='.'||target==='..')throw new Error('Укажите имя .exe-процесса, например browser.exe, без пути и подстановок.');
+    return target;
+  }
+  if(kind!=='domain')throw new Error('Неизвестный тип правила.');
+  if(!target||/[\s\\/:*?"<>|@#\x00-\x1f\x7f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/u.test(target))throw new Error('Укажите домен без URL, пути и подстановок, например example.org.');
+  let hostname;try{hostname=new URL('https://'+target).hostname.replace(/\.$/,'').toLowerCase()}catch{throw new Error('Некорректное доменное имя.');}
+  if(hostname.length>253||!hostname.includes('.')||/^\d+(\.\d+){3}$/.test(hostname)||hostname.split('.').some(label=>!label||label.length>63||!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)))throw new Error('Укажите полное доменное имя, например example.org.');
+  return hostname;
+}
+function rubyVpnRuleChange(rows,kind,action,rule){
+  if(!Array.isArray(rows))throw new Error('Список правил не получен. Дождитесь проверки.');
+  if(!['add','edit','remove','up','down'].includes(action))throw new Error('Неизвестное действие с правилом.');
+  const index=rows.findIndex(item=>item.id===rule.id);
+  if(action!=='add'&&index<0)throw new Error('Правило уже удалено. Обновите список.');
+  const next=rows.slice();
+  if(action==='remove'){next.splice(index,1);return next;}
+  if(action==='up'||action==='down'){
+    const target=index+(action==='up'?-1:1);
+    if(target>=0&&target<next.length)[next[index],next[target]]=[next[target],next[index]];
+    return next;
+  }
+  if(!['vpn','direct','block'].includes(rule.mode))throw new Error('Выберите действие правила.');
+  const key=kind==='domain'?'domain':'process',target=rubyVpnRuleTarget(kind,rule[key]);
+  if(rows.some(item=>item.id!==rule.id&&String(item[key]).toLowerCase()===target.toLowerCase()))throw new Error('Для этого адреса или процесса уже есть правило. Измените его.');
+  const entry={id:rule.id,[key]:target,mode:rule.mode};
+  if(action==='add'){
+    if(rows.length>=256)throw new Error('Достигнут лимит: 256 правил каждого типа.');
+    if(index>=0)throw new Error('Идентификатор правила уже существует.');
+    next.push(entry);
+  }else next[index]=entry;
+  return next;
+}
+function rubyNetworkWriteOutcome(result){
+  if(result?.ok===false)return rubySettingsOutcome(result);
+  if(result?.ok!==true||!Number.isSafeInteger(result.state?.stateRevision)||!result.state?.settings||!Array.isArray(result.state?.domainRules)||!Array.isArray(result.state?.processRules))return {ok:false,error:'Сохранение не подтверждено. Дождитесь новой проверки настроек.',message:'Сохранение не подтверждено. Дождитесь новой проверки настроек.'};
+  return result;
+}
+async function rubyVpnRuleCommand(api,kind,action,rule,expectedRevision){
+  const state=await Z('state.get',api?.state?.get);
+  if(!Number.isSafeInteger(state?.stateRevision)||!Array.isArray(state?.domainRules)||!Array.isArray(state?.processRules))throw new Error('Не удалось получить актуальные правила. Повторите проверку.');
+  if(state.stateRevision!==expectedRevision)return rubySettingsOutcome({ok:false,conflict:true,state,revision:state.stateRevision,error:'STATE_REVISION_CONFLICT'});
+  const key=kind==='domain'?'domainRules':kind==='process'?'processRules':null;
+  if(!key)throw new Error('Неизвестный тип правила.');
+  const patch={[key]:rubyVpnRuleChange(state[key],kind,action,rule)};
+  return rubyNetworkWriteOutcome(await Z('state.patchRules',api?.state?.patchRules,patch,state.stateRevision));
+}
+function RubyVpnRuleDialog({draft,busy,disabled,onClose,onSave}){
+  const dialog=O.useRef(null),input=O.useRef(null),labelId=O.useId(),hintId=O.useId();
+  const [target,setTarget]=O.useState(draft.rule[draft.kind==='domain'?'domain':'process']??''),[mode,setMode]=O.useState(draft.rule.mode??'vpn'),[error,setError]=O.useState('');
+  const domain=draft.kind==='domain',title=(draft.action==='edit'?'Изменить':'Добавить')+(domain?' правило домена VPN':' правило процесса VPN');
+  O.useEffect(()=>{const previous=document.activeElement;dialog.current?.showModal();input.current?.focus();return()=>{dialog.current?.close();previous?.isConnected&&previous.focus({preventScroll:true});}},[]);
+  async function save(event){
+    event.preventDefault();if(busy||disabled)return;
+    try{const value=rubyVpnRuleTarget(draft.kind,target);setError('');await onSave({...draft.rule,[domain?'domain':'process']:value,mode},setError);}catch(failure){setError(failure?.message||'Не удалось сохранить правило.');}
+  }
+  function keepFocus(event){
+    if(event.key!=='Tab')return;
+    const controls=Array.from(dialog.current?.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled)')??[]);
+    if(!controls.length){event.preventDefault();dialog.current?.focus();return;}
+    const first=controls[0],last=controls.at(-1);
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+  }
+  return <dialog className="ruby-rule-dialog" ref={dialog} tabIndex={-1} aria-labelledby={labelId} aria-describedby={hintId} onKeyDown={keepFocus} onCancel={event=>{event.preventDefault();if(!busy)onClose();}}><form onSubmit={save}><header><h2 id={labelId}>{title}</h2><button type="button" className="ruby-close" aria-label="Закрыть правило VPN" disabled={busy} onClick={onClose}><RubyIcon name="close" size={18}/></button></header><p id={hintId}>{domain?'Домен и его поддомены. Не указывайте URL, путь или маску.':'Имя .exe-файла, например browser.exe. Правила процессов требуют TUN.'}</p><label><span>{domain?'Домен для правила VPN':'Процесс для правила VPN'}</span><input ref={input} className="input" value={target} onChange={event=>setTarget(event.target.value)} maxLength={domain?253:260} placeholder={domain?'example.org':'browser.exe'} required autoComplete="off" spellCheck={false} disabled={disabled}/></label><label><span>Действие правила VPN</span><select className="input" aria-label="Действие правила VPN" value={mode} onChange={event=>setMode(event.target.value)} disabled={disabled}><option value="vpn">Через VPN</option><option value="direct">Напрямую</option><option value="block">Блокировать</option></select></label>{disabled&&!busy&&<p className="ruby-network-message" role="status">Актуальные правила не проверены. Закройте редактор и дождитесь новой проверки.</p>}{error&&<p className="ruby-network-message" role="alert">{error}</p>}<footer><button type="button" className="btn-secondary" onClick={onClose} disabled={busy}>Отмена</button><button type="submit" className="btn-primary" disabled={disabled}>{busy?'Сохраняем…':'Сохранить правило'}</button></footer></form></dialog>;
+}
+function RubyVpnRules({kind,rows,disabled,onEdit,onChange}){
+  const [page,setPage]=O.useState(0),slice=rubyServerPage(rows,page,24),domain=kind==='domain';
+  const modeLabel={vpn:'VPN',direct:'Напрямую',block:'Блокировать'};
+  return <section className="ruby-vpn-rules"><header><div><h4>{domain?'Домены':'Процессы'}</h4><span>{rows.length}/256</span></div><button type="button" className="btn-secondary compact" aria-label={domain?'Добавить правило домена VPN':'Добавить правило процесса VPN'} disabled={disabled||rows.length>=256} onClick={()=>onEdit(kind,'add',{id:crypto.randomUUID(),mode:'vpn'})}>Добавить</button></header>{rows.length?<ol className="ruby-rule-list" start={slice.start+1}>{slice.rows.map((rule,offset)=>{const index=slice.start+offset,target=rule[domain?'domain':'process'];return <li key={rule.id}><div className="ruby-rule-copy"><strong title={target}>{target}</strong><span>{modeLabel[rule.mode]??'Неизвестное действие'}</span></div><div className="ruby-rule-actions"><button type="button" className="ruby-close" aria-label={'Выше правило '+target} disabled={disabled||index===0} onClick={()=>onChange(kind,'up',rule)}><RubyIcon name="chevron-down" size={15} style={{transform:'rotate(180deg)'}}/></button><button type="button" className="ruby-close" aria-label={'Ниже правило '+target} disabled={disabled||index===rows.length-1} onClick={()=>onChange(kind,'down',rule)}><RubyIcon name="chevron-down" size={15}/></button><button type="button" className="btn-secondary compact" aria-label={'Изменить правило '+target} disabled={disabled} onClick={()=>onEdit(kind,'edit',rule)}>Изменить</button><button type="button" className="ruby-close" aria-label={'Удалить правило '+target} disabled={disabled} onClick={()=>onChange(kind,'remove',rule)}><RubyIcon name="trash" size={15}/></button></div></li>;})}</ol>:<p className="ruby-rule-empty">Правил нет.</p>}{slice.pages>1&&<nav className="ruby-server-pages" aria-label={domain?'Страницы правил доменов':'Страницы правил процессов'}><button type="button" className="btn-secondary compact" disabled={slice.page===0} onClick={()=>setPage(slice.page-1)}>Назад</button><span role="status">{slice.start+1}–{slice.end} из {slice.total}</span><button type="button" className="btn-secondary compact" disabled={slice.page===slice.pages-1} onClick={()=>setPage(slice.page+1)}>Далее</button></nav>}</section>;
+}
+function RubyNetworkSettings({runAction,snapshot}){
+  const state=snapshot.state,settings=state?.settings??{},revision=state?.stateRevision;
+  const readDraft=()=>({routeMode:settings.routeMode??'global',dnsMode:settings.dnsMode??'auto',useTunMode:!!settings.useTunMode,customDnsUrl:settings.customDnsUrl??''});
+  const [draft,setDraft]=O.useState(readDraft),[base,setBase]=O.useState({revision,settings}),[dirty,setDirty]=O.useState(false),[message,setMessage]=O.useState(''),[ruleDraft,setRuleDraft]=O.useState(null),[pending,setPending]=O.useState(false);
+  const inFlight=O.useRef(false),known=snapshot.stateObservation?.known!==false&&Number.isSafeInteger(revision)&&Array.isArray(state?.domainRules)&&Array.isArray(state?.processRules);
+  const conflict=dirty&&base.revision!==revision,disabled=pending||!!snapshot.busy||!known;
+  const domainRules=Array.isArray(state?.domainRules)?state.domainRules:[],processRules=Array.isArray(state?.processRules)?state.processRules:[];
+  O.useEffect(()=>{if(!dirty&&!inFlight.current){setDraft(readDraft());setBase({revision,settings});}},[revision,dirty,pending]);
+  function change(key,value){setDraft(previous=>({...previous,[key]:value}));setDirty(true);setMessage('');}
+  function reset(){setDraft(readDraft());setBase({revision,settings});setDirty(false);setMessage('');}
+  async function saveSettings(event){
+    event.preventDefault();if(disabled||inFlight.current)return;
+    let patch;try{patch=rubyVpnSettingsPatch(draft,base.settings)}catch(error){setMessage(error.message);return;}
+    if(!Object.keys(patch).length){reset();return;}
+    inFlight.current=true;setPending(true);setMessage('');let outcome;
+    try{
+      const ok=await runAction('vpn-network-settings',async()=>{outcome=rubyNetworkWriteOutcome(await Z('state.patchSettings',window.egoistAPI?.state?.patchSettings,patch,base.revision));return outcome;},'Настройки VPN сохранены для следующего подключения');
+      if(ok&&outcome?.ok===true){setDirty(false);setBase({revision:outcome.state.stateRevision,settings:outcome.state.settings});setMessage('Сохранено. Переподключите временный VPN или примените конфигурацию фоновой службы.');}
+      else setMessage(outcome?.message||outcome?.error||'Изменение не сохранено. Повторите действие после проверки состояния.');
+    }catch(error){setMessage(error?.message||'Не удалось сохранить настройки.');}
+    finally{inFlight.current=false;setPending(false);}
+  }
+  async function changeRule(kind,action,rule,setDialogError){
+    if(disabled||inFlight.current)return;
+    inFlight.current=true;setPending(true);setMessage('');let outcome;
+    const expectedRevision=ruleDraft?.revision??revision;
+    try{
+      const ok=await runAction('vpn-rule-'+action,async()=>{try{outcome=await rubyVpnRuleCommand(window.egoistAPI,kind,action,rule,expectedRevision);}catch(error){outcome={ok:false,error:error?.message||'Не удалось сохранить правило.',message:error?.message||'Не удалось сохранить правило.'};}return outcome;},'Правила VPN сохранены для следующего подключения');
+      if(ok&&outcome?.ok===true){setRuleDraft(null);setMessage('Правила сохранены. Для фоновой службы отдельно примените сервер и правила.');}
+      else{const failure=outcome?.message||outcome?.error||'Правило не сохранено. Закройте редактор и повторите действие после проверки состояния.';setMessage(failure);setDialogError?.(failure);}
+    }catch(error){const failure=error?.message||'Не удалось сохранить правило.';setMessage(failure);setDialogError?.(failure);}
+    finally{inFlight.current=false;setPending(false);}
+  }
+  const dnsInfo={auto:'Выбор DNS зависит от ядра VPN. Сам режим не подтверждает шифрование запросов.',secure:'В sing-box встроенный DNS использует HTTPS через VPN. В Xray встроенные IP-адреса DNS не гарантируют шифрование.',system:'DNS использует настройки Windows и может обращаться к резолверу напрямую. Этот режим не подтверждает шифрование или отсутствие утечек.',custom:'Используется указанный HTTPS DoH. Для имени сервера DNS может потребоваться отдельный bootstrap-запрос.'};
+  return <details className="settings-surface ruby-network-settings"><summary><RubyIcon name="route" size={20}/><span><strong>Маршрутизация VPN</strong><small>Режим соединения, DNS и правила</small></span><RubyIcon name="chevron-down" size={17}/></summary><div className="ruby-network-content">{!known&&<p className="ruby-network-message" role="status">Настройки не проверены. Сохранение доступно после актуального ответа приложения.</p>}<form onSubmit={saveSettings}><div className="ruby-network-fields"><label><span>Режим маршрутизации VPN</span><select className="input" aria-label="Режим маршрутизации VPN" value={draft.routeMode} onChange={event=>change('routeMode',event.target.value)} disabled={disabled}><option value="global">Весь трафик через VPN</option><option value="selected">По правилам · остальное напрямую</option></select></label><label><span>DNS соединения VPN</span><select className="input" aria-label="DNS соединения VPN" value={draft.dnsMode} onChange={event=>change('dnsMode',event.target.value)} disabled={disabled}><option value="auto">Авто · по ядру VPN</option><option value="secure">Встроенные DNS</option><option value="system">DNS системы</option><option value="custom">Свой HTTPS DNS (DoH)</option></select></label></div><p>{draft.routeMode==='global'?'Остальной трафик идёт через VPN; правила и локальные исключения обрабатываются раньше.':'Через VPN идёт только трафик правил с действием «VPN». Остальной трафик идёт напрямую.'}</p><p className="ruby-dns-mode-note">{dnsInfo[draft.dnsMode]}</p>{draft.dnsMode==='custom'&&<label><span>HTTPS-адрес DNS соединения VPN</span><input className="input" type="url" value={draft.customDnsUrl} onChange={event=>change('customDnsUrl',event.target.value)} placeholder="https://resolver.example/dns-query" autoComplete="off" spellCheck={false} disabled={disabled}/></label>}<label className="ruby-network-tun"><input type="checkbox" checked={draft.useTunMode} onChange={event=>change('useTunMode',event.target.checked)} disabled={disabled}/><span>Использовать TUN для временного VPN<small>Захватывает системный трафик и включает правила процессов. Временный TUN требует прав администратора; фоновая служба всегда использует TUN.</small></span></label>{conflict&&<p className="ruby-network-message" role="status">Настройки изменились во время редактирования. Ваш черновик сохранён. Возьмите текущие значения или подтвердите сохранение своего черновика поверх актуальных настроек.</p>}<div className="ruby-network-actions"><button type="submit" className="btn-primary" disabled={disabled||!dirty||conflict}>{pending?'Сохраняем…':'Сохранить настройки VPN'}</button>{dirty&&<button type="button" className="btn-secondary" disabled={pending} onClick={reset}>{conflict?'Взять текущие значения':'Отменить изменения'}</button>}{conflict&&<button type="button" className="btn-secondary" disabled={disabled} onClick={()=>{setBase({revision,settings});setMessage('Черновик оставлен. Проверьте значения и нажмите «Сохранить настройки VPN».');}}>Оставить мой черновик</button>}</div></form><div className="ruby-network-rule-groups"><RubyVpnRules kind="domain" rows={domainRules} disabled={disabled} onEdit={(kind,action,rule)=>setRuleDraft({kind,action,rule,revision})} onChange={changeRule}/><RubyVpnRules kind="process" rows={processRules} disabled={disabled} onEdit={(kind,action,rule)=>setRuleDraft({kind,action,rule,revision})} onChange={changeRule}/></div><p className="ruby-network-order">Сначала проверяются правила процессов в TUN, затем доменов, сверху вниз. Применяется первое совпадение. Локальные исключения и DNS обрабатываются ядром отдельно.</p><p className="ruby-network-snapshot-note">Сохранение не меняет уже работающее соединение. Переподключите временный VPN. Для фоновой службы в разделе VPN нажмите «Применить сервер и правила» — это создаст новую сохранённую конфигурацию и перезапустит службу.</p>{message&&<p className="ruby-network-message" role="status" aria-live="polite">{message}</p>}{ruleDraft&&<RubyVpnRuleDialog draft={ruleDraft} busy={pending} disabled={disabled} onClose={()=>setRuleDraft(null)} onSave={(rule,setError)=>changeRule(ruleDraft.kind,ruleDraft.action,rule,setError)}/>}</div></details>;
+}
 function rubyFilterServers(nodes,query){
   const search=String(query??'').trim().toLocaleLowerCase('ru');
   return search?nodes.filter(node=>[node.name,node.country,node.city,node.server,node.protocol].some(value=>String(value??'').toLocaleLowerCase('ru').includes(search))):nodes;
@@ -69,7 +196,7 @@ function RubyBackgroundVpn({snapshot,runAction,confirmAction}){
     confirmAction('Удалить службу VPN','Служба будет остановлена, её автозапуск и сохранённая конфигурация будут удалены. Подписки и временный режим сохранятся.','Удалить',()=>runAction('vpn-service-remove',()=>rubyBackgroundVpnCommand(window.egoistAPI,'serviceRemove'),'Служба VPN удалена'));
   }
   const label=!known?'Не проверено':runtimeRunning?'Работает':enabled?'Автозапуск включён · служба не готова':installed?'Установлена · выключена':'Не установлена';
-  return <section className="panel vpn-background-panel" aria-label="VPN без приложения"><h3>VPN без приложения <small>TUN</small></h3><p>Служба Windows запускается после перезагрузки. Окно и запуск приложения при входе не требуются.</p><div className="vpn-background-status" role="status"><RubyIcon name={!known?'help':runtimeRunning?'check':enabled?'warning':'service'} size={17}/><strong>{pending?'Переключаем…':label}</strong></div>{!known&&<p>{status?.uiObservation?.error||status?.message||'Ожидаем ответ службы. Состояние не заменяется выключенным.'}</p>}{known&&<dl className="vpn-background-facts"><div><dt>Сохранённый сервер</dt><dd>{status.activeNodeId?Kd(status.activeNodeName??snapshot.state?.nodes?.find(item=>item.id===status.activeNodeId)?.name??status.activeNodeId):'Не выбран'}</dd></div><div><dt>Внешний маршрут</dt><dd>Требует отдельной проверки</dd></div></dl>}{status?.message&&known&&<p className="vpn-background-message">{status.message}</p>}<button role="switch" aria-label="VPN без приложения (TUN)" aria-checked={enabled} aria-busy={pending} disabled={!known||busy||(!installed&&!canInstall)} className="btn-secondary full" onClick={toggle}><RubyIcon name="power" size={17}/>{!known?'Ожидаем проверку':pending?'Переключаем…':enabled||runtimeRunning?'Остановить фоновый VPN':installed?'Включить фоновый VPN':'Установить и включить'}</button>{installed&&<><button className="btn-secondary full" disabled={!canInstall||busy} onClick={install}>Применить выбранный сервер</button><button className="btn-danger full" disabled={busy} onClick={remove}>Удалить службу VPN</button></>}{known&&!canInstall&&!installed&&<p>Выберите сервер и отключите временное соединение перед установкой службы.</p>}<small className="vpn-background-hint">Сохраняется текущая конфигурация. Пользовательские исполняемые файлы и Kill Switch для службы пока не поддерживаются.</small></section>;
+  return <section className="panel vpn-background-panel" aria-label="VPN без приложения"><h3>VPN без приложения <small>TUN</small></h3><p>Служба Windows запускается после перезагрузки. Окно и запуск приложения при входе не требуются.</p><div className="vpn-background-status" role="status"><RubyIcon name={!known?'help':runtimeRunning?'check':enabled?'warning':'service'} size={17}/><strong>{pending?'Переключаем…':label}</strong></div>{!known&&<p>{status?.uiObservation?.error||status?.message||'Ожидаем ответ службы. Состояние не заменяется выключенным.'}</p>}{known&&<dl className="vpn-background-facts"><div><dt>Сохранённый сервер</dt><dd>{status.activeNodeId?Kd(status.activeNodeName??snapshot.state?.nodes?.find(item=>item.id===status.activeNodeId)?.name??status.activeNodeId):'Не выбран'}</dd></div><div><dt>Внешний маршрут</dt><dd>Требует отдельной проверки</dd></div></dl>}{status?.message&&known&&<p className="vpn-background-message">{status.message}</p>}<button role="switch" aria-label="VPN без приложения (TUN)" aria-checked={enabled} aria-busy={pending} disabled={!known||busy||(!installed&&!canInstall)} className="btn-secondary full" onClick={toggle}><RubyIcon name="power" size={17}/>{!known?'Ожидаем проверку':pending?'Переключаем…':enabled||runtimeRunning?'Остановить фоновый VPN':installed?'Включить фоновый VPN':'Установить и включить'}</button>{installed&&<><button className="btn-secondary full" disabled={!canInstall||busy} onClick={install}>Применить сервер и правила</button><button className="btn-danger full" disabled={busy} onClick={remove}>Удалить службу VPN</button></>}{known&&!canInstall&&!installed&&<p>Выберите сервер и отключите временное соединение перед установкой службы.</p>}<small className="vpn-background-hint">Сохраняется текущая конфигурация. Пользовательские исполняемые файлы и Kill Switch для службы пока не поддерживаются.</small></section>;
 }
 function rubyComponentStatus(status,active,pending){
   if(pending)return {tone:'pending',label:'Переключаем…',detail:''};
@@ -287,8 +414,7 @@ function ap({ activeScreen, activity, children, onAppInfo, onDismissActivity, on
       {O.createElement(sp, {activeScreen, onAppInfo, onNavigate, snapshot, onSwitchToWidget: () => {
         setWidgetMode(true);
       }})}
-      <section className="workspace"><RubyReadNotice snapshot={snapshot} activeScreen={activeScreen}/>{children}</section>
-      {O.createElement(op, {activity: activeScreen === 'dashboard' && activity?.id === 'speedtest' ? null : activity, onDismiss: onDismissActivity})}
+      <section className="workspace"><RubyReadNotice snapshot={snapshot} activeScreen={activeScreen}/>{children}<div className="ruby-activity-region">{O.createElement(op, {activity: activeScreen === 'settings' && (activity?.id === 'vpn-network-settings' || activity?.id?.startsWith('vpn-rule-')) || activeScreen === 'dashboard' && activity?.id === 'speedtest' ? null : activity, onDismiss: onDismissActivity})}</div></section>
     </main></Tl>
   );
 }

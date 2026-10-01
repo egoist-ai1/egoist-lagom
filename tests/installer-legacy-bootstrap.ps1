@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$TempRoot, [string]$BeforeSource = '')
+param([Parameter(Mandatory=$true)][string]$TempRoot, [string]$BeforeSource = '', [string]$BeforeLaunchSource = '')
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 2.0
 $project = Split-Path -Parent $PSScriptRoot
@@ -17,8 +17,21 @@ function Read-Function([string]$Text,[string]$Name) {
   return $function
 }
 foreach ($name in @('Enter-InstallerWorkerLease','Resolve-PreviousReinstallStage','Test-PreviousReinstallProcess',
-  'Wait-PreviousReinstallProcesses','Assert-PreviousReinstallRestored','Assert-PlainWrapperMigrationPath','Get-NativePowerShellPath')) {
+  'Wait-PreviousReinstallProcesses','Assert-PreviousReinstallRestored','Assert-PlainWrapperMigrationPath','Get-NativePowerShellPath',
+  'ConvertFrom-PreviousReinstallLaunchPreference','Get-PreviousReinstallLaunchPreference')) {
   Invoke-Expression (Read-Function $source $name).Extent.Text
+}
+$bootSource=[IO.File]::ReadAllText((Join-Path $project 'src\installer\maintenance-boot-recovery.ps1'))
+Invoke-Expression (Read-Function $bootSource 'Assert-InstallerBootRecoveryFileProtection').Extent.Text
+function Get-LaunchAssignmentBlock([string]$Text) {
+  $tokens=$null;$errors=$null
+  $ast=[Management.Automation.Language.Parser]::ParseInput($Text,[ref]$tokens,[ref]$errors)
+  if($errors.Count){throw 'Launch assignment AST did not parse.'}
+  $statements=@($ast.EndBlock.Statements)
+  $first=@($statements | Where-Object {$_.Extent.Text.Trim() -ceq '$runAfter = $true'})
+  $last=@($statements | Where-Object {$_.Extent.Text.Trim() -ceq 'if ($NoRunAfter) { $runAfter = $false }'})
+  if($first.Count -ne 1 -or $last.Count -ne 1){throw 'Exact production launch-assignment boundary missing.'}
+  return $Text.Substring($first[0].Extent.StartOffset,$last[0].Extent.EndOffset-$first[0].Extent.StartOffset)
 }
 function Assert-InstallerNotCancelled { if ($script:cancelled) { throw 'test cancellation' } }
 function Get-InstallerCommonDataRoot { return $caseRoot }
@@ -104,6 +117,147 @@ try {
   }
   $groups.Add('fresh native observation preflight refusal')
 
+  $launchStateFile=Join-Path $stage 'state.json'
+  $validState='{"schemaVersion":1,"owner":"EgoistShield","runAfter":false,"minimizedAfter":true,"installer":"C:\\foreign.exe","services":[{"name":"foreign"}],"userState":["never import"]}'
+  [IO.File]::WriteAllText($launchStateFile,$validState,[Text.UTF8Encoding]::new($true))
+  $projection=ConvertFrom-PreviousReinstallLaunchPreference ([IO.File]::ReadAllText($launchStateFile))
+  Assert ($projection.runAfter -eq $false -and $projection.minimizedAfter -eq $true) 'Original bool launch fields were not preserved.'
+  Assert (@($projection.PSObject.Properties).Count -eq 2) 'Legacy snapshots or unrelated state were imported.'
+  foreach($invalid in @('{}','[]','null','{','{"schemaVersion":"1","owner":"EgoistShield","runAfter":false,"minimizedAfter":false}',
+    '{"schemaVersion":1,"owner":"foreign","runAfter":false,"minimizedAfter":false}',
+    '{"schemaVersion":1,"owner":"EgoistShield","runAfter":"false","minimizedAfter":false}',
+    '{"schemaVersion":1,"owner":"EgoistShield","runAfter":0,"minimizedAfter":false}',
+    '{"schemaVersion":1,"owner":"EgoistShield","runAfter":false,"minimizedAfter":null}',
+    '{"schemaVersion":1,"owner":"EgoistShield","runAfter":false}')) {
+    [IO.File]::WriteAllText($launchStateFile,$invalid)
+    $refused=$false;try{[void](ConvertFrom-PreviousReinstallLaunchPreference ([IO.File]::ReadAllText($launchStateFile)))}catch{$refused=$true}
+    Assert $refused 'Malformed legacy bool preferences were accepted.'
+  }
+  [IO.File]::WriteAllText($launchStateFile,$validState,[Text.UTF8Encoding]::new($true))
+  $groups.Add('real own JSON files: exact bool projection and malformed/type/owner rejection')
+
+  # Actual Windows ACL objects exercise the unchanged production policy. A
+  # scoped Get-Acl leaf supplies only these owned-fixture descriptors; it does
+  # not alter native ACLs or assert ownership of this nonadmin fixture.
+  $directorySecurity=[Security.AccessControl.DirectorySecurity]::new()
+  $directorySecurity.SetSecurityDescriptorSddlForm('O:BAG:SYD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)')
+  $fileSecurity=[Security.AccessControl.FileSecurity]::new()
+  $fileSecurity.SetSecurityDescriptorSddlForm('O:BAG:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)')
+  $actualProjection=& {
+    function Get-Acl {param([string]$LiteralPath)
+      if($LiteralPath -ceq $stage){return $directorySecurity}
+      if($LiteralPath -ceq $launchStateFile){return $fileSecurity}
+      throw 'ACL fixture leaf refused an unrelated host path.'
+    }
+    $validated=Get-PreviousReinstallLaunchPreference -Stage $stage
+    Assert ($validated.runAfter -eq $false -and $validated.minimizedAfter -eq $true) 'Bounded production reader lost exact bool values.'
+    foreach($sddl in @('O:S-1-5-32-545G:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)',
+      'O:BAG:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;FW;;;BU)',
+      'O:BAG:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x00000040;;;BU)',
+      'O:BAG:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x00040000;;;BU)',
+      'O:BAG:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;WO;;;BU)',
+      'O:BAG:SYD:P(A;;FA;;;BA)')){
+      $fileSecurity.SetSecurityDescriptorSddlForm($sddl);$refused=$false
+      try{[void](Get-PreviousReinstallLaunchPreference -Stage $stage)}catch{$refused=$true}
+      Assert $refused 'Untrusted owner/write/delete/DACL/owner or missing SYSTEM control was accepted.'
+    }
+    $fileSecurity.SetSecurityDescriptorSddlForm('O:BAG:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)')
+    $directorySecurity.SetSecurityDescriptorSddlForm('O:BAG:SYD:(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)')
+    $refused=$false;try{[void](Get-PreviousReinstallLaunchPreference -Stage $stage)}catch{$refused=$true}
+    Assert $refused 'Unprotected old stage directory was accepted.'
+    $directorySecurity.SetSecurityDescriptorSddlForm('O:BAG:SYD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)')
+    return $validated
+  }
+  $groups.Add('real in-memory Windows DACL policy; exact own-file bounded reader; no native ACL changes')
+  [IO.File]::WriteAllText($launchStateFile,(' ' * 4194305))
+  $refused=$false;try{[void](Get-PreviousReinstallLaunchPreference -Stage $stage)}catch{$refused=$_.Exception.Message -match 'exceeds 4 MiB'}
+  Assert $refused 'Oversized own state was not refused before reading/ACL trust.'
+  [IO.File]::WriteAllText($launchStateFile,$validState,[Text.UTF8Encoding]::new($true))
+  $actualAcl=Microsoft.PowerShell.Security\Get-Acl -LiteralPath $launchStateFile
+  if($actualAcl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin @('S-1-5-18','S-1-5-32-544')){
+    $refused=$false;try{[void](Get-PreviousReinstallLaunchPreference -Stage $stage)}catch{$refused=$_.Exception.Message -match 'owner is not SYSTEM or Administrators'}
+    Assert $refused 'Actual untrusted nonadmin fixture owner was accepted.'
+  }
+  $groups.Add('actual own-file oversize/native untrusted-owner refusal')
+
+  $junctionPath=Join-Path (Split-Path -Parent $stage) ([Guid]::NewGuid().ToString('N'))
+  try{
+    [void](New-Item -ItemType Junction -Path $junctionPath -Target $stage)
+    $refused=$false;try{[void](Get-PreviousReinstallLaunchPreference -Stage $junctionPath)}catch{$refused=$_.Exception.Message -match 'reparse'}
+    Assert $refused 'Actual own canonical-looking junction stage was accepted.'
+  }finally{
+    $resolvedJunction=[IO.Path]::GetFullPath($junctionPath)
+    Assert ($resolvedJunction.StartsWith([IO.Path]::GetFullPath($caseRoot)+'\',[StringComparison]::OrdinalIgnoreCase)) 'Own junction cleanup escaped the fixture.'
+    if(Test-Path -LiteralPath $resolvedJunction){
+      $junctionItem=Get-Item -LiteralPath $resolvedJunction -Force
+      Assert (($junctionItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) 'Own cleanup target is no longer a junction.'
+      [IO.Directory]::Delete($resolvedJunction,$false)
+      Assert ([IO.File]::Exists($launchStateFile)) 'Junction cleanup changed its own target contents.'
+    }
+  }
+  $groups.Add('actual own canonical-looking junction refused; scoped nonrecursive cleanup')
+
+  $preferenceStart=$source.IndexOf('$previousReinstallStage = ')
+  $preferenceEnd=$source.IndexOf('$brandedUi = ',$preferenceStart)
+  Assert ($preferenceStart -ge 0 -and $preferenceEnd -gt $preferenceStart) 'Dispatch preference validation boundary missing.'
+  $dispatchPreferencePrefix=$source.Substring($preferenceStart,$preferenceEnd-$preferenceStart)
+  [IO.File]::WriteAllText($launchStateFile,'{"schemaVersion":1,"owner":"EgoistShield","runAfter":"false","minimizedAfter":false}')
+  & {
+    function Get-Acl {param([string]$LiteralPath)
+      if($LiteralPath -ceq $stage){return $directorySecurity}
+      if($LiteralPath -ceq $launchStateFile){return $fileSecurity}
+      throw 'ACL fixture leaf refused an unrelated host path.'
+    }
+    function New-Object {throw 'Invalid preferences reached the deferred lease or mutation preparation.'}
+    $savedInheritedStage=$env:EGOIST_PROTECTED_REINSTALL_STAGE
+    try{
+      $env:EGOIST_PROTECTED_REINSTALL_STAGE=$stage;$WaitForPreviousReinstall=$true
+      $refused=$false;try{. ([scriptblock]::Create($dispatchPreferencePrefix))}catch{$refused=$_.Exception.Message -match 'two JSON booleans'}
+      Assert $refused 'Actual dispatch prefix did not reject malformed preferences before lease/preparation.'
+    }finally{$env:EGOIST_PROTECTED_REINSTALL_STAGE=$savedInheritedStage}
+  }
+  [IO.File]::WriteAllText($launchStateFile,$validState,[Text.UTF8Encoding]::new($true))
+  $groups.Add('actual dispatch prefix refuses malformed bool state before lease/staging mutation')
+
+  $launchAssignments=Get-LaunchAssignmentBlock $source
+  foreach($row in @(@{run=$false;minimized=$false;noRun=$false;explicitMinimized=$false},
+    @{run=$false;minimized=$true;noRun=$false;explicitMinimized=$false},
+    @{run=$true;minimized=$true;noRun=$false;explicitMinimized=$false},
+    @{run=$true;minimized=$false;noRun=$true;explicitMinimized=$false},
+    @{run=$true;minimized=$false;noRun=$false;explicitMinimized=$true})){
+    & {
+      $WaitForPreviousReinstall=$true;$previousLaunchPreferences=[pscustomobject]@{runAfter=$row.run;minimizedAfter=$row.minimized}
+      $NoRunAfter=$row.noRun;$MinimizedAfter=$row.explicitMinimized;$RunAfterPath='';$brandedUi=$false
+      . ([scriptblock]::Create($launchAssignments))
+      Assert ($runAfter -eq ($row.run -and -not $row.noRun)) 'Actual dispatch assignments lost inherited/explicit no-launch intent.'
+      Assert ($minimizedAfterValue -eq ($row.minimized -or $row.explicitMinimized)) 'Actual dispatch assignments lost minimized launch intent.'
+    }
+  }
+  & {
+    $uiDirectory=Join-Path $caseRoot 'own-ui';New-Item -ItemType Directory -Path $uiDirectory | Out-Null
+    $RunAfterPath=Join-Path $uiDirectory 'run_after.txt';[IO.File]::WriteAllText($RunAfterPath,'1')
+    $HandoffSignalPath=Join-Path $uiDirectory 'handoff-started.flag';$brandedUi=$true
+    Invoke-Expression (Read-Function $source 'Resolve-FullPath').Extent.Text
+    $WaitForPreviousReinstall=$true;$previousLaunchPreferences=$actualProjection;$NoRunAfter=$false;$MinimizedAfter=$false
+    . ([scriptblock]::Create($launchAssignments))
+    Assert ($runAfter -eq $false) 'Branded launch choice re-enabled inherited false.'
+    $WaitForPreviousReinstall=$false
+    . ([scriptblock]::Create($launchAssignments))
+    Assert ($runAfter -eq $true -and $minimizedAfterValue -eq $false) 'Ordinary branded installer launch behavior changed.'
+  }
+  $groups.Add('actual dispatch AST: inherited false/true/minimized, explicit NoRunAfter priority, branded restriction')
+  if($BeforeLaunchSource){
+    $beforeLaunch=Get-LaunchAssignmentBlock ([IO.File]::ReadAllText($BeforeLaunchSource))
+    foreach($version in @(@{block=$beforeLaunch;expected=$true},@{block=$launchAssignments;expected=$false})){
+      & {
+        $WaitForPreviousReinstall=$true;$previousLaunchPreferences=$actualProjection;$NoRunAfter=$false;$MinimizedAfter=$false;$RunAfterPath='';$brandedUi=$false
+        . ([scriptblock]::Create($version.block))
+        Assert ($runAfter -eq $version.expected) 'Actual before/after dispatch AST did not reproduce/fix legacy relaunch.'
+      }
+    }
+    $groups.Add('actual saved-before dispatch AST reproduces false-to-true defect; fixed AST preserves false')
+  }
+
   if ($BeforeSource) {
     $stateFile=Join-Path $caseRoot 'state.json'; $script:StageDirectory=$caseRoot
     [IO.File]::WriteAllText($stateFile,'{"installer":"fixture","manifest":"fixture","version":"3.8.0","sha256":"fixture","previousReinstallWaitMilliseconds":1500}')
@@ -125,7 +279,7 @@ try {
     }
     $groups.Add('actual worker lease prefix before busy failure and after successful wait')
   }
-  [pscustomobject]@{groups=$groups.Count;passed=@($groups);liveServiceMutations=0;liveDnsMutations=0;taskRegistrations=0;scope='actual production lease/observer/prefix; own Local mutex, own hidden children, controlled DNS preflight leaf; no installer execution'} | ConvertTo-Json -Depth 4
+  [pscustomobject]@{groups=$groups.Count;passed=@($groups);liveServiceMutations=0;liveDnsMutations=0;taskRegistrations=0;hostAclMutations=0;nativeRegistryMutations=0;launchBeforeAfterChecked=[bool]$BeforeLaunchSource;aclTestScope='real in-memory Windows security descriptors supplied by a scoped fixture leaf; actual nonadmin own-file owner is rejected';scope='actual production lease/observer/dispatch AST; own files/Local mutex/hidden children; controlled DNS and ACL leaves; no installer execution or host ACL writes'} | ConvertTo-Json -Depth 4
 } finally {
   foreach ($child in $ownedChildren) {
     try { if (-not $child.WaitForExit(5000)) { $child.Kill(); [void]$child.WaitForExit(5000) } } finally { $child.Dispose() }

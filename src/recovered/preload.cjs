@@ -25,7 +25,8 @@ electron.contextBridge.exposeInMainWorld("egoistAPI", {
 	state: {
 		get: () => electron.ipcRenderer.invoke("state:get"),
 		set: (next) => electron.ipcRenderer.invoke("state:set", next),
-		patchSettings: (patch, expectedRevision) => electron.ipcRenderer.invoke("state:patch-settings", { patch, expectedRevision })
+		patchSettings: (patch, expectedRevision) => electron.ipcRenderer.invoke("state:patch-settings", { patch, expectedRevision }),
+		patchRules: (patch, expectedRevision) => electron.ipcRenderer.invoke("state:patch-rules", { patch, expectedRevision })
 	},
 	import: {
 		text: (payload) => electron.ipcRenderer.invoke("import:text", payload),

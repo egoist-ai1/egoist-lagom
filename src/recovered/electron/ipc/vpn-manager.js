@@ -925,6 +925,46 @@ var VpnRuntimeManager = class extends EventEmitter {
 	}
 	async _connect(node, domainRules, processRules, settings) {
 		await this.assertTemporaryRuntimeAllowed();
+		const rulePlan = buildProtocolRuntimePlan({
+			protocol: String(node.protocol ?? ""), transportType: String(node.metadata?.type ?? node.metadata?.net ?? ""),
+			useTunMode: settings.useTunMode, processRuleCount: processRules.length,
+			learnedRuntimePreference: this.nodeRuntimePreferences.get(node.id) ?? null
+		});
+		const hasEffectiveRules = domainRules.length > 0 || settings.useTunMode === true && processRules.length > 0;
+		const ruleRuntime = !this.mockMode && hasEffectiveRules ? await this.resolveRuntimePath(settings.runtimePath, rulePlan.preferredRuntime, rulePlan.fallbackRuntime !== null) : null;
+		ConfigBuilder.validateRoutingRules(ruleRuntime?.runtimeKind ?? rulePlan.preferredRuntime, domainRules, processRules, settings.useTunMode);
+		if (!this.mockMode && hasEffectiveRules) {
+			if (!ruleRuntime) throw new Error("Runtime для проверки правил не найден. Установите runtime до переключения; действующее подключение сохранено.");
+			const runtimeKind = ruleRuntime.runtimeKind;
+			const ruleConfig = JSON.parse(runtimeKind === "xray" ? ConfigBuilder.buildXray(node, domainRules, settings, 0, 0, 0, processRules) : ConfigBuilder.buildSingBox(node, domainRules, processRules, settings, 0));
+			// Check the actual route matchers without opening a TUN interface.
+			ruleConfig.inbounds = ruleConfig.inbounds.filter((inbound) => inbound.protocol !== "tun" && inbound.type !== "tun");
+			let lease, check;
+			try {
+				const checkContent = Buffer.from(JSON.stringify(ruleConfig), "utf8");
+				if (checkContent.length > 1048576) throw new Error("Runtime rule check input exceeds its bound.");
+				lease = await this.verifyRuntimeCandidate(ruleRuntime.runtimePath, runtimeKind, await this.isAdmin());
+				const args = runtimeKind === "xray" ? ["run", "-test", "-c", "stdin:"] : ["check", "-c", "stdin"];
+				check = promisify(execFile)(lease.runtimePath, args, { windowsHide: true, timeout: 15000, maxBuffer: 65536,
+					cwd: path.dirname(lease.runtimePath), env: runtimeExecutionEnvironment(lease, process.env) });
+				check.catch(() => {});
+				lease.watch(check.child);
+				if (!check.child.stdin) throw new Error("Runtime rule checker input is unavailable.");
+				const input = new Promise((resolve, reject) => {
+					check.child.stdin.once("error", (error) => { check.child.kill(); reject(error); });
+					check.child.stdin.end(checkContent, (error) => error ? reject(error) : resolve());
+				});
+				await Promise.all([check, input]);
+			} catch {
+				throw new Error("Runtime отклонил правила или конфигурацию выбранного подключения. Проверьте формат правил и поддержку runtime; действующее подключение сохранено.");
+			} finally {
+				if (check) {
+					if (check.child.exitCode === null && !check.child.signalCode) check.child.kill();
+					await check.catch(() => {});
+				}
+				lease?.release();
+			}
+		}
 		this.clearPendingHandoff();
 		this.setLifecycle(this.getActiveSession() ? "reconnecting" : "probing");
 		this.clearDiagnostic();

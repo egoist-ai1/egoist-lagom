@@ -12,4 +12,6 @@ Setup: 276 731 971 байт, SHA-256 `e53cccd522b396ff88e2159c97cf3c2f7c3d45bcfe
 
 Контролируемая регрессия импортирует настоящие production-функции через AST, воспроизводит старый отказ и проверяет шесть групп: отсутствие семейства, IPv4/IPv6-only, точность static DNS, отсутствие чужих интерфейсов в откате, отказ provider без публикации неполного журнала и совместимость старого журнала. PASS на PowerShell 7 и Windows PowerShell 5.1; собственные NTFS-файлы настоящие, DNS/registry/external-command границы контролируемые, изменений сетевых настроек и SCM физического хоста нет.
 
-Повторный source PreInstall и затем новая сгенерированная установка обязательны. Source-phase PASS сам по себе не доказывает работоспособность Setup, UI, SCM, TUN, обновления или длительную эксплуатацию.
+Повторный [диагностический run](https://github.com/egoist-ai1/egoist-lagom/actions/runs/36799664481/job/110170938987) исходников `ec975d1411fd39351bd32444e793fa01dfdea950` прошёл на настоящей чистой Windows: CheckInstallSafety и PreInstall завершились с кодом 0. DNS, default routes, IPv6 bindings и proxy до/после совпали; product SCM/Tasks отсутствовали. [Receipt после исправления](native-first-run/installer-diagnostic-after.json), [stdout](native-first-run/source-pre-install-after.stdout.txt).
+
+Новая сгенерированная установка ещё обязательна. Source-phase PASS сам по себе не доказывает работоспособность Setup, UI, SCM, TUN, обновления или длительную эксплуатацию.

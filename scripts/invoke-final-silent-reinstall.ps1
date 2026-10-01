@@ -1716,6 +1716,40 @@ function Resolve-PreviousReinstallStage {
   return $stage
 }
 
+function ConvertFrom-PreviousReinstallLaunchPreference {
+  param([Parameter(Mandatory=$true)][string]$Json)
+  try { $previous = $Json | ConvertFrom-Json -ErrorAction Stop }
+  catch { throw 'Legacy launch preference state is not valid JSON.' }
+  if (-not $previous -or $previous -is [array]) { throw 'Legacy launch preferences require a state object.' }
+  $schema = $previous.PSObject.Properties['schemaVersion']
+  $owner = $previous.PSObject.Properties['owner']
+  $run = $previous.PSObject.Properties['runAfter']
+  $minimized = $previous.PSObject.Properties['minimizedAfter']
+  if (-not $schema -or ($schema.Value -isnot [int] -and $schema.Value -isnot [long]) -or $schema.Value -ne 1 -or
+      -not $owner -or $owner.Value -isnot [string] -or $owner.Value -cne 'EgoistShield' -or
+      -not $run -or $run.Value -isnot [bool] -or -not $minimized -or $minimized.Value -isnot [bool]) {
+    throw 'Legacy launch preferences require schema 1, verified product owner and two JSON booleans.'
+  }
+  return [pscustomobject]@{runAfter=$run.Value; minimizedAfter=$minimized.Value}
+}
+
+function Get-PreviousReinstallLaunchPreference {
+  param([Parameter(Mandatory=$true)][string]$Stage)
+  $previousStage = Resolve-PreviousReinstallStage -Path $Stage
+  $statePath = Assert-PlainWrapperMigrationPath -Path (Join-Path $previousStage 'state.json') -Root $previousStage
+  $item = Get-Item -LiteralPath $statePath -Force -ErrorAction Stop
+  if ($item.PSIsContainer -or $item.Length -le 0 -or $item.Length -gt 4194304) { throw 'Legacy launch preference state is missing, not a file or exceeds 4 MiB.' }
+  Assert-InstallerBootRecoveryFileProtection -Path $previousStage -Directory
+  Assert-InstallerBootRecoveryFileProtection -Path $statePath
+  $stream = [IO.File]::Open($statePath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  try {
+    if ($stream.Length -le 0 -or $stream.Length -gt 4194304) { throw 'Legacy launch preference state exceeds its read limit.' }
+    $reader = [IO.StreamReader]::new($stream,[Text.UTF8Encoding]::new($false,$true),$true,4096,$true)
+    try { $json = $reader.ReadToEnd() } finally { $reader.Dispose() }
+    return ConvertFrom-PreviousReinstallLaunchPreference -Json $json
+  } finally { $stream.Dispose() }
+}
+
 function Test-PreviousReinstallProcess {
   param([object]$Process, [string]$Stage, [string]$PowerShellPath)
   if (-not [string]::Equals([string]$Process.ExecutablePath, $PowerShellPath, [StringComparison]::OrdinalIgnoreCase)) { return $false }
@@ -1961,7 +1995,11 @@ if ($WaitForPreviousReinstall -and (-not $EmbeddedRelease -or -not (Test-IsAdmin
   throw 'Waiting for a legacy installer is restricted to the embedded elevated Setup entrypoint.'
 }
 $previousReinstallStage = ''
-if ($WaitForPreviousReinstall) { $previousReinstallStage = Resolve-PreviousReinstallStage $env:EGOIST_PROTECTED_REINSTALL_STAGE }
+$previousLaunchPreferences = $null
+if ($WaitForPreviousReinstall) {
+  $previousReinstallStage = Resolve-PreviousReinstallStage $env:EGOIST_PROTECTED_REINSTALL_STAGE
+  $previousLaunchPreferences = Get-PreviousReinstallLaunchPreference -Stage $previousReinstallStage
+}
 $runningMutex = New-Object Threading.Mutex($false, "Global\EgoistShield.DeferredReinstall")
 try {
   try { $previousAvailable = $runningMutex.WaitOne(0) }
@@ -1993,6 +2031,11 @@ if ($brandedUi) {
   }
 }
 $runAfter = $true
+$minimizedAfterValue = [bool]$MinimizedAfter
+if ($WaitForPreviousReinstall) {
+  $runAfter = $previousLaunchPreferences.runAfter
+  $minimizedAfterValue = $previousLaunchPreferences.minimizedAfter -or [bool]$MinimizedAfter
+}
 if (-not [string]::IsNullOrWhiteSpace($RunAfterPath)) {
   if (-not $brandedUi) { throw "RunAfterPath requires branded installer handoff." }
   $RunAfterPath = Resolve-FullPath -Path $RunAfterPath -MustExist -Leaf
@@ -2002,7 +2045,8 @@ if (-not [string]::IsNullOrWhiteSpace($RunAfterPath)) {
   }
   $runAfterValue = ([IO.File]::ReadAllText($RunAfterPath, [Text.Encoding]::UTF8)).Trim()
   if ($runAfterValue -notin @("0", "1")) { throw "Installer launch preference is invalid." }
-  $runAfter = $runAfterValue -eq "1"
+  if ($WaitForPreviousReinstall) { $runAfter = $runAfter -and ($runAfterValue -eq "1") }
+  else { $runAfter = $runAfterValue -eq "1" }
 }
 if ($NoRunAfter) { $runAfter = $false }
 
@@ -2083,7 +2127,7 @@ $state = [ordered]@{
   bytes = $release.bytes
   delaySeconds = $DelaySeconds
   runAfter = $runAfter
-  minimizedAfter = [bool]$MinimizedAfter
+  minimizedAfter = $minimizedAfterValue
   fromVersion = $FromVersion
   watchdogTimeoutSeconds = $WatchdogTimeoutSeconds
   previousReinstallWaitMilliseconds = $(if ($WaitForPreviousReinstall) { 1200000 } else { 0 })

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import path from 'node:path';
+import fs from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { acceptanceEnvironmentErrors, relativePayloadPath } from './windows-production-acceptance.mjs';
 
@@ -73,4 +74,37 @@ test('an actual native acceptance invocation refuses a non-hosted process before
   assert.match(result.stderr, /Native acceptance host guard refused before mutation/);
   assert.match(result.stderr, /GITHUB_ACTIONS/);
   assert.match(result.stderr, /RUNNER_ENVIRONMENT/);
+});
+
+test('native child timeout retires its own process and retains bounded stdout, stderr and failure evidence', { skip: process.platform !== 'win32' || !process.env.LAGOM_TEST_POWERSHELL || !process.env.LAGOM_TEST_TEMP }, async () => {
+  assert.ok(path.isAbsolute(process.env.LAGOM_TEST_TEMP));
+  const directory = await fs.mkdtemp(path.join(process.env.LAGOM_TEST_TEMP, 'native-timeout-'));
+  const quote = value => value.replaceAll("'", "''");
+  const command = `
+    $ErrorActionPreference='Stop';
+    . '${quote(path.resolve('tests/windows-production-acceptance.ps1'))}' -LibraryOnly;
+    $script:Work='${quote(directory)}';
+    $refused=$false;
+    try{[void](Invoke-NativeBounded -Executable '${quote(process.execPath)}' -Arguments @('-e','process.stdout.write("owned stdout marker\\n");process.stderr.write("owned stderr marker\\n");setInterval(()=>{},1000)') -Label 'owned-timeout' -TimeoutSeconds 1)}catch{
+      if($_.Exception.Message -notmatch 'bounded timeout evidence retained'){throw};$refused=$true
+    };
+    if(-not $refused){throw 'Hung child was reported successful'};
+    $receipt=Get-Content -LiteralPath (Join-Path $script:Work 'owned-timeout.timeout.json') -Raw|ConvertFrom-Json;
+    if(-not $receipt.exitObserved -or -not $receipt.stdoutComplete -or -not $receipt.stderrComplete){throw 'Actual owned child retirement or bounded drain failed'};
+    if((Get-Content -LiteralPath (Join-Path $script:Work 'owned-timeout.stdout.txt') -Raw) -notmatch 'owned stdout marker'){throw 'stdout lost'};
+    if((Get-Content -LiteralPath (Join-Path $script:Work 'owned-timeout.stderr.txt') -Raw) -notmatch 'owned stderr marker'){throw 'stderr lost'};
+    $receipt|ConvertTo-Json -Compress
+  `;
+  try {
+    const result = spawnSync(process.env.LAGOM_TEST_POWERSHELL, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', command], { encoding: 'utf8', windowsHide: true, timeout: 20000 });
+    assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
+    const receipt = JSON.parse(result.stdout);
+    assert.equal(receipt.result, 'failed-timeout');
+    assert.equal(receipt.timeoutSeconds, 1);
+    assert.ok(receipt.elapsedMilliseconds < 10000);
+    assert.equal(receipt.killError, null);
+  } finally {
+    assert.equal(path.dirname(directory), path.resolve(process.env.LAGOM_TEST_TEMP));
+    await fs.rm(directory, { recursive: true, force: true });
+  }
 });

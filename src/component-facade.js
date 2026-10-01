@@ -1,3 +1,8 @@
+const systemDohServiceBrokers = new WeakMap();
+function getSystemDohServiceBroker(manager) {
+  const broker = systemDohServiceBrokers.get(manager);
+  return broker && manager.coreService === broker.coreService && Object.entries(broker.methods).every(([method, wrapped]) => manager[method] === wrapped) ? broker.coreService : null;
+}
 function useComponentService(manager, component, coreService) {
   if (!coreService) return manager;
   const operations = componentOperations()[component];
@@ -63,6 +68,9 @@ function useComponentService(manager, component, coreService) {
       }
       return pendingStatuses.get(key);
     };
+  }
+  if (component === 'SystemDoH' && manager.coreService === coreService && ['status', 'apply', 'restart', 'stopAndRemove'].every(method => Object.hasOwn(operations, method))) {
+    systemDohServiceBrokers.set(manager, { coreService, methods: Object.fromEntries(['status', 'apply', 'restart', 'stopAndRemove'].map(method => [method, manager[method]])) });
   }
   if (component === 'Zapret') {
     manager.autoSelectBestProfile = async onProgress => {

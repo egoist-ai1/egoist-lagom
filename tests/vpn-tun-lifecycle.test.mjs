@@ -14,6 +14,9 @@ class KillSwitch {
   isActive() { return false; }
 }
 
+const { ConfigBuilder } = loadRecovered('electron/ipc/config-builder', {}, ['ConfigBuilder']);
+const { buildProtocolRuntimePlan } = loadRecovered('shared/protocol-matrix', {}, ['buildProtocolRuntimePlan']);
+
 function loadVpnRuntimeManager({ baseline = false, platform = process.platform, bindings = {} } = {}) {
   const previousBaseline = process.env.SHIELD_BASELINE;
   if (baseline) process.env.SHIELD_BASELINE = '1';
@@ -36,7 +39,9 @@ function loadVpnRuntimeManager({ baseline = false, platform = process.platform, 
       readVersionFile: async () => null,
       compareLooseVersions: () => 0,
       runtimeExecutionEnvironment: (_lease, inherited) => inherited,
-      ...bindings
+      buildProtocolRuntimePlan,
+      ...bindings,
+      ConfigBuilder: { ...ConfigBuilder, ...bindings.ConfigBuilder }
     }, ['VpnRuntimeManager']).VpnRuntimeManager;
   } finally {
     if (previousBaseline === undefined) delete process.env.SHIELD_BASELINE;

@@ -259,6 +259,30 @@ var StateStore = class {
 			};
 		}
 	}
+	async patchRules(patch, expectedRevision) {
+		try {
+			if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
+				const error = new Error("STATE_REVISION_REQUIRED");
+				error.code = "STATE_REVISION_REQUIRED";
+				throw error;
+			}
+			const keys = patch && typeof patch === "object" && !Array.isArray(patch) ? Object.keys(patch) : [];
+			if (keys.length === 0 || keys.some((key) => !["domainRules", "processRules"].includes(key) || !Array.isArray(patch[key]) || patch[key].length > 256)) {
+				const error = new Error("STATE_RULES_INVALID");
+				error.code = "STATE_RULES_INVALID";
+				throw error;
+			}
+			// Capture caller-owned arrays before joining the shared mutation queue.
+			const rules = Object.fromEntries(keys.map((key) => [key, structuredClone(patch[key])]));
+			const state = await this.runMutation((current) => ({ ...current, ...rules }), { expectedRevision });
+			return { ok: true, conflict: false, revision: state.stateRevision, state };
+		} catch (error) {
+			const conflict = error?.code === "STATE_REVISION_CONFLICT";
+			const known = ["STATE_REVISION_REQUIRED", "STATE_RULES_INVALID", "STATE_REVISION_CONFLICT"].includes(error?.code);
+			if (!known) logger.error("[state-store] rules patch failed; in-memory state kept unchanged:", error);
+			return { ok: false, conflict, revision: this.revision, state: this.get(), error: known ? error.code : "STATE_WRITE_FAILED" };
+		}
+	}
 	/**
 	* Единственный путь мутации: очередь + запись до публикации в памяти.
 	*

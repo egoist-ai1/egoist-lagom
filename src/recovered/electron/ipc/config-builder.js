@@ -582,41 +582,91 @@ var ConfigBuilder;
 		};
 	}
 	function buildXrayProcessRules(processRules) {
-		return processRules.map((rule) => ({
+		return routingRuleList(processRules).map((rule) => ({
 			type: "field",
-			process: [rule.process],
-			outboundTag: rule.mode === "vpn" ? "proxy" : rule.mode === "block" ? "block" : "direct"
+			process: [routingProcessName(rule.process, "xray")],
+			outboundTag: routingRuleTarget(rule.mode, "proxy", "block")
 		}));
 	}
 	function buildRules(domainRules) {
 		const rules = [];
-		for (const rule of domainRules) rules.push({
+		for (const rule of routingRuleList(domainRules)) rules.push({
 			type: "field",
-			domain: [rule.domain],
-			outboundTag: rule.mode === "vpn" ? "proxy" : rule.mode === "block" ? "block" : "direct"
+			domain: [routingDomainCondition(rule.domain, "xray")],
+			outboundTag: routingRuleTarget(rule.mode, "proxy", "block")
 		});
 		return rules;
 	}
 	function buildSingBoxRules(domainRules, processRules, useTunMode, proxyTag) {
 		const rules = [];
-		if (useTunMode) for (const rule of processRules) if (rule.mode === "block") rules.push({
-			process_name: [rule.process],
-			action: "reject"
-		});
-		else rules.push({
-			process_name: [rule.process],
-			outbound: rule.mode === "vpn" ? proxyTag : "direct"
-		});
-		for (const rule of domainRules) if (rule.mode === "block") rules.push({
-			domain_suffix: [rule.domain],
-			action: "reject"
-		});
-		else rules.push({
-			domain_suffix: [rule.domain],
-			outbound: rule.mode === "vpn" ? proxyTag : "direct"
-		});
+		if (useTunMode) for (const rule of routingRuleList(processRules)) {
+			const condition = { process_name: [routingProcessName(rule.process, "sing-box")] };
+			const target = routingRuleTarget(rule.mode, proxyTag, "reject");
+			rules.push(target === "reject" ? { ...condition, action: "reject" } : { ...condition, outbound: target });
+		}
+		for (const rule of routingRuleList(domainRules)) {
+			const condition = routingDomainCondition(rule.domain, "sing-box");
+			const target = routingRuleTarget(rule.mode, proxyTag, "reject");
+			rules.push(target === "reject" ? { ...condition, action: "reject" } : { ...condition, outbound: target });
+		}
 		return rules;
 	}
+	function routingRuleList(rules) {
+		if (!Array.isArray(rules) || rules.length > 256) throw new Error("Список правил маршрутизации должен содержать не более 256 правил.");
+		return rules;
+	}
+	function routingRuleTarget(mode, proxyTag, blockedTag) {
+		if (mode === "vpn") return proxyTag;
+		if (mode === "direct") return "direct";
+		if (mode === "block") return blockedTag;
+		throw new Error("Неизвестный режим правила маршрутизации. Выберите VPN, напрямую или блокировку.");
+	}
+	function routingRuleText(value) {
+		if (typeof value !== "string" || value.length > 512 || /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/.test(value) || !value.trim()) throw new Error("Значение правила маршрутизации пустое, слишком длинное или содержит управляющие символы.");
+		return value.trim();
+	}
+	function routingHostName(value, allowSingleLabel) {
+		if (/[\s:/\\?#@%*\[\]]/.test(value)) throw new Error("Домен правила должен быть именем узла без IP, URL, пути или шаблона со звёздочкой.");
+		let host;
+		try { host = new URL("http://" + value).hostname.toLowerCase().replace(/\.$/, ""); }
+		catch { throw new Error("Некорректный домен правила маршрутизации."); }
+		const labels = host.split(".");
+		if (host.length > 253 || /^\d+(?:\.\d+){3}$/.test(host) || !allowSingleLabel && labels.length < 2 || labels.some((label) => label.length > 63 || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label))) throw new Error("Домен правила должен быть корректным именем узла; IP и CIDR не являются доменными правилами.");
+		return host;
+	}
+	function routingDomainCondition(value, runtimeKind) {
+		const text = routingRuleText(value), separator = text.indexOf(":");
+		const kind = separator < 0 ? "domain" : text.slice(0, separator);
+		let pattern = separator < 0 ? text : text.slice(separator + 1);
+		if (!["full", "domain", "keyword", "regexp", "geosite", "dotless"].includes(kind) || !pattern.trim()) throw new Error("Неподдерживаемый формат доменного правила. Используйте обычный домен или full:, domain:, keyword:, regexp:.");
+		if (kind === "full" || kind === "domain") pattern = routingHostName(pattern, separator >= 0);
+		if (kind === "dotless" && pattern.includes(".")) throw new Error("Формат dotless: допускает только имя без точки.");
+		if (runtimeKind === "xray") return `${kind}:${pattern}`;
+		const field = { full: "domain", domain: "domain_suffix", keyword: "domain_keyword", regexp: "domain_regex" }[kind];
+		if (!field) throw new Error(`Правило ${kind}: не поддерживается встроенным sing-box. Выберите Xray либо замените правило поддерживаемым форматом до переключения.`);
+		return { [field]: [pattern] };
+	}
+	function routingProcessName(value, runtimeKind) {
+		const processName = routingRuleText(value);
+		if (/[?*<>|"\u0000]/.test(processName)) throw new Error("Правило процесса не поддерживает звёздочки и шаблоны. Укажите точное имя файла .exe.");
+		if (/[/\\]/.test(processName)) {
+			if (runtimeKind === "sing-box") throw new Error("Полный путь процесса не поддерживается этим режимом приложения для sing-box. Укажите точное имя файла .exe; путь не будет заменён именем автоматически.");
+			if (processName !== "self/" && processName !== "xray/" && !/^(?:[a-z]:[/\\]|[/\\]{2}[^/\\]+[/\\])/.test(processName.toLowerCase())) throw new Error("Путь правила процесса должен быть абсолютным путём Windows либо поддерживаемым форматом Xray.");
+			return processName;
+		}
+		if (processName.includes(":")) throw new Error("Некорректное имя процесса в правиле маршрутизации.");
+		if (runtimeKind === "sing-box" && !/\.exe$/i.test(processName)) throw new Error("Для sing-box укажите точное имя файла процесса с расширением .exe. Имена без расширения Xray и sing-box сопоставляют по-разному.");
+		return processName;
+	}
+	function validateRoutingRules(runtimeKind, domainRules, processRules, useTunMode) {
+		if (runtimeKind === "xray") {
+			buildRules(domainRules);
+			if (useTunMode) buildXrayProcessRules(processRules);
+		} else if (runtimeKind === "sing-box") buildSingBoxRules(domainRules, processRules, useTunMode, "proxy");
+		else throw new Error("Неизвестный runtime для проверки правил маршрутизации.");
+		return true;
+	}
+	_ConfigBuilder.validateRoutingRules = validateRoutingRules;
 	function buildDefaultXrayRule(mode) {
 		return {
 			type: "field",

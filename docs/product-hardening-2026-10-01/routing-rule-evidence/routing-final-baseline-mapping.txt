@@ -1,0 +1,169 @@
+✖ a plain domain matches only the domain and its subdomains in both generated runtimes (2.8273ms)
+✖ full, suffix, keyword and regex explicit rules retain their meaning rather than a literal prefix (0.6455ms)
+✖ canonical host names retain IDNA labels and reject IP, CIDR, URL, wildcard and unknown prefixes (0.2841ms)
+✖ engine-specific domain tokens remain explicit or fail preflight before any config is returned (0.6523ms)
+✖ rule order and route/reject actions are preserved without combining different match conditions (0.5067ms)
+✖ process names apply only to TUN and unsupported process paths cannot masquerade as basenames (0.6324ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 0
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 111.5457
+
+✖ failing tests:
+
+test at tests\routing-rule-contract.test.mjs:29:1
+✖ a plain domain matches only the domain and its subdomains in both generated runtimes (2.8273ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'example.org'
+  -   'domain:example.org'
+    ]
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:30:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'example.org' ],
+    expected: [ 'domain:example.org' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\routing-rule-contract.test.mjs:34:1
+✖ full, suffix, keyword and regex explicit rules retain their meaning rather than a literal prefix (0.6455ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + undefined
+  - [
+  -   'exact.example.org'
+  - ]
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:44:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: [ 'exact.example.org' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\routing-rule-contract.test.mjs:49:1
+✖ canonical host names retain IDNA labels and reject IP, CIDR, URL, wildcard and unknown prefixes (0.2841ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   '  EXAMPLE.org.  '
+  -   'domain:example.org'
+    ]
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:50:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ '  EXAMPLE.org.  ' ],
+    expected: [ 'domain:example.org' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\routing-rule-contract.test.mjs:57:1
+✖ engine-specific domain tokens remain explicit or fail preflight before any config is returned (0.6523ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /sing-box/. Input:
+  
+  'TypeError: ConfigBuilder.validateRoutingRules is not a function'
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:61:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: TypeError: ConfigBuilder.validateRoutingRules is not a function
+        at file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:61:39
+        at getActual (node:assert:611:5)
+        at strict.throws (node:assert:759:24)
+        at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:61:12)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1382:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+        at Test.postRun (node:internal/test_runner/test:1522:19)
+        at Test.run (node:internal/test_runner/test:1447:12)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:960:7),
+    expected: /sing-box/,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests\routing-rule-contract.test.mjs:66:1
+✖ rule order and route/reject actions are preserved without combining different match conditions (0.5067ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:71:45)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /режим.*правил/i,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests\routing-rule-contract.test.mjs:74:1
+✖ process names apply only to TUN and unsupported process paths cannot masquerade as basenames (0.6324ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /путь|имя.*\.exe/i. Input:
+  
+  'TypeError: ConfigBuilder.validateRoutingRules is not a function'
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:82:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: TypeError: ConfigBuilder.validateRoutingRules is not a function
+        at file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:82:37
+        at getActual (node:assert:611:5)
+        at strict.throws (node:assert:759:24)
+        at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:82:10)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1382:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+        at Test.postRun (node:internal/test_runner/test:1522:19)
+        at Test.run (node:internal/test_runner/test:1447:12)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:960:7),
+    expected: /путь|имя.*\.exe/i,
+    operator: 'throws',
+    diff: 'simple'
+  }

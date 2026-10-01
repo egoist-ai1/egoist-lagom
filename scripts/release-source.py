@@ -59,3 +59,17 @@ def verify_artifact_source(integrity, expected=None):
     if expected is not None and binding != expected:
         raise RuntimeError('Packaged source differs from the requested release commit/tree')
     return binding
+
+
+def verify_pending_validation_refresh(recorded, current, remote_assets, uploaded_assets):
+    name = 'Egoist-Lagom-validation.md'
+    if not isinstance(recorded, dict) or not isinstance(current, dict) or set(recorded) != set(current) or name not in recorded:
+        raise RuntimeError('Validation refresh requires the original complete asset allowlist')
+    if any(recorded[key] != current[key] for key in recorded if key != name):
+        raise RuntimeError('Validation refresh cannot change any executable, source, trust or signed metadata asset')
+    if any(asset.get('name') == name for asset in [*remote_assets, *uploaded_assets]):
+        raise RuntimeError('Validation refresh cannot replace an uploaded document')
+    value = current[name]
+    if not isinstance(value, dict) or set(value) != {'digest', 'size'} or not re.fullmatch(r'sha256:[a-f0-9]{64}', str(value.get('digest'))) or type(value.get('size')) is not int or value['size'] <= 0:
+        raise RuntimeError('Validation document digest or size is invalid')
+    return {**recorded, name: dict(value)}

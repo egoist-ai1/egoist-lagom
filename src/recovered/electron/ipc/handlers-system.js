@@ -651,6 +651,21 @@ async function createDnsMutationRollbackSnapshot(reason) {
 	return createAdapterDnsRollbackSnapshot([...records.values()], reason);
 }
 function registerSystemHandlers({ window, stateStore, runtimeManager, gravitylessDnsManager, systemDohManager, zapretManager, telegramProxyManager, networkCombinatorManager }) {
+	const dnsMutationAccessError = async (useSystemDohBroker, directAdminMessage) => {
+		if (!app.isPackaged) return await runtimeManager.isAdmin() ? null : directAdminMessage;
+		const broker = useSystemDohBroker
+			? (typeof getSystemDohServiceBroker === "function" ? getSystemDohServiceBroker(systemDohManager) : null)
+			: coreServiceClient;
+		if (!broker) return "Защищённый канал System DoH к Egoist Lagom Core не настроен. Проверьте установку приложения.";
+		try {
+			const hello = await broker.request("hello", {});
+			if (hello?.protocolVersion !== 1 || hello.clientPid !== process.pid || hello.identityProbe !== false || hello.developmentOverride !== false) throw new Error("Core не подтвердил доступ текущего приложения.");
+			return null;
+		} catch (error) {
+			const detail = error instanceof Error ? error.message.slice(0, 400) : "Ответ Core не подтверждён.";
+			return `Защищённая служба Egoist Lagom Core недоступна или отказала в доступе. ${detail}`;
+		}
+	};
 	const mutateDns = (action, operation) => networkCombinatorManager ? networkCombinatorManager.runCoordinatedMutation({
 		module: "dns",
 		action,
@@ -680,6 +695,10 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 		const result = await stateStore.patchSettings(patch, expectedRevision, settingsCommitHooks);
 		if (result.ok) applyLoggerSettings(result.state.settings);
 		return result;
+	});
+	ipcMain.handle("state:patch-rules", async (_event, rawInput) => {
+		const { patch, expectedRevision } = RulesPatchInputSchema.parse(rawInput);
+		return stateStore.patchRules(patch, expectedRevision);
 	});
 	ipcMain.handle("app:is-admin", async () => runtimeManager.isAdmin());
 	ipcMain.handle("app:get-version", async () => ({
@@ -1146,9 +1165,10 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			const mock = process.env.NODE_ENV === "test";
 			const persistedState = stateStore.get();
 			if (!mock) {
-				if (!await runtimeManager.isAdmin()) return {
+				const accessError = await dnsMutationAccessError(false, "Для изменения системного DNS нужен запуск от имени администратора.");
+				if (accessError) return {
 					ok: false,
-					message: "Для изменения системного DNS нужен запуск от имени администратора.",
+					message: accessError,
 					servers: []
 				};
 			}
@@ -1185,9 +1205,10 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			const mock = process.env.NODE_ENV === "test";
 			const persistedState = stateStore.get();
 			if (!mock) {
-				if (!await runtimeManager.isAdmin()) return {
+				const accessError = await dnsMutationAccessError(false, "Для сброса системного DNS нужен запуск от имени администратора.");
+				if (accessError) return {
 					ok: false,
-					message: "Для сброса системного DNS нужен запуск от имени администратора.",
+					message: accessError,
 					servers: []
 				};
 			}
@@ -1235,10 +1256,11 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			const switchingFromGravityless = isGravitylessLoopbackDnsRequest(persistedState.settings.systemDnsServers ?? "");
 			let gravitylessWasRunning = false;
 			if (!mock) {
-				if (!await runtimeManager.isAdmin()) return {
+				const accessError = await dnsMutationAccessError(true, "Для включения System DoH нужен запуск приложения от имени администратора.");
+				if (accessError) return {
 					ok: false,
-					message: "Для включения System DoH нужен запуск приложения от имени администратора.",
-					status: await systemDohManager.status()
+					message: accessError,
+					status: null
 				};
 			}
 			try {
@@ -1302,10 +1324,11 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			const mock = process.env.NODE_ENV === "test";
 			const persistedState = stateStore.get();
 			if (!mock) {
-				if (!await runtimeManager.isAdmin()) return {
+				const accessError = await dnsMutationAccessError(true, "Для отключения System DoH нужен запуск приложения от имени администратора.");
+				if (accessError) return {
 					ok: false,
-					message: "Для отключения System DoH нужен запуск приложения от имени администратора.",
-					status: await systemDohManager.status()
+					message: accessError,
+					status: null
 				};
 			}
 			try {
@@ -1369,11 +1392,10 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 		return mutateDns("system-doh-restart", async () => {
 			const mock = process.env.NODE_ENV === "test";
 			const persistedState = stateStore.get();
-			if (!mock && !await runtimeManager.isAdmin()) return {
-				ok: false,
-				message: "Для перепроверки System DoH нужны права администратора.",
-				status: await systemDohManager.status()
-			};
+			if (!mock) {
+				const accessError = await dnsMutationAccessError(true, "Для перепроверки System DoH нужны права администратора.");
+				if (accessError) return { ok: false, message: accessError, status: null };
+			}
 			try {
 				return {
 					ok: true,

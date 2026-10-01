@@ -1478,6 +1478,68 @@
   border-radius: 8px;
 }
 
+/* VPN routing controls share the compact settings surface and native modal focus. */
+.screen-stage[data-screen="settings"] .ruby-network-settings {
+  grid-column: 1 / -1;
+  min-width: 0;
+  align-self: start;
+}
+.ruby-network-settings > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  list-style: none;
+  cursor: pointer;
+  color: var(--ink);
+}
+.ruby-network-settings > summary::-webkit-details-marker { display: none; }
+.ruby-network-settings > summary > span { flex: 1; min-width: 0; }
+.ruby-network-settings > summary strong { display: block; font-size: var(--type-body); }
+.ruby-network-settings > summary small { display: block; margin-top: 4px; color: var(--muted); font-size: var(--type-caption); }
+.ruby-network-settings[open] > summary { padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.ruby-network-settings[open] > summary > .ruby-icon:last-child { transform: rotate(180deg); }
+.ruby-network-content { display: flex; flex-direction: column; gap: 16px; padding-top: 16px; min-width: 0; }
+.ruby-network-content > form, .ruby-rule-dialog form { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ruby-network-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.ruby-network-content label:not(.ruby-network-tun), .ruby-rule-dialog label { display: flex; flex-direction: column; gap: 7px; min-width: 0; font-size: var(--type-caption); color: var(--ink); }
+.ruby-network-content .input, .ruby-rule-dialog .input { min-height: 40px; width: 100%; min-width: 0; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--control-line); border-radius: var(--radius-s); color: var(--ink); background: var(--canvas); font-size: var(--type-body); }
+.ruby-network-content p, .ruby-rule-dialog p { display: block; margin: 0; color: var(--muted); font-size: var(--type-caption); line-height: 1.55; overflow-wrap: anywhere; }
+.ruby-network-tun { display: flex; gap: 10px; align-items: flex-start; color: var(--ink); font-size: var(--type-body); line-height: 1.5; cursor: pointer; }
+.ruby-network-tun input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--action); }
+.ruby-network-tun small { display: block; margin-top: 4px; font-size: var(--type-caption); color: var(--muted); }
+.ruby-network-actions, .ruby-rule-dialog footer { display: flex; flex-wrap: wrap; gap: 8px; }
+.ruby-network-actions button, .ruby-rule-dialog footer button { min-height: 40px; }
+.ruby-network-rule-groups { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.ruby-vpn-rules { min-width: 0; padding-top: 12px; border-top: 1px solid var(--line); }
+.ruby-vpn-rules > header { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.ruby-vpn-rules > header > div { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.ruby-vpn-rules h4 { margin: 0; color: var(--ink); font-size: var(--type-body); }
+.ruby-vpn-rules header span { color: var(--muted); font-size: var(--type-caption); }
+.ruby-rule-list { margin: 0; padding-left: 28px; max-height: 340px; overflow: auto; font-size: var(--type-caption); color: var(--muted); }
+.ruby-rule-list li { padding: 8px 4px; border-bottom: 1px solid var(--line); }
+.ruby-rule-list li::marker { color: var(--muted); }
+.ruby-rule-copy { display: inline-block; vertical-align: middle; width: calc(100% - 245px); min-width: 150px; }
+.ruby-rule-copy strong { display: block; color: var(--ink); font-size: var(--type-body); font-weight: 600; overflow-wrap: anywhere; }
+.ruby-rule-copy span { display: block; margin-top: 4px; }
+.ruby-rule-actions { display: inline-flex; gap: 4px; vertical-align: middle; justify-content: flex-end; flex-wrap: wrap; width: 237px; }
+.ruby-rule-actions .ruby-close { width: 32px; height: 36px; }
+.ruby-network-content .ruby-network-message, .ruby-rule-dialog .ruby-network-message { padding: 10px 12px; border: 1px solid var(--control-line); border-radius: var(--radius-s); color: var(--ink); background: var(--panel-raised); }
+.ruby-network-snapshot-note { padding-left: 12px; border-left: 2px solid var(--line-hover); }
+.ruby-rule-dialog { position: fixed; inset: 0; width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 22px; border: 1px solid var(--control-line); border-radius: var(--radius-l); background: var(--panel); color: var(--ink); box-sizing: border-box; overflow: auto; box-shadow: 0 18px 60px #0008; }
+.ruby-rule-dialog::backdrop { background: #000b; }
+.ruby-rule-dialog header { display: flex; align-items: flex-start; gap: 12px; justify-content: space-between; }
+.ruby-rule-dialog h2 { margin: 0; font-size: var(--type-section); line-height: 1.5; }
+.ruby-rule-dialog footer { justify-content: flex-end; margin-top: 4px; }
+.ruby-rule-dialog :is(.btn-primary, .btn-secondary) { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 14px; font-size: var(--type-body); border-radius: var(--radius-s); }
+@media (max-width: 720px) {
+  .ruby-network-fields { grid-template-columns: minmax(0, 1fr); }
+  .ruby-rule-copy { display: block; width: 100%; min-width: 0; }
+  .ruby-rule-actions { display: flex; width: 100%; margin-top: 8px; justify-content: flex-start; }
+  .ruby-network-actions > button { flex: 1 1 auto; }
+  .ruby-rule-dialog { padding: 16px; }
+}
+
 /* Settings */
 
 .screen-stage[data-screen="settings"] {
@@ -1691,6 +1753,23 @@
 }
 
 /* Shared notifications and dialogs */
+
+.ruby-activity-region {
+  flex: none;
+  min-width: 0;
+  padding: 0 24px 14px;
+}
+.ruby-activity-region:not(:has(.activity-hud)) { display: none; }
+.ruby-activity-region .activity-hud {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-shadow: none;
+}
+@media (max-width: 900px) { .ruby-activity-region { padding-inline: 20px; } }
+@media (max-width: 460px) { .ruby-activity-region { padding-inline: 14px; padding-bottom: 10px; } }
 
 .activity-hud {
   grid-template-columns: 22px minmax(0, 1fr) 28px;

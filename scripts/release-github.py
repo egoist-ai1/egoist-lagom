@@ -78,8 +78,8 @@ def verify_local():
     return digests
 
 mode=sys.argv[1] if len(sys.argv)>1 else 'status'
-if mode not in ('status','verify','stage','upload','publish'):
-    raise ValueError('Expected status, verify, stage, upload, or publish')
+if mode not in ('status','verify','stage','upload-acceptance','finalize-validation','upload','publish'):
+    raise ValueError('Expected status, verify, stage, upload-acceptance, finalize-validation, upload, or publish')
 if mode=='verify':
     print(json.dumps({'tag':tag,'assets':verify_local()}))
     sys.exit(0)
@@ -109,7 +109,17 @@ elif mode=='stage':
     release=api.request(REPO+'/releases','POST',{'tag_name':tag,'target_commitish':commit,'name':'Egoist Lagom','body':body,'draft':True,'prerelease':False})
     receipt_path.write_text(json.dumps({'schemaVersion':2,'releaseId':release['id'],'tag':tag,'source':source,'candidate':verified_assets,'assets':[]},indent=2))
     print(json.dumps(summary(release)))
-elif mode=='upload':
+elif mode=='finalize-validation':
+    receipt=json.loads(receipt_path.read_text())
+    if packaged_source != receipt.get('source'):
+        raise RuntimeError('Packaged source differs from the staged release commit/tree')
+    if not release or not release['draft'] or release['id']!=receipt['releaseId'] or release['tag_name']!=receipt['tag']:
+        raise RuntimeError('Only the task-owned unpublished draft may finalize its validation document')
+    source_api.verify_release_source(api.request,REPO,release,receipt.get('source'),allow_missing_tag=True)
+    receipt['candidate']=source_api.verify_pending_validation_refresh(receipt.get('candidate'),verified_assets,release.get('assets',[]),receipt.get('assets',[]))
+    receipt_path.write_text(json.dumps(receipt,indent=2))
+    print(json.dumps({'releaseId':release['id'],'validationFinalized':True,'executableOrMetadataChanged':False}))
+elif mode in ('upload','upload-acceptance'):
     receipt=json.loads(receipt_path.read_text())
     if packaged_source != receipt.get('source'):
         raise RuntimeError('Packaged source differs from the staged release commit/tree')
@@ -119,7 +129,8 @@ elif mode=='upload':
         raise RuntimeError('Only the task-owned unpublished draft may receive assets')
     source_api.verify_release_source(api.request,REPO,release,receipt.get('source'),allow_missing_tag=True)
     assets={a['name']:a for a in release.get('assets',[])}
-    for name in names:
+    upload_names=names if mode=='upload' else ['EgoistShield-Setup-'+version+'.exe','package-integrity.json','release-manifest.json','release-manifest.json.sig','release-key-registry.json','release-key-registry.json.sig']
+    for name in upload_names:
         file=(DIST/name).resolve()
         if file.parent!=DIST.resolve() or not file.is_file():
             raise ValueError('Invalid release asset path')
@@ -173,4 +184,4 @@ elif mode=='publish':
     receipt_path.write_text(json.dumps(receipt,indent=2))
     print(json.dumps(summary(fresh)))
 else:
-    raise ValueError('Expected status, stage, upload, or publish')
+    raise ValueError('Expected status, verify, stage, upload-acceptance, finalize-validation, upload, or publish')

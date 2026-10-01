@@ -1,0 +1,1 @@
+{"cases":20,"interactions":11,"errors":0,"nativeSystemMutations":0,"report":"C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f42c-32b2-79a2-beba-be99c620a2c8\\work\\ui-network-accepted\\ui-network-settings-validation.json"}

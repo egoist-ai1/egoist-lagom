@@ -1,0 +1,264 @@
+{
+  "runtime-xray": {
+    "file": "recovery/official-app/resources/runtime/xray/xray.exe",
+    "bytes": 35819008,
+    "sha256": "47f612eff0a553c982a3e2806e54f94bee0639d0f3f0fa11116a11bbd6abda3f",
+    "version": "26.5.3",
+    "profile": "production"
+  },
+  "runtime-sing-box": {
+    "file": "recovery/component-candidates/sing-box-1.14.0-windows-amd64/sing-box-1.14.0-windows-amd64/sing-box.exe",
+    "bytes": 81819136,
+    "sha256": "aad0ede010eafa7b277e520464f3a66fde820103d737eff739f40f3cc9451dcc",
+    "version": "1.14.0",
+    "profile": "production"
+  },
+  "nativeChecks": [
+    {
+      "runtime": "xray",
+      "pattern": "example.org",
+      "outcome": "accepted",
+      "input": "stdin"
+    },
+    {
+      "runtime": "xray",
+      "pattern": "full:exact.example.org",
+      "outcome": "accepted",
+      "input": "stdin"
+    },
+    {
+      "runtime": "xray",
+      "pattern": "domain:suffix.example.org",
+      "outcome": "accepted",
+      "input": "stdin"
+    },
+    {
+      "runtime": "xray",
+      "pattern": "keyword:needle",
+      "outcome": "accepted",
+      "input": "stdin"
+    },
+    {
+      "runtime": "xray",
+      "pattern": "regexp:^api[0-9]+\\.example\\.org$",
+      "outcome": "accepted",
+      "input": "stdin"
+    },
+    {
+      "runtime": "xray",
+      "pattern": "regexp:(?=lookahead)",
+      "outcome": "rejected",
+      "input": "stdin"
+    },
+    {
+      "runtime": "sing-box",
+      "pattern": "example.org",
+      "outcome": "accepted",
+      "input": "stdin"
+    },
+    {
+      "runtime": "sing-box",
+      "pattern": "full:exact.example.org",
+      "outcome": "accepted",
+      "input": "stdin"
+    },
+    {
+      "runtime": "sing-box",
+      "pattern": "domain:suffix.example.org",
+      "outcome": "accepted",
+      "input": "stdin"
+    },
+    {
+      "runtime": "sing-box",
+      "pattern": "keyword:needle",
+      "outcome": "accepted",
+      "input": "stdin"
+    },
+    {
+      "runtime": "sing-box",
+      "pattern": "regexp:^api[0-9]+\\.example\\.org$",
+      "outcome": "accepted",
+      "input": "stdin"
+    },
+    {
+      "runtime": "sing-box",
+      "pattern": "regexp:(?=lookahead)",
+      "outcome": "rejected",
+      "input": "stdin"
+    }
+  ],
+  "preflight": {
+    "actualNativeChecks": 4,
+    "accepted": 2,
+    "rejected": 2,
+    "teardownMutations": 0,
+    "oldOwnedChildPreserved": true,
+    "configurationFileWrites": 0,
+    "credentialOnlyInStdin": true,
+    "credentialInOutput": false,
+    "actualCheckerChildrenRetired": true
+  },
+  "stdinFailure": {
+    "ownedPipeChildRetired": true,
+    "checkerExitCode": 0,
+    "checkedFailure": true,
+    "inputErrors": [
+      "EOF"
+    ],
+    "elapsedMs": 1053.0792000000001,
+    "oldOwnedChildPreserved": true,
+    "oversizedInputRejectedBeforeSpawn": true,
+    "teardownMutations": 0,
+    "configurationFileWrites": 0
+  },
+  "plainDomainRouteDecisions": [
+    {
+      "runtime": "xray",
+      "domain": "example.org",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "xray",
+      "domain": "www.example.org",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "xray",
+      "domain": "notexample.org",
+      "expected": "MISS",
+      "actual": "MISS"
+    },
+    {
+      "runtime": "xray",
+      "domain": "example.org.evil",
+      "expected": "MISS",
+      "actual": "MISS"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "example.org",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "www.example.org",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "notexample.org",
+      "expected": "MISS",
+      "actual": "MISS"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "example.org.evil",
+      "expected": "MISS",
+      "actual": "MISS"
+    }
+  ],
+  "explicitDomainRouteDecisions": [
+    {
+      "runtime": "xray",
+      "domain": "exact.example.org",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "xray",
+      "domain": "sub.exact.example.org",
+      "expected": "MISS",
+      "actual": "MISS"
+    },
+    {
+      "runtime": "xray",
+      "domain": "needle.example.org",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "xray",
+      "domain": "n.example.org",
+      "expected": "MISS",
+      "actual": "MISS"
+    },
+    {
+      "runtime": "xray",
+      "domain": "api2.example.org",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "xray",
+      "domain": "api.example.org",
+      "expected": "MISS",
+      "actual": "MISS"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "exact.example.org",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "sub.exact.example.org",
+      "expected": "MISS",
+      "actual": "MISS"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "needle.example.org",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "n.example.org",
+      "expected": "MISS",
+      "actual": "MISS"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "api2.example.org",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "api.example.org",
+      "expected": "MISS",
+      "actual": "MISS"
+    }
+  ],
+  "loopbackProcessRouteDecisions": [
+    {
+      "runtime": "xray",
+      "domain": "process.fixture.test",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "xray",
+      "domain": "process.fixture.test",
+      "expected": "MISS",
+      "actual": "MISS"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "process.fixture.test",
+      "expected": "MATCH",
+      "actual": "MATCH"
+    },
+    {
+      "runtime": "sing-box",
+      "domain": "process.fixture.test",
+      "expected": "MISS",
+      "actual": "MISS"
+    }
+  ]
+}

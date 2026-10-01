@@ -1,0 +1,26 @@
+✔ DNS provider contract is pinned to HTTPS URLs and documented v4/v6 pairs (1.008ms)
+✔ independent DNS wire preflight accepts matching positive reply and rejects incorrect protocol replies (1.6353ms)
+✔ packet parser requires bidirectional TLS at actual approved resolver in the query window (0.9359ms)
+✔ TCP443 without TLS, one direction, unrelated provider, or unrelated time cannot prove encrypted DNS (0.3232ms)
+✔ a matching plaintext TCP DNS probe makes TLS evidence fail (0.262ms)
+✔ truncated blocks, unsupported links and oversized snapshots fail closed (0.4255ms)
+✔ actual Run/GuardOnly/Guardian/Query invocation refuses physical non-hosted process before input or writes (3116.6862ms)
+✔ library import is inert and own native file/path boundary rejects reparse ancestors (1207.4022ms)
+✔ native acceptance refuses missing or mismatched hosted runner identities (0.9558ms)
+✔ native payload readback refuses traversal, drive paths and alternate path separators (0.2968ms)
+✔ PowerShell native acceptance host guard and path boundary perform no mutations (829.93ms)
+✔ an actual native acceptance invocation refuses a non-hosted process before input or mutation (698.8405ms)
+✔ native child timeout retires its own process and retains bounded stdout, stderr and failure evidence (1769.0987ms)
+✔ legacy gate verifies original real signed metadata with the project pinned public root (5.0848ms)
+✔ legacy gate refuses registry rollback, key replacement and revoked-key revival (1.6758ms)
+✔ pure source-binding boundary requires both signed fields and exact integrity bytes (0.4392ms)
+✔ legacy PowerShell library import performs no native query or mutation and observer matches exact scope (782.3946ms)
+✔ real legacy script and helper reject a non-hosted process before input or native mutation (753.6072ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4407.5649

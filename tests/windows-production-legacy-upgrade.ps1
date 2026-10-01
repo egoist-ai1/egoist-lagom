@@ -77,7 +77,7 @@ function Invoke-Legacy379Gui {
       $items=$root.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.AndCondition]::new($button,$named))
       if($items.Count -eq 1 -and $items[0].Current.IsEnabled){return $items[0]}
     }
-    $navigation=Wait-NativeCondition -Condition {& $findButton 'Telegram'} -Label 'Actual old Telegram navigation control' -TimeoutSeconds 90
+    $navigation=Get-NativeTelegramNavigation -FindButton $findButton -Label 'Actual old Telegram navigation control'
     ([Windows.Automation.InvokePattern]$navigation.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
     $install=Wait-NativeCondition -Condition {& $findButton 'Установить фоновую службу'} -Label 'Actual old Telegram background install control' -TimeoutSeconds 90
     ([Windows.Automation.InvokePattern]$install.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
@@ -106,26 +106,12 @@ function Assert-LegacyNativeBootTask {
   $xml.Save((Join-Path $script:Work ($name+'.xml')))
   return [ordered]@{taskName=$name;taskPath=$task.TaskPath;principal=[string]$principal.UserId;logonType=[string]$task.Principal.LogonType;arguments=[string]$action.Arguments;actualBootExecuted=$false}
 }
-function Close-LegacyAutomaticallyStartedCandidateGui {
+function Assert-LegacyRunAfterSuppression {
   $rows=@(Get-CimInstance Win32_Process -Filter "Name = 'EgoistShield.exe'" -OperationTimeoutSec 5)
-  if($rows.Count -eq 0){$script:Receipt.bridgeLaunchPreference=[ordered]@{oldRequestedRunAfter=$false;newGuiObserved=$false;normalCloseRequired=$false};Save-NativeReceipt;return}
-  $expected=Join-Path $script:InstallRoot 'EgoistShield.exe'
-  foreach($row in $rows){if([string]$row.ExecutablePath -ine $expected){throw 'Foreign GUI appeared after legacy handoff.'}}
-  $main=@();foreach($row in $rows){$candidate=[Diagnostics.Process]::GetProcessById([int]$row.ProcessId);$candidate.Refresh();if($candidate.MainWindowHandle -ne [IntPtr]::Zero){$main+=$candidate}else{$candidate.Dispose()}}
-  if($main.Count -ne 1){foreach($candidate in $main){$candidate.Dispose()};throw 'Automatically launched candidate did not expose exactly one canonical native window.'}
-  $child=$main[0]
-  try{
-    $identity=Get-NativeProcessIdentity $child.Id
-    if($identity.executable -ine $expected -or $child.MainModule.FileName -ine $expected -or [Math]::Abs(([DateTimeOffset]::Parse($identity.createdUtc).UtcDateTime-$child.StartTime.ToUniversalTime()).TotalMilliseconds) -gt 20){throw 'Automatically launched candidate GUI identity changed.'}
-    Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
-    $root=[Windows.Automation.AutomationElement]::FromHandle($child.MainWindowHandle);$pattern=$null
-    if(-not $root -or $root.Current.ProcessId -ne $child.Id -or -not $root.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'Automatically launched candidate exposes no owned native close pattern.'}
-    Add-NativeMutation -Kind 'actual-auto-launched-candidate-gui-close' -Target $expected -Purpose 'Normally close the exact candidate GUI started by the real legacy bridge, before proving background persistence.'
-    ([Windows.Automation.WindowPattern]$pattern).Close()
-    if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'Automatically launched candidate did not normally exit.'}
-    $script:Receipt.bridgeLaunchPreference=[ordered]@{oldRequestedRunAfter=$false;newGuiObserved=$true;normalCloseRequired=$true;process=$identity;exitCode=$child.ExitCode;preferencePreserved=$false}
-    Save-NativeReceipt;Assert-NativeNoGui
-  }finally{$child.Dispose()}
+  $script:Receipt.bridgeLaunchPreference=[ordered]@{oldRequestedRunAfter=$false;newGuiObserved=($rows.Count -ne 0);normalCloseRequired=$false;preferencePreserved=($rows.Count -eq 0)}
+  Save-NativeReceipt
+  if($rows.Count -ne 0){throw 'Actual legacy bridge launched a GUI despite the old helper NoRunAfter preference.'}
+  Assert-NativeNoGui
 }
 function Copy-LegacyBoundedStageEvidence {
   param([string]$Stage,[string]$Label)
@@ -177,6 +163,7 @@ function Invoke-ActualLegacyBridge {
             $state=Read-LegacyHarnessJson $statePath
             if($state.PSObject.Properties['previousReinstallStage'] -and [string]$state.previousReinstallStage -ieq $oldStage){
               if($state.owner -ne 'EgoistShield' -or $state.version -ne '3.8.0' -or [string]$state.sha256 -ine $script:InstallerHash -or [int]$state.previousReinstallWaitMilliseconds -le 0){throw 'New actual bridge state identity is invalid.'}
+              if(-not $state.PSObject.Properties['runAfter'] -or $state.runAfter -isnot [bool] -or $state.runAfter -ne $false -or -not $state.PSObject.Properties['minimizedAfter'] -or $state.minimizedAfter -isnot [bool] -or $state.minimizedAfter -ne $false){throw 'Actual new bridge state did not preserve old NoRunAfter/default minimized preference.'}
               $candidateStages+=$item.FullName
             }
           }
@@ -275,13 +262,13 @@ function Invoke-NativeLegacyUpgrade {
     $script:Receipt.candidateAcls=@(foreach($relative in @('','EgoistShield.exe','EgoistShield.Worker.exe','resources','resources\app.asar','resources\component-worker.cjs','resources\worker-host-integrity.json','resources\core-service\win-x64\EgoistShield.Service.exe')){Assert-NativeAdministratorOwned (Join-Path $script:InstallRoot $relative)})
     if((Get-FileHash -LiteralPath $configPath -Algorithm SHA256).Hash -cne $configHash){throw 'Actual Telegram private configuration changed across the genuine legacy upgrade.'}
     Assert-NativePrivateState 'actual-old-to-new-preserved-private-state'
-    Close-LegacyAutomaticallyStartedCandidateGui
+    Assert-LegacyRunAfterSuppression
     $script:Receipt.newCore=Assert-NativeService 'EgoistShieldCore' $script:Core -Running;$script:Receipt.newCorePolicy=Get-NativeRecoveryPolicy 'EgoistShieldCore'
     $script:Receipt.newTelegramWithoutGui=Assert-NativeTelegramEndpoint $port;$script:Receipt.newTelegramPolicy=Get-NativeRecoveryPolicy 'EgoistShieldTelegramProxy'
     Assert-NativeNoGui;Assert-NativeNetworkPreserved 'old-helper-new-bridge-upgrade';Assert-LegacyForeignRegistrationsPreserved 'upgrade'
     [void](Invoke-NativeGui -Action 'check-telegram' -Label 'actual-new-gui-after-legacy-upgrade');Assert-NativeNoGui
     $script:Receipt.checks+=[ordered]@{name='real-official-3.7.9-helper-to-signed-3.8.0-bridge';ok=$true;publicLatestFeedDiscovery=$false;actualBoot=$false};Save-NativeReceipt
-    $uninstaller=Join-Path $script:InstallRoot 'Uninstall.exe';[void](Assert-NativeAdministratorOwned $uninstaller)
+    $uninstaller=Join-Path $script:InstallRoot 'Uninstall Egoist Shield.exe';[void](Assert-NativeAdministratorOwned $uninstaller)
     Add-NativeMutation -Kind 'actual-owned-candidate-uninstall' -Target $uninstaller -Purpose 'Remove the successfully upgraded product with its actual uninstaller; preserve unrelated services/tasks/network.'
     [void](Invoke-NativeBounded -Executable $uninstaller -Arguments @('/S') -Label 'actual-candidate-uninstall' -TimeoutSeconds 300)
     [void](Wait-NativeCondition -Condition {if(-not (Test-Path -LiteralPath $script:InstallRoot)){return $true}} -Label 'Actual upgraded candidate uninstall completion' -TimeoutSeconds 90)

@@ -107,5 +107,5 @@ test('Xray TUN config applies process rules before domain rules', () => {
     { type: 'field', process: ['blocked.exe'], outboundTag: 'block' },
     { type: 'field', process: ['direct.exe'], outboundTag: 'direct' }
   ]);
-  assert.ok(config.routing.rules.indexOf(processRules[0]) < config.routing.rules.findIndex(rule => rule.domain?.includes('example.org')));
+  assert.ok(config.routing.rules.indexOf(processRules[0]) < config.routing.rules.findIndex(rule => rule.domain?.includes('domain:example.org')));
 });
