@@ -1,0 +1,254 @@
+diff --git a/src/brand/ShieldWidget.jsx b/src/brand/ShieldWidget.jsx
+index 0800c5a..1c54e6d 100644
+--- a/src/brand/ShieldWidget.jsx
++++ b/src/brand/ShieldWidget.jsx
+@@ -22,6 +22,42 @@ function rubyReadStatuses(reads) {
+   )));
+ }
+ 
++function rubyTelegramIpAddress(value) {
++  const parts = value.split('.');
++  if (parts.length === 4 && parts.every(part => /^(0|[1-9]\d{0,2})$/.test(part) && Number(part) <= 255)) return true;
++  if (!value.includes(':') || value.includes('%')) return false;
++  try { return new URL(`http://[${value}]/`).hostname.startsWith('['); } catch { return false; }
++}
++
++function rubyTelegramConfigProblem(config) {
++  if (!config || typeof config !== 'object' || Array.isArray(config)) return 'Конфигурация Telegram ещё не прочитана.';
++  const keys = ['host','port','secret','dcIp','verbose','bufKb','poolSize','logMaxMb','checkUpdates'];
++  if (Object.keys(config).some(key => !keys.includes(key))) return 'Служба вернула неизвестные поля конфигурации Telegram.';
++  const host = typeof config.host === 'string' ? config.host.trim().toLowerCase().replace(/^\[(.*)\]$/, '$1') : '';
++  if (!['127.0.0.1','::1','localhost'].includes(host)) return 'Локальный адрес: 127.0.0.1, ::1 или localhost.';
++  if (!Number.isInteger(config.port) || config.port < 1024 || config.port > 65535) return 'Порт Telegram: целое число от 1024 до 65535.';
++  if (typeof config.secret !== 'string' || !/^[a-f0-9]{32}$/i.test(config.secret.trim().replace(/^dd/i, ''))) return 'Secret должен содержать ровно 32 hex-символа.';
++  if (!Array.isArray(config.dcIp) || config.dcIp.length > 16 || config.dcIp.some(value => {
++    if (typeof value !== 'string' || value.trim().length > 128 || !/^\d+:[a-z0-9.:-]+$/i.test(value.trim())) return true;
++    const match = /^([1-5]):(.+)$/.exec(value.trim());
++    return !match || !rubyTelegramIpAddress(match[2]);
++  })) return 'Прямые DC: адреса вида 2:149.154.167.220; DC 1–5, не более 16 строк.';
++  if (!Number.isInteger(config.bufKb) || config.bufKb < 64 || config.bufKb > 4096) return 'Буфер Telegram: целое число от 64 до 4096 КБ.';
++  if (!Number.isInteger(config.poolSize) || config.poolSize < 1 || config.poolSize > 32) return 'Пул Telegram: целое число от 1 до 32.';
++  if (!Number.isFinite(config.logMaxMb) || config.logMaxMb < 1 || config.logMaxMb > 100) return 'Лимит журнала Telegram: от 1 до 100 МБ.';
++  if (typeof config.verbose !== 'boolean' || typeof config.checkUpdates !== 'boolean') return 'Служба не вернула все параметры конфигурации Telegram.';
++  return null;
++}
++
++function rubyTelegramConfigReady(status) {
++  return rubyStatusKnown(status) && rubyTelegramConfigProblem(status.config) === null;
++}
++
++function rubyTelegramConfigKey(config) {
++  return JSON.stringify([typeof config?.host === 'string' ? config.host.trim() : null, config?.port ?? null, typeof config?.secret === 'string' ? config.secret.trim().replace(/^dd/i, '').toLowerCase() : null,
++    Array.isArray(config?.dcIp) ? [...new Set(config.dcIp.map(value => typeof value === 'string' ? value.trim() : null))] : [], config?.verbose ?? null, config?.bufKb ?? null, config?.poolSize ?? null, config?.logMaxMb ?? null, config?.checkUpdates ?? null]);
++}
++
+ function rubyTelegramReady(status) {
+   if (!rubyStatusKnown(status)) return false;
+   if (status?.runtimeReady === false || status?.listenerReady === false) return false;
+diff --git a/src/recovered/renderer.js b/src/recovered/renderer.js
+index 0cadf69..b55116e 100644
+--- a/src/recovered/renderer.js
++++ b/src/recovered/renderer.js
+@@ -10700,7 +10700,15 @@ function tp(e2) {
+ function np() {
+   let [e2, t2] = O.useState(() => rp()), [n2, r2] = O.useState({ state: null, isAdmin: null, vpn: null, vpnService: null, dns: null, dnsCheck: null, systemDoh: null, zapret: null, zapretProfiles: [], zapretAutoSelect: Jf(), zapretProgress: null, telegram: null, health: null, network: null, myIp: null, runtimeLogs: [], trafficSeries: [], diagnosticsExport: null, traffic: { rx: 0, tx: 0 }, trafficSampleReceived: false, speedtest: null, speedProgress: null, routeProbe: null, update: null, busy: null, busyActions: [] }), [i2, a2] = O.useState(null), [o2, s2] = O.useState(null), [c2, l2] = O.useState(false), u2 = O.useCallback(() => {
+     l2(false), window.egoistAPI?.system?.cancelSpeedtest?.().catch(() => void 0);
+-  }, []), d2 = O.useRef(0), f2 = O.useRef(/* @__PURE__ */ new Map()), p2 = O.useRef(false), m2 = O.useRef(false), h2 = O.useRef(false), g2 = n2.busy ? `active` : `idle`, _2 = O.useRef(null), updateRevision = O.useRef(0), readGeneration = O.useRef(0);
++  }, []), d2 = O.useRef(0), f2 = O.useRef(/* @__PURE__ */ new Map()), p2 = O.useRef(false), m2 = O.useRef(false), h2 = O.useRef(false), g2 = n2.busy ? `active` : `idle`, _2 = O.useRef(null), updateRevision = O.useRef(0), readGeneration = O.useRef(0), telegramReadSequence = O.useRef(0), rendererMounted = O.useRef(true), telegramForegroundReads = O.useRef(0);
++  O.useEffect(() => {
++    rendererMounted.current = true;
++    return () => {
++      rendererMounted.current = false;
++      readGeneration.current += 1;
++      telegramReadSequence.current += 1;
++    };
++  }, []);
+   _2.current = n2.busy, O.useEffect(() => {
+     p2.current = !!n2.state?.settings?.soundNotifications;
+   }, [n2.state?.settings?.soundNotifications]), O.useEffect(() => {
+@@ -10712,12 +10720,36 @@ function np() {
+     }, e3);
+     return () => window.clearTimeout(r3);
+   }, [o2?.id, o2?.startedAt, o2?.tone]);
++  let readTelegramStatus = O.useCallback((generation, attemptedAt) => {
++    if (!rendererMounted.current) return Promise.reject(Error(`Окно Telegram закрыто.`));
++    const sequence = ++telegramReadSequence.current;
++    const read = Promise.resolve().then(() => Z(`telegramProxy.status`, window.egoistAPI?.telegramProxy?.status));
++    rubyReadStatuses([read]).then(([result]) => {
++      if (!rendererMounted.current || generation !== readGeneration.current || sequence !== telegramReadSequence.current) return;
++      r2(previous => !rendererMounted.current || generation !== readGeneration.current || sequence !== telegramReadSequence.current ? previous : {
++        ...previous, telegram:rubyObserveStatus(result, previous.telegram, generation, attemptedAt)
++      });
++    });
++    return read;
++  }, []), refreshTelegram = O.useCallback(async () => {
++    if (!rendererMounted.current) throw Error(`Окно Telegram закрыто.`);
++    telegramForegroundReads.current += 1;
++    try {
++      const generation = readGeneration.current, attemptedAt = Date.now();
++      const read = readTelegramStatus(generation, attemptedAt), sequence = telegramReadSequence.current;
++      const status = await read;
++      if (!rendererMounted.current || generation !== readGeneration.current || sequence !== telegramReadSequence.current) throw Error(`Состояние Telegram изменилось во время чтения. Повторите проверку.`);
++      if (!rubyTelegramConfigReady(status)) throw Error(status?.statusError || rubyTelegramConfigProblem(status?.config) || `Не удалось подтвердить конфигурацию Telegram.`);
++      return status;
++    } finally { telegramForegroundReads.current -= 1; }
++  }, [readTelegramStatus]);
+   let v2 = O.useCallback(async () => {
++    if (!rendererMounted.current) return;
+     const generation = ++readGeneration.current, attemptedAt = Date.now();
+-    let e3 = window.egoistAPI, t3 = await rubyReadStatuses([e3?.state?.get?.(), e3?.app?.isAdmin?.(), e3?.vpn?.status?.(), e3?.system?.dnsControllerStatus?.(), e3?.system?.systemDohStatus?.(), e3?.zapret?.status?.(), e3?.zapret?.listProfiles?.(), e3?.telegramProxy?.status?.(), e3?.health?.getReport?.(), e3?.network?.inspect?.(), e3?.system?.getMyIp?.(), e3?.logs?.getRuntimeSummary?.(40), e3?.telegramProxy?.tailLogs?.(40), e3?.vpn?.serviceStatus?.()]);
+-    if (generation !== readGeneration.current) return;
++    let e3 = window.egoistAPI, telegramRead = readTelegramStatus(generation, attemptedAt), t3 = await rubyReadStatuses([e3?.state?.get?.(), e3?.app?.isAdmin?.(), e3?.vpn?.status?.(), e3?.system?.dnsControllerStatus?.(), e3?.system?.systemDohStatus?.(), e3?.zapret?.status?.(), e3?.zapret?.listProfiles?.(), telegramRead, e3?.health?.getReport?.(), e3?.network?.inspect?.(), e3?.system?.getMyIp?.(), e3?.logs?.getRuntimeSummary?.(40), e3?.telegramProxy?.tailLogs?.(40), e3?.vpn?.serviceStatus?.()]);
++    if (!rendererMounted.current || generation !== readGeneration.current) return;
+     r2((previous) => {
+-      if (generation !== readGeneration.current) return previous;
++      if (!rendererMounted.current || generation !== readGeneration.current) return previous;
+       const freshState = im(t3[0]);
+       const state = freshState && (!previous.state || (freshState.stateRevision ?? 0) >= (previous.state.stateRevision ?? 0)) ? freshState : previous.state;
+       const zapret = rubyObserveStatus(t3[5], previous.zapret, generation, attemptedAt);
+@@ -10726,26 +10758,27 @@ function np() {
+         vpn:rubyObserveStatus(t3[2], previous.vpn, generation, attemptedAt), vpnService:rubyObserveStatus(t3[13],previous.vpnService,generation,attemptedAt), dns:rubyObserveStatus(t3[3], previous.dns, generation, attemptedAt),
+         systemDoh:rubyObserveStatus(t3[4], previous.systemDoh, generation, attemptedAt), zapret,
+         zapretAutoSelect:zapretHistoryResult(im(t3[5])?.autoSelectHistory,previous.zapretAutoSelect), zapretProfiles:im(t3[6]) ?? previous.zapretProfiles,
+-        telegram:rubyObserveStatus(t3[7], previous.telegram, generation, attemptedAt), health:im(t3[8]) ?? previous.health, network:im(t3[9]) ?? previous.network,
++        health:im(t3[8]) ?? previous.health, network:im(t3[9]) ?? previous.network,
+         myIp:im(t3[10]) ?? previous.myIp, runtimeLogs:[...am(im(t3[11]),`RUNTIME`),...am(im(t3[12]),`TG`)] };
+     });
+-  }, []), y2 = O.useCallback(async () => {
++  }, [readTelegramStatus]), y2 = O.useCallback(async () => {
++    if (!rendererMounted.current) return;
+     const generation = ++readGeneration.current, attemptedAt = Date.now();
+-    let e3 = window.egoistAPI, t3 = await rubyReadStatuses([e3?.state?.get?.(),e3?.vpn?.status?.(),e3?.system?.dnsControllerStatus?.(),e3?.system?.systemDohStatus?.(),e3?.zapret?.status?.(),e3?.telegramProxy?.status?.(),e3?.vpn?.serviceStatus?.()]);
+-    if (generation !== readGeneration.current) return;
++    let e3 = window.egoistAPI, telegramRead = readTelegramStatus(generation, attemptedAt), t3 = await rubyReadStatuses([e3?.state?.get?.(),e3?.vpn?.status?.(),e3?.system?.dnsControllerStatus?.(),e3?.system?.systemDohStatus?.(),e3?.zapret?.status?.(),telegramRead,e3?.vpn?.serviceStatus?.()]);
++    if (!rendererMounted.current || generation !== readGeneration.current) return;
+     r2((previous) => {
+-      if (generation !== readGeneration.current) return previous;
++      if (!rendererMounted.current || generation !== readGeneration.current) return previous;
+       const freshState = im(t3[0]);
+       const state = freshState && (!previous.state || (freshState.stateRevision ?? 0) >= (previous.state.stateRevision ?? 0)) ? freshState : previous.state;
+       return { ...previous,state,stateObservation:rubyObserveStatus(t3[0],previous.state ? {uiObservation:previous.stateObservation}:null,generation,attemptedAt).uiObservation,
+         vpn:rubyObserveStatus(t3[1],previous.vpn,generation,attemptedAt),vpnService:rubyObserveStatus(t3[6],previous.vpnService,generation,attemptedAt),dns:rubyObserveStatus(t3[2],previous.dns,generation,attemptedAt),
+         systemDoh:rubyObserveStatus(t3[3],previous.systemDoh,generation,attemptedAt),zapret:rubyObserveStatus(t3[4],previous.zapret,generation,attemptedAt),
+-        zapretAutoSelect:zapretHistoryResult(im(t3[4])?.autoSelectHistory,previous.zapretAutoSelect),telegram:rubyObserveStatus(t3[5],previous.telegram,generation,attemptedAt) };
++        zapretAutoSelect:zapretHistoryResult(im(t3[4])?.autoSelectHistory,previous.zapretAutoSelect) };
+     });
+-  }, []);
++  }, [readTelegramStatus]);
+   O.useEffect(() => {
+     let e3 = true, t3 = async (t4 = false) => {
+-      if (!(!e3 || document.hidden || h2.current)) {
++      if (!(!e3 || !rendererMounted.current || document.hidden || h2.current || f2.current.has(`telegram-sidecar`) || telegramForegroundReads.current > 0)) {
+         h2.current = true;
+         try {
+           await (t4 ? v2() : y2());
+@@ -10919,13 +10952,13 @@ ${i3}
+ 
+ Egoist Lagom управляет сетевыми компонентами Windows. Текущее состояние доступно в разделах DNS, Профили и Telegram.`, tone: `info` });
+     })();
+-  }, []), onDismissActivity: () => s2(null), onNavigate: t2, snapshot: n2, children: [(0, V.jsx)(cp, { activeScreen: e2 }), (0, V.jsx)(`section`, { className: `screen-stage`, "data-screen": e2, children: ip(e2, n2, S2, ee2, t2, C2, o2, c2, u2) }, e2), (0, V.jsx)(rm, { onClose: closeDialog, state: i2 })] });
++  }, []), onDismissActivity: () => s2(null), onNavigate: t2, snapshot: n2, children: [(0, V.jsx)(cp, { activeScreen: e2 }), (0, V.jsx)(`section`, { className: `screen-stage`, "data-screen": e2, children: ip(e2, n2, S2, ee2, t2, C2, o2, c2, u2, refreshTelegram) }, e2), (0, V.jsx)(rm, { onClose: closeDialog, state: i2 })] });
+ }
+ function rp() {
+   let e2 = new URLSearchParams(window.location.search).get(`screen`);
+   return Cf.some((t2) => t2.id === e2) ? e2 : `dashboard`;
+ }
+-function ip(e2, t2, n2, r2, i2, a2, o2, s2, c2) {
++function ip(e2, t2, n2, r2, i2, a2, o2, s2, c2, refreshTelegram) {
+   switch (e2) {
+     case `dashboard`:
+       return (0, V.jsx)(lp, { snapshot: t2, runAction: n2, confirmAction: r2, onNavigate: i2, speedPanelVisible: s2, onCloseSpeedPanel: c2 });
+@@ -10936,7 +10969,7 @@ function ip(e2, t2, n2, r2, i2, a2, o2, s2, c2) {
+     case `zapret`:
+       return (0, V.jsx)(Tp, { snapshot: t2, runAction: n2, confirmAction: r2, activity: o2 });
+     case `telegram-proxy`:
+-      return (0, V.jsx)(Ep, { snapshot: t2, runAction: n2, confirmAction: r2 });
++      return (0, V.jsx)(Ep, { snapshot: t2, runAction: n2, confirmAction: r2, refreshTelegram });
+     case `settings`:
+       return (0, V.jsx)(Dp, { snapshot: t2, runAction: n2 });
+     default:
+@@ -11328,10 +11361,12 @@ function Tp({ activity: e2, confirmAction: t2, runAction: n2, snapshot: r2 }) {
+ EgoistShield скачает релиз Flowseal/zapret-discord-youtube с GitHub, проверит целостность архива по SHA-256, заменит runtime-файлы и сохранит ваши списки маршрутов и IPSet. Активный профиль будет перезапущен.`, `Обновить`, () => n2(`zapret-install-update`, () => Z(`zapret.installCoreUpdate`, window.egoistAPI?.zapret?.installCoreUpdate), `Flowseal Core обновлён до ${r3}`)), { message: `Доступно обновление ${r3}` };
+   }, `Проверка обновлений Flowseal завершена`), children: `Обновить Flowseal Core` }), (0, V.jsxs)(`div`, { className: `flowseal-version-line`, children: [(0, V.jsxs)(`span`, { children: [`Текущая версия `, (0, V.jsx)(`strong`, { children: Q(r2.zapret?.coreVersion, r2.zapret?.version) ?? `не прочитана` })] }), (0, V.jsxs)(`span`, { children: [`Последняя версия `, (0, V.jsx)(`strong`, { children: Q(v2?.latestVersion, v2?.version) ?? `не проверялась` })] })] })] })] })] })] })] });
+ }
+-function Ep({ confirmAction: e2, runAction: t2, snapshot: n2 }) {
+-  let r2 = n2.telegram?.config ?? {}, i2 = O.useMemo(() => JSON.stringify([r2.host ?? null, r2.port ?? null, r2.secret ?? null, Array.isArray(r2.dcIp) ? r2.dcIp : [], r2.verbose ?? null, r2.bufKb ?? null, r2.poolSize ?? null, r2.logMaxMb ?? null, r2.checkUpdates ?? null]), [r2.host, r2.port, r2.secret, r2.dcIp, r2.verbose, r2.bufKb, r2.poolSize, r2.logMaxMb, r2.checkUpdates]), a2 = O.useCallback(() => ({ host: String(r2.host ?? Bf.host), port: String(r2.port ?? Bf.port), secret: String(r2.secret ?? Bf.secret), dcIp: Array.isArray(r2.dcIp) ? r2.dcIp.join(`
+-`) : ``, verbose: !!(r2.verbose ?? Bf.verbose), bufKb: String(r2.bufKb ?? Bf.bufKb), poolSize: String(r2.poolSize ?? Bf.poolSize), logMaxMb: String(r2.logMaxMb ?? Bf.logMaxMb), checkUpdates: !!(r2.checkUpdates ?? Bf.checkUpdates) }), [i2]), [o2, s2] = O.useState(a2), c2 = O.useRef(i2), [l2, u2] = O.useState(false), [d2, f2] = O.useState(false);
++function Ep({ confirmAction: e2, runAction: t2, snapshot: n2, refreshTelegram }) {
++  let r2 = n2.telegram?.config ?? {}, i2 = O.useMemo(() => rubyTelegramConfigKey(r2), [r2.host, r2.port, r2.secret, r2.dcIp, r2.verbose, r2.bufKb, r2.poolSize, r2.logMaxMb, r2.checkUpdates]), a2 = O.useCallback(() => ({ host: String(r2.host ?? Bf.host), port: String(r2.port ?? Bf.port), secret: String(r2.secret ?? Bf.secret), dcIp: Array.isArray(r2.dcIp) ? r2.dcIp.join(`
++`) : ``, verbose: !!(r2.verbose ?? Bf.verbose), bufKb: String(r2.bufKb ?? Bf.bufKb), poolSize: String(r2.poolSize ?? Bf.poolSize), logMaxMb: String(r2.logMaxMb ?? Bf.logMaxMb), checkUpdates: !!(r2.checkUpdates ?? Bf.checkUpdates) }), [i2]), [o2, s2] = O.useState(a2), c2 = O.useRef(i2), [l2, u2] = O.useState(false), [d2, f2] = O.useState(false), editLocked = O.useRef(false), draftGeneration = O.useRef(0), [retryPending, setRetryPending] = O.useState(false), [retryError, setRetryError] = O.useState(``);
++  const configKnown = rubyTelegramConfigReady(n2.telegram), telegramPending = retryPending || (n2.busyActions ?? []).some(action => action.startsWith(`tg-`) && ![`tg-copy`, `tg-logs`].includes(action));
+   O.useEffect(() => {
++    if (editLocked.current || telegramPending) return;
+     if (i2 !== c2.current) {
+       if (l2) {
+         f2(true);
+@@ -11339,23 +11374,59 @@ function Ep({ confirmAction: e2, runAction: t2, snapshot: n2 }) {
+       }
+       c2.current = i2, s2(a2());
+     }
+-  }, [a2, i2, l2]);
++  }, [a2, i2, l2, telegramPending]);
+   let p2 = O.useCallback((e3, t3) => {
++    if (editLocked.current || !configKnown || telegramPending) return;
++    draftGeneration.current += 1;
+     s2((n3) => ({ ...n3, [e3]: t3 })), u2(true);
+-  }, []), m2 = O.useCallback(() => {
++  }, [configKnown, telegramPending]), m2 = O.useCallback(() => {
++    if (editLocked.current || telegramPending) return;
++    draftGeneration.current += 1;
+     c2.current = i2, s2(a2()), u2(false), f2(false);
+-  }, [a2, i2]), h2 = O.useCallback(() => {
++  }, [a2, i2, telegramPending]), h2 = O.useCallback(() => {
++    if (editLocked.current || telegramPending) return;
+     c2.current = i2, f2(false);
+-  }, [i2]), { host: g2, port: _2, secret: v2, dcIp: y2, verbose: b2, bufKb: x2, poolSize: S2, logMaxMb: C2, checkUpdates: ee2 } = o2, te2 = (e3) => p2(`host`, e3), ne2 = (e3) => p2(`port`, e3), re2 = (e3) => p2(`secret`, e3), ie2 = (e3) => p2(`dcIp`, e3), ae2 = (e3) => p2(`verbose`, e3), oe2 = (e3) => p2(`bufKb`, e3), se2 = (e3) => p2(`poolSize`, e3), ce2 = (e3) => p2(`logMaxMb`, e3), w2 = (e3) => p2(`checkUpdates`, e3), T2 = () => Dm(r2, { host: g2, port: _2, secret: v2, dcIp: y2, verbose: b2, bufKb: x2, poolSize: S2, logMaxMb: C2, checkUpdates: ee2 }), le2 = async () => {
+-    let e3 = await Z(`telegramProxy.saveConfig`, window.egoistAPI?.telegramProxy?.saveConfig, T2());
+-    return u2(false), f2(false), e3;
+-  }, ue2 = async (e3) => (await le2(), e3()), de2 = rubyTelegramReady(n2.telegram), E2 = !!(n2.telegram?.serviceInstalled || n2.telegram?.serviceRunning), fe2 = n2.telegram?.updateGate ?? n2.telegram?.health?.updateGate ?? {}, D2 = Q(n2.telegram?.currentVersion, fe2?.currentVersion) ?? `не определена`, pe2 = Q(fe2?.latestVersion, n2.telegram?.latestVersion, fe2?.targetVersion) ?? `не проверялась`, me2 = !!n2.telegram?.serviceRunning, tgKnown = rubyStatusKnown(n2.telegram), he2 = n2.telegram?.health?.route, ge2 = tgKnown && he2?.state === `active`, _e2 = !tgKnown ? `не проверен` : ge2 ? he2.mode === `cloudflare` ? `Cloudflare · ${he2.successfulFallbackConnections} сессий` : `${he2.mode} · ${he2.totalConnections} сессий` : de2 ? `ожидает трафик` : `не активен`, ve2 = !tgKnown ? `не проверен` : de2 ? `работает` : `не запущен`, ye2 = !tgKnown ? `не проверен` : E2 ? me2 ? de2 ? `установлена, работает` : `установлена, прокси не готов` : `установлена` : `не установлена`, be2 = am(Array.isArray(n2.telegram?.logTail) && n2.telegram.logTail.length > 0 ? n2.telegram.logTail : n2.runtimeLogs, `TG`).map($p), xe2 = async () => {
++  }, [i2, telegramPending]), { host: g2, port: _2, secret: v2, dcIp: y2, verbose: b2, bufKb: x2, poolSize: S2, logMaxMb: C2, checkUpdates: ee2 } = o2, te2 = (e3) => p2(`host`, e3), ne2 = (e3) => p2(`port`, e3), re2 = (e3) => p2(`secret`, e3), ie2 = (e3) => p2(`dcIp`, e3), ae2 = (e3) => p2(`verbose`, e3), oe2 = (e3) => p2(`bufKb`, e3), se2 = (e3) => p2(`poolSize`, e3), ce2 = (e3) => p2(`logMaxMb`, e3), w2 = (e3) => p2(`checkUpdates`, e3), T2 = () => ({ host:g2.trim(), port:Number(_2), secret:v2.trim().replace(/^dd/i, ``), dcIp:Om(y2), verbose:b2, bufKb:Number(x2), poolSize:Number(S2), logMaxMb:Number(C2), checkUpdates:ee2 }), le2 = async latest => {
++    if (rubyTelegramConfigKey(latest.config) !== c2.current) {
++      f2(true);
++      throw Error(`Конфигурация Telegram изменилась. Выберите значения службы или оставьте свой черновик.`);
++    }
++    const draft = T2(), problem = rubyTelegramConfigProblem(draft), submittedGeneration = draftGeneration.current;
++    if (problem) throw Error(problem);
++    const saved = await Z(`telegramProxy.saveConfig`, window.egoistAPI?.telegramProxy?.saveConfig, draft);
++    if (saved?.ok === false || !rubyTelegramConfigReady(saved) || rubyTelegramConfigKey(saved.config) !== rubyTelegramConfigKey(draft)) throw Error(sm(saved ?? {}, `Служба не подтвердила сохранение конфигурации Telegram.`));
++    c2.current = rubyTelegramConfigKey(saved.config);
++    const verified = await refreshTelegram();
++    if (rubyTelegramConfigKey(verified.config) !== c2.current || submittedGeneration !== draftGeneration.current) {
++      f2(true);
++      throw Error(`Конфигурация Telegram изменилась после сохранения. Проверьте черновик и повторите действие.`);
++    }
++    u2(false), f2(false);
++    return verified;
++  }, ue2 = async operation => {
++    if (!configKnown) throw Error(`Сначала прочитайте актуальную конфигурацию Telegram.`);
++    if (d2) throw Error(`Разрешите конфликт конфигурации Telegram перед действием.`);
++    if (editLocked.current || telegramPending) throw Error(`Предыдущее действие Telegram ещё не завершено.`);
++    editLocked.current = true;
++    try {
++      const latest = await refreshTelegram();
++      if (l2) await le2(latest);
++      return await operation();
++    } finally { editLocked.current = false; }
++  }, retryConfiguration = async () => {
++    if (editLocked.current || telegramPending) return false;
++    editLocked.current = true;
++    setRetryPending(true), setRetryError(``);
++    try { await refreshTelegram(); return true; }
++    catch (error) { setRetryError(um(error)); return false; }
++    finally { editLocked.current = false; setRetryPending(false); }
++  }, de2 = rubyTelegramReady(n2.telegram), E2 = !!(n2.telegram?.serviceInstalled || n2.telegram?.serviceRunning), fe2 = n2.telegram?.updateGate ?? n2.telegram?.health?.updateGate ?? {}, D2 = Q(n2.telegram?.currentVersion, fe2?.currentVersion) ?? `не определена`, pe2 = Q(fe2?.latestVersion, n2.telegram?.latestVersion, fe2?.targetVersion) ?? `не проверялась`, me2 = !!n2.telegram?.serviceRunning, tgKnown = rubyStatusKnown(n2.telegram), tgShouldStop = tgKnown && (n2.telegram?.serviceRunning === true || n2.telegram?.running === true), configNotice = retryPending ? `Читаю конфигурацию Telegram…` : retryError || (!configKnown ? n2.telegram?.uiObservation?.error || rubyTelegramConfigProblem(n2.telegram?.config) || `Конфигурация Telegram не подтверждена. Перепроверьте её перед действием.` : ``), he2 = n2.telegram?.health?.route, ge2 = tgKnown && he2?.state === `active`, _e2 = !tgKnown ? `не проверен` : ge2 ? he2.mode === `cloudflare` ? `Cloudflare · ${he2.successfulFallbackConnections} сессий` : `${he2.mode} · ${he2.totalConnections} сессий` : de2 ? `ожидает трафик` : `не активен`, ve2 = !tgKnown ? `не проверен` : de2 ? `работает` : `не запущен`, ye2 = !tgKnown ? `не проверен` : E2 ? me2 ? de2 ? `установлена, работает` : `установлена, прокси не готов` : `установлена` : `не установлена`, be2 = am(Array.isArray(n2.telegram?.logTail) && n2.telegram.logTail.length > 0 ? n2.telegram.logTail : n2.runtimeLogs, `TG`).map($p), xe2 = async () => {
+     let e3 = await Z(`telegramProxy.checkUpdates`, window.egoistAPI?.telegramProxy?.checkUpdates);
+     return (e3?.updateAvailable === true || e3?.controlledInstallAllowed === true) && await Z(`telegramProxy.installUpdate`, window.egoistAPI?.telegramProxy?.installUpdate), e3;
+   };
+-  return (0, V.jsxs)(`div`, { className: `telegram-layout`, children: [(0, V.jsxs)(Mp, { className: `telegram-form`, children: [(0, V.jsx)(Np, { children: `Управление Telegram` }), (0, V.jsx)(`p`, { className: `telegram-control-lead`, children: `Локальный прокси и фоновая служба Telegram.` }), (0, V.jsxs)(`details`, { className: `advanced-settings`, children: [(0, V.jsx)(`summary`, { children: `Расширенные настройки` }), (0, V.jsxs)(`div`, { className: `telegram-advanced-content`, children: [d2 ? (0, V.jsxs)(`div`, { className: `draft-conflict`, role: `status`, children: [(0, V.jsx)(`strong`, { children: `Конфигурация изменилась на стороне службы` }), (0, V.jsx)(`p`, { children: `Ваши несохранённые изменения не затёрты. Выберите, что оставить.` }), (0, V.jsxs)(`div`, { className: `draft-conflict-actions`, children: [(0, V.jsx)(`button`, { onClick: h2, type: `button`, children: `Оставить мои изменения` }), (0, V.jsx)(`button`, { onClick: m2, type: `button`, children: `Взять значения службы` })] })] }) : null, (0, V.jsxs)(`div`, { className: `telegram-address-grid`, children: [(0, V.jsx)(Bp, { label: `Локальный адрес`, value: g2, onChange: te2 }), (0, V.jsx)(Bp, { label: `Порт`, type: `number`, min: 1024, max: 65535, value: _2, onChange: ne2 })] }), (0, V.jsx)(Bp, { label: `Secret (32 hex-символа)`, type: `password`, value: v2, onChange: re2 }), (0, V.jsx)(Vp, { label: `Прямые Telegram DC (необязательно, по одному на строку)`, value: y2, onChange: ie2 }), (0, V.jsxs)(`div`, { className: `telegram-runtime-grid`, children: [(0, V.jsx)(Bp, { label: `Буфер, КБ`, type: `number`, min: 64, max: 4096, value: x2, onChange: oe2 }), (0, V.jsx)(Bp, { label: `Пул соединений`, type: `number`, min: 1, max: 32, value: S2, onChange: se2 }), (0, V.jsx)(Bp, { label: `Лимит лога, МБ`, type: `number`, min: 1, max: 100, value: C2, onChange: ce2 })] }), (0, V.jsxs)(`div`, { className: `telegram-advanced-toggles`, children: [(0, V.jsx)(Hp, { checked: b2, label: `Подробный журнал`, onToggle: () => ae2(!b2) }), (0, V.jsx)(Hp, { checked: ee2, label: `Проверять обновления runtime`, onToggle: () => w2(!ee2) })] }), (0, V.jsx)(`p`, { className: `telegram-advanced-note`, children: `Изменения сохраняются перед установкой службы, запуском или добавлением прокси в Telegram.` })] })] }), (0, V.jsxs)(`div`, { className: `telegram-primary-actions`, children: [(0, V.jsx)(`button`, { className: E2 ? `btn-secondary full service-ready` : `btn-secondary full`, type: `button`, onClick: () => void t2(`tg-install`, () => ue2(() => Z(`telegramProxy.installService`, window.egoistAPI?.telegramProxy?.installService)), `Фоновая служба Telegram установлена и запущена`), children: n2.busy === `tg-install` ? `Устанавливается…` : E2 ? `Переустановить службу` : `Установить фоновую службу` }), (0, V.jsx)(`button`, { className: de2 ? `btn-secondary full` : `btn-primary full`, disabled: !E2 || !tgKnown, title: !tgKnown ? `Сначала дождитесь проверки состояния службы` : E2 ? void 0 : `Сначала установите фоновую службу`, type: `button`, onClick: () => void t2(de2 ? `tg-stop` : `tg-start`, () => de2 ? Z(`telegramProxy.stop`, window.egoistAPI?.telegramProxy?.stop) : ue2(() => Z(`telegramProxy.start`, window.egoistAPI?.telegramProxy?.start)), de2 ? `Telegram Proxy остановлен` : `Telegram Proxy запущен`), children: n2.busy === `tg-start` ? `Запускается…` : n2.busy === `tg-stop` ? `Останавливается…` : de2 ? `Остановить` : `Запустить` }), (0, V.jsx)(`button`, { className: `btn-secondary full`, type: `button`, onClick: () => void t2(`tg-open`, () => ue2(() => Z(`telegramProxy.openLink`, window.egoistAPI?.telegramProxy?.openLink)), `Telegram открыл ссылку прокси`), children: `Добавить в приложение` }), (0, V.jsx)(`button`, { className: `btn-danger full`, disabled: !E2, type: `button`, onClick: () => e2(`Удалить фоновую службу Telegram Proxy`, `Служба будет остановлена и снята с автозапуска. Локальный прокси перестанет работать после перезагрузки, пока вы не установите службу заново.
++  return (0, V.jsxs)(`div`, { className: `telegram-layout`, children: [(0, V.jsxs)(Mp, { className: `telegram-form`, children: [(0, V.jsx)(Np, { children: `Управление Telegram` }), (0, V.jsx)(`p`, { className: `telegram-control-lead`, children: `Локальный прокси и фоновая служба Telegram.` }), (0, V.jsx)(`button`, {className:`btn-secondary full`,type:`button`,disabled:telegramPending,"aria-busy":retryPending,onClick:retryConfiguration,children:retryPending?`Читаю конфигурацию…`:`Перепроверить конфигурацию`}), configNotice ? (0,V.jsx)(`p`,{className:`telegram-advanced-note`,role:retryError?`alert`:`status`,"aria-live":`polite`,children:configNotice}) : null, (0, V.jsxs)(`details`, { className: `advanced-settings`, children: [(0, V.jsx)(`summary`, { children: `Расширенные настройки` }), (0, V.jsxs)(`fieldset`, { className: `telegram-advanced-content`, disabled:!configKnown || telegramPending, style:{margin:0,padding:0,border:0,minWidth:0}, children: [d2 ? (0, V.jsxs)(`div`, { className: `draft-conflict`, role: `status`, children: [(0, V.jsx)(`strong`, { children: `Конфигурация изменилась на стороне службы` }), (0, V.jsx)(`p`, { children: `Ваши несохранённые изменения не затёрты. Выберите, что оставить.` }), (0, V.jsxs)(`div`, { className: `draft-conflict-actions`, children: [(0, V.jsx)(`button`, { onClick: h2, type: `button`, children: `Оставить мои изменения` }), (0, V.jsx)(`button`, { onClick: m2, type: `button`, children: `Взять значения службы` })] })] }) : null, (0, V.jsxs)(`div`, { className: `telegram-address-grid`, children: [(0, V.jsx)(Bp, { label: `Локальный адрес`, value: g2, onChange: te2 }), (0, V.jsx)(Bp, { label: `Порт`, type: `number`, min: 1024, max: 65535, value: _2, onChange: ne2 })] }), (0, V.jsx)(Bp, { label: `Secret (32 hex-символа)`, type: `password`, value: v2, onChange: re2 }), (0, V.jsx)(Vp, { label: `Прямые Telegram DC (необязательно, по одному на строку)`, value: y2, onChange: ie2 }), (0, V.jsxs)(`div`, { className: `telegram-runtime-grid`, children: [(0, V.jsx)(Bp, { label: `Буфер, КБ`, type: `number`, min: 64, max: 4096, value: x2, onChange: oe2 }), (0, V.jsx)(Bp, { label: `Пул соединений`, type: `number`, min: 1, max: 32, value: S2, onChange: se2 }), (0, V.jsx)(Bp, { label: `Лимит лога, МБ`, type: `number`, min: 1, max: 100, value: C2, onChange: ce2 })] }), (0, V.jsxs)(`div`, { className: `telegram-advanced-toggles`, children: [(0, V.jsx)(Hp, { checked: b2, label: `Подробный журнал`, onToggle: () => ae2(!b2) }), (0, V.jsx)(Hp, { checked: ee2, label: `Проверять обновления runtime`, onToggle: () => w2(!ee2) })] }), (0, V.jsx)(`p`, { className: `telegram-advanced-note`, children: `Сохраняются только ваши изменения перед установкой, запуском или добавлением прокси в Telegram. Неизменённая конфигурация не перезаписывается.` })] })] }), (0, V.jsxs)(`div`, { className: `telegram-primary-actions`, children: [(0, V.jsx)(`button`, { className: tgKnown && E2 ? `btn-secondary full service-ready` : `btn-secondary full`, disabled:!configKnown || d2 || telegramPending, type: `button`, onClick: () => void t2(`tg-install`, () => ue2(() => Z(`telegramProxy.installService`, window.egoistAPI?.telegramProxy?.installService)), `Фоновая служба Telegram установлена и запущена`), children: n2.busy === `tg-install` ? `Устанавливается…` : E2 ? `Переустановить службу` : `Установить фоновую службу` }), (0, V.jsx)(`button`, { className: tgShouldStop ? `btn-secondary full` : `btn-primary full`, disabled:telegramPending || (!tgShouldStop && (!E2 || !tgKnown || !configKnown || d2)), title: !tgKnown ? `Сначала дождитесь проверки состояния службы` : E2 ? void 0 : `Сначала установите фоновую службу`, type: `button`, onClick: () => { if(telegramPending || !tgKnown) return; return void t2(tgShouldStop ? `tg-stop` : `tg-start`, () => tgShouldStop ? Z(`telegramProxy.stop`, window.egoistAPI?.telegramProxy?.stop) : ue2(() => Z(`telegramProxy.start`, window.egoistAPI?.telegramProxy?.start)), tgShouldStop ? `Telegram Proxy остановлен` : `Telegram Proxy запущен`); }, children: n2.busy === `tg-start` ? `Запускается…` : n2.busy === `tg-stop` ? `Останавливается…` : tgShouldStop ? `Остановить` : `Запустить` }), (0, V.jsx)(`button`, { className: `btn-secondary full`, disabled:!configKnown || d2 || telegramPending, type: `button`, onClick: () => void t2(`tg-open`, () => ue2(() => Z(`telegramProxy.openLink`, window.egoistAPI?.telegramProxy?.openLink)), `Telegram открыл ссылку прокси`), children: `Добавить в приложение` }), (0, V.jsx)(`button`, { className: `btn-danger full`, disabled:!E2 || !tgKnown || telegramPending, type: `button`, onClick: () => e2(`Удалить фоновую службу Telegram Proxy`, `Служба будет остановлена и снята с автозапуска. Локальный прокси перестанет работать после перезагрузки, пока вы не установите службу заново.
+ 
+-Настройки и журнал сохранятся.`, `Удалить`, () => t2(`tg-remove`, () => Z(`telegramProxy.removeService`, window.egoistAPI?.telegramProxy?.removeService), `Фоновая служба Telegram Proxy удалена`)), children: `Удалить` })] }), (0, V.jsxs)(`div`, { className: `telegram-update-card`, children: [(0, V.jsxs)(`div`, { className: `telegram-version-inline`, children: [(0, V.jsxs)(`span`, { children: [`Версия `, (0, V.jsx)(`strong`, { children: D2 })] }), (0, V.jsxs)(`span`, { children: [`Последняя `, (0, V.jsx)(`strong`, { children: pe2 })] })] }), (0, V.jsx)(`button`, { className: `btn-secondary full`, type: `button`, onClick: () => void t2(`tg-update`, xe2, `Telegram проверен и обновлён при необходимости`), children: `Проверить обновление` })] })] }), (0, V.jsxs)(Mp, { className: `telegram-status`, children: [(0, V.jsx)(Np, { children: `Статус и логи` }), (0, V.jsx)(Fp, { tone: de2 ? `good` : `idle`, className: `corner-dot` }), (0, V.jsxs)(`div`, { className: `telegram-runtime-status`, children: [(0, V.jsxs)(`div`, { className: de2 ? `telegram-status-chip active` : `telegram-status-chip`, children: [(0, V.jsx)(Fp, { tone: de2 ? `good` : `idle` }), (0, V.jsx)(`span`, { children: `Прокси` }), (0, V.jsx)(`strong`, { children: ve2 })] }), (0, V.jsxs)(`div`, { className: E2 ? `telegram-status-chip active` : `telegram-status-chip`, children: [(0, V.jsx)(Fp, { tone: E2 ? `good` : `idle` }), (0, V.jsx)(`span`, { children: `Автозапуск` }), (0, V.jsx)(`strong`, { children: ye2 })] }), (0, V.jsxs)(`div`, { className: ge2 ? `telegram-status-chip active` : `telegram-status-chip`, children: [(0, V.jsx)(Fp, { tone: ge2 ? `good` : he2?.state === `error` ? `bad` : `idle` }), (0, V.jsx)(`span`, { children: `Маршрут` }), (0, V.jsx)(`strong`, { children: _e2 })] })] }), (0, V.jsxs)(`div`, { className: `log-head`, children: [(0, V.jsx)(Np, { children: `Журнал событий` }), (0, V.jsx)(`button`, { className: `btn-secondary compact`, type: `button`, onClick: () => void t2(`tg-logs`, () => Z(`telegramProxy.openLogs`, window.egoistAPI?.telegramProxy?.openLogs), `Папка логов открыта`), children: `Открыть` })] }), (0, V.jsx)(qp, { logs: be2 })] })] });
++Настройки и журнал сохранятся.`, `Удалить`, () => t2(`tg-remove`, () => Z(`telegramProxy.removeService`, window.egoistAPI?.telegramProxy?.removeService), `Фоновая служба Telegram Proxy удалена`)), children: `Удалить` })] }), (0, V.jsxs)(`div`, { className: `telegram-update-card`, children: [(0, V.jsxs)(`div`, { className: `telegram-version-inline`, children: [(0, V.jsxs)(`span`, { children: [`Версия `, (0, V.jsx)(`strong`, { children: D2 })] }), (0, V.jsxs)(`span`, { children: [`Последняя `, (0, V.jsx)(`strong`, { children: pe2 })] })] }), (0, V.jsx)(`button`, { className: `btn-secondary full`, disabled:telegramPending, type: `button`, onClick: () => void t2(`tg-update`, xe2, `Telegram проверен и обновлён при необходимости`), children: `Проверить обновление` })] })] }), (0, V.jsxs)(Mp, { className: `telegram-status`, children: [(0, V.jsx)(Np, { children: `Статус и логи` }), (0, V.jsx)(Fp, { tone: de2 ? `good` : `idle`, className: `corner-dot` }), (0, V.jsxs)(`div`, { className: `telegram-runtime-status`, children: [(0, V.jsxs)(`div`, { className: de2 ? `telegram-status-chip active` : `telegram-status-chip`, children: [(0, V.jsx)(Fp, { tone: de2 ? `good` : `idle` }), (0, V.jsx)(`span`, { children: `Прокси` }), (0, V.jsx)(`strong`, { children: ve2 })] }), (0, V.jsxs)(`div`, { className: tgKnown && E2 ? `telegram-status-chip active` : `telegram-status-chip`, children: [(0, V.jsx)(Fp, { tone: tgKnown && E2 ? `good` : `idle` }), (0, V.jsx)(`span`, { children: `Автозапуск` }), (0, V.jsx)(`strong`, { children: ye2 })] }), (0, V.jsxs)(`div`, { className: ge2 ? `telegram-status-chip active` : `telegram-status-chip`, children: [(0, V.jsx)(Fp, { tone: ge2 ? `good` : he2?.state === `error` ? `bad` : `idle` }), (0, V.jsx)(`span`, { children: `Маршрут` }), (0, V.jsx)(`strong`, { children: _e2 })] })] }), (0, V.jsxs)(`div`, { className: `log-head`, children: [(0, V.jsx)(Np, { children: `Журнал событий` }), (0, V.jsx)(`button`, { className: `btn-secondary compact`, type: `button`, onClick: () => void t2(`tg-logs`, () => Z(`telegramProxy.openLogs`, window.egoistAPI?.telegramProxy?.openLogs), `Папка логов открыта`), children: `Открыть` })] }), (0, V.jsx)(qp, { logs: be2 })] })] });
+ }
+ function rubySettingsOutcome(result) {
+   if (result?.ok !== false) return result;

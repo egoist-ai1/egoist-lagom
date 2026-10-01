@@ -1,0 +1,59 @@
+{
+  "kind": "source-contract-regression",
+  "red": {
+    "counts": {
+      "tests": 7,
+      "pass": 3,
+      "fail": 4,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "bytes": 7126,
+    "sha256": "ab0aadeb81428b7cf648557a1b025da0cb857e18b63b317089009a9616a0f68f",
+    "exitCodeObservedByParent": 1
+  },
+  "green": {
+    "counts": {
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "bytes": 1832,
+    "sha256": "6953ac64baa57c20264113fb1307122cdf22c12bed4f649f36e8b9a6b10a00c3",
+    "exitCodeObservedByParent": 0
+  },
+  "sourcesAfterBackendFix": [
+    {
+      "path": "src/recovered/electron/ipc/telegram-proxy-manager.js",
+      "rawSha256": "fa38d4462afc93a7a3c8802a2ae7ddf9bfe632cde89d47061cc5fb416830cb4a",
+      "lfSha256": "fa38d4462afc93a7a3c8802a2ae7ddf9bfe632cde89d47061cc5fb416830cb4a"
+    },
+    {
+      "path": "src/recovered/electron/ipc/ipc-schemas.js",
+      "rawSha256": "42d8fe6fa492386f671c4ff274db0af6da1487133a87760be41436dfbad17782",
+      "lfSha256": "42d8fe6fa492386f671c4ff274db0af6da1487133a87760be41436dfbad17782"
+    },
+    {
+      "path": "tests/telegram-secret-prefix.test.mjs",
+      "rawSha256": "92f95bd4418e92587a6224fefbec8e7b4707e6d60e280a6ffb7432c2565953ee",
+      "lfSha256": "92f95bd4418e92587a6224fefbec8e7b4707e6d60e280a6ffb7432c2565953ee"
+    }
+  ],
+  "applicationLaunches": 0,
+  "nativeServiceMutations": 0,
+  "nativeNetworkMutations": 0,
+  "covers": [
+    "raw32 starting dd",
+    "valid dd-prefixed34 including payload starting dd",
+    "upper-case whitespace",
+    "raw32 all dd",
+    "ordinary raw and prefixed",
+    "stable repeated tg and HTTPS proxy links without key regeneration",
+    "malformed/truncated/overlong input refusal"
+  ],
+  "nativePass": false
+}

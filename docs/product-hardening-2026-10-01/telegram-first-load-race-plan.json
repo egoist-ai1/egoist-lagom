@@ -1,0 +1,269 @@
+{
+  "schemaVersion": 1,
+  "taskId": "01a0f42c-32b2-79a2-beba-be99c620a2c8",
+  "generatedAt": "2026-10-01T09:04:00.014Z",
+  "kind": "read-only source-derived isolated VM reproduction; NOT native application/service evidence",
+  "nodeVersion": "v24.19.0",
+  "fixture": {
+    "file": "telegram-first-load-race.mjs",
+    "sha256": "b7b60b83ec6e40f6a180853763ce5c0841cc7542854beaf013165adac8e9420d"
+  },
+  "sourceHashes": {
+    "src/recovered/renderer.js": {
+      "sha256": "83c23387e581151eae23bcf2f2f945a8dc0c3d1fd18aa67145b6a6d6370f3d5a",
+      "sha256LF": "9e05041f0efa329bfe6a55622291dec66a7a8f6c17526f9290fb216bdace8438"
+    },
+    "src/brand/ShieldWidget.jsx": {
+      "sha256": "b504b5b73ca63db296b456f6c3c56c3f37bfd1c006053add63b0cbbfce8dc46a",
+      "sha256LF": "a397ba972c158680e2754418f8a23234e71a8cc751b63b89ba10761256b61fa3"
+    },
+    "src/recovered/electron/ipc/ipc-schemas.js": {
+      "sha256": "5a3363f0cd6da4d356ca31cefb0e4412369fcdf890597c4ab53623f336393a38",
+      "sha256LF": "5a3363f0cd6da4d356ca31cefb0e4412369fcdf890597c4ab53623f336393a38"
+    },
+    "src/recovered/electron/ipc/handlers-telegram-proxy.js": {
+      "sha256": "f72332e206682306004afe9e68843686f6e2fa50c0a8b28b8aed3d29f2d689f2",
+      "sha256LF": "f72332e206682306004afe9e68843686f6e2fa50c0a8b28b8aed3d29f2d689f2"
+    },
+    "src/recovered/electron/ipc/telegram-proxy-manager.js": {
+      "sha256": "fe4d8c49ff791d1c4c5f05db29b1735e1ef241ef45a8193ed66bc89c5affe39c",
+      "sha256LF": "fe4d8c49ff791d1c4c5f05db29b1735e1ef241ef45a8193ed66bc89c5affe39c"
+    }
+  },
+  "sourceBindings": {
+    "actual": [
+      "Ep component including actual button onClick and draft/save chain",
+      "v2/y2 initial and quick batch callbacks",
+      "S2 runAction including real readGeneration fence/error path",
+      "rubyReadStatuses/rubyObserveStatus/rubyStatusKnown/rubyTelegramReady",
+      "Dm/Bf actual defaults/config normalization",
+      "TelegramProxyConfigSchema and actual registerTelegramProxyHandlers"
+    ],
+    "fixtures": [
+      "minimal React hooks and JSX object representation; no browser/React scheduler",
+      "read-only status replies + deferred Promises",
+      "manager methods counted only; no filesystem/SCM/process mutation",
+      "zapretHistoryResult passthrough (unrelated statuses only), $p log renderer passthrough (empty logs)"
+    ]
+  },
+  "cases": [
+    {
+      "name": "resolved Telegram is unpublished while unrelated getMyIp is pending; early install aborts and invalidates completed initial batch",
+      "pass": true,
+      "telegramStatusResolvedBeforeClick": true,
+      "buttonDisabled": false,
+      "invalidSecretLength": 0,
+      "validationFailure": "secret: requires 32 hex characters",
+      "savedConfigWrites": 0,
+      "installCalls": 0,
+      "automaticRefreshesAfterFailure": 0,
+      "initialReadGeneration": 1,
+      "finalGeneration": 2,
+      "telegramSnapshotAfterBatchCompletes": null
+    },
+    {
+      "name": "Telegram own first read delayed; install is enabled and rejects empty draft before manager install",
+      "pass": true,
+      "buttonDisabled": false,
+      "installCalls": 0,
+      "managerSaveCalls": 0,
+      "acceptedLateConfig": false
+    },
+    {
+      "name": "rejected first Telegram status stays unknown, yet install remains enabled and attempts invalid save",
+      "pass": true,
+      "configKnown": false,
+      "buttonDisabled": false,
+      "saveAttempts": 1,
+      "installCalls": 0
+    },
+    {
+      "name": "first read allowed to publish: unedited valid draft still saves unnecessarily and then calls install",
+      "pass": true,
+      "configKnown": true,
+      "pristineDraftSaveCalls": 1,
+      "installCalls": 1,
+      "automaticRefreshes": 1
+    },
+    {
+      "name": "known config does not require a running service: install button is intentionally active before runtime installation",
+      "pass": true,
+      "statusKnown": true,
+      "actualConfigSchemaValid": true,
+      "runtimeReady": false,
+      "installButtonDisabled": false
+    },
+    {
+      "name": "stale retained config: install button remains enabled despite existing rubyStatusKnown=false",
+      "pass": true,
+      "configKnown": false,
+      "stale": true,
+      "installButtonDisabled": false
+    },
+    {
+      "name": "an unrelated successful read-only action also invalidates delayed initial Telegram publication",
+      "pass": true,
+      "action": "tg-copy",
+      "success": true,
+      "initialBatchDiscarded": true,
+      "quickRefreshes": 0,
+      "telegramSnapshotAfterBatch": null
+    }
+  ],
+  "passed": 7,
+  "failed": 0,
+  "skipped": 0,
+  "nativeHostMutations": 0,
+  "applicationLaunches": 0,
+  "browserLaunches": 0,
+  "conclusion": "Current source permits an install click before authoritative config. Actual strict IPC validation rejects the empty synthetic secret before manager.saveConfig/installService; failed action increments generation and discards the delayed initial batch. Signed-native failure causality is unproved.",
+  "report": {
+    "file": "docs/product-hardening-2026-10-01/telegram-first-load-race-plan.md",
+    "sha256": "ce6dc3a3c15796e9b559fe1e3970b126391d5d2a975719a9c4494022a2805175"
+  },
+  "sourceUnchangedAtPublication": [
+    {
+      "file": "src/recovered/renderer.js",
+      "unchanged": true
+    },
+    {
+      "file": "src/brand/ShieldWidget.jsx",
+      "unchanged": true
+    },
+    {
+      "file": "src/recovered/electron/ipc/ipc-schemas.js",
+      "unchanged": true
+    },
+    {
+      "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+      "unchanged": true
+    },
+    {
+      "file": "src/recovered/electron/ipc/telegram-proxy-manager.js",
+      "unchanged": true
+    }
+  ],
+  "activeAssignment": {
+    "owner": "/root/ui_finish",
+    "scope": "read-only sources; own fixtures; new plan .md/.json only",
+    "productionChanged": false,
+    "projectTestsChanged": false,
+    "ciChanged": false,
+    "backendChanged": false,
+    "patchImplemented": false,
+    "signedNative466CausalityEstablished": false
+  },
+  "reproducerMeaning": "Seven assertions deliberately confirm CURRENT faulty behaviors. They are not repair regressions or claims of application correctness. Candidate post-fix regression assertions must fail against this baseline.",
+  "minimalPatchPlan": [
+    {
+      "scope": "Ep configuration readiness",
+      "change": "Fresh successful observation plus complete valid config. Gate install/start/open UI and callback; missing runtime is not missing config. Keep known-service stop/remove available without secret."
+    },
+    {
+      "scope": "Ep ue2/le2 save chain",
+      "change": "Save only dirty draft; await successful save before operation; reject Promise/explicit ok:false, retain dirty on error; resolve existing dirty-conflict explicitly and preserve edits submitted after async save starts."
+    },
+    {
+      "scope": "v2/y2 Telegram result publication",
+      "change": "Share the ONE original telegramProxy.status Promise with the full batch and an independent settled-result publisher. Keep both generation checks and rubyObserveStatus. Ordinary read-only retry reads exact status, never save/install."
+    }
+  ],
+  "protectedConstraints": [
+    "No backend/IPC contracts or secret-validation exemptions",
+    "No port or host change",
+    "No UI-generated secret or default overwrite",
+    "Do not remove stale-read fences",
+    "No running-service precondition for installation",
+    "No green success from unknown observation",
+    "No native failure causality without diagnostic phase trace"
+  ],
+  "sourceLineAnchors": [
+    {
+      "file": "src/recovered/renderer.js",
+      "line": 10649,
+      "symbol": "Bf.secret empty; port1443"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "line": 10701,
+      "symbol": "telegram null initial snapshot"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "line": 10717,
+      "symbol": "v2 full batch; TG result accepted10729"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "line": 10734,
+      "symbol": "y2 quick batch"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "line": 10808,
+      "symbol": "runAction readGeneration increment"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "line": 10838,
+      "symbol": "error catch no refresh"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "line": 11332,
+      "symbol": "Ep draft from config or Bf"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "line": 11350,
+      "symbol": "actual saveConfig call"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "line": 11352,
+      "symbol": "ue2 unconditional save"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "line": 11356,
+      "symbol": "install button enabled without config authority"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "line": 11762,
+      "symbol": "Dm empty secret fallback remains empty"
+    },
+    {
+      "file": "src/brand/ShieldWidget.jsx",
+      "line": 18,
+      "symbol": "rubyReadStatuses Promise.all"
+    },
+    {
+      "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+      "line": 9,
+      "symbol": "schema before manager save"
+    },
+    {
+      "file": "src/recovered/electron/ipc/ipc-schemas.js",
+      "line": 150,
+      "symbol": "secret 32-hex strict contract"
+    }
+  ],
+  "regressionContract": [
+    "Baseline corrected assertions fail: unknown install disabled; direct callback save/install=0; pristine save=0.",
+    "Fast valid TG + unrelated indefinitely pending read: TG published before whole batch, pristine install1/save0.",
+    "Deferred TG: no defaults write/install/start/open before response; valid returned config unlocks installation even runtimeReady=false.",
+    "Rejected/missing/stale config: honest unknown and read-only retry, no mutation; successful retry restores authoritative config.",
+    "Dirty one-field edit: exactly save1 then install1; preserve original valid secret/port.",
+    "Rejected or resolved ok:false save: install0 and dirty retained, useful error visible.",
+    "External config change + dirty draft: explicit existing conflict choices, no silent overwrite.",
+    "Old late successful response after newer rejected status/action cannot restore readiness or overwrite newer draft.",
+    "Busy/stop/remove/edit-during-save: preserve existing sidecar locks; stop/remove do not need secret; old save cannot clear newer edits.",
+    "Actual Chromium/Electron click/disabled/retry/focus evidence and separate signed hosted SCM/install phase trace required after integration."
+  ],
+  "nativeDiagnosticCausalityCriterion": "Only correlate early GUI click -> save-config rejection specifically at secret validation -> installService not entered. If config authoritative or install phase entered, investigate native failure separately. Record known/configPresent/secretLength and phase/code, never secret value.",
+  "reproduction": {
+    "instructions": "Extract fixtureSource to the reproducing task own work, set LAGOM_AUDIT_WORK to that same directory; set LAGOM_AUDIT_PROJECT if needed; run with Node24 and existing project zod. Script reads project sources only and writes result only to LAGOM_AUDIT_WORK. No application/browser/native launch."
+  },
+  "fixtureSource": "import fs from 'node:fs';\nimport path from 'node:path';\nimport vm from 'node:vm';\nimport crypto from 'node:crypto';\nimport assert from 'node:assert/strict';\nimport { createRequire } from 'node:module';\nimport { isIP } from 'node:net';\n\nconst project = process.env.LAGOM_AUDIT_PROJECT ?? 'C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom';\nconst ownWork = process.env.LAGOM_AUDIT_WORK ?? path.dirname(new URL(import.meta.url).pathname.replace(/^\\/(?:[A-Za-z]:\\/)/, value => value.slice(1)));\nconst require = createRequire(path.join(project, 'package.json'));\nconst { z } = require('zod');\nconst files = {\n  renderer: 'src/recovered/renderer.js',\n  shield: 'src/brand/ShieldWidget.jsx',\n  schema: 'src/recovered/electron/ipc/ipc-schemas.js',\n  handlers: 'src/recovered/electron/ipc/handlers-telegram-proxy.js',\n  manager: 'src/recovered/electron/ipc/telegram-proxy-manager.js',\n};\nconst sources = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, fs.readFileSync(path.join(project, file), 'utf8')]));\nconst sha = text => crypto.createHash('sha256').update(text).digest('hex');\nfunction extractFunction(source, name) {\n  const start = source.indexOf(`function ${name}(`);\n  assert.ok(start >= 0, `${name} source exists`);\n  const end = source.indexOf('\\n}', start) + 2;\n  assert.ok(end > start, `${name} closing source exists`);\n  return source.slice(start, end);\n}\nfunction extractCallback(startMarker, endMarker) {\n  const start = sources.renderer.indexOf(startMarker);\n  const end = sources.renderer.indexOf(endMarker, start);\n  assert.ok(start >= 0 && end > start, startMarker);\n  return sources.renderer.slice(start + startMarker.indexOf('async'), end + 1);\n}\nconst readFull = extractCallback('let v2 = O.useCallback(async () => {', '}, []), y2 = O.useCallback(');\nconst readQuick = extractCallback('y2 = O.useCallback(async () => {', '}, []);');\nconst action = extractCallback('let S2 = O.useCallback(async (e3, t3, n3) => {', '}, [y2]);');\nconst panel = extractFunction(sources.renderer, 'Ep');\nconst fixtureConfig = { host: '127.0.0.1', port: 1443, secret: '0123456789abcdef0123456789abcdef', dcIp: [], verbose: false, bufKb: 256, poolSize: 8, logMaxMb: 5, checkUpdates: true };\nconst status = () => ({ config: { ...fixtureConfig }, serviceInstalled: false, serviceRunning: false, runtimeReady: false, listenerReady: false });\nfunction deferred() {\n  let resolve, reject;\n  const promise = new Promise((a, b) => { resolve = a; reject = b; });\n  return { promise, resolve, reject };\n}\nfunction harness({ telegramRead = () => Promise.resolve(status()), delayedIp = null, initialTelegram = null } = {}) {\n  let snapshot = { telegram: initialTelegram, state: null, zapretProfiles: [], runtimeLogs: [], busyActions: [], busy: null };\n  const calls = { saveInput: [], managerSave: 0, install: 0, start: 0, open: 0, status: 0, statusSettled: 0, validationFailures: [], refreshes: 0, activity: [], pending: [] };\n  const ipcHandlers = new Map();\n  const schemaContext = vm.createContext({ z, URL, Buffer, isIP });\n  vm.runInContext(sources.schema + '\\n;globalThis.actualSchema = TelegramProxyConfigSchema;', schemaContext);\n  const manager = {\n    status() { calls.status++; return Promise.resolve(telegramRead()).then(value => { calls.statusSettled++; return value; }); },\n    saveConfig: async config => { calls.managerSave++; return { ...status(), config }; },\n    installService: async () => { calls.install++; return { ...status(), serviceInstalled: true, serviceRunning: true, runtimeReady: true }; },\n    startService: async () => { calls.start++; return { ...status(), serviceInstalled: true, serviceRunning: true, runtimeReady: true }; },\n    openConnectionLink: async () => { calls.open++; return { ok: true }; },\n  };\n  const handlerContext = vm.createContext({ ipcMain: { handle: (channel, handler) => ipcHandlers.set(channel, handler) }, TelegramProxyConfigSchema: schemaContext.actualSchema });\n  vm.runInContext(sources.handlers + '\\n;registerTelegramProxyHandlers({telegramProxyManager:globalThis.manager});', Object.assign(handlerContext, { manager }));\n  const invoke = (channel, ...args) => Promise.resolve().then(() => ipcHandlers.get(channel)({}, ...args)).catch(error => {\n    if (Array.isArray(error.issues)) calls.validationFailures.push(...error.issues.map(issue => ({ path: issue.path, message: issue.message })));\n    throw error;\n  });\n  const api = {\n    state: { get: async () => ({ nodes: [], stateRevision: 1 }) }, app: { isAdmin: async () => true },\n    vpn: { status: async () => ({ connected: false }), serviceStatus: async () => ({ serviceInstalled: false, serviceState: 'not-installed', running: false }) },\n    system: { dnsControllerStatus: async () => ({ running: false }), systemDohStatus: async () => ({ running: false }), getMyIp: () => delayedIp?.promise ?? Promise.resolve({ ip: '198.51.100.1' }) },\n    zapret: { status: async () => ({ serviceRunning: false }), listProfiles: async () => [] },\n    telegramProxy: { status: () => invoke('telegram-proxy:status'), saveConfig: config => { calls.saveInput.push({ secretLength: config.secret.length, port: config.port }); return invoke('telegram-proxy:save-config', config); }, installService: () => invoke('telegram-proxy:install-service'), startService: () => invoke('telegram-proxy:start-service'), openLink: () => invoke('telegram-proxy:open-link'), tailLogs: async () => [] },\n    health: { getReport: async () => ({}) }, network: { inspect: async () => ({}) }, logs: { getRuntimeSummary: async () => [] },\n  };\n  let hookIndex = 0;\n  const hooks = [], effects = [];\n  const context = vm.createContext({\n    window: { egoistAPI: api }, Date, Error, JSON, console: { warn: value => calls.activity.push(String(value)) },\n    O: {\n      useMemo: fn => fn(), useCallback: fn => fn,\n      useState(initial) { const index = hookIndex++; if (!(index in hooks)) hooks[index] = typeof initial === 'function' ? initial() : initial; return [hooks[index], value => { hooks[index] = typeof value === 'function' ? value(hooks[index]) : value; }]; },\n      useRef(initial) { const index = hookIndex++; if (!(index in hooks)) hooks[index] = { current: initial }; return hooks[index]; },\n      useEffect: fn => effects.push(fn),\n    },\n    V: { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },\n    readGeneration: { current: 0 }, updateRevision: { current: 0 }, f2: { current: new Map() }, d2: { current: 0 }, p2: { current: false }, Zf: {},\n    r2: updater => { snapshot = updater(snapshot); }, s2: value => calls.activity.push(value), l2() {},\n    zapretHistoryResult: (_new, previous) => previous ?? null,\n  });\n  for (const name of ['im', 'am', 'Z', 'om', 'sm', 'cm', 'lm', 'um', 'Q', '$', 'Dm', 'Om', 'Em', 'If', 'Lf', 'Rf']) vm.runInContext(extractFunction(sources.renderer, name), context);\n  for (const name of ['rubyStatusKnown', 'rubyObserveStatus', 'rubyReadStatuses', 'rubyTelegramReady']) vm.runInContext(extractFunction(sources.shield, name), context);\n  const bf = sources.renderer.match(/Bf = (\\{ host:.*?checkUpdates: true \\})/);\n  assert.ok(bf, 'actual Bf defaults found');\n  vm.runInContext(`globalThis.Bf = ${bf[1]};`, context);\n  for (const match of panel.matchAll(/\\(0, V\\.jsxs?\\)\\(([$\\w]+),/g)) if (!(match[1] in context)) context[match[1]] = match[1];\n  context.$p = value => value;\n  vm.runInContext(`globalThis.v2=${readFull};globalThis.y2=${readQuick};globalThis.runAction=${action};\\n${panel}`, context);\n  const originalQuick = context.y2;\n  context.y2 = async () => { calls.refreshes++; return originalQuick(); };\n  function render() {\n    hookIndex = 0; effects.length = 0;\n    const tree = context.Ep({ snapshot, confirmAction() {}, runAction: (...args) => { const pending = context.runAction(...args); calls.pending.push(pending); return pending; } });\n    for (const effect of [...effects]) effect();\n    return tree;\n  }\n  function elements(tree) {\n    if (!tree || typeof tree !== 'object') return [];\n    if (Array.isArray(tree)) return tree.flatMap(elements);\n    return [tree, ...elements(tree.props?.children)];\n  }\n  function text(tree) {\n    if (typeof tree === 'string' || typeof tree === 'number') return String(tree);\n    if (Array.isArray(tree)) return tree.map(text).join('');\n    return tree?.props ? text(tree.props.children) : '';\n  }\n  function button(tree, label) {\n    const value = elements(tree).find(element => element.type === 'button' && text(element).includes(label));\n    assert.ok(value, `actual button ${label}`); return value;\n  }\n  async function clickInstall() { button(render(), 'Установить фоновую службу').props.onClick(); return calls.pending.at(-1); }\n  return { context, calls, get snapshot() { return snapshot; }, render, button, clickInstall, actualSchema: schemaContext.actualSchema };\n}\nconst cases = [];\nasync function check(name, run) { const detail = await run(); cases.push({ name, pass: true, ...detail }); }\nawait check('resolved Telegram is unpublished while unrelated getMyIp is pending; early install aborts and invalidates completed initial batch', async () => {\n  const ip = deferred(), h = harness({ delayedIp: ip });\n  const read = h.context.v2();\n  await new Promise(resolve => setImmediate(resolve));\n  assert.equal(h.calls.status, 1); assert.equal(h.calls.statusSettled, 1); assert.equal(h.snapshot.telegram, null);\n  const button = h.button(h.render(), 'Установить фоновую службу');\n  assert.equal(button.props.disabled, undefined);\n  const result = await h.clickInstall();\n  assert.equal(result, false); assert.deepEqual(h.calls.saveInput, [{ secretLength: 0, port: 1443 }]);\n  assert.equal(h.calls.managerSave, 0); assert.equal(h.calls.install, 0); assert.equal(h.calls.refreshes, 0);\n  assert.ok(h.calls.validationFailures.some(issue => issue.path.join('.') === 'secret' && issue.message.includes('32 hex')));\n  assert.equal(h.context.readGeneration.current, 2);\n  ip.resolve({ ip: '198.51.100.1' }); await read;\n  assert.equal(h.snapshot.telegram, null); assert.equal(h.snapshot.busy, null);\n  return { telegramStatusResolvedBeforeClick: true, buttonDisabled: false, invalidSecretLength: 0, validationFailure: 'secret: requires 32 hex characters', savedConfigWrites: 0, installCalls: 0, automaticRefreshesAfterFailure: 0, initialReadGeneration: 1, finalGeneration: 2, telegramSnapshotAfterBatchCompletes: null };\n});\nawait check('Telegram own first read delayed; install is enabled and rejects empty draft before manager install', async () => {\n  const tg = deferred(), h = harness({ telegramRead: () => tg.promise });\n  const read = h.context.v2();\n  const button = h.button(h.render(), 'Установить фоновую службу');\n  assert.equal(button.props.disabled, undefined);\n  assert.equal(await h.clickInstall(), false); assert.equal(h.calls.install, 0); assert.equal(h.calls.managerSave, 0);\n  tg.resolve(status()); await read; assert.equal(h.snapshot.telegram, null);\n  return { buttonDisabled: false, installCalls: 0, managerSaveCalls: 0, acceptedLateConfig: false };\n});\nawait check('rejected first Telegram status stays unknown, yet install remains enabled and attempts invalid save', async () => {\n  const h = harness({ telegramRead: () => Promise.reject(new Error('fixture status denied')) });\n  await h.context.v2();\n  assert.equal(h.snapshot.telegram.uiObservation.known, false);\n  assert.equal(h.button(h.render(), 'Установить фоновую службу').props.disabled, undefined);\n  assert.equal(await h.clickInstall(), false); assert.equal(h.calls.install, 0); assert.equal(h.calls.managerSave, 0);\n  return { configKnown: false, buttonDisabled: false, saveAttempts: h.calls.saveInput.length, installCalls: 0 };\n});\nawait check('first read allowed to publish: unedited valid draft still saves unnecessarily and then calls install', async () => {\n  const h = harness(); await h.context.v2();\n  assert.equal(h.context.rubyStatusKnown(h.snapshot.telegram), true);\n  const installed = await h.clickInstall();\n  assert.equal(installed, true, JSON.stringify(h.calls.activity)); assert.equal(h.calls.managerSave, 1); assert.equal(h.calls.install, 1);\n  assert.equal(h.calls.refreshes, 1);\n  return { configKnown: true, pristineDraftSaveCalls: 1, installCalls: 1, automaticRefreshes: 1 };\n});\nawait check('known config does not require a running service: install button is intentionally active before runtime installation', async () => {\n  const h = harness(); await h.context.v2();\n  assert.equal(h.context.rubyTelegramReady(h.snapshot.telegram), false);\n  assert.equal(h.context.rubyStatusKnown(h.snapshot.telegram), true);\n  assert.equal(h.actualSchema.safeParse(h.snapshot.telegram.config).success, true);\n  return { statusKnown: true, actualConfigSchemaValid: true, runtimeReady: false, installButtonDisabled: !!h.button(h.render(), 'Установить фоновую службу').props.disabled };\n});\nawait check('stale retained config: install button remains enabled despite existing rubyStatusKnown=false', async () => {\n  const observed = { ...status(), uiObservation: { known: false, stale: true, lastConfirmedAt: 1 } };\n  const h = harness({ initialTelegram: observed });\n  assert.equal(h.context.rubyStatusKnown(h.snapshot.telegram), false);\n  assert.equal(h.button(h.render(), 'Установить фоновую службу').props.disabled, undefined);\n  return { configKnown: false, stale: true, installButtonDisabled: false };\n});\nawait check('an unrelated successful read-only action also invalidates delayed initial Telegram publication', async () => {\n  const ip = deferred(), h = harness({ delayedIp: ip });\n  const read = h.context.v2(); await new Promise(resolve => setImmediate(resolve));\n  assert.equal(h.calls.statusSettled, 1); assert.equal(h.snapshot.telegram, null);\n  assert.equal(await h.context.runAction('tg-copy', async () => ({ ok: true }), 'fixture copied'), true);\n  assert.equal(h.calls.refreshes, 0); assert.equal(h.context.readGeneration.current, 2);\n  ip.resolve({ ip: '198.51.100.1' }); await read; assert.equal(h.snapshot.telegram, null);\n  return { action: 'tg-copy', success: true, initialBatchDiscarded: true, quickRefreshes: 0, telegramSnapshotAfterBatch: null };\n});\nconst result = {\n  schemaVersion: 1, taskId: '01a0f42c-32b2-79a2-beba-be99c620a2c8', generatedAt: new Date().toISOString(),\n  kind: 'read-only source-derived isolated VM reproduction; NOT native application/service evidence',\n  nodeVersion: process.version, fixture: { file: 'telegram-first-load-race.mjs', sha256: sha(fs.readFileSync(new URL(import.meta.url), 'utf8')) },\n  sourceHashes: Object.fromEntries(Object.entries(files).map(([key, file]) => [file, { sha256: sha(sources[key]), sha256LF: sha(sources[key].replace(/\\r\\n/g, '\\n')) }])),\n  sourceBindings: { actual: ['Ep component including actual button onClick and draft/save chain', 'v2/y2 initial and quick batch callbacks', 'S2 runAction including real readGeneration fence/error path', 'rubyReadStatuses/rubyObserveStatus/rubyStatusKnown/rubyTelegramReady', 'Dm/Bf actual defaults/config normalization', 'TelegramProxyConfigSchema and actual registerTelegramProxyHandlers'], fixtures: ['minimal React hooks and JSX object representation; no browser/React scheduler', 'read-only status replies + deferred Promises', 'manager methods counted only; no filesystem/SCM/process mutation', 'zapretHistoryResult passthrough (unrelated statuses only), $p log renderer passthrough (empty logs)'] },\n  cases, passed: cases.length, failed: 0, skipped: 0,\n  nativeHostMutations: 0, applicationLaunches: 0, browserLaunches: 0,\n  conclusion: 'Current source permits an install click before authoritative config. Actual strict IPC validation rejects the empty synthetic secret before manager.saveConfig/installService; failed action increments generation and discards the delayed initial batch. Signed-native failure causality is unproved.',\n};\nfs.writeFileSync(path.join(ownWork, 'telegram-first-load-race-result.json'), JSON.stringify(result, null, 2) + '\\n');\nconsole.log(JSON.stringify({ passed: result.passed, failed: result.failed, sourceRendererSHA256LF: result.sourceHashes[files.renderer].sha256LF, resultPath: path.join(ownWork, 'telegram-first-load-race-result.json'), cases: cases.map(item => ({ name: item.name, pass: item.pass })) }, null, 2));\n"
+}

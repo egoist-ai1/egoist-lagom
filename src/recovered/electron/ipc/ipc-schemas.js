@@ -147,7 +147,7 @@ var AppSettingsSchema = z.object({
 var TelegramProxyConfigSchema = z.object({
 	host: z.string().trim().min(1, "Host не может быть пустым").max(253, "Host не может превышать 253 символа").refine(isAllowedTelegramProxyHost, "Host Telegram Proxy должен быть loopback, wildcard или приватным LAN-адресом"),
 	port: z.coerce.number().int().min(1).max(65535),
-	secret: z.string().trim().transform((value) => value.replace(/^dd/i, "")).refine((value) => HEX_32_RE.test(value), "Secret должен быть 32 hex-символа без dd-префикса"),
+	secret: z.string().trim().transform((value) => value.replace(/^dd([a-f0-9]{32})$/i, "$1")).refine((value) => HEX_32_RE.test(value), "Secret должен быть 32 hex-символа без dd-префикса"),
 	dcIp: z.array(z.string().trim().min(1).max(128).refine((value) => TELEGRAM_DC_IP_RE.test(value), "Некорректный Telegram DC endpoint")).max(16, "Слишком много Telegram DC endpoints"),
 	verbose: z.boolean(),
 	bufKb: z.coerce.number().int().min(1).max(16384),

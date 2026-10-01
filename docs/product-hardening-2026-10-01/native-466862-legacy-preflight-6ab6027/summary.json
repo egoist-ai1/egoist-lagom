@@ -1,0 +1,140 @@
+{
+  "harnessSourceCommit": "6ab602765f0547299d44f624fc6a150c77ff0511",
+  "artifactSourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "runId": 36843831825,
+  "releaseId": 400757269,
+  "releaseAcceptance": false,
+  "physicalHostMutations": 0,
+  "cases": {
+    "old378": {
+      "jobId": 110309089203,
+      "artifactId": 11152801279,
+      "originalVersion": "3.7.8",
+      "result": "failed",
+      "error": "Original installer network prerequisite failed: missing DNS client row or failed query; original bytes and adapter configuration were preserved.",
+      "installerExecuted": false,
+      "networkPreserved": true
+    },
+    "old379": {
+      "jobId": 110309089474,
+      "artifactId": 11152447731,
+      "originalVersion": "3.7.9",
+      "result": "failed",
+      "error": "Original installer network prerequisite failed: missing DNS client row or failed query; original bytes and adapter configuration were preserved.",
+      "installerExecuted": false,
+      "networkPreserved": true
+    }
+  },
+  "files": [
+    {
+      "path": "old378/raw-artifact.zip",
+      "bytes": 6891,
+      "sha256": "2d69e6291eee048a0fb19c034a0c41d37d6b2a1e8d2916b41170f851553b3d91"
+    },
+    {
+      "path": "old378/raw-job.txt",
+      "bytes": 32655,
+      "sha256": "1af46bf22f78e8a484ac37e443fc463be064ac20a2ca8531086fc55c7ebb6c69"
+    },
+    {
+      "path": "old378/original-authentication.json",
+      "bytes": 2707,
+      "sha256": "b3192c8e627561f4099f1cf39af959d68556bbabe29379899db518460dccbf93"
+    },
+    {
+      "path": "old378/original-diagnostic-authentication.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/installer-diagnostic.json",
+      "bytes": 10836,
+      "sha256": "449e7ca8880b0a8dc2638db9e5bda5dff0bc279b4be30c94f426c1e4f22dab11"
+    },
+    {
+      "path": "old378/original-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/original-network-readback.ps1",
+      "bytes": 1403,
+      "sha256": "024fe9f2c58424c7300841dd51d85ac55865325b35fb2069e5e88e66b307f163"
+    },
+    {
+      "path": "old378/original-network-readback.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/signed-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/original-network-readback.stdout.txt",
+      "bytes": 4298,
+      "sha256": "ede17d84b4c472297c0bec670d384f0580917626bf0a8e674563eac4051d4546"
+    },
+    {
+      "path": "old378/signed-diagnostic-authentication.stdout.txt",
+      "bytes": 163,
+      "sha256": "04fda8faeee5f8b6a2c25945b30dc6ad73442bc39b3ee6bf20c1adbe45cecaa7"
+    },
+    {
+      "path": "old379/raw-artifact.zip",
+      "bytes": 6889,
+      "sha256": "b462919373d355af2d15a406cfce81fa2fad072bd8b7dfdd770d6876c1d45cde"
+    },
+    {
+      "path": "old379/raw-job.txt",
+      "bytes": 28321,
+      "sha256": "3dca8a33c92eb9b1b7a11f4f945325a916acad200b260fd4d17fe4131d6f9456"
+    },
+    {
+      "path": "old379/installer-diagnostic.json",
+      "bytes": 10836,
+      "sha256": "a89a913b98f89903250970f3f5d1df233e38467c644829bf8669900c5c856843"
+    },
+    {
+      "path": "old379/original-authentication.json",
+      "bytes": 2707,
+      "sha256": "7aca395a68f2a53f354a27311669fd4f6e293378f6e11008e6669df5239412e1"
+    },
+    {
+      "path": "old379/original-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/original-diagnostic-authentication.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/original-network-readback.ps1",
+      "bytes": 1403,
+      "sha256": "024fe9f2c58424c7300841dd51d85ac55865325b35fb2069e5e88e66b307f163"
+    },
+    {
+      "path": "old379/original-network-readback.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/original-network-readback.stdout.txt",
+      "bytes": 4298,
+      "sha256": "a47d8d4de30224f45fec10f27c19d38a7ca2d12d4a8f5d9e68ad0d36ee553dc1"
+    },
+    {
+      "path": "old379/signed-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/signed-diagnostic-authentication.stdout.txt",
+      "bytes": 163,
+      "sha256": "04fda8faeee5f8b6a2c25945b30dc6ad73442bc39b3ee6bf20c1adbe45cecaa7"
+    }
+  ]
+}

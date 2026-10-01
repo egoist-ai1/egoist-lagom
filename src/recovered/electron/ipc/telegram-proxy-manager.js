@@ -60,7 +60,7 @@ function normalizePositiveFloat(value, fallback) {
 	return value;
 }
 function normalizeTelegramProxySecret(value) {
-	const trimmed = value.trim().replace(/^dd/i, "");
+	const trimmed = value.trim().replace(/^dd([0-9a-f]{32})$/i, "$1");
 	return /^[0-9a-f]{32}$/i.test(trimmed) ? trimmed.toLowerCase() : randomBytes(16).toString("hex");
 }
 function isLoopbackHost(value) {
@@ -115,7 +115,7 @@ function validateTelegramProxyConfig(config) {
 	const host = config.host.trim();
 	if (!isLoopbackHost(host)) throw new Error("Локальный Telegram Proxy может слушать только 127.0.0.1, ::1 или localhost. Публикация прокси в локальную сеть заблокирована.");
 	if (!Number.isInteger(config.port) || config.port < 1024 || config.port > 65535) throw new Error("Порт Telegram Proxy должен быть целым числом от 1024 до 65535.");
-	const secret = config.secret.trim().replace(/^dd/i, "");
+	const secret = config.secret.trim().replace(/^dd([0-9a-f]{32})$/i, "$1");
 	if (!/^[0-9a-f]{32}$/i.test(secret)) throw new Error("Secret должен содержать ровно 32 шестнадцатеричных символа.");
 	if (!Array.isArray(config.dcIp)) throw new Error("Список прямых Telegram DC имеет неверный формат.");
 	const submittedDcEndpoints = config.dcIp.map((item) => String(item).trim()).filter(Boolean);

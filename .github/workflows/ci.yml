@@ -39,6 +39,10 @@ on:
         description: Signed draft ID for fresh installation and original 3.7.8/3.7.9 helper acceptance
         type: string
         default: ''
+      legacy_baseline_restore:
+        description: Test genuine old services/helpers from authenticated restored payload; this does not execute old clean Setup
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -690,11 +694,16 @@ jobs:
           @{ oldVersion = $oldVersion; oldReleaseId = $oldReleaseId; oldTransport = $oldTransport; publishedOldOriginVerified = ($oldVersion -ceq '3.7.9'); candidateReleaseId = $candidateRelease.id; sourceCommit = $env:GITHUB_SHA; candidateTag = $candidateRelease.tag_name; candidateDraft = $candidateRelease.draft } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'download-identity.json') -Encoding utf8
           "LAGOM_LEGACY_WORK=$legacyWork" >> $env:GITHUB_ENV
       - name: Run the actual signed old helper handoff
+        env:
+          LAGOM_LEGACY_RESTORE: ${{ inputs.legacy_baseline_restore }}
+          LAGOM_OLD_VERSION: ${{ matrix.old_version }}
         run: |
+          if ($env:LAGOM_LEGACY_RESTORE -cnotin @('true','false')) { throw 'Invalid legacy baseline selection.' }
           $env:SHIELD_DOTNET = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'
           $oldAssets = Join-Path $env:LAGOM_LEGACY_WORK 'old'
           $candidateAssets = Join-Path $env:LAGOM_LEGACY_WORK 'candidate'
-          ./tests/windows-production-legacy-upgrade.ps1 -ExpectedOldVersion '${{ matrix.old_version }}' -OldReleaseAssetsDirectory $oldAssets -CandidateReleaseAssetsDirectory $candidateAssets -IntegrityManifestPath (Join-Path $candidateAssets 'package-integrity.json') -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:LAGOM_LEGACY_WORK 'evidence\native')
+          $legacyOptions = @{ ExpectedOldVersion=$env:LAGOM_OLD_VERSION; OldReleaseAssetsDirectory=$oldAssets; CandidateReleaseAssetsDirectory=$candidateAssets; IntegrityManifestPath=(Join-Path $candidateAssets 'package-integrity.json'); ExpectedSourceCommit=$env:GITHUB_SHA; EvidenceDirectory=(Join-Path $env:LAGOM_LEGACY_WORK 'evidence\native'); RestoreAuthenticatedBaseline=($env:LAGOM_LEGACY_RESTORE -ceq 'true') }
+          ./tests/windows-production-legacy-upgrade.ps1 @legacyOptions
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Upload signed legacy acceptance evidence
         if: ${{ always() }}

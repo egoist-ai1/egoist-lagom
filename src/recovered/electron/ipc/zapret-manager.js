@@ -2262,7 +2262,8 @@ var ZapretManager = class {
 				startedAt: parseWmiDateToIso(entry.CreationDate)
 			})).filter((entry) => entry.pid > 0);
 		} catch (error) {
-			throw new Error(`Не удалось проверить процессы winws.exe: ${error instanceof Error ? error.message : String(error)}`);
+			const detail = error instanceof SyntaxError ? "Некорректный JSON проверки процессов." : error instanceof Error ? error.message : String(error);
+			throw new Error(`Не удалось проверить процессы winws.exe: ${detail}`, { cause: error });
 		}
 	}
 	async listIntegratedWinwsProcesses() {
@@ -2716,16 +2717,44 @@ var ZapretManager = class {
 		});
 	}
 	async execPowerShell(command, timeoutMs = 8e3) {
-		const { stdout } = await execFileAsync$1(resolveWindowsExecutable("powershell.exe"), [
-			"-NoProfile",
-			"-NonInteractive",
-			"-Command",
-			command
-		], {
-			windowsHide: true,
-			timeout: timeoutMs
-		});
-		return stdout;
+		const startedAt = performance.now();
+		let pending;
+		try {
+			pending = execFileAsync$1(resolveWindowsExecutable("powershell.exe"), [
+				"-NoProfile",
+				"-NonInteractive",
+				"-Command",
+				command
+			], {
+				windowsHide: true,
+				timeout: timeoutMs
+			});
+			const { stdout } = await pending;
+			return stdout;
+		} catch (error) {
+			const knownCodes = ["ENOENT", "EACCES", "EPERM", "EINVAL", "EAGAIN", "ENOMEM", "ENOTDIR", "EISDIR", "ENOSYS", "UNKNOWN", "ERR_CHILD_PROCESS_STDIO_MAXBUFFER"];
+			const code = Number.isInteger(error?.code) && error.code >= -2147483648 && error.code <= 4294967295 ? error.code : knownCodes.includes(error?.code) ? error.code : "unknown";
+			const killed = error?.killed === true;
+			const signal = error?.signal == null ? null : ["SIGTERM", "SIGKILL", "SIGINT", "SIGBREAK", "SIGABRT", "SIGSEGV", "SIGILL", "SIGFPE"].includes(error.signal) ? error.signal : "unknown";
+			const childPid = pending?.child?.pid;
+			const outputBytes = (value) => Buffer.isBuffer(value) ? value.length : typeof value === "string" ? Buffer.byteLength(value, "utf8") : null;
+			const diagnostic = Object.freeze({
+				kind: code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" ? "output-limit" : killed ? "terminated" : typeof code === "number" ? "exit" : code === "unknown" ? "unknown" : "spawn",
+				code,
+				killed,
+				signal,
+				elapsedMs: Math.max(0, Math.round(performance.now() - startedAt)),
+				timeoutMs: Number.isSafeInteger(timeoutMs) && timeoutMs >= 0 ? timeoutMs : null,
+				pid: Number.isInteger(childPid) && childPid > 0 && childPid <= 4294967295 ? childPid : null,
+				stdoutBytes: outputBytes(error?.stdout),
+				stderrBytes: outputBytes(error?.stderr)
+			});
+			// Keep native cause in process; the worker/Core message contains no command or captured text.
+			const failure = new Error(`PowerShell failed: ${Object.entries(diagnostic).map(([key, value]) => `${key}=${value}`).join(", ")}`, { cause: error });
+			failure.name = "PowerShellExecutionError";
+			failure.powerShellDiagnostic = diagnostic;
+			throw failure;
+		}
 	}
 	async fetchText(url, timeoutMs) {
 		const controller = new AbortController();

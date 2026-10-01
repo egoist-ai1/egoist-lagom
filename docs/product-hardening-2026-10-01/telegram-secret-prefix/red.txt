@@ -1,0 +1,135 @@
+TAP version 13
+# Subtest: raw leading dd: schema, saved config and both links preserve the same 16-byte secret
+not ok 1 - raw leading dd: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 1.4829
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\telegram-secret-prefix.test.mjs:27:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    [
+      {
+        "code": "custom",
+        "message": "Secret должен быть 32 hex-символа без dd-префикса",
+        "path": [
+          "secret"
+        ]
+      }
+    ]
+  code: 'ERR_TEST_FAILURE'
+  name: 'ZodError'
+  stack: |-
+    get error (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/node_modules/zod/v3/types.js:39:31)
+    ZodObject.parse (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/node_modules/zod/v3/types.js:114:22)
+    TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-secret-prefix.test.mjs:29:46)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1382:25)
+    Test.start (node:internal/test_runner/test:1242:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17)
+  ...
+# Subtest: prefixed leading dd: schema, saved config and both links preserve the same 16-byte secret
+not ok 2 - prefixed leading dd: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 0.3462
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\telegram-secret-prefix.test.mjs:27:3'
+  failureType: 'testCodeFailure'
+  error: 'Secret должен содержать ровно 32 шестнадцатеричных символа.'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    Object.validateTelegramProxyConfig (evalmachine.<anonymous>:119:45)
+    TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-secret-prefix.test.mjs:30:31)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1382:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+    Test.postRun (node:internal/test_runner/test:1522:19)
+    Test.run (node:internal/test_runner/test:1447:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+  ...
+# Subtest: raw all dd: schema, saved config and both links preserve the same 16-byte secret
+not ok 3 - raw all dd: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 0.1381
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\telegram-secret-prefix.test.mjs:27:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    [
+      {
+        "code": "custom",
+        "message": "Secret должен быть 32 hex-символа без dd-префикса",
+        "path": [
+          "secret"
+        ]
+      }
+    ]
+  code: 'ERR_TEST_FAILURE'
+  name: 'ZodError'
+  stack: |-
+    get error (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/node_modules/zod/v3/types.js:39:31)
+    ZodObject.parse (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/node_modules/zod/v3/types.js:114:22)
+    TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-secret-prefix.test.mjs:29:46)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1382:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+    Test.postRun (node:internal/test_runner/test:1522:19)
+    Test.run (node:internal/test_runner/test:1447:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: upper-case whitespace: schema, saved config and both links preserve the same 16-byte secret
+not ok 4 - upper-case whitespace: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 0.1148
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\telegram-secret-prefix.test.mjs:27:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    [
+      {
+        "code": "custom",
+        "message": "Secret должен быть 32 hex-символа без dd-префикса",
+        "path": [
+          "secret"
+        ]
+      }
+    ]
+  code: 'ERR_TEST_FAILURE'
+  name: 'ZodError'
+  stack: |-
+    get error (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/node_modules/zod/v3/types.js:39:31)
+    ZodObject.parse (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/node_modules/zod/v3/types.js:114:22)
+    TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-secret-prefix.test.mjs:29:46)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1382:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+    Test.postRun (node:internal/test_runner/test:1522:19)
+    Test.run (node:internal/test_runner/test:1447:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: ordinary raw: schema, saved config and both links preserve the same 16-byte secret
+ok 5 - ordinary raw: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 0.3227
+  type: 'test'
+  ...
+# Subtest: ordinary prefixed: schema, saved config and both links preserve the same 16-byte secret
+ok 6 - ordinary prefixed: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 0.1701
+  type: 'test'
+  ...
+# Subtest: malformed, truncated and overlong secret inputs are still refused before saving
+ok 7 - malformed, truncated and overlong secret inputs are still refused before saving
+  ---
+  duration_ms: 0.5752
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 3
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 141.7116

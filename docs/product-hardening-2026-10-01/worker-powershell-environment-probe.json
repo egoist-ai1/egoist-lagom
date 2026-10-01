@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "title": "Read-only local Windows PowerShell environment A/B",
+  "taskId": "01a0f425-9e46-7cd0-bc68-d12af2678068",
+  "capturedUtc": "2026-10-01T09:14:19.628Z",
+  "outcome": "NOT_REPRODUCED_UNDER_ACTUAL_NON_SYSTEM_USER_TOKEN",
+  "releaseReady": false,
+  "host": {
+    "capturedUtc": "2026-10-01T09:11:34.5031219+00:00",
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "administrativeToken": false,
+    "systemToken": false,
+    "windows": "C:\\WINDOWS",
+    "system": "C:\\WINDOWS\\system32",
+    "programData": "C:\\ProgramData",
+    "pwshVersion": "7.6.5",
+    "nodeVersion": "v24.19.0",
+    "winPsVersion": "10.0.26100.8875 (WinBuild.160101.0800)",
+    "head": "5086586140306a7401ebe6d52e94211b2278633e",
+    "branch": "codex/lagom-production-audit",
+    "baselinePsModulePathContainsPs7": true,
+    "baselineWinPsModulePathPresent": false,
+    "baselinePsModulePathPresent": true
+  },
+  "method": {
+    "executable": "C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "args": [
+      "-NoProfile",
+      "-NonInteractive",
+      "-Command",
+      "<exact fixed source query>"
+    ],
+    "commandSha256": "B8EB2E5B8081782526BC1906ABC007397627127A9C5A9AB0563FBEBD70846194",
+    "queryFilter": "Name='winws.exe'",
+    "projection": [
+      "ProcessId",
+      "ExecutablePath",
+      "CommandLine",
+      "CreationDate"
+    ],
+    "querySource": "src/recovered/electron/ipc/zapret-manager.js:2253-2266",
+    "childExecutionSource": "src/recovered/electron/ipc/zapret-manager.js:2718-2728",
+    "workerEnvironmentSource": "src/service/EgoistShield.Service/ComponentWorker.cs:157-184",
+    "executionApi": "Node24.19.0 child_process.execFile, no shell",
+    "windowsHide": true,
+    "timeoutMs": 12000,
+    "maxBufferBytes": 1048576,
+    "cases": [
+      "normal inherited process.env (77 keys)",
+      "eight-key worker-equivalent env (8 keys)"
+    ],
+    "workerEnvironmentKeys": [
+      "ELECTRON_RUN_AS_NODE",
+      "NODE_ENV",
+      "ProgramData",
+      "SystemRoot",
+      "PATH",
+      "COMSPEC",
+      "TEMP",
+      "TMP"
+    ],
+    "machinePathsDerivedFromActualDotNetHost": true,
+    "ownTemporaryDirectory": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\pe\\child-temp",
+    "workingDirectory": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\pe",
+    "sequence": [
+      "normal",
+      "worker"
+    ],
+    "childrenTotal": 2,
+    "rawStdoutOrProcessFieldsPersisted": false,
+    "stderrPolicy": "Persist only fixed recognized diagnostic markers and byte/line counts; omit raw stderr text.",
+    "productionOrOperatingSystemConfigurationWrites": false,
+    "additionalVariableProbesPerformed": false,
+    "additionalVariableProbeReason": "Neither primary case failed; no failure to isolate."
+  },
+  "receipts": [
+    {
+      "case": "normal",
+      "startedUtc": "2026-10-01T09:10:24.879Z",
+      "endedUtc": "2026-10-01T09:10:25.284Z",
+      "elapsedMs": 405.064,
+      "success": true,
+      "code": 0,
+      "killed": false,
+      "signal": null,
+      "childExitCode": 0,
+      "childSignalCode": null,
+      "timeoutBudgetMs": 12000,
+      "stdoutBytes": 103,
+      "stderrBytes": 0,
+      "jsonParseOk": true,
+      "resultCount": 1,
+      "validProcessCount": 1,
+      "sanitizedStderr": "",
+      "stderrLineCount": 0,
+      "stderrRecognizedMarkers": [],
+      "omittedStderrLines": 0,
+      "environmentKeyCount": 77,
+      "environmentKeysPresent": {
+        "SystemRoot": true,
+        "windir": true,
+        "USERPROFILE": true,
+        "PSModulePath": true,
+        "WinPSModulePath": false,
+        "TEMP": true,
+        "TMP": true
+      }
+    },
+    {
+      "case": "worker",
+      "startedUtc": "2026-10-01T09:10:25.286Z",
+      "endedUtc": "2026-10-01T09:10:25.686Z",
+      "elapsedMs": 400.52,
+      "success": true,
+      "code": 0,
+      "killed": false,
+      "signal": null,
+      "childExitCode": 0,
+      "childSignalCode": null,
+      "timeoutBudgetMs": 12000,
+      "stdoutBytes": 103,
+      "stderrBytes": 0,
+      "jsonParseOk": true,
+      "resultCount": 1,
+      "validProcessCount": 1,
+      "sanitizedStderr": "",
+      "stderrLineCount": 0,
+      "stderrRecognizedMarkers": [],
+      "omittedStderrLines": 0,
+      "environmentKeyCount": 8,
+      "environmentKeysPresent": {
+        "SystemRoot": true,
+        "windir": false,
+        "USERPROFILE": false,
+        "PSModulePath": false,
+        "WinPSModulePath": false,
+        "TEMP": true,
+        "TMP": true
+      }
+    }
+  ],
+  "findings": [
+    "Both exact filtered queries succeeded within 0.406 seconds; no timeout, nonzero exit or stderr was observed.",
+    "The eight-key environment, lacking windir/USERPROFILE/PSModulePath, returned one valid WinWS result with the same stdout size as inherited environment.",
+    "This local result does not establish the cause of the actual hosted LocalSystem component.query failures.",
+    "No production whitelist/environment fix is supported by this A/B result."
+  ],
+  "securityDecision": {
+    "recommendedProductionChange": "None from this evidence.",
+    "preserveCurrentSmallEnvironment": true,
+    "avoidBroadInheritance": [
+      "PSModulePath",
+      "NODE_OPTIONS",
+      "arbitrary PATH",
+      "user TEMP",
+      "user profile paths"
+    ],
+    "conditionalFutureChange": "Only after an actual SYSTEM failure is isolated to one missing variable, derive that value from a trusted system path/current service account API and add only that key; do not copy the caller environment.",
+    "psModulePathTradeoff": "An inherited/user-writable module search path would allow untrusted module resolution in a privileged worker; a demonstrated requirement would need fixed machine-owned PSHOME modules only."
+  },
+  "minimalDecisiveHostedDiagnostic": [
+    "At the original worker execFile boundary capture safe code/killed/signal/elapsed/stdoutBytes/stderrBytes and sanitized fixed error markers before JS wraps error.message.",
+    "Run only the same Name=winws.exe read-only query under the actual sealed LocalSystem worker host; do not persist process fields or change SCM/network state.",
+    "If the same eight-key environment then fails, separate child startup/module import/CIM provider phases with safe markers before any environment, timeout or ownership change."
+  ],
+  "limitations": [
+    "Actual current user token administrativeToken=false/systemToken=false; no SYSTEM or elevated child was started.",
+    "Physical Windows10.0.26200.0 differs from the hosted failing Windows10.0.26100.0 runner.",
+    "Probe parent is external Node24.19.0, not the installed fused Electron worker; its cwd/TEMP are isolated own-work paths rather than actual installation/private service paths.",
+    "Normal case inherits the actual PS7.6.5-host PSModulePath, including PS7 and WinPS modules; it is not a claimed Explorer or SYSTEM environment.",
+    "Only two sequential children were executed. This is a bounded reproduction check, not a latency benchmark, concurrency/load test or uptime guarantee.",
+    "No repeat, one-variable repair probes, Setup, application/service launch, SCM/DNS/Tasks/registry mutation, unrelated process kill, GUI operation or external API mutation was performed."
+  ],
+  "sources": [
+    {
+      "path": "src/service/EgoistShield.Service/ComponentWorker.cs",
+      "sha256": "F049C4C77992061C8752A5ABC2B5220D36A768418DC5C74C541D12471FB6642C",
+      "bytes": 13619
+    },
+    {
+      "path": "src/recovered/electron/ipc/zapret-manager.js",
+      "sha256": "FFC62CDD5103045620CABBA6C0C90B8890E38688DBD61CC0531A7830FD942D73",
+      "bytes": 132502
+    }
+  ],
+  "evidenceInputs": [
+    {
+      "file": "normal.json",
+      "bytes": 722,
+      "sha256": "6EEFCA7255ABE01C1F6CE7D7ABC7E56C699197C6FE3EFB59FA32F1B904E47135"
+    },
+    {
+      "file": "worker.json",
+      "bytes": 723,
+      "sha256": "A8036272B6BA171F198B0DC99B0874818365BEFE4FC681985C256A70FBC1C4FC"
+    },
+    {
+      "file": "host.json",
+      "bytes": 614,
+      "sha256": "91196A1F0653EF1801473E19C8FE6EDF1DFDF6F29E106B14FA5EC75F45960DE0"
+    }
+  ],
+  "probeSource": {
+    "file": "probe.mjs",
+    "bytes": 5951,
+    "sha256": "C915D672F7B303C3837B55A63B50FF6B1B3096A6212D110CA71AE3F2FF6058B0"
+  },
+  "primaryReferences": [
+    {
+      "url": "https://nodejs.org/download/release/v24.19.0/docs/api/child_process.html#child_processexecfilefile-args-options-callback",
+      "claim": "execFile env/timeout/error fields and direct executable behavior."
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_psmodulepath?view=powershell-7.5",
+      "claim": "Windows PowerShell startup builds module search defaults when PSModulePath is absent; PS7/WinPS module-path handling differs."
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/powershell/module/cimcmdlets/get-ciminstance?view=powershell-5.1",
+      "claim": "Local Get-CimInstance without ComputerName or CimSession uses local WMI/COM."
+    }
+  ]
+}

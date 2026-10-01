@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "taskId": "01a0f42c-32b2-79a2-beba-be99c620a2c8",
+  "owner": "/root/ui_finish",
+  "generatedAt": "2026-10-01T10:54:37.895Z",
+  "passed": true,
+  "scope": "Telegram-only visual/behavior QA of preliminary production renderer with explicit IPC fixtures; before authorized raw32-dd secret-only follow-up",
+  "browserVersion": "151.0.7922.34",
+  "nodeVersion": "v24.19.0",
+  "playwrightVersion": "1.62.1",
+  "viewports": [
+    {
+      "width": 1060,
+      "height": 760,
+      "deviceScaleFactor": 1
+    },
+    {
+      "width": 400,
+      "height": 600,
+      "deviceScaleFactor": 2
+    }
+  ],
+  "sourceHashes": {
+    "src/recovered/renderer.js": {
+      "bytes": 677879,
+      "sha256": "a06576f5ff87e05449cc7562cd58265021baeafbb3015f7b6c30ff045e890420",
+      "sha256LF": "947836bac950728a674bdc35fede32a03d7eb2bcfbaaf2019c061235704852f4"
+    },
+    "src/brand/ShieldWidget.jsx": {
+      "bytes": 22513,
+      "sha256": "82b9d4eae6b224bf58c9080a8bc0b2d6a1161e94d397d56473ab36daf383c084",
+      "sha256LF": "f467345c8dbf156008bcc0d8af0c959fe00a9403201ae28d4d4d2f4fddfa4e91"
+    },
+    "src/brand/compact-surfaces.css": {
+      "bytes": 66719,
+      "sha256": "a10318a6ac62f6090efb76fffbcb220f764d84841b97cb929a82b3f6c0498098",
+      "sha256LF": "a10318a6ac62f6090efb76fffbcb220f764d84841b97cb929a82b3f6c0498098"
+    },
+    "src/brand/compact-ruby.css": {
+      "bytes": 21450,
+      "sha256": "0869d3bb33bbac2c4de4751484f106192cd9d81f1284d79bcd018fb850b87a11",
+      "sha256LF": "0869d3bb33bbac2c4de4751484f106192cd9d81f1284d79bcd018fb850b87a11"
+    }
+  },
+  "buildManifestFile": "measurements.json",
+  "harnessBase": {
+    "file": "scripts/check-compact-ui.mjs",
+    "sha256": "618e59902992eab3aec03820459f60b2223ac38ab0cbac6cc4d01aaa7026a58b"
+  },
+  "files": {
+    "measurements.json": {
+      "bytes": 79547,
+      "sha256": "aa0327bc744731ef504263287453f5f5f2d1b40ef4ef8d1ebf0fd7a1265cdbf0"
+    },
+    "run.txt": {
+      "bytes": 255,
+      "sha256": "00322347733f58f8cc42b086147edf6399b5ec2b7f036dfe004538b14a220e4e"
+    },
+    "telegram-final-visual-qa.mjs": {
+      "bytes": 24428,
+      "sha256": "ed07a90535a61b580d856037e502c1d90430e9a6e20b7193c19b525a74c6c56d"
+    },
+    "fixture-1060-first-load.png": {
+      "bytes": 236195,
+      "sha256": "2e79e0a4c486314d8a05737707ab2dde4d8fb3083d48c1b98a137cb33bbb69a5"
+    },
+    "fixture-1060-rejected-focus.png": {
+      "bytes": 248988,
+      "sha256": "9aa0c67c1b1383a9f05783abc01397b23766a2dedaa788e44d2c00b1e0793ae6"
+    },
+    "fixture-1060-retry-pending.png": {
+      "bytes": 245968,
+      "sha256": "572108279145c6ddde264324c4bb500480fa994a01fd4e098b3d4ea51ccfa60e"
+    },
+    "fixture-1060-conflict-focus.png": {
+      "bytes": 253217,
+      "sha256": "5e88a8cd1a5e3fcb47c261dc972c242df80ed1039239031cfc1f8cbc4fc12c7c"
+    },
+    "fixture-1060-dirty-save-pending.png": {
+      "bytes": 240178,
+      "sha256": "6692075bd16143ba5b086c9b5b54113aa867c93dbcf67ad24e9fe91f099aab76"
+    },
+    "fixture-1060-install-pending.png": {
+      "bytes": 240178,
+      "sha256": "6692075bd16143ba5b086c9b5b54113aa867c93dbcf67ad24e9fe91f099aab76"
+    },
+    "fixture-400-first-load.png": {
+      "bytes": 421649,
+      "sha256": "e22b0c5d8913e3e77adf7ae906d31fd870e52247413290856f750e2ede498503"
+    },
+    "fixture-400-rejected-focus.png": {
+      "bytes": 434518,
+      "sha256": "8f616ae234cdcafb46692a8e7a1ad754bffffefd61e6d211b644d3a46cd28287"
+    },
+    "fixture-400-retry-pending.png": {
+      "bytes": 427223,
+      "sha256": "a8bed1d9ed49bdfed69154db44eb1619ee9c2a7ecb15d56243562eaf0fedf1b6"
+    },
+    "fixture-400-conflict-focus.png": {
+      "bytes": 432504,
+      "sha256": "d4aef365e438ab11c6773c6afe6f9ab40fa4321570b4df08e4f2084049378de3"
+    },
+    "fixture-400-dirty-save-pending.png": {
+      "bytes": 444725,
+      "sha256": "7f1f7c2fe5206cf31659bb33c3118bf1968fa7a5bc77da7f6538cdd4bd6d389c"
+    },
+    "fixture-400-install-pending.png": {
+      "bytes": 444725,
+      "sha256": "7f1f7c2fe5206cf31659bb33c3118bf1968fa7a5bc77da7f6538cdd4bd6d389c"
+    },
+    "report.md": {
+      "bytes": 5162,
+      "sha256": "4d28a37f78758c85344bc43229eb7b3020237fa7ba3e5825f698b5e3066f2063"
+    }
+  },
+  "states": 12,
+  "controlCenterObservations": 46,
+  "blockedEnabledControlCenters": 0,
+  "horizontalDocumentOverflow": 0,
+  "horizontalElementOrVisibleTextOverflow": 0,
+  "pageErrors": [],
+  "externalRequests": [],
+  "changedBuildAssets": [],
+  "changedUiSources": [],
+  "allReducedMotion": true,
+  "activeAnimationsObserved": 0,
+  "unknownOrPendingGoodFormIndicators": 0,
+  "keyboard": {
+    "retryAndConflictTabShiftTabEnterPassedBothWidths": true
+  },
+  "humanReviewed": [
+    "fixture-400-first-load.png",
+    "fixture-1060-rejected-focus.png",
+    "fixture-400-conflict-focus.png",
+    "fixture-400-dirty-save-pending.png",
+    "fixture-1060-install-pending.png"
+  ],
+  "minorFinding": {
+    "status": "reported to parent; source unchanged by visual QA",
+    "file": "src/recovered/renderer.js",
+    "line": 10690,
+    "action": "tg-install",
+    "title": "Установка службы оптимизатора",
+    "detail": "Устанавливаю owned службу и автозапуск.",
+    "finding": "Shared HUD wording differs from visible Telegram proxy/service wording and exposes implementation terminology. This does not prevent the tested flow."
+  },
+  "productionChanged": false,
+  "testsRerun": false,
+  "nativeGuiPass": false,
+  "nativeServiceMutations": 0,
+  "limits": [
+    "Headless Chromium loads a memory snapshot of the built production renderer; all egoistAPI methods are explicitly named IPC fixtures.",
+    "No native Electron window, UIA, privilege, Windows service, disk persistence, route or network health is exercised.",
+    "Screenshots include fixture observations and are not evidence that genuine Windows services work.",
+    "Only new Telegram first-load/rejected/retry/conflict/pending flows at two widths are covered; prior gallery and successful 47 Node cases are not rerun.",
+    "Built/source SHA binding and snapshot markers are recorded; this check does not independently prove the full build pipeline correspondence.",
+    "No months-long soak or all possible timing/conflict guarantees are claimed."
+  ]
+}

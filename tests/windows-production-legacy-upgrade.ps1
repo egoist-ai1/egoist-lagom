@@ -7,11 +7,12 @@ param(
   [string]$IntegrityManifestPath='',
   [string]$EvidenceDirectory='',
   [ValidatePattern('^$|^[a-f0-9]{40}$')][string]$ExpectedSourceCommit='',
+  [switch]$RestoreAuthenticatedBaseline,
   [switch]$LibraryOnly
 )
 Set-StrictMode -Version 2.0
 $ErrorActionPreference='Stop'
-$legacyParameters=@{Mode=$Mode;ExpectedOldVersion=$ExpectedOldVersion;OldReleaseAssetsDirectory=$OldReleaseAssetsDirectory;CandidateReleaseAssetsDirectory=$CandidateReleaseAssetsDirectory;IntegrityManifestPath=$IntegrityManifestPath;EvidenceDirectory=$EvidenceDirectory;ExpectedSourceCommit=$ExpectedSourceCommit;LibraryOnly=$LibraryOnly}
+$legacyParameters=@{Mode=$Mode;ExpectedOldVersion=$ExpectedOldVersion;OldReleaseAssetsDirectory=$OldReleaseAssetsDirectory;CandidateReleaseAssetsDirectory=$CandidateReleaseAssetsDirectory;IntegrityManifestPath=$IntegrityManifestPath;EvidenceDirectory=$EvidenceDirectory;ExpectedSourceCommit=$ExpectedSourceCommit;RestoreAuthenticatedBaseline=$RestoreAuthenticatedBaseline;LibraryOnly=$LibraryOnly}
 . (Join-Path $PSScriptRoot 'windows-production-acceptance.ps1') -LibraryOnly
 # Dot sourcing the read-only library binds its parameters in the caller scope.
 foreach($parameterName in $legacyParameters.Keys){Set-Variable -Name $parameterName -Value $legacyParameters[$parameterName]}
@@ -91,7 +92,11 @@ if($adapters.Count -gt 16){throw 'Original DNS diagnostic adapter count exceeded
 foreach($adapter in $adapters){
   foreach($family in @('IPv4','IPv6')){
     $watch=[Diagnostics.Stopwatch]::StartNew()
-    $row=[ordered]@{index=$adapter.ifIndex;guid=[string]$adapter.InterfaceGuid;name=[string]$adapter.Name;status=[string]$adapter.Status;family=$family;result='running'}
+    $row=[ordered]@{index=$adapter.ifIndex;guid=[string]$adapter.InterfaceGuid;name=[string]$adapter.Name;status=[string]$adapter.Status;family=$family;result='running';adapterIdentity=[ordered]@{}}
+    foreach($property in @('InterfaceDescription','PnPDeviceID','DriverDescription','DriverProvider','DriverFileName','DriverVersion','Virtual','HardwareInterface','LinkSpeed')){
+      $observed=$adapter.PSObject.Properties[$property]
+      $row.adapterIdentity[$property]=if($null -eq $observed -or $null -eq $observed.Value){$null}elseif($observed.Value -is [bool]){$observed.Value}else{[string]$observed.Value}
+    }
     try{
       $values=@(Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily $family -ErrorAction Stop)
       $row.result='complete';$row.records=$values.Count;$row.addresses=@($values|Select-Object -ExpandProperty ServerAddresses)
@@ -115,6 +120,7 @@ function Assert-LegacyNetworkCompatibility {
   }
 }
 function Read-LegacyNetworkCompatibility {
+  param([switch]$ProbeOnly)
   $probe=Join-Path $script:Work 'original-network-readback.ps1'
   [void](Assert-NativePathWithin $probe $script:Work)
   if(Test-Path -LiteralPath $probe){throw 'Original network prerequisite probe must be fresh.'}
@@ -122,7 +128,7 @@ function Read-LegacyNetworkCompatibility {
   [void](Invoke-NativeBounded -Executable $script:NativePowerShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$probe) -Label 'original-network-readback' -TimeoutSeconds 60)
   $report=Read-LegacyHarnessJson (Join-Path $script:Work 'original-network-readback.stdout.txt')
   $script:Receipt.oldNetworkCompatibility=$report;Save-NativeReceipt
-  Assert-LegacyNetworkCompatibility $report
+  if(-not $ProbeOnly){Assert-LegacyNetworkCompatibility $report}
   return $report
 }
 function Invoke-LegacyGui {
@@ -151,6 +157,20 @@ function Invoke-LegacyGui {
     }
     $navigation=Get-NativeTelegramNavigation -FindButton $findButton -Label 'Actual old Telegram navigation control'
     ([Windows.Automation.InvokePattern]$navigation.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
+    $editControl=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Edit)
+    [void](Wait-NativeCondition -Condition {
+      if($child.HasExited){throw 'Original GUI exited before its actual configuration was displayed.'}
+      $edits=$root.FindAll([Windows.Automation.TreeScope]::Descendants,$editControl)
+      if($edits.Count -gt 32){throw 'Original Telegram native configuration control count exceeded its bound.'}
+      foreach($edit in $edits){
+        $valuePattern=$null
+        if($edit.TryGetCurrentPattern([Windows.Automation.ValuePattern]::Pattern,[ref]$valuePattern)){
+          $value=[Windows.Automation.ValuePattern]$valuePattern
+          if($value.Current.Value -cmatch '^(?:[dD]{2})?[a-fA-F0-9]{32}$'){return $true}
+        }
+      }
+    } -Label 'Actual old Telegram configuration displayed before user click; values are not recorded' -TimeoutSeconds 90 -StopOnError)
+    $script:Receipt.checks+=[ordered]@{name='old-gui-configuration-displayed';oldVersion=$ExpectedOldVersion;control='native Edit/ValuePattern';secretFormatConfirmed=$true;valueRecorded=$false};Save-NativeReceipt
     $install=Wait-NativeCondition -Condition {& $findButton 'Установить фоновую службу'} -Label 'Actual old Telegram background install control' -TimeoutSeconds 90
     Add-NativeMutation -Kind 'old-telegram-native-invoke' -Target 'EgoistShieldTelegramProxy' -Purpose ("Invoke shipped old install control in exact GUI PID "+$child.Id)
     ([Windows.Automation.InvokePattern]$install.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
@@ -329,18 +349,39 @@ function Invoke-NativeLegacyUpgrade {
   New-Item -ItemType Directory -Path $script:Work,$script:Evidence | Out-Null
   $script:ReceiptPath=Join-Path $script:Work 'windows-production-legacy-upgrade.json'
   $script:Receipt=[ordered]@{schemaVersion=1;kind=('actual-native-official-'+$ExpectedOldVersion+'-helper-upgrade');oldVersion=$ExpectedOldVersion;candidateVersion='3.8.0';candidateSourceCommit=$script:SourceCommit;harnessSourceCommit=$environment.GITHUB_SHA;startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');host=[ordered]@{computerName=$env:COMPUTERNAME;administrator=$administrator;runnerEnvironment=$env:RUNNER_ENVIRONMENT;runId=$env:GITHUB_RUN_ID;runAttempt=$env:GITHUB_RUN_ATTEMPT;os=[Environment]::OSVersion.VersionString;imageOS=$env:ImageOS;imageVersion=$env:ImageVersion};result='running';cleanStartVerified=$true;releaseReady=$false;mutations=@();checks=@();gui=@();privateStateReadbacks=@();networkReadbacks=@();beforeNetwork=(Get-NativeNetworkFingerprint);beforeForeignRegistrations=(Get-LegacyForeignRegistrationSnapshot);releaseGates=@('Public/latest feed discovery and old GUI auto-update initiation','Actual reboot/interrupted recovery','3.7.7 trust compatibility','System DNS/TUN/WinDivert endpoints','Actual standard-user GUI token','Long-duration 72-hour/7-day/month-scale pilot')}
+  $script:Receipt.oldOriginalSetupExecuted=$false
+  $script:Receipt.oldOriginalSetupSucceeded=$false
+  $script:Receipt.legacyBaselineMethod=if($RestoreAuthenticatedBaseline){'restored-authenticated-legacy-native-baseline'}else{'original-clean-setup'}
+  if($RestoreAuthenticatedBaseline){
+    $script:Receipt.kind='actual-native-restored-'+$ExpectedOldVersion+'-helper-upgrade'
+    $script:Receipt.releaseGates+='Original old clean Setup on a compatible native environment (not executed by this restored baseline)'
+  }
   $script:Receipt.harnessFiles=@(foreach($file in @($PSCommandPath,$script:LegacyNodeHelper,(Join-Path $PSScriptRoot 'windows-production-acceptance.ps1'),(Join-Path $PSScriptRoot 'windows-production-acceptance.mjs'))){[ordered]@{path=$file;sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()}});Save-NativeReceipt
   $primaryError=$null;$uninstalled=$false
   try{
     $script:AuthenticatedAssets=Invoke-LegacyArtifactVerification -Label 'authenticated-assets'
     $script:Receipt.authenticatedAssets=$script:AuthenticatedAssets;Save-NativeReceipt
-    [void](Read-LegacyNetworkCompatibility)
+    [void](Read-LegacyNetworkCompatibility -ProbeOnly:$RestoreAuthenticatedBaseline)
     $script:Installer=Join-Path $script:CandidateAssets 'EgoistShield-Setup-3.8.0.exe';$script:InstallerHash=[string]$script:AuthenticatedAssets.candidate.sha256
     $oldInstaller=Join-Path $script:OldAssets ('EgoistShield-Setup-'+$ExpectedOldVersion+'.exe')
-    Add-NativeMutation -Kind 'official-old-setup-clean-install' -Target $script:InstallRoot -Purpose "Actual original public $ExpectedOldVersion installer, authenticated before execution."
-    [void](Invoke-NativeBounded -Executable $oldInstaller -Arguments @('/S') -Label 'official-old-clean-install' -TimeoutSeconds 600)
+    if($RestoreAuthenticatedBaseline){
+      $baselineLibrary=Join-Path $PSScriptRoot 'windows-native-legacy-baseline.ps1'
+      Assert-NativeOrdinaryPath $baselineLibrary -Leaf
+      . $baselineLibrary -LibraryOnly
+      $script:Receipt.harnessFiles+=@(foreach($file in @($baselineLibrary,(Join-Path $PSScriptRoot 'windows-native-legacy-baseline.mjs'))){Assert-NativeOrdinaryPath $file -Leaf;[ordered]@{path=$file;sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()}})
+      Save-NativeReceipt
+      $restorationOptions=@{OriginalVersion=$ExpectedOldVersion;AuthenticatedInstaller=$oldInstaller;ExpectedInstallerSha256=[string]$script:AuthenticatedAssets.old.sha256;ExpectedInstallerSha512=[string]$script:AuthenticatedAssets.old.sha512;ExpectedInstallerBytes=[long]$script:AuthenticatedAssets.old.size;InstallationRoot=$script:InstallRoot;WorkDirectory=$script:Work;EvidenceDirectory=$script:Evidence;NodePath=$script:Node;PowerShellPath=$script:NativePowerShell}
+      $baselineReceipt=Invoke-RestoredLegacyBaseline @restorationOptions
+      if($baselineReceipt.kind -cne 'restored-authenticated-legacy-native-baseline' -or $baselineReceipt.originalSetupExecuted -ne $false){throw 'Restored legacy baseline returned an invalid acceptance identity.'}
+      $script:Receipt.restoredLegacyBaseline=$baselineReceipt;Save-NativeReceipt
+    }else{
+      Add-NativeMutation -Kind 'official-old-setup-clean-install' -Target $script:InstallRoot -Purpose "Actual original authenticated $ExpectedOldVersion installer, authenticated before execution."
+      $script:Receipt.oldOriginalSetupExecuted=$true;Save-NativeReceipt
+      [void](Invoke-NativeBounded -Executable $oldInstaller -Arguments @('/S') -Label 'official-old-clean-install' -TimeoutSeconds 600)
+      $script:Receipt.oldOriginalSetupSucceeded=$true;Save-NativeReceipt
+    }
     [void](Assert-NativeService 'EgoistShieldCore' $script:Core -Running);$script:Receipt.oldCorePolicy=Get-NativeRecoveryPolicy 'EgoistShieldCore'
-    Assert-NativeNoGui;Assert-NativeNetworkPreserved 'old-clean-install'
+    Assert-NativeNoGui;Assert-NativeNetworkPreserved 'old-native-baseline'
     $script:Receipt.oldInstalledTrust=Invoke-LegacyArtifactVerification -Label 'old-installed-authentication' -Installed
     $gui=Invoke-LegacyGui;$port=[int]$gui.port
     $script:Receipt.oldTelegramPolicy=Get-NativeRecoveryPolicy 'EgoistShieldTelegramProxy';$script:Receipt.oldTelegramWithoutGui=Assert-NativeTelegramEndpoint $port

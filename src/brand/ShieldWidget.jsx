@@ -22,6 +22,42 @@ function rubyReadStatuses(reads) {
   )));
 }
 
+function rubyTelegramIpAddress(value) {
+  const parts = value.split('.');
+  if (parts.length === 4 && parts.every(part => /^(0|[1-9]\d{0,2})$/.test(part) && Number(part) <= 255)) return true;
+  if (!value.includes(':') || value.includes('%')) return false;
+  try { return new URL(`http://[${value}]/`).hostname.startsWith('['); } catch { return false; }
+}
+
+function rubyTelegramConfigProblem(config) {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) return 'Конфигурация Telegram ещё не прочитана.';
+  const keys = ['host','port','secret','dcIp','verbose','bufKb','poolSize','logMaxMb','checkUpdates'];
+  if (Object.keys(config).some(key => !keys.includes(key))) return 'Служба вернула неизвестные поля конфигурации Telegram.';
+  const host = typeof config.host === 'string' ? config.host.trim().toLowerCase().replace(/^\[(.*)\]$/, '$1') : '';
+  if (!['127.0.0.1','::1','localhost'].includes(host)) return 'Локальный адрес: 127.0.0.1, ::1 или localhost.';
+  if (!Number.isInteger(config.port) || config.port < 1024 || config.port > 65535) return 'Порт Telegram: целое число от 1024 до 65535.';
+  if (typeof config.secret !== 'string' || !/^[a-f0-9]{32}$/i.test(config.secret.trim().replace(/^dd([a-f0-9]{32})$/i, '$1'))) return 'Secret должен содержать ровно 32 hex-символа.';
+  if (!Array.isArray(config.dcIp) || config.dcIp.length > 16 || config.dcIp.some(value => {
+    if (typeof value !== 'string' || value.trim().length > 128 || !/^\d+:[a-z0-9.:-]+$/i.test(value.trim())) return true;
+    const match = /^([1-5]):(.+)$/.exec(value.trim());
+    return !match || !rubyTelegramIpAddress(match[2]);
+  })) return 'Прямые DC: адреса вида 2:149.154.167.220; DC 1–5, не более 16 строк.';
+  if (!Number.isInteger(config.bufKb) || config.bufKb < 64 || config.bufKb > 4096) return 'Буфер Telegram: целое число от 64 до 4096 КБ.';
+  if (!Number.isInteger(config.poolSize) || config.poolSize < 1 || config.poolSize > 32) return 'Пул Telegram: целое число от 1 до 32.';
+  if (!Number.isFinite(config.logMaxMb) || config.logMaxMb < 1 || config.logMaxMb > 100) return 'Лимит журнала Telegram: от 1 до 100 МБ.';
+  if (typeof config.verbose !== 'boolean' || typeof config.checkUpdates !== 'boolean') return 'Служба не вернула все параметры конфигурации Telegram.';
+  return null;
+}
+
+function rubyTelegramConfigReady(status) {
+  return rubyStatusKnown(status) && rubyTelegramConfigProblem(status.config) === null;
+}
+
+function rubyTelegramConfigKey(config) {
+  return JSON.stringify([typeof config?.host === 'string' ? config.host.trim() : null, config?.port ?? null, typeof config?.secret === 'string' ? config.secret.trim().replace(/^dd([a-f0-9]{32})$/i, '$1').toLowerCase() : null,
+    Array.isArray(config?.dcIp) ? [...new Set(config.dcIp.map(value => typeof value === 'string' ? value.trim() : null))] : [], config?.verbose ?? null, config?.bufKb ?? null, config?.poolSize ?? null, config?.logMaxMb ?? null, config?.checkUpdates ?? null]);
+}
+
 function rubyTelegramReady(status) {
   if (!rubyStatusKnown(status)) return false;
   if (status?.runtimeReady === false || status?.listenerReady === false) return false;

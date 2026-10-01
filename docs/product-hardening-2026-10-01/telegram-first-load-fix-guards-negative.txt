@@ -1,0 +1,69 @@
+✖ actual busy polling effect does not supersede a dirty foreground preflight (14.0203ms)
+✖ actual lifetime cleanup prevents pending status callbacks from adopting facts after unmount (8.0064ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 83.5447
+
+✖ failing tests:
+
+test at tests\telegram-first-load.test.mjs:154:1
+✖ actual busy polling effect does not supersede a dirty foreground preflight (14.0203ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-first-load.test.mjs:156:55)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\telegram-first-load.test.mjs:158:1
+✖ actual lifetime cleanup prevents pending status callbacks from adopting facts after unmount (8.0064ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + {
+  +   config: {
+  +     bufKb: 256,
+  +     checkUpdates: true,
+  +     dcIp: [],
+  +     host: '127.0.0.1',
+  +     logMaxMb: 5,
+  +     poolSize: 8,
+  +     port: 1443,
+  +     secret: '0123456789abcdef0123456789abcdef',
+  +     verbose: false
+  +   },
+  +   serviceInstalled: false,
+  +   uiObservation: {
+  +     attemptedAt: 1790850093921,
+  +     error: null,
+  +     generation: 1,
+  +     known: true,
+  +     lastConfirmedAt: 1790850093922,
+  +     stale: false
+  +   }
+  + }
+  - null
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/telegram-first-load.test.mjs:159:187)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { config: { host: '127.0.0.1', port: 1443, secret: '0123456789abcdef0123456789abcdef', dcIp: [], verbose: false, bufKb: 256, poolSize: 8, logMaxMb: 5, checkUpdates: true }, serviceInstalled: false, uiObservation: { known: true, stale: false, error: null, generation: 1, attemptedAt: 1790850093921, lastConfirmedAt: 1790850093922 } },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
