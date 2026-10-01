@@ -73,6 +73,24 @@ internal static class Program
                 "native recheck proves owned runtime quiescent without restarting a kill loop", clock.Elapsed.TotalMilliseconds);
             Require(WindowsServiceListenerSnapshot.StopProcessesUsingExecutable(Path.Combine(root, "absent", name), deadline.Token).Length == 0 && !foreign.HasExited,
                 "missing destination enumerates matching real rows and preserves foreign path");
+            // Repeat actual exit/capture overlap while retaining the caller's
+            // Process handle. A dead process may remain in a Toolhelp snapshot.
+            for (int iteration = 0; iteration < 12; iteration++)
+            {
+                using var retiring = Child(ownedPath, root);
+                try
+                {
+                    Require(retiring.Start(), "exit-race harmless child starts " + iteration);
+                    int retiringPid = int.Parse(await retiring.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(8)) ?? "0");
+                    Require(retiringPid == retiring.Id && !retiring.HasExited, "exit-race readiness belongs to held child " + iteration);
+                    await ExitOwnChild(retiring);
+                    using var cycleDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+                    WindowsServiceListenerSnapshot.VerifyRuntimeQuiescent(ownedPath, cycleDeadline.Token);
+                    Require(WindowsServiceListenerSnapshot.StopProcessesUsingExecutable(ownedPath, cycleDeadline.Token).Length == 0 && !foreign.HasExited,
+                        "actual exited-child capture preserves quiescence and live foreign process " + iteration);
+                }
+                finally { await ExitOwnChild(retiring); }
+            }
             Require(await EgoistShield.Service.Program.Main(["--telegram-runtime-cleanup", "--runtime", "C:\\Foreign\\arbitrary.exe"]) != 0,
                 "actual CLI refuses arbitrary target before native cleanup");
             Require(await EgoistShield.Service.Program.Main(["--telegram-runtime-cleanup", "--runtime", "primary", "--console"]) != 0,

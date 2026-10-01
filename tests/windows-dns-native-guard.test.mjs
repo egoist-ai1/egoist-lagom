@@ -66,10 +66,10 @@ test('truncated blocks, unsupported links and oversized snapshots fail closed', 
 });
 
 const shell = process.env.LAGOM_TEST_POWERSHELL || process.env.LAGOM_WINDOWS_POWERSHELL || path.join(process.env.SystemRoot || 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe');
-function run(args) {
+function run(args, timeout = 15000) {
   const env = { ...process.env, GITHUB_ACTIONS: 'false', RUNNER_ENVIRONMENT: 'self-hosted' };
   if (path.basename(shell).toLowerCase() === 'powershell.exe') for (const key of Object.keys(env)) if (key.toLowerCase() === 'psmodulepath') delete env[key];
-  return spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', ...args], { env, encoding: 'utf8', windowsHide: true, timeout: 15000 });
+  return spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', ...args], { env, encoding: 'utf8', windowsHide: true, timeout });
 }
 test('actual Run/GuardOnly/Guardian/Query invocation refuses physical non-hosted process before input or writes', { skip: process.platform !== 'win32' }, () => {
   for (const mode of ['Run', 'GuardOnly', 'EmergencyGuardian', 'QueryProbe']) {
@@ -112,7 +112,7 @@ test('library import is inert and own native file/path boundary rejects reparse 
       [IO.File]::Delete($leaf);[IO.Directory]::Delete($target,$false);[IO.Directory]::Delete($fixture,$false);
     }
   `;
-  const result = run(['-Command', command]); assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
+  const result = run(['-Command', command], 45000); assert.equal(result.status, 0, [result.error?.code, result.signal, result.stdout, result.stderr].filter(Boolean).join('\n'));
   const receipt = JSON.parse(result.stdout); assert.equal(receipt.ownJunctionRefused, true);
   assert.equal(receipt.liveScmMutations + receipt.liveDnsMutations + receipt.liveTaskMutations + receipt.liveRegistryMutations, 0);
   assert.equal(fs.existsSync(fixture), false);

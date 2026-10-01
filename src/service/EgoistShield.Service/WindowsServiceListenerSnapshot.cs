@@ -221,21 +221,35 @@ internal sealed class WindowsServiceListenerSnapshot
             foreach (var item in held)
             {
                 token.ThrowIfCancellationRequested();
+                if (Native.WaitForSingleObject(item.Handle, 0) == 0) continue;
                 var handle = Native.OpenProcess(1U | 0x1000U | 0x100000U, false, item.Identity.ProcessId);
-                if (handle.IsInvalid) { handle.Dispose(); throw new Win32Exception(Marshal.GetLastWin32Error()); }
+                if (handle.IsInvalid)
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    handle.Dispose();
+                    if (Native.WaitForSingleObject(item.Handle, 0) == 0) continue;
+                    throw new Win32Exception(error);
+                }
                 try
                 {
                     VerifyRuntimeIdentity(handle, item.Identity.ExecutablePath, item.Identity.CreatedAt);
                     terminators.Add((handle, item.Identity));
                 }
+                catch (IOException) when (Native.WaitForSingleObject(handle, 0) == 0) { handle.Dispose(); }
                 catch { handle.Dispose(); throw; }
             }
             foreach (var item in terminators)
             {
                 token.ThrowIfCancellationRequested();
                 if (Native.WaitForSingleObject(item.Handle, 0) == 0) continue;
-                VerifyRuntimeIdentity(item.Handle, expected, item.Identity.CreatedAt);
-                if (!Native.TerminateProcess(item.Handle, 0)) throw new Win32Exception(Marshal.GetLastWin32Error());
+                try { VerifyRuntimeIdentity(item.Handle, expected, item.Identity.CreatedAt); }
+                catch (IOException) when (Native.WaitForSingleObject(item.Handle, 0) == 0) { continue; }
+                if (!Native.TerminateProcess(item.Handle, 0))
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    if (Native.WaitForSingleObject(item.Handle, 0) == 0) continue;
+                    throw new Win32Exception(error);
+                }
                 while (true)
                 {
                     token.ThrowIfCancellationRequested();
@@ -330,6 +344,9 @@ internal sealed class WindowsServiceListenerSnapshot
                     if (!string.Equals(identity.Path, expected, StringComparison.OrdinalIgnoreCase)) { handle.Dispose(); continue; }
                     held.Add((handle, new(pid, identity.Born, identity.Path)));
                 }
+                // An exit can happen between the initial wait and image query.
+                // Only this same held handle's signaled state permits omission.
+                catch (IOException) when (Native.WaitForSingleObject(handle, 0) == 0) { handle.Dispose(); }
                 catch { handle.Dispose(); throw; }
             } while (Native.Process32Next(snapshot, ref entry));
             if (Marshal.GetLastWin32Error() != 18) throw new Win32Exception(Marshal.GetLastWin32Error());
