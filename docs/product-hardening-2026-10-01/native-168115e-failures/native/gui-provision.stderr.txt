@@ -1,0 +1,14 @@
+Error occurred in handler for 'telegram-proxy:install-service': CoreServiceRequestError: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $ErrorActionPreference = 'Stop'; $target = [System.IO.Path]::GetFullPath('C:\ProgramData\EgoistShield\Runtime\TelegramProxy\runtime\egoistshield-tg-ws-proxy.exe'); $processes = @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and [string]::Equals([System.IO.Path]::GetFullPath($_.ExecutablePath), $target, [System.StringComparison]::OrdinalIgnoreCase) }); foreach ($item in $processes) { Stop-Process -Id $item.ProcessId -Force -ErrorAction Stop }
+
+    at CoreServiceClient2.requestOnce (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42773:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/build/main.js:42728:16) {
+  code: 'OPERATION_FAILED',
+  retryable: false
+}
+[14:33:25] [warn]  [window] console-message level=warning <connection-uri> [activity] APP-ACTION: Error invoking remote method 'telegram-proxy:install-service': CoreServiceRequestError:
+[14:33:29] [error] [boot] background recovery failed: Error: Timed out inspecting network owners before mutation: dns:boot-recovery
+Error: Timed out inspecting network owners before mutation: dns:boot-recovery
+    at Timeout.<anonymous> (<connection-uri>
+    at listOnTimeout (node:internal/timers:685:17)
+    at process.processTimers (node:internal/timers:618:7)

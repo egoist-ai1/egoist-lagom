@@ -57,7 +57,10 @@ internal sealed class WindowsNativeDohController
 				return _hasIpv6DefaultRoute;
 			string script = "$ErrorActionPreference = 'Stop'\n$connected = @(Get-NetAdapter -Physical -ErrorAction Stop | Where-Object { $_.Status -eq 'Up' } | ForEach-Object { [int]$_.ifIndex })\n$routes = @(Get-NetRoute -AddressFamily IPv6 -DestinationPrefix '::/0' -PolicyStore ActiveStore -ErrorAction SilentlyContinue | Where-Object { [int]$_.InterfaceIndex -in $connected })\n[bool]($routes.Count -gt 0) | ConvertTo-Json -Compress";
 			var result = await RunPowerShellAsync(script, cancellationToken);
-			_hasIpv6DefaultRoute = result.ExitCode == 0 && bool.TryParse(result.StandardOutput.Trim(), out bool available) && available;
+			EnsureSuccess(result, "inspect IPv6 default route");
+			if (!bool.TryParse(result.StandardOutput.Trim(), out bool available))
+				throw new ServiceOperationException("DNS_DOH_ROUTE_QUERY_INVALID", "IPv6 default route inspection returned an invalid result; route capability remains unknown.");
+			_hasIpv6DefaultRoute = available;
 			_routeCheckedAt = _routeElapsed();
 			return _hasIpv6DefaultRoute;
 		}

@@ -68,6 +68,9 @@ var NetworkCombinatorManager = class {
 	inspectionCacheExpiresAt = 0;
 	inspectionInFlight = null;
 	inspectionGeneration = 0;
+	inspectionDiagnostics = [];
+	inspectionStartedAt = 0;
+	onInspectionDiagnostic;
 	activeCoordinatedMutations = /* @__PURE__ */ new Map();
 	outstandingCoordinatedMutations = 0;
 	mutationReleaseWaiters = /* @__PURE__ */ new Set();
@@ -78,6 +81,9 @@ var NetworkCombinatorManager = class {
 		this.getProductVersion = options.getProductVersion ?? (() => void 0);
 		this.moduleInspectors = options.moduleInspectors ?? {};
 		this.elapsedNow = options.elapsedNow ?? (() => performance.now());
+		this.onInspectionDiagnostic = options.onInspectionDiagnostic ?? ((event) => {
+			if (typeof log !== "undefined") log.warn?.("[network-owner-inspection]", JSON.stringify(event));
+		});
 	}
 	async inspect() {
 		const generation = this.inspectionGeneration;
@@ -94,26 +100,59 @@ var NetworkCombinatorManager = class {
 		return generation === this.inspectionGeneration ? value : this.inspect();
 	}
 	async buildInspection(generation = this.inspectionGeneration) {
-		const modules = await Promise.all(DEFAULT_MODULES.map(async (fallback) => {
-			const inspector = this.moduleInspectors[fallback.id];
-			return inspector ? {
-				...fallback,
-				...await inspector()
-			} : fallback;
+		this.inspectionStartedAt = this.elapsedNow();
+		this.inspectionDiagnostics = DEFAULT_MODULES.map((module) => ({
+			id: module.id, state: "pending", startedAt: this.elapsedNow(), elapsedMs: 0, errorCode: null
 		}));
-		const inspection = buildNetworkCombinatorInspection({
+		try {
+			const modules = await Promise.all(DEFAULT_MODULES.map(async (fallback, index) => {
+				const row = this.inspectionDiagnostics[index];
+				try {
+					const inspector = this.moduleInspectors[fallback.id];
+					const value = inspector ? { ...fallback, ...await inspector() } : fallback;
+					row.state = value.status === "degraded" || value.health === "warn" ? "degraded" : "complete";
+					if (row.state === "degraded") row.errorCode = "OWNER_STATE_UNAVAILABLE";
+					return value;
+				} catch (error) {
+					row.state = "error";
+					row.errorCode = typeof error?.code === "string" && /^[A-Z0-9_]{1,64}$/.test(error.code) ? error.code : "INSPECTOR_REJECTED";
+					throw error;
+				} finally { row.elapsedMs = Math.max(0, Math.round(this.elapsedNow() - row.startedAt)); }
+			}));
+			const admin = { id: "admin-token", state: "pending", startedAt: this.elapsedNow(), elapsedMs: 0, errorCode: null };
+			this.inspectionDiagnostics.push(admin);
+			let isElevated;
+			try { isElevated = await this.isElevated(); admin.state = "complete"; }
+			catch (error) { admin.state = "error"; admin.errorCode = "ADMIN_TOKEN_QUERY_FAILED"; throw error; }
+			finally { admin.elapsedMs = Math.max(0, Math.round(this.elapsedNow() - admin.startedAt)); }
+			const inspection = buildNetworkCombinatorInspection({
 			modules,
 			productVersion: this.getProductVersion(),
 			admin: {
-				isElevated: await this.isElevated(),
+				isElevated,
 				strategy: "admin-default-app-boundary"
 			}
 		});
-		if (generation === this.inspectionGeneration) {
-			this.lastInspection = inspection;
-			this.inspectionCacheExpiresAt = this.elapsedNow() + INSPECTION_CACHE_TTL_MS;
+			if (generation === this.inspectionGeneration) {
+				this.lastInspection = inspection;
+				this.inspectionCacheExpiresAt = this.elapsedNow() + INSPECTION_CACHE_TTL_MS;
+			}
+			if (this.inspectionDiagnostics.some((row) => row.state === "degraded") || this.elapsedNow() - this.inspectionStartedAt >= 1000)
+				this.reportInspectionDiagnostic("NETWORK_OWNER_INSPECTION_SLOW_OR_DEGRADED");
+			return inspection;
+		} catch (error) {
+			this.reportInspectionDiagnostic("NETWORK_OWNER_INSPECTION_FAILED");
+			throw error;
 		}
-		return inspection;
+	}
+	reportInspectionDiagnostic(errorCode, action) {
+		const providers = this.inspectionDiagnostics.map(({ id, state, startedAt, elapsedMs, errorCode }) => ({
+			id, state, elapsedMs: state === "pending" ? Math.max(0, Math.round(this.elapsedNow() - startedAt)) : elapsedMs, errorCode
+		}));
+		const event = { errorCode, ...(action ? { action } : {}), generation: this.inspectionGeneration,
+			elapsedMs: Math.max(0, Math.round(this.elapsedNow() - this.inspectionStartedAt)), providers };
+		try { this.onInspectionDiagnostic(event); } catch {}
+		return event;
 	}
 	async plan(intent) {
 		this.prunePlans();
@@ -250,7 +289,11 @@ var NetworkCombinatorManager = class {
 			return await Promise.race([
 				this.inspect(),
 				new Promise((_, reject) => {
-					timer = setTimeout(() => reject(new Error(`Timed out inspecting network owners before mutation: ${action}`)), remainingMs);
+					timer = setTimeout(() => {
+						const event = this.reportInspectionDiagnostic("NETWORK_OWNER_INSPECTION_TIMEOUT", action);
+						const pending = event.providers.filter((row) => row.state === "pending").map((row) => `${row.id}@${row.elapsedMs}ms`).join(",") || "none";
+						reject(new Error(`Timed out inspecting network owners before mutation: ${action}; pending=${pending}`));
+					}, remainingMs);
 				})
 			]);
 		} finally {

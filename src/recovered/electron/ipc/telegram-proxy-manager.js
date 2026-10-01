@@ -963,14 +963,26 @@ var TelegramProxyManager = class {
 		throw lastError instanceof Error ? lastError : /* @__PURE__ */ new Error("Не удалось скопировать runtime TG WS Proxy.");
 	}
 	async stopProcessesUsingManagedRuntime(runtimePath) {
-		const target = path.win32.normalize(runtimePath).replace(/'/g, "''");
-		const script = [
-			"$ErrorActionPreference = 'Stop'",
-			`$target = [System.IO.Path]::GetFullPath('${target}')`,
-			"$processes = @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and [string]::Equals([System.IO.Path]::GetFullPath($_.ExecutablePath), $target, [System.StringComparison]::OrdinalIgnoreCase) })",
-			"foreach ($item in $processes) { Stop-Process -Id $item.ProcessId -Force -ErrorAction Stop }"
-		].join("; ");
-		await execFileAsync$3(resolveWindowsExecutable("powershell.exe"), ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script], { windowsHide: true, timeout: 10000 });
+		const programData = process.env.ProgramData ?? process.env.PROGRAMDATA;
+		if (process.platform !== "win32" || typeof programData !== "string" || !path.win32.isAbsolute(programData) || !path.win32.isAbsolute(runtimePath))
+			throw new Error("Protected Telegram runtime cleanup path is unavailable.");
+		const root = path.win32.join(programData, "EgoistShield", "Runtime", "TelegramProxy", "runtime");
+		const target = path.win32.normalize(runtimePath);
+		const matches = (left, right) => typeof left === "string" && path.win32.isAbsolute(left) && path.win32.normalize(left).toLowerCase() === path.win32.normalize(right).toLowerCase();
+		const kind = matches(target, path.win32.join(root, TG_WS_PROXY_MANAGED_EXE_NAME)) ? "primary" : matches(target, path.win32.join(root, TG_WS_PROXY_LEGACY_EXE_NAME)) ? "legacy" : null;
+		if (!kind) throw new Error("Telegram cleanup requires an exact protected product runtime.");
+		const executable = path.join(this.resourcesPath, "core-service", "win-x64", "EgoistShield.Service.exe");
+		const { stdout } = await execFileAsync$3(executable, ["--telegram-runtime-cleanup", "--runtime", kind], { windowsHide: true, timeout: 10000, maxBuffer: 65536 });
+		if (typeof stdout !== "string" || stdout.length > 65536) throw new Error("Telegram runtime cleanup returned an invalid proof.");
+		const proof = JSON.parse(stdout);
+		const identities = new Set();
+		if (!proof || proof.schemaVersion !== 1 || proof.operation !== "telegram-runtime-cleanup" || proof.target !== kind || !matches(proof.runtimePath, target) || proof.cleanupComplete !== true || proof.quiescent !== true || !Array.isArray(proof.stopped) || proof.stopped.length > 128)
+			throw new Error("Telegram runtime cleanup could not prove quiescence.");
+		for (const row of proof.stopped) {
+			if (!row || !Number.isSafeInteger(row.processId) || row.processId <= 0 || identities.has(row.processId) || typeof row.createdAt !== "string" || !Number.isFinite(Date.parse(row.createdAt)) || Date.parse(row.createdAt) <= 0 || !matches(row.executablePath, target))
+				throw new Error("Telegram runtime cleanup returned an invalid process identity.");
+			identities.add(row.processId);
+		}
 		await this.clearManagedState();
 	}
 	async stopStaleTelegramProxyProcesses() {

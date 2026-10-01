@@ -142,3 +142,36 @@ test('an inspection deadline releases the idle guard and a late reply cannot run
   await new Promise(setImmediate);
   assert.equal(operated, false);
 });
+
+test('owner inspection timeout identifies the pending provider without guessing ownership', async t => {
+  const pending = deferred();
+  t.after(() => pending.resolve({ ownedLocks: [] }));
+  const events = [];
+  const manager = coordinator({ onInspectionDiagnostic: event => events.push(event), moduleInspectors: {
+    dns: () => pending.promise,
+    'telegram-proxy': async () => ({ ownedLocks: ['telegram-proxy-port'] })
+  } });
+  let operated = false;
+  await assert.rejects(manager.runCoordinatedMutation({ ...intent('boot-recovery'), waitTimeoutMs: 25 }, async () => { operated = true; }), /pending=dns/);
+  assert.equal(operated, false);
+  const timeout = events.find(event => event.errorCode === 'NETWORK_OWNER_INSPECTION_TIMEOUT');
+  assert.ok(timeout);
+  assert.equal(timeout.providers.find(row => row.id === 'dns').state, 'pending');
+  assert.equal(timeout.providers.find(row => row.id === 'telegram-proxy').state, 'complete');
+  assert.ok(timeout.providers.find(row => row.id === 'dns').elapsedMs >= 0);
+  assert.equal(manager.activeCoordinatedMutations.size, 0);
+});
+
+test('owner inspection diagnostics retain the failed provider and stable error ID', async () => {
+  const events = [];
+  const manager = coordinator({ onInspectionDiagnostic: event => events.push(event), moduleInspectors: {
+    dns: async () => { throw Object.assign(new Error('controlled ownership query failure'), { code: 'DNS_DOH_QUERY_TIMEOUT' }); }
+  } });
+  await assert.rejects(manager.inspect(), /controlled ownership query failure/);
+  const failure = events.find(event => event.errorCode === 'NETWORK_OWNER_INSPECTION_FAILED');
+  assert.ok(failure);
+  const row = failure.providers.find(value => value.id === 'dns');
+  assert.equal(row.state, 'error');
+  assert.equal(row.errorCode, 'DNS_DOH_QUERY_TIMEOUT');
+  assert.ok(row.elapsedMs >= 0);
+});

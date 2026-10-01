@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "kind": "current-native-doh-read-only-query-fix",
+  "baseCommit": "168115e",
+  "sourceFrozen": true,
+  "changes": {
+    "readOnlyBudgetSeconds": 20,
+    "mutationPowerShellBudgetSeconds": 120,
+    "missingOwnership": "Atomic Missing skips DNS snapshot; actual IPv6 route capability remains bounded and cached; ownership re-read after route; appeared ownership returns failure.",
+    "failClosed": [
+      "corrupt",
+      "null JSON",
+      "unavailable",
+      "unsupported owner/schema",
+      "DNS_DOH_QUERY_TIMEOUT",
+      "DNS_DOH_OWNERSHIP_CHANGED",
+      "DNS_DOH_ROUTE_QUERY_INVALID"
+    ],
+    "diagnostics": "Provider IDs, elapsedMs, pending/complete/degraded/error state, stable error IDs and admin-token stage; ownership gates unchanged."
+  },
+  "verification": {
+    "red": {
+      "nativeBuildErrors": 0,
+      "nativeFailure": "Missing ownership launched an unnecessary DNS snapshot.",
+      "coordinatorPass": 0,
+      "coordinatorFail": 2
+    },
+    "green": {
+      "nativeQueryGroups": 5,
+      "fullExistingNativeGroups": 22,
+      "nodePass": 24,
+      "nodeFail": 0,
+      "nodeSkip": 0,
+      "buildErrors": 0,
+      "buildWarnings": 135,
+      "sdk": "10.0.401",
+      "runtime": ".NET 10.0.12",
+      "fullNativeElapsedSeconds": 9.17,
+      "diffCheckExitCode": 0
+    },
+    "actualHeldChild": {
+      "pid": 27592,
+      "exited": true,
+      "cancellationObserved": true,
+      "elapsedMs": 2026,
+      "injectedBudgetSeconds": 2,
+      "code": "DNS_DOH_QUERY_TIMEOUT",
+      "productServiceExecuted": false,
+      "dnsMutationCommandsExecuted": 0
+    }
+  },
+  "limits": [
+    "Native run36875880105 lacks per-provider timings; historical blocking provider is unproven.",
+    "Fixtures use task-local state/injected DNS runners and an actual owned sleeping PowerShell child; no productive DNS/SCM/cleanup invocation.",
+    "Full existing harness ran ordinary read-only native listener CLI; unknown is allowed and is not proof of ownership/connectivity.",
+    "Other providers keep their independent budgets; coordinator does not abandon an underlying uncancelled inspection or invent ownership.",
+    "Parent sealed package and genuine next disposable native acceptance remain required; no release/month uptime claim."
+  ],
+  "files": {
+    "src/service/EgoistShield.Service/OperationDispatcher.cs": "cffb0184e0acd3650a47b80da1a4d4770421414d2d7f5b5c26a081df5e1cfaac",
+    "src/service/EgoistShield.Service/WindowsNativeDohController.cs": "1610e7791364d3fa243a49714f8f9b74ab1fc84966a0b22852d03207016ca6ef",
+    "src/recovered/electron/ipc/network-combinator-manager.js": "9903f2367968e181424b3a537119c49659055d9f8a8db3284145ab03f0143ab4",
+    "tests/NativeDohConfigurationRegression/Program.cs": "e28822a6500e6b10673c6361632172964d2400c9428c3dce4a83ec364c8b6a11",
+    "tests/network-mutation-idle.test.mjs": "39c9f0470c0feb23c632b659f155c5efa9c460f6734a1c5349e3f9c905500850"
+  },
+  "evidence": [
+    "green-build.txt",
+    "green-query.txt",
+    "green-full-native.txt",
+    "actual-query-cancellation.json"
+  ]
+}

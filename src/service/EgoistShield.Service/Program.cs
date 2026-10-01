@@ -141,6 +141,8 @@ internal static class Program
 				return VpnServiceStatusCommand.RunAsync();
 			if (args.Length == 1 && args[0] == "--winws-process-snapshot")
 				return WinwsProcessSnapshotCommand.RunAsync();
+			if (args.Length == 3 && args[0] == "--telegram-runtime-cleanup" && args[1] == "--runtime" && args[2] is "primary" or "legacy")
+				return TelegramRuntimeCleanupCommand.RunAsync(args[2]);
 			ParsedArguments parsed = ParsedArguments.Parse(args);
 			if (parsed.TelegramListenerSnapshot)
 				return TelegramListenerSnapshotCommand.RunAsync(parsed.SnapshotPort!.Value, parsed.ManagedProcessId, parsed.ManagedStartedAt);

@@ -26,6 +26,12 @@ internal static class Program
         var elapsed = Stopwatch.StartNew();
         try
         {
+            await Check("missing native ownership skips an unnecessary DNS snapshot", NativeDohMissingOwnershipAsync);
+            await Check("corrupt or unavailable native ownership fails before network inspection", NativeDohUnreadableOwnershipAsync);
+            await Check("read-only native DoH budget cancels its actual held child before the coordinator deadline", NativeDohQueryCancellationAsync);
+            await Check("failed or malformed IPv6 route queries remain unknown and are not cached", NativeDohRouteFailureAsync);
+            await Check("ownership created during a Missing route query cannot be reported disabled", NativeDohOwnershipAppearedAsync);
+            if (args.Contains("--native-doh-query-only")) { Console.WriteLine($"Native DoH read-only query regression passed: {_passed} groups; work={_work}"); return 0; }
             await Check("generated PowerShell adds and verifies a new registration", () => ConfigureScriptAsync("missing"));
             await Check("owned overlapping template changes in place", () => ConfigureScriptAsync("owned"));
             await Check("foreign and externally weakened templates are preserved", ForeignTemplatesAsync);
@@ -52,6 +58,102 @@ internal static class Program
     private static async Task Check(string name, Func<Task> run) { await run(); _passed++; Console.WriteLine("PASS: " + name); }
     private static void Assert(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, JsonDefaults.StateOptions);
+
+    private static async Task NativeDohMissingOwnershipAsync()
+    {
+        Assert(WindowsNativeDohController.IsSupported, "This Windows harness requires native DoH support.");
+        string root = Path.Combine(_work, "missing-ownership");
+        int snapshots = 0, routes = 0;
+        var dns = new WindowsDnsController((script, token) => { snapshots++; return Task.FromResult(new ProcessResult(0, Json(new[] { Baseline }), "")); });
+        var native = new WindowsNativeDohController(root, (script, token) => {
+            Assert(script.Contains("Get-NetRoute"), "Missing ownership queried DoH registrations."); routes++;
+            return Task.FromResult(new ProcessResult(0, "true", ""));
+        });
+        using var dispatcher = new OperationDispatcher(new ServiceOptions("test-no-pipe", root, true, true, null), dns, native, null, new TransactionJournal(root), new ServiceLog(root));
+        var response = await dispatcher.DispatchAsync(new ServiceRequest(1, "missing:status", "dns.doh.status", JsonDefaults.ToElement(new { })), new ClientIdentity(Environment.ProcessId, Environment.ProcessPath!, true, "test"));
+        JsonElement actual = JsonDefaults.ToElement(response.Result);
+        Assert(response.Ok && actual.GetProperty("enabled").GetBoolean() == false && actual.GetProperty("hasIpv6DefaultRoute").GetBoolean(), "Missing ownership or genuine route capability was misreported.");
+        Assert(snapshots == 0 && routes == 1 && actual.GetProperty("adapters").GetArrayLength() == 0, "Missing ownership launched an unnecessary DNS snapshot.");
+    }
+
+    private static async Task NativeDohUnreadableOwnershipAsync()
+    {
+        foreach (string mode in new[] { "corrupt", "null", "unavailable", "unsupported-owner" })
+        {
+            string root = Path.Combine(_work, "ownership-" + mode); Directory.CreateDirectory(root);
+            string file = Path.Combine(root, "native-doh-state.json");
+            await File.WriteAllTextAsync(file, mode == "null" ? "null" : mode == "unsupported-owner" ? Json(Owned() with { Owner = "Foreign" }) : "{");
+            using FileStream? held = mode == "unavailable" ? new FileStream(file, FileMode.Open, FileAccess.ReadWrite, FileShare.None) : null;
+            int queries = 0;
+            Task<ProcessResult> FailUnexpectedQuery(string script, CancellationToken token) { queries++; throw new InvalidOperationException("Unknown ownership reached network inspection."); }
+            using var dispatcher = new OperationDispatcher(new ServiceOptions("test-no-pipe", root, true, true, null),
+                new WindowsDnsController(FailUnexpectedQuery), new WindowsNativeDohController(root, FailUnexpectedQuery), null, new TransactionJournal(root), new ServiceLog(root));
+            ServiceResponse response;
+            try { response = await dispatcher.DispatchAsync(new ServiceRequest(1, "invalid:" + mode, "dns.doh.status", JsonDefaults.ToElement(new { })), new ClientIdentity(Environment.ProcessId, Environment.ProcessPath!, true, "test")); }
+            catch (InvalidOperationException error) when (mode == "unsupported-owner" && error.Message.Contains("unsupported schema or owner")) { Assert(queries == 0, "Unsupported ownership reached network inspection."); continue; }
+            Assert(!response.Ok && response.Result == null && queries == 0, "Corrupt, unavailable or unsupported ownership became a safe status or launched a network query.");
+            if (mode is "corrupt" or "null") Assert(response.Error?.Code == "STATE_CORRUPT", "Corrupt ownership lost its explicit error identity.");
+            if (mode == "unavailable") Assert(response.Error?.Code == "STATE_UNAVAILABLE", "Unavailable ownership lost its explicit error identity.");
+        }
+    }
+
+    private static async Task NativeDohQueryCancellationAsync()
+    {
+        Assert(OperationDispatcher.NativeDohQueryTimeout < TimeSpan.FromSeconds(30) && ServiceContract.PowerShellTimeout == TimeSpan.FromMinutes(2), "Read-only deadline changed global mutation budgets.");
+        string root = Path.Combine(_work, "query-cancellation"); Directory.CreateDirectory(root);
+        await File.WriteAllTextAsync(Path.Combine(root, "native-doh-state.json"), Json(Owned()));
+        string pidFile = Path.Combine(root, "held-child-pid.txt");
+        bool cancellationObserved = false;
+        var dns = new WindowsDnsController(async (script, token) => {
+            Assert(script.Contains("$result = @()") && !script.Contains("Set-DnsClient"), "Status attempted a mutating DNS script.");
+            try
+            {
+                return await ProcessRunner.RunAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe"),
+                    new[] { "-NoProfile", "-NonInteractive", "-Command", "$PID | Out-File -LiteralPath '" + pidFile.Replace("'", "''") + "' -Encoding ascii; Start-Sleep -Seconds 60" }, ServiceContract.PowerShellTimeout, token);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { cancellationObserved = true; throw; }
+        });
+        var native = new WindowsNativeDohController(root, (script, token) => throw new InvalidOperationException("Timed-out DNS snapshot must not continue to route or registration inspection."));
+        using var dispatcher = new OperationDispatcher(new ServiceOptions("test-no-pipe", root, true, true, null), dns, native, null, new TransactionJournal(root), new ServiceLog(root), nativeDohQueryTimeout: TimeSpan.FromSeconds(2));
+        var elapsed = Stopwatch.StartNew();
+        var response = await dispatcher.DispatchAsync(new ServiceRequest(1, "cancel:status", "dns.doh.status", JsonDefaults.ToElement(new { })), new ClientIdentity(Environment.ProcessId, Environment.ProcessPath!, true, "test"));
+        Assert(!response.Ok && response.Result == null && response.Error?.Code == "DNS_DOH_QUERY_TIMEOUT" && response.Error.Retryable == false && cancellationObserved && elapsed.Elapsed < TimeSpan.FromSeconds(5), "Query was not cancelled before the outer deadline or was offered for unbounded retries.");
+        Assert(File.Exists(pidFile) && int.TryParse((await File.ReadAllTextAsync(pidFile)).Trim(), out _), "Actual owned child did not start; cancellation proof is incomplete.");
+        int pid = int.Parse((await File.ReadAllTextAsync(pidFile)).Trim());
+        bool exited = false;
+        try { using var child = Process.GetProcessById(pid); exited = child.HasExited || await Task.Run(() => child.WaitForExit(2000)); }
+        catch (ArgumentException) { exited = true; }
+        Assert(exited, "Query deadline returned while its actual held child remained alive.");
+        await File.WriteAllTextAsync(Path.Combine(root, "actual-query-cancellation.json"), Json(new { kind = "actual-owned-read-only-child-cancellation", pid, exited, cancellationObserved, elapsedMs = elapsed.ElapsedMilliseconds, code = response.Error?.Code, productServiceExecuted = false, dnsMutationCommandsExecuted = 0 }));
+    }
+
+    private static async Task NativeDohRouteFailureAsync()
+    {
+        string root = Path.Combine(_work, "route-failure"); int calls = 0;
+        var controller = new WindowsNativeDohController(root, (script, token) => { calls++; return Task.FromResult(calls == 1 ? new ProcessResult(1, "", "controlled query failure") : calls == 2 ? new ProcessResult(0, "not-a-boolean", "") : new ProcessResult(0, "true", "")); });
+        for (int i = 0; i < 2; i++)
+        {
+            bool failed = false;
+            try { await controller.HasIpv6DefaultRouteAsync(default); }
+            catch (Exception error) when (error is InvalidOperationException or ServiceOperationException) { failed = true; }
+            Assert(failed, "Failed route query became a cached false capability.");
+        }
+        Assert(await controller.HasIpv6DefaultRouteAsync(default) && await controller.HasIpv6DefaultRouteAsync(default) && calls == 3, "Failed route result was cached or a verified result was not cached.");
+    }
+
+    private static async Task NativeDohOwnershipAppearedAsync()
+    {
+        string root = Path.Combine(_work, "ownership-appeared"); Directory.CreateDirectory(root); int snapshots = 0;
+        var native = new WindowsNativeDohController(root, async (script, token) => {
+            Assert(script.Contains("Get-NetRoute"), "Unexpected native status query.");
+            await File.WriteAllTextAsync(Path.Combine(root, "native-doh-state.json"), Json(Owned()), token);
+            return new ProcessResult(0, "true", "");
+        });
+        using var dispatcher = new OperationDispatcher(new ServiceOptions("test-no-pipe", root, true, true, null),
+            new WindowsDnsController((script, token) => { snapshots++; throw new InvalidOperationException("Missing path should not query adapters."); }), native, null, new TransactionJournal(root), new ServiceLog(root));
+        var response = await dispatcher.DispatchAsync(new ServiceRequest(1, "appeared:status", "dns.doh.status", JsonDefaults.ToElement(new { })), new ClientIdentity(Environment.ProcessId, Environment.ProcessPath!, true, "test"));
+        Assert(!response.Ok && response.Result == null && response.Error?.Code == "DNS_DOH_OWNERSHIP_CHANGED" && snapshots == 0, "A concurrent ownership creation was returned as disabled or caused an unbounded retry.");
+    }
 
     private static NativeDohOwnedState Owned(string[]? servers = null, DnsAdapterSnapshot[]? baseline = null) => new(1, "EgoistShield", OldUrl, servers ?? new[] { "1.1.1.1" }, DateTimeOffset.UtcNow,
         (servers ?? new[] { "1.1.1.1" }).Select(server => new NativeDohEntrySnapshot(server, false, null, false, false)).ToArray(), baseline ?? new[] { Baseline });

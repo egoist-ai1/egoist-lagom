@@ -65,10 +65,16 @@ internal sealed class OperationDispatcher : IDisposable
 	private readonly object _responseCacheLock = new();
 	private const long MaxResponseCacheBytes = 8 * 1024 * 1024;
 	private const int MaxCachedResponseBytes = 256 * 1024;
+	internal static readonly TimeSpan NativeDohQueryTimeout = TimeSpan.FromSeconds(20);
+	private readonly TimeSpan _nativeDohQueryTimeout;
 
 	public OperationDispatcher(ServiceOptions options, WindowsDnsController dns, WindowsNativeDohController nativeDoh, OwnedServiceController? services, TransactionJournal journal, ServiceLog log,
-		Func<JsonElement, bool, CancellationToken, Task<JsonElement>>? componentExecutor = null, StateReadException? startupStateError = null)
+		Func<JsonElement, bool, CancellationToken, Task<JsonElement>>? componentExecutor = null, StateReadException? startupStateError = null,
+		TimeSpan? nativeDohQueryTimeout = null)
 	{
+		_nativeDohQueryTimeout = nativeDohQueryTimeout ?? NativeDohQueryTimeout;
+		if (_nativeDohQueryTimeout <= TimeSpan.Zero || _nativeDohQueryTimeout > NativeDohQueryTimeout)
+			throw new ArgumentOutOfRangeException(nameof(nativeDohQueryTimeout));
 		_options = options;
 		_dns = dns;
 		_nativeDoh = nativeDoh;
@@ -1012,22 +1018,51 @@ internal sealed class OperationDispatcher : IDisposable
 			return new { supported = false, hasIpv6DefaultRoute = false, enabled = false, verified = false, encrypted = false,
 				nativeManaged = true, url = (string?)null, servers = Array.Empty<string>(), adapters = Array.Empty<DnsAdapterSnapshot>(),
 				updatedAt = (DateTimeOffset?)null, fallbackToUdp = false };
-		NativeDohHealth nativeDohHealth = await ReadNativeDohHealthAsync(cancellationToken);
-		bool covered = nativeDohHealth.State != null && DnsMaintenancePolicy.FullyCovered(nativeDohHealth.Adapters, nativeDohHealth.State.Servers);
-		return new
+		using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+		deadline.CancelAfter(_nativeDohQueryTimeout);
+		string stage = "ownership";
+		try
 		{
-			supported = true,
-			hasIpv6DefaultRoute = await _nativeDoh.HasIpv6DefaultRouteAsync(cancellationToken),
-			enabled = ((object)nativeDohHealth.State != null),
-			verified = (covered && nativeDohHealth.EntriesMatch && nativeDohHealth.DnsOwned),
-			encrypted = (covered && nativeDohHealth.EntriesMatch && nativeDohHealth.DnsOwned),
-			nativeManaged = true,
-			url = nativeDohHealth.State?.Url,
-			servers = (nativeDohHealth.State?.Servers ?? Array.Empty<string>()),
-			adapters = nativeDohHealth.Adapters,
-			updatedAt = nativeDohHealth.State?.UpdatedAt,
-			fallbackToUdp = false
-		};
+			// Only a confirmed Missing atomic read can take this fast path. Invalid or
+			// inaccessible ownership must not become a disabled/safe DNS observation.
+			NativeDohOwnedState? state = await _nativeDoh.ReadOwnedStateAsync(deadline.Token);
+			ValidateNativeDohOwnedState(state);
+			stage = "dns-snapshot-and-doh-entries";
+			NativeDohHealth health = state == null
+				? new NativeDohHealth(null, Array.Empty<DnsAdapterSnapshot>(), Array.Empty<NativeDohEntrySnapshot>(), false, false)
+				: await ReadNativeDohHealthAsync(deadline.Token);
+			bool covered = health.State != null && DnsMaintenancePolicy.FullyCovered(health.Adapters, health.State.Servers);
+			stage = "ipv6-default-route";
+			bool hasIpv6DefaultRoute = await _nativeDoh.HasIpv6DefaultRouteAsync(deadline.Token);
+			if (state == null)
+			{
+				stage = "ownership-recheck";
+				NativeDohOwnedState? after = await _nativeDoh.ReadOwnedStateAsync(deadline.Token);
+				ValidateNativeDohOwnedState(after);
+				if (after != null) throw new ServiceOperationException("DNS_DOH_OWNERSHIP_CHANGED",
+					"Native DoH ownership appeared during inspection; its current health remains unknown.");
+			}
+			return new
+			{
+				supported = true,
+				hasIpv6DefaultRoute,
+				enabled = health.State != null,
+				verified = covered && health.EntriesMatch && health.DnsOwned,
+				encrypted = covered && health.EntriesMatch && health.DnsOwned,
+				nativeManaged = true,
+				url = health.State?.Url,
+				servers = health.State?.Servers ?? Array.Empty<string>(),
+				adapters = health.Adapters,
+				updatedAt = health.State?.UpdatedAt,
+				fallbackToUdp = false
+			};
+		}
+		catch (OperationCanceledException error) when (!cancellationToken.IsCancellationRequested && deadline.IsCancellationRequested)
+		{
+			throw new ServiceOperationException("DNS_DOH_QUERY_TIMEOUT",
+				$"Read-only Windows DoH ownership query exceeded {_nativeDohQueryTimeout.TotalSeconds:0.###} seconds at {stage}; ownership remains unknown.",
+				innerException: error);
+		}
 	}
 
 	private async Task<object> ExecuteNativeDohApplyAsync(ServiceRequest request, long sequence, CancellationToken cancellationToken, DnsAdapterSnapshot[]? targetAdapters = null)

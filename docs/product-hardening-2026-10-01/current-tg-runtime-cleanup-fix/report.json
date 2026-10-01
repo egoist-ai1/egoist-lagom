@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "kind": "current-telegram-runtime-cleanup-fix",
+  "recordedAt": "2026-10-01T14:59:56.514369+00:00",
+  "baseSourceCommit": "168115e7304caa5154370bb8e3021ed6c9ed5c74",
+  "frozen": true,
+  "sourceFiles": [
+    {
+      "path": "src/recovered/electron/ipc/telegram-proxy-manager.js",
+      "sha256": "1072dc2225dde6d41190582af4483341eb0d7771905ed5bbaea49e4233f0ef63",
+      "size": 84489
+    },
+    {
+      "path": "src/service/EgoistShield.Service/WindowsServiceListenerSnapshot.cs",
+      "sha256": "8cb07d68f9e92d757ab26baadc63d029f0df5aeb97525a8286bd393d9526e536",
+      "size": 27791
+    },
+    {
+      "path": "src/service/EgoistShield.Service/TelegramRuntimeCleanupCommand.cs",
+      "sha256": "178d3d0dae54d3b028cda9e885137e5215e80d12792859f72d8216969d1b3395",
+      "size": 2077
+    },
+    {
+      "path": "src/service/EgoistShield.Service/Program.cs",
+      "sha256": "d9a391a41d622b90bbae6de0a0357639a5ff5cc57e35853b8012b8402dd58c3f",
+      "size": 10211
+    },
+    {
+      "path": "tests/telegram-runtime-cleanup.test.mjs",
+      "sha256": "abe8e1e6362248cf6b02ba1dd985bef430ff40b8063183603be57f7cd642a245",
+      "size": 6510
+    },
+    {
+      "path": "tests/NativeRuntimeCleanupRegression/NativeRuntimeCleanupRegression.csproj",
+      "sha256": "1af27f819866c11bb7424fb48c323a1403be282f0734f2bc5bee7f8d19855fb9",
+      "size": 864
+    },
+    {
+      "path": "tests/NativeRuntimeCleanupRegression/Program.cs",
+      "sha256": "2c339931685f6e251177de722b92c02e64f4ca62d98b10d6df5aef8904518ffe",
+      "size": 8567
+    }
+  ],
+  "checks": {
+    "originalRed": {
+      "tests": 3,
+      "pass": 0,
+      "fail": 3,
+      "skip": 0
+    },
+    "focusedGreen": {
+      "tests": 52,
+      "pass": 52,
+      "fail": 0,
+      "skip": 0,
+      "durationMs": 2871.2509
+    },
+    "actualNative": {
+      "kind": "actual-harmless-native-runtime-cleanup",
+      "actualNativeApis": true,
+      "checks": [
+        {
+          "name": "two caller-owned harmless children start",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "readiness identifies held own children",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "actual native handle path birth and liveness match owned child",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "foreign expected path is refused",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "stale creation identity is refused",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "identity refusals leave both real children alive",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "cancelled cleanup refuses before termination",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "cancelled cleanup leaves both children alive",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "actual native cleanup stops exact held owned identity",
+          "passed": true,
+          "milliseconds": 20.7229
+        },
+        {
+          "name": "same-name foreign path child survives actual termination",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "actual replacement child starts at the same owned executable path",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "replacement readiness identifies the held new child",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "actual replacement process makes publication quiescence fail closed",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "quiescence refusal preserves replacement and foreign child without kill loop",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "native recheck proves owned runtime quiescent without restarting a kill loop",
+          "passed": true,
+          "milliseconds": 9.914
+        },
+        {
+          "name": "missing destination enumerates matching real rows and preserves foreign path",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "actual CLI refuses arbitrary target before native cleanup",
+          "passed": true,
+          "milliseconds": null
+        },
+        {
+          "name": "actual CLI refuses mixed service mode before native cleanup",
+          "passed": true,
+          "milliseconds": null
+        }
+      ],
+      "scmWrites": false,
+      "dnsWrites": false,
+      "registryWrites": false,
+      "serviceInstallationVerified": false
+    },
+    "actualWorkContract": {
+      "exitCode": 0,
+      "checksPassed": 18
+    },
+    "isolatedCompile": {
+      "errors": 0,
+      "warnings": 136,
+      "suppressed": false
+    }
+  },
+  "evidence": [
+    {
+      "path": "actual-native.txt",
+      "sha256": "de3ca99a029f24393590d39888f99394b40ff9801fa6ae4333d49262744c8eb1",
+      "size": 2929
+    },
+    {
+      "path": "compile.txt",
+      "sha256": "bbc56fed67112c6e7740d358e81edebbcc117e06825a1d6525cb6757eb5f9493",
+      "size": 139623
+    },
+    {
+      "path": "tg-cleanup-first-green.txt",
+      "sha256": "2f7d1c6e68e29e793618153fe3fcf137010f08bf1b09c18afe951097552e39b7",
+      "size": 11748
+    },
+    {
+      "path": "tg-cleanup-fixture-red.txt",
+      "sha256": "daa0bfd4e2add18be68cbf34e83f43f8016a611dd733c3b9b130a0e47df391c6",
+      "size": 5277
+    },
+    {
+      "path": "tg-cleanup-green.txt",
+      "sha256": "2740794b5427ac093cd0a46cb3633b03e2c87d346f14d93cd9c7b3865d7a2a65",
+      "size": 11745
+    },
+    {
+      "path": "tg-cleanup-invalid-cli-red.txt",
+      "sha256": "c7d8faf1d8e1d70f7061f21ad23482a89c9e4f6fe9b11833e58e41c10b465b9e",
+      "size": 13319
+    },
+    {
+      "path": "tg-cleanup-negative-type-red.txt",
+      "sha256": "b49c39927899131c24c7f8bbeab6ba42bfb4b288b41b2b1e54037c4eaaafa031",
+      "size": 14165
+    },
+    {
+      "path": "tg-cleanup-red.mjs",
+      "sha256": "66f1896658cd73a21a21e2f4f37b325cdbf93646e476b332d6fd0ae13d73827b",
+      "size": 2212
+    },
+    {
+      "path": "tg-cleanup-red.txt",
+      "sha256": "42be166d031769184957654d3bd0b546a11709d321302f5f814153b75f3420cc",
+      "size": 2899
+    },
+    {
+      "path": "tg-cleanup-signaled-row-red.txt",
+      "sha256": "4383c42435f505b3834a5134c488a3c45224f858284c25c51b5a0b4253e101d8",
+      "size": 13914
+    },
+    {
+      "path": "tg-cleanup-work-contract.txt",
+      "sha256": "26dcbe039dbe9068ce18b6a41b4eaa49bd53a1024b91a180cb5cbe3011bd514c",
+      "size": 2910
+    }
+  ],
+  "limits": [
+    "Valid primary/legacy production cleanup CLI was never invoked on physical host.",
+    "Actual SYSTEM service installation, candidate packaging/signing and disposable Windows acceptance remain root work.",
+    "Unreadable live matching process/OS snapshot failure refusal is source-reviewed and exercised through JS negative proof fixtures, not claimed as an actual protected-process native experiment.",
+    "Actual replacement refusal exercises the exact production quiescence boundary with a real own replacement child; timing a real SCM recovery race was not attempted.",
+    "No service/DNS/registry writes or physical GUI changes; test APIs affected only held caller-owned harmless child processes.",
+    "No months-long uptime guarantee follows from these bounded tests."
+  ]
+}

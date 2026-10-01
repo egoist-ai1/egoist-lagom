@@ -1,0 +1,35 @@
+{
+  "ok": true,
+  "kind": "current-candidate-authentication",
+  "candidate": {
+    "schemaVersion": 2,
+    "channel": "stable",
+    "version": "3.8.0",
+    "tag": "v3.8.0",
+    "installerName": "EgoistShield-Setup-3.8.0.exe",
+    "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+    "size": 277449748,
+    "sha256": "beeb9e3fe40161aa936dc3261575b60efec99c3938175cd8ae8e97416a1bf430",
+    "sha512": "aa0bfc08d8862bda700d675445a675ae80b5762b01b538cf9df97c07dd095649b0c04322e3f3b6a7203c1b21e52201826806629cc914e69d39e29304dd56c290",
+    "githubDigest": "sha256:beeb9e3fe40161aa936dc3261575b60efec99c3938175cd8ae8e97416a1bf430",
+    "sourceCommit": "168115e7304caa5154370bb8e3021ed6c9ed5c74",
+    "integrityManifestSha256": "179ecfe71663e10e52f7a787b0d937c960da573d0aca57070e05268aca65a5ea",
+    "minimumAppVersion": "3.7.8",
+    "keyId": "release-2026-09-recovery",
+    "authenticodeStatus": "not-signed",
+    "licenseVersion": "1.0",
+    "publishedAt": "2026-10-01T14:19:08.084Z"
+  },
+  "sourceCommit": "168115e7304caa5154370bb8e3021ed6c9ed5c74",
+  "rootSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+  "bundledRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+  "candidateRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+  "candidateManifestSha256": "60fe52d60618d69a20f29da7f45000d4d9ed81277757d9c78fd8cc285234550b",
+  "integrityManifestSha256": "179ecfe71663e10e52f7a787b0d937c960da573d0aca57070e05268aca65a5ea",
+  "installer": {
+    "sha256": "beeb9e3fe40161aa936dc3261575b60efec99c3938175cd8ae8e97416a1bf430",
+    "sha512": "aa0bfc08d8862bda700d675445a675ae80b5762b01b538cf9df97c07dd095649b0c04322e3f3b6a7203c1b21e52201826806629cc914e69d39e29304dd56c290",
+    "bytes": 277449748
+  },
+  "crypto": "real Ed25519 over original bytes; project pinned root; no supplied CLI keys"
+}
