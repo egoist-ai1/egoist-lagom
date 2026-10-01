@@ -486,7 +486,7 @@ function Invoke-VpnNativeAcceptance {
   $script:VpnConfig=Join-Path $script:VpnProductRoot 'Runtime\Vpn\config.json'
   $script:VpnConnection=Join-Path $script:VpnProductRoot 'Service\Vpn\connection.json'
   $script:VpnStateFile=Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Egoist Shield\egoistshield-state.json'
-  $script:VpnNode=(Get-Command node -CommandType Application -ErrorAction Stop).Source
+  $script:VpnNode=Resolve-NativeApplication 'node'
   foreach($file in @($script:VpnGui,$script:VpnCore,$script:VpnRuntime)){Assert-NativeOrdinaryPath -Path $file -Leaf;[void](Assert-NativeAdministratorOwned $file)}
   [void](Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:VpnCore -Running)
   Assert-NativeNoGui

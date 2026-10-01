@@ -23,8 +23,12 @@ on:
         description: Optional signed draft ID for diagnostic-only Setup execution with both source identities recorded
         type: string
         default: ''
+      core_configuration_diagnostic:
+        description: Diagnose exact-source Core configuration and protected ACLs on this disposable administrator host
+        type: boolean
+        default: false
       signed_legacy_release_id:
-        description: Signed draft release ID for fresh installation and actual 3.7.9 updater acceptance
+        description: Signed draft ID for fresh installation and original 3.7.8/3.7.9 helper acceptance
         type: string
         default: ''
 
@@ -44,6 +48,26 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Read the Core diagnostic SDK
+        if: ${{ inputs.core_configuration_diagnostic }}
+        id: diagnostic-sdk
+        env:
+          DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+        shell: pwsh
+        run: |
+          ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          if ($env:DIAGNOSTIC_RELEASE_ID -ne '') { throw 'Choose either signed Setup or source Core diagnostics.' }
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($sdkPin -notmatch '^\d+\.\d+\.\d+$') { throw 'An exact diagnostic SDK is required.' }
+          "version=$sdkPin" >> $env:GITHUB_OUTPUT
+          "DOTNET_INSTALL_DIR=$(Join-Path $env:RUNNER_TEMP 'lagom-core-diagnostic-dotnet')" >> $env:GITHUB_ENV
+          "DOTNET_CLI_TELEMETRY_OPTOUT=1" >> $env:GITHUB_ENV
+          "DOTNET_NOLOGO=1" >> $env:GITHUB_ENV
+      - name: Use the exact Core diagnostic SDK
+        if: ${{ inputs.core_configuration_diagnostic }}
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ steps.diagnostic-sdk.outputs.version }}
       - name: Use Node.js for the signed diagnostic verifier
         if: ${{ inputs.diagnostic_release_id != '' }}
         uses: actions/setup-node@v4
@@ -91,7 +115,8 @@ jobs:
       - name: Diagnose exact native installer phases
         shell: pwsh
         run: |
-          if ($env:LAGOM_DIAGNOSTIC_ASSETS) { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS }
+          if ('${{ inputs.core_configuration_diagnostic }}' -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -CoreConfigurationOnly }
+          elseif ($env:LAGOM_DIAGNOSTIC_ASSETS) { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS }
           else { ./tests/windows-installer-diagnostics.ps1 }
       - name: Upload source phase diagnostics
         if: ${{ always() }}
@@ -208,6 +233,11 @@ jobs:
         shell: pwsh
         run: |
           ./tests/core-persistence-production.ps1 -WorkRoot $env:LAGOM_TEST_TEMP -DotnetPath (Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe') -Case all
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run Core owner and protected-file ACL regressions
+        shell: pwsh
+        run: |
+          ./tests/core-owner-regression.ps1 -WorkRoot $env:LAGOM_TEST_TEMP -DotnetPath (Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run owned wrapper log filesystem and Core integration regressions
         shell: pwsh
@@ -536,7 +566,7 @@ jobs:
         run: |
           npm ci
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Download the official old release and signed candidate
+      - name: Download and authenticate the original old generation and signed candidate
         env:
           GH_TOKEN: ${{ github.token }}
           SIGNED_LEGACY_RELEASE_ID: ${{ inputs.signed_legacy_release_id }}
@@ -547,13 +577,16 @@ jobs:
           if ($oldVersion -cnotin @('3.7.8', '3.7.9')) { throw 'Only the two authenticated supported old versions may be tested.' }
           $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid candidate version.' }
-          $oldReleaseText = gh api ("repos/egoist-ai1/egoist-lagom/releases/tags/v" + $oldVersion)
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $oldRelease = $oldReleaseText | ConvertFrom-Json
+          $oldRelease = $null
+          if ($oldVersion -ceq '3.7.9') {
+            $oldReleaseText = gh api 'repos/egoist-ai1/egoist-lagom/releases/tags/v3.7.9'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $oldRelease = $oldReleaseText | ConvertFrom-Json
+            if ($oldRelease.tag_name -cne 'v3.7.9' -or $oldRelease.draft -or -not $oldRelease.published_at) { throw 'The old 3.7.9 release must match the exact published generation.' }
+          }
           $candidateText = gh api ("repos/egoist-ai1/egoist-lagom/releases/" + $env:SIGNED_LEGACY_RELEASE_ID)
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $candidateRelease = $candidateText | ConvertFrom-Json
-          if ($oldRelease.tag_name -cne "v$oldVersion" -or $oldRelease.draft -or -not $oldRelease.published_at) { throw 'The old release must match the exact official published matrix version.' }
           if ($candidateRelease.tag_name -cne "v$version" -or [string]$candidateRelease.id -cne $env:SIGNED_LEGACY_RELEASE_ID) { throw 'The candidate release identity differs.' }
           $tagSelectionText = gh release view "v$version" --repo 'egoist-ai1/egoist-lagom' --json databaseId,tagName,isDraft
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -564,12 +597,27 @@ jobs:
           $oldAssets = Join-Path $legacyWork 'old'
           $candidateAssets = Join-Path $legacyWork 'candidate'
           $evidence = Join-Path $legacyWork 'evidence'
-          New-Item -ItemType Directory -Path $oldAssets, $candidateAssets, $evidence -Force | Out-Null
-          gh release download "v$oldVersion" --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern "EgoistShield-Setup-$oldVersion.exe" --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Path $candidateAssets, $evidence -Force | Out-Null
           gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $candidateAssets --pattern "EgoistShield-Setup-$version.exe" --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig' --pattern 'package-integrity.json'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          @{ oldVersion = $oldVersion; oldReleaseId = $oldRelease.id; candidateReleaseId = $candidateRelease.id; sourceCommit = $env:GITHUB_SHA; candidateTag = $candidateRelease.tag_name; candidateDraft = $candidateRelease.draft } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'download-identity.json') -Encoding utf8
+          $oldTransport = 'published-original-release'
+          $oldReleaseId = $null
+          if ($oldVersion -ceq '3.7.8') {
+            # The authenticated original 3.7.8 generation exists locally; its
+            # canonical signed URL is not evidence of a published old release.
+            gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $candidateAssets --pattern 'legacy-local-EgoistShield-Setup-3.7.8.exe' --pattern 'legacy-local-3.7.8-release-manifest.json' --pattern 'legacy-local-3.7.8-release-manifest.json.sig'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            node tests/windows-legacy-local-transport.mjs stage --sidecars $candidateAssets --candidate-registry $candidateAssets --old-assets $oldAssets --source-release-id $env:SIGNED_LEGACY_RELEASE_ID
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            Copy-Item -LiteralPath (Join-Path $oldAssets 'provenance.json') -Destination (Join-Path $evidence 'original-3.7.8-transport.json')
+            $oldTransport = 'original-signed-local-generation'
+          } else {
+            New-Item -ItemType Directory -Path $oldAssets | Out-Null
+            gh release download 'v3.7.9' --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern 'EgoistShield-Setup-3.7.9.exe' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $oldReleaseId = $oldRelease.id
+          }
+          @{ oldVersion = $oldVersion; oldReleaseId = $oldReleaseId; oldTransport = $oldTransport; publishedOldOriginVerified = ($oldVersion -ceq '3.7.9'); candidateReleaseId = $candidateRelease.id; sourceCommit = $env:GITHUB_SHA; candidateTag = $candidateRelease.tag_name; candidateDraft = $candidateRelease.draft } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'download-identity.json') -Encoding utf8
           "LAGOM_LEGACY_WORK=$legacyWork" >> $env:GITHUB_ENV
       - name: Run the actual signed old helper handoff
         run: |

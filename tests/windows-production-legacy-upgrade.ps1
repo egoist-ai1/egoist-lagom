@@ -247,7 +247,7 @@ function Invoke-NativeLegacyUpgrade {
   $script:InstallerDataRoot=Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) 'EgoistShieldInstaller';$script:DeferredRoot=Join-Path $script:InstallerDataRoot 'DeferredRuns'
   $script:Core=Join-Path $script:InstallRoot 'resources\core-service\win-x64\EgoistShield.Service.exe'
   $script:NativePowerShell=Join-Path ([Environment]::GetFolderPath('Windows')) 'System32\WindowsPowerShell\v1.0\powershell.exe'
-  $script:Node=(Get-Command node -CommandType Application -ErrorAction Stop).Source;$script:LegacyNodeHelper=Join-Path $PSScriptRoot 'windows-production-legacy-upgrade.mjs'
+  $script:Node=Resolve-NativeApplication 'node';$script:LegacyNodeHelper=Join-Path $PSScriptRoot 'windows-production-legacy-upgrade.mjs'
   Assert-NativeCleanStart
   foreach($hive in @([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryHive]::CurrentUser)){
     foreach($view in @([Microsoft.Win32.RegistryView]::Registry32,[Microsoft.Win32.RegistryView]::Registry64)){

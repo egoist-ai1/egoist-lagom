@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -20,6 +22,8 @@ internal static class SelfTest
 		bool testFailed = false;
 		try
 		{
+			VerifyProtectedProductAcls();
+			await VerifySharedLiveFileReadsAsync(root);
 			VerifyOwnedDnsBaselines();
 			Assert(WindowsDnsController.ValidateServers(new global::_003C_003Ez__ReadOnlyArray<string>(new string[2] { "1.1.1.1", "2606:4700:4700::1111" })).Length == 2, "DNS validation");
 			Expect<ArgumentException>(delegate
@@ -649,7 +653,7 @@ internal static class SelfTest
 		try
 		{
 			string logPath = Path.Combine(stateRoot, "service.log");
-			while (!File.Exists(logPath) || !(await File.ReadAllTextAsync(logPath, lifetime.Token)).Contains("Starting EgoistShieldCore", StringComparison.Ordinal))
+			while (!File.Exists(logPath) || !(await ReadLiveTextAsync(logPath, lifetime.Token)).Contains("Starting EgoistShieldCore", StringComparison.Ordinal))
 				await Task.Delay(10, lifetime.Token);
 			await using (var blockedClient = new NamedPipeClientStream(".", options.PipeName, PipeDirection.InOut, PipeOptions.Asynchronous))
 				await ExpectAsync<TimeoutException>(() => blockedClient.ConnectAsync(250, lifetime.Token), "hosted Core opens no IPC pipe during installer maintenance");
@@ -668,7 +672,7 @@ internal static class SelfTest
 			var response = JsonSerializer.Deserialize<ServiceResponse>(responseText, JsonDefaults.Options);
 			Assert(response?.Ok == true, "hosted IPC becomes ready after maintenance marker removal");
 			Assert(await journal.ReadActiveAsync(lifetime.Token) == null, "hosted startup recovers terminal journal after maintenance marker removal");
-			Assert((await File.ReadAllTextAsync(Path.Combine(stateRoot, "transactions.jsonl"), lifetime.Token)).Contains(terminal.TransactionId, StringComparison.Ordinal), "deferred terminal recovery is archived after maintenance");
+			Assert((await ReadLiveTextAsync(Path.Combine(stateRoot, "transactions.jsonl"), lifetime.Token)).Contains(terminal.TransactionId, StringComparison.Ordinal), "deferred terminal recovery is archived after maintenance");
 		}
 		finally
 		{
@@ -840,6 +844,61 @@ internal static class SelfTest
 				"actual supervisor recovery callback preserves restored or externally changed startup policy");
 		}
 		Console.WriteLine($"Recovery startup policy self-tests passed: policies={policies.Length}; repeated repairs={policies.Length}; supervisor fixtures={supervisorFixtures}; Disabled races=2; SCM failure steps=4; runner exceptions=2; cancellation boundaries=5; unknown service refusal=1");
+	}
+
+	private static async Task<string> ReadLiveTextAsync(string path, CancellationToken cancellationToken)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		const int maxBytes = 8 * 1024 * 1024;
+		await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
+			FileShare.ReadWrite | FileShare.Delete, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+		if (stream.Length > maxBytes) throw new InvalidOperationException("Live self-test text exceeds its bounded fixture size.");
+		using var bytes = new MemoryStream();
+		byte[] buffer = new byte[4096];
+		int read;
+		while ((read = await stream.ReadAsync(buffer.AsMemory(), cancellationToken)) != 0)
+		{
+			if (bytes.Length + read > maxBytes) throw new InvalidOperationException("Live self-test text grew beyond its bounded fixture size.");
+			bytes.Write(buffer, 0, read);
+		}
+		return Encoding.UTF8.GetString(bytes.ToArray());
+	}
+
+	private static async Task VerifySharedLiveFileReadsAsync(string root)
+	{
+		if (!OperatingSystem.IsWindows()) return;
+		string path = Path.Combine(root, "live-sharing.log");
+		await using var writer = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read, 4096, FileOptions.Asynchronous);
+		const string value = "live-writer-fixture";
+		await writer.WriteAsync(Encoding.UTF8.GetBytes(value));
+		await writer.FlushAsync();
+		await ExpectAsync<IOException>(() => File.ReadAllTextAsync(path), "default text reader reproduces live writer sharing failure");
+		Assert(await ReadLiveTextAsync(path, CancellationToken.None) == value, "shared bounded reader reads while the exclusive writer stays open");
+	}
+
+	private static void VerifyProtectedProductAcls()
+	{
+		if (!OperatingSystem.IsWindows()) return;
+		var system = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
+		var administrators = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
+		var users = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+		Assert(ProtectedProductRoot.SelectAclOwner(system, false).Equals(system), "SYSTEM selects its own trusted owner");
+		Assert(ProtectedProductRoot.SelectAclOwner(users, true).Equals(administrators), "enabled administrator selects BA instead of foreign SYSTEM owner");
+		Expect<UnauthorizedAccessException>(() => ProtectedProductRoot.SelectAclOwner(users, false), "untrusted ACL actor denied");
+		Expect<UnauthorizedAccessException>(() => ProtectedProductRoot.SelectAclOwner(null, true), "missing ACL identity denied");
+		foreach (SecurityIdentifier owner in new[] { system, administrators })
+			foreach (bool privateData in new[] { true, false })
+			{
+				ProtectedProductRoot.AssertAcl(ProtectedProductRoot.CreateDirectoryAclForOwner(privateData, owner), privateData, isDirectory: true, requireProtected: true, owner);
+				ProtectedProductRoot.AssertAcl(ProtectedProductRoot.CreateFileAclForOwner(privateData, owner), privateData, isDirectory: false, requireProtected: true, owner);
+			}
+		Expect<UnauthorizedAccessException>(() => ProtectedProductRoot.CreateFileAclForOwner(true, users), "descriptor projection rejects untrusted owner");
+		var exposed = ProtectedProductRoot.CreateFileAclForOwner(true, administrators);
+		exposed.AddAccessRule(new FileSystemAccessRule(users, FileSystemRights.Read, AccessControlType.Allow));
+		Expect<UnauthorizedAccessException>(() => ProtectedProductRoot.AssertAcl(exposed, true, false, true), "private ACL readback rejects an added user rule");
+		using var identity = WindowsIdentity.GetCurrent();
+		if (!identity.IsSystem && !new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator))
+			Expect<UnauthorizedAccessException>(() => ProtectedProductRoot.CreateFileAcl(true), "actual unelevated token cannot authorize production ACL");
 	}
 
 	private static void VerifyOwnedDnsBaselines()

@@ -1,9 +1,10 @@
 [CmdletBinding()]
-param([switch]$LibraryOnly,[string]$SignedCandidateAssetsDirectory='')
+param([switch]$LibraryOnly,[string]$SignedCandidateAssetsDirectory='',[switch]$CoreConfigurationOnly)
 Set-StrictMode -Version 2.0
 $ErrorActionPreference='Stop'
 
 if($LibraryOnly){return}
+if($CoreConfigurationOnly -and $SignedCandidateAssetsDirectory){throw 'Choose either signed Setup or source Core diagnostics.'}
 # Use the real hosted guard entry point before any directory or machine write.
 & (Join-Path $PSScriptRoot 'windows-production-acceptance.ps1') -Mode GuardOnly
 . (Join-Path $PSScriptRoot 'windows-production-acceptance.ps1') -LibraryOnly
@@ -26,7 +27,40 @@ $receiptPath=Join-Path $script:Work 'installer-diagnostic.json'
 $receipt | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $receiptPath -Encoding utf8
 $failure=$null
 try{
-  if($SignedCandidateAssetsDirectory){
+  if($CoreConfigurationOnly){
+    $receipt.kind='real-source-core-configuration-diagnostic'
+    $dotnet=Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'
+    Assert-NativeOrdinaryPath -Path $dotnet -Leaf
+    $sdk=Invoke-NativeBounded -Executable $dotnet -Arguments @('--version') -Label 'core-diagnostic-sdk' -TimeoutSeconds 30
+    $pin=(Get-Content -LiteralPath (Join-Path $project 'global.json') -Raw | ConvertFrom-Json).sdk.version
+    if((Get-Content -LiteralPath (Join-Path $script:Work 'core-diagnostic-sdk.stdout.txt') -Raw).Trim() -cne $pin){throw 'The actual Core diagnostic SDK differs from the exact project pin.'}
+    $build=Join-Path $script:Work 'core-build'
+    $publish=Join-Path $script:Work 'core-publish'
+    $coreProject=Join-Path $project 'src\service\EgoistShield.Service.csproj'
+    $coreObj=(Join-Path $build 'core-obj')+'\'
+    $coreProps=@('-p:PublishSingleFile=true','-p:SelfContained=true',('-p:BaseIntermediateOutputPath='+$coreObj),('-p:MSBuildProjectExtensionsPath='+$coreObj),'-p:DefaultItemExcludes=obj\**\*.cs')
+    $receipt.restore=Invoke-NativeBounded -Executable $dotnet -Arguments (@('restore',$coreProject,'--locked-mode','-r','win-x64')+$coreProps+@('-v','quiet')) -Label 'core-diagnostic-restore' -TimeoutSeconds 180
+    $receipt.build=Invoke-NativeBounded -Executable $dotnet -Arguments (@('publish',$coreProject,'--no-restore','-c','Release','-r','win-x64')+$coreProps+@('-p:EnableCompressionInSingleFile=true','-o',$publish,'-v','quiet')) -Label 'core-diagnostic-publish' -TimeoutSeconds 360
+    $core=Join-Path $publish 'EgoistShield.Service.exe'
+    Assert-NativeOrdinaryPath -Path $core -Leaf
+    $receipt.coreBinary=@{sha256=(Get-FileHash -LiteralPath $core -Algorithm SHA256).Hash;bytes=(Get-Item -LiteralPath $core).Length;sdk=$pin}
+    $receipt.configure=Invoke-NativeBounded -Executable $core -Arguments @('configure','--install-root',$script:InstallRoot) -Label 'core-diagnostic-configure' -TimeoutSeconds 120
+    $receipt.configurationAcl=@()
+    foreach($entry in @(@{path=$script:DataRoot;private=$false},@{path=(Join-Path $script:DataRoot 'Service');private=$true},@{path=(Join-Path $script:DataRoot 'Service\service-config.json');private=$true},@{path=(Join-Path $script:DataRoot 'Service\acl-hardening.marker');private=$true})){
+      $identity=Assert-NativeAdministratorOwned $entry.path
+      $acl=Get-Acl -LiteralPath $entry.path
+      if($entry.private){
+        foreach($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){
+          if($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and $rule.IdentityReference.Value -notin @('S-1-5-18','S-1-5-32-544')){throw 'Private Core configuration allows an untrusted principal.'}
+        }
+      }
+      $receipt.configurationAcl+=$identity
+    }
+    if((Get-Content -LiteralPath (Join-Path $script:DataRoot 'Service\acl-hardening.marker') -Raw).Trim() -cne '4'){throw 'Core hardening marker did not complete the owner migration.'}
+    Assert-NativeNoGui
+    if(@(Get-NativeProductServices).Count -ne 0 -or @(Get-NativeProductTasks).Count -ne 0){throw 'Direct Core configure unexpectedly registered a service or Task.'}
+    $receipt.result='source-core-configuration-and-acl-passed-diagnostic-only'
+  }elseif($SignedCandidateAssetsDirectory){
     $assets=Assert-NativePathWithin $SignedCandidateAssetsDirectory $env:RUNNER_TEMP
     Assert-NativeOrdinaryPath -Path $assets
     $manifest=Get-Content -LiteralPath (Join-Path $assets 'package-integrity.json') -Raw | ConvertFrom-Json

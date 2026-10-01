@@ -33,17 +33,19 @@ internal static class AtomicJsonFile
 
 	private static async Task WriteCoreAsync<T>(string targetPath, T value, CancellationToken cancellationToken)
 	{
+		ProtectedProductRoot.AssertFileWriteAllowed(targetPath);
 		Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
 		string tempPath = $"{targetPath}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp";
 		try
 		{
-			await using (FileStream stream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 16384, FileOptions.WriteThrough | FileOptions.Asynchronous))
+			await using (FileStream stream = ProtectedProductRoot.CreateStateFileStream(tempPath, FileMode.CreateNew, 16384, FileOptions.WriteThrough | FileOptions.Asynchronous))
 			{
 				await JsonSerializer.SerializeAsync((Stream)stream, value, JsonDefaults.StateOptions, cancellationToken);
 				await stream.FlushAsync(cancellationToken);
 				stream.Flush(flushToDisk: true);
 			}
 			await MoveWithRetryAsync(tempPath, targetPath, overwrite: true, cancellationToken);
+			ProtectedProductRoot.AssertCreatedFileIsProtected(targetPath);
 		}
 		finally
 		{
@@ -133,11 +135,12 @@ internal static class AtomicJsonFile
 
 	private static async Task<bool> TryCreateCoreAsync<T>(string targetPath, T value, CancellationToken cancellationToken)
 	{
+		ProtectedProductRoot.AssertFileWriteAllowed(targetPath);
 		Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
 		string tempPath = $"{targetPath}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp";
 		try
 		{
-			await using (FileStream stream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 16384, FileOptions.WriteThrough | FileOptions.Asynchronous))
+			await using (FileStream stream = ProtectedProductRoot.CreateStateFileStream(tempPath, FileMode.CreateNew, 16384, FileOptions.WriteThrough | FileOptions.Asynchronous))
 			{
 				await JsonSerializer.SerializeAsync((Stream)stream, value, JsonDefaults.StateOptions, cancellationToken);
 				await stream.FlushAsync(cancellationToken);
@@ -146,6 +149,7 @@ internal static class AtomicJsonFile
 			try
 			{
 				await MoveWithRetryAsync(tempPath, targetPath, overwrite: false, cancellationToken);
+				ProtectedProductRoot.AssertCreatedFileIsProtected(targetPath);
 				return true;
 			}
 			catch (IOException) when (File.Exists(tempPath) && File.Exists(targetPath))

@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(ServiceSourceRoot)/AtomicJsonFile.cs" Link="AtomicJsonFile.cs" />
+    <Compile Include="$(ServiceSourceRoot)/ProtectedProductRoot.cs" Link="ProtectedProductRoot.cs" />
     <Compile Include="$(ServiceSourceRoot)/AtomicJsonReadResult.cs" Link="AtomicJsonReadResult.cs" />
     <Compile Include="$(ServiceSourceRoot)/JsonDefaults.cs" Link="JsonDefaults.cs" />
     <Compile Include="$(ServiceSourceRoot)/TrustedPath.cs" Link="TrustedPath.cs" />

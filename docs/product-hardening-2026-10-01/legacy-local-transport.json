@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-10-01T04:47:53.1157541Z",
+  "taskId": "01a0f42c-8e52-7810-89bf-5257f3e06d3e",
+  "baselineHead": "ead2bebea1d5866c4c162bbff9b514db533721ab",
+  "scope": "File-only authentication, fresh staging and physical CLI refusal; no installation or native upgrade proof",
+  "ownedSources": [
+    {
+      "path": "tests/windows-legacy-local-transport.mjs",
+      "bytes": 13100,
+      "sha256": "e7526d9ea9ed05cd495d9b2fde59ff6b3863a0b9417eb607dde519e917418101"
+    },
+    {
+      "path": "tests/windows-legacy-local-transport.test.mjs",
+      "bytes": 13325,
+      "sha256": "e89db47fd2dc63b4dc15ac17ade571083bd912ac2aaff20b1d97246c5fa64f83"
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/legacy-local-transport.md",
+      "bytes": 4603,
+      "sha256": "20274598ba585804c0953cf80245ef6e3385fc2dcfa4723780830627b7b5a929"
+    }
+  ],
+  "authenticatedDependencies": [
+    {
+      "path": "tests/windows-production-legacy-upgrade.mjs",
+      "bytes": 17828,
+      "sha256": "af4b16e9fb37b1d9096c56c1481486754b0c90ff41f29cea34f538f6ab17fa04"
+    },
+    {
+      "path": "tests/windows-production-acceptance.mjs",
+      "bytes": 5990,
+      "sha256": "ded21a7546a95e0cfda0aa4704a76a7b95c9024fb2888bf2d81b3ec66a85a66e"
+    },
+    {
+      "path": "resources/release/root-public-key.pem",
+      "bytes": 113,
+      "sha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7"
+    },
+    {
+      "path": "docs/reliability-3.7.9/network/public-artifacts/candidate/release-manifest.json",
+      "bytes": 785,
+      "sha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3"
+    },
+    {
+      "path": "docs/reliability-3.7.9/network/public-artifacts/candidate/release-manifest.json.sig",
+      "bytes": 89,
+      "sha256": "c6b36d487342ab878e3428e1487a6e60e4599740574c22c090445f0b96eecb37"
+    },
+    {
+      "path": "docs/reliability-3.7.9/network/public-artifacts/candidate/release-key-registry.json",
+      "bytes": 1100,
+      "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc"
+    },
+    {
+      "path": "docs/reliability-3.7.9/network/public-artifacts/candidate/release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de"
+    }
+  ],
+  "integration": {
+    "command": "node tests/windows-legacy-local-transport.mjs stage --sidecars <RUNNER_TEMP/candidate> --candidate-registry <RUNNER_TEMP/candidate> --old-assets <fresh absent RUNNER_TEMP/lagom-legacy-old> --source-release-id <positive transport draft ID>",
+    "cliOwnedRoot": "actual RUNNER_TEMP",
+    "harnessSource": "actual observed GITHUB_SHA, never the legacy generation commit",
+    "sourceReleaseIdRole": "transport-draft only",
+    "expectedOldVersion": "3.7.8",
+    "publishedOriginVerified": false,
+    "draftApiCheckOwner": "parent workflow",
+    "sidecarCleanupOwner": "parent exact uploaded asset-ID cleanup before publication"
+  },
+  "checks": {
+    "runtime": "v24.19.0",
+    "focused": {
+      "exitCode": 0,
+      "tests": 13,
+      "pass": 13,
+      "fail": 0,
+      "skipped": 0,
+      "log": "TAP version 13\r\n# Subtest: preserved original 3.7.8 metadata authenticates against the real project pinned root\r\nok 1 - preserved original 3.7.8 metadata authenticates against the real project pinned root\r\n  ---\r\n  duration_ms: 8.69\r\n  type: 'test'\r\n  ...\r\n# Subtest: tampered original manifest, signatures or candidate registry bytes are rejected\r\nok 2 - tampered original manifest, signatures or candidate registry bytes are rejected\r\n  ---\r\n  duration_ms: 11.5841\r\n  type: 'test'\r\n  ...\r\n# Subtest: same-value reserialization and a substituted version cannot replace original signed bytes\r\nok 3 - same-value reserialization and a substituted version cannot replace original signed bytes\r\n  ---\r\n  duration_ms: 7.5188\r\n  type: 'test'\r\n  ...\r\n# Subtest: metadata is strictly bounded binary input, with no supplied trust override\r\nok 4 - metadata is strictly bounded binary input, with no supplied trust override\r\n  ---\r\n  duration_ms: 0.4481\r\n  type: 'test'\r\n  ...\r\n# Subtest: inert installer fixture cannot be staged as authentic Setup and creates no destination\r\nok 5 - inert installer fixture cannot be staged as authentic Setup and creates no destination\r\n  ---\r\n  duration_ms: 29.8821\r\n  type: 'test'\r\n  ...\r\n# Subtest: unknown options, noncanonical draft IDs and escaped paths fail before staging\r\nok 6 - unknown options, noncanonical draft IDs and escaped paths fail before staging\r\n  ---\r\n  duration_ms: 9.28\r\n  type: 'test'\r\n  ...\r\n# Subtest: staging rejects existing destinations, source overlap, and Windows path aliases\r\nok 7 - staging rejects existing destinations, source overlap, and Windows path aliases\r\n  ---\r\n  duration_ms: 41.4851\r\n  type: 'test'\r\n  ...\r\n# Subtest: exact sidecar set rejects missing, extra and case-substituted names\r\nok 8 - exact sidecar set rejects missing, extra and case-substituted names\r\n  ---\r\n  duration_ms: 16.535\r\n  type: 'test'\r\n  ...\r\n# Subtest: candidate registry or old manifest corruption fails before copying any files\r\nok 9 - candidate registry or old manifest corruption fails before copying any files\r\n  ---\r\n  duration_ms: 51.6344\r\n  type: 'test'\r\n  ...\r\n# Subtest: hardlinked files, leaf directories and junction ancestors are rejected in own fixtures\r\nok 10 - hardlinked files, leaf directories and junction ancestors are rejected in own fixtures\r\n  ---\r\n  duration_ms: 19.4584\r\n  type: 'test'\r\n  ...\r\n# Subtest: missing or oversized metadata is terminal and never produces a readiness receipt\r\nok 11 - missing or oversized metadata is terminal and never produces a readiness receipt\r\n  ---\r\n  duration_ms: 16.1362\r\n  type: 'test'\r\n  ...\r\n# Subtest: physical CLI guard refuses verify and stage before reading nonexistent inputs or writing paths\r\nok 12 - physical CLI guard refuses verify and stage before reading nonexistent inputs or writing paths\r\n  ---\r\n  duration_ms: 131.9083\r\n  type: 'test'\r\n  ...\r\n# Subtest: actual original Setup is authenticated and exclusively copied unchanged, without execution\r\nok 13 - actual original Setup is authenticated and exclusively copied unchanged, without execution\r\n  ---\r\n  duration_ms: 1847.2878\r\n  type: 'test'\r\n  ...\r\n1..13\r\n# tests 13\r\n# suites 0\r\n# pass 13\r\n# fail 0\r\n# cancelled 0\r\n# skipped 0\r\n# todo 0\r\n# duration_ms 2270.3262\r\n"
+    },
+    "syntax": [
+      {
+        "path": "tests/windows-legacy-local-transport.mjs",
+        "exitCode": 0,
+        "output": ""
+      },
+      {
+        "path": "tests/windows-legacy-local-transport.test.mjs",
+        "exitCode": 0,
+        "output": ""
+      }
+    ],
+    "physicalCliRefusal": {
+      "commands": [
+        "verify",
+        "stage"
+      ],
+      "exitCodeEach": 1,
+      "hostedEnvironmentSpoofed": false,
+      "inputReadsAfterRefusal": 0,
+      "destinationWritesAfterRefusal": 0
+    },
+    "actualOriginalInstaller": {
+      "projectPath": "dist/EgoistShield-Setup-3.7.8.exe",
+      "bytes": 194405835,
+      "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "authenticatedWithOriginalManifest": true,
+      "unchangedOwnCopiesVerified": true,
+      "sameSizeOwnCopyCorruptionRejected": true,
+      "executed": false
+    },
+    "actualOwnCopyProvenance": {
+      "schemaVersion": 1,
+      "transport": "original-signed-local-generation",
+      "oldVersion": "3.7.8",
+      "publishedOriginVerified": false,
+      "sourceReleaseId": 123,
+      "sourceReleaseIdRole": "transport-draft",
+      "draftApiStatusVerifiedByTransporter": false,
+      "harnessSourceCommit": null,
+      "harnessSourceCommitOrigin": "GITHUB_SHA observed at staging; not a legacy generation commit",
+      "stagedAtUtc": "2026-10-01T04:44:58.374Z",
+      "sourceAssetNames": [
+        "legacy-local-EgoistShield-Setup-3.7.8.exe",
+        "legacy-local-3.7.8-release-manifest.json",
+        "legacy-local-3.7.8-release-manifest.json.sig"
+      ],
+      "rootSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+      "originalRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+      "originalManifestSha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3",
+      "crypto": "Original byte equality and existing pinned-root Ed25519 verification",
+      "files": [
+        {
+          "name": "EgoistShield-Setup-3.7.8.exe",
+          "bytes": 194405835,
+          "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+          "sha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61"
+        },
+        {
+          "name": "release-manifest.json",
+          "bytes": 785,
+          "sha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3",
+          "sha512": "e641d56a223bcacf6d3c5ead4154320b43c39cbc4730531e45bb615c23659597d057a644214d84844c5699e751de5f3bd187caa82d576cf5d71c9c7f02864d3f"
+        },
+        {
+          "name": "release-manifest.json.sig",
+          "bytes": 89,
+          "sha256": "c6b36d487342ab878e3428e1487a6e60e4599740574c22c090445f0b96eecb37",
+          "sha512": "341367541cb4a1bb5edec728cfa16ca239eaea52a4fcdc1de60b2118cfc5b4d81345a102011d1f61b1b2748bbba3be709e94e90a7e7882eb96ad9ce4b950fee5"
+        },
+        {
+          "name": "release-key-registry.json",
+          "bytes": 1100,
+          "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+          "sha512": "bded048a60b337c800daa8006d0613d42489612d939117b5852d10df6dc8f475f46d5060b55eec89d5769845c41f9c40ff29b755b9b1f3750b361d10a44dba3b"
+        },
+        {
+          "name": "release-key-registry.json.sig",
+          "bytes": 89,
+          "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de",
+          "sha512": "b14a4e0a0984b9aa9c7ace9c6d8b38b7b88f79d47ff0a717d9bad9d7b5a288065cac84b1373c850b1e82d83ee1f7c373c8cdeba90d9ff9f6d5b60945cba0aff1"
+        }
+      ],
+      "installerExecuted": false,
+      "publicFeedDiscoveryTested": false
+    }
+  },
+  "mutationScope": [
+    "Own isolated file fixtures, copied installer/metadata, hardlink and junction boundary fixtures only",
+    "Four assigned new project source/test/report files"
+  ],
+  "protectedHostMutations": 0,
+  "nativeInstallationRuns": 0,
+  "nativeUpgradeRuns": 0,
+  "externalWrites": 0,
+  "limitations": [
+    "Original 3.7.8 local signed generation is not evidence of a currently public old release",
+    "CLI success only after parent workflow strict real hosted guard and exact transport draft asset download",
+    "File-only receipt does not prove old-helper handoff, public feed discovery, recovery, reboot or months of operation",
+    "Caller cannot supply keys, replace trusted original bytes or bypass version/signature/path checks",
+    "On post-copy failure partial fresh owned directory remains without success provenance; no recursive deletion"
+  ]
+}

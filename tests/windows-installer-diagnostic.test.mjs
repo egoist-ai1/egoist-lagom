@@ -84,15 +84,17 @@ test('installer diagnostics preserve actual own log bytes and refuse oversized l
   }
 });
 
-test('signed installer diagnostic refuses a physical host before reading candidate assets', { skip: process.platform !== 'win32' }, () => {
-  const result = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-File',
-    path.resolve('tests/windows-installer-diagnostics.ps1'), '-SignedCandidateAssetsDirectory', 'C:/nonexistent-diagnostic-fixture'], {
+test('signed Setup and source Core diagnostics refuse a physical host before reading inputs or compiling', { skip: process.platform !== 'win32' }, () => {
+  for (const parameters of [['-SignedCandidateAssetsDirectory', 'C:/nonexistent-diagnostic-fixture'], ['-CoreConfigurationOnly']]) {
+    const result = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-File',
+      path.resolve('tests/windows-installer-diagnostics.ps1'), ...parameters], {
     env: { ...process.env, GITHUB_ACTIONS: 'false', RUNNER_ENVIRONMENT: 'self-hosted' },
     encoding: 'utf8', windowsHide: true, timeout: 15000,
   });
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Native acceptance host guard refused before mutation/);
-  assert.doesNotMatch(result.stderr, /nonexistent-diagnostic-fixture/);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Native acceptance host guard refused before mutation/);
+    assert.doesNotMatch(result.stderr, /nonexistent-diagnostic-fixture|DOTNET_INSTALL_DIR|core-diagnostic-publish/);
+  }
 });
 
 test('native runtime resolution selects the first real PATH result when two applications share a name', {

@@ -18,6 +18,7 @@ internal sealed class ServiceLog
 
 	public ServiceLog(string stateRoot)
 	{
+		ProtectedProductRoot.AssertFileWriteAllowed(Path.Combine(stateRoot, "service.log"));
 		Directory.CreateDirectory(stateRoot);
 		_logPath = Path.Combine(stateRoot, "service.log");
 	}
@@ -44,8 +45,11 @@ internal sealed class ServiceLog
 		await _writeLock.WaitAsync(cancellationToken);
 		try
 		{
+			ProtectedProductRoot.AssertFileWriteAllowed(_logPath);
 			RotateIfNeeded();
-			await File.AppendAllTextAsync(_logPath, line, cancellationToken);
+			await using FileStream stream = ProtectedProductRoot.CreateStateFileStream(_logPath, FileMode.Append, 4096, FileOptions.Asynchronous, FileShare.Read);
+			await stream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(line), cancellationToken);
+			await stream.FlushAsync(cancellationToken);
 		}
 		catch (Exception error) when (error is IOException or UnauthorizedAccessException)
 		{

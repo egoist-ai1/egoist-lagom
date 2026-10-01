@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "harnessSourceCommit": "ead2bebea1d5866c4c162bbff9b514db533721ab",
+  "artifactSourceCommit": "3dae559124015b74dfeaabb12e46621cfd6d4cdc",
+  "diagnosticRunId": 36815146538,
+  "diagnosticJobId": 110218482899,
+  "diagnosticArtifactId": 11141271405,
+  "diagnosticArtifactZipSha256": "11222b19aed9302abb29a16f8e5cfe393d7d735c15a31842e1ef0e1c500cd562",
+  "installer": {
+    "version": "3.8.0",
+    "bytes": 277426678,
+    "sha256": "5D3BCAA41B39BA7C123E5D683F483F8796FE6652A23B525628278DBC673F14B8"
+  },
+  "installerExecuted": true,
+  "releaseReady": false,
+  "networkPreserved": true,
+  "coreConfigureExitCode": 1,
+  "installerExitCode": 43,
+  "failureStage": "Core configuration directory ACL owner assignment",
+  "beforeProductServices": null,
+  "afterProductServices": null,
+  "freshGuiDnsTunAcceptanceReached": false,
+  "prRunId": 36815148626,
+  "prJobId": 110218485894,
+  "prFailure": "SelfTest read a live service.log with an incompatible read sharing mode",
+  "files": [
+    {
+      "name": "installer-diagnostic.json",
+      "bytes": 5087,
+      "sha256": "8a396d68ae4b5fc653c74460c28dccbf87f750f35e6e82cb02b9dfaa5748151b"
+    },
+    {
+      "name": "installer-upgrade-journal.jsonl",
+      "bytes": 8417,
+      "sha256": "4e2fa94a182eff6662542b9187461d4adcd4534f826dc8dd7c6c9ea5c5bc71c1"
+    },
+    {
+      "name": "native-job.txt",
+      "bytes": 30496,
+      "sha256": "c825c4ce3732ba67c73bf1d9a2e187238acc571126fd82581f65083244918ac6"
+    },
+    {
+      "name": "pr-persistence-live-log-sharing.txt",
+      "bytes": 225421,
+      "sha256": "f8fdf7ca998f0ce0b832dd9b84eaa9e74903c2a95385bb85ad0fed7ee9c462ed"
+    },
+    {
+      "name": "signed-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "signed-diagnostic-authentication.stdout.txt",
+      "bytes": 163,
+      "sha256": "d652c7164ea677c7e46f706cdd3e3ee8fe8b7e68a34036baf99532820c86acdf"
+    },
+    {
+      "name": "signed-diagnostic-clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "signed-diagnostic-clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

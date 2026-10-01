@@ -73,7 +73,7 @@ internal static class TestProgram
         exposed.AddAccessRule(new FileSystemAccessRule(authenticated, FileSystemRights.Read, AccessControlType.Allow));
         new FileInfo(file).SetAccessControl(exposed);
         Check(new FileInfo(file).GetAccessControl().GetAccessRules(true, true, typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>().Any(rule => rule.IdentityReference.Equals(authenticated)), "Explicit fixture permission was not present.");
-        var privateAcl = ProtectedProductRoot.CreateFileAcl(privateData: true);
+        var privateAcl = ProtectedProductRoot.CreateFileAclForOwner(privateData: true, new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null));
         Check(privateAcl.AreAccessRulesProtected, "Private DACL was not protected from inheritance.");
         Check(privateAcl.GetAccessRules(true, true, typeof(SecurityIdentifier)).Count == 2, "Private DACL contains more than SY/BA.");
         // The test owns this one ordinary NTFS file. Keep its current owner;
