@@ -112,20 +112,24 @@ internal static class TestProgram
             try { await Read(CancellationToken.None); throw new Exception("Oversized live file was read."); } catch (InvalidOperationException) { }
             return new { originalReaderFailure = oldError, actualOpenWriter = true, sharedReaderPass = true, writerShareUnchanged = "Read", cancellationPreserved = true, maxBytes = 8 * 1024 * 1024, oversizedRefused = true };
         });
+        object? atomicAclDiagnostics = null;
         await Run("nonproduction-atomic-files", async () => {
             string root = Path.Combine(Work, "atomic"); Directory.CreateDirectory(root);
             string target = Path.Combine(root, "state.json");
             await AtomicJsonFile.WriteAsync(target, new State(0));
-            string initialAcl = new FileInfo(target).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access);
-            int valid = 0, missing = 0;
-            var writer = Task.Run(async () => { for (int index = 1; index <= 256; index++) await AtomicJsonFile.WriteAsync(target, new State(index)); });
+            FileSecurity initialSecurity = new FileInfo(target).GetAccessControl();
+            string initialAcl = initialSecurity.GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access);
+            int valid = 0, missing = 0, writes = 0, reads = 0;
+            var writer = Task.Run(async () => { for (int index = 1; index <= 256; index++) { await AtomicJsonFile.WriteAsync(target, new State(index)); Interlocked.Increment(ref writes); } });
             var readers = Enumerable.Range(0, 2).Select(_ => Task.Run(async () => {
-                for (int index = 0; index < 128; index++) { var result = await AtomicJsonFile.ReadResultAsync<State>(target); if (result.Kind == AtomicJsonReadKind.Missing) Interlocked.Increment(ref missing); if (result.Kind == AtomicJsonReadKind.Valid) Interlocked.Increment(ref valid); }
+                for (int index = 0; index < 128; index++) { var result = await AtomicJsonFile.ReadResultAsync<State>(target); Interlocked.Increment(ref reads); if (result.Kind == AtomicJsonReadKind.Missing) Interlocked.Increment(ref missing); if (result.Kind == AtomicJsonReadKind.Valid) Interlocked.Increment(ref valid); }
             })).ToArray();
             await Task.WhenAll(readers.Append(writer));
+            FileSecurity finalSecurity = new FileInfo(target).GetAccessControl();
+            atomicAclDiagnostics = new { initial = CaptureAcl(initialSecurity), final = CaptureAcl(finalSecurity), completedReplacementWrites = writes, completedReads = reads, validReads = valid, falseMissing = missing };
             Check(missing == 0 && valid == 256, "Nonproduction atomic read generation regressed.");
             Check((await AtomicJsonFile.ReadAsync<State>(target))?.Generation == 256, "Last durable value missing.");
-            Check(new FileInfo(target).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access) == initialAcl, "Nonproduction file ACL changed.");
+            Check(finalSecurity.GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access) == initialAcl, "Nonproduction file ACL changed.");
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             try { await AtomicJsonFile.WriteAsync(target, new State(999), cancelled.Token); throw new Exception("Cancelled write executed."); } catch (OperationCanceledException) { }
             string once = Path.Combine(root, "once.json");
@@ -133,7 +137,7 @@ internal static class TestProgram
             Check(!await AtomicJsonFile.TryCreateAsync(once, new State(2)) && (await AtomicJsonFile.ReadAsync<State>(once))?.Generation == 1, "Exclusive create overwrote state.");
             Check(!Directory.EnumerateFiles(root, "*.tmp").Any(), "Atomic temporary files remained.");
             return new { replaces = 256, validReads = valid, falseMissing = missing, cancellationPreserved = true, exclusiveCreatePreserved = true, nonproductionAclUnchanged = true };
-        });
+        }, () => atomicAclDiagnostics);
         await Run("nonproduction-log-and-hardening", async () => {
             string root = Path.Combine(Work, "log"); Directory.CreateDirectory(root);
             var log = new ServiceLog(root);
@@ -157,11 +161,28 @@ internal static class TestProgram
     }
 
     private sealed record State(int Generation);
+    private static object CaptureAcl(FileSecurity security)
+    {
+        var descriptor = new RawSecurityDescriptor(security.GetSecurityDescriptorBinaryForm(), 0);
+        return new {
+            sddl = security.GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access),
+            owner = security.GetOwner(typeof(SecurityIdentifier))?.Value,
+            controlFlags = descriptor.ControlFlags.ToString(),
+            controlFlagsMask = (int)descriptor.ControlFlags,
+            protectedDacl = security.AreAccessRulesProtected,
+            canonicalDacl = security.AreAccessRulesCanonical,
+            rules = security.GetAccessRules(true, true, typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>().Select(rule => new {
+                sid = rule.IdentityReference.Value, rights = rule.FileSystemRights.ToString(), rightsMask = (int)rule.FileSystemRights,
+                accessType = rule.AccessControlType.ToString(), inheritance = rule.InheritanceFlags.ToString(),
+                propagation = rule.PropagationFlags.ToString(), inherited = rule.IsInherited
+            }).ToArray()
+        };
+    }
     private static void Check(bool condition, string error) { if (!condition) throw new Exception(error); }
     private static void Reject(Action action) { try { action(); } catch (UnauthorizedAccessException) { return; } throw new Exception("Untrusted identity or ACL was accepted."); }
-    private static async Task Run(string name, Func<Task<object>> action)
+    private static async Task Run(string name, Func<Task<object>> action, Func<object?>? captureFailure = null)
     {
         try { Results.Add(new { name, passed = true, evidence = await action() }); }
-        catch (Exception error) { Results.Add(new { name, passed = false, error = error.ToString() }); }
+        catch (Exception error) { Results.Add(new { name, passed = false, error = error.ToString(), diagnostics = captureFailure?.Invoke() }); }
     }
 }

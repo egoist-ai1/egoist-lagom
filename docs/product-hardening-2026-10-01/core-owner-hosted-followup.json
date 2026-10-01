@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "scope": "failure diagnostics only; original eight C# groups and production assertions unchanged",
+  "baseSourceCommit": "900d84aaa218d090b7b78904dcb03a720b67503d",
+  "sourceHashesAreRawWorkingBytes": true,
+  "sourceHashes": {
+    "tests/core-owner-regression.ps1": "C4B509929DCF8B43798776FE6464B274EF59763B020DD226E0AA33725EF221B4",
+    "tests/core-owner-regression.cs": "D151B052B30E281CE5D52536B2DD618620A73085A349C7E110D4D9FBF9463E00"
+  },
+  "productionFilesUnchanged": {
+    "ProtectedProductRoot.cs": "7D02237F021979AA943B16B2C8357E48D7824430AF147C7E2649876C0201A896",
+    "AtomicJsonFile.cs": "09471387A813C2D1BCA85D5ECFEF7669BCAFD57846486B456B1F7D5EB7A3CA6F",
+    "ServiceLog.cs": "3650D4FF168569C88A5A8662CB8AE120E135C94DABEBAFDC716A40CBA4975FFD",
+    "SelfTest.cs": "07A0F5E8038412069D4D7C72E0A26EEF8914D22B931D27F235472505860671A0"
+  },
+  "diagnosticLimits": {
+    "logTailBytes": 16384,
+    "failedGroupJsonCharacters": 16384,
+    "resultsReadBytes": 1048576
+  },
+  "localVerification": {
+    "checks": {
+      "failedGroupOutputBound": true,
+      "failedGroupsProjection": true,
+      "missingEvidenceDoesNotThrow": true,
+      "boundedRealFileTail": true
+    },
+    "schemaVersion": 1,
+    "scope": "runner-diagnostic-functions-only",
+    "harnessSha256": "D151B052B30E281CE5D52536B2DD618620A73085A349C7E110D4D9FBF9463E00",
+    "productionChecksChanged": false,
+    "runnerSha256": "C4B509929DCF8B43798776FE6464B274EF59763B020DD226E0AA33725EF221B4",
+    "parserErrors": 0
+  },
+  "localOutputSha256": "9909712C05B377AFB62CEEA7018E50CA5792EDCFF84C8938C8AF5779CBE230C0",
+  "initialHostedFailure": {
+    "url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36820418763/job/110234591015",
+    "receipt": "docs/product-hardening-2026-10-01/core-owner-regression-initial-hosted/receipt.json",
+    "receiptSha256": "19A821B3F98F07ED7A39B512DF3996DBB2C3D2E46254B10A9F76816FDCE3DEBB",
+    "rawJobLogSha256": "004A76C334ADD98EBB6EC2CBC799C3B409431BE0F974A2A3E82FCEAE65E8642F",
+    "rawJobLogBytes": 270499,
+    "node": {
+      "tests": 878,
+      "pass": 866,
+      "fail": 0,
+      "skipped": 12
+    },
+    "coreFaultGroups": 27,
+    "actualCoreFaultRuntime": ".NET 8.0.31",
+    "atomic": {
+      "writes": 10000,
+      "reads": 50000,
+      "falseMissing": 0,
+      "unavailable": 0,
+      "malformed": 0
+    },
+    "innerFailureCause": "unknown; original harness run.log/results.json were not available",
+    "productionDefectEstablishedByThisFailure": false
+  },
+  "separateActualAdministratorConfigure": {
+    "url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36820434838/job/110234655159",
+    "receipt": "docs/product-hardening-2026-10-01/core-owner-native-run/receipt.json",
+    "receiptSha256": "48E027B66F9CA9C0ACA9E8BA8C84E9613F8454341C45BD066B0A8FA3D9B2B1FB",
+    "configureExitCode": 0,
+    "actualOwner": "S-1-5-32-544",
+    "privateDaclReadbackPassed": true,
+    "marker": "4",
+    "networkPreserved": true,
+    "installerExecuted": false,
+    "productServicesRegistered": false
+  },
+  "limits": [
+    "Local checks exercise the actual diagnostic functions with labelled own fixtures; they do not replace the hosted eight-group run.",
+    "No literal SDDL assertion, production ACL, authorization or installation behavior was changed without evidence.",
+    "Parent owns workflow/artifact retention and the next actual hosted diagnostic capture.",
+    "The signed whole Setup, installed service/network/legacy acceptance and sustained uptime remain separate gates."
+  ],
+  "releaseReady": false
+}

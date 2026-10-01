@@ -1,0 +1,6 @@
+[31;1mException: [0mD:\a\egoist-lagom\egoist-lagom\tests\core-owner-regression.ps1:94[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m  94 | [0m         [36;1mthrow "Focused regressions failed; evidence preserved at $wor[0m .[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mFocused regressions failed; evidence preserved at[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m[31;1m[36;1m     | [31;1mD:\a\_temp\lagom-installer-diagnostics\core-owner-ab25fc53/run.log[0m

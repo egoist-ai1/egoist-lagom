@@ -27,8 +27,8 @@ function Write-FailureLogTail([string]$Path) {
 function Write-FailedGroups($Results) {
     try {
         if ($null -eq $Results) { Write-Output 'FAILED_GROUPS_UNAVAILABLE'; return }
-        $failed = @($Results.results | Where-Object { $_.passed -eq $false } | Select-Object name, error)
-        $text = ConvertTo-Json -InputObject $failed -Depth 6
+        $failed = @($Results.results | Where-Object { $_.passed -eq $false } | Select-Object name, error, diagnostics)
+        $text = ConvertTo-Json -InputObject $failed -Depth 8
         if ($text.Length -gt 16384) { $text = $text.Substring(0, 16384) + "`n[truncated; see preserved results.json]" }
         Write-Output ('FAILED_GROUP_COUNT=' + $failed.Count)
         Write-Output $text
