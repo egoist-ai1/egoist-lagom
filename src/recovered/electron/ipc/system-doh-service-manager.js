@@ -11,6 +11,13 @@ var READY_POLL_INTERVAL_MS = 300;
 var QUERY_TIMEOUT_MS = 2e3;
 var STATUS_CACHE_TTL_MS = 3e3;
 var SYSTEM_DOH_BOOTSTRAP_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+function systemDohOwnerInspectionError(provider, stage, error, code) {
+	const commandErrorCode = typeof error?.code === "string" && /^[A-Z0-9_]{1,64}$/.test(error.code) ? error.code : null;
+	return { provider, stage, code: provider === "system-doh-native" && commandErrorCode ? commandErrorCode : code,
+		commandErrorCode, nativeErrorCode: Number.isInteger(error?.code) ? error.code : null,
+		timedOut: error?.killed === true || error?.timedOut === true || error?.timeout === true,
+		reason: String(error?.message ?? error).replace(/https?:\/\/[^\s]+/gi, "<url>").replace(/[\u0000-\u001f]/g, " ").slice(0, 384) };
+}
 var DNS_QUERY_ID = 4660;
 var SC_SERVICE_STATE_BY_CODE$2 = {
 	1: "STOPPED",
@@ -622,6 +629,7 @@ var SystemDohManager = class {
 				currentUrl: null,
 				serverAddresses: [],
 				fallbackToUdp: false,
+				ownerInspectionErrors: [systemDohOwnerInspectionError("system-doh-native", "native-status", error, "SYSTEM_DOH_NATIVE_STATUS_FAILED")],
 				lastError: reason
 			};
 		}
@@ -652,7 +660,8 @@ var SystemDohManager = class {
 			localPort: state?.localPort ?? null,
 			serverAddresses: verified ? (state.localAddress === "127.0.0.1" ? ["127.0.0.1", "::1"] : [state.localAddress]) : [],
 			currentUrl: state?.url || null,
-			lastError: this.lastError
+			ownerInspectionErrors: service.ownerInspectionErrors ?? [],
+			lastError: service.state === "unknown" && service.ownerInspectionErrors?.length ? service.ownerInspectionErrors.map((value) => `${value.code}/${value.stage}`).join("; ") : this.lastError
 		};
 	}
 	mapNativeStatus(native) {
@@ -824,6 +833,7 @@ var SystemDohManager = class {
 		}
 	}
 	async queryServiceStatus() {
+		const ownerInspectionErrors = [];
 		try {
 			const { stdout } = await execFileAsync$4(resolveWindowsExecutable("sc.exe"), ["queryex", SYSTEM_DOH_SERVICE_NAME], {
 				windowsHide: true,
@@ -842,9 +852,17 @@ var SystemDohManager = class {
 					pid: Number.isInteger(pid) && Number(pid) > 0 ? pid : null
 				};
 			}
-		} catch {}
+			ownerInspectionErrors.push(systemDohOwnerInspectionError("system-doh-local", "sc-queryex",
+				new Error("SCM query returned an unsupported service state."), "SYSTEM_DOH_SERVICE_STATE_UNKNOWN"));
+		} catch (error) {
+			if (error?.code === 1060 && !error.killed && !error.signal && !error.timedOut && !error.timeout) return {
+				installed: false, running: false, state: "not-installed", rawState: null, pid: null
+			};
+			ownerInspectionErrors.push(systemDohOwnerInspectionError("system-doh-local", "sc-queryex", error, "SYSTEM_DOH_SERVICE_QUERY_FAILED"));
+		}
 		const script = [
-			`$svc = Get-CimInstance Win32_Service -Filter "Name='${SYSTEM_DOH_SERVICE_NAME}'" -ErrorAction SilentlyContinue`,
+			"$ErrorActionPreference = 'Stop'",
+			`$svc = Get-CimInstance Win32_Service -Filter "Name='${SYSTEM_DOH_SERVICE_NAME}'" -ErrorAction Stop`,
 			"if ($null -eq $svc) { 'not-installed|0'; exit 0 }",
 			"'{0}|{1}' -f ([string]$svc.State), ([int]$svc.ProcessId)"
 		].join("; ");
@@ -870,20 +888,25 @@ var SystemDohManager = class {
 			};
 			const state = this.normalizeServiceState(rawState);
 			const pid = Number.parseInt(rawPid, 10);
+			if (state === "unknown") ownerInspectionErrors.push(systemDohOwnerInspectionError("system-doh-local", "cim-fallback",
+				new Error("CIM query returned an unsupported service state."), "SYSTEM_DOH_SERVICE_STATE_UNKNOWN"));
 			return {
 				installed: true,
 				running: state === "running",
 				state,
 				rawState,
-				pid: Number.isInteger(pid) && pid > 0 ? pid : null
+				pid: Number.isInteger(pid) && pid > 0 ? pid : null,
+				...(state === "unknown" ? { ownerInspectionErrors } : {})
 			};
-		} catch {
+		} catch (error) {
+			ownerInspectionErrors.push(systemDohOwnerInspectionError("system-doh-local", "cim-fallback", error, "SYSTEM_DOH_SERVICE_QUERY_FAILED"));
 			return {
 				installed: false,
 				running: false,
 				state: "unknown",
 				rawState: null,
-				pid: null
+				pid: null,
+				ownerInspectionErrors
 			};
 		}
 	}

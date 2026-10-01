@@ -139,6 +139,8 @@ internal static class Program
 				return VpnRuntimeHost.RunAsync();
 			if (args.Length == 1 && args[0] == "--vpn-service-status")
 				return VpnServiceStatusCommand.RunAsync();
+			if (args.Length == 1 && args[0] == "--telegram-service-recovery")
+				return TelegramServiceRecoveryCommand.RunAsync();
 			if (args.Length == 1 && args[0] == "--winws-process-snapshot")
 				return WinwsProcessSnapshotCommand.RunAsync();
 			if (args.Length == 3 && args[0] == "--telegram-runtime-cleanup" && args[1] == "--runtime" && args[2] is "primary" or "legacy")

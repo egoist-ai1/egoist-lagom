@@ -1175,68 +1175,77 @@ var TelegramProxyManager = class {
 	* MED-03: команды `sc config/failure/failureflag` выполнялись с подавлением
 	* ошибок, поэтому интерфейс мог показывать обещанный автозапуск, ни разу его
 	* не подтвердив. Вывод `sc.exe` локализован и не является машинным API,
-	* поэтому фактическое состояние читается из служебного раздела реестра SCM.
+	* поэтому фактическое состояние читается напрямую через QueryServiceConfig/2 SCM.
 	*/
 	async ensureServicePersistence() {
 		let verification = await this.verifyServiceRecoveryConfiguration();
 		if (verification.ok) return verification;
+		if (verification.readbackAvailable === false) throw new Error(`Не удалось прочитать фактические параметры ${TG_WS_PROXY_SERVICE_NAME}: ${verification.details.join("; ")}`, { cause: verification.cause });
 		await this.appendProxyLog("WARN", `Параметры фоновой службы требуют восстановления: ${verification.details.join("; ")}`);
-		if (this.coreService) {
-			await this.coreService.installOwnedService(TG_WS_PROXY_SERVICE_NAME);
-		} else await this.configureServiceRecovery();
+		if (this.coreService) await this.coreService.installOwnedService(TG_WS_PROXY_SERVICE_NAME);
+		else await this.configureServiceRecovery();
 		verification = await this.verifyServiceRecoveryConfiguration();
-		if (!verification.ok) throw new Error(`Не удалось подтвердить Automatic + restart recovery для ${TG_WS_PROXY_SERVICE_NAME}: ${verification.details.join("; ")}`);
+		if (!verification.ok) throw new Error(`Не удалось подтвердить Automatic + restart recovery для ${TG_WS_PROXY_SERVICE_NAME}: ${verification.details.join("; ")}`, { cause: verification.cause });
 		return verification;
 	}
 	async verifyServiceRecoveryConfiguration() {
-		const details = [];
-		let startTypeAuto = false;
-		let delayedAutoStart = false;
-		let failureActionsConfigured = false;
-		let failureFlagSet = false;
+		const result = { ok: false, readbackAvailable: false, startTypeAuto: false, delayedAutoStart: false,
+			failureActionsConfigured: false, failureFlagSet: false, details: [] };
+		let payload;
 		try {
-			const script = [
-				`$key = Get-Item -LiteralPath '${`Registry::HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\${TG_WS_PROXY_SERVICE_NAME}`}' -ErrorAction Stop`,
-				"$start = $key.GetValue('Start', $null)",
-				"$delayed = $key.GetValue('DelayedAutoStart', 0)",
-				"$failure = $key.GetValue('FailureActions', $null)",
-				"$failureFlag = $key.GetValue('FailureActionsOnNonCrashFailures', 0)",
-				"$failureBytes = if ($failure -is [byte[]]) { $failure.Length } else { 0 }",
-				"[pscustomobject]@{ start = [int]$start; delayed = [int]$delayed; failureBytes = [int]$failureBytes; failureFlag = [int]$failureFlag } | ConvertTo-Json -Compress"
-			].join("; ");
-			const { stdout } = await execFileAsync$3(resolveWindowsExecutable("powershell.exe"), [
-				"-NoProfile",
-				"-NonInteractive",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-Command",
-				script
-			], {
-				windowsHide: true,
-				timeout: 8e3,
-				maxBuffer: 1024 * 1024
+			const nativePath = path.join(this.resourcesPath, "core-service", "win-x64", "EgoistShield.Service.exe");
+			const { stdout } = await execFileAsync$3(nativePath, ["--telegram-service-recovery"], {
+				windowsHide: true, timeout: 4e3, maxBuffer: 65536
 			});
-			const registry = JSON.parse(stdout.trim());
-			startTypeAuto = registry.start === 2;
-			delayedAutoStart = registry.delayed === 1;
-			failureActionsConfigured = Number(registry.failureBytes ?? 0) > 0;
-			failureFlagSet = registry.failureFlag === 1;
+			if (typeof stdout !== "string" || Buffer.byteLength(stdout, "utf8") > 65536) throw new Error("Native recovery payload exceeds its bound.");
+			payload = JSON.parse(stdout.trim());
+			if (!payload || payload.schemaVersion !== 1 || payload.operation !== "telegram-service-recovery" ||
+				payload.serviceName !== TG_WS_PROXY_SERVICE_NAME || payload.snapshotAvailable !== true ||
+				payload.stable !== true || typeof payload.installed !== "boolean") throw new Error("Native SCM recovery snapshot is incomplete.");
+			if (payload.installed === false) {
+				if (payload.identityVerified !== false) throw new Error("Native SCM absence proof is contradictory.");
+				result.readbackAvailable = true;
+				result.details.push("Служба не установлена");
+			} else {
+				const uint32 = value => Number.isInteger(value) && value >= 0 && value <= 4294967295;
+				if (payload.identityVerified !== true || !uint32(payload.startType) || payload.startType > 4 ||
+					typeof payload.delayedAutoStart !== "boolean" || !uint32(payload.resetPeriodSeconds) ||
+					typeof payload.failureActionsOnNonCrashFailures !== "boolean" || !Array.isArray(payload.actions) || payload.actions.length > 128 ||
+					payload.actions.some(action => !action || !["none", "restart", "reboot", "command"].includes(action.type) || !uint32(action.delayMs)))
+					throw new Error("Native SCM recovery identity or policy is incomplete.");
+				result.readbackAvailable = true;
+				result.startTypeAuto = payload.startType === 2;
+				result.delayedAutoStart = payload.delayedAutoStart;
+				result.failureActionsConfigured = payload.resetPeriodSeconds === 3600 && payload.actions.length === 3 &&
+					payload.actions.every((action, index) => action.type === "restart" && action.delayMs === [5000, 10000, 60000][index]);
+				result.failureFlagSet = payload.failureActionsOnNonCrashFailures;
+				if (!result.startTypeAuto) result.details.push("Start не равен 2 (Automatic)");
+				if (!result.failureActionsConfigured) result.details.push("SCM restart recovery не соответствует reset=3600, restart/5000/10000/60000");
+				if (!result.failureFlagSet) result.details.push("FailureActionsOnNonCrashFailures не выставлен");
+				result.ok = result.startTypeAuto && result.failureActionsConfigured && result.failureFlagSet;
+			}
 		} catch (error) {
-			details.push(`registry read: ${error instanceof Error ? error.message : String(error)}`);
+			Object.defineProperty(result, "cause", { value: error, enumerable: false });
+			let stage = "contract";
+			let win32 = null;
+			if (typeof error?.stdout === "string" && Buffer.byteLength(error.stdout, "utf8") <= 65536) {
+				try {
+					const diagnostic = JSON.parse(error.stdout.trim());
+					if (diagnostic?.schemaVersion === 1 && diagnostic.operation === "telegram-service-recovery" &&
+						diagnostic.serviceName === TG_WS_PROXY_SERVICE_NAME && diagnostic.snapshotAvailable === false && diagnostic.stable === false &&
+						typeof diagnostic.error?.stage === "string" && /^[a-z-]{1,64}$/.test(diagnostic.error.stage)) {
+						stage = diagnostic.error.stage;
+						if (Number.isInteger(diagnostic.error.win32) && diagnostic.error.win32 >= 0 && diagnostic.error.win32 <= 4294967295) win32 = diagnostic.error.win32;
+					}
+				} catch { /* Untrusted command output never becomes policy evidence. */ }
+			}
+			const code = typeof error?.code === "number" && Number.isInteger(error.code) ? error.code :
+				typeof error?.code === "string" && /^[A-Z0-9_]{1,32}$/.test(error.code) ? error.code : "unavailable";
+			const signal = typeof error?.signal === "string" && /^SIG[A-Z0-9]{1,16}$/.test(error.signal) ? error.signal : "none";
+			result.details.push(`SCM read unavailable: stage=${stage}, win32=${win32 ?? "unknown"}, code=${code}, signal=${signal}, killed=${error?.killed === true}`);
 		}
-		if (!startTypeAuto) details.push("Start не равен 2 (Automatic)");
-		if (!failureActionsConfigured) details.push("FailureActions отсутствует или пуст");
-		if (!failureFlagSet) details.push("FailureActionsOnNonCrashFailures не выставлен");
-		const ok = startTypeAuto && failureActionsConfigured && failureFlagSet;
-		if (!ok) await this.appendProxyLog("WARN", `Конфигурация автозапуска службы подтверждена не полностью: ${details.join("; ")}`);
-		return {
-			ok,
-			startTypeAuto,
-			delayedAutoStart,
-			failureActionsConfigured,
-			failureFlagSet,
-			details
-		};
+		if (!result.ok) await this.appendProxyLog("WARN", `Конфигурация автозапуска службы подтверждена не полностью: ${result.details.join("; ")}`);
+		return result;
 	}
 	async execServiceWrapper(wrapperPath, args, ignoreFailure) {
 		try {

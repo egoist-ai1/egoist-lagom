@@ -111,7 +111,8 @@ var NetworkCombinatorManager = class {
 					const inspector = this.moduleInspectors[fallback.id];
 					const value = inspector ? { ...fallback, ...await inspector() } : fallback;
 					row.state = value.status === "degraded" || value.health === "warn" ? "degraded" : "complete";
-					if (row.state === "degraded") row.errorCode = "OWNER_STATE_UNAVAILABLE";
+					if (fallback.id === "dns" && Array.isArray(value.ownerInspectionErrors)) row.causes = value.ownerInspectionErrors.slice(0, 8);
+					if (row.state === "degraded") row.errorCode = typeof row.causes?.[0]?.code === "string" && /^[A-Z0-9_]{1,64}$/.test(row.causes[0].code) ? row.causes[0].code : "OWNER_STATE_UNAVAILABLE";
 					return value;
 				} catch (error) {
 					row.state = "error";
@@ -146,8 +147,9 @@ var NetworkCombinatorManager = class {
 		}
 	}
 	reportInspectionDiagnostic(errorCode, action) {
-		const providers = this.inspectionDiagnostics.map(({ id, state, startedAt, elapsedMs, errorCode }) => ({
-			id, state, elapsedMs: state === "pending" ? Math.max(0, Math.round(this.elapsedNow() - startedAt)) : elapsedMs, errorCode
+		const providers = this.inspectionDiagnostics.map(({ id, state, startedAt, elapsedMs, errorCode, causes }) => ({
+			id, state, elapsedMs: state === "pending" ? Math.max(0, Math.round(this.elapsedNow() - startedAt)) : elapsedMs, errorCode,
+			...causes?.length ? { causes } : {}
 		}));
 		const event = { errorCode, ...(action ? { action } : {}), generation: this.inspectionGeneration,
 			elapsedMs: Math.max(0, Math.round(this.elapsedNow() - this.inspectionStartedAt)), providers };

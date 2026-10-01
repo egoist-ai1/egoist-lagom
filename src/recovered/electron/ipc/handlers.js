@@ -71,13 +71,23 @@ function buildNetworkModuleInspectors({ stateStore, runtimeManager, gravitylessD
 			const [gravityless, systemDoh] = await Promise.all([gravitylessDnsManager.status().catch((error) => ({
 				running: false,
 				serviceState: "unknown",
+				ownerInspectionErrors: dnsOwnerInspectionErrors("gravityless-dns", null, error),
 				lastError: stringifyError(error)
 			})), systemDohManager.status().catch((error) => ({
 				running: false,
 				serviceState: "unknown",
+				ownerInspectionErrors: dnsOwnerInspectionErrors("system-doh", null, error),
 				lastError: stringifyError(error)
 			}))]);
-			if (isNetworkServiceStateUnknown(gravityless) || isNetworkServiceStateUnknown(systemDoh)) throw new Error("Состояние службы DNS не подтверждено; сетевые блокировки сохранены.");
+			const ownerInspectionErrors = [
+				...isNetworkServiceStateUnknown(gravityless) ? dnsOwnerInspectionErrors("gravityless-dns", gravityless) : [],
+				...isNetworkServiceStateUnknown(systemDoh) || systemDoh.nativeStatusUnavailable === true ? dnsOwnerInspectionErrors("system-doh", systemDoh) : []
+			];
+			if (ownerInspectionErrors.length) {
+				const error = new Error("Состояние службы DNS не подтверждено; сетевые блокировки сохранены.");
+				error.ownerInspectionErrors = ownerInspectionErrors.slice(0, 8);
+				throw error;
+			}
 			const mode = state.settings.systemDohEnabled ? "system-doh" : String(state.settings.systemDnsServers ?? "").trim() ? "system-dns" : "system-default";
 			const active = mode !== "system-default" || Boolean(gravityless.running) || Boolean(systemDoh.running);
 			const health = mode === "system-doh" && !systemDoh.running || String(state.settings.systemDnsServers ?? "").includes("127.0.0.1") && !gravityless.running ? "warn" : "ok";
@@ -186,9 +196,27 @@ async function inspectModule(id, inspect) {
 			ownedLocks: conservativeNetworkModuleLocks(id),
 			activeMutations: [],
 			rollbackReady: false,
+			...id === "dns" && Array.isArray(error?.ownerInspectionErrors) ? { ownerInspectionErrors: error.ownerInspectionErrors.slice(0, 8) } : {},
 			blockers: [stringifyError(error)]
 		};
 	}
+}
+function dnsOwnerInspectionErrors(provider, status, error) {
+	const declared = Array.isArray(status?.ownerInspectionErrors) && status.ownerInspectionErrors.length ? status.ownerInspectionErrors : [{
+		provider, stage: "status", code: typeof error?.code === "string" ? error.code : "DNS_OWNER_STATE_UNAVAILABLE",
+		nativeErrorCode: Number.isInteger(error?.code) ? error.code : null,
+		timedOut: error?.killed === true || error?.timedOut === true,
+		reason: error?.message ?? status?.lastError ?? "DNS service state is unknown."
+	}];
+	return declared.slice(0, 8).map((value) => ({
+		provider: ["gravityless-dns", "system-doh", "system-doh-native", "system-doh-local"].includes(value?.provider) ? value.provider : provider,
+		stage: typeof value?.stage === "string" && /^[a-z0-9-]{1,64}$/.test(value.stage) ? value.stage : "status",
+		code: typeof value?.code === "string" && /^[A-Z0-9_]{1,64}$/.test(value.code) ? value.code : "DNS_OWNER_STATE_UNAVAILABLE",
+		nativeErrorCode: Number.isInteger(value?.nativeErrorCode) ? value.nativeErrorCode : null,
+		commandErrorCode: typeof value?.commandErrorCode === "string" && /^[A-Z0-9_]{1,64}$/.test(value.commandErrorCode) ? value.commandErrorCode : null,
+		timedOut: value?.timedOut === true,
+		reason: String(value?.reason ?? "DNS service state is unknown.").replace(/https?:\/\/[^\s]+/gi, "<url>").replace(/[\u0000-\u001f]/g, " ").slice(0, 384)
+	}));
 }
 function stringifyError(error) {
 	return error instanceof Error ? error.message : String(error);
