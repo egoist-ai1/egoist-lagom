@@ -1,0 +1,11 @@
+{
+  "harnessSha256": "98588FD97ABB551FE27BB07982EEFCFBD2D7012C1BFE577E9182D2732F9819D4",
+  "replaces": 10000,
+  "sourceFileCount": 75,
+  "schemaVersion": 1,
+  "reads": 50000,
+  "sdk": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\.tools\\dotnet-10.0.401\\dotnet.exe",
+  "sdkVersion": "10.0.401",
+  "case": "verification",
+  "runnerSha256": "7031F6361FE4C2CEAD6992281D3FD7E8416FFE08B8922A9384B2FDFE72BC2687"
+}

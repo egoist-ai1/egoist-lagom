@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-30T19:40:41.809Z",
+  "actualStartCommit": "5d0d58b44076843e639723ef267e7b8d2605e481",
+  "historicalHarnessExpectedCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "scope": "Actual production trusted URL validator before fix; controlled URLs only, no navigation/GUI/OS mutations",
+  "sourceFiles": [
+    {
+      "path": "src/recovered/electron/ipc/trusted-ipc.js",
+      "sha256": "986cade4f337aa84f80e4d2225e37348bc64e1f6caaad2e4d9ea2710946486af"
+    }
+  ],
+  "ipcCases": [
+    {
+      "kind": "canonical-local-file",
+      "url": "file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/renderer/main_window/index.html",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "kind": "foreign-network-host",
+      "url": "file://audit.invalid/C:/Program%20Files/EgoistShield/resources/app.asar/.vite/renderer/main_window/index.html",
+      "expected": false,
+      "actual": true
+    },
+    {
+      "kind": "localhost-alias",
+      "url": "file://localhost/C:/Program%20Files/EgoistShield/resources/app.asar/.vite/renderer/main_window/index.html",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "kind": "outside-renderer",
+      "url": "file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/other/index.html",
+      "expected": false,
+      "actual": false
+    },
+    {
+      "kind": "renderer-prefix-sibling",
+      "url": "file:///C:/Program%20Files/EgoistShield/resources/app.asar/.vite/renderer/main_window-other/index.html",
+      "expected": false,
+      "actual": false
+    },
+    {
+      "kind": "remote-https",
+      "url": "https://audit.invalid/index.html",
+      "expected": false,
+      "actual": false
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+✔ native CIM retry returns a complete snapshot and refuses terminal partial reads (765.3373ms)
+✔ installer diagnostics preserve actual own log bytes and refuse oversized logs (364.2623ms)
+✔ signed installer diagnostic refuses a physical host before reading candidate assets (298.8917ms)
+✔ official legacy versions select separate immutable installer/helper pins and reject aliases (1.3257ms)
+✔ both original signed legacy manifests are accepted only for the explicitly selected version (3.2312ms)
+✔ candidate minimum version is compared with the selected legacy version, not a fixed 3.7.9 (0.5296ms)
+✔ legacy gate verifies original real signed metadata with the project pinned public root (2.3177ms)
+✔ legacy gate refuses registry rollback, key replacement and revoked-key revival (1.371ms)
+✔ pure source-binding boundary requires both signed fields and exact integrity bytes (0.4126ms)
+✔ legacy PowerShell library import performs no native query or mutation and observer matches exact scope (275.0704ms)
+✔ inert legacy snapshot retries a failed cold query, discards partial rows and preserves complete foreign inventory (282.8798ms)
+✔ inert legacy snapshot never returns empty or partial state after failed, nonterminating, empty or malformed CIM reads (275.5673ms)
+✔ inert legacy snapshot keeps foreign service/Task comparison strict and refuses Task errors (313.3232ms)
+✔ real legacy script and helper reject a non-hosted process before input or native mutation (1213.1278ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3921.9778

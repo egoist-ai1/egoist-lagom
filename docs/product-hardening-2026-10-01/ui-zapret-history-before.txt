@@ -1,0 +1,31 @@
+✔ history shows actual early-exit winner, retaining normalized catalogue status and aggregate probe counts (2.7068ms)
+✔ explicit failed result cannot become successful from an all-good target preview; startup failures stay visible (1.6316ms)
+✔ completed history round-trips localStorage and survives cancelled/empty attempts and stale refreshes (1.7272ms)
+✖ actual renderer action preserves previous history while pending, cancelled, or throwing (2.0969ms)
+✔ direct IPC selection persists on disk with renderer destroyed and is restored after handler reload (5.0213ms)
+✔ widget saves failed selection evidence and successful probes before later connection failure (7.3974ms)
+✔ bounded history retains all 64 result aggregates, omits previews honestly, caches reads and ignores malformed files (76.0328ms)
+✔ cancel keeps last completed run; first partial cancellation retains completed error rows (3.0252ms)
+✔ history disk failure logs a warning without failing widget connection or changing prior durable file (6.0312ms)
+ℹ Error: Test "actual renderer action preserves previous history while pending, cancelled, or throwing" at tests\zapret-history.test.mjs:67:1 generated asynchronous activity after the test ended. This activity created the error "ReferenceError: readGeneration is not defined" and would have caused the test to fail, but instead triggered an unhandledRejection event.
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 167.1328
+
+✖ failing tests:
+
+test at tests\zapret-history.test.mjs:67:1
+✖ actual renderer action preserves previous history while pending, cancelled, or throwing (2.0969ms)
+  TypeError: finish is not a function
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/zapret-history.test.mjs:79:3)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)

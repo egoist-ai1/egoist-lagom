@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: fresh runtime cleanup uses fixed native query/stop rather than CIM or broad PowerShell enumeration
+ok 1 - fresh runtime cleanup uses fixed native query/stop rather than CIM or broad PowerShell enumeration
+  ---
+  duration_ms: 3.8068
+  type: 'test'
+  ...
+# Subtest: arbitrary runtime paths are refused before any child launch
+ok 2 - arbitrary runtime paths are refused before any child launch
+  ---
+  duration_ms: 1.1452
+  type: 'test'
+  ...
+# Subtest: unknown cleanup cannot clear saved state or permit copy
+ok 3 - unknown cleanup cannot clear saved state or permit copy
+  ---
+  duration_ms: 0.963
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.schemaVersion = 2
+ok 4 - cleanup rejects contradictory or incomplete native proof p => p.schemaVersion = 2
+  ---
+  duration_ms: 0.8465
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.operation = 'other'
+ok 5 - cleanup rejects contradictory or incomplete native proof p => p.operation = 'other'
+  ---
+  duration_ms: 0.8829
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.target = 'legacy'
+ok 6 - cleanup rejects contradictory or incomplete native proof p => p.target = 'legacy'
+  ---
+  duration_ms: 0.8081
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.runtimePath = 'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'
+ok 7 - cleanup rejects contradictory or incomplete native proof p => p.runtimePath = 'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'
+  ---
+  duration_ms: 0.8533
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.quiescent = false
+ok 8 - cleanup rejects contradictory or incomplete native proof p => p.quiescent = false
+  ---
+  duration_ms: 0.8786
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:null,executablePath:target}]
+ok 9 - cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:null,executablePath:target}]
+  ---
+  duration_ms: 0.9657
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'}]
+ok 10 - cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'}]
+  ---
+  duration_ms: 1.524
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.stopped = [1,2].map(() => ({processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:target}))
+ok 11 - cleanup rejects contradictory or incomplete native proof p => p.stopped = [1,2].map(() => ({processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:target}))
+  ---
+  duration_ms: 1.1636
+  type: 'test'
+  ...
+# Subtest: legacy cleanup uses only fixed legacy token and validates exact resulting identity
+ok 12 - legacy cleanup uses only fixed legacy token and validates exact resulting identity
+  ---
+  duration_ms: 0.9403
+  type: 'test'
+  ...
+# Subtest: unknown cleanup prevents destination removal
+ok 13 - unknown cleanup prevents destination removal
+  ---
+  duration_ms: 0.9784
+  type: 'test'
+  ...
+# Subtest: actual Windows runtime cleanup terminates only exact-path held harmless child
+ok 14 - actual Windows runtime cleanup terminates only exact-path held harmless child
+  ---
+  duration_ms: 3379.2931
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3456.6525

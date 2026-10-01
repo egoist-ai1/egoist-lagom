@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-10-01T08:34:05.9262325Z",
+  "taskId": "01a0f42c-8e52-7810-89bf-5257f3e06d3e",
+  "kind": "read-only original379 Setup41 boundary analysis",
+  "candidate": {
+    "source": "466862cc00b36277460ccc94cb47f4df891ac14b",
+    "setupSha256": "768953bfc01a64f1ea0c776246c0033c39c7c29acd2aafcbd48e08ad3c4e7b09",
+    "executedInFailingJob": false
+  },
+  "actualRun": {
+    "runId": 36834226795,
+    "jobId": 110279863127,
+    "artifactId": 11149026027,
+    "os": "Microsoft Windows Server 2025",
+    "image": "win25-vs2026/20260925.250",
+    "oldVersion": "3.7.9",
+    "oldInstallerBytes": 206521508,
+    "oldInstallerSha256": "eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+    "oldHelperUpgradeReached": false,
+    "setupExitCode": 41,
+    "timeoutSeconds": 600,
+    "reportedError": "Native child failed (41): official-old-clean-install; see owned stdout/stderr.",
+    "cleanStartVerified": true,
+    "mutationCount": 1,
+    "completedCheckCount": 0,
+    "guiCount": 0,
+    "afterNetworkVerified": false,
+    "foreignRegistrationAfterVerified": false
+  },
+  "acceptedEvidenceHashes": [
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-old379-failure\\authenticated-assets.json",
+      "bytes": 2707,
+      "sha256": "7aca395a68f2a53f354a27311669fd4f6e293378f6e11008e6669df5239412e1"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-old379-failure\\download-identity.json",
+      "bytes": 304,
+      "sha256": "ea214079e8a5311703c4d435912df38d6abf4290e1f1769e20137a8a4a2fdcd5"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-old379-failure\\raw-artifact.zip",
+      "bytes": 12669,
+      "sha256": "09995344f926651619a3a6e066ded956ad3aef4893de9d288a2d2f92910e3d5d"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-old379-failure\\raw-job.txt",
+      "bytes": 30939,
+      "sha256": "ae3f9ebed1b1f1881f76cab47ee2d19718c1ed386445202948ec3f04658616c9"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\native-466862-old379-failure\\windows-production-legacy-upgrade.json",
+      "bytes": 86809,
+      "sha256": "b4131699719c458cf9f9d06c96e70d551526bc1b5f16b8b511b345c42c9fdb7f"
+    }
+  ],
+  "rawArtifactInventory": [
+    {
+      "name": "download-identity.json",
+      "bytes": 304
+    },
+    {
+      "name": "native/authenticated-assets.json",
+      "bytes": 2707
+    },
+    {
+      "name": "native/authenticated-assets.options.json",
+      "bytes": 423
+    },
+    {
+      "name": "native/authenticated-assets.stderr.txt",
+      "bytes": 0
+    },
+    {
+      "name": "native/authenticated-assets.stdout.txt",
+      "bytes": 0
+    },
+    {
+      "name": "native/official-old-clean-install.stderr.txt",
+      "bytes": 0
+    },
+    {
+      "name": "native/official-old-clean-install.stdout.txt",
+      "bytes": 0
+    },
+    {
+      "name": "native/windows-production-legacy-upgrade.json",
+      "bytes": 86809
+    }
+  ],
+  "originalSourceReadback": {
+    "tag": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+    "sourceBinding": "Publication record pins tag; actual embedded cleanup equals tag after BOM/EOL normalization. Compiled NSIS instruction table not decompiled.",
+    "embedded": {
+      "member": "$PLUGINSDIR/owned-cleanup.ps1",
+      "bytes": 190567,
+      "sha256": "c7eca1981c0aa2eb237f1db29c0acfa2fe62a0756ef292efb97339815011f44e",
+      "normalizedSha256": "e00c18c62e9e6b50cfc915f26c77851c65c2b62cf3dda2219d11b276cd8b35ef"
+    },
+    "taggedCleanup": {
+      "path": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2:src/installer/owned-cleanup.ps1",
+      "bytes": 186765,
+      "sha256": "375a8290cb8cc980c2c3cee5d7b5ecb2c46f518075c1bae196f97dd55cf7fa3e",
+      "normalizedSha256": "e00c18c62e9e6b50cfc915f26c77851c65c2b62cf3dda2219d11b276cd8b35ef"
+    },
+    "taggedNsis": {
+      "path": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2:src/installer/setup.nsi",
+      "bytes": 15460,
+      "sha256": "ebd988c9cdbac2155ae4cd3847beaa0cc7f5c2cfeb4f226eb4c250414bfe5691",
+      "pointers": [
+        {
+          "line": 84,
+          "text": "!macro RunPhase PHASE"
+        },
+        {
+          "line": 153,
+          "text": "  !insertmacro RunPhase CheckInstallSafety"
+        },
+        {
+          "line": 239,
+          "text": "  !insertmacro RunPhase PreInstall"
+        },
+        {
+          "line": 243,
+          "text": "    SetErrorLevel 41"
+        },
+        {
+          "line": 254,
+          "text": "  File /r \"${PAYLOAD}\\*.*\""
+        },
+        {
+          "line": 287,
+          "text": "  !insertmacro RunPhase InstallCoreService"
+        }
+      ]
+    },
+    "embeddedScriptExecuted": false,
+    "installerExecuted": false
+  },
+  "actualStaticParserChecks": [
+    {
+      "runtime": "5.1.26100.9168",
+      "method": "Parser::ParseFile (BOM-aware); no dot-source or script invocation",
+      "sourceSha256": "c7eca1981c0aa2eb237f1db29c0acfa2fe62a0756ef292efb97339815011f44e",
+      "errors": [],
+      "scriptExecuted": false
+    },
+    {
+      "runtime": "7.6.5",
+      "method": "Parser::ParseFile (BOM-aware); no dot-source or script invocation",
+      "sourceSha256": "c7eca1981c0aa2eb237f1db29c0acfa2fe62a0756ef292efb97339815011f44e",
+      "errors": [],
+      "scriptExecuted": false
+    }
+  ],
+  "boundary": {
+    "attribution": "Exact original tagged NSIS outer mapping, supported by actual pinned installer/embedded helper. Compiled NSIS table not decompiled.",
+    "taggedNsisPreInstallLine": 239,
+    "rollbackCallLine": 242,
+    "outerExit41Line": 243,
+    "payloadCopyLine": 254,
+    "coreInstallLine": 287,
+    "rawInternalPhaseResult": "not captured",
+    "rollbackSuccess": "unknown",
+    "preparationMutations": "possible; outer41 does not establish no-op",
+    "initialSafetyOuterCode": 54,
+    "mutexOuterCode": 48,
+    "coreOuterCode": 43
+  },
+  "missingDiagnostic": {
+    "originalJournal": "%ProgramData%\\EgoistShield\\installer\\upgrade-journal.json",
+    "format": "JSON lines, preserve original bytes",
+    "journalIncludedInArtifact": false,
+    "journalAbsentOnRunner": "unknown",
+    "misleadingOldBrandedStatusPath": "%APPDATA%\\EgoistShield\\Installer\\upgrade-journal.json",
+    "setupStdoutBytes": 0,
+    "setupStderrBytes": 0,
+    "nsisChildOutput": "nsExec::Exec does not propagate inner PowerShell output to captured Setup streams",
+    "journalWriteErrors": "Write-Journal catches and discards write failure"
+  },
+  "leadingHypothesis": {
+    "cause": "Original per-adapter IPv4/IPv6 DNS snapshot query fails for active virtual adapter without matching DNS client row",
+    "confirmedForThisRun": false,
+    "actualEmbeddedLines": [
+      1577,
+      1582,
+      1602,
+      1604,
+      3534,
+      3535,
+      3538
+    ],
+    "previousIndependentNativeDiagnostic": "docs/product-hardening-2026-10-01/native-first-run/installer-diagnostic.json",
+    "previousErrorSource": "docs/product-hardening-2026-10-01/native-first-run/source-pre-install.stderr.txt",
+    "previousError": "CmdletizationQuery_NotFound,Get-DnsClientServerAddress; InterfaceIndex9 AddressFamily2",
+    "previousSetupIsCurrentOld379": false,
+    "otherUnexcludedCauses": [
+      "CIM provider/snapshot failure",
+      "filesystem or backup failure",
+      "target/safety guard",
+      "later preparation/quarantine failure"
+    ]
+  },
+  "minimalNextDiagnostic": [
+    "On the same disposable Windows image, bounded explicit WindowsPowerShell5.1 read-only exact original uplink filter and each IPv4/IPv6 DNS query; record index/GUID/status/presence/exacterror/elapsed. No whole-script import or network writes.",
+    "Immediately after unchanged original Setup failure collect bounded plain-path original ProgramData .json journal raw plus baseline/service-backup/marker existence and sizes, before retirement. Snapshot after network and foreign registrations.",
+    "Only if still unknown, parent-owned separate strict disposable diagnostic can execute exact original authenticated embedded PreInstall and capture its inner stdout/stderr. It can mutate preparation state and is not an installer/upgrade PASS."
+  ],
+  "reproducibleReadOnlyChecks": [
+    "Hash actual original dist/EgoistShield-Setup-3.7.9.exe SHA256 and require exact eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6.",
+    "7-Zip e only literal $PLUGINSDIR\\owned-cleanup.ps1 from that pinned NSIS archive into a fresh own work folder; never execute the installer/script.",
+    "git show d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2:src/installer/owned-cleanup.ps1; require byte equality after only BOM/CRLF normalization with embedded helper.",
+    "git show original tag:src/installer/setup.nsi; inspect sole outer SetErrorLevel41 and ordering.",
+    "Parser::ParseFile exact extracted file with explicit PS5.1 and PS7.6.5; both0errors, no dot-source or full helper invocation.",
+    "Read raw ZIP inventory and accepted JSON hashes; verify empty actual Setup streams and missing original journal are artifact facts only."
+  ],
+  "analysisMutations": [
+    "Two assigned new project report files",
+    "Own task work extraction and source/parser receipts only"
+  ],
+  "productionOrCiEdits": 0,
+  "physicalScmDnsTaskRegistryUiChanges": 0,
+  "installerOrOriginalScriptExecutions": 0,
+  "externalWrites": 0,
+  "dispatches": 0,
+  "conclusion": "Confirmed failure of old379 clean-install prerequisite, before new380 execution/handoff. Outer41 boundary located in original tagged source; exact inner cause remains unknown pending bounded native diagnostic."
+}

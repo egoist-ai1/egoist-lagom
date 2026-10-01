@@ -1,0 +1,31 @@
+{
+  "actualFailureSubstage": "unobserved",
+  "sourceSha256": "C9B2662D732207E0BE506C3AD7FE39DB9ADD30A5597C15201355123723550747",
+  "kind": "inert-dns-source-ci-test-timeout-fix",
+  "oldCompileBudgetMs": 15000,
+  "sourceRunId": 36881877373,
+  "files": [
+    {
+      "path": "green.txt",
+      "sha256": "653A8EE441DBE1CDA971D96666963A93F9803EBC6D740D7C616C7ECF5DB11638",
+      "bytes": 2087
+    },
+    {
+      "path": "raw-ci-ac817bc.txt",
+      "sha256": "45FE61012F8E4956821EBA97FEEDBAB5B64FF198EA1A70B91D4BD58FFD361A34",
+      "bytes": 166415
+    },
+    {
+      "path": "README.md",
+      "sha256": "C37B0ACE54639E02A5216284F739D786F685ADB5860D0DDA6611BAA56D1F2085",
+      "bytes": 876
+    }
+  ],
+  "physicalRefusalBudgetMs": 15000,
+  "jobId": 110435408549,
+  "productionChanged": false,
+  "newCompileBudgetMs": 45000,
+  "sourceFile": "tests/windows-dns-native-guard.test.mjs",
+  "targetedPass": 8,
+  "targetedSkip": 0
+}

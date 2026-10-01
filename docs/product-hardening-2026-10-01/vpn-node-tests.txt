@@ -1,0 +1,31 @@
+✔ desktop facade reaches native DoH when capability is explicit and local state is absent (2.2843ms)
+✔ running and stopped saved local configurations retain their worker mode (1.218ms)
+✔ custom-port and unsupported new configurations use the authenticated worker (0.9894ms)
+✔ unknown local state and conflicting managed modes refuse mutations (1.96ms)
+✔ active native custom-port transfer preserves DNS (0.7227ms)
+✔ local status survives native inspection failure while mutations stay blocked (0.8304ms)
+✔ concurrent native and custom-port selections inspect state in mutation order (1.195ms)
+✔ one renderer refresh shares pending component statuses before opening Core pipes (1.8058ms)
+✔ failed status can be retried and forced reads keep their own request (1.0128ms)
+✔ distinct status arguments and cancellation calls are never collapsed (0.6126ms)
+✔ packaged DoH reconfiguration avoids a redundant restore while stop restores DNS once (1.2068ms)
+✔ R25: component accepts only the fixed background methods and mutations require serialization (5.6254ms)
+✔ R25: protected snapshot uses TUN, fixed local port, unique interface and digest, without mutating GUI settings (1.11ms)
+✔ R25: custom runtime, GUI-only firewall, arbitrary config and oversized pipe input are rejected (2.4624ms)
+✔ R25: unknown native observation stays unknown and changes no files or SCM commands (12.1295ms)
+✔ R25: install persists the chosen snapshot, config and fixed wrapper before starting, then stop disables automatic startup (23.1469ms)
+✔ R25: native config rejection preserves an already running old service and bytes (15.6696ms)
+✔ R25: failed new start restores known old config, automatic policy and local readiness (31.1239ms)
+✔ R25: failed first start removes only the partially created service and does not retain a new intent snapshot (17.5776ms)
+✔ R25: unconfirmed old stop never replaces old config and carries an unknown-outcome code (13.832ms)
+✔ R25: removal keeps configuration if actual service removal is not confirmed (10.2968ms)
+✔ R25: worker method queue prevents overlapping settings and service lifecycle effects (35.906ms)
+✔ R25: actual pinned sing-box validates all nine generated protocol configurations without starting TUN (613.4464ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 871.091

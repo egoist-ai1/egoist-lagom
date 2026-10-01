@@ -1,0 +1,11 @@
+# Проверка повторной сборки 3.8.0
+
+После первого signed acceptance исправлены три наблюдаемые проблемы. Снимок исходников снят до следующего коммита на базе `9bf77129ccc2aeac741bf109b8ab6c9368fac558`; точный commit/tree установщика фиксируется последующей упаковкой и подписью.
+
+- [Draft lookup](signed-native-first-run.md): published-only REST tag endpoint возвращал 404 до установки. Выбор pending draft теперь идёт через официальный GraphQL fallback GitHub CLI с обязательным совпадением release ID/tag/draft.
+- [Настоящий schema 1 helper 3.7.8](legacy-378-preference.md) не записывал `minimizedAfter`. Reader сохраняет обязательный точный `runAfter`, принимает отсутствующий minimized flag как исходное `false`, отвергает неверные типы и сохраняет protected stage checks. Before RED, after 15 групп PASS на PS7 и PS5.1. Добавлена [матрица двух оригинальных версий](legacy-version-matrix.md) с разными immutable installer/helper pins.
+- [Уязвимость упаковщика](dependency-advisory.md): только lock entry `brace-expansion` изменена с 1.1.18 на 1.1.21. Root выполнил locked install, независимо подтвердил установленную версию и неизменность lock. Фактические full/production npm audit оба завершились с 0 известных находок. Предупреждения устаревания сборочных зависимостей остаются в логе.
+
+Полный итоговый набор: **858/858 PASS, 0 skips, 24.48 секунды**. Сборка main/preload/renderer/component worker прошла. Parser трёх изменённых PowerShell-файлов: 0 ошибок; actionlint workflow: PASS. [Receipt и точные hashes](candidate-rebuild-source/receipt.json), [Node log](candidate-rebuild-source/node.txt), [build](candidate-rebuild-source/build.txt), [all audit](candidate-rebuild-source/npm-audit-all.json), [production audit](candidate-rebuild-source/npm-audit-production.json).
+
+Эти результаты подтверждают исходники и ограниченные тестовые сценарии. Настоящие подписанные fresh/ordinary GUI/DNS/TUN/3.7.8/3.7.9 installation gates должны выполниться для нового кандидата; `releaseReady=false`. Короткие тесты и отсутствие известных advisory не являются гарантией многомесячной работы или отсутствия всех дефектов. Предыдущие [855 source checks](final-source.md), Core fault/crash stress и native protocol/ACL результаты сохраняют исходный scope; неудачные прогоны не скрыты.

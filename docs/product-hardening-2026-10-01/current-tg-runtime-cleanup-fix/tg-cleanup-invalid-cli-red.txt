@@ -1,0 +1,340 @@
+TAP version 13
+# Subtest: foreign Relay listener cannot make a running Telegram wrapper ready
+ok 1 - foreign Relay listener cannot make a running Telegram wrapper ready
+  ---
+  duration_ms: 3.9518
+  type: 'test'
+  ...
+# Subtest: Telegram foreign-port preflight prevents runtime publication, stop and another spawn
+ok 2 - Telegram foreign-port preflight prevents runtime publication, stop and another spawn
+  ---
+  duration_ms: 1.6207
+  type: 'test'
+  ...
+# Subtest: Telegram readiness wait rejects a foreign port even when SCM remains running
+ok 3 - Telegram readiness wait rejects a foreign port even when SCM remains running
+  ---
+  duration_ms: 2.1423
+  type: 'test'
+  ...
+# Subtest: Telegram unknown listener ownership blocks start without exposing command details
+ok 4 - Telegram unknown listener ownership blocks start without exposing command details
+  ---
+  duration_ms: 1.1572
+  type: 'test'
+  ...
+# Subtest: an owned Telegram listener remains ready and preserves its configured port
+ok 5 - an owned Telegram listener remains ready and preserves its configured port
+  ---
+  duration_ms: 1.2921
+  type: 'test'
+  ...
+# Subtest: an unknown Telegram owner stays unready and does not claim the port is free
+ok 6 - an unknown Telegram owner stays unready and does not claim the port is free
+  ---
+  duration_ms: 1.0843
+  type: 'test'
+  ...
+# Subtest: current foreign or unknown Telegram ownership takes precedence over an old action error
+ok 7 - current foreign or unknown Telegram ownership takes precedence over an old action error
+  ---
+  duration_ms: 2.4401
+  type: 'test'
+  ...
+# Subtest: PowerShell ownership snapshot accepts the actual service grandchild and refuses foreign Relay
+ok 8 - PowerShell ownership snapshot accepts the actual service grandchild and refuses foreign Relay
+  ---
+  duration_ms: 877.539
+  type: 'test'
+  ...
+# Subtest: PowerShell IPv6 ownership cannot hide a foreign IPv4 listener behind localhost
+ok 9 - PowerShell IPv6 ownership cannot hide a foreign IPv4 listener behind localhost
+  ---
+  duration_ms: 863.8118
+  type: 'test'
+  ...
+# Subtest: PowerShell standalone ownership checks the saved process creation time and executable
+ok 10 - PowerShell standalone ownership checks the saved process creation time and executable
+  ---
+  duration_ms: 681.3673
+  type: 'test'
+  ...
+# Subtest: Telegram CIM service fallback returns the service PID without assigning the PowerShell PID variable
+ok 11 - Telegram CIM service fallback returns the service PID without assigning the PowerShell PID variable
+  ---
+  duration_ms: 158.7975
+  type: 'test'
+  ...
+# Subtest: a changing Telegram listener snapshot is unknown rather than a free or ready port
+ok 12 - a changing Telegram listener snapshot is unknown rather than a free or ready port
+  ---
+  duration_ms: 1.5854
+  type: 'test'
+  ...
+# Subtest: pending Telegram service reports unconfirmed readiness without a stale failure
+ok 13 - pending Telegram service reports unconfirmed readiness without a stale failure
+  ---
+  duration_ms: 2.0205
+  type: 'test'
+  ...
+# Subtest: Zapret startStandalone disables a stopped automatic SCM registration before spawning
+ok 14 - Zapret startStandalone disables a stopped automatic SCM registration before spawning
+  ---
+  duration_ms: 2.6581
+  type: 'test'
+  ...
+# Subtest: Zapret restartStandalone disables a stopped automatic SCM registration before spawning
+ok 15 - Zapret restartStandalone disables a stopped automatic SCM registration before spawning
+  ---
+  duration_ms: 1.0387
+  type: 'test'
+  ...
+# Subtest: Zapret unknown SCM state cannot enter standalone mode
+ok 16 - Zapret unknown SCM state cannot enter standalone mode
+  ---
+  duration_ms: 1.0449
+  type: 'test'
+  ...
+# Subtest: temporary VPN suspension preserves Zapret service startup mode
+ok 17 - temporary VPN suspension preserves Zapret service startup mode
+  ---
+  duration_ms: 1.5725
+  type: 'test'
+  ...
+# Subtest: service readiness uses two fresh native proofs within one deadline
+ok 18 - service readiness uses two fresh native proofs within one deadline
+  ---
+  duration_ms: 4.8294
+  type: 'test'
+  ...
+# Subtest: native query failure stays unknown without a permissive fallback
+ok 19 - native query failure stays unknown without a permissive fallback
+  ---
+  duration_ms: 1.0186
+  type: 'test'
+  ...
+# Subtest: foreign IPv6 cannot be hidden behind an owned IPv4 localhost listener
+ok 20 - foreign IPv6 cannot be hidden behind an owned IPv4 localhost listener
+  ---
+  duration_ms: 7.696
+  type: 'test'
+  ...
+# Subtest: an explicit IPv6 endpoint uses its own ownership proof
+ok 21 - an explicit IPv6 endpoint uses its own ownership proof
+  ---
+  duration_ms: 1.5903
+  type: 'test'
+  ...
+# Subtest: native ownership rejects wrong operation
+ok 22 - native ownership rejects wrong operation
+  ---
+  duration_ms: 1.0298
+  type: 'test'
+  ...
+# Subtest: native ownership rejects obsolete schema
+ok 23 - native ownership rejects obsolete schema
+  ---
+  duration_ms: 0.8729
+  type: 'test'
+  ...
+# Subtest: native ownership rejects wrong port
+ok 24 - native ownership rejects wrong port
+  ---
+  duration_ms: 1.4981
+  type: 'test'
+  ...
+# Subtest: native ownership rejects contradictory SCM snapshot
+ok 25 - native ownership rejects contradictory SCM snapshot
+  ---
+  duration_ms: 1.5478
+  type: 'test'
+  ...
+# Subtest: native ownership rejects unverified root path
+ok 26 - native ownership rejects unverified root path
+  ---
+  duration_ms: 1.2223
+  type: 'test'
+  ...
+# Subtest: native ownership rejects foreign wrapper path
+ok 27 - native ownership rejects foreign wrapper path
+  ---
+  duration_ms: 1.1289
+  type: 'test'
+  ...
+# Subtest: native ownership rejects unstable SCM root
+ok 28 - native ownership rejects unstable SCM root
+  ---
+  duration_ms: 0.9986
+  type: 'test'
+  ...
+# Subtest: native ownership rejects unknown address family
+ok 29 - native ownership rejects unknown address family
+  ---
+  duration_ms: 1.1006
+  type: 'test'
+  ...
+# Subtest: native ownership rejects missing process birth
+ok 30 - native ownership rejects missing process birth
+  ---
+  duration_ms: 1.7342
+  type: 'test'
+  ...
+# Subtest: native ownership rejects missing ancestry
+ok 31 - native ownership rejects missing ancestry
+  ---
+  duration_ms: 1.1574
+  type: 'test'
+  ...
+# Subtest: native ownership rejects recycled service root
+ok 32 - native ownership rejects recycled service root
+  ---
+  duration_ms: 1.0088
+  type: 'test'
+  ...
+# Subtest: native ownership rejects recycled listener owner
+ok 33 - native ownership rejects recycled listener owner
+  ---
+  duration_ms: 0.9301
+  type: 'test'
+  ...
+# Subtest: native ownership rejects changing listener
+ok 34 - native ownership rejects changing listener
+  ---
+  duration_ms: 0.9183
+  type: 'test'
+  ...
+# Subtest: stopped service and standalone mode require two native saved-process identity proofs
+ok 35 - stopped service and standalone mode require two native saved-process identity proofs
+  ---
+  duration_ms: 1.0611
+  type: 'test'
+  ...
+# Subtest: native missing port needs two stable reads and a contradictory TCP result stays unknown
+ok 36 - native missing port needs two stable reads and a contradictory TCP result stays unknown
+  ---
+  duration_ms: 1.6478
+  type: 'test'
+  ...
+# Subtest: Telegram start-pending waits for SCM before requiring native running ownership
+ok 37 - Telegram start-pending waits for SCM before requiring native running ownership
+  ---
+  duration_ms: 501.9709
+  type: 'test'
+  ...
+# Subtest: Telegram pending-to-running still refuses an actual foreign ownership response
+ok 38 - Telegram pending-to-running still refuses an actual foreign ownership response
+  ---
+  duration_ms: 504.7737
+  type: 'test'
+  ...
+# Subtest: fresh runtime cleanup uses fixed native query/stop rather than CIM or broad PowerShell enumeration
+ok 39 - fresh runtime cleanup uses fixed native query/stop rather than CIM or broad PowerShell enumeration
+  ---
+  duration_ms: 4.7378
+  type: 'test'
+  ...
+# Subtest: arbitrary runtime paths are refused before any child launch
+ok 40 - arbitrary runtime paths are refused before any child launch
+  ---
+  duration_ms: 1.081
+  type: 'test'
+  ...
+# Subtest: unknown cleanup cannot clear saved state or permit copy
+ok 41 - unknown cleanup cannot clear saved state or permit copy
+  ---
+  duration_ms: 1.0454
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.schemaVersion = 2
+ok 42 - cleanup rejects contradictory or incomplete native proof p => p.schemaVersion = 2
+  ---
+  duration_ms: 1.1863
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.operation = 'other'
+ok 43 - cleanup rejects contradictory or incomplete native proof p => p.operation = 'other'
+  ---
+  duration_ms: 1.2911
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.target = 'legacy'
+ok 44 - cleanup rejects contradictory or incomplete native proof p => p.target = 'legacy'
+  ---
+  duration_ms: 1.2915
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.runtimePath = 'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'
+ok 45 - cleanup rejects contradictory or incomplete native proof p => p.runtimePath = 'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'
+  ---
+  duration_ms: 1.1292
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.quiescent = false
+ok 46 - cleanup rejects contradictory or incomplete native proof p => p.quiescent = false
+  ---
+  duration_ms: 0.9738
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:null,executablePath:target}]
+ok 47 - cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:null,executablePath:target}]
+  ---
+  duration_ms: 0.9241
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'}]
+ok 48 - cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'}]
+  ---
+  duration_ms: 1.2506
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.stopped = [1,2].map(() => ({processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:target}))
+ok 49 - cleanup rejects contradictory or incomplete native proof p => p.stopped = [1,2].map(() => ({processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:target}))
+  ---
+  duration_ms: 1.4896
+  type: 'test'
+  ...
+# Subtest: legacy cleanup uses only fixed legacy token and validates exact resulting identity
+ok 50 - legacy cleanup uses only fixed legacy token and validates exact resulting identity
+  ---
+  duration_ms: 1.3776
+  type: 'test'
+  ...
+# Subtest: unknown cleanup prevents destination removal
+ok 51 - unknown cleanup prevents destination removal
+  ---
+  duration_ms: 1.1905
+  type: 'test'
+  ...
+# Subtest: actual Windows runtime cleanup terminates only exact-path held harmless child
+not ok 52 - actual Windows runtime cleanup terminates only exact-path held harmless child
+  ---
+  duration_ms: 3101.6093
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\telegram-runtime-cleanup.test.mjs:50:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Command failed: C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f75d-1042-7df1-9e68-86e8c4a49415\work\native-runtime-cleanup-laEeDn\bin\NativeRuntimeCleanupRegression.exe
+    Unhandled exception. System.ArgumentException: Runtime cleanup accepts only primary or legacy.
+       at EgoistShield.Service.TelegramRuntimeCleanupCommand.RunAsync(String target) in C:\Users\Egoist\Desktop\�஥���\�ਫ������\Egoist Lagom\src\service\EgoistShield.Service\TelegramRuntimeCleanupCommand.cs:line 13
+       at NativeRuntimeCleanupRegression.Program.Main(String[] args) in C:\Users\Egoist\Desktop\�஥���\�ਫ������\Egoist Lagom\tests\NativeRuntimeCleanupRegression\Program.cs:line 69
+       at NativeRuntimeCleanupRegression.Program.Main(String[] args) in C:\Users\Egoist\Desktop\�஥���\�ਫ������\Egoist Lagom\tests\NativeRuntimeCleanupRegression\Program.cs:line 80
+       at NativeRuntimeCleanupRegression.Program.<Main>(String[] args)
+    
+  code: 3762504530
+  stack: |-
+    genericNodeError (node:internal/errors:985:15)
+    wrappedFn (node:internal/errors:539:14)
+    ChildProcess.exithandler (node:child_process:417:12)
+    ChildProcess.emit (node:events:509:28)
+    maybeClose (node:internal/child_process:1141:16)
+    ChildProcess._handle.onexit (node:internal/child_process:306:5)
+  ...
+1..52
+# tests 52
+# suites 0
+# pass 51
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3196.1629

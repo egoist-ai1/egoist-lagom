@@ -27,7 +27,8 @@ test('UI accepts confirmed runtime readiness and preserves older status compatib
 test('UI distinguishes a running DNS worker from failed DNS verification', () => {
   assert.equal(readiness.dns({ running:true, verified:false }), false);
   assert.equal(readiness.dns({ running:true, verified:true }), true);
-  assert.equal(readiness.dns({ running:true }), true);
+  assert.equal(readiness.dns({ running:true, resolutionVerified:true, resolverIdentityVerified:null }), true);
+  assert.equal(readiness.dns({ running:true }), false);
   assert.equal(readiness.dns({ running:false, verified:true }), false);
 });
 

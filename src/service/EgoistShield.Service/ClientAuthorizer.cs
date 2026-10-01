@@ -17,6 +17,7 @@ internal sealed class ClientAuthorizer
 	private readonly ServiceOptions _options;
 
 	private readonly string? _configuredInstallRoot;
+	private readonly Lazy<ProtectedExecutable>? _guiLease;
 
 	private const uint TokenQuery = 8u;
 
@@ -24,6 +25,8 @@ internal sealed class ClientAuthorizer
 	{
 		_options = options;
 		_configuredInstallRoot = config?.InstallRoot ?? options.InstallRoot;
+		if (!string.IsNullOrWhiteSpace(_configuredInstallRoot))
+			_guiLease = new Lazy<ProtectedExecutable>(() => ProtectedExecutable.OpenHost(_configuredInstallRoot, "gui"));
 	}
 
 	public ClientIdentity Authorize(NamedPipeServerStream pipe)
@@ -34,8 +37,14 @@ internal sealed class ClientAuthorizer
 		}
 		checked
 		{
-			string text = ResolveProcessPath((int)clientProcessId);
-			string userSid = ResolveProcessUserSid((int)clientProcessId);
+			using Process client = Process.GetProcessById((int)clientProcessId);
+			DateTime clientStartTime = client.StartTime;
+			string text = ResolveProcessPath(client);
+			string userSid = ResolveProcessUserSid(client);
+			client.Refresh();
+			if (client.HasExited || client.StartTime != clientStartTime ||
+				!GetNamedPipeClientProcessId(pipe.SafePipeHandle, out uint confirmedPid) || confirmedPid != clientProcessId)
+				throw new UnauthorizedAccessException("Named-pipe client identity changed during authorization.");
 			if (_options.ConsoleMode && _options.AllowDevClient)
 			{
 				return new ClientIdentity((int)clientProcessId, text, DevelopmentOverride: true, userSid);
@@ -49,15 +58,13 @@ internal sealed class ClientAuthorizer
 			string fullPath2 = Path.GetFullPath(Path.Combine(fullPath, "EgoistShield.exe"));
 			if (string.Equals(text, fullPath2, StringComparison.OrdinalIgnoreCase))
 			{
+				GuiLaunchPolicy.RequireMainProcess(client);
+				_ = _guiLease!.Value;
 				return new ClientIdentity((int)clientProcessId, text, DevelopmentOverride: false, userSid);
 			}
-			InlineArray5<string> buffer = default(InlineArray5<string>);
-			buffer[0] = fullPath;
-			buffer[1] = "resources";
-			buffer[2] = "core-service";
-			buffer[3] = "win-x64";
-			buffer[4] = "EgoistShield.Service.exe";
-			string fullPath3 = Path.GetFullPath(Path.Combine(buffer));
+			if (text.Equals(Path.Combine(fullPath, "EgoistShield.Worker.exe"), StringComparison.OrdinalIgnoreCase))
+				throw new UnauthorizedAccessException("Component worker host has no interactive GUI authority.");
+			string fullPath3 = Path.GetFullPath(Path.Combine(fullPath, "resources", "core-service", "win-x64", "EgoistShield.Service.exe"));
 			if (string.Equals(text, fullPath3, StringComparison.OrdinalIgnoreCase))
 			{
 				return new ClientIdentity((int)clientProcessId, text, DevelopmentOverride: false, userSid, IdentityProbe: true);
@@ -85,9 +92,8 @@ internal sealed class ClientAuthorizer
 		}
 	}
 
-	private static string ResolveProcessPath(int processId)
+	private static string ResolveProcessPath(Process process)
 	{
-		using Process process = Process.GetProcessById(processId);
 		DateTime startTime = process.StartTime;
 		string obj = process.MainModule?.FileName;
 		if (string.IsNullOrWhiteSpace(obj))
@@ -102,7 +108,7 @@ internal sealed class ClientAuthorizer
 		return Path.GetFullPath(obj);
 	}
 
-	private static string ResolveProcessUserSid(int processId)
+	private static string ResolveProcessUserSid(Process process)
 	{
 		if (!OperatingSystem.IsWindows())
 		{
@@ -111,7 +117,6 @@ internal sealed class ClientAuthorizer
 				return windowsIdentity.User?.Value ?? "S-1-0-0";
 			}
 		}
-		using Process process = Process.GetProcessById(processId);
 		if (!OpenProcessToken(process.Handle, 8u, out var tokenHandle))
 		{
 			throw new UnauthorizedAccessException($"Cannot resolve named-pipe client token (Win32 {Marshal.GetLastWin32Error()}).");

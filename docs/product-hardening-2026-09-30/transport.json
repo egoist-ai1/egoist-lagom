@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-30T20:29:43.4505687Z",
+  "baseCommit": "5d0d58b44076843e639723ef267e7b8d2605e481",
+  "findings": [
+    "R11",
+    "R21",
+    "R22"
+  ],
+  "sourceImplemented": true,
+  "releaseReady": false,
+  "installed": false,
+  "published": false,
+  "sourceFiles": [
+    {
+      "path": "src/recovered/electron/ipc/safe-network.js",
+      "sha256": "2b6f8c304ced558c6398f8984d48b830888206530c16ff7101d24f7a4a6c03d5",
+      "owner": "transport agent"
+    },
+    {
+      "path": "src/recovered/electron/ipc/github-release.js",
+      "sha256": "7b67d4c57d50514a64c9670e8571f022dcd8dfda30c79c8782708d230e5b8ced",
+      "owner": "transport agent"
+    },
+    {
+      "path": "src/recovered/electron/ipc/trusted-ipc.js",
+      "sha256": "4867ee461b114c772f503de17b3564428135677fd98a23d69d4b9417adead02d",
+      "owner": "transport agent"
+    },
+    {
+      "path": "src/recovered/electron/ipc/release-trust.js",
+      "sha256": "373a491942771a1d81352129b435a5935d8927703b05f5e5b0ca8555ba680d71",
+      "owner": "transport agent"
+    },
+    {
+      "path": "src/recovered/electron/ipc/runtime-installer.js",
+      "sha256": "b3a3f67cc5ea5b9af50a0675330f42689f45ba47410c896eef0228399c7a6c4c",
+      "owner": "transport agent"
+    },
+    {
+      "path": "tests/runtime-installer.test.mjs",
+      "sha256": "192edfd41599915167913ef89d21c0a47498b4167ed72b6fb4bc746aea1bb2e3",
+      "owner": "transport agent"
+    },
+    {
+      "path": "tests/production-download-security-url.test.mjs",
+      "sha256": "5cefa0b406ca34b72e7997b062de63cb2448e9dda50460a8af33755ff0169d0a",
+      "owner": "transport agent"
+    },
+    {
+      "path": "src/recovered/electron/ipc/desktop-updater.js",
+      "sha256": "7adf510cf7f0da0c74e1e563810817651f6861fdcffa6fc315bb6dbdfb53eb06",
+      "owner": "parent, integration read only"
+    }
+  ],
+  "defaultDownloadBudgets": {
+    "headerTimeoutMs": 60000,
+    "bodyIdleTimeoutMs": 15000,
+    "totalTimeoutMs": 600000,
+    "maxBytes": 536870912,
+    "redirects": 4,
+    "attempts": 3
+  },
+  "tests": {
+    "testFiles": [
+      "tests/production-download-security-url.test.mjs",
+      "tests/runtime-installer.test.mjs",
+      "tests/lagom-release.test.mjs",
+      "tests/release-registry-lifecycle.test.mjs",
+      "tests/network-audit-2026-regression.test.mjs",
+      "tests/network-audit-followup.test.mjs",
+      "tests/zapret-update.test.mjs"
+    ],
+    "stats": {
+      "tests": 94.0,
+      "pass": 94.0,
+      "fail": 0.0,
+      "cancelled": 0.0,
+      "skipped": 0.0,
+      "todo": 0.0,
+      "duration_ms": 10534.6094
+    },
+    "nativeStress": [
+      {
+        "transport": "native HTTP",
+        "operations": 64,
+        "successfulDownloads": 16,
+        "expectedBoundedFailures": 48,
+        "partialFilesAfter": 0,
+        "ownedServerSocketsAfter": 0,
+        "durationMs": 971.5382000000001
+      },
+      {
+        "transport": "native HTTPS with per-agent trusted own CA",
+        "operations": 64,
+        "successfulDownloads": 16,
+        "expectedBoundedFailures": 48,
+        "partialFilesAfter": 0,
+        "ownedServerSocketsAfter": 0,
+        "durationMs": 1000.9105000000002
+      }
+    ],
+    "originalBaseline": [
+      "transport-baseline-download.json",
+      "transport-baseline-canonical.json",
+      "transport-baseline-ipc.json"
+    ],
+    "log": "transport-tests.txt",
+    "genericAbortErrorContractRetained": true,
+    "realNativeExclusiveOpenCollisionProtected": true,
+    "realNativeSocketAutoClosedOnStall": true,
+    "desktopUpdaterActualSharedTransportUnsafeRedirectCases": 4,
+    "tlsSystemTrustModified": false,
+    "readerCleanupFaultRetainsOriginalWriteErrorAndClosesFile": true
+  },
+  "proofBoundaries": {
+    "real": "Own HTTP/TLS listeners, real fetch/undici fetch, real files exclusive-open/read/write/flush/rename and actual product functions",
+    "controlled": "Short deadlines, malformed Response metadata/streams, EACCES/ENOSPC/zero/short writes, publish failure and runtime checksum/extraction/version leaves",
+    "privilegedWindowsAcceptance": false,
+    "uncNavigationExecuted": false,
+    "fullWindowsInstallOrUpgrade": false,
+    "monthsObserved": false
+  },
+  "notes": [
+    "Stress serverSocket0 is measured after own Agent/server teardown; standalone stall test measures socket close before teardown.",
+    "prepareRuntimeInstallRoot production identity helper is owned and separately verified by identity agent; this receipt confirms early refusal at RuntimeInstaller boundary.",
+    "Historical baseline harness metadata names199; actual phase started at5d0 and records byte hashes.",
+    "Initial wide test setup failed without task-owned trust environment; intermediate generic timeout-name regression was detected and corrected."
+  ]
+}

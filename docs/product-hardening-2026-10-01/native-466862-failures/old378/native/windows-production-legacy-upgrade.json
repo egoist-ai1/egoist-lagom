@@ -1,0 +1,2787 @@
+{
+  "schemaVersion": 1,
+  "kind": "actual-native-official-3.7.8-helper-upgrade",
+  "oldVersion": "3.7.8",
+  "candidateVersion": "3.8.0",
+  "candidateSourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "harnessSourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "startedAtUtc": "2026-10-01T08:13:45.5149319+00:00",
+  "host": {
+    "computerName": "runnervm99s1a",
+    "administrator": true,
+    "runnerEnvironment": "github-hosted",
+    "runId": "36834226795",
+    "runAttempt": "1"
+  },
+  "result": "failed",
+  "cleanStartVerified": true,
+  "releaseReady": false,
+  "mutations": [
+    {
+      "atUtc": "2026-10-01T08:13:50.1482889+00:00",
+      "kind": "official-old-setup-clean-install",
+      "target": "C:\\Program Files\\EgoistShield",
+      "purpose": "Actual original public 3.7.8 installer, authenticated before execution."
+    },
+    {
+      "atUtc": "2026-10-01T08:14:34.7233398+00:00",
+      "kind": "old-canonical-gui-native-uia",
+      "target": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+      "purpose": "Provision actual Telegram background service through shipped 3.7.8 controls, then normally close GUI."
+    }
+  ],
+  "checks": [],
+  "gui": [],
+  "privateStateReadbacks": [],
+  "networkReadbacks": [
+    {
+      "phase": "old-clean-install",
+      "preserved": true,
+      "snapshot": {
+        "dns": [
+          {
+            "index": 1,
+            "family": 2,
+            "servers": []
+          },
+          {
+            "index": 1,
+            "family": 23,
+            "servers": [
+              "fec0:0:0:ffff::1",
+              "fec0:0:0:ffff::2",
+              "fec0:0:0:ffff::3"
+            ]
+          },
+          {
+            "index": 10,
+            "family": 2,
+            "servers": []
+          },
+          {
+            "index": 10,
+            "family": 23,
+            "servers": [
+              "fec0:0:0:ffff::1",
+              "fec0:0:0:ffff::2",
+              "fec0:0:0:ffff::3"
+            ]
+          },
+          {
+            "index": 14,
+            "family": 2,
+            "servers": [
+              "168.63.129.16"
+            ]
+          },
+          {
+            "index": 14,
+            "family": 23,
+            "servers": []
+          }
+        ],
+        "defaultRoutes": [
+          {
+            "index": 14,
+            "prefix": "0.0.0.0/0",
+            "nextHop": "10.1.0.1",
+            "metric": 1,
+            "protocol": "NetMgmt"
+          }
+        ],
+        "ipv6Bindings": [
+          {
+            "Name": "Ethernet 3",
+            "Enabled": true
+          },
+          {
+            "Name": "vEthernet (nat)",
+            "Enabled": true
+          }
+        ],
+        "userProxy": {
+          "ProxyEnable": 0,
+          "ProxyServer": null,
+          "ProxyOverride": null,
+          "AutoConfigURL": null
+        },
+        "winHttp": {
+          "WinHttpSettings": [
+            24,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "DefaultConnectionSettings": null
+        }
+      }
+    }
+  ],
+  "beforeNetwork": {
+    "dns": [
+      {
+        "index": 1,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 1,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 10,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 10,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 2,
+        "servers": [
+          "168.63.129.16"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 23,
+        "servers": []
+      }
+    ],
+    "defaultRoutes": [
+      {
+        "index": 14,
+        "prefix": "0.0.0.0/0",
+        "nextHop": "10.1.0.1",
+        "metric": 1,
+        "protocol": "NetMgmt"
+      }
+    ],
+    "ipv6Bindings": [
+      {
+        "Name": "Ethernet 3",
+        "Enabled": true
+      },
+      {
+        "Name": "vEthernet (nat)",
+        "Enabled": true
+      }
+    ],
+    "userProxy": {
+      "ProxyEnable": 0,
+      "ProxyServer": null,
+      "ProxyOverride": null,
+      "AutoConfigURL": null
+    },
+    "winHttp": {
+      "WinHttpSettings": [
+        24,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "DefaultConnectionSettings": null
+    }
+  },
+  "beforeForeignRegistrations": {
+    "services": [
+      {
+        "Name": "ALG",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\alg.exe"
+      },
+      {
+        "Name": "Apache",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\tools\\Apache24\\bin\\httpd.exe\" -k runservice"
+      },
+      {
+        "Name": "AppHostSvc",
+        "StartMode": "Auto",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k apphost"
+      },
+      {
+        "Name": "AppIDSvc",
+        "StartMode": "Manual",
+        "StartName": "NT Authority\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted -p"
+      },
+      {
+        "Name": "Appinfo",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "AppMgmt",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "AppReadiness",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k AppReadiness -p"
+      },
+      {
+        "Name": "AppVClient",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\AppVClient.exe"
+      },
+      {
+        "Name": "AppXSvc",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k wsappx -p"
+      },
+      {
+        "Name": "aspnet_state",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_state.exe"
+      },
+      {
+        "Name": "AudioEndpointBuilder",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "Audiosrv",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalServiceNetworkRestricted -p"
+      },
+      {
+        "Name": "AxInstSV",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k AxInstSVGroup"
+      },
+      {
+        "Name": "BDESVC",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "BFE",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceNoNetworkFirewall -p"
+      },
+      {
+        "Name": "BITS",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "BluetoothUserService_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k BthAppGroup -p"
+      },
+      {
+        "Name": "BrokerInfrastructure",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k DcomLaunch -p"
+      },
+      {
+        "Name": "BTAGService",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted"
+      },
+      {
+        "Name": "BthAvctpSvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "bthserv",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "camsvc",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k osprivacy -p"
+      },
+      {
+        "Name": "CaptureService_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "cbdhsvc_da0d7",
+        "StartMode": "Auto",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k ClipboardSvcGroup -p"
+      },
+      {
+        "Name": "CDPSvc",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "CertPropSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs"
+      },
+      {
+        "Name": "ClipSVC",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k wsappx -p"
+      },
+      {
+        "Name": "CloudBackupRestoreSvc_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k UnistackSvcGroup"
+      },
+      {
+        "Name": "COMSysApp",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\dllhost.exe /Processid:{02D4B3F1-FD88-11D1-960D-00805FC79235}"
+      },
+      {
+        "Name": "ConsentUxUserSvc_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k DevicesFlow"
+      },
+      {
+        "Name": "CoreMessagingRegistrar",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceNoNetwork -p"
+      },
+      {
+        "Name": "CredentialEnrollmentManagerUserSvc_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\CredentialEnrollmentManager.exe"
+      },
+      {
+        "Name": "CryptSvc",
+        "StartMode": "Auto",
+        "StartName": "NT Authority\\NetworkService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k NetworkService -p"
+      },
+      {
+        "Name": "CscService",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "DcomLaunch",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k DcomLaunch -p"
+      },
+      {
+        "Name": "dcsvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "defragsvc",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k defragsvc"
+      },
+      {
+        "Name": "DeviceAssociationBrokerSvc_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k DevicesFlow -p"
+      },
+      {
+        "Name": "DeviceAssociationService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "DeviceInstall",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k DcomLaunch -p"
+      },
+      {
+        "Name": "DevicePickerUserSvc_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k DevicesFlow"
+      },
+      {
+        "Name": "DevicesFlowUserSvc_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k DevicesFlow"
+      },
+      {
+        "Name": "DevQueryBroker",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "Dhcp",
+        "StartMode": "Auto",
+        "StartName": "NT Authority\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted -p"
+      },
+      {
+        "Name": "DiagTrack",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k utcsvc -p"
+      },
+      {
+        "Name": "DispBrokerDesktopSvc",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "DisplayEnhancementService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "DmEnrollmentSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "dmwappushservice",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "Dnscache",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k NetworkService -p"
+      },
+      {
+        "Name": "docker",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\dockerd.exe --run-service --service-name docker"
+      },
+      {
+        "Name": "DoSvc",
+        "StartMode": "Manual",
+        "StartName": "NT Authority\\NetworkService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k NetworkService -p"
+      },
+      {
+        "Name": "dot3svc",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "DPS",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalServiceNoNetwork -p"
+      },
+      {
+        "Name": "DsmSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "DsSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "EapHost",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "edgeupdate",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe\" /svc"
+      },
+      {
+        "Name": "edgeupdatem",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\MicrosoftEdgeUpdate.exe\" /medsvc"
+      },
+      {
+        "Name": "EFS",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\lsass.exe"
+      },
+      {
+        "Name": "embeddedmode",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "EntAppSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k appmodelRedirectionGuard -p"
+      },
+      {
+        "Name": "EventLog",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalServiceNetworkRestricted -p"
+      },
+      {
+        "Name": "EventSystem",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "FabricHostSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files\\Microsoft Service Fabric\\bin\\FabricHost.exe\""
+      },
+      {
+        "Name": "fdPHost",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "FDResPub",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceAndNoImpersonation -p"
+      },
+      {
+        "Name": "FontCache",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "FontCache3.0.0.0",
+        "StartMode": "Manual",
+        "StartName": "NT Authority\\LocalService",
+        "PathName": "C:\\Windows\\Microsoft.Net\\Framework64\\v3.0\\WPF\\PresentationFontCache.exe"
+      },
+      {
+        "Name": "FrameServer",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k Camera"
+      },
+      {
+        "Name": "FrameServerMonitor",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k CameraMonitor"
+      },
+      {
+        "Name": "GameInputSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\GameInputSvc.exe"
+      },
+      {
+        "Name": "GoogleChromeElevationService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files\\Google\\Chrome\\Application\\153.0.8010.53\\elevation_service.exe\""
+      },
+      {
+        "Name": "GoogleUpdaterInternalService152.0.7933.0",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files (x86)\\Google\\GoogleUpdater\\152.0.7933.0\\updater.exe\" --system --windows-service --service=update-internal"
+      },
+      {
+        "Name": "GoogleUpdaterService152.0.7933.0",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files (x86)\\Google\\GoogleUpdater\\152.0.7933.0\\updater.exe\" --system --windows-service --service=update"
+      },
+      {
+        "Name": "gpsvc",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k GPSvcGroup"
+      },
+      {
+        "Name": "GraphicsPerfSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k GraphicsPerfSvcGroup"
+      },
+      {
+        "Name": "HgClientService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "hidserv",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "hns",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k NetSvcs -p"
+      },
+      {
+        "Name": "hpatchmon",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "HvHost",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "IKEEXT",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "InstallService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "InventorySvc",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k InvSvcGroup -p"
+      },
+      {
+        "Name": "iphlpsvc",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k NetSvcs -p"
+      },
+      {
+        "Name": "KeyIso",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\lsass.exe"
+      },
+      {
+        "Name": "KPSSVC",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k KpsSvcGroup"
+      },
+      {
+        "Name": "KtmRm",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k NetworkServiceAndNoImpersonation -p"
+      },
+      {
+        "Name": "LanmanServer",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k smbsvcs"
+      },
+      {
+        "Name": "LanmanWorkstation",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k NetworkService -p"
+      },
+      {
+        "Name": "lfsvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcsRedirectionGuard -p"
+      },
+      {
+        "Name": "LicenseManager",
+        "StartMode": "Manual",
+        "StartName": "NT Authority\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "lltdsvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "lmhosts",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalServiceNetworkRestricted -p"
+      },
+      {
+        "Name": "LocalKdc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\lsass.exe"
+      },
+      {
+        "Name": "LSM",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k DcomLaunch -p"
+      },
+      {
+        "Name": "LxpSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs"
+      },
+      {
+        "Name": "MapsBroker",
+        "StartMode": "Disabled",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k NetworkService -p"
+      },
+      {
+        "Name": "McpManagementService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k McpManagementServiceGroup"
+      },
+      {
+        "Name": "MDCoreSvc",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.26080.4-0\\MpDefenderCoreService.exe\""
+      },
+      {
+        "Name": "MicrosoftEdgeElevationService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\153.0.4234.48\\elevation_service.exe\""
+      },
+      {
+        "Name": "MongoDB",
+        "StartMode": "Disabled",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "\"C:\\Program Files\\MongoDB\\Server\\7.0\\bin\\mongod.exe\" --config \"C:\\Program Files\\MongoDB\\Server\\7.0\\bin\\mongod.cfg\" --service"
+      },
+      {
+        "Name": "MozillaMaintenance",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files (x86)\\Mozilla Maintenance Service\\maintenanceservice.exe\""
+      },
+      {
+        "Name": "mpssvc",
+        "StartMode": "Auto",
+        "StartName": "NT Authority\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceNoNetworkFirewall -p"
+      },
+      {
+        "Name": "MSDTC",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\System32\\msdtc.exe"
+      },
+      {
+        "Name": "MSiSCSI",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "msiserver",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\msiexec.exe /V"
+      },
+      {
+        "Name": "MSMQ",
+        "StartMode": "Auto",
+        "StartName": "NT Authority\\NetworkService",
+        "PathName": "C:\\Windows\\system32\\mqsvc.exe"
+      },
+      {
+        "Name": "NaturalAuthentication",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "NcaSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k NetSvcs -p"
+      },
+      {
+        "Name": "NcbService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "Netlogon",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\lsass.exe"
+      },
+      {
+        "Name": "Netman",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "NetMsmqActivator",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "\"C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\SMSvcHost.exe\" -NetMsmqActivator"
+      },
+      {
+        "Name": "NetPipeActivator",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\SMSvcHost.exe"
+      },
+      {
+        "Name": "netprofm",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netprofm -p"
+      },
+      {
+        "Name": "NetSetupSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "NetTcpActivator",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\SMSvcHost.exe"
+      },
+      {
+        "Name": "NetTcpPortSharing",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\SMSvcHost.exe"
+      },
+      {
+        "Name": "NgcCtnrSvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted -p"
+      },
+      {
+        "Name": "NgcSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "nginx",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\ProgramData\\Chocolatey\\lib\\NSSM\\tools\\nssm.exe"
+      },
+      {
+        "Name": "NlaSvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netprofm -p"
+      },
+      {
+        "Name": "NPSMSvc_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "nsi",
+        "StartMode": "Auto",
+        "StartName": "NT Authority\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "nvagent",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k NetSvcs"
+      },
+      {
+        "Name": "P9RdrService_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k P9RdrService -p"
+      },
+      {
+        "Name": "PcaSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "PerfHost",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\SysWow64\\perfhost.exe"
+      },
+      {
+        "Name": "pla",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalServiceNoNetwork -p"
+      },
+      {
+        "Name": "PlugPlay",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k DcomLaunch -p"
+      },
+      {
+        "Name": "PolicyAgent",
+        "StartMode": "Manual",
+        "StartName": "NT Authority\\NetworkService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k NetworkServiceNetworkRestricted -p"
+      },
+      {
+        "Name": "postgresql-x64-17",
+        "StartMode": "Disabled",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "\"C:\\Program Files\\PostgreSQL\\17\\bin\\pg_ctl.exe\" runservice -N \"postgresql-x64-17\" -D \"C:\\PostgreSQL\\17\\data\" -w"
+      },
+      {
+        "Name": "Power",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k DcomLaunch -p"
+      },
+      {
+        "Name": "PrintDeviceConfigurationService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "PrintNotify",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k print"
+      },
+      {
+        "Name": "PrintScanBrokerService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k PrintScanBrokerService -p"
+      },
+      {
+        "Name": "PrintWorkflowUserSvc_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k PrintWorkflow"
+      },
+      {
+        "Name": "ProfSvc",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k UserProfileService -p"
+      },
+      {
+        "Name": "PushToInstall",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "QWAVE",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceAndNoImpersonation -p"
+      },
+      {
+        "Name": "RasAuto",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "RasMan",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs"
+      },
+      {
+        "Name": "RdAgent",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\WindowsAzure\\GuestAgent_2.7.41491.1243_2026-10-01_081107\\WaAppAgent.exe"
+      },
+      {
+        "Name": "refsdedupsvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\ReFsDedupSvc.exe"
+      },
+      {
+        "Name": "RemoteAccess",
+        "StartMode": "Disabled",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs"
+      },
+      {
+        "Name": "RemoteRegistry",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k localService -p"
+      },
+      {
+        "Name": "RmSvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalServiceNetworkRestricted"
+      },
+      {
+        "Name": "RpcEptMapper",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k RPCSS -p"
+      },
+      {
+        "Name": "RpcLocator",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\system32\\locator.exe"
+      },
+      {
+        "Name": "RpcSs",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k rpcss -p"
+      },
+      {
+        "Name": "RSoPProv",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\RSoPProv.exe"
+      },
+      {
+        "Name": "sacsvr",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "SamSs",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\lsass.exe"
+      },
+      {
+        "Name": "SCardSvr",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceAndNoImpersonation"
+      },
+      {
+        "Name": "ScDeviceEnum",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted"
+      },
+      {
+        "Name": "Schedule",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "SCPolicySvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs"
+      },
+      {
+        "Name": "seclogon",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "SecurityHealthService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\SecurityHealthService.exe"
+      },
+      {
+        "Name": "SEMgrSvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "SENS",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcsRedirectionGuard -p"
+      },
+      {
+        "Name": "Sense",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files\\Windows Defender Advanced Threat Protection\\MsSense.exe\""
+      },
+      {
+        "Name": "SensorDataService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\SensorDataService.exe"
+      },
+      {
+        "Name": "SensorService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "SensrSvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceAndNoImpersonation -p"
+      },
+      {
+        "Name": "SessionEnv",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "SharedAccess",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "ShellHWDetection",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "shpamsvc",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcsRedirectionGuard -p"
+      },
+      {
+        "Name": "smphost",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k smphost"
+      },
+      {
+        "Name": "SNMPTrap",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\snmptrap.exe"
+      },
+      {
+        "Name": "Spooler",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\spoolsv.exe"
+      },
+      {
+        "Name": "sppsvc",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\system32\\sppsvc.exe"
+      },
+      {
+        "Name": "SQLWriter",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files\\Microsoft SQL Server\\90\\Shared\\sqlwriter.exe\""
+      },
+      {
+        "Name": "SSDPSRV",
+        "StartMode": "Disabled",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceAndNoImpersonation -p"
+      },
+      {
+        "Name": "ssh-agent",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\OpenSSH\\ssh-agent.exe"
+      },
+      {
+        "Name": "sshd",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\OpenSSH\\sshd.exe"
+      },
+      {
+        "Name": "SstpSvc",
+        "StartMode": "Manual",
+        "StartName": "NT Authority\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "StateRepository",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k appmodel -p"
+      },
+      {
+        "Name": "StiSvc",
+        "StartMode": "Manual",
+        "StartName": "NT Authority\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k imgsvc"
+      },
+      {
+        "Name": "StorSvc",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "svsvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "swprv",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k swprv"
+      },
+      {
+        "Name": "SysMain",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "SystemEventsBroker",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k DcomLaunch -p"
+      },
+      {
+        "Name": "tapisrv",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k NetworkService -p"
+      },
+      {
+        "Name": "TermService",
+        "StartMode": "Manual",
+        "StartName": "NT Authority\\NetworkService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k termsvcs"
+      },
+      {
+        "Name": "TextInputManagementService",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "Themes",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "TieringEngineService",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\system32\\TieringEngineService.exe"
+      },
+      {
+        "Name": "TimeBrokerSvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted -p"
+      },
+      {
+        "Name": "TokenBroker",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "TrkWks",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "TrustedInstaller",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\servicing\\TrustedInstaller.exe"
+      },
+      {
+        "Name": "tzautoupdate",
+        "StartMode": "Disabled",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "UALSVC",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "UdkUserSvc_da0d7",
+        "StartMode": "Manual",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k UdkSvcGroup"
+      },
+      {
+        "Name": "UevAgentService",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\AgentService.exe"
+      },
+      {
+        "Name": "UmRdpService",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "upnphost",
+        "StartMode": "Disabled",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceAndNoImpersonation -p"
+      },
+      {
+        "Name": "UserManager",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "UsoSvc",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "VaultSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\lsass.exe"
+      },
+      {
+        "Name": "vds",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\vds.exe"
+      },
+      {
+        "Name": "vmcompute",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\vmcompute.exe"
+      },
+      {
+        "Name": "vmicguestinterface",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestrictedRedirectionGuard -p"
+      },
+      {
+        "Name": "vmicheartbeat",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k ICService -p"
+      },
+      {
+        "Name": "vmickvpexchange",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestrictedRedirectionGuard -p"
+      },
+      {
+        "Name": "vmicrdv",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k ICService -p"
+      },
+      {
+        "Name": "vmicshutdown",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestrictedRedirectionGuard -p"
+      },
+      {
+        "Name": "vmictimesync",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted -p"
+      },
+      {
+        "Name": "vmicvmsession",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestrictedRedirectionGuard -p"
+      },
+      {
+        "Name": "vmicvss",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestrictedRedirectionGuard -p"
+      },
+      {
+        "Name": "vmms",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\vmms.exe"
+      },
+      {
+        "Name": "VSInstallerElevationService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\VSInstallerElevationService.exe\""
+      },
+      {
+        "Name": "VSS",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\vssvc.exe"
+      },
+      {
+        "Name": "VSStandardCollectorService150",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\Common\\DiagnosticsHub.Collection.Service\\StandardCollector.Service.exe\""
+      },
+      {
+        "Name": "W32Time",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalService"
+      },
+      {
+        "Name": "w3logsvc",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k apphost"
+      },
+      {
+        "Name": "W3SVC",
+        "StartMode": "Auto",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k iissvcs"
+      },
+      {
+        "Name": "WaaSMedicSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k wusvcs -p"
+      },
+      {
+        "Name": "WalletService",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k appmodel -p"
+      },
+      {
+        "Name": "WarpJITSvc",
+        "StartMode": "Manual",
+        "StartName": "NT Authority\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalServiceNetworkRestricted"
+      },
+      {
+        "Name": "WAS",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k iissvcs"
+      },
+      {
+        "Name": "WbioSrvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k WbioSvcGroup"
+      },
+      {
+        "Name": "Wcmsvc",
+        "StartMode": "Auto",
+        "StartName": "NT Authority\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted -p -s Wcmsvc"
+      },
+      {
+        "Name": "wcncsvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalServiceAndNoImpersonation -p"
+      },
+      {
+        "Name": "WdiServiceHost",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "WdiSystemHost",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "WdNisSvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "\"C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.26080.4-0\\NisSrv.exe\""
+      },
+      {
+        "Name": "Wecsvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k NetworkService -p"
+      },
+      {
+        "Name": "WEPHOSTSVC",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k WepHostSvcGroup"
+      },
+      {
+        "Name": "wercplsupport",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "WerSvc",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k WerSvcGroup"
+      },
+      {
+        "Name": "WFDSConMgrSvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted -p"
+      },
+      {
+        "Name": "WiaRpc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted -p"
+      },
+      {
+        "Name": "WinDefend",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.26080.4-0\\MsMpEng.exe\""
+      },
+      {
+        "Name": "WindowsAzureGuestAgent",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\WindowsAzure\\GuestAgent_2.7.41491.1243_2026-10-01_081107\\WindowsAzureGuestAgent.exe"
+      },
+      {
+        "Name": "WinHttpAutoProxySvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalServiceHttp -p"
+      },
+      {
+        "Name": "Winmgmt",
+        "StartMode": "Auto",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "WinRM",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k NetworkService -p"
+      },
+      {
+        "Name": "wisvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "WlanSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k WlansvcGroup"
+      },
+      {
+        "Name": "wlidsvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "WManSvc",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "wmiApSrv",
+        "StartMode": "Manual",
+        "StartName": "localSystem",
+        "PathName": "C:\\Windows\\system32\\wbem\\WmiApSrv.exe"
+      },
+      {
+        "Name": "WMPNetworkSvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\NetworkService",
+        "PathName": "\"C:\\Program Files\\Windows Media Player\\wmpnetwk.exe\""
+      },
+      {
+        "Name": "workfolderssvc",
+        "StartMode": "Manual",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\System32\\svchost.exe -k LocalService -p"
+      },
+      {
+        "Name": "WPDBusEnum",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k LocalSystemNetworkRestricted"
+      },
+      {
+        "Name": "WpnService",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "WpnUserService_da0d7",
+        "StartMode": "Auto",
+        "StartName": null,
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k UnistackSvcGroup"
+      },
+      {
+        "Name": "WSAIFabricSvc",
+        "StartMode": "Auto",
+        "StartName": "NT AUTHORITY\\LocalService",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k WSAIFabricSvcGroup -p"
+      },
+      {
+        "Name": "WSearch",
+        "StartMode": "Disabled",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\SearchIndexer.exe /Embedding"
+      },
+      {
+        "Name": "WSLService",
+        "StartMode": "Auto",
+        "StartName": "LocalSystem",
+        "PathName": "\"C:\\Program Files\\WSL\\wslservice.exe\""
+      },
+      {
+        "Name": "wuauserv",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "XblAuthManager",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p"
+      },
+      {
+        "Name": "ZTHELPER",
+        "StartMode": "Manual",
+        "StartName": "LocalSystem",
+        "PathName": "C:\\Windows\\system32\\svchost.exe -k zthelper -p"
+      }
+    ],
+    "taskNames": [
+      {
+        "TaskPath": "\\",
+        "TaskName": "HostedComputeAgent"
+      },
+      {
+        "TaskPath": "\\",
+        "TaskName": "MicrosoftEdgeUpdateTaskMachineCore{2DAC648F-6FF6-4857-97D8-9424877BBB61}"
+      },
+      {
+        "TaskPath": "\\",
+        "TaskName": "MicrosoftEdgeUpdateTaskMachineUA{942EB968-C11A-4BD4-9577-523150453F3C}"
+      },
+      {
+        "TaskPath": "\\",
+        "TaskName": "primer"
+      },
+      {
+        "TaskPath": "\\GoogleSystem\\GoogleUpdater\\",
+        "TaskName": "GoogleUpdaterTaskSystem152.0.7933.0{78593637-A9E0-4D72-B0BF-6F7D2A93E536}"
+      },
+      {
+        "TaskPath": "\\Microsoft\\VisualStudio\\",
+        "TaskName": "VSIX Auto Update"
+      },
+      {
+        "TaskPath": "\\Microsoft\\VisualStudio\\Updates\\",
+        "TaskName": "UpdateConfiguration_S-1-5-21-3162555376-3447873500-144036907-1000"
+      },
+      {
+        "TaskPath": "\\Microsoft\\VisualStudio\\Updates\\",
+        "TaskName": "UpdateConfiguration_S-1-5-21-3162555376-3447873500-144036907-500"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\",
+        "TaskName": "Server Initial Configuration Task"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\.NET Framework\\",
+        "TaskName": ".NET Framework NGEN v4.0.30319"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\.NET Framework\\",
+        "TaskName": ".NET Framework NGEN v4.0.30319 64"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\.NET Framework\\",
+        "TaskName": ".NET Framework NGEN v4.0.30319 64 Critical"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\.NET Framework\\",
+        "TaskName": ".NET Framework NGEN v4.0.30319 Critical"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\AccountHealth\\",
+        "TaskName": "RecoverabilityToastTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Active Directory Rights Management Services Client\\",
+        "TaskName": "AD RMS Rights Policy Template Management (Automated)"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Active Directory Rights Management Services Client\\",
+        "TaskName": "AD RMS Rights Policy Template Management (Manual)"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\AppID\\",
+        "TaskName": "EDP Policy Manager"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\AppID\\",
+        "TaskName": "PolicyConverter"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\AppID\\",
+        "TaskName": "VerifiedPublisherCertStoreCheck"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Application Experience\\",
+        "TaskName": "MareBackup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Application Experience\\",
+        "TaskName": "Microsoft Compatibility Appraiser Exp"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Application Experience\\",
+        "TaskName": "PcaPatchDbTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Application Experience\\",
+        "TaskName": "SdbinstMergeDbTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Application Experience\\",
+        "TaskName": "StartupAppTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\ApplicationData\\",
+        "TaskName": "appuriverifierdaily"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\ApplicationData\\",
+        "TaskName": "appuriverifierinstall"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\ApplicationData\\",
+        "TaskName": "CleanupTemporaryState"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\ApplicationData\\",
+        "TaskName": "DsSvcCleanup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\AppxDeploymentClient\\",
+        "TaskName": "Pre-staged app cleanup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Autochk\\",
+        "TaskName": "Proxy"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\BitLocker\\",
+        "TaskName": "BitLocker Encrypt All Drives"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\BitLocker\\",
+        "TaskName": "BitLocker MDM policy Refresh"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Bluetooth\\",
+        "TaskName": "UninstallDeviceTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\BrokerInfrastructure\\",
+        "TaskName": "BgTaskRegistrationMaintenanceTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\capabilityaccessmanager\\",
+        "TaskName": "maintenancetasks"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\CertificateServicesClient\\",
+        "TaskName": "AikCertEnrollTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\CertificateServicesClient\\",
+        "TaskName": "CryptoPolicyTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\CertificateServicesClient\\",
+        "TaskName": "KeyPreGenTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\CertificateServicesClient\\",
+        "TaskName": "SystemTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\CertificateServicesClient\\",
+        "TaskName": "UserTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\CertificateServicesClient\\",
+        "TaskName": "UserTask-Roam"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Chkdsk\\",
+        "TaskName": "ProactiveScan"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Chkdsk\\",
+        "TaskName": "SyspartRepair"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Clip\\",
+        "TaskName": "License Validation"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\CloudExperienceHost\\",
+        "TaskName": "CreateObjectTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\CloudRestore\\",
+        "TaskName": "Backup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\CloudRestore\\",
+        "TaskName": "Restore"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Customer Experience Improvement Program\\",
+        "TaskName": "Consolidator"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Customer Experience Improvement Program\\",
+        "TaskName": "UsbCeip"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Data Integrity Scan\\",
+        "TaskName": "Data Integrity Check And Scan"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Data Integrity Scan\\",
+        "TaskName": "Data Integrity Scan"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Data Integrity Scan\\",
+        "TaskName": "Data Integrity Scan for Crash Recovery"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Defrag\\",
+        "TaskName": "ScheduledDefrag"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Device Information\\",
+        "TaskName": "Device"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Device Information\\",
+        "TaskName": "Device User"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Device Setup\\",
+        "TaskName": "Driver Recovery on Reboot"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Device Setup\\",
+        "TaskName": "Metadata Refresh"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DeviceDirectoryClient\\",
+        "TaskName": "HandleCommand"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DeviceDirectoryClient\\",
+        "TaskName": "HandleWnsCommand"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DeviceDirectoryClient\\",
+        "TaskName": "IntegrityCheck"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DeviceDirectoryClient\\",
+        "TaskName": "LocateCommandUserSession"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DeviceDirectoryClient\\",
+        "TaskName": "RegisterDeviceAccountChange"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DeviceDirectoryClient\\",
+        "TaskName": "RegisterDeviceLocationRightsChange"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DeviceDirectoryClient\\",
+        "TaskName": "RegisterDevicePeriodic24"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DeviceDirectoryClient\\",
+        "TaskName": "RegisterDevicePolicyChange"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DeviceDirectoryClient\\",
+        "TaskName": "RegisterDeviceProtectionStateChanged"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DeviceDirectoryClient\\",
+        "TaskName": "RegisterDeviceSettingChange"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DeviceDirectoryClient\\",
+        "TaskName": "RegisterUserDevice"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Diagnosis\\",
+        "TaskName": "Scheduled"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Diagnosis\\",
+        "TaskName": "UnexpectedCodepath"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DirectX\\",
+        "TaskName": "DirectXDatabaseUpdater"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DirectX\\",
+        "TaskName": "DXGIAdapterCache"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DiskCleanup\\",
+        "TaskName": "SilentCleanup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DiskDiagnostic\\",
+        "TaskName": "Microsoft-Windows-DiskDiagnosticDataCollector"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DiskDiagnostic\\",
+        "TaskName": "Microsoft-Windows-DiskDiagnosticResolver"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DiskFootprint\\",
+        "TaskName": "Diagnostics"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\DiskFootprint\\",
+        "TaskName": "StorageSense"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\EDP\\",
+        "TaskName": "EDP App Launch Task"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\EDP\\",
+        "TaskName": "EDP Auth Task"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\EDP\\",
+        "TaskName": "EDP Inaccessible Credentials Task"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\EDP\\",
+        "TaskName": "StorageCardEncryption Task"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\ExploitGuard\\",
+        "TaskName": "ExploitGuard MDM policy Refresh"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\File Classification Infrastructure\\",
+        "TaskName": "Property Definition Sync"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Flighting\\FeatureConfig\\",
+        "TaskName": "BootstrapUsageDataReporting"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Flighting\\FeatureConfig\\",
+        "TaskName": "GovernedFeatureUsageProcessing"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Flighting\\FeatureConfig\\",
+        "TaskName": "ReconcileConfigs"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Flighting\\FeatureConfig\\",
+        "TaskName": "ReconcileFeatures"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Flighting\\FeatureConfig\\",
+        "TaskName": "UsageDataFlushing"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Flighting\\FeatureConfig\\",
+        "TaskName": "UsageDataReceiver"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Flighting\\FeatureConfig\\",
+        "TaskName": "UsageDataReporting"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Flighting\\OneSettings\\",
+        "TaskName": "RefreshCache"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Hotpatch\\",
+        "TaskName": "Monitoring"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\input\\",
+        "TaskName": "InputSettingsRestoreDataAvailable"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\input\\",
+        "TaskName": "LocalUserSyncDataAvailable"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\input\\",
+        "TaskName": "MouseSyncDataAvailable"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\input\\",
+        "TaskName": "PenSyncDataAvailable"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\input\\",
+        "TaskName": "RemoteMouseSyncDataAvailable"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\input\\",
+        "TaskName": "RemotePenSyncDataAvailable"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\input\\",
+        "TaskName": "RemoteTouchpadSyncDataAvailable"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\input\\",
+        "TaskName": "syncpensettings"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\input\\",
+        "TaskName": "TouchpadSyncDataAvailable"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\InstallService\\",
+        "TaskName": "RestoreDevice"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\InstallService\\",
+        "TaskName": "ScanForUpdates"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\InstallService\\",
+        "TaskName": "ScanForUpdatesAsUser"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\InstallService\\",
+        "TaskName": "SmartRetry"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\InstallService\\",
+        "TaskName": "WakeUpAndContinueUpdates"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\InstallService\\",
+        "TaskName": "WakeUpAndScanForUpdates"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\International\\",
+        "TaskName": "Synchronize Language Settings"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Kernel\\",
+        "TaskName": "La57Cleanup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\LanguageComponentsInstaller\\",
+        "TaskName": "Installation"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\LanguageComponentsInstaller\\",
+        "TaskName": "ReconcileLanguageResources"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\LanguageComponentsInstaller\\",
+        "TaskName": "Uninstallation"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\License Manager\\",
+        "TaskName": "TempSignedLicenseExchange"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Location\\",
+        "TaskName": "WindowsActionDialog"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Maintenance\\",
+        "TaskName": "WinSAT"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Management\\Autopilot\\",
+        "TaskName": "DetectHardwareChange"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Management\\Autopilot\\",
+        "TaskName": "RemediateHardwareChange"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Management\\Provisioning\\",
+        "TaskName": "Cellular"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Management\\Provisioning\\",
+        "TaskName": "Logon"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Management\\Provisioning\\",
+        "TaskName": "MdmDiagnosticsCleanup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Management\\Provisioning\\",
+        "TaskName": "Retry"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Management\\Provisioning\\",
+        "TaskName": "RunOnReboot"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Maps\\",
+        "TaskName": "MapsToastTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Maps\\",
+        "TaskName": "MapsUpdateTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\MemoryDiagnostic\\",
+        "TaskName": "ProcessMemoryDiagnosticEvents"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\MemoryDiagnostic\\",
+        "TaskName": "RunFullMemoryDiagnostic"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\MUI\\",
+        "TaskName": "LPRemove"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Multimedia\\",
+        "TaskName": "SystemSoundsService"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Network Connectivity Status Indicator\\",
+        "TaskName": "NcsiIdentifyUserProxies"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Network Controller\\",
+        "TaskName": "SDN Diagnostics Task"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Offline Files\\",
+        "TaskName": "Background Synchronization"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Offline Files\\",
+        "TaskName": "Logon Synchronization"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\PCRPF\\",
+        "TaskName": "PCR Prediction Framework Firmware Update Task"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\PI\\",
+        "TaskName": "Secure-Boot-Update"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\PI\\",
+        "TaskName": "Sqm-Tasks"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\PLA\\",
+        "TaskName": "GAEvents"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\PLA\\",
+        "TaskName": "RTEvents"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\PLA\\",
+        "TaskName": "Server Manager Performance Monitor"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Plug and Play\\",
+        "TaskName": "Device Install Group Policy"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Plug and Play\\",
+        "TaskName": "Device Install Reboot Required"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Plug and Play\\",
+        "TaskName": "Sysprep Generalize Drivers"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Power Efficiency Diagnostics\\",
+        "TaskName": "AnalyzeSystem"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Printing\\",
+        "TaskName": "PrinterCleanupTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Printing\\",
+        "TaskName": "PrintJobCleanupTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\PushToInstall\\",
+        "TaskName": "LoginCheck"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\PushToInstall\\",
+        "TaskName": "Registration"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Ras\\",
+        "TaskName": "MobilityManager"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\RecoveryEnvironment\\",
+        "TaskName": "VerifyWinRE"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\ReFsDedupSvc\\",
+        "TaskName": "Initialization"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Registry\\",
+        "TaskName": "RegIdleBackup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Server Manager\\",
+        "TaskName": "CleanupOldPerfLogs"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Server Manager\\",
+        "TaskName": "ServerManager"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Servicing\\",
+        "TaskName": "OOBEFodSetup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Servicing\\",
+        "TaskName": "StartComponentCleanup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\SharedPC\\",
+        "TaskName": "Account Cleanup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Shell\\",
+        "TaskName": "CreateObjectTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Shell\\",
+        "TaskName": "IndexerAutomaticMaintenance"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Shell\\",
+        "TaskName": "UpdateUserPictureTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Shell\\",
+        "TaskName": "UpdateUserPictureTaskContained"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Software Inventory Logging\\",
+        "TaskName": "Collection"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Software Inventory Logging\\",
+        "TaskName": "Configuration"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\SoftwareProtectionPlatform\\",
+        "TaskName": "SvcRestartTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\SoftwareProtectionPlatform\\",
+        "TaskName": "SvcRestartTaskLogon"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\SoftwareProtectionPlatform\\",
+        "TaskName": "SvcRestartTaskNetwork"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\SpacePort\\",
+        "TaskName": "SpaceAgentTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\SpacePort\\",
+        "TaskName": "SpaceManagerTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Speech\\",
+        "TaskName": "SpeechModelDownloadTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\StateRepository\\",
+        "TaskName": "MaintenanceTasks"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Storage Tiers Management\\",
+        "TaskName": "Storage Tiers Management Initialization"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Storage Tiers Management\\",
+        "TaskName": "Storage Tiers Optimization"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Task Manager\\",
+        "TaskName": "Interactive"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\TextServicesFramework\\",
+        "TaskName": "MsCtfMonitor"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Time Synchronization\\",
+        "TaskName": "ForceSynchronizeTime"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Time Synchronization\\",
+        "TaskName": "SynchronizeTime"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Time Zone\\",
+        "TaskName": "SynchronizeTimeZone"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\TPM\\",
+        "TaskName": "Tpm-HASCertRetr"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\TPM\\",
+        "TaskName": "Tpm-Maintenance"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\TPM\\",
+        "TaskName": "Tpm-PreAttestationHealthCheck"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\UpdateOrchestrator\\",
+        "TaskName": "Report policies"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\UpdateOrchestrator\\",
+        "TaskName": "Schedule Maintenance Work"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\UpdateOrchestrator\\",
+        "TaskName": "Schedule Scan"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\UpdateOrchestrator\\",
+        "TaskName": "Schedule Scan Static Task"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\UpdateOrchestrator\\",
+        "TaskName": "Schedule Wake To Work"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\UpdateOrchestrator\\",
+        "TaskName": "Schedule Work"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\UpdateOrchestrator\\",
+        "TaskName": "USO_UxBroker"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\UpdateOrchestrator\\",
+        "TaskName": "UUS Failover Task"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\UPnP\\",
+        "TaskName": "UPnPHostConfig"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\User Profile Service\\",
+        "TaskName": "HiveUploadTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\WaaSMedic\\",
+        "TaskName": "PerformRemediation"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\WDI\\",
+        "TaskName": "ResolutionHost"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Windows Defender\\",
+        "TaskName": "Windows Defender Cache Maintenance"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Windows Defender\\",
+        "TaskName": "Windows Defender Cleanup"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Windows Defender\\",
+        "TaskName": "Windows Defender Verification"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Windows Error Reporting\\",
+        "TaskName": "QueueReporting"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Windows Filtering Platform\\",
+        "TaskName": "BfeOnServiceStartTypeChange"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Windows Media Sharing\\",
+        "TaskName": "UpdateLibrary"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\WindowsAI\\Settings\\",
+        "TaskName": "InitialConfiguration"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\WindowsColorSystem\\",
+        "TaskName": "Calibration Loader"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\WindowsUpdate\\",
+        "TaskName": "Refresh Group Policy Cache"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\WindowsUpdate\\",
+        "TaskName": "Scheduled Start"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Wininet\\",
+        "TaskName": "CacheTask"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\WlanSvc\\",
+        "TaskName": "MoProfileManagement"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Work Folders\\",
+        "TaskName": "Work Folders Logon Synchronization"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Work Folders\\",
+        "TaskName": "Work Folders Maintenance Work"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Workplace Join\\",
+        "TaskName": "Automatic-Device-Join"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Workplace Join\\",
+        "TaskName": "Device-Sync"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\Workplace Join\\",
+        "TaskName": "Recovery-Check"
+      },
+      {
+        "TaskPath": "\\Microsoft\\Windows\\WwanSvc\\",
+        "TaskName": "OobeDiscovery"
+      },
+      {
+        "TaskPath": "\\Mozilla\\",
+        "TaskName": "Firefox Default Browser Agent 308046B0AF4A39CB"
+      }
+    ]
+  },
+  "releaseGates": [
+    "Public/latest feed discovery and old GUI auto-update initiation",
+    "Actual reboot/interrupted recovery",
+    "3.7.7 trust compatibility",
+    "System DNS/TUN/WinDivert endpoints",
+    "Actual standard-user GUI token",
+    "Long-duration 72-hour/7-day/month-scale pilot"
+  ],
+  "harnessFiles": [
+    {
+      "path": "D:\\a\\egoist-lagom\\egoist-lagom\\tests\\windows-production-legacy-upgrade.ps1",
+      "sha256": "3f7eb4faacae0893a46231c9f16bcd2fb2c1fabccb86d2586442b53dbcc14bd6"
+    },
+    {
+      "path": "D:\\a\\egoist-lagom\\egoist-lagom\\tests\\windows-production-legacy-upgrade.mjs",
+      "sha256": "f3fce3866326be76d414ff370502c42512d2f520de0acb81ab9b561e64661bf2"
+    },
+    {
+      "path": "D:\\a\\egoist-lagom\\egoist-lagom\\tests\\windows-production-acceptance.ps1",
+      "sha256": "faadd17bedca25f5f667a077c50ab195f301bf066f4b01037da22ab21cd792d6"
+    },
+    {
+      "path": "D:\\a\\egoist-lagom\\egoist-lagom\\tests\\windows-production-acceptance.mjs",
+      "sha256": "84241b4d9a2102a9e29fbc680e949ff3da38e7c5c928ef4f7c66f5a50ea2caed"
+    }
+  ],
+  "authenticatedAssets": {
+    "ok": true,
+    "oldVersion": "3.7.8",
+    "oldReleaseProfile": {
+      "version": "3.7.8",
+      "installerSha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "helperSha256": "e33bca4550b6e130287c8bb2d5c0dccf30b76e033bf99520e81d6c2acda609f5"
+    },
+    "old": {
+      "schemaVersion": 2,
+      "channel": "stable",
+      "version": "3.7.8",
+      "tag": "v3.7.8",
+      "installerName": "EgoistShield-Setup-3.7.8.exe",
+      "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.8/EgoistShield-Setup-3.7.8.exe",
+      "size": 194405835,
+      "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "sha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61",
+      "githubDigest": "sha256:34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "minimumAppVersion": "3.7.8",
+      "keyId": "release-2026-09-recovery",
+      "authenticodeStatus": "not-signed",
+      "licenseVersion": "1.0",
+      "publishedAt": "2026-09-29T12:54:24.535Z"
+    },
+    "candidate": {
+      "schemaVersion": 2,
+      "channel": "stable",
+      "version": "3.8.0",
+      "tag": "v3.8.0",
+      "installerName": "EgoistShield-Setup-3.8.0.exe",
+      "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+      "size": 277408236,
+      "sha256": "768953bfc01a64f1ea0c776246c0033c39c7c29acd2aafcbd48e08ad3c4e7b09",
+      "sha512": "eba7c77ab5112bec4d268c8075238c3cc58ec15f9711371828d3b59df340dcd0dbe330103b79e4bd6c097b50c05372c4c7df740b2e0f66fbfa7fa28ce3bff90f",
+      "githubDigest": "sha256:768953bfc01a64f1ea0c776246c0033c39c7c29acd2aafcbd48e08ad3c4e7b09",
+      "sourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+      "integrityManifestSha256": "32a42418db6f1d18006f87df282056d6a1c2a3cb3089a10ce0a5ae78882d5966",
+      "minimumAppVersion": "3.7.8",
+      "keyId": "release-2026-09-recovery",
+      "authenticodeStatus": "not-signed",
+      "licenseVersion": "1.0",
+      "publishedAt": "2026-10-01T07:56:12.768Z"
+    },
+    "installed": null,
+    "rootSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+    "oldRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+    "candidateRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+    "candidateManifestSha256": "470fb5892cc407aaa07e1f7f104ce78be5c6f7a4ffd05f8e5d87adf568140973",
+    "integrityManifestSha256": "32a42418db6f1d18006f87df282056d6a1c2a3cb3089a10ce0a5ae78882d5966",
+    "crypto": "real Ed25519 verification over original bytes; no supplied keys",
+    "publicLatestFeedDiscoveryTested": false
+  },
+  "oldCorePolicy": {
+    "start": 2,
+    "resetSeconds": 86400,
+    "nonCrash": 1,
+    "actions": [
+      {
+        "type": 1,
+        "delayMs": 5000
+      },
+      {
+        "type": 1,
+        "delayMs": 15000
+      },
+      {
+        "type": 1,
+        "delayMs": 30000
+      }
+    ]
+  },
+  "oldInstalledTrust": {
+    "ok": true,
+    "oldVersion": "3.7.8",
+    "oldReleaseProfile": {
+      "version": "3.7.8",
+      "installerSha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "helperSha256": "e33bca4550b6e130287c8bb2d5c0dccf30b76e033bf99520e81d6c2acda609f5"
+    },
+    "old": {
+      "schemaVersion": 2,
+      "channel": "stable",
+      "version": "3.7.8",
+      "tag": "v3.7.8",
+      "installerName": "EgoistShield-Setup-3.7.8.exe",
+      "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.8/EgoistShield-Setup-3.7.8.exe",
+      "size": 194405835,
+      "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "sha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61",
+      "githubDigest": "sha256:34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "minimumAppVersion": "3.7.8",
+      "keyId": "release-2026-09-recovery",
+      "authenticodeStatus": "not-signed",
+      "licenseVersion": "1.0",
+      "publishedAt": "2026-09-29T12:54:24.535Z"
+    },
+    "candidate": {
+      "schemaVersion": 2,
+      "channel": "stable",
+      "version": "3.8.0",
+      "tag": "v3.8.0",
+      "installerName": "EgoistShield-Setup-3.8.0.exe",
+      "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+      "size": 277408236,
+      "sha256": "768953bfc01a64f1ea0c776246c0033c39c7c29acd2aafcbd48e08ad3c4e7b09",
+      "sha512": "eba7c77ab5112bec4d268c8075238c3cc58ec15f9711371828d3b59df340dcd0dbe330103b79e4bd6c097b50c05372c4c7df740b2e0f66fbfa7fa28ce3bff90f",
+      "githubDigest": "sha256:768953bfc01a64f1ea0c776246c0033c39c7c29acd2aafcbd48e08ad3c4e7b09",
+      "sourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+      "integrityManifestSha256": "32a42418db6f1d18006f87df282056d6a1c2a3cb3089a10ce0a5ae78882d5966",
+      "minimumAppVersion": "3.7.8",
+      "keyId": "release-2026-09-recovery",
+      "authenticodeStatus": "not-signed",
+      "licenseVersion": "1.0",
+      "publishedAt": "2026-10-01T07:56:12.768Z"
+    },
+    "installed": {
+      "version": "3.7.8",
+      "rootSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+      "registrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+      "helperSha256": "e33bca4550b6e130287c8bb2d5c0dccf30b76e033bf99520e81d6c2acda609f5",
+      "candidateAcceptedByInstalledBundledKey": true
+    },
+    "rootSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+    "oldRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+    "candidateRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+    "candidateManifestSha256": "470fb5892cc407aaa07e1f7f104ce78be5c6f7a4ffd05f8e5d87adf568140973",
+    "integrityManifestSha256": "32a42418db6f1d18006f87df282056d6a1c2a3cb3089a10ce0a5ae78882d5966",
+    "crypto": "real Ed25519 verification over original bytes; no supplied keys",
+    "publicLatestFeedDiscoveryTested": false
+  },
+  "error": "Actual native observation timed out: Old canonical GUI native window (Old GUI exited before its native window was ready.)",
+  "completedAtUtc": "2026-10-01T08:16:04.9396436+00:00",
+  "uninstalled": false,
+  "cleanupDisposition": "Failure evidence retained. No force cleanup races active old/new workers or watchdogs; disposable runner is retired by Actions."
+}

@@ -11,7 +11,7 @@ internal sealed record OwnedServiceIntentState(int SchemaVersion, string Owner, 
 
 internal sealed class OwnedServiceIntentStore
 {
-    internal static readonly string[] ServiceNames = { "EgoistShieldSystemDoH", "EgoistShieldZapret", "EgoistShieldTelegramProxy" };
+    internal static readonly string[] ServiceNames = { "EgoistShieldSystemDoH", "EgoistShieldZapret", "EgoistShieldTelegramProxy", "EgoistShieldVpn" };
     private readonly string _path;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
 
@@ -36,6 +36,21 @@ internal sealed class OwnedServiceIntentStore
 
     internal Task MarkRecoveryAsync(string serviceName, DateTimeOffset now, CancellationToken cancellationToken) =>
         UpdateAsync(serviceName, previous => new OwnedServiceIntent(previous?.Running == true, now), cancellationToken);
+
+    internal async Task RestoreRunningAsync(string serviceName, OwnedServiceIntent? previous, CancellationToken cancellationToken)
+    {
+        if (!Supports(serviceName)) throw new ArgumentException("Unknown owned-service intent.");
+        await _writeLock.WaitAsync(cancellationToken);
+        try
+        {
+            var state = await ReadAsync(cancellationToken);
+            if (!state.Services.TryGetValue(serviceName, out var current) || !current.Running || current.LastRecoveryAt != previous?.LastRecoveryAt)
+                throw new InvalidOperationException("Owned-service intent changed after the attempted start; its current value is preserved.");
+            if (previous == null) state.Services.Remove(serviceName); else state.Services[serviceName] = previous;
+            await AtomicJsonFile.WriteAsync(_path, state, cancellationToken);
+        }
+        finally { _writeLock.Release(); }
+    }
 
     private async Task UpdateAsync(string serviceName, Func<OwnedServiceIntent?, OwnedServiceIntent> change, CancellationToken cancellationToken)
     {

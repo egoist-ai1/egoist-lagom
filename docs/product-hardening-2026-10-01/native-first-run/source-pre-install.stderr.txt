@@ -1,0 +1,10 @@
+Get-DnsClientServerAddress : No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the 
+ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  
+WHERE ((InterfaceIndex = 9)) AND ((AddressFamily = 2)). Verify query parameters and retry.
+At D:\a\egoist-lagom\egoist-lagom\src\installer\owned-cleanup.ps1:1710 char:17
++ ...   $ipv4 = @(Get-DnsClientServerAddress -InterfaceIndex $adapter.ifInd ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (MSFT_DNSClientServerAddress:String) [Get-DnsClientServerAddress], CimJo 
+   bException
+    + FullyQualifiedErrorId : CmdletizationQuery_NotFound,Get-DnsClientServerAddress
+ 

@@ -1,0 +1,1 @@
+{"kind":"actual-owned-read-only-child-cancellation","pid":27592,"exited":true,"cancellationObserved":true,"elapsedMs":2026,"code":"DNS_DOH_QUERY_TIMEOUT","productServiceExecuted":false,"dnsMutationCommandsExecuted":0}

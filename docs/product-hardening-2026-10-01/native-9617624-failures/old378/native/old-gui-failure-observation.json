@@ -1,0 +1,15 @@
+{
+  "label": "old-gui",
+  "observedAtUtc": "2026-10-01T11:48:48.4911814+00:00",
+  "processId": 6960,
+  "mainLog": {
+    "name": "old-gui-main.log",
+    "status": "captured",
+    "bytes": 762,
+    "sha256": "37E788182ACF48672E051FB510897BEDDD84AFD06BD7E990761E0E78B8B06206"
+  },
+  "controls": [],
+  "readbackErrors": [],
+  "exited": true,
+  "exitCode": -2147483645
+}

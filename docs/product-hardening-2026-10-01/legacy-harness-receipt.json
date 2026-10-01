@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-source-bound-legacy-harness-validation",
+  "observedAtUtc": "2026-10-01T00:10:44.1212156+00:00",
+  "harnessSources": [
+    {
+      "path": "tests/windows-production-legacy-upgrade.ps1",
+      "bytes": 32608,
+      "sha256": "cdcdf148ec76234b0ba4ba644940b2a2e50581fc6fb6f9cdedc75f6711a48b1b"
+    },
+    {
+      "path": "tests/windows-production-legacy-upgrade.mjs",
+      "bytes": 16002,
+      "sha256": "e5f28dd6e92efd8bafcafd120a6dc5e44854f9a48d7f2e828647d931df67e663"
+    },
+    {
+      "path": "tests/windows-production-legacy-guard.test.mjs",
+      "bytes": 7812,
+      "sha256": "62efcf7689af58c68957f67d12da7b204ad6f74fb4372fd50a1cee85c9cfdd4d"
+    }
+  ],
+  "baseCommit": "5d0d58b44076843e639723ef267e7b8d2605e481",
+  "sourceState": "new uncommitted harness files; native Actions run must record actual checkout/source file hashes",
+  "nodeVersion": "24.19.0",
+  "powershellVersion": "7.6.5",
+  "guardTests": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "durationMilliseconds": 1816.0908,
+    "receipt": "legacy-guard-tests.txt"
+  },
+  "parserErrors": 0,
+  "nodeSyntaxErrors": 0,
+  "psScriptAnalyzer": {
+    "errors": 0,
+    "warnings": 0,
+    "informational": 0,
+    "receipt": "legacy-analyzer.json"
+  },
+  "genuineNativeRuns": 0,
+  "localScmDnsTaskRegistryMutations": 0,
+  "originalCryptoFixtureVersion": "3.7.8",
+  "fakeSigningKeysGenerated": 0,
+  "sourceBindingUnitData": "explicit pure unsigned boundary data, not a release candidate",
+  "newSignedCandidateProvided": false,
+  "releaseReady": false,
+  "frozenAcceptanceFilesUntouched": true,
+  "expectedNativeInputContract": {
+    "oldVersion": "3.7.9",
+    "candidateVersion": "3.8.0",
+    "requiredSignedFields": [
+      "sourceCommit",
+      "integrityManifestSha256"
+    ],
+    "privateSigningKeyInCi": false,
+    "suppliedTrustRootAllowed": false,
+    "candidateSourceMayDifferFromHarnessJobSha": true
+  },
+  "pendingGate": "root-owned separate signed-assets GitHub-hosted Windows dispatch"
+}

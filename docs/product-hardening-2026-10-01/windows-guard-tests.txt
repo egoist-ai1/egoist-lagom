@@ -1,0 +1,12 @@
+✔ native acceptance refuses missing or mismatched hosted runner identities (1.0362ms)
+✔ native payload readback refuses traversal, drive paths and alternate path separators (0.2897ms)
+✔ PowerShell native acceptance host guard and path boundary perform no mutations (795.4953ms)
+✔ an actual native acceptance invocation refuses a non-hosted process before input or mutation (644.1636ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1787.5895

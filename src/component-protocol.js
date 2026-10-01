@@ -20,6 +20,15 @@ function componentOperations() {
       status, saveConfig: z.tuple([TelegramProxyConfigSchema]),
       tailLogs: z.tuple([z.number().int().min(1).max(300).optional()]),
     },
+    get Vpn() { return {
+      ...entries(['startService', 'stopService', 'removeService']), status,
+      installService: z.tuple([z.object({
+        node: VpnNodeSchema.extend({ id: z.string().min(1).max(256), name: z.string().max(512), server: z.string().min(1).max(253), uri: z.string().max(8192), metadata: z.record(z.string().max(64), z.string().max(8192)).refine(value => Object.keys(value).length <= 128) }).strict(),
+        settings: AppSettingsSchema.strict(),
+        domainRules: z.array(DomainRuleSchema.extend({ id: z.string().max(256), domain: z.string().min(1).max(512) }).strict()).max(512),
+        processRules: z.array(ProcessRuleSchema.extend({ id: z.string().max(256), process: z.string().min(1).max(512) }).strict()).max(512),
+      }).strict()]),
+    }; },
     Zapret: {
       ...entries(['listProfiles', 'getUserLists', 'startService', 'stopService', 'removeService', 'stopStandalone', 'updateIpsetList', 'checkForUpdates', 'installCoreUpdate', 'installDiscordRescueCore', 'resetNetworkState', 'runDiagnostics', 'cancelAutoSelect', 'autoSelectProgress', 'clearVpnSuspension']),
       autoSelectBestProfile: z.tuple([z.object({
@@ -41,7 +50,7 @@ function componentOperations() {
 }
 const COMPONENT_QUERIES = new Set(['status', 'tailLogs', 'shouldCheckUpdates', 'cancelAutoSelect', 'autoSelectProgress', 'bootstrapServers']);
 function validateComponentRequest(request) {
-  const envelope = z.object({ id: z.string().max(128), component: z.enum(['SystemDoH', 'TelegramProxy', 'Zapret']), method: z.string().max(64), args: z.array(z.unknown()).max(4), query: z.boolean() }).strict().parse(request);
+  const envelope = z.object({ id: z.string().max(128), component: z.enum(['SystemDoH', 'TelegramProxy', 'Zapret', 'Vpn']), method: z.string().max(64), args: z.array(z.unknown()).max(4), query: z.boolean(), requestId: z.string().min(1).max(128).nullish() }).strict().parse(request);
   const operations = componentOperations()[envelope.component];
   if (!Object.hasOwn(operations, envelope.method)) throw new Error('Unsupported component operation');
   if (envelope.query && !COMPONENT_QUERIES.has(envelope.method)) throw new Error('Mutation requires the serialized endpoint');

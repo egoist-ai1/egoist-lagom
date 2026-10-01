@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 
-const productResourceNames = ['brand', 'gravityless-dns', 'installer', 'release', 'runtime', 'scripts', 'elevate.exe'];
+const productResourceNames = ['brand', 'gravityless-dns', 'installer', 'release', 'runtime', 'scripts'];
 const retiredScripts = 'scripts/system-control';
 const templateAsar = 'resources/default_app.asar';
 
@@ -76,7 +76,7 @@ export async function stageElectronPayload({ runtime, out, recoveredResources })
   const { runtimePath, files, ...pin } = runtime;
   const provenance = {
     ...pin,
-    executable: { packagedName: 'EgoistShield.exe', upstreamSha256: files.find(entry => entry.path === 'electron.exe')?.sha256, modifiedFor: ['product icon/version', 'requireAdministrator manifest'] },
+    executable: { packagedName: 'EgoistShield.exe', upstreamSha256: files.find(entry => entry.path === 'electron.exe')?.sha256, modifiedFor: ['product icon/version', 'requireAdministrator GUI manifest', 'production GUI fuses', 'embedded ASAR integrity'] },
     productResourceNames,
     excludedRecoveredResources: ['app.asar', 'core-service'],
     excludedUpstreamSample: templateAsar,

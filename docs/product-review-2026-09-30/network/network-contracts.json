@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "tunCases": [
+    {
+      "label": "different",
+      "verdict": "protected",
+      "bypassDetected": false,
+      "checks": [
+        {
+          "id": "vpn-egress",
+          "title": "Внешний маршрут доступен",
+          "status": "pass",
+          "observed": "203.0.113.2",
+          "expected": "внешний адрес получен через управляемый рантайм",
+          "explanation": "HTTPS-запрос через локальный прокси завершился успешно.",
+          "recommendedAction": null
+        },
+        {
+          "id": "egress-changed",
+          "title": "Внешний адрес изменён",
+          "status": "pass",
+          "observed": "203.0.113.1 -> 203.0.113.2",
+          "expected": "адрес внешнего маршрута отличается от прямого",
+          "explanation": "Трафик выходит с другого внешнего адреса — точка выхода изменена.",
+          "recommendedAction": null
+        },
+        {
+          "id": "route-applied",
+          "title": "Маршрут применён в Windows",
+          "status": "skipped",
+          "observed": null,
+          "expected": "TUN/WFP-проверка",
+          "explanation": "Для полного туннеля применяется отдельная проверка интерфейса и таблицы маршрутов.",
+          "recommendedAction": null
+        }
+      ]
+    },
+    {
+      "label": "same",
+      "verdict": "partial",
+      "bypassDetected": true,
+      "checks": [
+        {
+          "id": "vpn-egress",
+          "title": "Внешний маршрут доступен",
+          "status": "pass",
+          "observed": "203.0.113.2",
+          "expected": "внешний адрес получен через управляемый рантайм",
+          "explanation": "HTTPS-запрос через локальный прокси завершился успешно.",
+          "recommendedAction": null
+        },
+        {
+          "id": "egress-changed",
+          "title": "Внешний адрес изменён",
+          "status": "fail",
+          "observed": "direct и внешний маршрут совпадают: 203.0.113.2",
+          "expected": "адрес внешнего маршрута отличается от прямого",
+          "explanation": "Точка выхода не изменилась: трафик покидает сеть с того же адреса, что и прямой. Защита внешнего маршрута не подтверждена.",
+          "recommendedAction": "Выбрать другой сервер"
+        },
+        {
+          "id": "route-applied",
+          "title": "Маршрут применён в Windows",
+          "status": "skipped",
+          "observed": null,
+          "expected": "TUN/WFP-проверка",
+          "explanation": "Для полного туннеля применяется отдельная проверка интерфейса и таблицы маршрутов.",
+          "recommendedAction": null
+        }
+      ]
+    }
+  ],
+  "clockRollback": {
+    "scope": "isolated Date.now dependency for actual JS status-cache; no OS clock or SCM changed",
+    "virtualRollbackDays": 90,
+    "before": {
+      "running": true,
+      "verified": true,
+      "serviceState": "running"
+    },
+    "afterRollback": {
+      "running": true,
+      "verified": true,
+      "serviceState": "running"
+    },
+    "readsBeforeForce": 1,
+    "forced": {
+      "running": false,
+      "verified": false,
+      "serviceState": "stopped"
+    },
+    "totalReads": 2
+  }
+}

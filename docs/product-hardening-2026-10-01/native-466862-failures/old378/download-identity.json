@@ -1,0 +1,10 @@
+{
+  "publishedOldOriginVerified": false,
+  "oldTransport": "original-signed-local-generation",
+  "candidateTag": "v3.8.0",
+  "sourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "oldVersion": "3.7.8",
+  "candidateDraft": true,
+  "candidateReleaseId": 400757269,
+  "oldReleaseId": null
+}

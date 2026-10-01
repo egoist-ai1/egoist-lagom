@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+  "sourceTree": "a99d45e7c306da25bdea60de1034cec530db0c1f",
+  "local": {
+    "counts": {
+      "fail": 0,
+      "skipped": 0,
+      "tests": 924,
+      "cancelled": 0,
+      "pass": 924,
+      "todo": 0
+    },
+    "sourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+    "exitCode": 0,
+    "logPath": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0ecbd-13aa-7e31-b730-4c521c792097\\work\\hardening\\full-node-source-9617624b888d.txt",
+    "logSha256": "18176CAD4F6BB8E13911AB7255D509185D19BF964D2E99A4B07796BCC1742EE6",
+    "startedUtc": "2026-10-01T11:24:36.8026546+00:00",
+    "sourceTree": "a99d45e7c306da25bdea60de1034cec530db0c1f",
+    "headAfter": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+    "sourceUnchanged": true,
+    "finishedUtc": "2026-10-01T11:25:02.0779994+00:00"
+  },
+  "ci": {
+    "runId": 36855227843,
+    "jobId": 110346031677,
+    "conclusion": "success",
+    "counts": {
+      "tests": 924,
+      "pass": 910,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 14,
+      "todo": 0
+    },
+    "nativeAcceptance": false
+  },
+  "package": {
+    "result": "built",
+    "installer": {
+      "path": "dist/october-9617624b888d/EgoistShield-Setup-3.8.0.exe",
+      "bytes": 277407436,
+      "sha256": "D77EB1B2ECAC06DF191CF2953653213377068BEAAA3B0E447297E17F468B026C"
+    },
+    "integritySha256": "2ec11314f2760fec3dcbf09d988c82c07ca279b8a0cfd4f651b0fbabcf0faf42",
+    "signedAndVerifiedAssets": 18,
+    "authenticode": false
+  },
+  "nativeAcceptance": "pending in independent run36856686510",
+  "physicalInstallation": false,
+  "published": false,
+  "acceptedUtc": "2026-10-01T11:43:06.922451+00:00",
+  "files": [
+    {
+      "path": "local-tests.json",
+      "bytes": 727,
+      "sha256": "b35950568abce494345c6707569837347b696a2a8fba036800adac7d2c2f3c4a"
+    },
+    {
+      "path": "local-tests.txt",
+      "bytes": 217434,
+      "sha256": "18176cad4f6bb8e13911ab7255d509185d19bf964d2e99a4b07796bcc1742ee6"
+    },
+    {
+      "path": "source-ci-raw-job.txt",
+      "bytes": 377470,
+      "sha256": "395fb0c2b9e9327770e8c534c46ad948eecb577332953810c74f5b1bc66808b8"
+    },
+    {
+      "path": "source-ci-run.json",
+      "bytes": 14807,
+      "sha256": "800c50f2fd11cdff4114ce4754b9586a3a75665a268d641dd8849e5b0ff4d25c"
+    },
+    {
+      "path": "source-ci-jobs.json",
+      "bytes": 11642,
+      "sha256": "ce6176a8579169f94788d64170c2c7be0556d17ffa37f74cdb4bcef9a5f063a5"
+    },
+    {
+      "path": "package-generation.json",
+      "bytes": 458,
+      "sha256": "e31792e0b5173f712e67c47302967b59f94f160d39d236c04a0560596c3d5cd3"
+    },
+    {
+      "path": "package-result.json",
+      "bytes": 78,
+      "sha256": "1c9197566734a20f04d61d6fe2ec236b49de7622b0f0faaca1653d6439e12c68"
+    },
+    {
+      "path": "package-build.txt",
+      "bytes": 278,
+      "sha256": "1706e6e245377e021e6334859638c881ded51fe340e3eec2df4f030a50d01602"
+    },
+    {
+      "path": "package-core-publish.txt",
+      "bytes": 65245,
+      "sha256": "fb9d85615fa39723a8a357a86ccb1d2d1a455c6c96256a9630a5791cb0828125"
+    },
+    {
+      "path": "signed-assets-raw.txt",
+      "bytes": 164,
+      "sha256": "c6641cadfa96042e27a701c7c317fe1b4d286bfe69354b154df750e305efbc7c"
+    },
+    {
+      "path": "verified-assets-raw.txt",
+      "bytes": 2552,
+      "sha256": "ef893e677efe39644099c274f4fdecfac176f604bf149140e3519cf8b2a6d7ce"
+    }
+  ]
+}

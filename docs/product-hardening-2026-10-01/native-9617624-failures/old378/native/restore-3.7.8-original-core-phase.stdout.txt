@@ -1,0 +1,1 @@
+CORE-SERVICE: installed-and-running

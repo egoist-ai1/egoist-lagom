@@ -1,0 +1,503 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-09-30T11:34:53.163Z",
+  "sourceHead": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "node": "v24.19.0",
+  "platform": "win32",
+  "sourceSha256": {
+    "electron/ipc/safe-network": "a0a1b3635488f760e7a67c3d12be44deab4c67839eebfc6b299229dfd2308b02",
+    "electron/ipc/handlers-vpn": "22e3c77494fb0ef685fcd9697f6fe12557da4b872e24da93d0b593f260c9e5ce",
+    "electron/ipc/route-probe": "5d5588014703f676038a8f0cbbde117ea106f7746f6a5f14405ae9dc8aac2876",
+    "electron/ipc/first-success": "6e428ea50eabd48418d2d6dde862fa330dfd112eb96975120170787688536b93",
+    "electron/ipc/vpn-reconnect-supervisor": "5d9ff7795154acda73b2981f66890b90047de22efd0aef5743bfc55e18d70ae0",
+    "electron/ipc/gravityless-dns-manager": "3c409353c9fff2d1cc5f259e7c61a2d00512b9720a2fea0db275753cc5ef49f5",
+    "electron/ipc/network-combinator-manager": "d664d3492e3077fc5d36e3e7ed94118f45f9b8fecd6ec3848afae21ddcd6a236",
+    "electron/ipc/config-builder": "993c62f24206fe216cc1ccacf6cf449b1ff77a31b116ac5e01bb7b04105556da",
+    "shared/dns-controller": "1a087f5acc6fc789251cc912bcee0fddb8d0f758c9256f5e0e198083da6bcf4b"
+  },
+  "boundaries": {
+    "windowsMutation": false,
+    "externalNetworkRequests": 0,
+    "maxWorkers": 16,
+    "sockets": "own loopback only",
+    "tlsTrust": "own one-day lab CA; no rejectUnauthorized bypass",
+    "forceGcForSnapshots": true,
+    "virtualTime": false
+  },
+  "phases": [
+    {
+      "id": "http",
+      "kind": "actual loopback HTTP",
+      "plannedOperations": 1536,
+      "completed": 1536,
+      "rejectedAsExpected": 768,
+      "requestCount": 2145,
+      "requestsByPath": {
+        "/ok": 448,
+        "/stream": 192,
+        "/oversize": 192,
+        "/stall": 545,
+        "/retry": 384,
+        "/neverretry": 192,
+        "/backoff": 192
+      },
+      "errors": [],
+      "durationMs": 6605.1232,
+      "latencyByScenarioMs": {
+        "0": {
+          "count": 192,
+          "p50": 2.1875999999992928,
+          "p95": 6.945700000000215,
+          "max": 11.001699999999971
+        },
+        "1": {
+          "count": 192,
+          "p50": 26.4375,
+          "p95": 31.684600000000046,
+          "max": 35.687799999999925
+        },
+        "2": {
+          "count": 192,
+          "p50": 2.383600000000115,
+          "p95": 6.3233000000000175,
+          "max": 8.682000000000016
+        },
+        "3": {
+          "count": 192,
+          "p50": 228.62660000000005,
+          "p95": 233.80389999999989,
+          "max": 235.32600000000002
+        },
+        "4": {
+          "count": 192,
+          "p50": 8.3128999999999,
+          "p95": 16.636599999999817,
+          "max": 18.850099999999657
+        },
+        "5": {
+          "count": 192,
+          "p50": 1.6322999999999865,
+          "p95": 6.04060000000004,
+          "max": 9.472999999999956
+        },
+        "6": {
+          "count": 192,
+          "p50": 40.007400000000416,
+          "p95": 47.08960000000002,
+          "max": 50.42360000000008
+        },
+        "7": {
+          "count": 192,
+          "p50": 1.7801000000000045,
+          "p95": 8.333899999999971,
+          "max": 13.301999999999964
+        }
+      },
+      "scenarioMap": [
+        "ok",
+        "delayed stream",
+        "size rejection",
+        "whole body timeout",
+        "503 then success",
+        "503 retry forbidden",
+        "caller abort in 1s backoff",
+        "fast IP wins; two stalled losers cancelled"
+      ],
+      "eventLoopDelayMs": {
+        "p95": 19.775487,
+        "max": 22.282239
+      },
+      "peakRss": 114520064,
+      "samples": [
+        {
+          "label": "after warmup",
+          "rss": 91152384,
+          "heapTotal": 32940032,
+          "heapUsed": 13718728,
+          "external": 4367643,
+          "arrayBuffers": 201180,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        },
+        {
+          "label": "after batch 1",
+          "rss": 99450880,
+          "heapTotal": 33628160,
+          "heapUsed": 14716328,
+          "external": 5488922,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        },
+        {
+          "label": "after batch 2",
+          "rss": 101068800,
+          "heapTotal": 50667520,
+          "heapUsed": 14675760,
+          "external": 4430395,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        },
+        {
+          "label": "after batch 3",
+          "rss": 106172416,
+          "heapTotal": 50667520,
+          "heapUsed": 14915152,
+          "external": 7597601,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        },
+        {
+          "label": "after batch 4",
+          "rss": 110387200,
+          "heapTotal": 50929664,
+          "heapUsed": 14952272,
+          "external": 7597199,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        },
+        {
+          "label": "after batch 5",
+          "rss": 110583808,
+          "heapTotal": 50929664,
+          "heapUsed": 15019584,
+          "external": 7598247,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        },
+        {
+          "label": "after batch 6",
+          "rss": 110792704,
+          "heapTotal": 50929664,
+          "heapUsed": 15047008,
+          "external": 7597711,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        },
+        {
+          "label": "after batch 7",
+          "rss": 110313472,
+          "heapTotal": 50929664,
+          "heapUsed": 15099280,
+          "external": 7596041,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        },
+        {
+          "label": "after batch 8",
+          "rss": 111038464,
+          "heapTotal": 51191808,
+          "heapUsed": 15259352,
+          "external": 7597065,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        },
+        {
+          "label": "after batch 9",
+          "rss": 110919680,
+          "heapTotal": 51453952,
+          "heapUsed": 15267800,
+          "external": 7592969,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        },
+        {
+          "label": "after batch 10",
+          "rss": 110940160,
+          "heapTotal": 51716096,
+          "heapUsed": 15250328,
+          "external": 7596175,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 16,
+            "Server": 1
+          },
+          "serverSockets": 15
+        },
+        {
+          "label": "after batch 11",
+          "rss": 111251456,
+          "heapTotal": 51716096,
+          "heapUsed": 15269048,
+          "external": 7597601,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        },
+        {
+          "label": "after batch 12",
+          "rss": 111116288,
+          "heapTotal": 51716096,
+          "heapUsed": 15272488,
+          "external": 7597577,
+          "arrayBuffers": 201021,
+          "diagnosticActiveHandles": {
+            "Socket": 17,
+            "Server": 1
+          },
+          "serverSockets": 16
+        }
+      ],
+      "ownServerSocketsAfterClose": 0
+    },
+    {
+      "id": "tls",
+      "kind": "actual loopback TLS HTTP",
+      "plannedOperations": 256,
+      "completed": 256,
+      "cancelled": 64,
+      "errors": [],
+      "durationMs": 1494.9717,
+      "samples": [
+        {
+          "label": "TLS batch 1",
+          "rss": 112291840,
+          "heapTotal": 51716096,
+          "heapUsed": 15226360,
+          "external": 4653170,
+          "arrayBuffers": 269412,
+          "diagnosticActiveHandles": {
+            "Socket": 1,
+            "Server": 1
+          },
+          "serverSockets": 0
+        },
+        {
+          "label": "TLS batch 2",
+          "rss": 112107520,
+          "heapTotal": 51716096,
+          "heapUsed": 15071688,
+          "external": 4651922,
+          "arrayBuffers": 269412,
+          "diagnosticActiveHandles": {
+            "Socket": 1,
+            "Server": 1
+          },
+          "serverSockets": 0
+        },
+        {
+          "label": "TLS batch 3",
+          "rss": 112152576,
+          "heapTotal": 51716096,
+          "heapUsed": 15085824,
+          "external": 4651922,
+          "arrayBuffers": 269412,
+          "diagnosticActiveHandles": {
+            "Socket": 1,
+            "Server": 1
+          },
+          "serverSockets": 0
+        },
+        {
+          "label": "TLS batch 4",
+          "rss": 112390144,
+          "heapTotal": 51716096,
+          "heapUsed": 15101784,
+          "external": 4651922,
+          "arrayBuffers": 269412,
+          "diagnosticActiveHandles": {
+            "Socket": 1,
+            "Server": 1
+          },
+          "serverSockets": 0
+        },
+        {
+          "label": "TLS batch 5",
+          "rss": 112181248,
+          "heapTotal": 51716096,
+          "heapUsed": 15089352,
+          "external": 4717458,
+          "arrayBuffers": 269412,
+          "diagnosticActiveHandles": {
+            "Socket": 1,
+            "Server": 1
+          },
+          "serverSockets": 0
+        },
+        {
+          "label": "TLS batch 6",
+          "rss": 112148480,
+          "heapTotal": 51716096,
+          "heapUsed": 15095624,
+          "external": 4651922,
+          "arrayBuffers": 269412,
+          "diagnosticActiveHandles": {
+            "Socket": 1,
+            "Server": 1
+          },
+          "serverSockets": 0
+        },
+        {
+          "label": "TLS batch 7",
+          "rss": 112287744,
+          "heapTotal": 51716096,
+          "heapUsed": 15114176,
+          "external": 4651922,
+          "arrayBuffers": 269412,
+          "diagnosticActiveHandles": {
+            "Socket": 1,
+            "Server": 1
+          },
+          "serverSockets": 0
+        },
+        {
+          "label": "TLS batch 8",
+          "rss": 112283648,
+          "heapTotal": 51716096,
+          "heapUsed": 15127584,
+          "external": 4717458,
+          "arrayBuffers": 269412,
+          "diagnosticActiveHandles": {
+            "Socket": 1,
+            "Server": 1
+          },
+          "serverSockets": 0
+        }
+      ],
+      "ownServerSocketsAfterClose": 0
+    },
+    {
+      "id": "udp",
+      "kind": "actual loopback UDP DNS",
+      "requests": 160,
+      "validAccepted": 128,
+      "expectedValid": 128,
+      "truncatedAccepted": 32,
+      "expectedTruncatedAccepted": 0,
+      "durationMs": 32.37870000000112
+    },
+    {
+      "id": "coordinator",
+      "kind": "actual coordinator + own real filesystem; inspectors deliberately controlled lab",
+      "plannedOperations": 384,
+      "completed": 329,
+      "intendedFaults": 55,
+      "errors": [],
+      "durationMs": 195.11669999999867,
+      "peakConcurrentPerLock": {
+        "lab-3": 1,
+        "lab-0": 1,
+        "lab-1": 1,
+        "lab-2": 1
+      },
+      "activeAfter": 0,
+      "waitersAfter": 0,
+      "outstandingAfter": 0,
+      "idleAfter": true
+    },
+    {
+      "id": "pure-invariants",
+      "kind": "actual pure source functions; no OS uptime implication",
+      "generatedConfigs": 5000,
+      "generationScenarios": 1000,
+      "errors": [],
+      "durationMs": 54.70310000000063
+    }
+  ],
+  "findings": [
+    {
+      "id": "NET-05",
+      "evidenceStatus": "reproduced-real-loopback-TLS",
+      "observed": 1065,
+      "expectedPayloadBytes": 1000,
+      "detail": "Raw HTTP chunk framing is counted as downloaded payload."
+    },
+    {
+      "id": "NET-01",
+      "evidenceStatus": "reproduced-real-loopback-UDP",
+      "observedAccepted": 32,
+      "outOf": 32,
+      "expected": 0,
+      "replyBytes": 12,
+      "actualAnswerRecords": 0
+    },
+    {
+      "id": "NET-02",
+      "evidenceStatus": "reproduced-source-function",
+      "actual": "protected",
+      "egressChanged": "pass",
+      "semanticAddressEqual": true
+    },
+    {
+      "id": "NET-04",
+      "evidenceStatus": "reproduced-source-function",
+      "cases": [
+        {
+          "reason": "connect ECONNREFUSED 203.0.113.40:40123",
+          "actual": "auth",
+          "expected": "network"
+        },
+        {
+          "reason": "connect ETIMEDOUT 203.0.113.40:40301",
+          "actual": "auth",
+          "expected": "network"
+        }
+      ]
+    },
+    {
+      "id": "NET-03",
+      "evidenceStatus": "reproduced-real-loopback-CONNECT",
+      "inactivityTimeoutMs": 40,
+      "observedAtMs": 197.28149999999914,
+      "remainedPending": true,
+      "manualAbortResult": "Замер скорости отменён.",
+      "settledAtMs": 197.77399999999943
+    }
+  ],
+  "failures": [],
+  "finalResources": {
+    "label": "all own servers and dispatchers closed",
+    "rss": 124698624,
+    "heapTotal": 53026816,
+    "heapUsed": 16766640,
+    "external": 4498923,
+    "arrayBuffers": 269412,
+    "diagnosticActiveHandles": {
+      "Socket": 1
+    }
+  },
+  "completedAt": "2026-09-30T11:35:01.979Z",
+  "findingCount": 5,
+  "successfulChecksDoNotEraseFindings": true
+}

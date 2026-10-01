@@ -1,0 +1,9 @@
+# Actual elevated Core configuration after the owner fix
+
+[Hosted Windows run](https://github.com/egoist-ai1/egoist-lagom/actions/runs/36820434838/job/110234655159) passed for exact committed source `900d84aaa218d090b7b78904dcb03a720b67503d` on Windows 11 build 26100. The pinned SDK was 10.0.401 and runtime 10.0.12. Locked restore, single-file self-contained publish and actual EXE `configure --install-root C:\Program Files\EgoistShield` all returned 0. No custom state root or production-state simulation was used.
+
+Actual configuration completed in **307.94 ms** on this runner. ProgramData product root, private Service directory, service-config.json and marker file all read back **BuiltinAdministrators owner**. The private DACLs contain only SYSTEM and Administrators FullControl; Users ReadAndExecute exists on the public product root. The actual marker file contains version 4. Before/after network fingerprints match. No product service or scheduled task was registered, and no GUI or Setup was launched.
+
+This directly verifies the correction of the earlier actual Setup43/Core-configure1 owner error under a real elevated administrator token. The Core EXE used here is a diagnostic build, with its actual size and SHA256 recorded. It is not represented as the subsequently packaged release binary. The complete rebuilt signed Setup and installed service/network/upgrade gates remain separate required checks; this diagnostic keeps releaseReady=false.
+
+Raw receipt, SDK/restore/publish/configure stdout/stderr and the original job log are preserved unchanged. `receipt.json` records their sizes and hashes and the downloaded artifact ZIP hash. Build warnings are retained in the raw publish output. No month-long uptime, real reboot or full installer acceptance is inferred from this check.

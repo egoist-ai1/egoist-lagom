@@ -1,0 +1,8 @@
+{
+  "cases": 23,
+  "horizontalOverflowCases": [],
+  "blockedControls": [],
+  "failedInteractions": [],
+  "lowContrast": [],
+  "pageErrors": 0
+}

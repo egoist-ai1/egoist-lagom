@@ -129,8 +129,8 @@ internal static class OwnedTcpListenerProbe
 
     internal static string CreateSnapshotScript(string serviceName, int port)
     {
-        if (serviceName != "EgoistShieldTelegramProxy" || port < 1 || port > 65535)
-            throw new ArgumentException("Listener snapshot requires the owned Telegram service and a valid port.");
+        if (serviceName is not ("EgoistShieldTelegramProxy" or "EgoistShieldVpn") || port < 1 || port > 65535)
+            throw new ArgumentException("Listener snapshot requires an owned TCP service and a valid port.");
         return $$"""
             $ErrorActionPreference = 'Stop'
             $serviceBefore = Get-CimInstance Win32_Service -Filter "Name='{{serviceName}}'" -ErrorAction Stop

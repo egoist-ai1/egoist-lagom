@@ -1,0 +1,106 @@
+TAP version 13
+# Subtest: Shield preemption never evicts a live VPN mutation, even after its timestamp looks stale
+ok 1 - Shield preemption never evicts a live VPN mutation, even after its timestamp looks stale
+  ---
+  duration_ms: 28.3571
+  type: 'test'
+  ...
+# Subtest: Shield preemption cannot bypass steady VPN ownership on timeout
+ok 2 - Shield preemption cannot bypass steady VPN ownership on timeout
+  ---
+  duration_ms: 11.3316
+  type: 'test'
+  ...
+# Subtest: Core mutations from separate clients are serialized before reaching the service
+ok 3 - Core mutations from separate clients are serialized before reaching the service
+  ---
+  duration_ms: 1.8949
+  type: 'test'
+  ...
+# Subtest: Core mutation queue advances after a failed mutation
+ok 4 - Core mutation queue advances after a failed mutation
+  ---
+  duration_ms: 1.0329
+  type: 'test'
+  ...
+# Subtest: Direct Zapret auto-select restores an unusable owned DNS resolver before probing
+ok 5 - Direct Zapret auto-select restores an unusable owned DNS resolver before probing
+  ---
+  duration_ms: 0.8748
+  type: 'test'
+  ...
+# Subtest: Shield handoff waits for VPN owner and verifies stop before invoking the operation
+ok 6 - Shield handoff waits for VPN owner and verifies stop before invoking the operation
+  ---
+  duration_ms: 0.9659
+  type: 'test'
+  ...
+# Subtest: Shield handoff reports failed VPN stop and never runs the Shield mutation
+ok 7 - Shield handoff reports failed VPN stop and never runs the Shield mutation
+  ---
+  duration_ms: 0.9198
+  type: 'test'
+  ...
+# Subtest: Telegram ownership discovery failure never falls back to image-name killing or clears state
+ok 8 - Telegram ownership discovery failure never falls back to image-name killing or clears state
+  ---
+  duration_ms: 2.4871
+  type: 'test'
+  ...
+# Subtest: Auto-select completion is compact enough for legacy Core envelopes while retaining the UI result
+ok 9 - Auto-select completion is compact enough for legacy Core envelopes while retaining the UI result
+  ---
+  duration_ms: 75.2725
+  type: 'test'
+  ...
+# Subtest: Auto-select compaction enforces a byte budget for pathological diagnostics
+ok 10 - Auto-select compaction enforces a byte budget for pathological diagnostics
+  ---
+  duration_ms: 55.4872
+  type: 'test'
+  ...
+# Subtest: Component worker compacts only the completed Zapret auto-select response
+ok 11 - Component worker compacts only the completed Zapret auto-select response
+  ---
+  duration_ms: 3.3591
+  type: 'test'
+  ...
+# Subtest: Built UI styles contain no red accent colors
+ok 12 - Built UI styles contain no red accent colors
+  ---
+  duration_ms: 2.4499
+  type: 'test'
+  ...
+# Subtest: installer and background desktop PowerShell helpers never open visible console windows
+ok 13 - installer and background desktop PowerShell helpers never open visible console windows
+  ---
+  duration_ms: 3.7792
+  type: 'test'
+  ...
+# Subtest: Generated DNS snapshot is valid Windows PowerShell syntax
+ok 14 - Generated DNS snapshot is valid Windows PowerShell syntax
+  ---
+  duration_ms: 572.3949
+  type: 'test'
+  ...
+# Subtest: Installer uses one canonical path and never kills network processes by image name
+ok 15 - Installer uses one canonical path and never kills network processes by image name
+  ---
+  duration_ms: 0.9453
+  type: 'test'
+  ...
+# Subtest: Installer cleanup recognizes current and legacy owned DNS journals
+ok 16 - Installer cleanup recognizes current and legacy owned DNS journals
+  ---
+  duration_ms: 0.9746
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 840.2289

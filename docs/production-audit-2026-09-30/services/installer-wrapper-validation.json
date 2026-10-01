@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+  "environment": {
+    "powershell": "Windows PowerShell 5.1",
+    "frameworkReleaseObserved": 533509
+  },
+  "before": {
+    "exitCode": 1,
+    "workflow": "Actual archived worker post-restore statements; original files restored in fixture; SCM stubbed.",
+    "failure": "Worker preserved the obsolete wrapper: EgoistShieldSystemDoH"
+  },
+  "after": {
+    "exitCode": 0,
+    "passed": 21,
+    "checks": [
+      "PASS: actual worker restore sequence migrates three exact stopped aliases and records rollback state",
+      "PASS: verified aliases are idempotent and stopped intent is preserved",
+      "PASS: a running third service prevents every replacement",
+      "PASS: changed current SCM ownership prevents every replacement",
+      "PASS: a CIM query failure prevents every replacement",
+      "PASS: changed saved registration prevents every replacement",
+      "PASS: a substituted manifest hash cannot approve arbitrary code",
+      "PASS: corrupt packaged source prevents every replacement",
+      "PASS: a stale installed manifest prevents every replacement",
+      "PASS: altered original backup prevents every replacement",
+      "PASS: an unknown current binary prevents every replacement",
+      "PASS: duplicate service ownership records are refused",
+      "PASS: locked second alias fails atomically; recovery stops three owned aliases and restores originals",
+      "PASS: an unstarted wrapper migration causes no service stop",
+      "PASS: recovery rejects a substituted SCM registration",
+      "PASS: recovery propagates a CIM lookup failure without stopping an unverified service",
+      "PASS: migration refuses a real junction before reading or writing outside paths",
+      "PASS: an outside destination is rejected",
+      "PASS: missing or older framework fails; exact 4.8 threshold and 4.8.1 pass",
+      "PASS: actual worker refuses unsupported framework before every backup and stop",
+      "PASS: actual worker snapshot failure does not stop Core or invoke recovery"
+    ]
+  },
+  "existingRuntimeXml": {
+    "exitCode": 0,
+    "passed": 5,
+    "engineConfigurationValidation": "Real Xray run -test under isolated fixture"
+  },
+  "recoveryReporting": {
+    "exitCode": 0,
+    "checks": [
+      "PASS: a pre-handoff failure does not stop services or launch the desktop",
+      "PASS: legacy state without the handoff marker still runs recovery",
+      "PASS: recovery does not claim payload rollback or start the desktop while its marker remains pending"
+    ]
+  },
+  "officialWrapper": {
+    "version": "2.12.0.0",
+    "bytes": 655872,
+    "sha256": "b5066b7bbdfba1293e5d15cda3caaea88fbeab35bd5b38c41c913d492aadfc4f",
+    "minimumFrameworkRelease": 528040,
+    "readonlyCliObserved": [
+      {
+        "alias": "egoistshield-system-doh-service",
+        "versionExitCode": 0,
+        "statusExitCode": 0,
+        "status": "NonExistent"
+      },
+      {
+        "alias": "egoistshield-telegram-proxy-service",
+        "versionExitCode": 0,
+        "statusExitCode": 0,
+        "status": "NonExistent"
+      },
+      {
+        "alias": "egoistshield-zapret-service",
+        "versionExitCode": 0,
+        "statusExitCode": 0,
+        "status": "NonExistent"
+      }
+    ]
+  },
+  "sourceSha256": {
+    "scripts/invoke-final-silent-reinstall.ps1": "ff3e74c738d0f0d0f979897946d8d756ea039c6b140dfaa868bfbc598a309405",
+    "tests/installer-wrapper-migration.ps1": "241710568c8c822a534c1a2b61be278a723eaa355338ebf0f07e4f2d0a8684ff",
+    "tests/installer-wrapper-migration.test.mjs": "3501fd9fb0aba07e8c82bfedd547d173ca04d6ab04f5a555211d514172e1e619",
+    "tests/installer-recovery-reporting.ps1": "ad0bed797694ba9c1ae8fcc5869d22197b4f07373f731d9f15f9f5c2efd7faa9"
+  },
+  "limits": [
+    "No live SCM, registry, adapter, DNS or installed-app mutation.",
+    "Actual services, driver loading, reboot and prolonged runtime require separate production acceptance.",
+    "WinSW status/version confirms Framework launch and alias/XML compatibility; it does not prove child-engine start or recovery."
+  ]
+}

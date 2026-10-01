@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Xml;
+using System.Xml.Linq;
 using System.ServiceProcess;
 using System.Text.RegularExpressions;
 using System.Text.RegularExpressions.Generated;
@@ -41,7 +45,8 @@ internal sealed class OwnedServiceController
 			"install"
 		}, new string[2] { "-service", "uninstall" }, "Локальный Gravityless DNS resolver Egoist Lagom"),
 		["EgoistShieldZapret"] = new OwnedServiceDefinition(new string[1] { "egoistshield-zapret-service.exe" }, Path.Combine("Runtime", "Zapret", "service-wrapper", "egoistshield-zapret-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Профильная служба Discord и YouTube, управляемая Egoist Lagom"),
-		["EgoistShieldTelegramProxy"] = new OwnedServiceDefinition(new string[1] { "egoistshield-telegram-proxy-service.exe" }, Path.Combine("Runtime", "TelegramProxy", "service-wrapper", "egoistshield-telegram-proxy-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Локальный Telegram Proxy, управляемый Egoist Lagom")
+		["EgoistShieldTelegramProxy"] = new OwnedServiceDefinition(new string[1] { "egoistshield-telegram-proxy-service.exe" }, Path.Combine("Runtime", "TelegramProxy", "service-wrapper", "egoistshield-telegram-proxy-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Локальный Telegram Proxy, управляемый Egoist Lagom"),
+		[ServiceContract.VpnServiceName] = new OwnedServiceDefinition(new string[] { "egoistshield-vpn-service.exe" }, Path.Combine("Runtime", "Vpn", "service-wrapper", "egoistshield-vpn-service.exe"), new string[] { "install" }, new string[] { "uninstall" }, "Фоновое TUN-подключение Egoist Lagom")
 	};
 
 	private readonly string _installRoot;
@@ -82,6 +87,7 @@ internal sealed class OwnedServiceController
 	public async Task<OwnedServiceStatus> StartAsync(string serviceName, CancellationToken cancellationToken = default(CancellationToken))
 	{
 		serviceName = NormalizeServiceName(serviceName);
+		EnsureProductDataRootVerified();
 		await AssertOwnedImagePathAsync(serviceName, cancellationToken);
 		return await OwnedServiceTransition.ChangeAsync(serviceName, true,
 			token => StatusAsync(serviceName, token),
@@ -92,12 +98,14 @@ internal sealed class OwnedServiceController
 	public async Task<OwnedServiceStatus> InstallAsync(string serviceName, CancellationToken cancellationToken = default(CancellationToken))
 	{
 		serviceName = NormalizeServiceName(serviceName);
+		EnsureProductDataRootVerified();
 		OwnedServiceDefinition definition = OwnedServices[serviceName];
 		if (!definition.SupportsInstall)
 		{
 			throw new ArgumentException("Service " + serviceName + " cannot be installed under this name; it is kept for status and removal only.");
 		}
 		string executablePath = ResolveCanonicalExecutable(definition);
+		if (serviceName == ServiceContract.VpnServiceName) VerifyVpnWrapper(executablePath);
 		if (!File.Exists(executablePath))
 		{
 			throw new FileNotFoundException("Owned service executable is missing for " + serviceName + ".", executablePath);
@@ -108,7 +116,7 @@ internal sealed class OwnedServiceController
 			await AssertOwnedImagePathAsync(serviceName, cancellationToken);
 			// Repair recovery and dependencies on repeated installation as well:
 			// a previous partial install can already have Start=Automatic.
-			await ConfigureRecoveryAsync(serviceName, definition.Description, cancellationToken);
+			await ConfigureInstallationAsync(serviceName, definition.Description, cancellationToken);
 			return await StatusAsync(serviceName, cancellationToken);
 		}
 		ProcessResult processResult = await RunOwnedExecutableAsync(executablePath, ResolveOwnedArguments(definition.InstallArguments), cancellationToken);
@@ -117,7 +125,7 @@ internal sealed class OwnedServiceController
 			throw new InvalidOperationException("Service install failed for " + serviceName + ": " + CleanError(processResult));
 		}
 		await AssertOwnedImagePathAsync(serviceName, cancellationToken);
-		await ConfigureRecoveryAsync(serviceName, definition.Description, cancellationToken);
+		await ConfigureInstallationAsync(serviceName, definition.Description, cancellationToken);
 		OwnedServiceStatus obj = await StatusAsync(serviceName, cancellationToken);
 		if (!obj.Installed)
 		{
@@ -261,6 +269,7 @@ internal sealed class OwnedServiceController
 		string normalizedStartType = NormalizeRestorableStartType(desiredStartType);
 		if (normalizedStartType != null)
 		{
+			if (normalizedStartType == "auto") EnsureProductDataRootVerified();
 			await AssertOwnedImagePathAsync(serviceName, cancellationToken);
 			await SetStartTypeAsync(serviceName, normalizedStartType, await StatusAsync(serviceName, cancellationToken), cancellationToken);
 			OwnedServiceStatus ownedServiceStatus = await StatusAsync(serviceName, cancellationToken);
@@ -288,11 +297,46 @@ internal sealed class OwnedServiceController
 			throw new InvalidOperationException("Cannot read ImagePath for owned service " + serviceName + ".");
 		}
 		string text = ExtractExecutablePath(Environment.ExpandEnvironmentVariables(obj.Trim()));
+		if (serviceName == ServiceContract.VpnServiceName)
+		{
+			string expected = Path.Combine(_productDataRoot, "Runtime", "Vpn", "service-wrapper", "egoistshield-vpn-service.exe");
+			if (!Path.GetFullPath(text).Equals(Path.GetFullPath(expected), StringComparison.OrdinalIgnoreCase)) throw new UnauthorizedAccessException("VPN service ImagePath is not its fixed owned wrapper.");
+			string image = Environment.ExpandEnvironmentVariables(obj.Trim());
+			if (!image.Equals(expected, StringComparison.OrdinalIgnoreCase) && !image.Equals("\"" + expected + "\"", StringComparison.OrdinalIgnoreCase)) throw new UnauthorizedAccessException("VPN service ImagePath includes unexpected arguments.");
+			VerifyVpnWrapper(expected);
+		}
 		if (!MemoryExtensions.Contains<string>(value: Path.GetFileName(text), span: OwnedServices[serviceName].ExecutableNames, comparer: StringComparer.OrdinalIgnoreCase))
 		{
 			throw new UnauthorizedAccessException("ImagePath executable is not allowlisted for " + serviceName + ".");
 		}
 		return TrustedPath.AssertExistingFileUnderRoots(text, _installRoot, _productDataRoot);
+	}
+
+	private void VerifyVpnWrapper(string executable)
+	{
+		VpnServiceConfiguration.AssertPrivatePath(executable, _productDataRoot);
+		using var installation = ProtectedExecutable.OpenHost(_installRoot, "cli");
+		using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(_installRoot, "resources", "runtime", "manifest.json")));
+		var pins = manifest.RootElement.GetProperty("components").EnumerateArray().Where(value => value.GetProperty("name").GetString() == "zapret")
+			.SelectMany(value => value.GetProperty("files").EnumerateArray()).Where(value => value.GetProperty("path").GetString() == "zapret/service-wrapper/egoistshield-zapret-service.exe").ToArray();
+		if (pins.Length != 1) throw new InvalidDataException("VPN wrapper source pin is ambiguous.");
+		using var file = new FileStream(executable, FileMode.Open, FileAccess.Read, FileShare.Read);
+		if (file.Length != pins[0].GetProperty("size").GetInt64() || !Convert.ToHexString(SHA256.HashData(file)).Equals(pins[0].GetProperty("sha256").GetString(), StringComparison.OrdinalIgnoreCase)) throw new UnauthorizedAccessException("VPN wrapper does not match its installation pin.");
+		string xml = Path.ChangeExtension(executable, ".xml");
+		VpnServiceConfiguration.AssertPrivatePath(xml, _productDataRoot);
+		if (new FileInfo(xml).Length > 16384) throw new InvalidDataException("VPN wrapper config exceeds its bound.");
+		using var reader = XmlReader.Create(xml, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null });
+		var document = XDocument.Load(reader);
+		var service = document.Root;
+		string[] allowed = { "id", "name", "description", "startmode", "delayedAutoStart", "hidewindow", "executable", "arguments", "workingdirectory", "stoptimeout", "stopparentprocessfirst", "logpath", "log", "onfailure", "resetfailure" };
+		if (service?.Name != "service" || service.HasAttributes || service.Elements().Any(value => !allowed.Contains(value.Name.LocalName, StringComparer.Ordinal) || value.Name.NamespaceName.Length != 0) ||
+			service.Elements().Where(value => value.Name != "onfailure").GroupBy(value => value.Name).Any(group => group.Count() != 1)) throw new InvalidDataException("VPN wrapper includes an unsupported extension.");
+		string helper = Path.Combine(_installRoot, "resources", "core-service", "win-x64", "EgoistShield.Service.exe");
+		if (service.Element("id")?.Value != ServiceContract.VpnServiceName || service.Element("arguments")?.Value != "--run-vpn-runtime" ||
+			!string.Equals(service.Element("executable")?.Value, helper, StringComparison.OrdinalIgnoreCase) ||
+			!string.Equals(service.Element("workingdirectory")?.Value, Path.GetDirectoryName(helper), StringComparison.OrdinalIgnoreCase) ||
+			service.Element("startmode")?.Value != "Automatic" || service.Element("hidewindow")?.Value != "true" || service.Element("stopparentprocessfirst")?.Value != "false")
+			throw new InvalidDataException("VPN wrapper host contract is invalid.");
 	}
 
 	private async Task<OwnedServiceStatus> WaitForStateAsync(string serviceName, string expectedState, CancellationToken cancellationToken)
@@ -381,33 +425,23 @@ internal sealed class OwnedServiceController
 	internal async Task RepairRecoveryAsync(string serviceName, CancellationToken cancellationToken)
 	{
 		serviceName = NormalizeServiceName(serviceName);
+		EnsureProductDataRootVerified();
 		await AssertOwnedImagePathAsync(serviceName, cancellationToken);
-		await ConfigureRecoveryAsync(serviceName, OwnedServices[serviceName].Description, cancellationToken);
+		await ConfigureRecoveryAsync(serviceName, OwnedServices[serviceName].Description, RunScAsync, cancellationToken);
 	}
 
-	private async Task ConfigureRecoveryAsync(string serviceName, string description, CancellationToken cancellationToken)
+	private async Task ConfigureInstallationAsync(string serviceName, string description, CancellationToken cancellationToken)
 	{
-		string[][] array = new string[4][]
+		EnsureProductDataRootVerified();
+		cancellationToken.ThrowIfCancellationRequested();
+		ProcessResult startup = await RunScAsync(new[] { "config", serviceName, "start=", "auto" }, cancellationToken);
+		if (startup.ExitCode != 0)
 		{
-			new string[4] { "config", serviceName, "start=", "auto" },
-			new string[4] { "config", serviceName, "depend=", "Tcpip/Afd" },
-			new string[6] { "failure", serviceName, "reset=", "3600", "actions=", "restart/5000/restart/10000/restart/60000" },
-			new string[3] { "failureflag", serviceName, "1" }
-		};
-		foreach (string[] arguments in array)
-		{
-			ProcessResult processResult = await RunScAsync(arguments, cancellationToken);
-			if (processResult.ExitCode != 0)
-			{
-				throw new InvalidOperationException("SC recovery configuration failed for " + serviceName + ": " + CleanError(processResult));
-			}
+			throw new InvalidOperationException("SC installation startup configuration failed for " + serviceName + ": " + CleanError(startup));
 		}
-		ProcessResult processResult2 = await RunScAsync(new global::_003C_003Ez__ReadOnlyArray<string>(new string[3] { "description", serviceName, description }), cancellationToken);
-		if (processResult2.ExitCode != 0)
-		{
-			throw new InvalidOperationException("SC description failed for " + serviceName + ": " + CleanError(processResult2));
-		}
-		ProcessResult processResult3 = await ProcessRunner.RunAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "reg.exe"), new global::_003C_003Ez__ReadOnlyArray<string>(new string[9]
+		await ConfigureRecoveryAsync(serviceName, description, RunScAsync, cancellationToken);
+		cancellationToken.ThrowIfCancellationRequested();
+		ProcessResult delayedStart = await RunRegAsync(new[]
 		{
 			"add",
 			"HKLM\\SYSTEM\\CurrentControlSet\\Services\\" + serviceName,
@@ -418,10 +452,39 @@ internal sealed class OwnedServiceController
 			"/d",
 			"0",
 			"/f"
-		}), ServiceContract.CommandTimeout, cancellationToken);
-		if (processResult3.ExitCode != 0)
+		}, cancellationToken);
+		if (delayedStart.ExitCode != 0)
 		{
-			throw new InvalidOperationException("DelayedAutoStart configuration failed for " + serviceName + ": " + CleanError(processResult3));
+			throw new InvalidOperationException("DelayedAutoStart configuration failed for " + serviceName + ": " + CleanError(delayedStart));
+		}
+	}
+
+	internal static async Task ConfigureRecoveryAsync(string serviceName, string description,
+		Func<IEnumerable<string>, CancellationToken, Task<ProcessResult>> runSc, CancellationToken cancellationToken)
+	{
+		serviceName = NormalizeServiceName(serviceName);
+		// Recovery repair must leave startup policy unchanged, including an external
+		// Disabled change made after the supervisor's earlier status observation.
+		string[][] array = new string[3][]
+		{
+			new string[4] { "config", serviceName, "depend=", "Tcpip/Afd" },
+			new string[6] { "failure", serviceName, "reset=", "3600", "actions=", "restart/5000/restart/10000/restart/60000" },
+			new string[3] { "failureflag", serviceName, "1" }
+		};
+		foreach (string[] arguments in array)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			ProcessResult processResult = await runSc(arguments, cancellationToken);
+			if (processResult.ExitCode != 0)
+			{
+				throw new InvalidOperationException("SC recovery configuration failed for " + serviceName + ": " + CleanError(processResult));
+			}
+		}
+		cancellationToken.ThrowIfCancellationRequested();
+		ProcessResult processResult2 = await runSc(new[] { "description", serviceName, description }, cancellationToken);
+		if (processResult2.ExitCode != 0)
+		{
+			throw new InvalidOperationException("SC description failed for " + serviceName + ": " + CleanError(processResult2));
 		}
 	}
 
@@ -437,11 +500,16 @@ internal sealed class OwnedServiceController
 
 	private Task<ProcessResult> RunOwnedExecutableAsync(string executablePath, string[] arguments, CancellationToken cancellationToken)
 	{
+		EnsureProductDataRootVerified();
+		return ProcessRunner.RunAsync(executablePath, arguments, ServiceContract.CommandTimeout, cancellationToken, Path.GetDirectoryName(executablePath));
+	}
+
+	private void EnsureProductDataRootVerified()
+	{
 		if (!_productDataRootVerified)
 		{
 			throw new ServiceOperationException("PROTECTED_ROOT_UNVERIFIED", "Права на защищённый каталог Egoist Lagom не подтверждены, поэтому запуск его исполняемых файлов заблокирован. Выполните «Восстановить интернет» или переустановите приложение.");
 		}
-		return ProcessRunner.RunAsync(executablePath, arguments, ServiceContract.CommandTimeout, cancellationToken, Path.GetDirectoryName(executablePath));
 	}
 
 	private Task<ProcessResult> RunRegAsync(IEnumerable<string> arguments, CancellationToken cancellationToken)

@@ -1,0 +1,30 @@
+✖ actual loopback routing proves the same plain-domain boundary in both pinned cores (279.8569ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 348.58
+
+✖ failing tests:
+
+test at tests\routing-rule-contract.test.mjs:331:1
+✖ actual loopback routing proves the same plain-domain boundary in both pinned cores (279.8569ms)
+  AssertionError [ERR_ASSERTION]: xray rule decision for notexample.org
+  
+  'MATCH' !== 'MISS'
+  
+      at runRouteFixture (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:322:107)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/routing-rule-contract.test.mjs:333:60)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'MATCH',
+    expected: 'MISS',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

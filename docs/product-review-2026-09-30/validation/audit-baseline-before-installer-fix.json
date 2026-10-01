@@ -1,0 +1,1497 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-09-30",
+  "generatedAtUtc": "2026-09-30T12:41:01.237687+00:00",
+  "status": "audit_and_plan_complete_candidate_on_hold",
+  "source": {
+    "commit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+    "branch": "codex/lagom-production-audit",
+    "trackedDiff": [],
+    "productSourceChangedInThisReview": false
+  },
+  "candidate": {
+    "version": "3.8.0",
+    "file": "EgoistShield-Setup-3.8.0.exe",
+    "bytes": 201109964,
+    "sha256": "20de1d94481ac1f550f70748397d86f9950c2bc055eaacf359e6580523971dd8",
+    "rebuiltInstalledOrPublishedInThisReview": false
+  },
+  "installedPublicVersion": "3.7.9",
+  "freshBaseline": {
+    "sourceCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+    "run": "fresh full postpackage Node baseline",
+    "rawLogSha256": "c502f19b28b76b67a13f1505af93e0cce0d9bbf469f8d17fb2ae0a70edfc9c3c",
+    "tests": 633,
+    "pass": 633,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "durationMs": 19267.4615
+  },
+  "independentAuditRoles": [
+    "market",
+    "design_architect",
+    "feature_contracts",
+    "service_reliability",
+    "network_stress",
+    "security_release"
+  ],
+  "boundedServiceStress": {
+    "cases": 11,
+    "elapsedSeconds": 31.3513229,
+    "realSystemMutations": false,
+    "newFindingsRemainOpen": [
+      "S2-01",
+      "S2-02",
+      "S2-03"
+    ],
+    "report": "services-audit.md"
+  },
+  "boundedNetworkStress": {
+    "durationSecondsApprox": 8.816,
+    "httpOperations": 1536,
+    "tlsOperations": 256,
+    "udpRequests": 160,
+    "coordinatorOperations": 384,
+    "configurations": 5000,
+    "generationSequences": 1000,
+    "unexpectedFailures": [],
+    "findingCount": 5,
+    "headerOnlyDnsAccepted": {
+      "actual": 32,
+      "expected": 0
+    },
+    "report": "network-audit.md",
+    "scope": "own actual loopback HTTP/TLS/TCP/UDP; controlled coordinator inspectors/Date where disclosed"
+  },
+  "boundedSecurityChecks": {
+    "cases": 15,
+    "confirmedP0": false,
+    "fullExploitRun": false,
+    "report": "security-release-audit.md"
+  },
+  "nativeUi": {
+    "navigations": 360,
+    "miniCycles": 40,
+    "dialogCycles": 10,
+    "elapsedMs": 829233,
+    "pageErrors": [],
+    "workingSetDeltaMiB": 72.0039,
+    "scope": "Actual hidden unfocused native Electron UI, page-local pointer/keys, noDefaults; NODE_ENV=test has service mocks. No production readiness, OS-DPI, foreground FPS or month-soak claim.",
+    "ownProcessClosed": true,
+    "report": "native-ui-audit.md"
+  },
+  "designProposal": {
+    "layoutCases": 36,
+    "latestChangedMiniCases": 4,
+    "preservedFeatureGroups": 45,
+    "currentRuntimeDesignAuthorityUnchanged": true,
+    "pageErrors": [],
+    "remoteRequests": 0,
+    "implementedInProduct": false,
+    "nativeDpiAndForegroundMotionVerified": false,
+    "report": "design-audit.md"
+  },
+  "featureContractInventory": {
+    "featureGroups": 45,
+    "uniqueInvokeChannels": 117,
+    "matchedHandlers": 117,
+    "allNativeOperationsVerified": false
+  },
+  "marketResearch": {
+    "products": 8,
+    "primarySourceRecords": 24,
+    "versionRecords": 8,
+    "competitorRuntimeUptimeCompared": false,
+    "report": "market-research.md"
+  },
+  "sourceAndFrozenEvidenceVerification": {
+    "checks": 148,
+    "uniqueFiles": 136,
+    "mismatches": 0,
+    "records": [
+      {
+        "group": "feature source",
+        "file": "scripts/build.mjs",
+        "sha256": "319bd58181992c64c98325c3b19ad1bf0c283c9a94da3f70c68565c0493afc7b",
+        "bytes": 12009,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/renderer.js",
+        "sha256": "baacbd72b9bbec6bbce7e94c3fb8d9addda47e88e6cde3d6926c649737fa00d7",
+        "bytes": 652349,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/renderer.css",
+        "sha256": "fcbd72b6254116f5a81d941718320502ab2aa6b31a69fdca2936d8a05d999aaa",
+        "bytes": 143077,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/brand/CompactRuby.jsx",
+        "sha256": "ca1bc9453f3b93a921f76cdec2cdae95edad86c82c7d9b026ec6588eea5a0f0d",
+        "bytes": 23982,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/brand/ShieldWidget.jsx",
+        "sha256": "cb0b34255de4e5a4b256ea262e96d84f79fd253c08af61d902ee7859bc082162",
+        "bytes": 16473,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/preload.cjs",
+        "sha256": "516fe01d9693d75fbf46cf20c1dbbbf597ab53335c569a62ae3dcc7084a61b3d",
+        "bytes": 12332,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/shield-connection-controller.js",
+        "sha256": "2ad2456f68b0ef1a379470c834de4250b9007b554486efd4ea38a875ed4d9a05",
+        "bytes": 16067,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/component-protocol.js",
+        "sha256": "f56e144cff495683c3dd9a52ea232c61c0353f7d75b11059c3ccac39df997da6",
+        "bytes": 3975,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/component-facade.js",
+        "sha256": "d33bc90ce1dbc673866feafa74813a0503d0cf8e2d3f12b7317f0603301557e8",
+        "bytes": 5008,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/component-worker-entry.js",
+        "sha256": "ab5e6974684a203e8047d13e4198b8b48ef07fc9743d93ffc2084371fd930e2b",
+        "bytes": 2868,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/main.js",
+        "sha256": "e0c97f01e7bc391dd5721ec7fcd606beb796f9b33b778270990886223dfcde49",
+        "bytes": 53707,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/state-store.js",
+        "sha256": "5a1273aea418a4928c65a7b49c4440a24d52dc55bc422ac572abc6c2bde34e1c",
+        "bytes": 18697,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/handlers-system.js",
+        "sha256": "a97ea28a035e8f316c80194388abf91ff1ccd87e4aefe21924cfad8ee3b58182",
+        "bytes": 70573,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/handlers-vpn.js",
+        "sha256": "22e3c77494fb0ef685fcd9697f6fe12557da4b872e24da93d0b593f260c9e5ce",
+        "bytes": 64395,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/handlers-import.js",
+        "sha256": "f29cf1cbe7e54e4aa43e76b8353967faa24cbbe8284ec432003f44509c2f9a73",
+        "bytes": 12648,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/handlers-zapret.js",
+        "sha256": "57a12d329ebaacad2a0aa76a862ef3c41cbf63ace091df5cb4e6e2f35beb0c99",
+        "bytes": 13969,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/handlers-telegram-proxy.js",
+        "sha256": "f72332e206682306004afe9e68843686f6e2fa50c0a8b28b8aed3d29f2d689f2",
+        "bytes": 2034,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/handlers.js",
+        "sha256": "b2f41e3910d50486c92494b96e578e8671e8207165370cfa45ce4dce07ad8adb",
+        "bytes": 8914,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/diagnostics-redaction.js",
+        "sha256": "e00223f19371fbe30088aaf4a2fcb421763d43288eef6c5c4614abe5017dcea0",
+        "bytes": 3330,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/handlers-health.js",
+        "sha256": "c6d2cd00b911ae2754894e7b74f93790c7f08d819eeb2d2eee8e363ab167a32a",
+        "bytes": 16155,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/handlers-logs.js",
+        "sha256": "618cc45dd53c70fcf0bd7de257234efd8b3fe8f217aa3187beb4ff3af410cb3a",
+        "bytes": 3147,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/logger.js",
+        "sha256": "b908af2094730a1782e82a165011e3ad635738f5c7f5260224ea9493904c83d1",
+        "bytes": 4764,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/trusted-ipc.js",
+        "sha256": "986cade4f337aa84f80e4d2225e37348bc64e1f6caaad2e4d9ea2710946486af",
+        "bytes": 2919,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/port-utils.js",
+        "sha256": "32353bb7641f3212d27118cc9a7e19ce4276341e2ac38b66a6e9c0635c305e98",
+        "bytes": 14104,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/zapret-manager.js",
+        "sha256": "ffc62cdd5103045620cabba6c0c90b8890e38688dbd61cc0531a7830fd942d73",
+        "bytes": 132502,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/telegram-proxy-manager.js",
+        "sha256": "fe4d8c49ff791d1c4c5f05db29b1735e1ef241ef45a8193ed66bc89c5affe39c",
+        "bytes": 79063,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/system-doh-service-manager.js",
+        "sha256": "5197b43d1e6e7388b5eb73352b282660e4895d4b1f1faeff5f273d5ec3f37a98",
+        "bytes": 51715,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/system-doh-manager.js",
+        "sha256": "31cc0bceab2a4cfc7109fc33a4cd897a7fd217ca052a832f5738b2ddba13f6f1",
+        "bytes": 10853,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/vpn-manager.js",
+        "sha256": "1adb0a913f528dbfc654920764c8fcd6cc06803b6a0e966bce6f6073be2e5978",
+        "bytes": 62677,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/recovered/electron/ipc/network-combinator-manager.js",
+        "sha256": "d664d3492e3077fc5d36e3e7ed94118f45f9b8fecd6ec3848afae21ddcd6a236",
+        "bytes": 10521,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/service/EgoistShield.Service/ComponentWorker.cs",
+        "sha256": "8a5a9bf014d0aefba20e043fba25c0957b67ceb2b633f81f6e7044d822508699",
+        "bytes": 11049,
+        "matches": true
+      },
+      {
+        "group": "feature source",
+        "file": "src/service/EgoistShield.Service/OperationDispatcher.cs",
+        "sha256": "113186fa323da22eea05dd3de18e8f4c70413a5b655de2720fab9e5bc92916b9",
+        "bytes": 83885,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/--z__ReadOnlyArray.cs",
+        "sha256": "8a14e3a66a55c9a72989287078c98e132232a951d18a3f5e01df7d468423cee7",
+        "bytes": 2756,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/--z__ReadOnlySingleElementList.cs",
+        "sha256": "3ff97bc2c15559eba83f70e3416588dcdfa4cb63ee059a489d3d3a80d520b42d",
+        "bytes": 3616,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ActiveTransaction.cs",
+        "sha256": "1be4aaeb9464d3f7a50e11e8f2616c304610ce44e695f2862bab9135b1505c90",
+        "bytes": 504,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/AdminStatusChecker.cs",
+        "sha256": "9ae72832525f7fcf466f397efd7959060669b01348e30324d8671594068f5e51",
+        "bytes": 1107,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/AtomicJsonFile.cs",
+        "sha256": "d89e564835a9266a542fc3be0bfdaf8fe3da4e752137a3003b45b72456170d98",
+        "bytes": 3846,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/BuildInfo.cs",
+        "sha256": "11404d3f064572376cae60a04ad3992cd30909efa5ef2c26690ba68422227f4e",
+        "bytes": 178,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ClientAuthorizer.cs",
+        "sha256": "b3a0e937b8682ee41c48737c46a81b6dbae64d3c1467dda677c144a407ea45fb",
+        "bytes": 7152,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ClientIdentity.cs",
+        "sha256": "7d6450032a5d0aef10aa90b97f8587b892fe28d023fc937cac5821c651e85186",
+        "bytes": 183,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ComponentWorker.cs",
+        "sha256": "8a5a9bf014d0aefba20e043fba25c0957b67ceb2b633f81f6e7044d822508699",
+        "bytes": 11049,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/DnsAdapterSnapshot.cs",
+        "sha256": "166e1381e2137f06938fb387c21a886676ff26e49e01143ce71ff79e8704e4f1",
+        "bytes": 209,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/DnsApplyPayload.cs",
+        "sha256": "8e15284e785d2efca1bef613c227ed0eef8efa94fdc6760e689c8e400a6613f4",
+        "bytes": 247,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/DnsBootstrapRefreshScheduler.cs",
+        "sha256": "6600fe4897ccbc6e2d459459b3b6b0eaa12e7533a4931315fd13eee46285799d",
+        "bytes": 3025,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/DnsMaintenancePolicy.cs",
+        "sha256": "61e06310cd2b8dcea738ff18b3f60271b6c1817abefa24a037ffd3eb1890e36f",
+        "bytes": 1416,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/DnsOwnedState.cs",
+        "sha256": "467daf81e07eb234e2dd109456f62d7d5b19d9582100273fc1f22b668b9f417e",
+        "bytes": 5645,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/EgoistShieldWindowsService.cs",
+        "sha256": "3a28d790d370c08f352ab18b7a8ca6df1b3a597c9198a4f62e0680219ea3df5b",
+        "bytes": 2690,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/IdentityJsonContext.cs",
+        "sha256": "69a7e1cc487fbb306decd0f0a69dcf0ecb81d7a2d67334d425694b9e204cd849",
+        "bytes": 623,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/JsonDefaults.cs",
+        "sha256": "b071b84ed735af69efc01d51d65e9d32b77fbfe1e43e394c06cdd60a5408cef9",
+        "bytes": 951,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/LocalServiceHealthProbe.cs",
+        "sha256": "79f11fae5d8b3fce7b9d2d05662b887014d72d167fe7c88acf384b1403f5fa3d",
+        "bytes": 6279,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/NativeDohApplyPayload.cs",
+        "sha256": "7657ad8961533fe66d7777e214834fda7929e24fb4376a21e66d64ed5f863816",
+        "bytes": 302,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/NativeDohEntrySnapshot.cs",
+        "sha256": "3b2232670db438fc95685d764cd399160ee7113131dad660fc3ae11ddb5d717d",
+        "bytes": 183,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/NativeDohOwnedState.cs",
+        "sha256": "3ed99de4fd3d739cf45676d2bdfa390e1a1a271c228cfc7612c3b023a46eaeca",
+        "bytes": 286,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/NativeDohTransactionSnapshot.cs",
+        "sha256": "e1b3bd7ee7103c621fb1e3b4e36247341592dff196e9a835c7fd227d4b0df2d0",
+        "bytes": 187,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/OperationDispatcher.cs",
+        "sha256": "113186fa323da22eea05dd3de18e8f4c70413a5b655de2720fab9e5bc92916b9",
+        "bytes": 83885,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/OwnedServiceController.cs",
+        "sha256": "c45250f096a69dfad5a83323e4835cf9c0a656cef0a07247770bfdee90dcfb22",
+        "bytes": 22666,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/OwnedServiceIntentStore.cs",
+        "sha256": "266d4b10c505f3716239268b07ed38babc2e71f5cd90ae4e2241cb792b299f18",
+        "bytes": 2787,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/OwnedServicePayload.cs",
+        "sha256": "1579005b187b011666749f694be45c2838c5cb3f760460aee1b2218e39854b05",
+        "bytes": 185,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/OwnedServiceStatus.cs",
+        "sha256": "19efd59a60f78571d0a53e020131ed37875a0c6363c744fef3292db7928d8387",
+        "bytes": 148,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/OwnedServiceSupervisor.cs",
+        "sha256": "1d20965724a09fa3c2d009968b398c7fa90efd5512c6411837fc0889572eb878",
+        "bytes": 11680,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/OwnedServiceTransition.cs",
+        "sha256": "45dc82db9a44dd0851f6f55faffbe8a6713c53a6be6a214c803f5707685cdb88",
+        "bytes": 3617,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/OwnedTcpListenerProbe.cs",
+        "sha256": "018efba76b4222a061e4c4c4351ededf81af94c7e5a5799acb9a44a27c660b07",
+        "bytes": 10335,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/OwnedWrapperLogMaintenance.cs",
+        "sha256": "a24b54ae947058c238eabf52f71edeb80bfeaf4996ecd5497c1a9e191ae1bc38",
+        "bytes": 4296,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/PersistedResponseEntry.cs",
+        "sha256": "2b198f29cccada33dc0f758479607edfaccff99f589fd63c3efd16091b57fc63",
+        "bytes": 192,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/PersistedResponseStore.cs",
+        "sha256": "8ee1b6c2f30f60c02fb41efe7e1347b3964400b417532e4960742bac7e655f39",
+        "bytes": 191,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/PipeServer.cs",
+        "sha256": "bb573b4ea0814d5304837a209e2d7347c689fb0e02abf78134ea2fcaf6e507c7",
+        "bytes": 10185,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/PipeServerIdentityResult.cs",
+        "sha256": "b6bc04f20f28ddfe99191c753cfc87fd7d80b4c3c4ad2616c8515a9b99db77c9",
+        "bytes": 190,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/PipeServerIdentityVerifier.cs",
+        "sha256": "16792ecf1aa154256ec278b0ab0775dcda0a4050db792aef2f0d13173cfda504",
+        "bytes": 14931,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ProcessResult.cs",
+        "sha256": "a54a722a2408865acbfef2814c229b6432ddb5316212cc431f22daa4ba9c33d1",
+        "bytes": 133,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ProcessRunner.cs",
+        "sha256": "09bb6db3f2f3da045d757f5b79d9f41619effa3c5c688a0db1e5115da878ce84",
+        "bytes": 4579,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/Program.cs",
+        "sha256": "2e485f74ea0b0b8448d6474a4a2609de57bb1c1439273e37198e2646a1d175b9",
+        "bytes": 8152,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ProtectedProductRoot.cs",
+        "sha256": "f490bf316bc49752cd730cf81ec313a9ec92e45c5863329f17ace81acc5e0343",
+        "bytes": 6576,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/SelfTest.cs",
+        "sha256": "037becd6140771c37d63de7059b2b9d0b1d7c8262aea6598aa403084d4384287",
+        "bytes": 25649,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ServiceConfig.cs",
+        "sha256": "782fd934ee0caac6d1cc0ac4a9d46e2e03ffbbe60fbf74f1a2acecc7d06b81f0",
+        "bytes": 170,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ServiceConfiguration.cs",
+        "sha256": "cf25692f9d1421ec8794a7efe742e0fe7572b1fcae9234bb5e21f79748f12be8",
+        "bytes": 1003,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ServiceContract.cs",
+        "sha256": "512c22858fe6c7abfd2dc7fdc71b42b43dfdf32604d6cf9623a26176702cb742",
+        "bytes": 892,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ServiceEngine.cs",
+        "sha256": "8c4aafd99dd2e2a3783686c49f1d7bb141fd5e03f63a65cd2bbf1fb7926a568c",
+        "bytes": 4943,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ServiceError.cs",
+        "sha256": "a0e23ac28d39343e30649656e416353736d690d5a95a617352f8bbcc933b1cc9",
+        "bytes": 286,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ServiceLog.cs",
+        "sha256": "952a0b7910656b89541dbd9b1326f385ddc31c6bc7ad9d504a9152abc971398e",
+        "bytes": 3156,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ServiceOperationException.cs",
+        "sha256": "7ae927c5e8c86ab7b14da46a7f6cf7d8593c6d5d7bdf1878846e8774a76d3c3c",
+        "bytes": 317,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ServiceOptions.cs",
+        "sha256": "87565b25954eb8be58ce1754d6c2fde310df85443c35cbd60eec3f7ccf658694",
+        "bytes": 170,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ServiceRequest.cs",
+        "sha256": "b0a2f26661a84179f3f99271fcbec8738ae254499243628cfd6e859c137e25c0",
+        "bytes": 391,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ServiceResponse.cs",
+        "sha256": "3e95dc26cf1d9abb7872699187eea6bef14f038f87b47a9dd3b4eb2ca8974ff3",
+        "bytes": 1001,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/SystemProxyNotifier.cs",
+        "sha256": "5e56356ab9712ff5f2c1693fd69490febf981c12d2e5b2105c4280a532459fc7",
+        "bytes": 2036,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/TelegramListenerSnapshotCommand.cs",
+        "sha256": "c6b94f7e60262e22ac6fdb1823272b17904a6038a6ea982fedfcf3f346688186",
+        "bytes": 4324,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/TransactionJournal.cs",
+        "sha256": "4750f6b1ae36163cc236fa5b8da7c97325c16e502b76aa671a05631a52f39339",
+        "bytes": 10195,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/TransactionPhase.cs",
+        "sha256": "7528413abb5df95aea3e9d2d7cd8f0781ab5f4e73db4184bc7708fdae0699a58",
+        "bytes": 170,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/TrustedPath.cs",
+        "sha256": "923775babb3639de1a08b00e8851681671ce08cf8654ced4857a7ed41afe3609",
+        "bytes": 4248,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/WindowsDnsController.cs",
+        "sha256": "f3cc36c702e66f7a64e03df74e2001f4cb57ff16eee33201257da9de97a7ee3a",
+        "bytes": 30103,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/WindowsNativeDohController.cs",
+        "sha256": "a104eb6feb16dffbc826af823d65107283dce1487fb3057b18ee8b42dc08a6bb",
+        "bytes": 19409,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/WindowsServiceListenerSnapshot.cs",
+        "sha256": "6c328ef0a3fd68d9ba8cce31a2a6a86f9cb2f05e2e198b374d732bb6ee4527c9",
+        "bytes": 15589,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ZapretProfilePayload.cs",
+        "sha256": "2f0503a7d85fd6c55d61d2a254e42da3876fac47ad30a46dc5d1cf3f6ce16289",
+        "bytes": 179,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/EgoistShield.Service/ZapretProfileSnapshot.cs",
+        "sha256": "c20a9a4c23850d0b578022ef496e1c1a3b45fedbb9cb65b86710e969def4fa2d",
+        "bytes": 99,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/Properties/AssemblyInfo.cs",
+        "sha256": "65a153b53a3003c4780e65fef16faa76929409fcdee81764d2ffa6bad568dff0",
+        "bytes": 616,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__ProfileRegex_0.cs",
+        "sha256": "caef7420759362e5254acf2b099200a13beb7d76f09a55fa978cb1f9b9609cd8",
+        "bytes": 5749,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__ProxyCredentialRegex_2.cs",
+        "sha256": "6b686412ce5912fa2b7dac7ca710f004cc88b42012de1628c0e3fd01cdfe78ba",
+        "bytes": 4889,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__SecretAssignmentRegex_1.cs",
+        "sha256": "b09c1ab763fca22f53f35838145b5065dac11cec7b89322d47827bc4f45b4379",
+        "bytes": 6155,
+        "matches": true
+      },
+      {
+        "group": "service production source",
+        "file": "src/service/System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__Utilities.cs",
+        "sha256": "300981686addb45e76dc2b0740c091a302ab4811fab034291746858356ba97e2",
+        "bytes": 3786,
+        "matches": true
+      },
+      {
+        "group": "network source",
+        "file": "src/recovered/electron/ipc/safe-network.js",
+        "sha256": "a0a1b3635488f760e7a67c3d12be44deab4c67839eebfc6b299229dfd2308b02",
+        "bytes": 8158,
+        "matches": true
+      },
+      {
+        "group": "network source",
+        "file": "src/recovered/electron/ipc/handlers-vpn.js",
+        "sha256": "22e3c77494fb0ef685fcd9697f6fe12557da4b872e24da93d0b593f260c9e5ce",
+        "bytes": 64395,
+        "matches": true
+      },
+      {
+        "group": "network source",
+        "file": "src/recovered/electron/ipc/route-probe.js",
+        "sha256": "5d5588014703f676038a8f0cbbde117ea106f7746f6a5f14405ae9dc8aac2876",
+        "bytes": 10223,
+        "matches": true
+      },
+      {
+        "group": "network source",
+        "file": "src/recovered/electron/ipc/first-success.js",
+        "sha256": "6e428ea50eabd48418d2d6dde862fa330dfd112eb96975120170787688536b93",
+        "bytes": 2280,
+        "matches": true
+      },
+      {
+        "group": "network source",
+        "file": "src/recovered/electron/ipc/vpn-reconnect-supervisor.js",
+        "sha256": "5d9ff7795154acda73b2981f66890b90047de22efd0aef5743bfc55e18d70ae0",
+        "bytes": 12547,
+        "matches": true
+      },
+      {
+        "group": "network source",
+        "file": "src/recovered/electron/ipc/gravityless-dns-manager.js",
+        "sha256": "3c409353c9fff2d1cc5f259e7c61a2d00512b9720a2fea0db275753cc5ef49f5",
+        "bytes": 21027,
+        "matches": true
+      },
+      {
+        "group": "network source",
+        "file": "src/recovered/electron/ipc/network-combinator-manager.js",
+        "sha256": "d664d3492e3077fc5d36e3e7ed94118f45f9b8fecd6ec3848afae21ddcd6a236",
+        "bytes": 10521,
+        "matches": true
+      },
+      {
+        "group": "network source",
+        "file": "src/recovered/electron/ipc/config-builder.js",
+        "sha256": "993c62f24206fe216cc1ccacf6cf449b1ff77a31b116ac5e01bb7b04105556da",
+        "bytes": 19075,
+        "matches": true
+      },
+      {
+        "group": "network source",
+        "file": "src/recovered/shared/dns-controller.js",
+        "sha256": "1a087f5acc6fc789251cc912bcee0fddb8d0f758c9256f5e0e198083da6bcf4b",
+        "bytes": 6556,
+        "matches": true
+      },
+      {
+        "group": "design baseline source",
+        "file": "scripts/build.mjs",
+        "sha256": "319bd58181992c64c98325c3b19ad1bf0c283c9a94da3f70c68565c0493afc7b",
+        "bytes": 12009,
+        "matches": true
+      },
+      {
+        "group": "design baseline source",
+        "file": "src/brand/tokens.css",
+        "sha256": "fb257a2a99de07c7707851d778b3db5f313c4f3cea44c934ed235669a19e4dad",
+        "bytes": 3845,
+        "matches": true
+      },
+      {
+        "group": "design baseline source",
+        "file": "src/brand/CompactRuby.jsx",
+        "sha256": "ca1bc9453f3b93a921f76cdec2cdae95edad86c82c7d9b026ec6588eea5a0f0d",
+        "bytes": 23982,
+        "matches": true
+      },
+      {
+        "group": "design baseline source",
+        "file": "src/brand/ShieldWidget.jsx",
+        "sha256": "cb0b34255de4e5a4b256ea262e96d84f79fd253c08af61d902ee7859bc082162",
+        "bytes": 16473,
+        "matches": true
+      },
+      {
+        "group": "design baseline source",
+        "file": "src/brand/compact-ruby.css",
+        "sha256": "309b20b1e689def2f91a30a143e3d49b90697c810dbb3c4565a5695b0617b8db",
+        "bytes": 18862,
+        "matches": true
+      },
+      {
+        "group": "design baseline source",
+        "file": "src/brand/compact-surfaces.css",
+        "sha256": "bb73969a415746c2d804a1e2911488d64b8cb22158f35617f6353495d2a20131",
+        "bytes": 60475,
+        "matches": true
+      },
+      {
+        "group": "design baseline source",
+        "file": "src/brand/shield-widget.css",
+        "sha256": "3fc866305c28115b6601cc1cb686b9e76bbc09668557ef791a3b212ce83f128a",
+        "bytes": 12691,
+        "matches": true
+      },
+      {
+        "group": "design baseline source",
+        "file": "src/brand/final-polish.css",
+        "sha256": "b04721633a7dd0445aa3a7e2b1fd126b9468124c8e0d96970ba9c394dfa8db32",
+        "bytes": 4639,
+        "matches": true
+      },
+      {
+        "group": "design baseline source",
+        "file": "src/recovered/renderer.js",
+        "sha256": "baacbd72b9bbec6bbce7e94c3fb8d9addda47e88e6cde3d6926c649737fa00d7",
+        "bytes": 652349,
+        "matches": true
+      },
+      {
+        "group": "design baseline source",
+        "file": "src/recovered/electron/ipc/handlers-system.js",
+        "sha256": "a97ea28a035e8f316c80194388abf91ff1ccd87e4aefe21924cfad8ee3b58182",
+        "bytes": 70573,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design-audit.md",
+        "sha256": "6785276b1c790927d88f04d466245ec8d313e3cd7346298b9f1b3fc56dbc7048",
+        "bytes": 34412,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/feature-preservation.json",
+        "sha256": "35c2116921905321874141139276cbc3ac29dd9f00a884037ef4d8bbb3d85f8a",
+        "bytes": 11778,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/icons-proposal.svg",
+        "sha256": "3dfe7b14bf65fd2f2c6997516cc107203d34921b72d71396579620d2adafc737",
+        "bytes": 1586,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/layout-map.svg",
+        "sha256": "d2388a3a45a4f7ff20cf97e93b1c7b651f9d04fe2838390611ff553c4aea3caa",
+        "bytes": 5403,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/preview.css",
+        "sha256": "e028cd591ed63da921eec41758e10069e8b7caae9f62e50719ad9884327aacec",
+        "bytes": 13440,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/preview.html",
+        "sha256": "b82a497ca5011bda31e6e2e41470801ae4441d72ac3233e908b69d14defc4184",
+        "bytes": 26328,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/preview.js",
+        "sha256": "8b7b5a7b18791c9eb5b531f46f70f4bd56177d673267c978d0ca3385b61c28a8",
+        "bytes": 2384,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/tokens-proposal.css",
+        "sha256": "c16917676c6b0235cdbb40099dddb058e088e64f740f7d301bb2af461574721f",
+        "bytes": 2253,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/validation.json",
+        "sha256": "d9db40ec17da4cd96f79c4222520979d4385f9eab4a9f3ab7c95c325e0482564",
+        "bytes": 22489,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/verify-preview.mjs",
+        "sha256": "c2a1fecfcb84f005733475e13919f579da03f6434ea8c50adaae8962067da929",
+        "bytes": 7285,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/assets/manrope-cyrillic.woff2",
+        "sha256": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914",
+        "bytes": 14500,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/assets/manrope-latin.woff2",
+        "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972",
+        "bytes": 24836,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/assets/manrope-OFL.txt",
+        "sha256": "d826ab6583b12c26807d8716a545bdbbb672df04f48608a364ba9efdbe501c30",
+        "bytes": 4383,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/assets/unbounded-cyrillic.woff2",
+        "sha256": "e30bf6a6063b6a47232bbd657e24c7cf4fdaf76fc2c50d92d9ee63e2ad2087cf",
+        "bytes": 31424,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/assets/unbounded-latin.woff2",
+        "sha256": "22f9b928aa3928a896340422b54d690fbb5875c30eae4c106f029c61f2289fd6",
+        "bytes": 50904,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/assets/unbounded-OFL.txt",
+        "sha256": "48a780bc857729859e54d1e691b05792894a26634edc1c4b5dbeabffe6941758",
+        "bytes": 4390,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/screenshots/minimum-zoom200-equivalent-mini.png",
+        "sha256": "ce6e819e221d6d8eaf2b6a31017daffd0c110db0d476405ea7b0bc07cd2b76b2",
+        "bytes": 26576,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/screenshots/minimum-zoom200-equivalent-settings.png",
+        "sha256": "0864b17fcacd5b9a82c46b6c102918452b35f3918c7d8ad8b690c69340390cd3",
+        "bytes": 29989,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/screenshots/wide-dns.png",
+        "sha256": "dcb4b13ac25fedbb33ce7e77b0cda6b4a856a7d685ea0b025ba3a7f4d762d5cb",
+        "bytes": 99777,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/screenshots/wide-mini.png",
+        "sha256": "9cc60fc93b1675f6693b9be15ef85a58aba378bcc7caeb050524f4c5bb1dc978",
+        "bytes": 62385,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/screenshots/wide-overview.png",
+        "sha256": "baab22f96074a1b289b419648042e3c4b699207fa4b7601fb29886018a58332b",
+        "bytes": 101728,
+        "matches": true
+      },
+      {
+        "group": "design frozen outputs",
+        "file": "docs/product-review-2026-09-30/design/screenshots/wide-settings.png",
+        "sha256": "270e77342df36701970d2e0fe9edef5a9e37317dd5bcc5aff93d027bd02bd668",
+        "bytes": 123589,
+        "matches": true
+      },
+      {
+        "group": "security/security-boundary-reproductions.json",
+        "file": "src/recovered/electron/ipc/trusted-ipc.js",
+        "sha256": "986cade4f337aa84f80e4d2225e37348bc64e1f6caaad2e4d9ea2710946486af",
+        "bytes": 2919,
+        "matches": true
+      },
+      {
+        "group": "security/security-boundary-reproductions.json",
+        "file": "src/recovered/electron/ipc/vpn-manager.js",
+        "sha256": "1adb0a913f528dbfc654920764c8fcd6cc06803b6a0e966bce6f6073be2e5978",
+        "bytes": 62677,
+        "matches": true
+      },
+      {
+        "group": "security/shared-download-reproductions.json",
+        "file": "src/recovered/electron/ipc/safe-network.js",
+        "sha256": "a0a1b3635488f760e7a67c3d12be44deab4c67839eebfc6b299229dfd2308b02",
+        "bytes": 8158,
+        "matches": true
+      },
+      {
+        "group": "security/shared-download-reproductions.json",
+        "file": "src/recovered/electron/ipc/github-release.js",
+        "sha256": "8704996d41dba02cb9b13ff05025352a761c53cb89e7ec6e15528a5a392bff29",
+        "bytes": 15023,
+        "matches": true
+      },
+      {
+        "group": "security/canonical-url-reproductions.json",
+        "file": "src/recovered/electron/ipc/release-trust.js",
+        "sha256": "213e71798e93eb9c27bbc8d80e6016d09765a753d791a5197137f89700080d43",
+        "bytes": 26669,
+        "matches": true
+      },
+      {
+        "group": "security/canonical-url-reproductions.json",
+        "file": "src/recovered/electron/ipc/desktop-updater.js",
+        "sha256": "72523aef188e2a8210d5a597980c19cf74ea74feeda55297a6cbd078f1ac7af3",
+        "bytes": 26487,
+        "matches": true
+      },
+      {
+        "group": "service harness and receipts",
+        "file": "docs/product-review-2026-09-30/services/ServiceAuditStress.cs",
+        "sha256": "05a410891a9b30df57c76a6af70e61ef00a46a222bef43de7dfa61ebbb20b6bb",
+        "bytes": 27590,
+        "matches": true
+      },
+      {
+        "group": "service harness and receipts",
+        "file": "docs/product-review-2026-09-30/services/stress-results.json",
+        "sha256": "52736a2c8c8f87197042f3605437f82be23935e5e6ad2ca35b73608b9510384c",
+        "bytes": 6827,
+        "matches": true
+      },
+      {
+        "group": "service harness and receipts",
+        "file": "docs/product-review-2026-09-30/services/stress-results.txt",
+        "sha256": "f6e8e82a8aef5b50bdd700e24ff0fac0e2e56d9b941694900cfedd4308d4c15e",
+        "bytes": 4222,
+        "matches": true
+      }
+    ]
+  },
+  "artifactChecks": {
+    "jsonDocumentsParsedBeforeFinalReceipt": 23,
+    "svgDocumentsParsed": [
+      "design/icons-proposal.svg",
+      "design/layout-map.svg"
+    ],
+    "brokenLocalMarkdownLinks": []
+  },
+  "releaseBlockers": {
+    "openTasks": 26,
+    "tasksByKind": {
+      "defect": 22,
+      "architecture_gap": 2,
+      "measurement_gap": 1,
+      "policy_debt": 1
+    },
+    "candidateReadyForStable": false,
+    "backlog": "prioritized-findings.json"
+  },
+  "notPerformedInThisReview": [
+    "No new product fixes/build/install/publication; report and proposal files only.",
+    "No live SCM/DNS/routes/registry/UAC mutation or user-owned GUI control.",
+    "No clean Windows upgrade/reboot/full interrupted-install matrix for corrected build.",
+    "No 72-hour/7-14-day/30-90-day operational soak.",
+    "No foreground animation FPS/native mixed-DPI proof.",
+    "No full privilege exploit or arbitrary executable launch."
+  ],
+  "previousReceipts": "Unchanged historical evidence; new P1 findings supersede any assumption of complete stable readiness.",
+  "acceptedArtifactSnapshot": [
+    {
+      "file": "design/assets/manrope-cyrillic.woff2",
+      "bytes": 14500,
+      "sha256": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914"
+    },
+    {
+      "file": "design/assets/manrope-latin.woff2",
+      "bytes": 24836,
+      "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972"
+    },
+    {
+      "file": "design/assets/manrope-OFL.txt",
+      "bytes": 4383,
+      "sha256": "d826ab6583b12c26807d8716a545bdbbb672df04f48608a364ba9efdbe501c30"
+    },
+    {
+      "file": "design/assets/unbounded-cyrillic.woff2",
+      "bytes": 31424,
+      "sha256": "e30bf6a6063b6a47232bbd657e24c7cf4fdaf76fc2c50d92d9ee63e2ad2087cf"
+    },
+    {
+      "file": "design/assets/unbounded-latin.woff2",
+      "bytes": 50904,
+      "sha256": "22f9b928aa3928a896340422b54d690fbb5875c30eae4c106f029c61f2289fd6"
+    },
+    {
+      "file": "design/assets/unbounded-OFL.txt",
+      "bytes": 4390,
+      "sha256": "48a780bc857729859e54d1e691b05792894a26634edc1c4b5dbeabffe6941758"
+    },
+    {
+      "file": "design/feature-preservation.json",
+      "bytes": 11778,
+      "sha256": "35c2116921905321874141139276cbc3ac29dd9f00a884037ef4d8bbb3d85f8a"
+    },
+    {
+      "file": "design/icons-proposal.svg",
+      "bytes": 1586,
+      "sha256": "3dfe7b14bf65fd2f2c6997516cc107203d34921b72d71396579620d2adafc737"
+    },
+    {
+      "file": "design/layout-map.svg",
+      "bytes": 5403,
+      "sha256": "d2388a3a45a4f7ff20cf97e93b1c7b651f9d04fe2838390611ff553c4aea3caa"
+    },
+    {
+      "file": "design/preview.css",
+      "bytes": 13440,
+      "sha256": "e028cd591ed63da921eec41758e10069e8b7caae9f62e50719ad9884327aacec"
+    },
+    {
+      "file": "design/preview.html",
+      "bytes": 26328,
+      "sha256": "b82a497ca5011bda31e6e2e41470801ae4441d72ac3233e908b69d14defc4184"
+    },
+    {
+      "file": "design/preview.js",
+      "bytes": 2384,
+      "sha256": "8b7b5a7b18791c9eb5b531f46f70f4bd56177d673267c978d0ca3385b61c28a8"
+    },
+    {
+      "file": "design/qa-inputs.json",
+      "bytes": 6871,
+      "sha256": "0d07512d6dc61c2f8576bc999b15b6c51f77ff5e8685170c23e8a9ada39c9454"
+    },
+    {
+      "file": "design/screenshots/minimum-zoom200-equivalent-mini.png",
+      "bytes": 26576,
+      "sha256": "ce6e819e221d6d8eaf2b6a31017daffd0c110db0d476405ea7b0bc07cd2b76b2"
+    },
+    {
+      "file": "design/screenshots/minimum-zoom200-equivalent-settings.png",
+      "bytes": 29989,
+      "sha256": "0864b17fcacd5b9a82c46b6c102918452b35f3918c7d8ad8b690c69340390cd3"
+    },
+    {
+      "file": "design/screenshots/wide-dns.png",
+      "bytes": 99777,
+      "sha256": "dcb4b13ac25fedbb33ce7e77b0cda6b4a856a7d685ea0b025ba3a7f4d762d5cb"
+    },
+    {
+      "file": "design/screenshots/wide-mini.png",
+      "bytes": 62385,
+      "sha256": "9cc60fc93b1675f6693b9be15ef85a58aba378bcc7caeb050524f4c5bb1dc978"
+    },
+    {
+      "file": "design/screenshots/wide-overview.png",
+      "bytes": 101728,
+      "sha256": "baab22f96074a1b289b419648042e3c4b699207fa4b7601fb29886018a58332b"
+    },
+    {
+      "file": "design/screenshots/wide-settings.png",
+      "bytes": 123589,
+      "sha256": "270e77342df36701970d2e0fe9edef5a9e37317dd5bcc5aff93d027bd02bd668"
+    },
+    {
+      "file": "design/tokens-proposal.css",
+      "bytes": 2253,
+      "sha256": "c16917676c6b0235cdbb40099dddb058e088e64f740f7d301bb2af461574721f"
+    },
+    {
+      "file": "design/validation.json",
+      "bytes": 22489,
+      "sha256": "d9db40ec17da4cd96f79c4222520979d4385f9eab4a9f3ab7c95c325e0482564"
+    },
+    {
+      "file": "design/verify-preview.mjs",
+      "bytes": 7285,
+      "sha256": "c2a1fecfcb84f005733475e13919f579da03f6434ea8c50adaae8962067da929"
+    },
+    {
+      "file": "design-audit.md",
+      "bytes": 34412,
+      "sha256": "6785276b1c790927d88f04d466245ec8d313e3cd7346298b9f1b3fc56dbc7048"
+    },
+    {
+      "file": "feature-contracts.json",
+      "bytes": 80271,
+      "sha256": "5e18fa10874894e5fef574b54ffa752b8a360dc806c77ab232e7825b06374ac6"
+    },
+    {
+      "file": "feature-map.md",
+      "bytes": 34623,
+      "sha256": "b4ab4ff297c2c5b0df32d4419774921bb5be090c06c338bc995130684a0dc4ca"
+    },
+    {
+      "file": "implementation-plan.md",
+      "bytes": 39096,
+      "sha256": "9b3200c261b8bd638822b3fc722c6088c65b0d64d4d40a036add78a30ccb8807"
+    },
+    {
+      "file": "market-research.md",
+      "bytes": 31912,
+      "sha256": "a6fa61d9ae9ff99074c8e3fbf8575346725494a2964266e28f089a477ae3ee4f"
+    },
+    {
+      "file": "market-sources.json",
+      "bytes": 25053,
+      "sha256": "a977157c1b5c412053a99ebdc98694fce50e55c9a3d793794d80f558b2b61134"
+    },
+    {
+      "file": "native-ui/close-summary.json",
+      "bytes": 1250,
+      "sha256": "593480d722ae59526a11a884e3b58932f5d21344f3883994c396ffd469372f44"
+    },
+    {
+      "file": "native-ui/dialog-tick.png",
+      "bytes": 276349,
+      "sha256": "7b2b11903493b90d2aa7ac032841810ccdb20927a51d6ebfda530c53b61bab38"
+    },
+    {
+      "file": "native-ui/idle-summary.json",
+      "bytes": 7102,
+      "sha256": "28a5b7ca7d701b6d6c503c5bf6fc8c6b751d99d71f97a71589fa6daa14bf35c5"
+    },
+    {
+      "file": "native-ui/mini-idle.png",
+      "bytes": 18083,
+      "sha256": "d3dd46448249b3c1d7ae60d50c4bd742285203cce5e1e6210b10df5b0765044b"
+    },
+    {
+      "file": "native-ui/mini-intent.json",
+      "bytes": 439,
+      "sha256": "ae7249a5e911a1eff3df49ccb7384ee293c06f82101d4bc6dc6052006f92b445"
+    },
+    {
+      "file": "native-ui/settings-end.png",
+      "bytes": 221210,
+      "sha256": "791d827d3068fa7ab90e5a8b874dc47be7f03bc04b71af0ef5d488dac453544e"
+    },
+    {
+      "file": "native-ui/stress-summary.json",
+      "bytes": 15539,
+      "sha256": "745b83d6296096f921b1acb176547a898ef1756287d702aa857d76c1b7ab9c7e"
+    },
+    {
+      "file": "native-ui-audit.md",
+      "bytes": 8972,
+      "sha256": "1eba1ab267e80517e2fd211882dd39c14ffca6601e1350f3890757587c064483"
+    },
+    {
+      "file": "network/network-contract-probes.mjs",
+      "bytes": 2393,
+      "sha256": "27c2157e9a4f49aab55452b7ed42fcd8cb26a47ba4ea5e6be3f2982a4dc15b8d"
+    },
+    {
+      "file": "network/network-contracts.json",
+      "bytes": 3864,
+      "sha256": "877e38b73fcea41aa4cd3e5f287bfcd5d8b7c9de60e35d0fb3ba9c62df9c949d"
+    },
+    {
+      "file": "network/network-findings.json",
+      "bytes": 7474,
+      "sha256": "384e0ba0a5149bdec22453b942775c52d0d7fbec80e08ea92af214a4e9a582a4"
+    },
+    {
+      "file": "network/network-stress.json",
+      "bytes": 13914,
+      "sha256": "6fe6c7e43221daa0f8e06a50f4e29234dc11a65de7024094b23b1e1628b6ebea"
+    },
+    {
+      "file": "network/network-stress.mjs",
+      "bytes": 22490,
+      "sha256": "ddd79085765ef01abe0339ad80c50fa267760ce2da0176a87fae89773086e11d"
+    },
+    {
+      "file": "network-audit.md",
+      "bytes": 29229,
+      "sha256": "574774da09a22aae21acee073f99f4d7416fd2979fd54d08550efe8b91df9735"
+    },
+    {
+      "file": "prioritized-findings.json",
+      "bytes": 33518,
+      "sha256": "239e676d60713d2993bc335ebd2f4eeed5deb1c2116c561e897f1a136a15ba1a"
+    },
+    {
+      "file": "README.md",
+      "bytes": 14858,
+      "sha256": "49e6fbccb10deb449c87d1bce1d6078ef0557f18e3c6d19e3f286e1838ad2b69"
+    },
+    {
+      "file": "security/audit-harness/audit-boundaries.mjs",
+      "bytes": 5577,
+      "sha256": "5ca2a49f04412e73f71579794961c2d29f7d7b26c4abf5f252e3875b299d1f1a"
+    },
+    {
+      "file": "security/audit-harness/audit-canonical-url.mjs",
+      "bytes": 3596,
+      "sha256": "10c5b6d5d44d2d841aabbbc30287d86651d9809e599597fcb6c4fb32f87a01e4"
+    },
+    {
+      "file": "security/audit-harness/audit-shared-download.mjs",
+      "bytes": 4768,
+      "sha256": "8b20ed96c91e7ff1bcdd33c33800a669539d1e9fd6a266ecd6d88034d26996c9"
+    },
+    {
+      "file": "security/audit-harness/README.md",
+      "bytes": 1566,
+      "sha256": "00163042589d5230d54da44c8e3ad7f387294cfce5c280565edd571319bfbce0"
+    },
+    {
+      "file": "security/canonical-url-reproductions.json",
+      "bytes": 2398,
+      "sha256": "7ae4c09ceb6a7383ef8a7299746e00426bc230aa3dd57d8d43887f003fd9e337"
+    },
+    {
+      "file": "security/current-vendor-releases.json",
+      "bytes": 1412,
+      "sha256": "7af028dc7862f6549e5ee29e60dfb3555b9d23d633f6c78dc51ddc64e70e2c72"
+    },
+    {
+      "file": "security/electron-fuses-readback.json",
+      "bytes": 1279,
+      "sha256": "62d6016114c5cfae3252311a3e5a508e2101a5034e0f27de07588df5020b696c"
+    },
+    {
+      "file": "security/extra-primary-readback.json",
+      "bytes": 2074,
+      "sha256": "2feba821e7e33b2993029c0196a17e4cd66dbaa419ca4df8c1d39e34bf4f171f"
+    },
+    {
+      "file": "security/primary-source-readback.json",
+      "bytes": 4080,
+      "sha256": "dd5abfc9968777acfb9b218de12375538987229764e7e0f8923cd962c3bb418a"
+    },
+    {
+      "file": "security/security-boundary-reproductions.json",
+      "bytes": 2544,
+      "sha256": "158e01949829421ef397a33297995cd76dcf4c20db7c677230acfc137201f526"
+    },
+    {
+      "file": "security/shared-download-reproductions.json",
+      "bytes": 1508,
+      "sha256": "faf90459a19fefaa7b4a1946a3bb579e97d8a88d3fcf369bdb9458a7852b596a"
+    },
+    {
+      "file": "security-release-audit.md",
+      "bytes": 24745,
+      "sha256": "85a10066de206740316d1edf8c34435b17b006f043664273ece2e72edbbc516d"
+    },
+    {
+      "file": "services/run-stress.ps1",
+      "bytes": 3328,
+      "sha256": "b8d937db96165d4add236d8b354554b9c9dfeef57c5140368aae7bca7decd46e"
+    },
+    {
+      "file": "services/ServiceAuditStress.cs",
+      "bytes": 27590,
+      "sha256": "05a410891a9b30df57c76a6af70e61ef00a46a222bef43de7dfa61ebbb20b6bb"
+    },
+    {
+      "file": "services/stress-provenance.json",
+      "bytes": 14957,
+      "sha256": "2ca80ee30fa10e2e577331e1869de06c7774df929a3e912b539d99bfab279d73"
+    },
+    {
+      "file": "services/stress-results.json",
+      "bytes": 6827,
+      "sha256": "52736a2c8c8f87197042f3605437f82be23935e5e6ad2ca35b73608b9510384c"
+    },
+    {
+      "file": "services/stress-results.txt",
+      "bytes": 4222,
+      "sha256": "f6e8e82a8aef5b50bdd700e24ff0fac0e2e56d9b941694900cfedd4308d4c15e"
+    },
+    {
+      "file": "services-audit.md",
+      "bytes": 21504,
+      "sha256": "6b1b2f185547c5c2844537e9f5daefdd48bfb9662365f8203fac492ef7507f6d"
+    },
+    {
+      "file": "validation/node-baseline-summary.json",
+      "bytes": 331,
+      "sha256": "ff18ce89fd95c2c8ec5e9ad1763c503576af3e39947546f8504411552cf2d67a"
+    }
+  ]
+}

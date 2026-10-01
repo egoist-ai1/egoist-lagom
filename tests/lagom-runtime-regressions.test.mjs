@@ -123,14 +123,20 @@ test('Shield handoff reports failed VPN stop and never runs the Shield mutation'
 
 test('Telegram ownership discovery failure never falls back to image-name killing or clears state',async()=>{
   const commands=[];
+  const discoveryError=new Error('Native runtime discovery unavailable');
   const {TelegramProxyManager}=loadRecovered('electron/ipc/telegram-proxy-manager',{
-    path,promisify:()=>async(executable,args)=>{commands.push([executable,args]);throw new Error('CIM unavailable')},execFile(){},resolveWindowsExecutable:name=>name
+    path:path.win32,process:{platform:'win32',env:{ProgramData:'C:\\ProgramData'}},
+    promisify:()=>async(executable,args)=>{commands.push([executable,args]);throw discoveryError},execFile(){}
   },['TelegramProxyManager']);
   let cleared=false;
   const target=Object.create(TelegramProxyManager.prototype);
+  target.resourcesPath='C:\\Fixture\\resources';
   target.clearManagedState=async()=>{cleared=true};
-  await assert.rejects(target.stopProcessesUsingManagedRuntime('C:\\Owned\\egoistshield-tg-ws-proxy.exe'),/CIM unavailable/);
-  assert.equal(commands.length,1);assert.equal(commands[0][0],'powershell.exe');assert.equal(cleared,false);
+  await assert.rejects(target.stopProcessesUsingManagedRuntime('C:\\ProgramData\\EgoistShield\\Runtime\\TelegramProxy\\runtime\\egoistshield-tg-ws-proxy.exe'),error=>error===discoveryError);
+  assert.equal(commands.length,1);
+  assert.equal(commands[0][0],'C:\\Fixture\\resources\\core-service\\win-x64\\EgoistShield.Service.exe');
+  assert.deepEqual(Array.from(commands[0][1]),['--telegram-runtime-cleanup','--runtime','primary']);
+  assert.equal(cleared,false);
 });
 
 test('Auto-select completion is compact enough for legacy Core envelopes while retaining the UI result', () => {

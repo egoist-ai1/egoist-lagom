@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: raw leading dd: schema, saved config and both links preserve the same 16-byte secret
+ok 1 - raw leading dd: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 1.7034
+  type: 'test'
+  ...
+# Subtest: prefixed leading dd: schema, saved config and both links preserve the same 16-byte secret
+ok 2 - prefixed leading dd: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 0.3606
+  type: 'test'
+  ...
+# Subtest: raw all dd: schema, saved config and both links preserve the same 16-byte secret
+ok 3 - raw all dd: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 0.1966
+  type: 'test'
+  ...
+# Subtest: upper-case whitespace: schema, saved config and both links preserve the same 16-byte secret
+ok 4 - upper-case whitespace: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 0.17
+  type: 'test'
+  ...
+# Subtest: ordinary raw: schema, saved config and both links preserve the same 16-byte secret
+ok 5 - ordinary raw: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 0.1717
+  type: 'test'
+  ...
+# Subtest: ordinary prefixed: schema, saved config and both links preserve the same 16-byte secret
+ok 6 - ordinary prefixed: schema, saved config and both links preserve the same 16-byte secret
+  ---
+  duration_ms: 0.0946
+  type: 'test'
+  ...
+# Subtest: malformed, truncated and overlong secret inputs are still refused before saving
+ok 7 - malformed, truncated and overlong secret inputs are still refused before saving
+  ---
+  duration_ms: 0.663
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 68.4111

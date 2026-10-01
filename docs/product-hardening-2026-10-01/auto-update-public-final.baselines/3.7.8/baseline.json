@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "version": "3.7.8",
+  "capturedAtUtc": "2026-10-01T07:04:18.387Z",
+  "provenance": "extracted-original-signed-local-setup-never-public-feed-claimed",
+  "sourceSetup": {
+    "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\dist\\EgoistShield-Setup-3.7.8.exe",
+    "bytes": 194405835,
+    "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+    "sha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61"
+  },
+  "sourceSetupAuthentication": {
+    "schemaVersion": 1,
+    "observedAtUtc": "2026-10-01T07:03:11.777Z",
+    "version": "3.7.8",
+    "source": "preserved-original-local-signed-generation-not-a-public-release",
+    "installer": {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\dist\\EgoistShield-Setup-3.7.8.exe",
+      "bytes": 194405835,
+      "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "sha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61"
+    },
+    "originalManifestSha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3",
+    "signatureAuthenticatesAgainstCapturedInstalled379PublicRoot": true,
+    "installerExecuted": false
+  },
+  "sourceArchive": {
+    "bytes": 11664308,
+    "sha256": "08db1827d678faedab285711f180e6296a8984f122d0c13ed224155d482c9985"
+  },
+  "main": {
+    "member": ".vite/build/main.js",
+    "bytes": 2537193,
+    "sha256": "1e15edc490d1d52a789ffc57a23d822d21ef8c11a3346cc922b56c27a88e24e2"
+  },
+  "preserved": [
+    {
+      "file": "trust.js",
+      "bytes": 16509,
+      "sha256": "3ef271144d65fe0f7e5b0d8b81e120605a59227d6e59e96b3d8c3db4d0eca125"
+    },
+    {
+      "file": "desktopPure.js",
+      "bytes": 6492,
+      "sha256": "2e60185e40e55c49db6b8c1bba6f796daff17463818576e030f15fde13c1d342"
+    },
+    {
+      "file": "helpers.js",
+      "bytes": 2088,
+      "sha256": "cf178b03ef657b26aba3830717ff94125e73dd0ba21f118e1bb3708914692c10"
+    },
+    {
+      "file": "installerGate.js",
+      "bytes": 761,
+      "sha256": "1157ea97745a135417b42d236c5ee2c40f4c7500d0f89ff2e1671f0504e6d196"
+    },
+    {
+      "file": "root-public-key.pem",
+      "bytes": 113,
+      "sha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7"
+    },
+    {
+      "file": "release-key-registry.json",
+      "bytes": 1100,
+      "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc"
+    },
+    {
+      "file": "release-key-registry.json.sig",
+      "bytes": 89,
+      "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de"
+    }
+  ],
+  "noAppOrUpdaterOrInstallerLaunched": true,
+  "publicTrustSnapshotIsOriginalBundledBytes": true
+}

@@ -1,0 +1,191 @@
+{
+  "checkedAt": "2026-09-30T00:41:51.4599639+03:00",
+  "baselineCommit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+  "runtime": ".NET 10.0.12",
+  "isolatedOutput": null,
+  "productionMutations": null,
+  "baseline": [
+    {
+      "name": "CoreServiceReliabilityRegression",
+      "exitCode": 0,
+      "output": [
+        "PASS: SCM pending transitions and control races",
+        "PASS: SCM transition deadline and cancellation",
+        "PASS: boot enrollment preserves stopped and disabled services",
+        "PASS: boot recovery policy repair is bounded and preserves stopped intent",
+        "PASS: explicit stop and disabled races beat recovery",
+        "PASS: recovery backoff survives Core restart",
+        "PASS: offline and unknown probes never trigger recovery",
+        "COLLISION STRESS: runningChecks=1440, stoppedChecks=1440, recoveries=0, warnings=0",
+        "PASS: foreign Telegram listener cannot cause a running/stopped recovery storm",
+        "PASS: listener ownership validates process ancestry, birth time and endpoint",
+        "PASS: real TCP reachability cannot override foreign or changing listener ownership",
+        "PASS: native snapshot timeout cannot accumulate reads or reuse stale metadata",
+        "PASS: real native IPv4/IPv6 TCP tables retain exact endpoint PID and fresh changes",
+        "STRESS: checks=1440, simulatedHours=6, recoveries=14, warnings=14",
+        "PASS: 1,440 fault cycles have bounded recovery and diagnostics",
+        "PASS: malformed durable intent prevents recovery",
+        "PASS: new DNS adapter selection preserves existing and static settings",
+        "PASS: bootstrap refresh deadline persists across restart and concurrent checks",
+        "PASS: DNS SERVFAIL proves local liveness",
+        "PASS: DNS TCP fallback and unresponsive transport",
+        "PASS: DNS identity/question checks and malformed packet stress",
+        "PASS: worker replies correlate and operation error keeps protocol alive",
+        "PASS: worker malformed frame fails all pending requests",
+        "PASS: oversized unterminated worker frame fails within a bound",
+        "PASS: blocked worker stdin cannot hold the mutation indefinitely",
+        "PASS: worker timeout retires process and never replays mutation",
+        "Core service reliability regression passed: 24 groups; runtime=.NET 10.0.12; elapsed=3,47s"
+      ],
+      "logSha256": "10D2B38A9302405B00C875504707C402BB56860D45CD23534ADBBB9B7B6DDE51"
+    },
+    {
+      "name": "NativeDohConfigurationRegression",
+      "exitCode": 0,
+      "output": [
+        "PASS: generated PowerShell adds and verifies a new registration",
+        "PASS: owned overlapping template changes in place",
+        "PASS: foreign and externally weakened templates are preserved",
+        "PASS: same-template readback rejects wrong encryption flags",
+        "PASS: provider switch preserves old registration until adapter readback",
+        "PASS: failed provider switch rolls back DNS, templates and saved ownership",
+        "PASS: native removal restores each owned family and preserves external peers",
+        "PASS: boot bootstrap rotation uses a verified worker result and durable transaction",
+        "PASS: bootstrap failure cooldown and external adapter state prevent blind changes",
+        "PASS: central DNS mode guards reject cross-mode mutations",
+        "PASS: optional log locking does not fail network operations",
+        "PASS: generated listener ownership snapshot is bounded and stable in PowerShell5.1",
+        "PASS: read-only CLI reports the actual foreign owner across mixed endpoint families",
+        "PASS: read-only CLI rejects invalid or mixed service arguments before startup",
+        "PASS: read-only CLI emits a bounded native snapshot from the actual Windows host",
+        "Native DoH/Core regression passed: 15 groups; runtime=.NET 10.0.12; elapsed=4,32s"
+      ],
+      "logSha256": "F72A8E7EB77AEA02FE469BDA4585CEB5D7605A8E17EDD8B642B765CE5FF541C8"
+    },
+    {
+      "name": "AtomicJsonFileLockRegression",
+      "exitCode": 0,
+      "output": [
+        "AtomicJsonFile lock regression passed."
+      ],
+      "logSha256": "EBC51EC82106CA3D8A7AD0ADEBE78D2B820AAB869FDB5CC7850A1DD9EB27573D"
+    },
+    {
+      "name": "DnsOwnedRestoreRegression",
+      "exitCode": 0,
+      "output": [
+        "PASS: a poisoned owned IPv4 baseline switches to DHCP despite external IPv6",
+        "PASS: external IPv6 stays unchanged",
+        "DNS owned restore regression passed."
+      ],
+      "logSha256": "6E5D226B088EE95A0DAC1B2B34D817C01727EB42125CC0AA48042C9E9DB5AB3B"
+    }
+  ],
+  "after": [
+    {
+      "name": "CoreServiceReliabilityRegression",
+      "exitCode": 0,
+      "output": [
+        "PASS: SCM pending transitions and control races",
+        "PASS: SCM transition deadline and cancellation",
+        "PASS: boot enrollment preserves stopped and disabled services",
+        "PASS: boot recovery policy repair is bounded and preserves stopped intent",
+        "PASS: explicit stop and disabled races beat recovery",
+        "PASS: recovery backoff survives Core restart",
+        "PASS: clock correction preserves bounded service recovery",
+        "PASS: offline and unknown probes never trigger recovery",
+        "COLLISION STRESS: runningChecks=1440, stoppedChecks=1440, recoveries=0, warnings=0",
+        "PASS: foreign Telegram listener cannot cause a running/stopped recovery storm",
+        "PASS: listener ownership validates process ancestry, birth time and endpoint",
+        "PASS: real TCP reachability cannot override foreign or changing listener ownership",
+        "PASS: native snapshot timeout cannot accumulate reads or reuse stale metadata",
+        "PASS: real native IPv4/IPv6 TCP tables retain exact endpoint PID and fresh changes",
+        "STRESS: checks=1440, simulatedHours=6, recoveries=14, warnings=14",
+        "PASS: 1,440 fault cycles have bounded recovery and diagnostics",
+        "PASS: malformed durable intent prevents recovery",
+        "PASS: new DNS adapter selection preserves existing and static settings",
+        "PASS: bootstrap refresh deadline persists across restart and concurrent checks",
+        "PASS: clock correction cannot suspend DNS bootstrap refresh",
+        "PASS: DNS SERVFAIL proves local liveness",
+        "PASS: DNS TCP fallback and unresponsive transport",
+        "PASS: DNS identity/question checks and malformed packet stress",
+        "PASS: worker replies correlate and operation error keeps protocol alive",
+        "PASS: pure bootstrap query crosses the actual Core worker boundary",
+        "PASS: worker malformed frame fails all pending requests",
+        "PASS: oversized unterminated worker frame fails within a bound",
+        "PASS: blocked worker stdin cannot hold the mutation indefinitely",
+        "PASS: worker timeout retires process and never replays mutation",
+        "Core service reliability regression passed: 27 groups; runtime=.NET 10.0.12; elapsed=3,83s"
+      ],
+      "logSha256": "F9D41A00D4F8BB018FFEAD9ECE5F7808E9724DBF6AA49797F39E26809461D985"
+    },
+    {
+      "name": "NativeDohConfigurationRegression",
+      "exitCode": 0,
+      "output": [
+        "PASS: generated PowerShell adds and verifies a new registration",
+        "PASS: owned overlapping template changes in place",
+        "PASS: foreign and externally weakened templates are preserved",
+        "PASS: same-template readback rejects wrong encryption flags",
+        "PASS: provider switch preserves old registration until adapter readback",
+        "PASS: failed provider switch rolls back DNS, templates and saved ownership",
+        "PASS: native removal restores each owned family and preserves external peers",
+        "PASS: boot bootstrap rotation uses a verified worker result and durable transaction",
+        "PASS: bootstrap failure cooldown and external adapter state prevent blind changes",
+        "PASS: central DNS mode guards reject cross-mode mutations",
+        "PASS: probe scope is enforced before memory, durable and in-flight responses",
+        "PASS: unverified runtime root blocks SCM execution and automatic startup before metadata access",
+        "PASS: optional log locking does not fail network operations",
+        "PASS: generated listener ownership snapshot is bounded and stable in PowerShell5.1",
+        "PASS: read-only CLI reports the actual foreign owner across mixed endpoint families",
+        "PASS: read-only CLI rejects invalid or mixed service arguments before startup",
+        "PASS: read-only CLI emits a bounded native snapshot from the actual Windows host",
+        "Native DoH/Core regression passed: 17 groups; runtime=.NET 10.0.12; elapsed=3,77s"
+      ],
+      "logSha256": "F0B057A9261B0E73432BD0817957AC19D2EF3CDF902D70BF13F2A9147F341427"
+    }
+  ],
+  "selfTestAfter": [
+    "Owned DNS baseline self-tests passed: 10",
+    "Component worker response self-test passed: malformed-json",
+    "Component worker response self-test passed: missing-result",
+    "Component worker response self-test passed: healthy",
+    "EgoistShield.Service self-test passed; protocol=1; version=3.7.9"
+  ],
+  "files": [
+    {
+      "path": "src/service/EgoistShield.Service/ComponentWorker.cs",
+      "sha256": "8A5A9BF014D0AEFBA20E043FBA25C0957B67CEB2B633F81F6E7044D822508699"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OperationDispatcher.cs",
+      "sha256": "31A65B9CDA4E9F17E36825F9884232370B4E499578D9DA2265F48A752EA185FC"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceSupervisor.cs",
+      "sha256": "1D20965724A09FA3C2D009968B398C7FA90EFD5512C6411837FC0889572EB878"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/DnsBootstrapRefreshScheduler.cs",
+      "sha256": "6600FE4897CCBC6E2D459459B3B6B0EAA12E7533A4931315FD13EEE46285799D"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceController.cs",
+      "sha256": "C45250F096A69DFAD5A83323E4835CF9C0A656CEF0A07247770BFDEE90DCFB22"
+    },
+    {
+      "path": "tests/CoreServiceReliabilityRegression/Program.cs",
+      "sha256": "EFFDFD8860000539B1D896D6E2E798C446585EA0FBE5B763BD25326B04FC6C67"
+    },
+    {
+      "path": "tests/NativeDohConfigurationRegression/Program.cs",
+      "sha256": "012035C89A1AF5CED6E15F81F4BDC7FA47B401EDD707B9D98E910B3B933913D8"
+    }
+  ],
+  "limits": [
+    "source harness and isolated own process tests",
+    "actual native TCP tables and read-only DoH readback",
+    "SCM execution exploit remains source-only",
+    "no installed updater/reboot/network settings/multiday soak"
+  ]
+}

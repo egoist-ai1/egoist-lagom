@@ -1,0 +1,31 @@
+{
+  "checkedAt": "2026-09-29T22:04:16.702Z",
+  "scope": "Maintained production-source registry helper and updater coupling in isolated fixtures",
+  "commands": [
+    "node --test tests/release-registry-lifecycle.test.mjs tests/lagom-release.test.mjs"
+  ],
+  "total": 30,
+  "passed": 30,
+  "failed": 0,
+  "skipped": 0,
+  "registryTests": 24,
+  "existingReleaseTests": 6,
+  "sourceSha256": "213e71798e93eb9c27bbc8d80e6016d09765a753d791a5197137f89700080d43",
+  "updaterSourceSha256": "924f74a5a626f5b576c117d83f395df52b30b2171fc6d761c2a847403895a62b",
+  "lifecycleTestSha256": "4627e89ac82b6472677b4d497ca941766ac45ea83855332ac4f1bb9b06d5be49",
+  "capturedOutputSha256": "90d3d02462befb16eda34bd519afdfd903e96dd8c109e4380d46ebe7a43927c1",
+  "stallChecks": [
+    {
+      "kind": "controlled unresolved reader",
+      "observedMs": 5018.0613
+    },
+    {
+      "kind": "native fetch over local HTTP partial response",
+      "observedMs": 5024.8505
+    }
+  ],
+  "limitations": [
+    "No installed application profile or service was exercised.",
+    "No production outage, reboot or month-long run was induced."
+  ]
+}

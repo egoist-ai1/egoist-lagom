@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -22,12 +23,13 @@ internal sealed class WindowsServiceListenerSnapshot
     private readonly Func<int, CancellationToken, ServiceListenerSnapshot?> _collect;
 
     internal WindowsServiceListenerSnapshot(string serviceName,
-        Func<int, CancellationToken, ServiceListenerSnapshot?>? collect = null)
+        Func<int, CancellationToken, ServiceListenerSnapshot?>? collect = null, int? managedProcessId = null)
     {
-        if (serviceName != "EgoistShieldTelegramProxy")
-            throw new ArgumentException("Native snapshot requires the owned Telegram service.");
+        if (serviceName is not ("EgoistShieldTelegramProxy" or "EgoistShieldVpn"))
+            throw new ArgumentException("Native snapshot requires an owned TCP service.");
         _serviceName = serviceName;
-        _collect = collect ?? ((port, token) => Collect(_serviceName, port, token));
+        if (managedProcessId is <= 0) throw new ArgumentException("Managed process identity must be positive.");
+        _collect = collect ?? ((port, token) => Collect(_serviceName, port, token, managedProcessId));
     }
 
     internal async Task<ServiceListenerSnapshot?> ReadAsync(int port, CancellationToken cancellationToken)
@@ -50,15 +52,16 @@ internal sealed class WindowsServiceListenerSnapshot
         return await read.WaitAsync(cancellationToken);
     }
 
-    private static ServiceListenerSnapshot Collect(string serviceName, int port, CancellationToken token)
+    private static ServiceListenerSnapshot Collect(string serviceName, int port, CancellationToken token, int? managedProcessId)
     {
         if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
         token.ThrowIfCancellationRequested();
         using var manager = Native.OpenSCManager(null, null, 1);
         if (manager.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
         using var service = Native.OpenService(manager, serviceName, 4);
-        if (service.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
-        var before = ReadService(service, token);
+        bool absent = service.IsInvalid;
+        if (absent && Marshal.GetLastWin32Error() != 1060) throw new Win32Exception(Marshal.GetLastWin32Error());
+        var before = absent ? new Native.ServiceStatus { CurrentState = 1 } : ReadService(service, token);
         var handles = new Dictionary<int, SafeProcessHandle>();
         try
         {
@@ -66,6 +69,7 @@ internal sealed class WindowsServiceListenerSnapshot
             var listeners = ReadListeners(port, token);
             var needed = new HashSet<int>();
             if (before.ProcessId > 0) needed.Add(checked((int)before.ProcessId));
+            if (managedProcessId is int managed) needed.Add(managed);
             foreach (var listener in listeners)
             {
                 int cursor = listener.OwningProcess;
@@ -81,9 +85,9 @@ internal sealed class WindowsServiceListenerSnapshot
             {
                 token.ThrowIfCancellationRequested();
                 parents.TryGetValue(processId, out int parent);
-                var handle = Native.OpenProcess(0x1000U | (processId == before.ProcessId ? 0x100000U : 0U), false, processId);
+                var handle = Native.OpenProcess(0x1000U | 0x100000U, false, processId);
                 handles.Add(processId, handle);
-                if (handle.IsInvalid)
+                if (handle.IsInvalid || !IsProcessAlive(handle))
                 {
                     rows.Add(new(processId, parent, null, null));
                     continue;
@@ -97,11 +101,21 @@ internal sealed class WindowsServiceListenerSnapshot
                 if (Native.QueryFullProcessImageName(handle, 0, path, ref length)) executable = path.ToString();
                 rows.Add(new(processId, parent, born, executable));
             }
-            var after = ReadService(service, token);
+            var after = before;
+            if (absent)
+            {
+                using var check = Native.OpenService(manager, serviceName, 4);
+                if (!check.IsInvalid || Marshal.GetLastWin32Error() != 1060)
+                    throw new IOException("Owned service registration changed during listener capture.");
+            }
+            else after = ReadService(service, token);
             bool stable = before.ProcessId == after.ProcessId && before.CurrentState == after.CurrentState;
             if (before.ProcessId > 0)
                 stable &= handles.TryGetValue(checked((int)before.ProcessId), out var root) && !root.IsInvalid &&
-                    Native.WaitForSingleObject(root, 0) == 258;
+                    IsProcessAlive(root);
+            if (managedProcessId is int managedRoot)
+                stable &= handles.TryGetValue(managedRoot, out var managedHandle) && !managedHandle.IsInvalid &&
+                    IsProcessAlive(managedHandle);
             token.ThrowIfCancellationRequested();
             return new(checked((int)before.ProcessId), State(before.CurrentState), rows.ToArray(), listeners, stable);
         }
@@ -122,6 +136,8 @@ internal sealed class WindowsServiceListenerSnapshot
     private static string State(uint value) => value switch
     { 1 => "Stopped", 2 => "Start Pending", 3 => "Stop Pending", 4 => "Running",
       5 => "Continue Pending", 6 => "Pause Pending", 7 => "Paused", _ => "Unknown" };
+
+    private static bool IsProcessAlive(SafeProcessHandle handle) => Native.WaitForSingleObject(handle, 0) == 258;
 
     private static Dictionary<int, int> ReadParents(CancellationToken token)
     {
@@ -146,6 +162,266 @@ internal sealed class WindowsServiceListenerSnapshot
         int last = Marshal.GetLastWin32Error();
         if (last != 18) throw new Win32Exception(last);
         return parents;
+    }
+
+    internal static int ReadParentProcessId(int processId, CancellationToken cancellationToken) =>
+        ReadParents(cancellationToken).GetValueOrDefault(processId);
+
+    internal static ListenerProcess[] ReadWinwsProcesses(CancellationToken token)
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
+        token.ThrowIfCancellationRequested();
+        using var snapshot = Native.CreateToolhelp32Snapshot(2, 0);
+        if (snapshot.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+        var entry = new Native.ProcessEntry { Size = (uint)Marshal.SizeOf<Native.ProcessEntry>() };
+        if (!Native.Process32First(snapshot, ref entry)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        var rows = new List<ListenerProcess>();
+        int count = 0;
+        do
+        {
+            token.ThrowIfCancellationRequested();
+            if (++count > 65536) throw new InvalidDataException("Process snapshot exceeds its bound.");
+            if (!string.Equals(entry.FileName, "winws.exe", StringComparison.OrdinalIgnoreCase)) continue;
+            if (rows.Count >= 128 || entry.ProcessId is 0 or > int.MaxValue || entry.ParentProcessId > int.MaxValue)
+                throw new InvalidDataException("WinWS process snapshot exceeds its bound.");
+            int processId = checked((int)entry.ProcessId);
+            using var handle = Native.OpenProcess(0x1000U | 0x100000U, false, processId);
+            if (handle.IsInvalid || !IsProcessAlive(handle) ||
+                !Native.GetProcessTimes(handle, out var created, out _, out _, out _))
+            { rows.Add(new(processId, checked((int)entry.ParentProcessId), null, null)); continue; }
+            var executable = new StringBuilder(32768);
+            int length = executable.Capacity;
+            if (!Native.QueryFullProcessImageName(handle, 0, executable, ref length))
+            { rows.Add(new(processId, checked((int)entry.ParentProcessId), null, null)); continue; }
+            if (!Path.GetFileName(executable.ToString()).Equals("winws.exe", StringComparison.OrdinalIgnoreCase) ||
+                !IsProcessAlive(handle))
+            { rows.Add(new(processId, checked((int)entry.ParentProcessId), null, null)); continue; }
+            var born = DateTimeOffset.FromFileTime(unchecked((long)(((ulong)created.High << 32) | created.Low))).ToUniversalTime();
+            rows.Add(new(processId, checked((int)entry.ParentProcessId), born, executable.ToString()));
+        } while (Native.Process32Next(snapshot, ref entry));
+        if (Marshal.GetLastWin32Error() != 18) throw new Win32Exception(Marshal.GetLastWin32Error());
+        return rows.ToArray();
+    }
+
+    internal sealed record RuntimeStoppedProcess(int ProcessId, DateTimeOffset CreatedAt, string ExecutablePath);
+
+    // Only the fixed-target command exposes this operation. The internal exact-path
+    // boundary also permits caller-owned harmless regression executables.
+    internal static RuntimeStoppedProcess[] StopProcessesUsingExecutable(string executablePath, CancellationToken token)
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
+        if (!Path.IsPathFullyQualified(executablePath)) throw new ArgumentException("Absolute runtime path required.");
+        string expected = Path.GetFullPath(executablePath);
+        var held = CaptureRuntimeProcesses(expected, token);
+        var terminators = new List<(SafeProcessHandle Handle, RuntimeStoppedProcess Identity)>();
+        var stopped = new List<RuntimeStoppedProcess>();
+        try
+        {
+            // Prepare every termination handle before changing any process. The
+            // original query handles stay held, preventing stale-PID substitution.
+            foreach (var item in held)
+            {
+                token.ThrowIfCancellationRequested();
+                if (Native.WaitForSingleObject(item.Handle, 0) == 0) continue;
+                var handle = Native.OpenProcess(1U | 0x1000U | 0x100000U, false, item.Identity.ProcessId);
+                if (handle.IsInvalid)
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    handle.Dispose();
+                    if (Native.WaitForSingleObject(item.Handle, 0) == 0) continue;
+                    throw new Win32Exception(error);
+                }
+                try
+                {
+                    VerifyRuntimeIdentity(handle, item.Identity.ExecutablePath, item.Identity.CreatedAt, token);
+                    terminators.Add((handle, item.Identity));
+                }
+                catch (IOException) when (Native.WaitForSingleObject(handle, 0) == 0) { handle.Dispose(); }
+                catch { handle.Dispose(); throw; }
+            }
+            foreach (var item in terminators)
+            {
+                token.ThrowIfCancellationRequested();
+                if (Native.WaitForSingleObject(item.Handle, 0) == 0) continue;
+                try { VerifyRuntimeIdentity(item.Handle, expected, item.Identity.CreatedAt, token); }
+                catch (IOException) when (Native.WaitForSingleObject(item.Handle, 0) == 0) { continue; }
+                if (!Native.TerminateProcess(item.Handle, 0))
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    if (Native.WaitForSingleObject(item.Handle, 0) == 0) continue;
+                    throw new Win32Exception(error);
+                }
+                while (true)
+                {
+                    token.ThrowIfCancellationRequested();
+                    uint wait = Native.WaitForSingleObject(item.Handle, 100);
+                    if (wait == 0) break;
+                    if (wait != 258) throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+                stopped.Add(item.Identity);
+            }
+            // A recovery/respawn race refuses publication instead of kill-looping.
+            VerifyRuntimeQuiescent(expected, token);
+            token.ThrowIfCancellationRequested();
+            return stopped.ToArray();
+        }
+        finally
+        {
+            foreach (var item in terminators) item.Handle.Dispose();
+            foreach (var item in held) item.Handle.Dispose();
+        }
+    }
+
+    // Default-null fixture lifecycle hook observes actual native rows; it cannot
+    // supply identity or liveness and is never selected by production commands.
+    internal static void VerifyRuntimeQuiescent(string expectedPath, CancellationToken token, Action? afterCapture = null)
+    {
+        var remaining = CaptureRuntimeProcesses(Path.GetFullPath(expectedPath), token);
+        try
+        {
+            token.ThrowIfCancellationRequested();
+            afterCapture?.Invoke();
+            token.ThrowIfCancellationRequested();
+            foreach (var item in remaining)
+            {
+                token.ThrowIfCancellationRequested();
+                uint wait = Native.WaitForSingleObject(item.Handle, 0);
+                int error = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+                token.ThrowIfCancellationRequested();
+                if (wait == 0) continue;
+                if (wait == 258)
+                    throw new IOException($"Runtime restarted during cleanup (pid={item.Identity.ProcessId}; born={item.Identity.CreatedAt:O}; path={item.Identity.ExecutablePath}; wait={wait}).");
+                throw new Win32Exception(error, $"Runtime quiescence liveness is unavailable (wait={wait}).");
+            }
+        }
+        finally { foreach (var item in remaining) item.Handle.Dispose(); }
+        token.ThrowIfCancellationRequested();
+    }
+
+    internal static void VerifyRuntimeIdentity(SafeProcessHandle handle, string expectedPath, DateTimeOffset expectedBirth, CancellationToken token = default)
+    {
+        var actual = ReadRuntimeIdentity(handle, token);
+        if (!string.Equals(actual.Path, Path.GetFullPath(expectedPath), StringComparison.OrdinalIgnoreCase) || actual.Born != expectedBirth)
+            throw new InvalidDataException("Runtime process identity changed or is foreign.");
+    }
+
+    internal static void VerifyRuntimeProcessIdentity(int processId, string expectedPath, DateTimeOffset expectedBirth)
+    {
+        using var handle = Native.OpenProcess(0x1000U | 0x100000U, false, processId);
+        if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+        VerifyRuntimeIdentity(handle, expectedPath, expectedBirth);
+    }
+
+    // The internal error-only seam cannot provide a successful path or birth.
+    // Production calls leave it null and always use the native image query.
+    internal static (string Path, DateTimeOffset Born) ReadRuntimeIdentity(SafeProcessHandle handle,
+        CancellationToken token = default, Func<int, int?>? imageQueryError = null)
+    {
+        token.ThrowIfCancellationRequested();
+        uint wait = Native.WaitForSingleObject(handle, 0);
+        if (wait != 258) throw RuntimeIdentityFailure("wait", wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0, wait, 0);
+        bool times = Native.GetProcessTimes(handle, out var created, out _, out _, out _);
+        int timeError = times ? 0 : Marshal.GetLastWin32Error();
+        if (!times) throw RuntimeIdentityFailure("creation", timeError, Native.WaitForSingleObject(handle, 0), 0);
+        token.ThrowIfCancellationRequested();
+        var readClock = Stopwatch.StartNew();
+        for (int attempt = 1; ; attempt++)
+        {
+            token.ThrowIfCancellationRequested();
+            var image = ReadRuntimeImage(handle, imageQueryError?.Invoke(attempt));
+            token.ThrowIfCancellationRequested();
+            wait = Native.WaitForSingleObject(handle, 0);
+            int waitError = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+            token.ThrowIfCancellationRequested();
+            if (wait != 258)
+                throw RuntimeIdentityFailure(wait == 0 ? "image" : "wait", wait == 0 ? image.NativeError : waitError, wait, attempt);
+            if (!string.IsNullOrWhiteSpace(image.Path))
+            {
+                var born = DateTimeOffset.FromFileTime(unchecked((long)(((ulong)created.High << 32) | created.Low))).ToUniversalTime();
+                return (Path.GetFullPath(image.Path), born);
+            }
+            int remaining = 250 - (int)readClock.ElapsedMilliseconds;
+            if (remaining <= 0 || attempt >= 11)
+                throw RuntimeIdentityFailure("image", image.NativeError, wait, attempt);
+            // Image teardown may precede the process signal. Neither timeout nor
+            // missing path proves exit: wait/requery this same handle only.
+            token.ThrowIfCancellationRequested();
+            wait = Native.WaitForSingleObject(handle, (uint)Math.Min(25, remaining));
+            waitError = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+            token.ThrowIfCancellationRequested();
+            if (wait != 258)
+                throw RuntimeIdentityFailure(wait == 0 ? "image" : "wait", wait == 0 ? image.NativeError : waitError, wait, attempt);
+        }
+    }
+
+    private static (string? Path, int NativeError) ReadRuntimeImage(SafeProcessHandle handle, int? injectedError)
+    {
+        if (injectedError is int error) return (null, error);
+        var path = new StringBuilder(32768);
+        int length = path.Capacity;
+        if (!Native.QueryFullProcessImageName(handle, 0, path, ref length)) return (null, Marshal.GetLastWin32Error());
+        return (path.ToString(), 0);
+    }
+
+    private static IOException RuntimeIdentityFailure(string stage, int nativeError, uint wait, int attempts) =>
+        new($"Runtime identity is unavailable (stage={stage}; win32={nativeError}; wait={wait}; attempts={attempts}).");
+
+    private static List<(SafeProcessHandle Handle, RuntimeStoppedProcess Identity)> CaptureRuntimeProcesses(string expected, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        using var snapshot = Native.CreateToolhelp32Snapshot(2, 0);
+        if (snapshot.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+        var entry = new Native.ProcessEntry { Size = (uint)Marshal.SizeOf<Native.ProcessEntry>() };
+        var held = new List<(SafeProcessHandle Handle, RuntimeStoppedProcess Identity)>();
+        if (!Native.Process32First(snapshot, ref entry))
+        {
+            int error = Marshal.GetLastWin32Error();
+            if (error == 18) return held;
+            throw new Win32Exception(error);
+        }
+        int count = 0, matching = 0;
+        try
+        {
+            do
+            {
+                token.ThrowIfCancellationRequested();
+                if (++count > 65536) throw new InvalidDataException("Process snapshot exceeds its bound.");
+                if (!string.Equals(entry.FileName, Path.GetFileName(expected), StringComparison.OrdinalIgnoreCase)) continue;
+                if (++matching > 128 || entry.ProcessId is 0 or > int.MaxValue)
+                    throw new InvalidDataException("Runtime candidate snapshot exceeds its bound.");
+                int pid = checked((int)entry.ProcessId);
+                var handle = Native.OpenProcess(0x1000U | 0x100000U, false, pid);
+                if (handle.IsInvalid) { handle.Dispose(); throw new IOException("Runtime candidate is unreadable."); }
+                try
+                {
+                    // Toolhelp may retain an exited process while another caller
+                    // holds its handle. A signaled held handle proves it cannot
+                    // use the runtime; unreadable/live unknown rows still refuse.
+                    uint wait = Native.WaitForSingleObject(handle, 0);
+                    int error = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+                    token.ThrowIfCancellationRequested();
+                    if (wait == 0) { handle.Dispose(); continue; }
+                    if (wait != 258) throw new Win32Exception(error, $"Runtime candidate liveness is unavailable (wait={wait}).");
+                    // A readable foreign same-name process is never granted terminate rights.
+                    var identity = ReadRuntimeIdentity(handle, token);
+                    wait = Native.WaitForSingleObject(handle, 0);
+                    error = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : 0;
+                    token.ThrowIfCancellationRequested();
+                    if (wait == 0) { handle.Dispose(); continue; }
+                    if (wait != 258) throw new Win32Exception(error, $"Runtime candidate liveness is unavailable after identity read (wait={wait}).");
+                    if (!string.Equals(identity.Path, expected, StringComparison.OrdinalIgnoreCase)) { handle.Dispose(); continue; }
+                    held.Add((handle, new(pid, identity.Born, identity.Path)));
+                }
+                // An exit can happen between the initial wait and image query.
+                // Only this same held handle's signaled state permits omission.
+                catch (IOException) when (Native.WaitForSingleObject(handle, 0) == 0) { handle.Dispose(); }
+                catch { handle.Dispose(); throw; }
+            } while (Native.Process32Next(snapshot, ref entry));
+            if (Marshal.GetLastWin32Error() != 18) throw new Win32Exception(Marshal.GetLastWin32Error());
+            token.ThrowIfCancellationRequested();
+            return held;
+        }
+        catch { foreach (var item in held) item.Handle.Dispose(); throw; }
     }
 
     internal static ListenerEndpoint[] ReadListeners(int port, CancellationToken token)
@@ -270,6 +546,10 @@ internal sealed class WindowsServiceListenerSnapshot
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern uint WaitForSingleObject(SafeProcessHandle handle, uint milliseconds);
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool TerminateProcess(SafeProcessHandle process, uint exitCode);
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [DllImport("kernel32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]

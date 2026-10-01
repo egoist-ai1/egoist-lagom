@@ -1,0 +1,39 @@
+✖ legacy installer bridge preserves verified launch booleans and waits for the prior lease/watchdog (4050.0386ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4105.7001
+
+✖ failing tests:
+
+test at tests\installer-legacy-bootstrap.test.mjs:8:1
+✖ legacy installer bridge preserves verified launch booleans and waits for the prior lease/watchdog (4050.0386ms)
+  AssertionError [ERR_ASSERTION]: 
+  Legacy launch preferences require schema 1, verified product owner and two JSON booleans.
+  ��ப�:13 ����:5
+  +     throw 'Legacy launch preferences require schema 1, verified produ ...
+  +     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      + CategoryInfo          : OperationStopped: (Legacy launch p... JSON booleans.:String) [], RuntimeException
+      + FullyQualifiedErrorId : Legacy launch preferences require schema 1, verified product owner and two JSON booleans 
+     .
+   
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/installer-legacy-bootstrap.test.mjs:18:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

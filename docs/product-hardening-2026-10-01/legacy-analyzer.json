@@ -1,0 +1,38 @@
+[
+  {
+    "RuleName": "PSAvoidAssignmentToAutomaticVariable",
+    "Severity": 1,
+    "Line": 171,
+    "Message": "The Variable 'matches' is an automatic variable that is built into PowerShell, assigning to it might have undesired side effects. If assignment is not by design, please use a different name."
+  },
+  {
+    "RuleName": "PSAvoidAssignmentToAutomaticVariable",
+    "Severity": 1,
+    "Line": 180,
+    "Message": "The Variable 'matches' is an automatic variable that is built into PowerShell, assigning to it might have undesired side effects. If assignment is not by design, please use a different name."
+  },
+  {
+    "RuleName": "PSUseBOMForUnicodeEncodedFile",
+    "Severity": 1,
+    "Line": null,
+    "Message": "Missing BOM encoding for non-ASCII encoded file 'windows-production-legacy-upgrade.ps1'"
+  },
+  {
+    "RuleName": "PSUseSingularNouns",
+    "Severity": 1,
+    "Line": 26,
+    "Message": "The cmdlet 'Get-LegacyHarnessStageProcesses' uses a plural noun. A singular noun should be used instead."
+  },
+  {
+    "RuleName": "PSUseSingularNouns",
+    "Severity": 1,
+    "Line": 38,
+    "Message": "The cmdlet 'Get-LegacyForeignRegistrations' uses a plural noun. A singular noun should be used instead."
+  },
+  {
+    "RuleName": "PSAvoidUsingPositionalParameters",
+    "Severity": 0,
+    "Line": 30,
+    "Message": "Cmdlet 'Test-LegacyHarnessStageProcess' has positional parameter. Please use named parameters instead of positional parameters when calling a command."
+  }
+]

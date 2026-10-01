@@ -1,0 +1,590 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-09-30",
+  "baselineCommit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+  "productionStateMutated": false,
+  "findingsResolved": [
+    "N01",
+    "N02",
+    "N03",
+    "N04",
+    "N05",
+    "N06",
+    "N07",
+    "N08",
+    "N09",
+    "N10",
+    "N11",
+    "N12",
+    "N13"
+  ],
+  "newRegression": {
+    "total": 22,
+    "pass": 22,
+    "fail": 0,
+    "skipped": 0,
+    "reproducedBeforeFix": 19,
+    "additionalLifecycleChecks": 3
+  },
+  "affectedSuite": {
+    "tests": 133,
+    "pass": 133,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "duration_ms": 6216.3017
+  },
+  "sourceSha256": {
+    "src/recovered/electron/ipc/safe-network.js": "a0a1b3635488f760e7a67c3d12be44deab4c67839eebfc6b299229dfd2308b02",
+    "src/recovered/electron/ipc/route-probe.js": "5d5588014703f676038a8f0cbbde117ea106f7746f6a5f14405ae9dc8aac2876",
+    "src/recovered/electron/ipc/handlers-vpn.js": "22e3c77494fb0ef685fcd9697f6fe12557da4b872e24da93d0b593f260c9e5ce",
+    "src/recovered/electron/ipc/vpn-reconnect-supervisor.js": "5d9ff7795154acda73b2981f66890b90047de22efd0aef5743bfc55e18d70ae0",
+    "src/recovered/electron/ipc/state-store.js": "5a1273aea418a4928c65a7b49c4440a24d52dc55bc422ac572abc6c2bde34e1c",
+    "src/recovered/electron/ipc/config-builder.js": "993c62f24206fe216cc1ccacf6cf449b1ff77a31b116ac5e01bb7b04105556da",
+    "src/recovered/electron/ipc/gravityless-dns-manager.js": "3c409353c9fff2d1cc5f259e7c61a2d00512b9720a2fea0db275753cc5ef49f5",
+    "src/recovered/electron/ipc/network-combinator-manager.js": "d664d3492e3077fc5d36e3e7ed94118f45f9b8fecd6ec3848afae21ddcd6a236",
+    "src/recovered/shared/dns-controller.js": "1a087f5acc6fc789251cc912bcee0fddb8d0f758c9256f5e0e198083da6bcf4b",
+    "src/recovered/electron/ipc/subscription-utils.js": "5ca1247eb02679a75aeb08b230faf7a96cab4bea467847e618f0af794f7b60ce",
+    "tests/network-audit-2026-regression.test.mjs": "2314e1b02ac57c960571af87b56b546c57681f12eaf1fb648c3756c9356d1b2b"
+  },
+  "cases": [
+    {
+      "name": "a timed-out boot repair cannot overlap a new network action",
+      "durationMs": 16.669
+    },
+    {
+      "name": "Shield preemption never evicts a live VPN mutation, even after its timestamp looks stale",
+      "durationMs": 34.7095
+    },
+    {
+      "name": "Shield preemption cannot bypass steady VPN ownership on timeout",
+      "durationMs": 14.3703
+    },
+    {
+      "name": "Core mutations from separate clients are serialized before reaching the service",
+      "durationMs": 2.3264
+    },
+    {
+      "name": "Core mutation queue advances after a failed mutation",
+      "durationMs": 0.9965
+    },
+    {
+      "name": "Direct Zapret auto-select restores an unusable owned DNS resolver before probing",
+      "durationMs": 0.8656
+    },
+    {
+      "name": "Shield handoff waits for VPN owner and verifies stop before invoking the operation",
+      "durationMs": 1.1753
+    },
+    {
+      "name": "Shield handoff reports failed VPN stop and never runs the Shield mutation",
+      "durationMs": 0.9944
+    },
+    {
+      "name": "Telegram ownership discovery failure never falls back to image-name killing or clears state",
+      "durationMs": 1.7365
+    },
+    {
+      "name": "Auto-select completion is compact enough for legacy Core envelopes while retaining the UI result",
+      "durationMs": 77.5402
+    },
+    {
+      "name": "Auto-select compaction enforces a byte budget for pathological diagnostics",
+      "durationMs": 53.7863
+    },
+    {
+      "name": "Component worker compacts only the completed Zapret auto-select response",
+      "durationMs": 2.8233
+    },
+    {
+      "name": "Built UI styles contain no red accent colors",
+      "durationMs": 2.5363
+    },
+    {
+      "name": "installer and background desktop PowerShell helpers never open visible console windows",
+      "durationMs": 3.5286
+    },
+    {
+      "name": "Generated DNS snapshot is valid Windows PowerShell syntax",
+      "durationMs": 493.4365
+    },
+    {
+      "name": "Installer uses one canonical path and never kills network processes by image name",
+      "durationMs": 1.8702
+    },
+    {
+      "name": "Installer cleanup recognizes current and legacy owned DNS journals",
+      "durationMs": 0.8753
+    },
+    {
+      "name": "a running Zapret wrapper without its worker is degraded and retains interception locks",
+      "durationMs": 1.6733
+    },
+    {
+      "name": "a running Telegram wrapper without its listener retains its port reservation",
+      "durationMs": 0.1996
+    },
+    {
+      "name": "confirmed ready runtimes are active while genuinely stopped runtimes release locks",
+      "durationMs": 0.139
+    },
+    {
+      "name": "failed inspection preserves potential ownership instead of authorizing a conflict",
+      "durationMs": 0.2423
+    },
+    {
+      "name": "configured DoH with a failed verification is degraded and keeps DNS ownership",
+      "durationMs": 0.2154
+    },
+    {
+      "name": "route IP probe bounds a real stalled HTTP body, not just its headers",
+      "durationMs": 246.3107
+    },
+    {
+      "name": "route IP probe limits its response body before parsing",
+      "durationMs": 4.442
+    },
+    {
+      "name": "route IP extraction rejects invalid addresses and explicit provider failure",
+      "durationMs": 1.6227
+    },
+    {
+      "name": "coordinator rejection completes manual reconnect supervisor state",
+      "durationMs": 4.0748
+    },
+    {
+      "name": "late manual connect result cannot rearm a cancelled reconnect generation",
+      "durationMs": 0.5906
+    },
+    {
+      "name": "caller cancellation interrupts Retry-After wait without another fetch",
+      "durationMs": 34.3169
+    },
+    {
+      "name": "HTTP retry allowlist is respected while default temporary-status retries remain",
+      "durationMs": 32.3216
+    },
+    {
+      "name": "state sanitization preserves exact subscription endpoint, URI, and SNI",
+      "durationMs": 1.7905
+    },
+    {
+      "name": "Xray, sing-box and ping use exactly the configured server and TLS SNI",
+      "durationMs": 3.5337
+    },
+    {
+      "name": "SCM/CIM observation failure remains unknown instead of claiming no installed DNS service",
+      "durationMs": 1.2793
+    },
+    {
+      "name": "DNS status read started before invalidation cannot repopulate current cache",
+      "durationMs": 0.8945
+    },
+    {
+      "name": "a newer forced DNS status observation wins over an older still-pending read",
+      "durationMs": 0.6272
+    },
+    {
+      "name": "the real PowerShell CIM script distinguishes an empty result from an access failure",
+      "durationMs": 989.9389
+    },
+    {
+      "name": "network inspection reports its real supplied product version",
+      "durationMs": 1.7092
+    },
+    {
+      "name": "ping DoH fallback also bounds a stalled body after HTTP headers",
+      "durationMs": 234.6661
+    },
+    {
+      "name": "speed test cancellation interrupts its pending latency, download and upload sockets",
+      "durationMs": 92.552
+    },
+    {
+      "name": "speed test cancellation also closes its pending proxy CONNECT request",
+      "durationMs": 15.8812
+    },
+    {
+      "name": "the registered cancel IPC closes only speed-test sockets and allows a fresh subsequent measurement",
+      "durationMs": 61.3326
+    },
+    {
+      "name": "subscription auto profile budget bounds a real stalled response and skips curl after cancellation",
+      "durationMs": 233.8825
+    },
+    {
+      "name": "subscription curl fallback shares the same total budget and abort signal",
+      "durationMs": 156.8032
+    },
+    {
+      "name": "subscription transport error logs and returned errors never expose secret URL paths",
+      "durationMs": 2.2584
+    },
+    {
+      "name": "an explicit deleted server ID fails without connecting to a different first server",
+      "durationMs": 3.2141
+    },
+    {
+      "name": "DNS readback must match each adapter even when every write reports success",
+      "durationMs": 1189.5585
+    },
+    {
+      "name": "DNS restoration follows the saved GUID to its new index",
+      "durationMs": 539.4355
+    },
+    {
+      "name": "a notification-only proxy retry keeps the journal until WinINet acknowledges restoration",
+      "durationMs": 2.1411
+    },
+    {
+      "name": "JSON and buffer helpers include body consumption in their timeout",
+      "durationMs": 52.4007
+    },
+    {
+      "name": "a body timeout retries the whole response and preserves the text result contract",
+      "durationMs": 47.9059
+    },
+    {
+      "name": "caller cancellation during body reading does not start another network attempt",
+      "durationMs": 1.2294
+    },
+    {
+      "name": "VPN suspension intent never bypasses an active Zapret mutation",
+      "durationMs": 29.5787
+    },
+    {
+      "name": "VPN exemption applies only to the Zapret owner and a declared suspension transition",
+      "durationMs": 62.6825
+    },
+    {
+      "name": "Telegram readiness requires its configured listener, even when SCM reports running",
+      "durationMs": 6.6132
+    },
+    {
+      "name": "Telegram stop timeout does not kill workers behind a live SCM or claim success",
+      "durationMs": 1.3313
+    },
+    {
+      "name": "Telegram persistence repair preserves service registration",
+      "durationMs": 1.2998
+    },
+    {
+      "name": "Telegram restart preserves startup policy and closing the UI preserves an installed service",
+      "durationMs": 1.3147
+    },
+    {
+      "name": "Telegram start waits for an already starting SCM service without killing its emerging worker",
+      "durationMs": 1.4929
+    },
+    {
+      "name": "Telegram discovery failures remain unknown instead of being treated as a missing service",
+      "durationMs": 1.1245
+    },
+    {
+      "name": "telegram-proxy-manager ignores a status sample that completes after cache invalidation",
+      "durationMs": 1.5221
+    },
+    {
+      "name": "zapret-manager ignores a status sample that completes after cache invalidation",
+      "durationMs": 2.9281
+    },
+    {
+      "name": "Zapret running wrapper without owned worker is explicitly unready",
+      "durationMs": 1.9022
+    },
+    {
+      "name": "Zapret stop waits for a pending transition before allowing VPN handoff",
+      "durationMs": 1.6787
+    },
+    {
+      "name": "Zapret start waits for pending SCM startup before stale-process cleanup or another start",
+      "durationMs": 2.182
+    },
+    {
+      "name": "Zapret profile selection preserves registration and does not restart an unchanged strategy",
+      "durationMs": 1.7776
+    },
+    {
+      "name": "Zapret failed strategy switch restores the previous running profile and configuration",
+      "durationMs": 1.3919
+    },
+    {
+      "name": "Zapret failed rollback reports both failures instead of promising restoration",
+      "durationMs": 1.2996
+    },
+    {
+      "name": "VPN transient retry budget enters cooldown and recovers after a long outage",
+      "durationMs": 2.0397
+    },
+    {
+      "name": "VPN stale retry completion cannot release the new manual connection guard",
+      "durationMs": 0.8537
+    },
+    {
+      "name": "VPN auth failure requires user correction rather than periodic retries",
+      "durationMs": 0.8255
+    },
+    {
+      "name": "VPN runtime crashes use bounded cooldown rather than requiring a permanent manual reset",
+      "durationMs": 0.6599
+    },
+    {
+      "name": "coordinator deadline includes a hung read-only inspection and never invokes the mutation later",
+      "durationMs": 45.1069
+    },
+    {
+      "name": "coordinator serializes a burst of network mutations without leaking locks or release waiters",
+      "durationMs": 105.0423
+    },
+    {
+      "name": "Shield does not accept SCM running if the working component explicitly failed readiness",
+      "durationMs": 0.9509
+    },
+    {
+      "name": "Shield recovered live state clears a stale connection error while retaining the failed action",
+      "durationMs": 0.1671
+    },
+    {
+      "name": "Shield failed disconnect remains visible until every requested component is confirmed stopped",
+      "durationMs": 0.13
+    },
+    {
+      "name": "VPN killed flag alone is not proof that the OS process has stopped",
+      "durationMs": 1.3997
+    },
+    {
+      "name": "VPN failed disconnect retains the active session for diagnosis and a safe stop retry",
+      "durationMs": 0.8954
+    },
+    {
+      "name": "VPN failed retired-session cleanup keeps its reference for the next cleanup attempt",
+      "durationMs": 0.7224
+    },
+    {
+      "name": "VPN signal-terminated process cleanup skips redundant kill and restores owned network settings",
+      "durationMs": 0.8206
+    },
+    {
+      "name": "VPN escalates termination through its exact child handle and verifies exit before restoring the proxy",
+      "durationMs": 3317.8954
+    },
+    {
+      "name": "shutdown deadline prevents subsequent service mutations after the UI has already quit",
+      "durationMs": 30.2978
+    },
+    {
+      "name": "VPN ninety-day virtual outage keeps one timer, bounded retry batches, and manual cancellation",
+      "durationMs": 1498.3286
+    },
+    {
+      "name": "network mutations wait for a steady VPN traffic route, while VPN disconnect can release its own proxy",
+      "durationMs": 40.4101
+    },
+    {
+      "name": "refresh merge keeps a user deletion and explicit deselection made while the request was pending",
+      "durationMs": 0.8455
+    },
+    {
+      "name": "import merge does not resurrect a subscription deleted while its network fetch was pending",
+      "durationMs": 0.2689
+    },
+    {
+      "name": "subscription requests omit HWID unless the user opted in",
+      "durationMs": 0.7704
+    },
+    {
+      "name": "audit: DNS restore never falls back to a recycled index when its saved GUID is missing",
+      "durationMs": 628.014
+    },
+    {
+      "name": "audit: DNS apply rejects a partial multi-adapter failure",
+      "durationMs": 531.5392
+    },
+    {
+      "name": "audit: failed proxy notification cannot be reported as successful enable",
+      "durationMs": 2.4832
+    },
+    {
+      "name": "audit: failed proxy restore notification keeps a retryable journal",
+      "durationMs": 1.0279
+    },
+    {
+      "name": "audit: response body is included in the network timeout budget",
+      "durationMs": 136.0359
+    },
+    {
+      "name": "audit: VPN may acquire the transition that suspends an already-running Zapret",
+      "durationMs": 1.604
+    },
+    {
+      "name": "rollback restores only its owned DNS and preserves a later external edit",
+      "durationMs": 1777.5535
+    },
+    {
+      "name": "rollback requires DNS readback even when netsh returns success",
+      "durationMs": 536.4807
+    },
+    {
+      "name": "rollback preserves an external IPv4 edit while independently restoring its owned IPv6 change",
+      "durationMs": 547.9202
+    },
+    {
+      "name": "transaction apply follows its captured GUID, excludes newly connected adapters and rejects index reuse",
+      "durationMs": 952.4326
+    },
+    {
+      "name": "DNS readback rejects additional unwanted resolvers and an incorrect priority",
+      "durationMs": 1030.4859
+    },
+    {
+      "name": "a VPN-only network cannot enter the fallback snapshot route without a stable uplink",
+      "durationMs": 444.7327
+    },
+    {
+      "name": "DNS journal is synced before rename and commit survives a temporarily locked journal file",
+      "durationMs": 3.9572
+    },
+    {
+      "name": "an unfinished or corrupt DNS journal cannot be overwritten by a new mutation",
+      "durationMs": 1.6422
+    },
+    {
+      "name": "a rollback marker write failure still restores adapter DNS rather than skipping recovery",
+      "durationMs": 1.5031
+    },
+    {
+      "name": "targeted adapter recovery snapshots only its targets and application remains serialized",
+      "durationMs": 782.5223
+    },
+    {
+      "name": "serializes a previous TUN session before preparing its replacement (baseline fails)",
+      "durationMs": 10.2989
+    },
+    {
+      "name": "keeps make-before-break handoff for proxy sessions, including proxy to TUN",
+      "durationMs": 1.1714
+    },
+    {
+      "name": "failed serial TUN replacement releases dead proxy ownership",
+      "durationMs": 1.068
+    },
+    {
+      "name": "retries the recorded Windows Xray TUN route failure once after serial cleanup (baseline fails)",
+      "durationMs": 1018.7126
+    },
+    {
+      "name": "stops after the second TUN route failure and releases network ownership",
+      "durationMs": 1003.8801
+    },
+    {
+      "name": "recognizes only the recorded Windows Xray TUN route initialization failure and skips generic fallback",
+      "durationMs": 2.2391
+    },
+    {
+      "name": "Subscription: Parse VLESS Reality XHTTP URI",
+      "durationMs": 1.0261
+    },
+    {
+      "name": "Subscription: Parse VLESS WebSocket TLS URI",
+      "durationMs": 0.1897
+    },
+    {
+      "name": "Subscription: Parse Trojan URI with SNI",
+      "durationMs": 0.151
+    },
+    {
+      "name": "Subscription: Unicode Russian server name correctly decoded from hash",
+      "durationMs": 0.1001
+    },
+    {
+      "name": "Subscription: Safe base64 decoding with missing padding",
+      "durationMs": 0.1337
+    },
+    {
+      "name": "Subscription: Safe base64 decoding with whitespace and newlines",
+      "durationMs": 0.0911
+    },
+    {
+      "name": "Subscription: Node fingerprint matches identical endpoints",
+      "durationMs": 0.103
+    },
+    {
+      "name": "Subscription: Node fingerprint distinguishes different UUIDs",
+      "durationMs": 0.0938
+    },
+    {
+      "name": "Subscription: Deduplication removes identical nodes while preserving order",
+      "durationMs": 0.1211
+    },
+    {
+      "name": "Subscription: URL redaction masks secret subscription key in path",
+      "durationMs": 0.2566
+    },
+    {
+      "name": "Subscription: URL redaction masks credentials in node URL",
+      "durationMs": 0.135
+    },
+    {
+      "name": "Subscription: Retry-After integer seconds parsed to milliseconds",
+      "durationMs": 0.0606
+    },
+    {
+      "name": "Subscription: Retry-After missing header returns 0",
+      "durationMs": 0.0276
+    },
+    {
+      "name": "Subscription: IPv6 server address bracket format parsed correctly",
+      "durationMs": 0.0631
+    },
+    {
+      "name": "Subscription: Public key length check passes for 43 char base64url Reality key",
+      "durationMs": 0.1234
+    },
+    {
+      "name": "Subscription: Short ID (sid) hex validation",
+      "durationMs": 0.1064
+    },
+    {
+      "name": "Subscription: Reject expired subscription placeholder",
+      "durationMs": 0.059
+    },
+    {
+      "name": "Subscription: Identity preservation keeps user-edited alias across refreshes",
+      "durationMs": 0.0952
+    },
+    {
+      "name": "Subscription: Empty input produces zero nodes without exception",
+      "durationMs": 0.3403
+    },
+    {
+      "name": "Subscription: Mixed protocol batch parsing separates VLESS and Trojan nodes",
+      "durationMs": 0.1219
+    },
+    {
+      "name": "XHTTP VLESS remains an Xray config without invented Vision flow",
+      "durationMs": 1.3444
+    },
+    {
+      "name": "XHTTP and SplitHTTP keep their transport metadata and use the HTTP ALPN default",
+      "durationMs": 0.4338
+    },
+    {
+      "name": "sing-box rejects XHTTP instead of silently using another transport",
+      "durationMs": 0.5356
+    },
+    {
+      "name": "XHTTP requires Xray even when TUN and learned health prefer sing-box",
+      "durationMs": 0.2595
+    },
+    {
+      "name": "Xray TUN config applies process rules before domain rules",
+      "durationMs": 0.3824
+    }
+  ],
+  "limits": [
+    "Transport/IPC fixtures are not live VPN-provider tests.",
+    "Local HTTP stream and PowerShell script were executed.",
+    "Default auto-subscription request budget remains 45000 ms.",
+    "No live SCM/DNS/settings/GUI mutation, reboot, elapsed-month soak or publication by this audit worker."
+  ]
+}

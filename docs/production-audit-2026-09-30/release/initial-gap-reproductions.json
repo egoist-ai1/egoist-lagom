@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-09-29T21:30:42.890Z",
+  "baseline": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+  "probes": [
+    {
+      "mode": "blocked-redirect",
+      "rejected": true,
+      "failureCode": "redirect-blocked",
+      "bodyCancellations": 0,
+      "expectedBodyCancellations": 1,
+      "defectReproduced": true
+    },
+    {
+      "mode": "oversized-content-length",
+      "rejected": true,
+      "failureCode": "integrity-failed",
+      "bodyCancellations": 0,
+      "expectedBodyCancellations": 1,
+      "defectReproduced": true
+    },
+    {
+      "mode": "verified-archive-unverified-extracted-inputs",
+      "archives": [
+        {
+          "name": "sing-box-1.14.0-windows-amd64.zip",
+          "sha256": "3ffb56267da14e287be48bd10cf7e6505260125bad940b75101fbb4d5d58e5d6"
+        },
+        {
+          "name": "zapret-discord-youtube-1.10.3.zip",
+          "sha256": "244314ae1c24538a0d751601da8e0c925c843371eec4456eb15f14c4fd6b7058"
+        },
+        {
+          "name": "wintun-0.14.1.zip",
+          "sha256": "07c256185d6ee3652e09fa55c0b673e2624b565e02c4b9091c79ca7d2f24ef51"
+        }
+      ],
+      "changedExtractedFilesCopied": {
+        "sing-box/sing-box.exe": true,
+        "zapret/core/bin/winws.exe": true,
+        "xray/wintun.dll": true
+      },
+      "defectReproduced": true
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "beforeCommit": "ead2bebea1d5866c4c162bbff9b514db533721ab",
+  "testedWorkingTree": true,
+  "node": {
+    "tests": 878,
+    "pass": 878,
+    "fail": 0,
+    "skipped": 0,
+    "durationMs": 25459.5515
+  },
+  "diagnosticWindowsPowerShell51": {
+    "tests": 4,
+    "pass": 4,
+    "fail": 0,
+    "skipped": 0
+  },
+  "actionlintExitCode": 0,
+  "sourceHashes": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "bytes": 39555,
+      "sha256": "152247c89ef43c79d6f889bb2bb5d64cae9cfafa5c835ca02dd1c361a2b249d5"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ProtectedProductRoot.cs",
+      "bytes": 19232,
+      "sha256": "7d02237f021979aa943b16b2c8357e48d7824430af147c7e2649876c0201a896"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/AtomicJsonFile.cs",
+      "bytes": 7859,
+      "sha256": "09471387a813c2d1bca85d5ecfef7669bcafd57846486b456b1f7d5eb7a3ca6f"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceLog.cs",
+      "bytes": 3526,
+      "sha256": "3650d4ff168569c88a5a8662cb8ae120e135c94dabebafdc716a40cba4975ffd"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/SelfTest.cs",
+      "bytes": 59976,
+      "sha256": "07a0f5e8038412069d4d7c72e0a26eef8914d22b931d27f235472505860671a0"
+    },
+    {
+      "path": "tests/AtomicJsonFileLockRegression/AtomicJsonFileLockRegression.csproj",
+      "bytes": 858,
+      "sha256": "6f02432cbfa5dd97592ba674fd1089259db0ccbc6895cc9f100dc368111f8965"
+    },
+    {
+      "path": "tests/CoreServiceReliabilityRegression/CoreServiceReliabilityRegression.csproj",
+      "bytes": 2976,
+      "sha256": "b62e2d03a90bd81722cf2ec2e6dc4f00c3e41b77344cc0467791893b5140407e"
+    },
+    {
+      "path": "tests/vpn-service-native.cs",
+      "bytes": 11290,
+      "sha256": "7931dab1c8c65fe5dc485805157c6e23338a6c694975f4bda59c81988fee4bbc"
+    },
+    {
+      "path": "tests/core-owner-regression.cs",
+      "bytes": 15295,
+      "sha256": "d151b052b30e281ce5d52536b2dd618620a73085a349c7e110d4d9fbf9463e00"
+    },
+    {
+      "path": "tests/core-owner-regression.ps1",
+      "bytes": 4634,
+      "sha256": "071aa397e0c98252e2ff5c5fd3668db92eedac5f9262293074619572a50cde1a"
+    },
+    {
+      "path": "tests/windows-installer-diagnostics.ps1",
+      "bytes": 9569,
+      "sha256": "8dea7d271b8c59c6c8fcc23c9b4c2bcc81f9d99e88b910ca5e9e94eba53a4f54"
+    },
+    {
+      "path": "tests/windows-installer-diagnostic.test.mjs",
+      "bytes": 7149,
+      "sha256": "81693235b6a3fd0be6d43839f722bd017868f9012de6dbd57c453e77e099db02"
+    },
+    {
+      "path": "tests/windows-production-legacy-upgrade.ps1",
+      "bytes": 32913,
+      "sha256": "e3cd01802403bd14f61f7ba65d136a7050a1c918711f6c2454b1f72ee53335bd"
+    },
+    {
+      "path": "tests/windows-dns-native-acceptance.ps1",
+      "bytes": 48876,
+      "sha256": "1f0dab760daef79bcf6d2372710d7792440bb3d3dca9702ba10f20bfeaf77574"
+    },
+    {
+      "path": "tests/windows-vpn-native-acceptance.ps1",
+      "bytes": 64784,
+      "sha256": "4bc87e0b17927a3ebc47fff0d539d0cb9bfea542a9814f36bc96b8bc55cf891b"
+    },
+    {
+      "path": "tests/windows-legacy-local-transport.mjs",
+      "bytes": 13100,
+      "sha256": "e7526d9ea9ed05cd495d9b2fde59ff6b3863a0b9417eb607dde519e917418101"
+    },
+    {
+      "path": "tests/windows-legacy-local-transport.test.mjs",
+      "bytes": 13325,
+      "sha256": "e89db47fd2dc63b4dc15ac17ade571083bd912ac2aaff20b1d97246c5fa64f83"
+    }
+  ],
+  "files": [
+    {
+      "name": "actionlint.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "diagnostic-ps51-tests.txt",
+      "bytes": 546,
+      "sha256": "8cf4f221ecf9f50a869435f3730e8890674df88a791d8b4ee0d8f93ccb24efcc"
+    },
+    {
+      "name": "node-tests.txt",
+      "bytes": 85062,
+      "sha256": "b2b555bf7c1622445d6a97827888a9e0515090591d6c85722ee5af31fea2feaf"
+    },
+    {
+      "name": "diagnostic-final-ps7-tests.txt",
+      "bytes": 547,
+      "sha256": "8c391a433caa80d7921b320826124b89be60a636828d7f85aa6d7abacef4f061"
+    }
+  ],
+  "nativeReleaseAcceptancePassed": false,
+  "physicalProductMutations": 0,
+  "finalDiagnosticPS7": {
+    "tests": 4,
+    "pass": 4,
+    "fail": 0,
+    "skipped": 0
+  },
+  "nodeSuiteBeforeFinalDiagnosticBuildCommandConsolidation": true
+}

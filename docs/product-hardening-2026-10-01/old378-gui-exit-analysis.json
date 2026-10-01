@@ -1,0 +1,360 @@
+{
+  "schemaVersion": 1,
+  "kind": "read-only-authentic-3.7.8-gui-exit-analysis",
+  "observedAtUtc": "2026-10-01T08:40:55.933911+00:00",
+  "taskId": "01a0f42b-2910-7fe3-90ed-233033c751cb",
+  "runId": "36834226795",
+  "runAttempt": 1,
+  "harnessSourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "finding": "Actual original GUI exited before a nonzero native MainWindowHandle was observed. The available artifact does not establish the exit cause.",
+  "exitCauseEstablished": false,
+  "readyForLegacyUpgradeClaim": false,
+  "scope": {
+    "sourceEdited": false,
+    "installerOrGuiOrHelperExecutedLocally": false,
+    "scmDnsRegistryUiOrExternalApiMutated": false,
+    "originalPayloadOfflineExtractionOnly": true,
+    "oldReleasePublishedOriginVerified": false,
+    "oldManifestAuthenticated": true,
+    "oldAuthenticodeStatus": "not-signed"
+  },
+  "nativeObservation": {
+    "startedAtUtc": "2026-10-01T08:13:45.5149319+00:00",
+    "completedAtUtc": "2026-10-01T08:16:04.9396436+00:00",
+    "host": {
+      "computerName": "runnervm99s1a",
+      "administrator": true,
+      "runnerEnvironment": "github-hosted",
+      "runId": "36834226795",
+      "runAttempt": "1"
+    },
+    "result": "failed",
+    "cleanStartVerified": true,
+    "error": "Actual native observation timed out: Old canonical GUI native window (Old GUI exited before its native window was ready.)",
+    "recordedMutations": [
+      {
+        "atUtc": "2026-10-01T08:13:50.1482889+00:00",
+        "kind": "official-old-setup-clean-install",
+        "target": "C:\\Program Files\\EgoistShield",
+        "purpose": "Actual original public 3.7.8 installer, authenticated before execution."
+      },
+      {
+        "atUtc": "2026-10-01T08:14:34.7233398+00:00",
+        "kind": "old-canonical-gui-native-uia",
+        "target": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+        "purpose": "Provision actual Telegram background service through shipped 3.7.8 controls, then normally close GUI."
+      }
+    ],
+    "oldCorePolicy": {
+      "start": 2,
+      "resetSeconds": 86400,
+      "nonCrash": 1,
+      "actions": [
+        {
+          "type": 1,
+          "delayMs": 5000
+        },
+        {
+          "type": 1,
+          "delayMs": 15000
+        },
+        {
+          "type": 1,
+          "delayMs": 30000
+        }
+      ]
+    },
+    "guiReceiptsCount": 0,
+    "privateStateReadbacksCount": 0,
+    "networkReadbackPhases": [
+      {
+        "phase": "old-clean-install",
+        "preserved": true
+      }
+    ],
+    "guiPidCaptured": false,
+    "guiStartTimeCaptured": false,
+    "guiExitCodeCaptured": false,
+    "guiStdoutStderrCaptured": false,
+    "applicationLogOrCrashEventCaptured": false,
+    "candidateInstallerOrLegacyHelperReached": false,
+    "waitLoopSwallowsTerminalProcessExitUntilDeadline": true,
+    "ninetySecondWaitDoesNotProveNinetySecondChildLifetime": true
+  },
+  "launchContractFromRunBoundSource": {
+    "executable": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+    "workingDirectory": "C:\\Program Files\\EgoistShield",
+    "arguments": [],
+    "useShellExecute": false,
+    "createNoWindow": true,
+    "environmentRemovalRegex": "^(ELECTRON_RUN_AS_NODE|NODE_OPTIONS|NODE_PATH|LAGOM_TEST_USER_DATA_DIR|SHIELD_.*|EGOIST_.*)$",
+    "nodeEnv": "production",
+    "launchTimeoutSeconds": 90,
+    "preLaunchNoGuiProcessAssertion": true,
+    "noGuiAssertionIsSnapshotNotRecordedSingleInstanceLockOutcome": true,
+    "environmentNotRecorded": [
+      "APPDATA",
+      "EGOISTSHIELD_*",
+      "VITEST",
+      "VITE_DEV_SERVER_URL"
+    ],
+    "environmentPresenceOrCausalEffectNotEstablished": true
+  },
+  "authenticOldApplicationContract": {
+    "asarMember": ".vite/build/main.js",
+    "mainSha256": "1e15edc490d1d52a789ffc57a23d822d21ef8c11a3346cc922b56c27a88e24e2",
+    "userData": "app.getPath(\"appData\")\\Egoist Shield",
+    "usualWindowsUserData": "%APPDATA%\\Egoist Shield",
+    "mainLog": "app.getPath(\"appData\")\\Egoist Shield\\logs\\main.log",
+    "usualWindowsMainLog": "%APPDATA%\\Egoist Shield\\logs\\main.log",
+    "userProfileMustBeDerivedFromActualGuiLaunchEnvironment": true,
+    "productionUserDataHasNoDevOrTestSuffix": true,
+    "mainWindowInitiallyShowFalse": true,
+    "windowShownOnReadyToShowWhenNotMinimized": true,
+    "emptyArgvDoesNotRequestMinimized": true,
+    "knownExplicitExitBranches": [
+      {
+        "condition": "app.requestSingleInstanceLock() returns false",
+        "line": 59244,
+        "behavior": "app.quit(); no branch-specific log"
+      },
+      {
+        "condition": "app.whenReady startup try block throws",
+        "line": 59268,
+        "behavior": "log [boot] app startup failed: with stack; showErrorBox; app.quit()"
+      },
+      {
+        "condition": "all windows closed on Windows",
+        "line": 59276,
+        "behavior": "app.quit()"
+      }
+    ],
+    "bootStagesLogged": [
+      "[paths] Runtime=",
+      "[boot] createMainWindow:start",
+      "[boot] ipc security guards installed",
+      "[boot] creating BrowserWindow",
+      "[boot] BrowserWindow created",
+      "[boot] creating StateStore and managers",
+      "[boot] registering IPC handlers",
+      "[boot] IPC handlers registered",
+      "[boot] loading persisted state",
+      "[boot] persisted state loaded",
+      "[window] Loading packaged renderer",
+      "[window] loadFile resolved successfully"
+    ],
+    "anchors": {
+      "runtimeAndProfileSelection": [
+        37488,
+        37493,
+        58168
+      ],
+      "logPath": 37689,
+      "createMainWindow": 59003,
+      "singleInstance": 59244,
+      "startupCatch": 59268
+    },
+    "coreAvailabilityFailureCaughtAsFalseAndWarned": true,
+    "coreRunningAloneDoesNotProveGuiBootCompletes": true,
+    "syntaxOnlyNodeCheck": {
+      "version": "24.19.0",
+      "exitCode": 0,
+      "executesPayload": false,
+      "provesElectronNativeStartup": false
+    }
+  },
+  "hypothesesNotProven": [
+    {
+      "cause": "Startup JavaScript exception or native Electron/loader crash",
+      "evidenceNeeded": "Original GUI stderr, exit status, profile main.log and time-bounded exact-process Application Error/WER records."
+    },
+    {
+      "cause": "Single-instance lock rejected the new process",
+      "limitation": "A pre-launch CIM assertion found no EgoistShield.exe processes; no lock result, process/session inventory or exit code was recorded."
+    },
+    {
+      "cause": "Inherited launch environment changes runtime behavior",
+      "limitation": "NODE_ENV is explicitly production and RunAsNode/Node preload variables are removed. Other variables were not recorded; the scrub pattern does not cover EGOISTSHIELD_*."
+    },
+    {
+      "cause": "Hosted desktop/graphics or renderer initialization failed",
+      "limitation": "No crash/module code, window lifecycle or stderr exists in the artifact. Initial show:false alone cannot explain a process exit."
+    }
+  ],
+  "minimalDiagnosticWithoutTrustBypass": [
+    "Retain original signed-generation installer/ASAR/helper bytes and empty argv; preserve hashes and normal launch identity.",
+    "Before launch, record only the launch-affecting environment presence and safe non-secret values plus bounded owned process/session inventory. Derive the log path from the actual launching profile.",
+    "Redirect and asynchronously drain bounded own GUI stdout/stderr. Immediately persist PID, UTC start, first HWND if any, UTC exit and raw signed exit code in finally even on failure; do not lose terminal-exit observation in the generic retry loop.",
+    "Read only that original profile logs/main.log and recent rotated logs with byte/time caps. Preserve [paths], [boot] and [window] stage/error messages.",
+    "If stderr/logs are insufficient, capture time-bounded Windows Application Error/WER events attributable to the exact executable/PID; report absence explicitly.",
+    "Interpret readback before further mutation: no JS boot log suggests pre-logger/load failure; boot stack identifies the failed stage; exit zero alone is not proof of single-instance rejection."
+  ],
+  "verifiedFiles": {
+    "originalInstaller": {
+      "path": "dist/EgoistShield-Setup-3.7.8.exe",
+      "bytes": 194405835,
+      "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927"
+    },
+    "directSetupExtractedAsar": {
+      "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f42b-2910-7fe3-90ed-233033c751cb\\work\\t\\old378-review\\setup-readback\\resources\\app.asar",
+      "bytes": 11664308,
+      "sha256": "08db1827d678faedab285711f180e6296a8984f122d0c13ed224155d482c9985"
+    },
+    "originalMain": {
+      "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f42b-2910-7fe3-90ed-233033c751cb\\work\\t\\old378-review\\main.js",
+      "bytes": 2537193,
+      "sha256": "1e15edc490d1d52a789ffc57a23d822d21ef8c11a3346cc922b56c27a88e24e2"
+    },
+    "originalBaseline": {
+      "path": "docs/product-hardening-2026-10-01/auto-update-public-final.baselines/3.7.8/baseline.json",
+      "bytes": 2884,
+      "sha256": "df756e5992bdb79c67aa41ff5ae75af6d3886e628d6d3efef03c7a3428ef0f97"
+    },
+    "evidence": [
+      {
+        "path": "docs/product-hardening-2026-10-01/native-466862-failures/old378/native/windows-production-legacy-upgrade.json",
+        "bytes": 92828,
+        "sha256": "fba359b21412f3746c0e1771faa6f7a1a6e25224972d3636cbd9028209af5b47"
+      },
+      {
+        "path": "docs/product-hardening-2026-10-01/native-466862-failures/old378/native/old-installed-authentication.json",
+        "bytes": 3047,
+        "sha256": "260729f61a661375a2c7c629b35b61fe5eb621f1fc2a1ed505a12b16c1099126"
+      },
+      {
+        "path": "docs/product-hardening-2026-10-01/native-466862-failures/old378/native/authenticated-assets.json",
+        "bytes": 2707,
+        "sha256": "b3192c8e627561f4099f1cf39af959d68556bbabe29379899db518460dccbf93"
+      },
+      {
+        "path": "docs/product-hardening-2026-10-01/native-466862-failures/old378/original-3.7.8-transport.json",
+        "bytes": 2637,
+        "sha256": "d79eb40c082ddbd61dbbd97ad0831210b977c2b7801d47dff0ec362f3c5aeb9f"
+      },
+      {
+        "path": "docs/product-hardening-2026-10-01/native-466862-failures/old378/raw-job.txt",
+        "bytes": 35431,
+        "sha256": "8e771b20b531f0668c7b21ca406c25fb90a63548cbcbff8622e3c57498f377cd"
+      },
+      {
+        "path": "docs/product-hardening-2026-10-01/native-466862-failures/old378/raw-artifact.zip",
+        "bytes": 16602,
+        "sha256": "62080df606727b5c47afeb5a7b85b9f7bb07048f66113e91a55471f10461b48d"
+      }
+    ],
+    "runBoundHarness": [
+      {
+        "path": "tests/windows-production-legacy-upgrade.ps1",
+        "sourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+        "gitBlobSha256": "018c047199f8ba4533f8595b1383d2340f5885d7e749609b1131ac96cb1bab7a",
+        "windowsCrLfSha256": "3f7eb4faacae0893a46231c9f16bcd2fb2c1fabccb86d2586442b53dbcc14bd6",
+        "nativeReportedSha256": "3f7eb4faacae0893a46231c9f16bcd2fb2c1fabccb86d2586442b53dbcc14bd6",
+        "nativeBytesMatchGitBlobOrCrLfCheckout": true
+      },
+      {
+        "path": "tests/windows-production-legacy-upgrade.mjs",
+        "sourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+        "gitBlobSha256": "af4b16e9fb37b1d9096c56c1481486754b0c90ff41f29cea34f538f6ab17fa04",
+        "windowsCrLfSha256": "f3fce3866326be76d414ff370502c42512d2f520de0acb81ab9b561e64661bf2",
+        "nativeReportedSha256": "f3fce3866326be76d414ff370502c42512d2f520de0acb81ab9b561e64661bf2",
+        "nativeBytesMatchGitBlobOrCrLfCheckout": true
+      },
+      {
+        "path": "tests/windows-production-acceptance.ps1",
+        "sourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+        "gitBlobSha256": "5bb62b9aea28c5bdf38efa7a4e12128bd75db90da19d392721543d19cb64b8d2",
+        "windowsCrLfSha256": "faadd17bedca25f5f667a077c50ab195f301bf066f4b01037da22ab21cd792d6",
+        "nativeReportedSha256": "faadd17bedca25f5f667a077c50ab195f301bf066f4b01037da22ab21cd792d6",
+        "nativeBytesMatchGitBlobOrCrLfCheckout": true
+      },
+      {
+        "path": "tests/windows-production-acceptance.mjs",
+        "sourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+        "gitBlobSha256": "ded21a7546a95e0cfda0aa4704a76a7b95c9024fb2888bf2d81b3ec66a85a66e",
+        "windowsCrLfSha256": "84241b4d9a2102a9e29fbc680e949ff3da38e7c5c928ef4f7c66f5a50ea2caed",
+        "nativeReportedSha256": "84241b4d9a2102a9e29fbc680e949ff3da38e7c5c928ef4f7c66f5a50ea2caed",
+        "nativeBytesMatchGitBlobOrCrLfCheckout": true
+      }
+    ]
+  },
+  "rawArtifactEntries": [
+    {
+      "path": "native/authenticated-assets.json",
+      "bytes": 2707,
+      "sha256": "b3192c8e627561f4099f1cf39af959d68556bbabe29379899db518460dccbf93",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "download-identity.json",
+      "bytes": 306,
+      "sha256": "d54a2346917b6b7cbffc8d17322d6fcededccda3d3cdcc999f1f972b85484f46",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "native/authenticated-assets.options.json",
+      "bytes": 423,
+      "sha256": "367fc94ae67078454af021917410fa2749db75f70f470228d6032b212aca40f6",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "native/authenticated-assets.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "native/authenticated-assets.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "native/official-old-clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "native/official-old-clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "native/old-installed-authentication.json",
+      "bytes": 3047,
+      "sha256": "260729f61a661375a2c7c629b35b61fe5eb621f1fc2a1ed505a12b16c1099126",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "native/old-installed-authentication.options.json",
+      "bytes": 486,
+      "sha256": "d569af52f07f39bed580825b682e1aacb79692c7d58af3551a6d44256e7512e4",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "native/old-installed-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "native/old-installed-authentication.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "native/windows-production-legacy-upgrade.json",
+      "bytes": 92828,
+      "sha256": "fba359b21412f3746c0e1771faa6f7a1a6e25224972d3636cbd9028209af5b47",
+      "matchesAcceptedExtractedEvidence": true
+    },
+    {
+      "path": "original-3.7.8-transport.json",
+      "bytes": 2637,
+      "sha256": "d79eb40c082ddbd61dbbd97ad0831210b977c2b7801d47dff0ec362f3c5aeb9f",
+      "matchesAcceptedExtractedEvidence": true
+    }
+  ]
+}

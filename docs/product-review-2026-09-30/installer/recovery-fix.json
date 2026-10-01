@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-09-30T18:34:17.401955+00:00",
+  "baseCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "scope": "R29/R30/R32 plus uninstall source integration; exact current working bytes, not a newly packaged/installed release",
+  "workerSha256": "caca6ed98ef87e74895b83c6b4b513e9dd0435d2b91f4e1ebda780508340822e",
+  "cleanupSha256": "8e726d7551005e98031087aa9e6cf2f7f004d0cff538d10ef754b47ff90d128a",
+  "bootModuleSha256": "94006d7d993f6b58ff6eff903d16cf2d968dd6c18f86eb66e0d31a11c0e6de42",
+  "fullSuite": {
+    "tests": 644,
+    "passed": 644,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 19570.9442,
+    "rawLogSha256": "8255121861df4a305bd1c7ed0e851a92059ee7d8b2665c9d60e540a7baa3c62d",
+    "acceptedLog": "full-node-test-output.txt"
+  },
+  "preFixFullSuiteFailure": {
+    "sourceSha256": "D71C19D1289308F457B3920581179FF89B253A637DC29710C0109F28183BBB19",
+    "tests": 642,
+    "passed": 641,
+    "failed": 1,
+    "rawLogSha256": "4b1bc8dbea81dbfd848d37ac086862dab1d729c692771492ed8855f756719d44",
+    "acceptedExcerpt": "early-worker-failure-before.txt",
+    "excerptSha256": "c72bfeb18d384247319bea7d310b7d88e97ce166fca9cd3ff81ce2059f6187de",
+    "failure": "branded early worker status: missing complete.flag after diagnostic journal failure"
+  },
+  "preFixTerminalRecovery": {
+    "file": "terminal-recovery-before.ps1",
+    "sha256": "1aa794935e0ca4c93def256455cc21898e19f484fb7b3c667132edf00b8a69b1",
+    "scope": "Exact saved functions only, not an archived full worker; byte/line normalization recorded in prior review",
+    "actualOutcome": "recovery-warning with retained marker plus watchdog-recovered terminal; next invocation retry count1to1"
+  },
+  "preFixReceiptRmw": {
+    "file": "receipt-event-before.ps1",
+    "sha256": "3a76e96928120c618bc0ab05dc58be28adc566907ebb36c1257f1bf6ba5021d3",
+    "scope": "Exact Add-ReceiptEvent AST excerpt only",
+    "actualOutcome": "controlled actual two-writer interleave retained1of2 committed events"
+  },
+  "groups": {
+    "boot": 22,
+    "bootAssertions": 490,
+    "timeoutRecovery": 8,
+    "uninstall": 4,
+    "receiptSerialization": 4,
+    "workerRestoration": 3,
+    "lifecycle": 9,
+    "requiredImports": 7,
+    "protectedUpgrade": 6,
+    "registration": 38,
+    "nativeArgvRoundTrips": 148,
+    "brandedNodeTests": 4
+  },
+  "actualHarmlessBoundaries": [
+    "owned temporary files and FileStream Flush/Replace",
+    "WinPS5.1 runspaces and isolated Local mutex/threads",
+    "own hidden WinPS child with cached handle and creation/path identity",
+    "NTFS reparse refusal",
+    "CommandLineToArgvW",
+    "Schedule.Service in-memory Task XML parser"
+  ],
+  "controlledBoundaries": [
+    "live SCM/registry/service start/stop and DNS adapters",
+    "Task Scheduler COM registration/readback/delete factory",
+    "production SYSTEM/BA file/mutex ACL disk creation factory",
+    "shortened grace/retry delays"
+  ],
+  "nativeLimitations": {
+    "liveScmUpgradeAcceptance": false,
+    "liveTaskRegistrationBootAcceptance": false,
+    "privilegedSystemBaGlobalMutexAclAcceptance": false,
+    "nativeRebootPowerLoss": false,
+    "oldVersionAutomaticUpgrade": false,
+    "historical378SourceVerified": false,
+    "installedOrPublished": false,
+    "monthlyUptimeObserved": false
+  },
+  "foreignProcessKills": 0,
+  "onlyOwnHarmlessChildProcessesTerminated": true,
+  "independentReviewReceipt": "post-recovery-review.json",
+  "independentReviewSourceMatched": true,
+  "newBlockersInIndependentAgreedScope": 0,
+  "legacyInstalledUpdaterReceipt": "legacy-installed-updater-asar.json",
+  "legacyBridgeImplemented": false,
+  "sources": [
+    {
+      "file": "tests/installer-recovery-timeout.ps1",
+      "sha256": "b6943d48c83cd90254b2bf59ebc1a37386771aea909e2c146652bd4aec297d38"
+    },
+    {
+      "file": "tests/installer-uninstall-maintenance.ps1",
+      "sha256": "c17d7f48e3a65b3e17208b09815fa1b3172e60151fe04bf396d8300aa6814751"
+    },
+    {
+      "file": "tests/installer-receipt-events.ps1",
+      "sha256": "82af44c6a1e9f72011fe958bb7c2168c7fdbb9fec4553de8a05a6422db7b053a"
+    },
+    {
+      "file": "tests/installer-worker-restoration.ps1",
+      "sha256": "d342cfdcd203fff04f2c74906b650c477ca81342282fc5845ba6b5790429e04e"
+    },
+    {
+      "file": "tests/branded-worker-status.test.mjs",
+      "sha256": "4f71db899d883bd8e9e32806e7597248113bbd9ca9a3606770a29cfa87889c28"
+    }
+  ]
+}

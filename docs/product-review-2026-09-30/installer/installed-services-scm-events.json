@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "scope": "Bounded read-only last24h System SCM query max500 provider events; selected up to24 own-service events, not complete uptime history",
+  "observedAtUtc": "2026-09-30T18:08:23.3726801Z",
+  "events": [],
+  "mutations": 0,
+  "queryStatus": "no_matching_provider_events",
+  "scannedProviderEvents": 0,
+  "queryErrorId": null,
+  "limit": "No selected event is not proof of no restart; provider logging/retention and max500 sampling limit this query."
+}

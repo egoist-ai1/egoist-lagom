@@ -1,0 +1,55 @@
+[2026-10-01 08:58:47.320] [info]  [paths] Runtime=production, userData=C:\Users\<user>\AppData\Roaming\Egoist Shield
+[2026-10-01 08:58:47.327] [info]  [boot] createMainWindow:start
+[2026-10-01 08:58:47.328] [info]  [boot] paths preload=C:\Program Files\EgoistShield\resources\app.asar\.vite\build\preload.js, renderer=C:\Program Files\EgoistShield\resources\app.asar\.vite\renderer\main_window\index.html, icon=C:\Program Files\EgoistShield\resources\brand\icon.ico, minimized=false
+[2026-10-01 08:58:47.328] [info]  [boot] ipc security guards installed
+[2026-10-01 08:58:47.330] [info]  [boot] creating BrowserWindow
+[2026-10-01 08:58:47.364] [info]  [boot] BrowserWindow created
+[2026-10-01 08:58:47.375] [info]  [boot] creating StateStore and managers
+[2026-10-01 08:58:49.276] [info]  [boot] system proxy reconciliation:start
+[2026-10-01 08:58:49.280] [info]  [boot] system proxy reconciliation:complete
+[2026-10-01 08:58:49.282] [info]  [boot] registering IPC handlers
+[2026-10-01 08:58:49.283] [info]  [state-store] Initializing a new state profile.
+[2026-10-01 08:58:49.344] [info]  [boot] IPC handlers registered
+[2026-10-01 08:58:49.345] [info]  [boot] loading persisted state
+[2026-10-01 08:58:49.345] [info]  [boot] persisted state loaded
+[2026-10-01 08:58:49.410] [info]  [updater] Persisted auto-update = true
+[2026-10-01 08:58:49.411] [info]  [window] Loading packaged renderer from C:\Program Files\EgoistShield\resources\app.asar\.vite\renderer\main_window\index.html
+[2026-10-01 08:58:49.503] [info]  [window] Main window renderer finished load
+[2026-10-01 08:58:49.504] [info]  [window] loadFile resolved successfully
+[2026-10-01 08:58:49.504] [info]  [boot] createMainWindow:complete
+[2026-10-01 08:58:49.505] [info]  [boot] background recovery:start
+[2026-10-01 08:58:49.532] [info]  [updater] Signed stable channel configured, current=3.8.0
+[2026-10-01 08:58:59.476] [warn]  [dns-diagnostics] Current DNS server read failed; retrying in 5s. Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+    at genericNodeError (node:internal/errors:986:15)
+    at wrappedFn (node:internal/errors:540:14)
+    at ChildProcess.exithandler (node:child_process:417:12)
+    at ChildProcess.emit (node:events:514:28)
+    at maybeClose (node:internal/child_process:1141:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:306:5)
+[2026-10-01 08:58:59.589] [info]  [updater] Background check: up-to-date, latest=3.7.9
+[2026-10-01 08:59:04.029] [warn]  [window] console-message level=warning <connection-uri> [activity] APP-ACTION: Error invoking remote method 'telegram-proxy:save-config': [ { "code": "custom", "message": "Secret должен быть 32 hex-символа без dd-префикса", "path": [ "secret" ] } ]
+[2026-10-01 08:59:16.269] [warn]  [updates] Managed component check failed: CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+CoreServiceRequestError: Не удалось проверить процессы winws.exe: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter "Name='winws.exe'" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }
+
+    at CoreServiceClient2.requestOnce (<connection-uri>
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (<connection-uri>
+[2026-10-01 08:59:19.834] [error] [boot] background recovery failed: Error: Timed out inspecting network owners before mutation: dns:boot-recovery
+Error: Timed out inspecting network owners before mutation: dns:boot-recovery
+    at Timeout.<anonymous> (<connection-uri>
+    at listOnTimeout (node:internal/timers:685:17)
+    at process.processTimers (node:internal/timers:618:7)
+[2026-10-01 09:02:43.107] [warn]  [dns-diagnostics] Current DNS server read failed; retrying in 5s. Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+    at genericNodeError (node:internal/errors:986:15)
+    at wrappedFn (node:internal/errors:540:14)
+    at ChildProcess.exithandler (node:child_process:417:12)
+    at ChildProcess.emit (node:events:514:28)
+    at maybeClose (node:internal/child_process:1141:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:306:5)

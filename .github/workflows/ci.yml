@@ -5,17 +5,272 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      package_candidate:
+        description: Build and upload an unsigned Windows candidate after checks
+        type: boolean
+        default: false
+      native_acceptance:
+        description: Install and test the candidate on this disposable Windows runner
+        type: boolean
+        default: false
+      installer_diagnostics:
+        description: Capture actual source installer phase diagnostics on a clean disposable Windows runner
+        type: boolean
+        default: false
+      ordinary_gui_diagnostic:
+        description: Diagnose only the actual ordinary GUI from the authenticated current signed draft
+        type: boolean
+        default: false
+      diagnostic_release_id:
+        description: Optional signed draft ID for diagnostic-only Setup execution with both source identities recorded
+        type: string
+        default: ''
+      diagnostic_all_versions:
+        description: Diagnose the signed candidate and authenticated original 3.7.8/3.7.9 without claiming release acceptance
+        type: boolean
+        default: false
+      diagnostic_legacy_only:
+        description: Limit authenticated diagnostics to original legacy versions on Windows Server 2022
+        type: boolean
+        default: false
+      core_configuration_diagnostic:
+        description: Diagnose exact-source Core configuration and protected ACLs on this disposable administrator host
+        type: boolean
+        default: false
+      signed_legacy_release_id:
+        description: Signed draft ID for fresh installation and original 3.7.8/3.7.9 helper acceptance
+        type: string
+        default: ''
+      signed_current_only:
+        description: Limit signed native acceptance to the current candidate services, GUI and network
+        type: boolean
+        default: false
+      legacy_baseline_restore:
+        description: Test genuine old services/helpers from authenticated restored payload; this does not execute old clean Setup
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
-  test:
-    runs-on: windows-latest
-    timeout-minutes: 25
+  installer-diagnostics:
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.installer_diagnostics || inputs.ordinary_gui_diagnostic) }}
+    runs-on: ${{ matrix.variant == 'candidate' && 'windows-latest' || 'windows-2022' }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(inputs.diagnostic_all_versions && (inputs.diagnostic_legacy_only && '["3.7.8","3.7.9"]' || '["candidate","3.7.8","3.7.9"]') || '["candidate"]') }}
+    permissions:
+      # Draft downloads require repository push access, as in signed acceptance.
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate diagnostic selection before writes
+        env:
+          DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+          DIAGNOSTIC_ALL_VERSIONS: ${{ inputs.diagnostic_all_versions }}
+          DIAGNOSTIC_LEGACY_RESTORE: ${{ inputs.legacy_baseline_restore }}
+          DIAGNOSTIC_LEGACY_ONLY: ${{ inputs.diagnostic_legacy_only }}
+          CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
+          ORDINARY_GUI_DIAGNOSTIC: ${{ inputs.ordinary_gui_diagnostic }}
+          INSTALLER_DIAGNOSTICS: ${{ inputs.installer_diagnostics }}
+          DIAGNOSTIC_VARIANT: candidate
+          PACKAGE_CANDIDATE: ${{ inputs.package_candidate }}
+          NATIVE_ACCEPTANCE: ${{ inputs.native_acceptance }}
+          SIGNED_LEGACY_RELEASE_ID: ${{ inputs.signed_legacy_release_id }}
+          SIGNED_CURRENT_ONLY: ${{ inputs.signed_current_only }}
+        shell: pwsh
+        run: |
+          ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          . ./tests/windows-installer-diagnostics.ps1 -LibraryOnly
+          $ordinarySelection=@{}
+          foreach($name in @('ORDINARY_GUI_DIAGNOSTIC','INSTALLER_DIAGNOSTICS','DIAGNOSTIC_RELEASE_ID','DIAGNOSTIC_VARIANT','DIAGNOSTIC_ALL_VERSIONS','DIAGNOSTIC_LEGACY_ONLY','CORE_CONFIGURATION_DIAGNOSTIC','DIAGNOSTIC_LEGACY_RESTORE','PACKAGE_CANDIDATE','NATIVE_ACCEPTANCE','SIGNED_LEGACY_RELEASE_ID','SIGNED_CURRENT_ONLY')){$ordinarySelection[$name]=[Environment]::GetEnvironmentVariable($name)}
+          Assert-OrdinaryGuiDiagnosticSelection -Selection $ordinarySelection
+          if ($env:DIAGNOSTIC_LEGACY_ONLY -eq 'true' -and $env:DIAGNOSTIC_ALL_VERSIONS -ne 'true') { throw 'Legacy-only diagnostics require the authenticated original-version selection.' }
+          if ($env:DIAGNOSTIC_ALL_VERSIONS -eq 'true' -and ($env:DIAGNOSTIC_RELEASE_ID -eq '' -or $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true')) { throw 'Original version diagnostics require an authenticated signed candidate.' }
+          if ($env:DIAGNOSTIC_LEGACY_RESTORE -cnotin @('true','false')) { throw 'Invalid diagnostic restoration selection.' }
+          if ($env:DIAGNOSTIC_LEGACY_RESTORE -eq 'true' -and $env:DIAGNOSTIC_ALL_VERSIONS -ne 'true') { throw 'Restored launch diagnostics require authenticated original versions.' }
+          if ($env:DIAGNOSTIC_RELEASE_ID -ne '' -and $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { throw 'Choose either signed Setup or source Core diagnostics.' }
+      - name: Read the Core diagnostic SDK
+        if: ${{ inputs.core_configuration_diagnostic || inputs.legacy_baseline_restore || inputs.ordinary_gui_diagnostic }}
+        id: diagnostic-sdk
+        env:
+          DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+          CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
+        shell: pwsh
+        run: |
+          ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          if ($env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true' -and $env:DIAGNOSTIC_RELEASE_ID -ne '') { throw 'Choose either signed Setup or source Core diagnostics.' }
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($sdkPin -notmatch '^\d+\.\d+\.\d+$') { throw 'An exact diagnostic SDK is required.' }
+          "version=$sdkPin" >> $env:GITHUB_OUTPUT
+          "DOTNET_INSTALL_DIR=$(Join-Path $env:RUNNER_TEMP 'lagom-core-diagnostic-dotnet')" >> $env:GITHUB_ENV
+          "DOTNET_CLI_TELEMETRY_OPTOUT=1" >> $env:GITHUB_ENV
+          "DOTNET_NOLOGO=1" >> $env:GITHUB_ENV
+      - name: Use the exact Core diagnostic SDK
+        if: ${{ inputs.core_configuration_diagnostic || inputs.legacy_baseline_restore || inputs.ordinary_gui_diagnostic }}
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ steps.diagnostic-sdk.outputs.version }}
+      - name: Use Node.js for the signed diagnostic verifier
+        if: ${{ inputs.diagnostic_release_id != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install locked original verifier dependencies
+        if: ${{ inputs.diagnostic_release_id != '' && (inputs.diagnostic_all_versions || inputs.ordinary_gui_diagnostic) }}
+        shell: pwsh
+        run: |
+          npm ci --ignore-scripts --no-audit --fund=false --cache (Join-Path $env:RUNNER_TEMP 'lagom-diagnostic-npm-cache')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Download the exact authenticated diagnostic candidate
+        if: ${{ inputs.diagnostic_release_id != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+          DIAGNOSTIC_VARIANT: ${{ matrix.variant }}
+        shell: pwsh
+        run: |
+          ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          if ($env:DIAGNOSTIC_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Invalid diagnostic release ID.' }
+          if ($env:DIAGNOSTIC_VARIANT -cnotin @('candidate','3.7.8','3.7.9')) { throw 'Invalid diagnostic version selection.' }
+          $head = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $head -cne $env:GITHUB_SHA) { throw 'Diagnostic harness checkout differs from the actual workflow SHA.' }
+          $text = gh api ("repos/egoist-ai1/egoist-lagom/releases/" + $env:DIAGNOSTIC_RELEASE_ID)
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $release = $text | ConvertFrom-Json
+          $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
+          if ([string]$release.id -cne $env:DIAGNOSTIC_RELEASE_ID -or -not $release.draft -or $release.tag_name -cne "v$version" -or $release.target_commitish -cnotmatch '^[a-f0-9]{40}$') { throw 'Diagnostic candidate must be an exact unpublished source-bound draft.' }
+          $selectionText = gh release view "v$version" --repo 'egoist-ai1/egoist-lagom' --json databaseId,tagName,isDraft
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $selection = $selectionText | ConvertFrom-Json
+          if ([string]$selection.databaseId -cne $env:DIAGNOSTIC_RELEASE_ID -or -not $selection.isDraft -or $selection.tagName -cne $release.tag_name) { throw 'Diagnostic tag resolves to different bytes.' }
+          $assets = Join-Path $env:RUNNER_TEMP 'lagom-signed-diagnostic-assets'
+          if (Test-Path -LiteralPath $assets) { throw 'Diagnostic asset directory must be fresh.' }
+          New-Item -ItemType Directory -Path $assets | Out-Null
+          gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $assets --pattern "EgoistShield-Setup-$version.exe" --pattern 'package-integrity.json' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $integrity = Get-Content -LiteralPath (Join-Path $assets 'package-integrity.json') -Raw | ConvertFrom-Json
+          if ($integrity.source.commit -cne $release.target_commitish) { throw 'Artifact source differs from the exact draft target.' }
+          # These aliases are local verifier inputs copied from authenticated
+          # bytes; they are never claimed to have been downloaded or published.
+          Copy-Item -LiteralPath (Join-Path $assets "EgoistShield-Setup-$version.exe") -Destination (Join-Path $assets 'Egoist-Lagom-Setup.exe')
+          Copy-Item -LiteralPath (Join-Path $assets 'release-manifest.json') -Destination (Join-Path $assets 'stable-channel.json')
+          Copy-Item -LiteralPath (Join-Path $assets 'release-manifest.json.sig') -Destination (Join-Path $assets 'stable-channel.json.sig')
+          Copy-Item -LiteralPath 'resources/release/root-public-key.pem' -Destination (Join-Path $assets 'root-public-key.pem')
+          $manifest = Get-Content -LiteralPath (Join-Path $assets 'release-manifest.json') -Raw | ConvertFrom-Json
+          [IO.File]::WriteAllText((Join-Path $assets "EgoistShield-Setup-$version.exe.sha256"), ($manifest.sha256 + "  EgoistShield-Setup-$version.exe`n"), [Text.UTF8Encoding]::new($false))
+          [IO.File]::WriteAllText((Join-Path $assets 'Egoist-Lagom-Setup.exe.sha256'), ($manifest.sha256 + "  Egoist-Lagom-Setup.exe`n"), [Text.UTF8Encoding]::new($false))
+          node scripts/prepare-release-assets.mjs --dist $assets --verify-only true
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "LAGOM_DIAGNOSTIC_ASSETS=$assets" >> $env:GITHUB_ENV
+          if ($env:DIAGNOSTIC_VARIANT -cne 'candidate') {
+            $oldAssets = Join-Path $env:RUNNER_TEMP 'lagom-original-diagnostic-assets'
+            if (Test-Path -LiteralPath $oldAssets) { throw 'Original diagnostic assets must be fresh.' }
+            if ($env:DIAGNOSTIC_VARIANT -ceq '3.7.8') {
+              gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $assets --pattern 'legacy-local-EgoistShield-Setup-3.7.8.exe' --pattern 'legacy-local-3.7.8-release-manifest.json' --pattern 'legacy-local-3.7.8-release-manifest.json.sig'
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              node tests/windows-legacy-local-transport.mjs stage --sidecars $assets --candidate-registry $assets --old-assets $oldAssets --source-release-id $env:DIAGNOSTIC_RELEASE_ID
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            } else {
+              $oldReleaseText = gh api 'repos/egoist-ai1/egoist-lagom/releases/tags/v3.7.9'
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              $oldRelease = $oldReleaseText | ConvertFrom-Json
+              if ($oldRelease.tag_name -cne 'v3.7.9' -or $oldRelease.draft -or -not $oldRelease.published_at) { throw 'Original diagnostic 3.7.9 must be the published release.' }
+              New-Item -ItemType Directory -Path $oldAssets | Out-Null
+              gh release download 'v3.7.9' --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern 'EgoistShield-Setup-3.7.9.exe' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            }
+            "LAGOM_DIAGNOSTIC_OLD_ASSETS=$oldAssets" >> $env:GITHUB_ENV
+            "LAGOM_DIAGNOSTIC_OLD_VERSION=$env:DIAGNOSTIC_VARIANT" >> $env:GITHUB_ENV
+          }
+      - name: Diagnose exact native installer phases
+        env:
+          CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
+          DIAGNOSTIC_ALL_VERSIONS: ${{ inputs.diagnostic_all_versions }}
+          DIAGNOSTIC_LEGACY_RESTORE: ${{ inputs.legacy_baseline_restore }}
+          DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+          DIAGNOSTIC_LEGACY_ONLY: ${{ inputs.diagnostic_legacy_only }}
+          ORDINARY_GUI_DIAGNOSTIC: ${{ inputs.ordinary_gui_diagnostic }}
+          INSTALLER_DIAGNOSTICS: ${{ inputs.installer_diagnostics }}
+          DIAGNOSTIC_VARIANT: candidate
+          PACKAGE_CANDIDATE: ${{ inputs.package_candidate }}
+          NATIVE_ACCEPTANCE: ${{ inputs.native_acceptance }}
+          SIGNED_LEGACY_RELEASE_ID: ${{ inputs.signed_legacy_release_id }}
+          SIGNED_CURRENT_ONLY: ${{ inputs.signed_current_only }}
+        shell: pwsh
+        run: |
+          if ($env:DOTNET_INSTALL_DIR) { $env:SHIELD_DOTNET = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe' }
+          if ($env:ORDINARY_GUI_DIAGNOSTIC -ceq 'true') { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS -OrdinaryGuiDiagnostic }
+          elseif ($env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -CoreConfigurationOnly }
+          elseif ($env:LAGOM_DIAGNOSTIC_OLD_ASSETS) {
+            if ($env:DIAGNOSTIC_LEGACY_RESTORE -cnotin @('true','false')) { throw 'Invalid diagnostic baseline selection.' }
+            $diagnosticOptions = @{ SignedCandidateAssetsDirectory=$env:LAGOM_DIAGNOSTIC_ASSETS; OriginalAssetsDirectory=$env:LAGOM_DIAGNOSTIC_OLD_ASSETS; OriginalVersion=$env:LAGOM_DIAGNOSTIC_OLD_VERSION; GuiFailureDiagnostic=$true; RestoreAuthenticatedBaseline=($env:DIAGNOSTIC_LEGACY_RESTORE -ceq 'true') }
+            ./tests/windows-installer-diagnostics.ps1 @diagnosticOptions
+          }
+          elseif ($env:LAGOM_DIAGNOSTIC_ASSETS -and $env:DIAGNOSTIC_ALL_VERSIONS -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS -GuiFailureDiagnostic }
+          elseif ($env:LAGOM_DIAGNOSTIC_ASSETS) { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS }
+          else { ./tests/windows-installer-diagnostics.ps1 }
+      - name: Upload source phase diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lagom-installer-diagnostics-${{ github.sha }}-${{ matrix.variant }}
+          retention-days: 7
+          if-no-files-found: error
+          path: ${{ runner.temp }}/lagom-installer-diagnostics
+
+  test:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.installer_diagnostics || inputs.package_candidate || inputs.signed_legacy_release_id != '' }}
+    runs-on: windows-latest
+    timeout-minutes: 35
+    env:
+      DOTNET_MULTILEVEL_LOOKUP: '0'
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate manual acceptance inputs
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          NATIVE_ACCEPTANCE: ${{ inputs.native_acceptance }}
+          PACKAGE_CANDIDATE: ${{ inputs.package_candidate }}
+          SIGNED_LEGACY_RELEASE_ID: ${{ inputs.signed_legacy_release_id }}
+          ORDINARY_GUI_DIAGNOSTIC: ${{ inputs.ordinary_gui_diagnostic }}
+          INSTALLER_DIAGNOSTICS: ${{ inputs.installer_diagnostics }}
+          DIAGNOSTIC_RELEASE_ID: ${{ inputs.diagnostic_release_id }}
+          DIAGNOSTIC_VARIANT: candidate
+          DIAGNOSTIC_ALL_VERSIONS: ${{ inputs.diagnostic_all_versions }}
+          DIAGNOSTIC_LEGACY_ONLY: ${{ inputs.diagnostic_legacy_only }}
+          CORE_CONFIGURATION_DIAGNOSTIC: ${{ inputs.core_configuration_diagnostic }}
+          DIAGNOSTIC_LEGACY_RESTORE: ${{ inputs.legacy_baseline_restore }}
+          SIGNED_CURRENT_ONLY: ${{ inputs.signed_current_only }}
+        shell: pwsh
+        run: |
+          . ./tests/windows-installer-diagnostics.ps1 -LibraryOnly
+          $ordinarySelection=@{}
+          foreach($name in @('ORDINARY_GUI_DIAGNOSTIC','INSTALLER_DIAGNOSTICS','DIAGNOSTIC_RELEASE_ID','DIAGNOSTIC_VARIANT','DIAGNOSTIC_ALL_VERSIONS','DIAGNOSTIC_LEGACY_ONLY','CORE_CONFIGURATION_DIAGNOSTIC','DIAGNOSTIC_LEGACY_RESTORE','PACKAGE_CANDIDATE','NATIVE_ACCEPTANCE','SIGNED_LEGACY_RELEASE_ID','SIGNED_CURRENT_ONLY')){$ordinarySelection[$name]=[Environment]::GetEnvironmentVariable($name)}
+          Assert-OrdinaryGuiDiagnosticSelection -Selection $ordinarySelection
+          if ($env:NATIVE_ACCEPTANCE -eq 'true' -and $env:PACKAGE_CANDIDATE -ne 'true') { throw 'Native acceptance requires a packaged candidate.' }
+          if ($env:SIGNED_LEGACY_RELEASE_ID -and $env:SIGNED_LEGACY_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Signed legacy release ID must be an exact GitHub release ID.' }
+      - name: Read the pinned SDK
+        id: sdk
+        shell: pwsh
+        run: |
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($sdkPin -notmatch '^\d+\.\d+\.\d+$') { throw 'global.json must select an exact stable SDK' }
+          "version=$sdkPin" >> $env:GITHUB_OUTPUT
+          "DOTNET_INSTALL_DIR=$(Join-Path $env:RUNNER_TEMP 'lagom-checks-dotnet')" >> $env:GITHUB_ENV
       - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
@@ -26,7 +281,7 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
-            10.0.x
+            ${{ steps.sdk.outputs.version }}
       - name: Use Python for offline release preflight
         uses: actions/setup-python@v5
         with:
@@ -36,7 +291,20 @@ jobs:
         run: |
           $testWork = Join-Path $env:RUNNER_TEMP 'lagom-tests'
           New-Item -ItemType Directory -Path $testWork -Force | Out-Null
+          $dotnetPath = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'
+          $actualSdk = & $dotnetPath --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($actualSdk.Trim() -ne $sdkPin) { throw "SDK mismatch: expected $sdkPin, received $actualSdk" }
+          . ./scripts/resolve-git-openssl.ps1
+          $gitApplicationPaths = @((Get-Command git -CommandType Application -ErrorAction Stop).Source)
+          $opensslPath = Resolve-GitOpenSsl -GitApplicationPaths $gitApplicationPaths
+          & $opensslPath version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "LAGOM_TEST_TEMP=$testWork" >> $env:GITHUB_ENV
+          "LAGOM_TEST_POWERSHELL=$(Join-Path $PSHOME 'pwsh.exe')" >> $env:GITHUB_ENV
+          "LAGOM_DNS_TEST_WORK=$testWork" >> $env:GITHUB_ENV
+          "LAGOM_DNS_TEST_OPENSSL=$opensslPath" >> $env:GITHUB_ENV
           "EGOIST_RELEASE_TEST_DIR=$testWork" >> $env:GITHUB_ENV
           "EGOIST_RELEASE_PYTHON=$env:pythonLocation\python.exe" >> $env:GITHUB_ENV
           "EGOIST_PACKAGING_TEST_DIR=$testWork" >> $env:GITHUB_ENV
@@ -44,16 +312,27 @@ jobs:
           "TEMP=$testWork" >> $env:GITHUB_ENV
           "TMP=$testWork" >> $env:GITHUB_ENV
       - name: Install dependencies
-        run: npm ci
+        shell: pwsh
+        run: |
+          npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build generated bundles
-        run: npm run build
+        shell: pwsh
+        run: |
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Install NSIS for installer regressions
         shell: pwsh
-        run: choco install nsis --no-progress --yes
+        run: |
+          choco install nsis --no-progress --yes
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run tests
         env:
           SHIELD_MAKENSIS: C:\\Program Files (x86)\\NSIS\\makensis.exe
-        run: npm test
+        shell: pwsh
+        run: |
+          npm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run Core fault and recovery regressions
         shell: pwsh
         run: |
@@ -63,6 +342,44 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet run --project tests/NativeDohConfigurationRegression -c Release -- --self-test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run Core persistence and crash stress against frozen sources
+        shell: pwsh
+        run: |
+          ./tests/core-persistence-production.ps1 -WorkRoot $env:LAGOM_TEST_TEMP -DotnetPath (Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe') -Case all
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run Core owner and protected-file ACL regressions
+        id: core-owner
+        shell: pwsh
+        run: |
+          ./tests/core-owner-regression.ps1 -WorkRoot $env:LAGOM_TEST_TEMP -DotnetPath (Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preserve actual Core owner regression diagnostics
+        if: ${{ always() && steps.core-owner.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lagom-core-owner-regression-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/lagom-tests/core-owner-*/receipt.json
+            ${{ runner.temp }}/lagom-tests/core-owner-*/results.json
+            ${{ runner.temp }}/lagom-tests/core-owner-*/run.log
+            ${{ runner.temp }}/lagom-tests/core-owner-*/build.log
+      - name: Run owned wrapper log filesystem and Core integration regressions
+        shell: pwsh
+        run: |
+          $env:LAGOM_TEST_POWERSHELL = Join-Path $PSHOME 'pwsh.exe'
+          if (-not (Test-Path -LiteralPath $env:LAGOM_TEST_POWERSHELL -PathType Leaf)) { throw 'PowerShell 7 is required for native long-path junction fixtures' }
+          $coreIntermediate = (Join-Path $env:LAGOM_TEST_TEMP 'wrapper-core-obj') + '\'
+          $coreOutput = (Join-Path $env:LAGOM_TEST_TEMP 'wrapper-core-bin') + '\'
+          dotnet build src/service/EgoistShield.Service.csproj -c Release -p:RestoreLockedMode=true -p:PublishSingleFile=true -p:SelfContained=true "-p:BaseIntermediateOutputPath=$coreIntermediate" "-p:MSBuildProjectExtensionsPath=$coreIntermediate" "-p:OutputPath=$coreOutput" '-p:DefaultItemExcludes=obj\**\*.cs' -v quiet
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $coreAssembly = Join-Path $coreOutput 'EgoistShield.Service.dll'
+          if (-not (Test-Path -LiteralPath $coreAssembly -PathType Leaf)) { throw 'Actual Core assembly for the log guard regression is missing' }
+          dotnet $coreAssembly --self-test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet run --project tests/OwnedWrapperLogMaintenanceRegression -c Release -- --work $env:LAGOM_TEST_TEMP --core $coreAssembly
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run Windows PowerShell installer safety regressions
         shell: pwsh
         run: |
@@ -71,3 +388,387 @@ jobs:
             & $nativeShell -NoProfile -ExecutionPolicy Bypass -File (Join-Path 'tests' $test)
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
+
+  candidate:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.package_candidate }}
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      DOTNET_MULTILEVEL_LOOKUP: '0'
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Read pinned candidate metadata
+        id: metadata
+        run: |
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
+          if ($sdkPin -notmatch '^\d+\.\d+\.\d+$' -or $version -notmatch '^\d+\.\d+\.\d+$') { throw 'Candidate metadata must use stable exact versions' }
+          "sdk=$sdkPin" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "DOTNET_INSTALL_DIR=$(Join-Path $env:RUNNER_TEMP 'lagom-candidate-dotnet')" >> $env:GITHUB_ENV
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Use the exact packaging SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ steps.metadata.outputs.sdk }}
+      - name: Use Python for verified input recovery
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install packaging tools
+        run: |
+          choco install nsis 7zip --no-progress --yes
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Prepare runner-owned work and tool paths
+        id: prepare
+        run: |
+          $candidateWork = Join-Path $env:RUNNER_TEMP 'lagom-candidate'
+          $evidence = Join-Path $candidateWork 'evidence'
+          $temporary = Join-Path $candidateWork 'temp'
+          New-Item -ItemType Directory -Path $candidateWork, $evidence, $temporary -Force | Out-Null
+          $dotnetPath = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'
+          $sevenZipPath = Join-Path $env:ProgramFiles '7-Zip\7z.exe'
+          $makensisPath = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
+          foreach ($tool in @($dotnetPath, $sevenZipPath, $makensisPath)) {
+            if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) { throw "Required tool is missing: $tool" }
+          }
+          $actualSdk = & $dotnetPath --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($actualSdk.Trim() -ne $sdkPin) { throw "SDK mismatch: expected $sdkPin, received $actualSdk" }
+          $sourceEpoch = git log -1 --format=%ct
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($sourceEpoch -notmatch '^\d+$') { throw 'Invalid source commit timestamp' }
+          "SHIELD_DOTNET=$dotnetPath" >> $env:GITHUB_ENV
+          "SHIELD_MAKENSIS=$makensisPath" >> $env:GITHUB_ENV
+          "SHIELD_SEVEN_ZIP=$sevenZipPath" >> $env:GITHUB_ENV
+          "SHIELD_EVIDENCE_DIR=$evidence" >> $env:GITHUB_ENV
+          "LAGOM_CANDIDATE_WORK=$candidateWork" >> $env:GITHUB_ENV
+          "SOURCE_DATE_EPOCH=$sourceEpoch" >> $env:GITHUB_ENV
+          "TEMP=$temporary" >> $env:GITHUB_ENV
+          "TMP=$temporary" >> $env:GITHUB_ENV
+          @{ sdk = $actualSdk.Trim(); sevenZip = $sevenZipPath; makensis = $makensisPath; sourceEpoch = $sourceEpoch } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'candidate-tools.json') -Encoding utf8
+      - name: Install locked JavaScript dependencies
+        run: |
+          npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Recover checksum-verified build inputs
+        run: |
+          python scripts/bootstrap-build-inputs.py --seven-zip $env:SHIELD_SEVEN_ZIP --work-dir $env:LAGOM_CANDIDATE_WORK
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build generated bundles
+        run: |
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Package unsigned Windows candidate
+        run: |
+          npm run package:win
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $integrity = Get-Content -LiteralPath 'dist/package-integrity.json' -Raw | ConvertFrom-Json
+          $installer = Join-Path $env:GITHUB_WORKSPACE $integrity.installer.path
+          $actualHash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
+          if ($actualHash -ne $integrity.installer.sha256 -or (Get-Item -LiteralPath $installer).Length -ne $integrity.installer.bytes) { throw 'Candidate installer does not match package integrity' }
+      - name: Test the packaged candidate and actual DNS runtime
+        run: |
+          $testWork = Join-Path $env:LAGOM_CANDIDATE_WORK 'tests'
+          $trustWork = Join-Path $testWork 'trust'
+          New-Item -ItemType Directory -Path $testWork, $trustWork -Force | Out-Null
+          $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
+          $integrity = Get-Content -LiteralPath 'dist/package-integrity.json' -Raw | ConvertFrom-Json
+          if ($integrity.version -ne $version) { throw 'Packaged test candidate version does not match the source' }
+          $installer = Join-Path $env:GITHUB_WORKSPACE "dist\EgoistShield-Setup-$version.exe"
+          $nativeSourcesPath = Join-Path $env:GITHUB_WORKSPACE "dist\Egoist-Lagom-$version-native-sources.zip"
+          if ($integrity.nativeSources.path -ne "dist/Egoist-Lagom-$version-native-sources.zip") { throw 'Mandatory native source companion is missing from package integrity' }
+          $xrayPath = Join-Path $env:GITHUB_WORKSPACE "out\EgoistShield-$version-win-x64\resources\runtime\xray\xray.exe"
+          $pythonPath = Join-Path $env:pythonLocation 'python.exe'
+          . ./scripts/resolve-git-openssl.ps1
+          $gitApplicationPaths = @((Get-Command git -CommandType Application -ErrorAction Stop).Source)
+          $opensslPath = Resolve-GitOpenSsl -GitApplicationPaths $gitApplicationPaths
+          foreach ($required in @($installer, $nativeSourcesPath, "$nativeSourcesPath.sha256", $xrayPath, $pythonPath, $opensslPath)) {
+            if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { throw "Candidate test input is missing: $required" }
+          }
+          & $opensslPath version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $xrayVersion = & $xrayPath version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:LAGOM_TEST_TEMP = $testWork
+          $env:LAGOM_TEST_POWERSHELL = Join-Path $PSHOME 'pwsh.exe'
+          $env:LAGOM_DNS_TEST_WORK = $testWork
+          $env:LAGOM_DNS_TEST_OPENSSL = $opensslPath
+          $env:LAGOM_XRAY_TEST_BINARY = $xrayPath
+          $env:LAGOM_TRUST_TEST_WORK = $trustWork
+          $env:EGOIST_RELEASE_TEST_DIR = $testWork
+          $env:EGOIST_RELEASE_PYTHON = $pythonPath
+          $env:EGOIST_PACKAGING_TEST_DIR = $testWork
+          $env:SHIELD_PYTHON = $pythonPath
+          $env:TEMP = $testWork
+          $env:TMP = $testWork
+          @{ xray = $xrayPath; xraySha256 = (Get-FileHash -LiteralPath $xrayPath -Algorithm SHA256).Hash; xrayVersion = $xrayVersion; openssl = $opensslPath; fixtureWork = $testWork } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $env:SHIELD_EVIDENCE_DIR 'candidate-test-inputs.json') -Encoding utf8
+          npm test 2>&1 | Tee-Object -FilePath (Join-Path $env:SHIELD_EVIDENCE_DIR 'candidate-node-tests.txt')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $actualHash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
+          if ($actualHash -ne $integrity.installer.sha256 -or (Get-Item -LiteralPath $installer).Length -ne $integrity.installer.bytes) { throw 'Candidate installer changed during tests' }
+          $actualSourcesHash = (Get-FileHash -LiteralPath $nativeSourcesPath -Algorithm SHA256).Hash
+          if ($actualSourcesHash -ne $integrity.nativeSources.sha256 -or (Get-Item -LiteralPath $nativeSourcesPath).Length -ne $integrity.nativeSources.bytes) { throw 'Native source companion does not match package integrity after tests' }
+      - name: Install and exercise the candidate on the disposable runner
+        if: ${{ inputs.native_acceptance }}
+        shell: pwsh
+        run: |
+          ./tests/windows-production-acceptance.ps1 -IntegrityManifestPath (Join-Path $env:GITHUB_WORKSPACE 'dist/package-integrity.json') -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:SHIELD_EVIDENCE_DIR 'native')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload unsigned candidate only
+        uses: actions/upload-artifact@v4
+        with:
+          name: lagom-unsigned-candidate-${{ steps.metadata.outputs.version }}-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            dist/EgoistShield-Setup-${{ steps.metadata.outputs.version }}.exe
+            dist/EgoistShield-Setup-${{ steps.metadata.outputs.version }}.exe.sha256
+            dist/Egoist-Lagom-${{ steps.metadata.outputs.version }}-native-sources.zip
+            dist/Egoist-Lagom-${{ steps.metadata.outputs.version }}-native-sources.zip.sha256
+            dist/package-integrity.json
+      - name: Upload candidate build evidence
+        if: ${{ always() && steps.prepare.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lagom-candidate-build-evidence-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: error
+          path: ${{ runner.temp }}/lagom-candidate/evidence
+
+  signed-candidate:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.signed_legacy_release_id != '' }}
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 60
+    permissions:
+      # GitHub exposes draft releases to identities with repository push access.
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout the exact acceptance sources
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Read the signed acceptance SDK
+        id: sdk
+        run: |
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($sdkPin -notmatch '^\d+\.\d+\.\d+$') { throw 'An exact SDK is required.' }
+          "version=$sdkPin" >> $env:GITHUB_OUTPUT
+          "DOTNET_INSTALL_DIR=$(Join-Path $env:RUNNER_TEMP 'lagom-signed-candidate-dotnet')" >> $env:GITHUB_ENV
+      - name: Use the exact native harness SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ steps.sdk.outputs.version }}
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked verification dependencies
+        run: |
+          npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Download and authenticate the exact signed candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNED_RELEASE_ID: ${{ inputs.signed_legacy_release_id }}
+          SIGNED_CURRENT_ONLY: ${{ inputs.signed_current_only }}
+        run: |
+          if ($env:SIGNED_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Invalid signed release ID.' }
+          if ($env:SIGNED_CURRENT_ONLY -cnotin @('true','false')) { throw 'Invalid current candidate selection.' }
+          $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid candidate version.' }
+          $releaseText = gh api ("repos/egoist-ai1/egoist-lagom/releases/" + $env:SIGNED_RELEASE_ID)
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $release = $releaseText | ConvertFrom-Json
+          # REST releases/tags only returns published releases. The CLI also
+          # resolves draft pending tags through GraphQL; pin the resulting ID.
+          $tagText = gh release view "v$version" --repo 'egoist-ai1/egoist-lagom' --json databaseId,tagName,isDraft
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $tagSelection = $tagText | ConvertFrom-Json
+          if ($release.tag_name -cne "v$version" -or [string]$release.id -cne $env:SIGNED_RELEASE_ID -or [string]$tagSelection.databaseId -cne $env:SIGNED_RELEASE_ID -or $tagSelection.tagName -cne $release.tag_name -or $tagSelection.isDraft -ne $release.draft) { throw 'The selected tag/release identity differs.' }
+          $signedWork = Join-Path $env:RUNNER_TEMP 'lagom-signed-candidate'
+          if (Test-Path -LiteralPath $signedWork) { throw 'Signed candidate work must be fresh.' }
+          $oldAssets = Join-Path $signedWork 'old'
+          $candidateAssets = Join-Path $signedWork 'candidate'
+          $evidence = Join-Path $signedWork 'evidence'
+          New-Item -ItemType Directory -Path $oldAssets, $candidateAssets, $evidence -Force | Out-Null
+          if ($env:SIGNED_CURRENT_ONLY -cne 'true') {
+            gh release download 'v3.7.9' --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern 'EgoistShield-Setup-3.7.9.exe' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $candidateAssets --pattern "EgoistShield-Setup-$version.exe" --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig' --pattern 'package-integrity.json'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $authWork = Join-Path $env:RUNNER_TEMP ("lagom-legacy-native-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT")
+          New-Item -ItemType Directory -Path $authWork | Out-Null
+          $options = Join-Path $authWork 'signed-fresh-authentication.options.json'
+          $authenticationOptions = @{ candidateAssets=$candidateAssets; integrityPath=(Join-Path $candidateAssets 'package-integrity.json'); sourceCommit=$env:GITHUB_SHA; output=(Join-Path $authWork 'signed-fresh-authentication.json') }
+          $authenticationMode = 'verify-current-assets'
+          if ($env:SIGNED_CURRENT_ONLY -cne 'true') { $authenticationOptions.oldVersion='3.7.9'; $authenticationOptions.oldAssets=$oldAssets; $authenticationMode='verify-assets' }
+          $authenticationOptions | ConvertTo-Json | Set-Content -LiteralPath $options -Encoding utf8
+          node tests/windows-production-legacy-upgrade.mjs $authenticationMode $options
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item -LiteralPath (Join-Path $authWork 'signed-fresh-authentication.json') -Destination $evidence
+          $integrityPath = Join-Path $candidateAssets 'package-integrity.json'
+          $integrity = Get-Content -LiteralPath $integrityPath -Raw | ConvertFrom-Json
+          $relative = [string]$integrity.installer.path
+          if ($relative -cnotmatch '^dist/(?:[a-zA-Z0-9_-]+/)*EgoistShield-Setup-\d+\.\d+\.\d+\.exe$') { throw 'Signed installer staging path is not canonical.' }
+          $stagedInstaller = Join-Path $env:GITHUB_WORKSPACE $relative
+          $stagedDirectory = Split-Path -Parent $stagedInstaller
+          if (Test-Path -LiteralPath $stagedDirectory) { throw 'Signed staging directory must be fresh.' }
+          New-Item -ItemType Directory -Path $stagedDirectory -Force | Out-Null
+          Copy-Item -LiteralPath (Join-Path $candidateAssets "EgoistShield-Setup-$version.exe") -Destination $stagedInstaller
+          $stagedIntegrity = Join-Path $stagedDirectory 'package-integrity.json'
+          Copy-Item -LiteralPath $integrityPath -Destination $stagedIntegrity
+          "LAGOM_SIGNED_INTEGRITY=$stagedIntegrity" >> $env:GITHUB_ENV
+          "LAGOM_SIGNED_EVIDENCE=$evidence" >> $env:GITHUB_ENV
+          "SHIELD_DOTNET=$(Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe')" >> $env:GITHUB_ENV
+          @{ releaseId=$release.id; sourceCommit=$env:GITHUB_SHA; draft=$release.draft; installerSha256=(Get-FileHash -LiteralPath $stagedInstaller -Algorithm SHA256).Hash; integritySha256=(Get-FileHash -LiteralPath $stagedIntegrity -Algorithm SHA256).Hash } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'download-identity.json') -Encoding utf8
+      - name: Install the actual signed release and exercise native services
+        run: |
+          ./tests/windows-production-acceptance.ps1 -IntegrityManifestPath $env:LAGOM_SIGNED_INTEGRITY -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:LAGOM_SIGNED_EVIDENCE 'native')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload signed candidate native evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lagom-signed-candidate-acceptance-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: ${{ runner.temp }}/lagom-signed-candidate/evidence
+
+  legacy:
+    name: legacy (${{ matrix.old_version }})
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.signed_legacy_release_id != '' && !inputs.signed_current_only }}
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        old_version: ['3.7.8', '3.7.9']
+    runs-on: windows-2022
+    timeout-minutes: 45
+    permissions:
+      # This manually dispatched job reads the unpublished, source-bound draft.
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout the acceptance sources
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Read the legacy acceptance SDK
+        id: sdk
+        run: |
+          $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($sdkPin -notmatch '^\d+\.\d+\.\d+$') { throw 'An exact SDK is required.' }
+          "version=$sdkPin" >> $env:GITHUB_OUTPUT
+          "DOTNET_INSTALL_DIR=$(Join-Path $env:RUNNER_TEMP 'lagom-signed-legacy-dotnet')" >> $env:GITHUB_ENV
+      - name: Use the exact ordinary GUI harness SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ steps.sdk.outputs.version }}
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked verification dependencies
+        run: |
+          npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Download and authenticate the original old generation and signed candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNED_LEGACY_RELEASE_ID: ${{ inputs.signed_legacy_release_id }}
+          SIGNED_OLD_VERSION: ${{ matrix.old_version }}
+        run: |
+          if ($env:SIGNED_LEGACY_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Invalid signed release ID.' }
+          $oldVersion = $env:SIGNED_OLD_VERSION
+          if ($oldVersion -cnotin @('3.7.8', '3.7.9')) { throw 'Only the two authenticated supported old versions may be tested.' }
+          $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid candidate version.' }
+          $oldRelease = $null
+          if ($oldVersion -ceq '3.7.9') {
+            $oldReleaseText = gh api 'repos/egoist-ai1/egoist-lagom/releases/tags/v3.7.9'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $oldRelease = $oldReleaseText | ConvertFrom-Json
+            if ($oldRelease.tag_name -cne 'v3.7.9' -or $oldRelease.draft -or -not $oldRelease.published_at) { throw 'The old 3.7.9 release must match the exact published generation.' }
+          }
+          $candidateText = gh api ("repos/egoist-ai1/egoist-lagom/releases/" + $env:SIGNED_LEGACY_RELEASE_ID)
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $candidateRelease = $candidateText | ConvertFrom-Json
+          if ($candidateRelease.tag_name -cne "v$version" -or [string]$candidateRelease.id -cne $env:SIGNED_LEGACY_RELEASE_ID) { throw 'The candidate release identity differs.' }
+          $tagSelectionText = gh release view "v$version" --repo 'egoist-ai1/egoist-lagom' --json databaseId,tagName,isDraft
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $tagSelection = $tagSelectionText | ConvertFrom-Json
+          if ([string]$tagSelection.databaseId -cne $env:SIGNED_LEGACY_RELEASE_ID -or $tagSelection.tagName -cne $candidateRelease.tag_name -or $tagSelection.isDraft -ne $candidateRelease.draft) { throw 'Candidate tag resolves to a different release.' }
+          $legacyWork = Join-Path $env:RUNNER_TEMP ("lagom-signed-legacy-" + $oldVersion)
+          if (Test-Path -LiteralPath $legacyWork) { throw 'Signed acceptance work directory must be fresh.' }
+          $oldAssets = Join-Path $legacyWork 'old'
+          $candidateAssets = Join-Path $legacyWork 'candidate'
+          $evidence = Join-Path $legacyWork 'evidence'
+          New-Item -ItemType Directory -Path $candidateAssets, $evidence -Force | Out-Null
+          gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $candidateAssets --pattern "EgoistShield-Setup-$version.exe" --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig' --pattern 'package-integrity.json'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $oldTransport = 'published-original-release'
+          $oldReleaseId = $null
+          if ($oldVersion -ceq '3.7.8') {
+            # The authenticated original 3.7.8 generation exists locally; its
+            # canonical signed URL is not evidence of a published old release.
+            gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $candidateAssets --pattern 'legacy-local-EgoistShield-Setup-3.7.8.exe' --pattern 'legacy-local-3.7.8-release-manifest.json' --pattern 'legacy-local-3.7.8-release-manifest.json.sig'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            node tests/windows-legacy-local-transport.mjs stage --sidecars $candidateAssets --candidate-registry $candidateAssets --old-assets $oldAssets --source-release-id $env:SIGNED_LEGACY_RELEASE_ID
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            Copy-Item -LiteralPath (Join-Path $oldAssets 'provenance.json') -Destination (Join-Path $evidence 'original-3.7.8-transport.json')
+            $oldTransport = 'original-signed-local-generation'
+          } else {
+            New-Item -ItemType Directory -Path $oldAssets | Out-Null
+            gh release download 'v3.7.9' --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern 'EgoistShield-Setup-3.7.9.exe' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $oldReleaseId = $oldRelease.id
+          }
+          @{ oldVersion = $oldVersion; oldReleaseId = $oldReleaseId; oldTransport = $oldTransport; publishedOldOriginVerified = ($oldVersion -ceq '3.7.9'); candidateReleaseId = $candidateRelease.id; sourceCommit = $env:GITHUB_SHA; candidateTag = $candidateRelease.tag_name; candidateDraft = $candidateRelease.draft } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'download-identity.json') -Encoding utf8
+          "LAGOM_LEGACY_WORK=$legacyWork" >> $env:GITHUB_ENV
+      - name: Run the actual signed old helper handoff
+        env:
+          LAGOM_LEGACY_RESTORE: ${{ inputs.legacy_baseline_restore }}
+          LAGOM_OLD_VERSION: ${{ matrix.old_version }}
+        run: |
+          if ($env:LAGOM_LEGACY_RESTORE -cnotin @('true','false')) { throw 'Invalid legacy baseline selection.' }
+          $env:SHIELD_DOTNET = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'
+          $oldAssets = Join-Path $env:LAGOM_LEGACY_WORK 'old'
+          $candidateAssets = Join-Path $env:LAGOM_LEGACY_WORK 'candidate'
+          $legacyOptions = @{ ExpectedOldVersion=$env:LAGOM_OLD_VERSION; OldReleaseAssetsDirectory=$oldAssets; CandidateReleaseAssetsDirectory=$candidateAssets; IntegrityManifestPath=(Join-Path $candidateAssets 'package-integrity.json'); ExpectedSourceCommit=$env:GITHUB_SHA; EvidenceDirectory=(Join-Path $env:LAGOM_LEGACY_WORK 'evidence\native'); RestoreAuthenticatedBaseline=($env:LAGOM_LEGACY_RESTORE -ceq 'true') }
+          ./tests/windows-production-legacy-upgrade.ps1 @legacyOptions
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload signed legacy acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lagom-signed-legacy-${{ matrix.old_version }}-acceptance-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: ${{ runner.temp }}/lagom-signed-legacy-${{ matrix.old_version }}/evidence

@@ -17,7 +17,7 @@ namespace EgoistShield.Service;
 
 internal sealed class OperationDispatcher : IDisposable
 {
-	private sealed record CachedResponse(string Fingerprint, ServiceResponse Response, DateTimeOffset CompletedAt);
+	private sealed record CachedResponse(string Fingerprint, ServiceResponse Response, DateTimeOffset CompletedAt, int Bytes);
 
 	private sealed record NativeDohHealth(NativeDohOwnedState? State, DnsAdapterSnapshot[] Adapters, NativeDohEntrySnapshot[] Entries, bool EntriesMatch, bool DnsOwned);
 
@@ -36,6 +36,7 @@ internal sealed class OperationDispatcher : IDisposable
 	private readonly OwnedServiceController? _services;
 
 	private readonly TransactionJournal _journal;
+	private readonly StateReadException? _startupStateError;
 
 	private readonly ServiceLog _log;
 
@@ -51,30 +52,46 @@ internal sealed class OperationDispatcher : IDisposable
 	private readonly Lazy<ComponentWorker> _componentWorker;
 	private readonly Func<JsonElement, bool, CancellationToken, Task<JsonElement>> _executeComponent;
 	private readonly OwnedServiceIntentStore _serviceIntents;
+	private readonly InstallerServiceMaintenance _installerMaintenance;
 	private readonly OwnedServiceSupervisor? _serviceSupervisor;
 	private readonly DnsBootstrapRefreshScheduler _bootstrapRefresh;
+	private readonly OwnedWrapperLogMaintenance? _wrapperLogMaintenance;
 	private WindowsServiceListenerSnapshot? _telegramListenerSnapshot;
 	private readonly Stopwatch _maintenanceClock = Stopwatch.StartNew();
 	private TimeSpan _nextDnsMaintenance;
 	private TimeSpan _nextDnsAudit;
 	private int _dnsMaintenanceRequested = 1;
+	private TimeSpan _nextWrapperLogWarning;
+	private readonly object _responseCacheLock = new();
+	private const long MaxResponseCacheBytes = 8 * 1024 * 1024;
+	private const int MaxCachedResponseBytes = 256 * 1024;
+	internal static readonly TimeSpan NativeDohQueryTimeout = TimeSpan.FromSeconds(20);
+	private readonly TimeSpan _nativeDohQueryTimeout;
 
 	public OperationDispatcher(ServiceOptions options, WindowsDnsController dns, WindowsNativeDohController nativeDoh, OwnedServiceController? services, TransactionJournal journal, ServiceLog log,
-		Func<JsonElement, bool, CancellationToken, Task<JsonElement>>? componentExecutor = null)
+		Func<JsonElement, bool, CancellationToken, Task<JsonElement>>? componentExecutor = null, StateReadException? startupStateError = null,
+		TimeSpan? nativeDohQueryTimeout = null)
 	{
+		_nativeDohQueryTimeout = nativeDohQueryTimeout ?? NativeDohQueryTimeout;
+		if (_nativeDohQueryTimeout <= TimeSpan.Zero || _nativeDohQueryTimeout > NativeDohQueryTimeout)
+			throw new ArgumentOutOfRangeException(nameof(nativeDohQueryTimeout));
 		_options = options;
 		_dns = dns;
 		_nativeDoh = nativeDoh;
 		_services = services;
 		_journal = journal;
+		_startupStateError = startupStateError;
 		_log = log;
 		_dnsOwnedStatePath = Path.Combine(options.StateRoot, "dns-owned-state.json");
 		_componentWorker = new Lazy<ComponentWorker>(() => new ComponentWorker(options.InstallRoot ?? throw new InvalidOperationException("Component operations require an installed product.")));
 		_executeComponent = componentExecutor ?? ((payload, query, token) => _componentWorker.Value.ExecuteAsync(payload, query, token));
 		_serviceIntents = new OwnedServiceIntentStore(options.StateRoot);
+		_installerMaintenance = new InstallerServiceMaintenance(options.StateRoot);
 		_bootstrapRefresh = new DnsBootstrapRefreshScheduler(options.StateRoot);
 		if (services != null && options.InstallRoot != null && !options.ConsoleMode)
 		{
+			if (ProtectedProductRoot.IsProductionShape(options.StateRoot))
+				_wrapperLogMaintenance = OwnedWrapperLogMaintenance.ForVerifiedProductionRoot(options.StateRoot);
 			_serviceSupervisor = new OwnedServiceSupervisor(_serviceIntents, services.StatusAsync,
 				services.AssertOwnedImagePathAsync, ProbeOwnedServiceAsync,
 				async (name, running, token) =>
@@ -97,11 +114,15 @@ internal sealed class OperationDispatcher : IDisposable
 			if (!await _mutationLock.WaitAsync(0, cancellationToken)) continue;
 			try
 			{
+				if (_installerMaintenance.IsActive() || _startupStateError != null) continue;
 				// A crash marker is recovered by the transaction path, never bypassed
 				// by an independent health repair during partial network mutation.
-				if (await _journal.ReadActiveAsync(cancellationToken) != null) continue;
-				await _serviceSupervisor.CheckAsync(cancellationToken);
+				if ((await _journal.ReadActiveResultAsync(cancellationToken)).Kind != AtomicJsonReadKind.Missing) continue;
+				await _journal.ReadResponsesAsync(cancellationToken);
+				if ((await ReconcileCompletedOperationIntentsAsync(cancellationToken)).Count != 0) continue;
 				TimeSpan now = _maintenanceClock.Elapsed;
+				await MaintainOwnedWrapperLogsAsync(now, cancellationToken);
+				await _serviceSupervisor.CheckAsync(cancellationToken);
 				if (now >= TimeSpan.FromSeconds(60)) await RefreshOwnedDnsBootstrapAsync(cancellationToken);
 				if (now >= TimeSpan.FromSeconds(60) && now >= _nextDnsMaintenance &&
 					(Volatile.Read(ref _dnsMaintenanceRequested) != 0 || now >= _nextDnsAudit))
@@ -123,6 +144,29 @@ internal sealed class OperationDispatcher : IDisposable
 				}
 			}
 			finally { _mutationLock.Release(); }
+		}
+	}
+
+	private async Task MaintainOwnedWrapperLogsAsync(TimeSpan now, CancellationToken cancellationToken)
+	{
+		if (_wrapperLogMaintenance == null) return;
+		try
+		{
+			var result = _wrapperLogMaintenance.RunIfDue(now, cancellationToken);
+			if (result.Deferred == 0 && result.Rejected == 0) return;
+			if (now < _nextWrapperLogWarning) return;
+			_nextWrapperLogWarning = now + TimeSpan.FromHours(1);
+			await _log.WarnAsync($"Owned wrapper log maintenance deferred: busy/unavailable={result.Deferred}; untrusted={result.Rejected}. Services continue without interruption.", cancellationToken);
+		}
+		catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+		catch (Exception)
+		{
+			// Log maintenance must not prevent independent service/DNS checks.
+			if (now < _nextWrapperLogWarning) return;
+			_nextWrapperLogWarning = now + TimeSpan.FromHours(1);
+			try { await _log.WarnAsync("Owned wrapper log maintenance is temporarily unavailable; service/DNS checks continue.", cancellationToken); }
+			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+			catch (Exception) { }
 		}
 	}
 
@@ -244,6 +288,8 @@ internal sealed class OperationDispatcher : IDisposable
 	private async Task<LocalServiceHealth> ProbeOwnedServiceAsync(string serviceName, CancellationToken cancellationToken)
 	{
 		if (serviceName == "EgoistShieldZapret") return LocalServiceHealth.ScmOnly;
+		if (serviceName == "EgoistShieldVpn")
+			return await VpnServiceHealthProbe.ProbeAsync(ProtectedProductRoot.Resolve(_options.StateRoot), RequireServiceController(), cancellationToken);
 		string component = serviceName == "EgoistShieldSystemDoH" ? "SystemDoH" : "TelegramProxy";
 		string productRoot = ProtectedProductRoot.Resolve(_options.StateRoot);
 		string file = Path.Combine(productRoot, "Runtime", component,
@@ -283,7 +329,7 @@ internal sealed class OperationDispatcher : IDisposable
 		string serviceName = component switch
 		{
 			"SystemDoH" => "EgoistShieldSystemDoH", "Zapret" => "EgoistShieldZapret",
-			"TelegramProxy" => "EgoistShieldTelegramProxy", _ => ""
+			"TelegramProxy" => "EgoistShieldTelegramProxy", "Vpn" => "EgoistShieldVpn", _ => ""
 		};
 		var args = request.Payload.GetProperty("args");
 		bool localEnable = component == "SystemDoH" && !query && (method is "apply" or "restart" || method == "recover" &&
@@ -297,7 +343,40 @@ internal sealed class OperationDispatcher : IDisposable
 			component == "SystemDoH" && method == "recover" && args.ValueKind == JsonValueKind.Array && args.GetArrayLength() > 0 &&
 				args[0].ValueKind == JsonValueKind.Object && args[0].TryGetProperty("enabled", out var enabled) && enabled.ValueKind == JsonValueKind.False);
 		if (off && serviceName.Length > 0) await _serviceIntents.SetRunningAsync(serviceName, false, cancellationToken);
-		JsonElement result = await _executeComponent(request.Payload, query, cancellationToken);
+		// The VPN runtime verifies explicit saved start intent before SCM launches it.
+		bool vpnStart = !query && component == "Vpn" && (method is "installService" or "startService");
+		OwnedServiceIntent? previousVpnIntent = null;
+		if (vpnStart)
+		{
+			(await _serviceIntents.ReadAsync(cancellationToken)).Services.TryGetValue(serviceName, out previousVpnIntent);
+			await _serviceIntents.SetRunningAsync(serviceName, true, cancellationToken);
+		}
+		JsonElement result;
+		try
+		{
+			var correlated = JsonDefaults.ToElement(new { component, method, args, requestId = request.RequestId });
+			result = await _executeComponent(correlated, query, cancellationToken);
+		}
+		catch (ServiceOperationException error) when (vpnStart && (error.Code is "VPN_SERVICE_VALIDATION_FAILED" or "VPN_SERVICE_ROLLBACK_VERIFIED"))
+		{
+			try { await _serviceIntents.RestoreRunningAsync(serviceName, previousVpnIntent, CancellationToken.None); }
+			catch (Exception restoreError)
+			{
+				throw new ServiceOperationException("OPERATION_OUTCOME_UNKNOWN",
+					"The VPN worker confirmed its rollback but Core could not confirm the prior background intent. Inspect operation.status before retrying.", false, restoreError);
+			}
+			throw;
+		}
+		catch (Exception error) when (vpnStart)
+		{
+			throw new ServiceOperationException("OPERATION_OUTCOME_UNKNOWN",
+				"The VPN worker did not confirm its result or a verified rollback. The saved operation will not be replayed; inspect operation.status before retrying.", false, error);
+		}
+		catch (Exception error) when (!query && error is IOException or TimeoutException or OperationCanceledException)
+		{
+			throw new ServiceOperationException("OPERATION_OUTCOME_UNKNOWN",
+				"The component worker did not confirm its result. The operation may have changed owned state; inspect operation.status before any retry.", false, error);
+		}
 		bool enablesService = !query && !off && (method is "start" or "startService" or "restart" or "apply" or "recover" or "installService" or "restoreAfterVpnIfNeeded");
 		if (enablesService && _services != null && serviceName.Length > 0)
 		{
@@ -311,11 +390,50 @@ internal sealed class OperationDispatcher : IDisposable
 		return result;
 	}
 
-	public async Task<ServiceResponse> DispatchAsync(ServiceRequest request, ClientIdentity identity, CancellationToken cancellationToken = default(CancellationToken))
+	public Task<ServiceResponse> DispatchAsync(ServiceRequest request, ClientIdentity identity, CancellationToken cancellationToken = default(CancellationToken))
+		=> DispatchRequestAsync(request, identity, false, cancellationToken);
+
+	// Only the offline installer/uninstaller entry point can use this path. IPC
+	// callers cannot select an operation or opt out of the maintenance barrier.
+	internal Task<ServiceResponse> RestoreOwnedDnsOfflineAsync(ClientIdentity identity, CancellationToken cancellationToken = default)
+		=> DispatchRequestAsync(new ServiceRequest(1, "uninstall-dns:" + Guid.NewGuid().ToString("N"),
+			"dns.restore-owned", JsonDefaults.ToElement(new { })), identity, true, cancellationToken);
+
+	private async Task<ServiceResponse> DispatchRequestAsync(ServiceRequest request, ClientIdentity identity, bool offlineDnsRestore, CancellationToken cancellationToken)
+	{
+		try { return await DispatchRequestCoreAsync(request, identity, offlineDnsRestore, cancellationToken); }
+		catch (StateReadException error)
+		{
+			return ServiceResponse.Failure(request.RequestId, Interlocked.Increment(ref _sequence),
+				error.Kind == AtomicJsonReadKind.Corrupt ? "STATE_CORRUPT" : "STATE_UNAVAILABLE", error.Message,
+				retryable: error.Kind == AtomicJsonReadKind.Unavailable);
+		}
+	}
+
+	private async Task<ServiceResponse> DispatchRequestCoreAsync(ServiceRequest request, ClientIdentity identity, bool offlineDnsRestore, CancellationToken cancellationToken)
 	{
 		long sequence = Interlocked.Increment(ref _sequence);
+		if (identity.IdentityProbe && request.Operation != "hello")
+		{
+			return ServiceResponse.Failure(request.RequestId, sequence, "IDENTITY_PROBE_SCOPE", "The Core identity probe may call hello only.");
+		}
 		string fingerprint = Fingerprint(request);
 		bool mutation = MutationOperations.Contains(request.Operation);
+		if (_startupStateError != null && (mutation || request.Operation == "component.query"))
+			throw _startupStateError;
+		if (!offlineDnsRestore && _installerMaintenance.IsActive() && (mutation || request.Operation == "component.query"))
+		{
+			return ServiceResponse.Failure(request.RequestId, sequence, "INSTALLER_MAINTENANCE",
+				"An installer is preserving owned services; retry after installation or recovery completes.", retryable: true);
+		}
+		if (request.Operation == "component.query")
+		{
+			var activeRead = await _journal.ReadActiveResultAsync(cancellationToken);
+			if (activeRead.Kind is AtomicJsonReadKind.Corrupt or AtomicJsonReadKind.Unavailable)
+				activeRead.ValueOrThrow("active-transaction.json");
+			await _journal.ReadResponsesAsync(cancellationToken);
+			await _journal.ReadOperationIntentsAsync(cancellationToken);
+		}
 		if (_responses.TryGetValue(request.RequestId, out CachedResponse value))
 		{
 			return (value.Fingerprint == fingerprint) ? value.Response : ServiceResponse.Failure(request.RequestId, sequence, "REQUEST_ID_REUSED", "The requestId was already used with a different request.");
@@ -325,7 +443,11 @@ internal sealed class OperationDispatcher : IDisposable
 			PersistedResponseEntry persistedResponseEntry = await _journal.ReadResponseAsync(request.RequestId, cancellationToken);
 			if ((object)persistedResponseEntry != null)
 			{
-				return (persistedResponseEntry.Fingerprint == fingerprint) ? persistedResponseEntry.Response : ServiceResponse.Failure(request.RequestId, sequence, "REQUEST_ID_REUSED", "The requestId was already used with a different persisted mutation.");
+				if (persistedResponseEntry.Fingerprint != fingerprint)
+					return ServiceResponse.Failure(request.RequestId, sequence, "REQUEST_ID_REUSED", "The requestId was already used with a different persisted mutation.");
+				if (request.Operation == "component.execute")
+					await _journal.RetireOperationIntentAsync(request.RequestId, fingerprint, cancellationToken);
+				return persistedResponseEntry.Response;
 			}
 		}
 		if (!_inFlight.TryAdd(request.RequestId, 0))
@@ -336,12 +458,12 @@ internal sealed class OperationDispatcher : IDisposable
 		{
 			if (mutation)
 			{
-				return await DispatchMutationAsync(request, identity, sequence, fingerprint, cancellationToken);
+				return await DispatchMutationAsync(request, identity, sequence, fingerprint, offlineDnsRestore, cancellationToken);
 			}
 			ServiceResponse serviceResponse = await ExecuteAsync(request, identity, sequence, cancellationToken);
 			if (serviceResponse.Error?.Code != "REQUEST_IN_FLIGHT")
 			{
-				_responses.TryAdd(request.RequestId, new CachedResponse(fingerprint, serviceResponse, DateTimeOffset.UtcNow));
+				CacheResponse(request.RequestId, fingerprint, serviceResponse);
 			}
 			TrimResponseCache();
 			return serviceResponse;
@@ -357,7 +479,16 @@ internal sealed class OperationDispatcher : IDisposable
 		await _mutationLock.WaitAsync(cancellationToken);
 		try
 		{
+			// Validate durable replay state before any startup recovery can touch the OS.
+			if (_startupStateError != null) throw _startupStateError;
+			await _journal.ReadResponsesAsync(cancellationToken);
+			var intents = await ReconcileCompletedOperationIntentsAsync(cancellationToken);
 			ActiveTransaction transaction = await _journal.ReadActiveAsync(cancellationToken);
+			foreach (var intent in intents)
+			{
+				await _log.WarnAsync("Component operation " + intent.RequestId + " has unknown outcome; startup recovery will not replay it.", cancellationToken);
+			}
+			if (intents.Count != 0) return;
 			if ((object)transaction == null)
 			{
 				return;
@@ -399,13 +530,41 @@ internal sealed class OperationDispatcher : IDisposable
 				await _log.ErrorAsync("Startup recovery of " + transaction.TransactionId + " did not complete: " + ex.Message, cancellationToken);
 			}
 		}
+		catch (StateReadException error)
+		{
+			await _log.ErrorAsync("Core started with read-only diagnostics: " + error.Message, cancellationToken);
+		}
+		catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+		{
+			await _log.ErrorAsync("Core recovery persistence is unavailable; read-only diagnostics remain available: " + error.GetType().Name, cancellationToken);
+		}
 		finally
 		{
 			_mutationLock.Release();
 		}
 	}
 
-	private async Task<ServiceResponse> DispatchMutationAsync(ServiceRequest request, ClientIdentity identity, long sequence, string fingerprint, CancellationToken cancellationToken)
+	internal async Task WaitForInstallerMaintenanceAsync(CancellationToken cancellationToken)
+	{
+		while (_installerMaintenance.IsActive())
+			await Task.Delay(250, cancellationToken);
+	}
+
+	// Callers hold the Core mutation slot. This only commits already confirmed
+	// results; it never calls the executor or infers success from current status.
+	internal async Task<IReadOnlyList<PersistedOperationIntent>> ReconcileCompletedOperationIntentsAsync(CancellationToken cancellationToken)
+	{
+		if (_startupStateError != null) throw _startupStateError;
+		var intents = await _journal.ReadOperationIntentsAsync(cancellationToken);
+		foreach (var intent in intents.Where(value => value.TerminalResponse != null))
+		{
+			await _journal.RecordResponseAsync(intent.RequestId, intent.Fingerprint, intent.TerminalResponse!, cancellationToken);
+			await _journal.RetireOperationIntentAsync(intent.RequestId, intent.Fingerprint, cancellationToken);
+		}
+		return intents.Where(value => value.TerminalResponse == null).ToArray();
+	}
+
+	private async Task<ServiceResponse> DispatchMutationAsync(ServiceRequest request, ClientIdentity identity, long sequence, string fingerprint, bool offlineDnsRestore, CancellationToken cancellationToken)
 	{
 		bool isRepair = request.Operation == "network.repair-owned";
 		TimeSpan lockTimeout = isRepair ? TimeSpan.FromSeconds(3) : ServiceContract.MutationLockTimeout;
@@ -415,18 +574,54 @@ internal sealed class OperationDispatcher : IDisposable
 		}
 		try
 		{
-			ServiceResponse serviceResponse = await PrepareMutationSlotAsync(request, sequence, cancellationToken);
-			if ((object)serviceResponse != null)
+			if (!offlineDnsRestore && _installerMaintenance.IsActive())
 			{
-				return serviceResponse;
+				return ServiceResponse.Failure(request.RequestId, sequence, "INSTALLER_MAINTENANCE",
+					"An installer is preserving owned services; retry after installation or recovery completes.", retryable: true);
 			}
+			var intents = await ReconcileCompletedOperationIntentsAsync(cancellationToken);
 			PersistedResponseEntry persistedResponseEntry = await _journal.ReadResponseAsync(request.RequestId, cancellationToken);
 			if ((object)persistedResponseEntry != null)
 			{
 				return (persistedResponseEntry.Fingerprint == fingerprint) ? persistedResponseEntry.Response : ServiceResponse.Failure(request.RequestId, sequence, "REQUEST_ID_REUSED", "The requestId was already used with a different persisted mutation.");
 			}
+			var existingIntent = intents.SingleOrDefault(intent => intent.RequestId == request.RequestId);
+			if (existingIntent != null)
+			{
+				if (existingIntent.Fingerprint != fingerprint)
+					return ServiceResponse.Failure(request.RequestId, sequence, "REQUEST_ID_REUSED", "The requestId already has durable intent for a different request.");
+				return UnknownOperation(request.RequestId, sequence);
+			}
+			if (intents.Count != 0)
+				return ServiceResponse.Failure(request.RequestId, sequence, "RECOVERY_REQUIRED", "A component operation has unresolved durable intent. Inspect operation.status; new mutations are blocked until its outcome is reconciled.");
+			ServiceResponse serviceResponse = await PrepareMutationSlotAsync(request, sequence, cancellationToken);
+			if (serviceResponse != null) return serviceResponse;
+			bool componentOperation = request.Operation == "component.execute";
+			if (componentOperation)
+			{
+				PersistedOperationIntent intent;
+				try { intent = CreateComponentIntent(request, fingerprint); }
+				catch (ArgumentException error) { return CreateFailureResponse(request.RequestId, sequence, error); }
+				await _journal.BeginOperationIntentAsync(intent, cancellationToken);
+			}
 			ServiceResponse response = await ExecuteAsync(request, identity, sequence, cancellationToken);
-			await PersistMutationResponseAsync(request, fingerprint, response, CancellationToken.None);
+			if (componentOperation && response.Error?.Code == "OPERATION_OUTCOME_UNKNOWN") return response;
+			try
+			{
+				if (componentOperation)
+					await _journal.CompleteOperationIntentAsync(request.RequestId, fingerprint, response, CancellationToken.None);
+				await PersistMutationResponseAsync(request, fingerprint, response, CancellationToken.None, cacheResponse: !componentOperation);
+				if (componentOperation)
+				{
+					await _journal.RetireOperationIntentAsync(request.RequestId, fingerprint, CancellationToken.None);
+					CacheResponse(request.RequestId, fingerprint, response);
+				}
+			}
+			catch (Exception error) when (componentOperation && error is IOException or UnauthorizedAccessException)
+			{
+				await _log.ErrorAsync("Component result persistence failed; durable intent was retained: " + error.GetType().Name, CancellationToken.None);
+				return UnknownOperation(request.RequestId, sequence);
+			}
 			return response;
 		}
 		finally
@@ -464,7 +659,7 @@ internal sealed class OperationDispatcher : IDisposable
 		return ServiceResponse.Failure(request.RequestId, sequence, "RECOVERY_REQUIRED", "Transaction " + active.TransactionId + " requires owned recovery before another mutation can start.");
 	}
 
-	private async Task PersistMutationResponseAsync(ServiceRequest request, string fingerprint, ServiceResponse response, CancellationToken cancellationToken)
+	private async Task PersistMutationResponseAsync(ServiceRequest request, string fingerprint, ServiceResponse response, CancellationToken cancellationToken, bool cacheResponse = true)
 	{
 		ActiveTransaction activeTransaction = await _journal.ReadActiveAsync(cancellationToken);
 		if ((object)activeTransaction != null && activeTransaction.RequestId.Equals(request.RequestId, StringComparison.Ordinal))
@@ -472,7 +667,7 @@ internal sealed class OperationDispatcher : IDisposable
 			await _journal.AttachTerminalResponseAsync(activeTransaction, response, cancellationToken);
 		}
 		await _journal.RecordResponseAsync(request.RequestId, fingerprint, response, cancellationToken);
-		_responses.TryAdd(request.RequestId, new CachedResponse(fingerprint, response, DateTimeOffset.UtcNow));
+		if (cacheResponse) CacheResponse(request.RequestId, fingerprint, response);
 		activeTransaction = await _journal.ReadActiveAsync(cancellationToken);
 		if ((object)activeTransaction != null && activeTransaction.RequestId.Equals(request.RequestId, StringComparison.Ordinal))
 		{
@@ -523,7 +718,7 @@ internal sealed class OperationDispatcher : IDisposable
 		await _journal.CompleteAsync(transaction, TransactionPhase.Committed, null, response, cancellationToken);
 		ActiveTransaction completed = (await _journal.ReadActiveAsync(cancellationToken)) ?? throw new InvalidOperationException("Verified transaction marker disappeared before archival.");
 		await _journal.ArchiveTerminalAsync(completed, cancellationToken);
-		_responses.TryAdd(transaction.RequestId, new CachedResponse(fingerprint, response, DateTimeOffset.UtcNow));
+		CacheResponse(transaction.RequestId, fingerprint, response);
 		await _log.InfoAsync("Finalized verified transaction " + transaction.TransactionId + " without replaying its mutation.", cancellationToken);
 		return true;
 	}
@@ -539,7 +734,7 @@ internal sealed class OperationDispatcher : IDisposable
 		else
 		{
 			await _journal.RecordResponseAsync(transaction.RequestId, fingerprint, response, cancellationToken);
-			_responses.TryAdd(transaction.RequestId, new CachedResponse(fingerprint, response, DateTimeOffset.UtcNow));
+			CacheResponse(transaction.RequestId, fingerprint, response);
 		}
 		await _journal.ArchiveTerminalAsync(transaction, cancellationToken);
 		await _log.InfoAsync("Finalized terminal transaction marker " + transaction.TransactionId + ".", cancellationToken);
@@ -549,10 +744,6 @@ internal sealed class OperationDispatcher : IDisposable
 	{
 		try
 		{
-			if (identity.IdentityProbe && request.Operation != "hello")
-			{
-				return ServiceResponse.Failure(request.RequestId, sequence, "IDENTITY_PROBE_SCOPE", "The Core identity probe may call hello only.");
-			}
 			object obj;
 			switch (request.Operation)
 			{
@@ -568,7 +759,8 @@ internal sealed class OperationDispatcher : IDisposable
 					pipeName = _options.PipeName,
 					clientPid = identity.ProcessId,
 					developmentOverride = identity.DevelopmentOverride,
-					identityProbe = identity.IdentityProbe
+					identityProbe = identity.IdentityProbe,
+					persistence = await DescribePersistenceAsync(cancellationToken)
 				};
 				break;
 			case "service.status":
@@ -579,15 +771,18 @@ internal sealed class OperationDispatcher : IDisposable
 					processId = Environment.ProcessId,
 					startedAt = Program.StartedAt,
 					consoleMode = _options.ConsoleMode,
-					supervision = _serviceSupervisor?.Describe()
+					supervision = _serviceSupervisor?.Describe(),
+					persistence = await DescribePersistenceAsync(cancellationToken)
 				};
 				break;
 			case "recovery.status":
 			{
-				TransactionJournal journal = _journal;
-				obj = journal.Describe(await _journal.ReadActiveAsync(cancellationToken));
+				obj = await DescribePersistenceAsync(cancellationToken);
 				break;
 			}
+			case "operation.status":
+				obj = await ReadOperationStatusAsync(request, cancellationToken);
+				break;
 			case "dns.status":
 				obj = new
 				{
@@ -823,22 +1018,51 @@ internal sealed class OperationDispatcher : IDisposable
 			return new { supported = false, hasIpv6DefaultRoute = false, enabled = false, verified = false, encrypted = false,
 				nativeManaged = true, url = (string?)null, servers = Array.Empty<string>(), adapters = Array.Empty<DnsAdapterSnapshot>(),
 				updatedAt = (DateTimeOffset?)null, fallbackToUdp = false };
-		NativeDohHealth nativeDohHealth = await ReadNativeDohHealthAsync(cancellationToken);
-		bool covered = nativeDohHealth.State != null && DnsMaintenancePolicy.FullyCovered(nativeDohHealth.Adapters, nativeDohHealth.State.Servers);
-		return new
+		using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+		deadline.CancelAfter(_nativeDohQueryTimeout);
+		string stage = "ownership";
+		try
 		{
-			supported = true,
-			hasIpv6DefaultRoute = await _nativeDoh.HasIpv6DefaultRouteAsync(cancellationToken),
-			enabled = ((object)nativeDohHealth.State != null),
-			verified = (covered && nativeDohHealth.EntriesMatch && nativeDohHealth.DnsOwned),
-			encrypted = (covered && nativeDohHealth.EntriesMatch && nativeDohHealth.DnsOwned),
-			nativeManaged = true,
-			url = nativeDohHealth.State?.Url,
-			servers = (nativeDohHealth.State?.Servers ?? Array.Empty<string>()),
-			adapters = nativeDohHealth.Adapters,
-			updatedAt = nativeDohHealth.State?.UpdatedAt,
-			fallbackToUdp = false
-		};
+			// Only a confirmed Missing atomic read can take this fast path. Invalid or
+			// inaccessible ownership must not become a disabled/safe DNS observation.
+			NativeDohOwnedState? state = await _nativeDoh.ReadOwnedStateAsync(deadline.Token);
+			ValidateNativeDohOwnedState(state);
+			stage = "dns-snapshot-and-doh-entries";
+			NativeDohHealth health = state == null
+				? new NativeDohHealth(null, Array.Empty<DnsAdapterSnapshot>(), Array.Empty<NativeDohEntrySnapshot>(), false, false)
+				: await ReadNativeDohHealthAsync(deadline.Token);
+			bool covered = health.State != null && DnsMaintenancePolicy.FullyCovered(health.Adapters, health.State.Servers);
+			stage = "ipv6-default-route";
+			bool hasIpv6DefaultRoute = await _nativeDoh.HasIpv6DefaultRouteAsync(deadline.Token);
+			if (state == null)
+			{
+				stage = "ownership-recheck";
+				NativeDohOwnedState? after = await _nativeDoh.ReadOwnedStateAsync(deadline.Token);
+				ValidateNativeDohOwnedState(after);
+				if (after != null) throw new ServiceOperationException("DNS_DOH_OWNERSHIP_CHANGED",
+					"Native DoH ownership appeared during inspection; its current health remains unknown.");
+			}
+			return new
+			{
+				supported = true,
+				hasIpv6DefaultRoute,
+				enabled = health.State != null,
+				verified = covered && health.EntriesMatch && health.DnsOwned,
+				encrypted = covered && health.EntriesMatch && health.DnsOwned,
+				nativeManaged = true,
+				url = health.State?.Url,
+				servers = health.State?.Servers ?? Array.Empty<string>(),
+				adapters = health.Adapters,
+				updatedAt = health.State?.UpdatedAt,
+				fallbackToUdp = false
+			};
+		}
+		catch (OperationCanceledException error) when (!cancellationToken.IsCancellationRequested && deadline.IsCancellationRequested)
+		{
+			throw new ServiceOperationException("DNS_DOH_QUERY_TIMEOUT",
+				$"Read-only Windows DoH ownership query exceeded {_nativeDohQueryTimeout.TotalSeconds:0.###} seconds at {stage}; ownership remains unknown.",
+				innerException: error);
+		}
 	}
 
 	private async Task<object> ExecuteNativeDohApplyAsync(ServiceRequest request, long sequence, CancellationToken cancellationToken, DnsAdapterSnapshot[]? targetAdapters = null)
@@ -1411,6 +1635,9 @@ internal sealed class OperationDispatcher : IDisposable
 
 	private static ServiceResponse CreateFailureResponse(string requestId, long sequence, Exception error)
 	{
+		if (error is StateReadException readError)
+			return ServiceResponse.Failure(requestId, sequence, readError.Kind == AtomicJsonReadKind.Corrupt ? "STATE_CORRUPT" : "STATE_UNAVAILABLE",
+				readError.Message, readError.Kind == AtomicJsonReadKind.Unavailable);
 		if (!(error is ServiceOperationException ex))
 		{
 			if (!(error is JsonException) && !(error is ArgumentException))
@@ -1421,7 +1648,7 @@ internal sealed class OperationDispatcher : IDisposable
 					{
 						if (error is OperationCanceledException)
 						{
-							return ServiceResponse.Failure(requestId, sequence, "OPERATION_CANCELLED", "The operation was cancelled and any owned mutation was rolled back.", retryable: true);
+							return ServiceResponse.Failure(requestId, sequence, "OPERATION_CANCELLED", "The operation was cancelled; inspect recovery.status before retrying.", retryable: true);
 						}
 						return ServiceResponse.Failure(requestId, sequence, "OPERATION_FAILED", error.Message);
 					}
@@ -1613,17 +1840,96 @@ internal sealed class OperationDispatcher : IDisposable
 
 	private void TrimResponseCache()
 	{
-		if (_responses.Count <= 1024)
+		lock (_responseCacheLock)
 		{
-			return;
+			var entries = _responses.ToArray().OrderBy(entry => entry.Value.CompletedAt).ToArray();
+			long bytes = entries.Sum(entry => (long)entry.Value.Bytes);
+			int count = entries.Length;
+			foreach (var entry in entries)
+			{
+				if (count <= 1024 && bytes <= MaxResponseCacheBytes) break;
+				if (_responses.TryRemove(entry.Key, out var removed)) { count--; bytes -= removed.Bytes; }
+			}
 		}
-		foreach (string item in from entry in (from entry in _responses.ToArray()
-				orderby entry.Value.CompletedAt
-				select entry).Take(_responses.Count - 768)
-			select entry.Key)
+	}
+
+	private void CacheResponse(string requestId, string fingerprint, ServiceResponse response)
+	{
+		int bytes = JsonSerializer.SerializeToUtf8Bytes(response, JsonDefaults.StateOptions).Length;
+		if (bytes > MaxCachedResponseBytes) return;
+		lock (_responseCacheLock)
 		{
-			_responses.TryRemove(item, out CachedResponse _);
+			_responses.TryAdd(requestId, new CachedResponse(fingerprint, response, DateTimeOffset.UtcNow, bytes));
+			TrimResponseCache();
 		}
+	}
+
+	private static ServiceResponse UnknownOperation(string requestId, long sequence) => ServiceResponse.Failure(requestId, sequence,
+		"OPERATION_OUTCOME_UNKNOWN", "A durable operation intent exists but its result is not committed. The operation will not execute again; inspect operation.status and current component state.");
+
+	private static PersistedOperationIntent CreateComponentIntent(ServiceRequest request, string fingerprint)
+	{
+		if (request.Payload.ValueKind != JsonValueKind.Object ||
+			!request.Payload.TryGetProperty("component", out var component) || component.ValueKind != JsonValueKind.String ||
+			component.GetString() is not ("SystemDoH" or "Zapret" or "TelegramProxy" or "Vpn") ||
+			!request.Payload.TryGetProperty("method", out var method) || method.ValueKind != JsonValueKind.String ||
+			string.IsNullOrWhiteSpace(method.GetString()) || method.GetString()!.Length > 128 || method.GetString()!.Any(char.IsControl) ||
+			!request.Payload.TryGetProperty("args", out var args) || args.ValueKind != JsonValueKind.Array || args.GetArrayLength() > 4)
+			throw new ArgumentException("Invalid owned component operation payload.");
+		return new PersistedOperationIntent(request.RequestId, fingerprint, component.GetString()!, method.GetString()!, DateTimeOffset.UtcNow);
+	}
+
+	internal async Task<object> DescribePersistenceAsync(CancellationToken cancellationToken = default)
+	{
+		var active = await _journal.ReadActiveResultAsync(cancellationToken);
+		var problems = new List<object>();
+		if (_startupStateError != null) problems.Add(DescribeStateError(_startupStateError));
+		IReadOnlyList<PersistedOperationIntent> intents = Array.Empty<PersistedOperationIntent>();
+		try { intents = await _journal.ReadOperationIntentsAsync(cancellationToken); }
+		catch (StateReadException error) { problems.Add(DescribeStateError(error)); }
+		try { await _journal.ReadResponsesAsync(cancellationToken); }
+		catch (StateReadException error) { problems.Add(DescribeStateError(error)); }
+		var original = JsonDefaults.ToElement(_journal.Describe(active.Value));
+		bool uncertain = active.Kind is AtomicJsonReadKind.Corrupt or AtomicJsonReadKind.Unavailable || problems.Count != 0;
+		return new { recoveryRequired = uncertain || intents.Count != 0 || original.GetProperty("recoveryRequired").GetBoolean(),
+			mutationReady = active.Kind == AtomicJsonReadKind.Missing && intents.Count == 0 && problems.Count == 0,
+			active = original.GetProperty("active").Clone(), journal = active.Describe(), persistenceProblems = problems,
+			pendingOperations = intents.Select(intent => new { requestId = intent.RequestId, component = intent.Component, method = intent.Method,
+				startedAt = intent.StartedAt, outcome = intent.TerminalResponse == null ? "unknown" : "commit-pending" }).ToArray(),
+			replayRetention = new { maxResponses = 512, maxStoreBytes = TransactionJournal.MaxResponseStoreBytes,
+				maxRetainedResponseBytes = TransactionJournal.MaxRetainedResponseBytes, unresolvedIntentsEvicted = false } };
+	}
+
+	private static object DescribeStateError(StateReadException error) => new { file = error.FileName,
+		kind = error.Kind.ToString().ToLowerInvariant(), errorCode = error.ErrorCode, bytes = error.Bytes, sha256 = error.Sha256 };
+
+	private async Task<object> ReadOperationStatusAsync(ServiceRequest request, CancellationToken cancellationToken)
+	{
+		string targetId = request.Payload.TryGetProperty("requestId", out var id) && id.ValueKind == JsonValueKind.String ? id.GetString()! : "";
+		if (string.IsNullOrWhiteSpace(targetId) || targetId.Length > 128) throw new ArgumentException("A bounded requestId is required.");
+		var intent = (await _journal.ReadOperationIntentsAsync(cancellationToken)).SingleOrDefault(value => value.RequestId == targetId);
+		var response = await _journal.ReadResponseAsync(targetId, cancellationToken);
+		if (intent == null) return new { requestId = targetId, outcome = response == null ? "not-retained" : "committed",
+			replayAllowed = false, historicalResultKnown = response != null };
+		object observation;
+		try
+		{
+			if (_startupStateError != null) throw _startupStateError;
+			using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+			deadline.CancelAfter(TimeSpan.FromSeconds(3));
+			var payload = JsonDefaults.ToElement(new { component = intent.Component, method = "status", args = Array.Empty<object>(), requestId = request.RequestId });
+			var state = await _executeComponent(payload, true, deadline.Token).WaitAsync(deadline.Token);
+			observation = JsonSerializer.SerializeToUtf8Bytes(state, JsonDefaults.StateOptions).Length <= 64 * 1024
+				? new { available = true, state = (object)state, evidence = "current-component-status-only" }
+				: new { available = false, state = (object?)null, evidence = "observation-too-large" };
+		}
+		catch (Exception error) when (error is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+		{
+			observation = new { available = false, error = error.GetType().Name, evidence = "current-status-unavailable" };
+		}
+		return new { requestId = targetId, component = intent.Component, method = intent.Method,
+			outcome = intent.TerminalResponse == null ? "unknown" : "commit-pending", replayAllowed = false,
+			historicalResultKnown = intent.TerminalResponse != null, observation };
 	}
 
 	public void Dispose()

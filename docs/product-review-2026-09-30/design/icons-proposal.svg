@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" fill="none" stroke="#f5f5f5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="title desc">
+  <title id="title">Egoist Lagom — собственные иконки предложения</title>
+  <desc id="desc">Щит, включение, неизвестное состояние, готовность, предупреждение, ошибка. Это визуальные образцы, не состояние служб.</desc>
+  <rect width="320" height="96" rx="10" fill="#121212" stroke="none"/>
+  <g transform="translate(16 16)"><path d="m12 2 9 4v6c0 6-4 10-9 12C7 22 3 18 3 12V6l9-4Z"/><path d="m12 5 4 8-4 8-4-8 4-8Z"/></g>
+  <g transform="translate(68 16)"><path d="M12 3v8M6.5 6.5a9 9 0 1 0 11 0"/></g>
+  <g transform="translate(120 16)"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></g>
+  <g transform="translate(172 16)"><circle cx="12" cy="12" r="9"/><path d="m7.5 12 3 3 6-6"/></g>
+  <g transform="translate(224 16)"><path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v5M12 17h.01"/></g>
+  <g transform="translate(276 16)"><circle cx="12" cy="12" r="9"/><path d="m8.5 8.5 7 7m0-7-7 7"/></g>
+  <g fill="#b8b8b8" stroke="none" font-family="Segoe UI,sans-serif" font-size="10" text-anchor="middle"><text x="28" y="67">Бренд</text><text x="80" y="67">Действие</text><text x="132" y="67">Неизвестно</text><text x="184" y="67">Готово</text><text x="236" y="67">Проверка</text><text x="288" y="67">Ошибка</text></g>
+</svg>

@@ -1,3 +1,15 @@
+const systemDohServiceBrokers = new WeakMap();
+function getSystemDohServiceBroker(manager) {
+  const broker = systemDohServiceBrokers.get(manager);
+  return broker && manager.coreService === broker.coreService && Object.entries(broker.methods).every(([method, wrapped]) => manager[method] === wrapped) ? broker.coreService : null;
+}
+function componentNativeDohInspectionError(error) {
+  return { provider: 'system-doh-native', stage: 'native-status',
+    code: typeof error?.code === 'string' && /^[A-Z0-9_]{1,64}$/.test(error.code) ? error.code : 'SYSTEM_DOH_NATIVE_STATUS_FAILED',
+    nativeErrorCode: Number.isInteger(error?.code) ? error.code : null,
+    timedOut: error?.killed === true || error?.timedOut === true,
+    reason: String(error?.message ?? error).replace(/https?:\/\/[^\s]+/gi, '<url>').replace(/[\u0000-\u001f]/g, ' ').slice(0, 384) };
+}
 function useComponentService(manager, component, coreService) {
   if (!coreService) return manager;
   const operations = componentOperations()[component];
@@ -14,6 +26,7 @@ function useComponentService(manager, component, coreService) {
       if (nativeResult.error) {
         if (method === 'status' && (local?.currentUrl || local?.serviceInstalled)) return {
           ...local, nativeStatusUnavailable: true,
+          ownerInspectionErrors: [componentNativeDohInspectionError(nativeResult.error), ...(Array.isArray(local?.ownerInspectionErrors) ? local.ownerInspectionErrors.slice(0, 7) : [])],
           lastError: local.lastError ?? 'Не удалось проверить штатный Windows DoH; локальная служба сохранена.',
         };
         throw nativeResult.error;
@@ -63,6 +76,9 @@ function useComponentService(manager, component, coreService) {
       }
       return pendingStatuses.get(key);
     };
+  }
+  if (component === 'SystemDoH' && manager.coreService === coreService && ['status', 'apply', 'restart', 'stopAndRemove'].every(method => Object.hasOwn(operations, method))) {
+    systemDohServiceBrokers.set(manager, { coreService, methods: Object.fromEntries(['status', 'apply', 'restart', 'stopAndRemove'].map(method => [method, manager[method]])) });
   }
   if (component === 'Zapret') {
     manager.autoSelectBestProfile = async onProgress => {

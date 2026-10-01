@@ -1,0 +1,667 @@
+{
+  "total_count": 6,
+  "jobs": [
+    {
+      "id": 110277646403,
+      "run_id": 36834226795,
+      "workflow_name": "Checks",
+      "head_branch": "codex/lagom-production-audit",
+      "run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36834226795",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORmCXB88AAAAZrQ9YQw",
+      "head_sha": "466862cc00b36277460ccc94cb47f4df891ac14b",
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/jobs/110277646403",
+      "html_url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36834226795/job/110277646403",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-10-01T08:05:54Z",
+      "started_at": "2026-10-01T08:05:56Z",
+      "completed_at": "2026-10-01T08:12:43Z",
+      "name": "test",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-01T08:05:56Z",
+          "completed_at": "2026-10-01T08:05:58Z"
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-01T08:05:58Z",
+          "completed_at": "2026-10-01T08:06:05Z"
+        },
+        {
+          "name": "Validate manual acceptance inputs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-01T08:06:05Z",
+          "completed_at": "2026-10-01T08:06:06Z"
+        },
+        {
+          "name": "Read the pinned SDK",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-01T08:06:06Z",
+          "completed_at": "2026-10-01T08:06:06Z"
+        },
+        {
+          "name": "Use Node.js 24",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-01T08:06:06Z",
+          "completed_at": "2026-10-01T08:06:13Z"
+        },
+        {
+          "name": "Use .NET for Core regression tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-01T08:06:13Z",
+          "completed_at": "2026-10-01T08:06:45Z"
+        },
+        {
+          "name": "Use Python for offline release preflight",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-01T08:06:45Z",
+          "completed_at": "2026-10-01T08:06:45Z"
+        },
+        {
+          "name": "Prepare isolated test directories",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-01T08:06:45Z",
+          "completed_at": "2026-10-01T08:06:46Z"
+        },
+        {
+          "name": "Install dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-01T08:06:46Z",
+          "completed_at": "2026-10-01T08:06:50Z"
+        },
+        {
+          "name": "Build generated bundles",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-01T08:06:50Z",
+          "completed_at": "2026-10-01T08:06:52Z"
+        },
+        {
+          "name": "Install NSIS for installer regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-10-01T08:06:52Z",
+          "completed_at": "2026-10-01T08:07:04Z"
+        },
+        {
+          "name": "Run tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-10-01T08:07:04Z",
+          "completed_at": "2026-10-01T08:08:10Z"
+        },
+        {
+          "name": "Run Core fault and recovery regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-10-01T08:08:10Z",
+          "completed_at": "2026-10-01T08:08:46Z"
+        },
+        {
+          "name": "Run Core persistence and crash stress against frozen sources",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-10-01T08:08:46Z",
+          "completed_at": "2026-10-01T08:11:56Z"
+        },
+        {
+          "name": "Run Core owner and protected-file ACL regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-10-01T08:11:56Z",
+          "completed_at": "2026-10-01T08:12:01Z"
+        },
+        {
+          "name": "Preserve actual Core owner regression diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-10-01T08:12:01Z",
+          "completed_at": "2026-10-01T08:12:02Z"
+        },
+        {
+          "name": "Run owned wrapper log filesystem and Core integration regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-10-01T08:12:02Z",
+          "completed_at": "2026-10-01T08:12:37Z"
+        },
+        {
+          "name": "Run Windows PowerShell installer safety regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-10-01T08:12:37Z",
+          "completed_at": "2026-10-01T08:12:39Z"
+        },
+        {
+          "name": "Post Use Python for offline release preflight",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 33,
+          "started_at": "2026-10-01T08:12:39Z",
+          "completed_at": "2026-10-01T08:12:39Z"
+        },
+        {
+          "name": "Post Use .NET for Core regression tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 34,
+          "started_at": "2026-10-01T08:12:39Z",
+          "completed_at": "2026-10-01T08:12:39Z"
+        },
+        {
+          "name": "Post Use Node.js 24",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 35,
+          "started_at": "2026-10-01T08:12:39Z",
+          "completed_at": "2026-10-01T08:12:39Z"
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 36,
+          "started_at": "2026-10-01T08:12:39Z",
+          "completed_at": "2026-10-01T08:12:41Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 37,
+          "started_at": "2026-10-01T08:12:41Z",
+          "completed_at": "2026-10-01T08:12:41Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/check-runs/110277646403",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": 1000000259,
+      "runner_name": "GitHub Actions 1000000259",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 110277647997,
+      "run_id": 36834226795,
+      "workflow_name": "Checks",
+      "head_branch": "codex/lagom-production-audit",
+      "run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36834226795",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORmCXB88AAAAZrQ9efQ",
+      "head_sha": "466862cc00b36277460ccc94cb47f4df891ac14b",
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/jobs/110277647997",
+      "html_url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36834226795/job/110277647997",
+      "status": "completed",
+      "conclusion": "skipped",
+      "created_at": "2026-10-01T08:05:54Z",
+      "started_at": "2026-10-01T08:05:54Z",
+      "completed_at": "2026-10-01T08:05:53Z",
+      "name": "installer-diagnostics",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/check-runs/110277647997",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": null,
+      "runner_name": null,
+      "runner_group_id": null,
+      "runner_group_name": null
+    },
+    {
+      "id": 110279863034,
+      "run_id": 36834226795,
+      "workflow_name": "Checks",
+      "head_branch": "codex/lagom-production-audit",
+      "run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36834226795",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORmCXB88AAAAZrTEq-g",
+      "head_sha": "466862cc00b36277460ccc94cb47f4df891ac14b",
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/jobs/110279863034",
+      "html_url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36834226795/job/110279863034",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-10-01T08:12:43Z",
+      "started_at": "2026-10-01T08:12:45Z",
+      "completed_at": "2026-10-01T08:19:05Z",
+      "name": "signed-candidate",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-01T08:12:46Z",
+          "completed_at": "2026-10-01T08:12:47Z"
+        },
+        {
+          "name": "Checkout the exact acceptance sources",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-01T08:12:47Z",
+          "completed_at": "2026-10-01T08:12:55Z"
+        },
+        {
+          "name": "Read the signed acceptance SDK",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-01T08:12:55Z",
+          "completed_at": "2026-10-01T08:12:55Z"
+        },
+        {
+          "name": "Use the exact native harness SDK",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-01T08:12:55Z",
+          "completed_at": "2026-10-01T08:13:14Z"
+        },
+        {
+          "name": "Use Node.js 24",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-01T08:13:14Z",
+          "completed_at": "2026-10-01T08:13:21Z"
+        },
+        {
+          "name": "Install locked verification dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-01T08:13:21Z",
+          "completed_at": "2026-10-01T08:13:26Z"
+        },
+        {
+          "name": "Download and authenticate the exact signed candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-01T08:13:26Z",
+          "completed_at": "2026-10-01T08:13:38Z"
+        },
+        {
+          "name": "Install the actual signed release and exercise native services",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 8,
+          "started_at": "2026-10-01T08:13:38Z",
+          "completed_at": "2026-10-01T08:18:59Z"
+        },
+        {
+          "name": "Upload signed candidate native evidence",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-01T08:18:59Z",
+          "completed_at": "2026-10-01T08:19:00Z"
+        },
+        {
+          "name": "Post Use Node.js 24",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 16,
+          "started_at": "2026-10-01T08:19:00Z",
+          "completed_at": "2026-10-01T08:19:00Z"
+        },
+        {
+          "name": "Post Use the exact native harness SDK",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 17,
+          "started_at": "2026-10-01T08:19:00Z",
+          "completed_at": "2026-10-01T08:19:00Z"
+        },
+        {
+          "name": "Post Checkout the exact acceptance sources",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-10-01T08:19:00Z",
+          "completed_at": "2026-10-01T08:19:03Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-10-01T08:19:03Z",
+          "completed_at": "2026-10-01T08:19:03Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/check-runs/110279863034",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": 1000000261,
+      "runner_name": "GitHub Actions 1000000261",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 110279863044,
+      "run_id": 36834226795,
+      "workflow_name": "Checks",
+      "head_branch": "codex/lagom-production-audit",
+      "run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36834226795",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORmCXB88AAAAZrTErBA",
+      "head_sha": "466862cc00b36277460ccc94cb47f4df891ac14b",
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/jobs/110279863044",
+      "html_url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36834226795/job/110279863044",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-10-01T08:12:43Z",
+      "started_at": "2026-10-01T08:12:45Z",
+      "completed_at": "2026-10-01T08:16:09Z",
+      "name": "legacy (3.7.8)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-01T08:12:46Z",
+          "completed_at": "2026-10-01T08:12:47Z"
+        },
+        {
+          "name": "Checkout the acceptance sources",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-01T08:12:47Z",
+          "completed_at": "2026-10-01T08:12:55Z"
+        },
+        {
+          "name": "Read the legacy acceptance SDK",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-01T08:12:55Z",
+          "completed_at": "2026-10-01T08:12:55Z"
+        },
+        {
+          "name": "Use the exact ordinary GUI harness SDK",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-01T08:12:55Z",
+          "completed_at": "2026-10-01T08:13:12Z"
+        },
+        {
+          "name": "Use Node.js 24",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-01T08:13:12Z",
+          "completed_at": "2026-10-01T08:13:18Z"
+        },
+        {
+          "name": "Install locked verification dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-01T08:13:18Z",
+          "completed_at": "2026-10-01T08:13:25Z"
+        },
+        {
+          "name": "Download and authenticate the original old generation and signed candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-01T08:13:25Z",
+          "completed_at": "2026-10-01T08:13:42Z"
+        },
+        {
+          "name": "Run the actual signed old helper handoff",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 8,
+          "started_at": "2026-10-01T08:13:42Z",
+          "completed_at": "2026-10-01T08:16:05Z"
+        },
+        {
+          "name": "Upload signed legacy acceptance evidence",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-01T08:16:05Z",
+          "completed_at": "2026-10-01T08:16:06Z"
+        },
+        {
+          "name": "Post Use Node.js 24",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 16,
+          "started_at": "2026-10-01T08:16:06Z",
+          "completed_at": "2026-10-01T08:16:06Z"
+        },
+        {
+          "name": "Post Use the exact ordinary GUI harness SDK",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 17,
+          "started_at": "2026-10-01T08:16:06Z",
+          "completed_at": "2026-10-01T08:16:06Z"
+        },
+        {
+          "name": "Post Checkout the acceptance sources",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-10-01T08:16:06Z",
+          "completed_at": "2026-10-01T08:16:08Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-10-01T08:16:08Z",
+          "completed_at": "2026-10-01T08:16:08Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/check-runs/110279863044",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": 1000000260,
+      "runner_name": "GitHub Actions 1000000260",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 110279863127,
+      "run_id": 36834226795,
+      "workflow_name": "Checks",
+      "head_branch": "codex/lagom-production-audit",
+      "run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36834226795",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORmCXB88AAAAZrTErVw",
+      "head_sha": "466862cc00b36277460ccc94cb47f4df891ac14b",
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/jobs/110279863127",
+      "html_url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36834226795/job/110279863127",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-10-01T08:12:43Z",
+      "started_at": "2026-10-01T08:12:45Z",
+      "completed_at": "2026-10-01T08:14:11Z",
+      "name": "legacy (3.7.9)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-01T08:12:46Z",
+          "completed_at": "2026-10-01T08:12:47Z"
+        },
+        {
+          "name": "Checkout the acceptance sources",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-01T08:12:47Z",
+          "completed_at": "2026-10-01T08:12:58Z"
+        },
+        {
+          "name": "Read the legacy acceptance SDK",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-01T08:12:58Z",
+          "completed_at": "2026-10-01T08:12:59Z"
+        },
+        {
+          "name": "Use the exact ordinary GUI harness SDK",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-01T08:12:59Z",
+          "completed_at": "2026-10-01T08:13:22Z"
+        },
+        {
+          "name": "Use Node.js 24",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-01T08:13:22Z",
+          "completed_at": "2026-10-01T08:13:29Z"
+        },
+        {
+          "name": "Install locked verification dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-01T08:13:29Z",
+          "completed_at": "2026-10-01T08:13:34Z"
+        },
+        {
+          "name": "Download and authenticate the original old generation and signed candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-01T08:13:34Z",
+          "completed_at": "2026-10-01T08:13:46Z"
+        },
+        {
+          "name": "Run the actual signed old helper handoff",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 8,
+          "started_at": "2026-10-01T08:13:46Z",
+          "completed_at": "2026-10-01T08:14:06Z"
+        },
+        {
+          "name": "Upload signed legacy acceptance evidence",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-01T08:14:06Z",
+          "completed_at": "2026-10-01T08:14:07Z"
+        },
+        {
+          "name": "Post Use Node.js 24",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 16,
+          "started_at": "2026-10-01T08:14:07Z",
+          "completed_at": "2026-10-01T08:14:07Z"
+        },
+        {
+          "name": "Post Use the exact ordinary GUI harness SDK",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 17,
+          "started_at": "2026-10-01T08:14:07Z",
+          "completed_at": "2026-10-01T08:14:07Z"
+        },
+        {
+          "name": "Post Checkout the acceptance sources",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-10-01T08:14:07Z",
+          "completed_at": "2026-10-01T08:14:09Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-10-01T08:14:09Z",
+          "completed_at": "2026-10-01T08:14:09Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/check-runs/110279863127",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": 1000000262,
+      "runner_name": "GitHub Actions 1000000262",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 110279864676,
+      "run_id": 36834226795,
+      "workflow_name": "Checks",
+      "head_branch": "codex/lagom-production-audit",
+      "run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36834226795",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORmCXB88AAAAZrTExZA",
+      "head_sha": "466862cc00b36277460ccc94cb47f4df891ac14b",
+      "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/jobs/110279864676",
+      "html_url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36834226795/job/110279864676",
+      "status": "completed",
+      "conclusion": "skipped",
+      "created_at": "2026-10-01T08:12:43Z",
+      "started_at": "2026-10-01T08:12:43Z",
+      "completed_at": "2026-10-01T08:12:43Z",
+      "name": "candidate",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/check-runs/110279864676",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": null,
+      "runner_name": null,
+      "runner_group_id": null,
+      "runner_group_name": null
+    }
+  ]
+}

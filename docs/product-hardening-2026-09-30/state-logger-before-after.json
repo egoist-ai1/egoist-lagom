@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "sourceBase": "5d0d58b44076843e639723ef267e7b8d2605e481",
+  "scenario": "Actual electron-log hook with current redactor, synthetic bare field credentials, deep object and circular reference; no transport IO.",
+  "before": {
+    "sourceSha256": "b908af2094730a1782e82a165011e3ad635738f5c7f5260224ea9493904c83d1",
+    "rawCredentialSurvives": true,
+    "deepCredentialSurvives": true,
+    "circularSerializationError": "TypeError",
+    "circularPlaceholder": false
+  },
+  "after": {
+    "sourceSha256": "d809ad1f3b6cd16f820ce5cbe8dbce89f98fe2aeaf0974fb6f625fdeede39716",
+    "rawCredentialSurvives": false,
+    "deepCredentialSurvives": false,
+    "circularSerializationError": null,
+    "circularPlaceholder": true
+  }
+}

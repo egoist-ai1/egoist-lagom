@@ -147,7 +147,7 @@ var AppSettingsSchema = z.object({
 var TelegramProxyConfigSchema = z.object({
 	host: z.string().trim().min(1, "Host не может быть пустым").max(253, "Host не может превышать 253 символа").refine(isAllowedTelegramProxyHost, "Host Telegram Proxy должен быть loopback, wildcard или приватным LAN-адресом"),
 	port: z.coerce.number().int().min(1).max(65535),
-	secret: z.string().trim().transform((value) => value.replace(/^dd/i, "")).refine((value) => HEX_32_RE.test(value), "Secret должен быть 32 hex-символа без dd-префикса"),
+	secret: z.string().trim().transform((value) => value.replace(/^dd([a-f0-9]{32})$/i, "$1")).refine((value) => HEX_32_RE.test(value), "Secret должен быть 32 hex-символа без dd-префикса"),
 	dcIp: z.array(z.string().trim().min(1).max(128).refine((value) => TELEGRAM_DC_IP_RE.test(value), "Некорректный Telegram DC endpoint")).max(16, "Слишком много Telegram DC endpoints"),
 	verbose: z.boolean(),
 	bufKb: z.coerce.number().int().min(1).max(16384),
@@ -165,6 +165,7 @@ var UsageRecordSchema = z.object({
 	durationSec: z.number()
 });
 var PersistedStateSchema = z.object({
+	stateRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 	nodes: z.array(VpnNodeSchema),
 	activeNodeId: z.string().nullable(),
 	subscriptions: z.array(SubscriptionItemSchema),
@@ -173,6 +174,65 @@ var PersistedStateSchema = z.object({
 	settings: AppSettingsSchema,
 	usageHistory: z.array(UsageRecordSchema)
 });
+var SettingsPatchInputSchema = z.object({
+	patch: AppSettingsSchema.partial().strict(),
+	expectedRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
+}).strict();
+function isRulesPatchNativePrototype(prototype, constructor) {
+	if (!prototype) return false;
+	const descriptor = Object.getOwnPropertyDescriptor(prototype, "constructor");
+	return typeof descriptor?.value === "function" && Function.prototype.toString.call(descriptor.value) === Function.prototype.toString.call(constructor) &&
+		Object.getOwnPropertyDescriptor(descriptor.value, "prototype")?.value === prototype;
+}
+function isRulesPatchRecord(value, keys) {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+	const prototype = Object.getPrototypeOf(value);
+	if (prototype !== null && (Object.getPrototypeOf(prototype) !== null || !isRulesPatchNativePrototype(prototype, Object))) return false;
+	return Reflect.ownKeys(value).every((key) => typeof key === "string" && keys.includes(key) &&
+		Object.getOwnPropertyDescriptor(value, key).enumerable === true && Object.prototype.hasOwnProperty.call(Object.getOwnPropertyDescriptor(value, key), "value"));
+}
+function isRulesPatchPayload(value) {
+	if (!isRulesPatchRecord(value, ["patch", "expectedRevision"]) || !Object.hasOwn(value, "patch") || !Object.hasOwn(value, "expectedRevision")) return false;
+	if (!isRulesPatchRecord(value.patch, ["domainRules", "processRules"]) || Object.keys(value.patch).length === 0 || typeof value.expectedRevision !== "number") return false;
+	for (const key of Object.keys(value.patch)) {
+		const list = value.patch[key];
+		if (!Array.isArray(list) || list.length > 256) return false;
+		const prototype = Object.getPrototypeOf(list);
+		if (!isRulesPatchNativePrototype(prototype, Array) || !isRulesPatchNativePrototype(Object.getPrototypeOf(prototype), Object)) return false;
+		if (!Reflect.ownKeys(list).every((item) => typeof item === "string" && (item === "length" || /^(0|[1-9][0-9]*)$/.test(item) && Number(item) < list.length) &&
+			(item === "length" || Object.getOwnPropertyDescriptor(list, item).enumerable === true) && Object.prototype.hasOwnProperty.call(Object.getOwnPropertyDescriptor(list, item), "value"))) return false;
+		const field = key === "domainRules" ? "domain" : "process";
+		for (const rule of list) if (!isRulesPatchRecord(rule, ["id", field, "mode"]) ||
+			!["id", field, "mode"].every((name) => Object.hasOwn(rule, name) && typeof rule[name] === "string") ||
+			rule.id.length > 128 || rule[field].length > 512 || rule.mode.length > 6) return false;
+	}
+	try { return Buffer.byteLength(JSON.stringify(value), "utf8") <= 60 * 1024; } catch { return false; }
+}
+function rulesPatchText(maximum) {
+	return z.string().max(maximum).refine((value) => !/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/.test(value), "Rule text contains control characters").transform((value) => value.trim()).refine((value) => value.length > 0, "Rule text cannot be empty");
+}
+var RulesPatchInputSchema = z.unknown().refine(isRulesPatchPayload, "Invalid or oversized rules patch").pipe(z.object({
+	patch: z.object({
+		domainRules: z.array(z.object({ id: rulesPatchText(128), domain: rulesPatchText(512), mode: RuleModeSchema }).strict()).max(256).optional(),
+		processRules: z.array(z.object({ id: rulesPatchText(128), process: rulesPatchText(512), mode: RuleModeSchema }).strict()).max(256).optional()
+	}).strict(),
+	expectedRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
+}).strict()).superRefine(({ patch }, context) => {
+	for (const key of ["domainRules", "processRules"]) if (patch[key]) {
+		const ids = new Set();
+		for (const [index, rule] of patch[key].entries()) {
+			if (ids.has(rule.id)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["patch", key, index, "id"], message: "Rule IDs must be unique within their type" });
+			ids.add(rule.id);
+		}
+	}
+});
+var NodeIdInputSchema = z.object({ id: z.string().min(1).max(256) }).strict();
+var SelectNodeInputSchema = z.object({ id: z.string().min(1).max(256).nullable() }).strict();
+var NodeFavoriteInputSchema = z.object({
+	id: z.string().min(1).max(256),
+	favorite: z.boolean()
+}).strict();
+var SubscriptionIdInputSchema = z.object({ id: z.string().min(1).max(256) }).strict();
 /** import:text — текстовый payload (URI, base64, YAML) */
 var ImportTextInputSchema = z.string().min(1, "Payload не может быть пустым");
 /** import:file — путь к файлу */

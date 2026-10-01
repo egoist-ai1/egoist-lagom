@@ -25,10 +25,12 @@ async function fixture(t, fault) {
     },
   };
   const { RuntimeInstaller, XRAY_PLAN } = loadRecovered('electron/ipc/runtime-installer', {
+	prepareRuntimeInstallRoot: async ({ userDataDir }) => ({ runtimeRoot: path.join(userDataDir, 'runtime'), privileged: false }),
     promises, path, randomUUID, readVersionFile: async file => fs.readFile(file, 'utf8').then(x => x.trim()).catch(() => null),
     normalizeVersionTag: x => x, compareLooseVersions: (a,b) => a.localeCompare(b),
     resolveLatestGitHubRelease: async () => ({ tag_name: fault === 'recovery' ? 'v1' : fault === 'stale' ? 'v0' : 'v2', release: { assets: [] } }),
     pickGitHubAsset: () => ({ name: 'xray.zip', browser_download_url: 'https://github.com/XTLS/Xray-core/releases/download/v2/xray.zip' }),
+	buildGitHubAssetDownloadUrl: (_api, tag, assetName) => `https://github.com/XTLS/Xray-core/releases/download/${tag}/${assetName}`,
     downloadFileWithProgress: async () => { if (fault === 'recovery') throw new Error('Offline'); },
     verifyGitHubReleaseAssetChecksum: async () => ({ verified: true }),
     extractZipArchive: async (_, dir) => {

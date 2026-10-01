@@ -1,0 +1,1116 @@
+{
+  "schemaVersion": 1,
+  "scope": "Actual production renderer/CSS and native HTML dialog, inert loopback IPC fixtures; no native networking/service/SCM mutation or proof.",
+  "browser": "151.0.7922.34",
+  "cases": [
+    {
+      "name": "network-settings-collapsed",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "global",
+        "dnsMode": "auto",
+        "customDnsUrl": "",
+        "useTunMode": false,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": []
+    },
+    {
+      "name": "network-settings-default",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "SUMMARY",
+      "settings": {
+        "routeMode": "global",
+        "dnsMode": "auto",
+        "customDnsUrl": "",
+        "useTunMode": false,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": []
+    },
+    {
+      "name": "network-settings-rules",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "Добавить правило домена VPN",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [
+        {
+          "id": "e73d8ea0-c443-40fb-844e-4ecf5b542e34",
+          "domain": "xn--e1afmkfd.xn--p1ai",
+          "mode": "direct"
+        }
+      ],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-rule-dialog",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": true,
+      "focus": "BUTTON",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [
+        {
+          "id": "e73d8ea0-c443-40fb-844e-4ecf5b542e34",
+          "domain": "xn--e1afmkfd.xn--p1ai",
+          "mode": "direct"
+        }
+      ],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-selected-system-process",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-custom-invalid",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BUTTON",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-custom-saved",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "custom",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-save-pending",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "custom",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-write-failure",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-settings-conflict",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "global",
+        "dnsMode": "system",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-rule-conflict",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": true,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "global",
+        "dnsMode": "system",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-explicit-background-apply",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-hud-1060",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-hud-600",
+      "viewport": {
+        "width": 600,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-hud-400",
+      "viewport": {
+        "width": 400,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-narrow",
+      "viewport": {
+        "width": 400,
+        "height": 640
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "SUMMARY",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-rule-dialog-narrow",
+      "viewport": {
+        "width": 400,
+        "height": 640
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": true,
+      "focus": "INPUT",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-rule-dialog-unknown",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": true,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-unknown",
+      "viewport": {
+        "width": 1060,
+        "height": 720
+      },
+      "horizontalOverflow": false,
+      "blockedControls": [],
+      "modal": false,
+      "focus": "BODY",
+      "settings": {
+        "routeMode": "selected",
+        "dnsMode": "system",
+        "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+        "useTunMode": true,
+        "autoStart": false,
+        "autoConnect": false,
+        "autoUpdate": false,
+        "minimizeToTray": false,
+        "systemDohUrl": "https://resolver.example/dns-query"
+      },
+      "domainRules": [],
+      "processRules": [
+        {
+          "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+          "process": "LagomVpnProbe.exe",
+          "mode": "vpn"
+        }
+      ]
+    },
+    {
+      "name": "network-settings-browser-200-reduced",
+      "horizontalOverflow": false,
+      "devicePixelRatio": 2,
+      "transition": "0s",
+      "nativeWindowsDpiVerified": false
+    }
+  ],
+  "interactions": [
+    {
+      "name": "selected-system-TUN-real-settings-patch",
+      "ok": true,
+      "call": {
+        "name": "patchSettings",
+        "args": [
+          {
+            "routeMode": "selected",
+            "dnsMode": "system",
+            "useTunMode": true
+          },
+          3
+        ]
+      },
+      "protectedSnapshotUnchanged": true
+    },
+    {
+      "name": "native-dialog-tab-containment-escape-focus",
+      "ok": true
+    },
+    {
+      "name": "edit-reorder-remove-stable-id-and-array-preservation",
+      "ok": true
+    },
+    {
+      "name": "custom-DoH-contract-validation-and-preserved-address",
+      "ok": true
+    },
+    {
+      "name": "pending-write-no-double-actions",
+      "ok": true
+    },
+    {
+      "name": "failed-write-and-CAS-conflicts-no-overwrite-no-auto-retry",
+      "ok": true
+    },
+    {
+      "name": "dedicated-visible-HUD-row-1060",
+      "ok": true,
+      "region": {
+        "x": 185,
+        "y": 651.8125,
+        "width": 874,
+        "height": 67.1875
+      },
+      "content": {
+        "x": 185,
+        "y": 81.390625,
+        "width": 874,
+        "height": 570.421875
+      }
+    },
+    {
+      "name": "dedicated-visible-HUD-row-600",
+      "ok": true,
+      "region": {
+        "x": 65,
+        "y": 651.8125,
+        "width": 534,
+        "height": 67.1875
+      },
+      "content": {
+        "x": 65,
+        "y": 103.390625,
+        "width": 534,
+        "height": 548.421875
+      }
+    },
+    {
+      "name": "dedicated-visible-HUD-row-400",
+      "ok": true,
+      "region": {
+        "x": 53,
+        "y": 639.625,
+        "width": 346,
+        "height": 79.375
+      },
+      "content": {
+        "x": 53,
+        "y": 107.390625,
+        "width": 346,
+        "height": 532.234375
+      }
+    },
+    {
+      "name": "background-snapshot-remains-unchanged-until-explicit-apply",
+      "ok": true,
+      "call": {
+        "name": "serviceInstall",
+        "args": [
+          "selected-node"
+        ]
+      },
+      "snapshot": {
+        "settings": {
+          "routeMode": "selected",
+          "dnsMode": "system",
+          "customDnsUrl": "https://resolver.example:8443/dns-query?client=one",
+          "useTunMode": true,
+          "autoStart": false,
+          "autoConnect": false,
+          "autoUpdate": false,
+          "minimizeToTray": false,
+          "systemDohUrl": "https://resolver.example/dns-query"
+        },
+        "domainRules": [],
+        "processRules": [
+          {
+            "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+            "process": "LagomVpnProbe.exe",
+            "mode": "vpn"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown-observation-keeps-facts-and-blocks-writes",
+      "ok": true
+    }
+  ],
+  "errors": [],
+  "sourceHashes": {
+    "src/recovered/renderer.js": "83c23387e581151eae23bcf2f2f945a8dc0c3d1fd18aa67145b6a6d6370f3d5a",
+    "src/brand/CompactRuby.jsx": "652eb41b16eefa65ef6af2f49b5c468a3b9bd676ed7281c42cd5efbca18feeb0",
+    "src/brand/compact-surfaces.css": "a10318a6ac62f6090efb76fffbcb220f764d84841b97cb929a82b3f6c0498098",
+    "src/recovered/preload.cjs": "b43a139cb749c3240857b47b48b45086f5a242b7c7ece51c8a29a8bb929f8d23",
+    "src/recovered/electron/ipc/ipc-schemas.js": "5a3363f0cd6da4d356ca31cefb0e4412369fcdf890597c4ab53623f336393a38",
+    "src/recovered/electron/ipc/state-store.js": "88e9244153aa07395994d9d8ef2cfad1250a286905f4175e56bd79f046f92b4b"
+  },
+  "nativeSystemMutations": 0,
+  "calls": [
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchSettings",
+      "args": [
+        {
+          "routeMode": "selected",
+          "dnsMode": "system",
+          "useTunMode": true
+        },
+        3
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchRules",
+      "args": [
+        {
+          "processRules": [
+            {
+              "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+              "process": "LagomVpnProbe.exe",
+              "mode": "vpn"
+            }
+          ]
+        },
+        4
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchRules",
+      "args": [
+        {
+          "domainRules": [
+            {
+              "id": "e73d8ea0-c443-40fb-844e-4ecf5b542e34",
+              "domain": "xn--e1afmkfd.xn--p1ai",
+              "mode": "direct"
+            }
+          ]
+        },
+        5
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchRules",
+      "args": [
+        {
+          "processRules": [
+            {
+              "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+              "process": "LagomVpnProbe.exe",
+              "mode": "block"
+            }
+          ]
+        },
+        6
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchRules",
+      "args": [
+        {
+          "processRules": [
+            {
+              "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+              "process": "LagomVpnProbe.exe",
+              "mode": "block"
+            },
+            {
+              "id": "b44e3f69-3a70-4f90-a6c6-9f113e621bd9",
+              "process": "browser.exe",
+              "mode": "direct"
+            }
+          ]
+        },
+        7
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchRules",
+      "args": [
+        {
+          "processRules": [
+            {
+              "id": "b44e3f69-3a70-4f90-a6c6-9f113e621bd9",
+              "process": "browser.exe",
+              "mode": "direct"
+            },
+            {
+              "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+              "process": "LagomVpnProbe.exe",
+              "mode": "block"
+            }
+          ]
+        },
+        8
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchRules",
+      "args": [
+        {
+          "processRules": [
+            {
+              "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+              "process": "LagomVpnProbe.exe",
+              "mode": "block"
+            }
+          ]
+        },
+        9
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchRules",
+      "args": [
+        {
+          "processRules": [
+            {
+              "id": "78e165b6-1a1f-47c6-b45a-6702ea5745e7",
+              "process": "LagomVpnProbe.exe",
+              "mode": "vpn"
+            }
+          ]
+        },
+        10
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchRules",
+      "args": [
+        {
+          "domainRules": []
+        },
+        11
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchSettings",
+      "args": [
+        {
+          "dnsMode": "custom",
+          "customDnsUrl": "https://resolver.example:8443/dns-query?client=one"
+        },
+        12
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchSettings",
+      "args": [
+        {
+          "dnsMode": "system"
+        },
+        13
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchSettings",
+      "args": [
+        {
+          "routeMode": "global"
+        },
+        14
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchSettings",
+      "args": [
+        {
+          "routeMode": "global"
+        },
+        14
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "patchSettings",
+      "args": [
+        {
+          "routeMode": "selected"
+        },
+        16
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "serviceInstall",
+      "args": [
+        "selected-node"
+      ]
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    },
+    {
+      "name": "get",
+      "args": []
+    }
+  ]
+}

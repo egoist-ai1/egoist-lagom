@@ -1,0 +1,14 @@
+✔ both actual pinned binaries accept supported route fields from stdin and reject invalid Go regex syntax (1759.9456ms)
+✔ both selected native stdin checks preserve the old child and write no temporary config or credential file (536.3186ms)
+✔ an actual owned child exiting before buffered stdin completes and oversized input fail before teardown (1075.1039ms)
+✔ actual loopback routing proves the same plain-domain boundary in both pinned cores (431.6402ms)
+✔ actual loopback routing keeps full, keyword and regexp decisions distinct in both pinned cores (1162.7629ms)
+✔ actual Windows loopback process lookup distinguishes the owned node.exe client from another basename (788.8274ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5831.4626

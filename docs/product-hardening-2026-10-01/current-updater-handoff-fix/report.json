@@ -1,0 +1,36 @@
+{
+  "kind": "current-updater-preparation-handoff-fix",
+  "currentVersion": "3.8.0",
+  "futureVersionFixture": "3.8.1",
+  "nativeUpdateAcceptance": false,
+  "actualElevationTested": false,
+  "productExecuted": false,
+  "scmMutated": false,
+  "oldHelpersOrTrustPinsChanged": false,
+  "contract": {
+    "outerWaitsForHeldPreparation": true,
+    "preparationWaitSeconds": 300,
+    "propagatesPreparationExitCode": true,
+    "signalOnlyAcceptance": false,
+    "waitsForWorkerProcessTree": false,
+    "killsPreparationOnTimeout": false,
+    "preservesInputsAfterHelperSpawn": true,
+    "preservesCleanupBeforeSpawn": true,
+    "recallsCommittedHelperOnPreferenceChange": false
+  },
+  "checks": {
+    "preparationRed": {"total": 3, "passed": 0, "failed": 3, "skipped": 0},
+    "preparationGreen": {"total": 3, "passed": 3, "failed": 0, "skipped": 0},
+    "finalTargeted": {"total": 35, "passed": 35, "failed": 0, "skipped": 0},
+    "actualInertChildProcesses": true,
+    "actualFilesystemHashes": true,
+    "existingTestsEdited": false,
+    "limits": "Extracted production branch/functions and actual task-owned ordinary harmless processes; no native elevated installer acceptance."
+  },
+  "files": [
+    "scripts/invoke-final-silent-reinstall.ps1",
+    "src/recovered/electron/ipc/desktop-updater.js",
+    "tests/update-preparation-handoff.test.mjs"
+  ],
+  "supersedesRemainingFindingIn": "docs/product-hardening-2026-10-01/current-updater-review/review.md"
+}

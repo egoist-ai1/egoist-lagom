@@ -22,6 +22,8 @@ $runPhase = [ScriptBlock]::Create($phaseText)
 $installRoot = 'C:\MockEgoistShieldInstall'
 $events = [Collections.Generic.List[string]]::new()
 function Test-InstallRootHealthy { param($Root) $true }
+function Get-ValidatedInstalledProductVersion { param($Root) $events.Add('version-gate'); if (-not $script:versionVerified) { throw 'MOCK: Installed PE version does not match the runtime manifest.' }; return '3.8.0' }
+function Write-ValidatedInstallationIdentity { param($Root) $events.Add('identity-write') }
 function Invoke-CoreNativeDohCleanup { }
 function Invoke-CoreOwnedDnsCleanup { }
 function Remove-OptionalOwnedServices { }
@@ -50,6 +52,7 @@ function Restore-UpgradeQuarantine {
 
 $failures = 0
 foreach ($coreRunning in @($false, $true)) {
+  $script:versionVerified = $true
   $script:coreRunning = $coreRunning
   $script:previousVersionAvailable = $true
   $script:externalBaselineAvailable = $true
@@ -77,4 +80,11 @@ foreach ($coreRunning in @($false, $true)) {
     Write-Output "FAIL: $_ Events: $($events -join ', ')"
   }
 }
+$script:coreRunning=$true;$script:versionVerified=$false
+$script:previousVersionAvailable=$true;$script:externalBaselineAvailable=$true;$events.Clear()
+$phaseFailure=$null
+try { & $runPhase } catch { $phaseFailure=$_ }
+if(-not $phaseFailure -or $events.Contains('commit') -or $events.Contains('identity-write') -or -not $events.Contains('rollback')) {
+  $failures++; Write-Output 'FAIL: unverified version mutated installation identity or was committed.'
+} else { Write-Output 'PASS: mismatching installed version enters rollback before identity publication and commit' }
 if ($failures) { exit 1 }

@@ -651,76 +651,61 @@ async function createDnsMutationRollbackSnapshot(reason) {
 	return createAdapterDnsRollbackSnapshot([...records.values()], reason);
 }
 function registerSystemHandlers({ window, stateStore, runtimeManager, gravitylessDnsManager, systemDohManager, zapretManager, telegramProxyManager, networkCombinatorManager }) {
+	const dnsMutationAccessError = async (useSystemDohBroker, directAdminMessage) => {
+		if (!app.isPackaged) return await runtimeManager.isAdmin() ? null : directAdminMessage;
+		const broker = useSystemDohBroker
+			? (typeof getSystemDohServiceBroker === "function" ? getSystemDohServiceBroker(systemDohManager) : null)
+			: coreServiceClient;
+		if (!broker) return "Защищённый канал System DoH к Egoist Lagom Core не настроен. Проверьте установку приложения.";
+		try {
+			const hello = await broker.request("hello", {});
+			if (hello?.protocolVersion !== 1 || hello.clientPid !== process.pid || hello.identityProbe !== false || hello.developmentOverride !== false) throw new Error("Core не подтвердил доступ текущего приложения.");
+			return null;
+		} catch (error) {
+			const detail = error instanceof Error ? error.message.slice(0, 400) : "Ответ Core не подтверждён.";
+			return `Защищённая служба Egoist Lagom Core недоступна или отказала в доступе. ${detail}`;
+		}
+	};
 	const mutateDns = (action, operation) => networkCombinatorManager ? networkCombinatorManager.runCoordinatedMutation({
 		module: "dns",
 		action,
 		requiredLocks: ["dns", "dns-verify"],
 		conflictsWith: ["traffic-route"]
 	}, operation) : operation();
-	const patchSettingsWithLoginItemSync = async (settingsPatch) => {
-		const previous = stateStore.get();
-		const nextState = {
-			...previous,
-			settings: {
-				...previous.settings,
-				...settingsPatch
-			}
-		};
-		syncWindowsLoginItemSettings({
-			app,
-			settings: nextState.settings
-		});
-		try {
-			return await stateStore.set(nextState);
-		} catch (error) {
-			try {
-				syncWindowsLoginItemSettings({
-					app,
-					settings: previous.settings
-				});
-			} catch (rollbackError) {
-				logger.error("[system] Failed to restore Windows login item after DNS settings error:", rollbackError);
-			}
-			throw error;
+	let startupSideEffectAttempted = false;
+	const settingsCommitHooks = {
+		beforeCommit: async (next, previous) => {
+			startupSideEffectAttempted = next.settings.autoStart !== previous.settings.autoStart;
+			if (startupSideEffectAttempted) await syncWindowsLoginItemSettings({ app, settings: next.settings, previousSettings: previous.settings });
+		},
+		rollback: async previous => {
+			if (startupSideEffectAttempted) await syncWindowsLoginItemSettings({ app, settings: previous.settings });
+			startupSideEffectAttempted = false;
 		}
+	};
+	const patchSettingsWithLoginItemSync = async (settingsPatch) => {
+		const result = await stateStore.patchSettings(settingsPatch, void 0, settingsCommitHooks);
+		if (!result.ok) throw new Error(result.error || "STATE_WRITE_FAILED");
+		return result.state;
 	};
 	ipcMain.handle("state:get", async () => {
 		return stateStore.get();
 	});
 	ipcMain.handle("state:set", async (_event, rawState) => {
 		const state = PersistedStateSchema.parse(rawState);
-		const previous = stateStore.get();
-		const nextState = {
-			...state,
-			settings: {
-				...state.settings,
-				systemDnsServers: state.settings.systemDnsServers ?? "",
-				customDnsUrl: state.settings.customDnsUrl ?? "",
-				systemDohEnabled: state.settings.systemDohEnabled ?? false,
-				systemDohUrl: state.settings.systemDohUrl ?? "",
-				systemDohLocalAddress: state.settings.systemDohLocalAddress ?? ""
-			}
-		};
-		try {
-			syncWindowsLoginItemSettings({
-				app,
-				settings: nextState.settings
-			});
-			const persisted = await stateStore.set(nextState);
-			applyLoggerSettings(persisted.settings);
-			return persisted;
-		} catch (error) {
-			try {
-				syncWindowsLoginItemSettings({
-					app,
-					settings: previous.settings
-				});
-			} catch (rollbackError) {
-				logger.error("[system] Failed to restore Windows login item after settings error:", rollbackError);
-			}
-			logger.warn("[system] Failed to apply persisted settings:", error);
-			throw error;
-		}
+		const persisted = await stateStore.set(state, state.stateRevision, settingsCommitHooks);
+		applyLoggerSettings(persisted.settings);
+		return persisted;
+	});
+	ipcMain.handle("state:patch-settings", async (_event, rawInput) => {
+		const { patch, expectedRevision } = SettingsPatchInputSchema.parse(rawInput);
+		const result = await stateStore.patchSettings(patch, expectedRevision, settingsCommitHooks);
+		if (result.ok) applyLoggerSettings(result.state.settings);
+		return result;
+	});
+	ipcMain.handle("state:patch-rules", async (_event, rawInput) => {
+		const { patch, expectedRevision } = RulesPatchInputSchema.parse(rawInput);
+		return stateStore.patchRules(patch, expectedRevision);
 	});
 	ipcMain.handle("app:is-admin", async () => runtimeManager.isAdmin());
 	ipcMain.handle("app:get-version", async () => ({
@@ -1187,9 +1172,10 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			const mock = process.env.NODE_ENV === "test";
 			const persistedState = stateStore.get();
 			if (!mock) {
-				if (!await runtimeManager.isAdmin()) return {
+				const accessError = await dnsMutationAccessError(false, "Для изменения системного DNS нужен запуск от имени администратора.");
+				if (accessError) return {
 					ok: false,
-					message: "Для изменения системного DNS нужен запуск от имени администратора.",
+					message: accessError,
 					servers: []
 				};
 			}
@@ -1226,9 +1212,10 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			const mock = process.env.NODE_ENV === "test";
 			const persistedState = stateStore.get();
 			if (!mock) {
-				if (!await runtimeManager.isAdmin()) return {
+				const accessError = await dnsMutationAccessError(false, "Для сброса системного DNS нужен запуск от имени администратора.");
+				if (accessError) return {
 					ok: false,
-					message: "Для сброса системного DNS нужен запуск от имени администратора.",
+					message: accessError,
 					servers: []
 				};
 			}
@@ -1276,10 +1263,11 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			const switchingFromGravityless = isGravitylessLoopbackDnsRequest(persistedState.settings.systemDnsServers ?? "");
 			let gravitylessWasRunning = false;
 			if (!mock) {
-				if (!await runtimeManager.isAdmin()) return {
+				const accessError = await dnsMutationAccessError(true, "Для включения System DoH нужен запуск приложения от имени администратора.");
+				if (accessError) return {
 					ok: false,
-					message: "Для включения System DoH нужен запуск приложения от имени администратора.",
-					status: await systemDohManager.status()
+					message: accessError,
+					status: null
 				};
 			}
 			try {
@@ -1343,10 +1331,11 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			const mock = process.env.NODE_ENV === "test";
 			const persistedState = stateStore.get();
 			if (!mock) {
-				if (!await runtimeManager.isAdmin()) return {
+				const accessError = await dnsMutationAccessError(true, "Для отключения System DoH нужен запуск приложения от имени администратора.");
+				if (accessError) return {
 					ok: false,
-					message: "Для отключения System DoH нужен запуск приложения от имени администратора.",
-					status: await systemDohManager.status()
+					message: accessError,
+					status: null
 				};
 			}
 			try {
@@ -1410,11 +1399,10 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 		return mutateDns("system-doh-restart", async () => {
 			const mock = process.env.NODE_ENV === "test";
 			const persistedState = stateStore.get();
-			if (!mock && !await runtimeManager.isAdmin()) return {
-				ok: false,
-				message: "Для перепроверки System DoH нужны права администратора.",
-				status: await systemDohManager.status()
-			};
+			if (!mock) {
+				const accessError = await dnsMutationAccessError(true, "Для перепроверки System DoH нужны права администратора.");
+				if (accessError) return { ok: false, message: accessError, status: null };
+			}
 			try {
 				return {
 					ok: true,
@@ -1470,7 +1458,7 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			});
 			return { ok: true };
 		},
-		saveConnected: profile => patchSettingsWithLoginItemSync({ zapretProfile: profile, autoStart: true, startMinimized: true, minimizeToTray: true }),
+		saveConnected: profile => patchSettingsWithLoginItemSync({ zapretProfile: profile }),
 		coordinate: (action, operation) => coordinateShieldAction(action, operation, {
 			manager: networkCombinatorManager,
 			vpn: runtimeManager,

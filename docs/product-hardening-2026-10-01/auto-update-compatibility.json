@@ -1,0 +1,817 @@
+{
+  "schemaVersion": 1,
+  "audit": "Actual installed3.7.9 updater compatibility with candidate3.8.0",
+  "finalizedAtUtc": "2026-10-01T04:05:05.452Z",
+  "sourceCommit": "3dae559124015b74dfeaabb12e46621cfd6d4cdc",
+  "conclusion": {
+    "old379OfflineCryptographicContract": "pass",
+    "assertionsPassed": 15,
+    "old378ActualBundleCompatibility": "not-tested",
+    "publicCandidateDiscovery": "not-available-at-observed-snapshot",
+    "nativeWorkflowAcceptance": "failed-before-handoff",
+    "endToEndAutoUpdateAccepted": false,
+    "releaseReadyFromThisAudit": false
+  },
+  "scope": {
+    "readOnlyProductionAndHost": true,
+    "appUpdaterInstallerOrServiceLaunchedByThisAudit": false,
+    "physicalScmDnsRegistryTaskOrInstallWrites": false,
+    "externalWrites": false,
+    "privateKeysReadOrCopied": false,
+    "credentialOutput": false,
+    "hostTrustOrGithubShaReplaced": false,
+    "acceptedArtifacts": [
+      "docs/product-hardening-2026-10-01/auto-update-compatibility.md",
+      "docs/product-hardening-2026-10-01/auto-update-compatibility.json"
+    ]
+  },
+  "installed": {
+    "root": "C:/Program Files/EgoistShield",
+    "version": "3.7.9",
+    "productName": "Egoist Lagom",
+    "archive": {
+      "path": "C:/Program Files/EgoistShield/resources/app.asar",
+      "bytes": 11689184,
+      "sha256": "0696d3f37b56e70fb6dd3cbbb4c14f820aeafe9931ef32a74787ffe6055d7711"
+    },
+    "main": {
+      "member": ".vite/build/main.js",
+      "bytes": 2545209,
+      "sha256": "8b2c019c6369a5a9e14e343df76271487e7736c0f9643bdc98eb3f8b90962ade"
+    },
+    "publicTrust": [
+      {
+        "path": "C:\\Program Files\\EgoistShield\\resources\\release\\root-public-key.pem",
+        "bytes": 113,
+        "sha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+        "matchesCandidate": true
+      },
+      {
+        "path": "C:\\Program Files\\EgoistShield\\resources\\release\\release-key-registry.json",
+        "bytes": 1100,
+        "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+        "matchesCandidate": true
+      },
+      {
+        "path": "C:\\Program Files\\EgoistShield\\resources\\release\\release-key-registry.json.sig",
+        "bytes": 89,
+        "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de",
+        "matchesCandidate": true
+      }
+    ],
+    "originalHelpers": [
+      {
+        "path": "C:/Program Files/EgoistShield/resources/installer/invoke-final-silent-reinstall.ps1",
+        "bytes": 63700,
+        "sha256": "f6c232fa15e4e8f1d78c149f973df8b807d58cabd8ef5898b8b5ce0d2279da8e"
+      },
+      {
+        "path": "C:/Program Files/EgoistShield/resources/installer/ModernInstaller.exe",
+        "bytes": 468992,
+        "sha256": "321b04000ed67ebf304021aa2102e6a9258a6a64f3cdc1501908abfd16556f0f"
+      }
+    ],
+    "helpersExecuted": false,
+    "userSettingsOrUpdaterStateRead": false,
+    "trustLoading": "Actual old loadTrustedKeyRegistry reads bundled public root/registry/signature only; no remote registry refresh or cache was present in its source.",
+    "newerSourceCommitAndIntegrityFields": "Their signed bytes are authenticated as part of the complete metadata, but the old client does not independently enforce the added sourceCommit/integrityManifestSha256 semantics."
+  },
+  "candidate": {
+    "directory": "C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom/dist/october-3dae55912401",
+    "version": "3.8.0",
+    "manifest": {
+      "schemaVersion": 2,
+      "channel": "stable",
+      "version": "3.8.0",
+      "tag": "v3.8.0",
+      "installerName": "EgoistShield-Setup-3.8.0.exe",
+      "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+      "size": 277426678,
+      "sha256": "5d3bcaa41b39ba7c123e5d683f483f8796fe6652a23b525628278dbc673f14b8",
+      "sha512": "4969e47380cb1f90e3fd7db51d43c2677a4491f510b52da084ff9a4557e0b20a4313c93ece37389a84d0c31e4a73d25534aa0597239c424c9c7db6e61e7ecb51",
+      "githubDigest": "sha256:5d3bcaa41b39ba7c123e5d683f483f8796fe6652a23b525628278dbc673f14b8",
+      "sourceCommit": "3dae559124015b74dfeaabb12e46621cfd6d4cdc",
+      "integrityManifestSha256": "003bfa8c8d32964b70f1834377e5f2c8f6d169c98fcac443b265296df0be118e",
+      "minimumAppVersion": "3.7.8",
+      "keyId": "release-2026-09-recovery",
+      "authenticodeStatus": "not-signed",
+      "licenseVersion": "1.0",
+      "publishedAt": "2026-10-01T03:35:04.731Z"
+    },
+    "installer": {
+      "path": "C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom/dist/october-3dae55912401/EgoistShield-Setup-3.8.0.exe",
+      "bytes": 277426678,
+      "sha256": "5d3bcaa41b39ba7c123e5d683f483f8796fe6652a23b525628278dbc673f14b8",
+      "sha512": "4969e47380cb1f90e3fd7db51d43c2677a4491f510b52da084ff9a4557e0b20a4313c93ece37389a84d0c31e4a73d25534aa0597239c424c9c7db6e61e7ecb51"
+    },
+    "installerAlias": {
+      "path": "C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom/dist/october-3dae55912401/Egoist-Lagom-Setup.exe",
+      "bytes": 277426678,
+      "sha256": "5d3bcaa41b39ba7c123e5d683f483f8796fe6652a23b525628278dbc673f14b8"
+    },
+    "publicFiles": {
+      "release-manifest.json": {
+        "path": "C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom/dist/october-3dae55912401/release-manifest.json",
+        "bytes": 944,
+        "sha256": "198ef5bfdd43249af14cbde5f9d1b8557b681381b7cfe226504736a5280fbf53"
+      },
+      "release-manifest.json.sig": {
+        "path": "C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom/dist/october-3dae55912401/release-manifest.json.sig",
+        "bytes": 89,
+        "sha256": "8bc286c5e23bbdf385f0f68bc1ac91b22e2b1592c1b7d4a4ee0db09bc5464c68"
+      },
+      "stable-channel.json": {
+        "path": "C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom/dist/october-3dae55912401/stable-channel.json",
+        "bytes": 944,
+        "sha256": "198ef5bfdd43249af14cbde5f9d1b8557b681381b7cfe226504736a5280fbf53"
+      },
+      "stable-channel.json.sig": {
+        "path": "C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom/dist/october-3dae55912401/stable-channel.json.sig",
+        "bytes": 89,
+        "sha256": "8bc286c5e23bbdf385f0f68bc1ac91b22e2b1592c1b7d4a4ee0db09bc5464c68"
+      },
+      "release-key-registry.json": {
+        "path": "C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom/dist/october-3dae55912401/release-key-registry.json",
+        "bytes": 1100,
+        "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc"
+      },
+      "release-key-registry.json.sig": {
+        "path": "C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom/dist/october-3dae55912401/release-key-registry.json.sig",
+        "bytes": 89,
+        "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de"
+      },
+      "root-public-key.pem": {
+        "path": "C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom/dist/october-3dae55912401/root-public-key.pem",
+        "bytes": 113,
+        "sha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7"
+      },
+      "package-integrity.json": {
+        "path": "C:/Users/Egoist/Desktop/Проекты/Приложения/Egoist Lagom/dist/october-3dae55912401/package-integrity.json",
+        "bytes": 30714,
+        "sha256": "003bfa8c8d32964b70f1834377e5f2c8f6d169c98fcac443b265296df0be118e"
+      }
+    }
+  },
+  "offlineContract": {
+    "observedAtUtc": "2026-10-01T03:53:38.146Z",
+    "installedVersion": "3.7.9",
+    "candidateVersion": "3.8.0",
+    "onlyPureFunctionsInvoked": true,
+    "appOrUpdaterOrInstallerLaunched": false,
+    "installedTrustActualFiles": [
+      {
+        "path": "C:\\Program Files\\EgoistShield\\resources\\release\\root-public-key.pem",
+        "bytes": 113,
+        "sha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+        "matchesCandidate": true
+      },
+      {
+        "path": "C:\\Program Files\\EgoistShield\\resources\\release\\release-key-registry.json",
+        "bytes": 1100,
+        "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+        "matchesCandidate": true
+      },
+      {
+        "path": "C:\\Program Files\\EgoistShield\\resources\\release\\release-key-registry.json.sig",
+        "bytes": 89,
+        "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de",
+        "matchesCandidate": true
+      }
+    ],
+    "trustReadPaths": [
+      "C:\\Program Files\\EgoistShield\\resources\\release\\release-key-registry.json",
+      "C:\\Program Files\\EgoistShield\\resources\\release\\release-key-registry.json.sig",
+      "C:\\Program Files\\EgoistShield\\resources\\release\\root-public-key.pem"
+    ],
+    "sourceParts": {
+      "trust": {
+        "bytes": 16509,
+        "sha256": "3ef271144d65fe0f7e5b0d8b81e120605a59227d6e59e96b3d8c3db4d0eca125"
+      },
+      "desktopPure": {
+        "bytes": 6625,
+        "sha256": "5271a02eea5455d5953f3bd62c8c4a4bf9401469849e52bb030c1fd2d34cc215"
+      },
+      "helpers": {
+        "bytes": 2088,
+        "sha256": "cf178b03ef657b26aba3830717ff94125e73dd0ba21f118e1bb3708914692c10"
+      },
+      "installerGate": {
+        "bytes": 761,
+        "sha256": "1157ea97745a135417b42d236c5ee2c40f4c7500d0f89ff2e1671f0504e6d196"
+      }
+    },
+    "urls": {
+      "api": "https://api.github.com/repos/egoist-ai1/egoist-lagom/releases/latest",
+      "page": "https://github.com/egoist-ai1/egoist-lagom/releases/latest",
+      "stable": "https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/stable-channel.json",
+      "stableSignature": "https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/stable-channel.json.sig",
+      "manifest": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/release-manifest.json",
+      "manifestSignature": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/release-manifest.json.sig",
+      "installer": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe"
+    },
+    "metadata": {
+      "schemaVersion": 2,
+      "channel": "stable",
+      "version": "3.8.0",
+      "tag": "v3.8.0",
+      "installerName": "EgoistShield-Setup-3.8.0.exe",
+      "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+      "size": 277426678,
+      "sha256": "5d3bcaa41b39ba7c123e5d683f483f8796fe6652a23b525628278dbc673f14b8",
+      "sha512": "4969e47380cb1f90e3fd7db51d43c2677a4491f510b52da084ff9a4557e0b20a4313c93ece37389a84d0c31e4a73d25534aa0597239c424c9c7db6e61e7ecb51",
+      "githubDigest": "sha256:5d3bcaa41b39ba7c123e5d683f483f8796fe6652a23b525628278dbc673f14b8",
+      "sourceCommit": "3dae559124015b74dfeaabb12e46621cfd6d4cdc",
+      "integrityManifestSha256": "003bfa8c8d32964b70f1834377e5f2c8f6d169c98fcac443b265296df0be118e",
+      "minimumAppVersion": "3.7.8",
+      "keyId": "release-2026-09-recovery",
+      "authenticodeStatus": "not-signed",
+      "licenseVersion": "1.0",
+      "publishedAt": "2026-10-01T03:35:04.731Z"
+    },
+    "versionMatrix": [
+      {
+        "version": "3.7.7",
+        "newerCandidate": true,
+        "minimumVersionPass": false,
+        "actualClientVerified": false
+      },
+      {
+        "version": "3.7.8",
+        "newerCandidate": true,
+        "minimumVersionPass": true,
+        "actualClientVerified": false
+      },
+      {
+        "version": "3.7.9",
+        "newerCandidate": true,
+        "minimumVersionPass": true,
+        "actualClientVerified": true
+      },
+      {
+        "version": "3.8.0",
+        "newerCandidate": false,
+        "minimumVersionPass": true,
+        "actualClientVerified": false
+      }
+    ],
+    "observations": [
+      {
+        "name": "actual installed root authenticates actual installed registry",
+        "outcome": "pass",
+        "releaseKeyId": "release-2026-09-recovery",
+        "generatedAt": "2026-09-29T12:02:01.705Z"
+      },
+      {
+        "name": "actual old stable verifier accepts exact final signed metadata",
+        "outcome": "pass",
+        "input": "offline byte transport",
+        "authenticodeSigned": false
+      },
+      {
+        "name": "actual old release verifier accepts final metadata and matching offline API envelope",
+        "outcome": "pass"
+      },
+      {
+        "name": "actual old candidate builder keeps the expected versioned installer and canonical address",
+        "outcome": "pass"
+      },
+      {
+        "name": "actual old version comparator enforces minimum3.7.8 without asserting a different client bundle was tested",
+        "outcome": "pass"
+      },
+      {
+        "name": "old stable verifier rejects a modified metadata byte",
+        "outcome": "pass"
+      },
+      {
+        "name": "old stable verifier rejects a modified detached signature",
+        "outcome": "pass"
+      },
+      {
+        "name": "old release verifier rejects candidate version disagreement",
+        "outcome": "pass"
+      },
+      {
+        "name": "old release verifier rejects a disagreeing API digest fixture",
+        "outcome": "pass"
+      },
+      {
+        "name": "old canonical URL guard rejects non-HTTPS, query, foreign host and wrong tag",
+        "outcome": "pass"
+      },
+      {
+        "name": "old candidate consistency guard rejects digest or manifest replay differences",
+        "outcome": "pass"
+      },
+      {
+        "name": "exact old installer size/SHA256/SHA512 gates accept actual final installer",
+        "outcome": "pass",
+        "bytes": 277426678,
+        "sha256": "5d3bcaa41b39ba7c123e5d683f483f8796fe6652a23b525628278dbc673f14b8",
+        "sha512": "4969e47380cb1f90e3fd7db51d43c2677a4491f510b52da084ff9a4557e0b20a4313c93ece37389a84d0c31e4a73d25534aa0597239c424c9c7db6e61e7ecb51"
+      },
+      {
+        "name": "exact old installer gate rejects mismatched size",
+        "outcome": "pass"
+      },
+      {
+        "name": "exact old installer gate rejects mismatched SHA256",
+        "outcome": "pass"
+      },
+      {
+        "name": "exact old installer gate rejects mismatched SHA512",
+        "outcome": "pass"
+      }
+    ],
+    "passCount": 15,
+    "offlinePublicApiEnvelope": true,
+    "limits": [
+      "No actual update discovery/download/install/handoff execution",
+      "3.7.8 threshold eligibility does not prove its distinct original bundle contains the recovery release key",
+      "Authenticode status remains not-signed; Ed25519 manifest signing is separate"
+    ],
+    "method": "Exact source definitions extracted from actual installed main.js; the real old trust loader used actual process and installed public files. Node ran with the real installed cwd, not a replaced process.resourcesPath. Only metadata transport and the matching API release envelope were explicit offline fixtures. The old size/SHA256/SHA512 check block read the actual candidate installer; no updater object or installation was invoked.",
+    "transportFixtureNotPublicDiscovery": true,
+    "apiDigestFixtureNotActualCandidateApiObservation": true,
+    "hashCheckNegativeCasesChangedExpectedValuesNotInstallerBytes": true
+  },
+  "publicDiscovery": {
+    "observedAtUtc": "2026-10-01T03:55:04.081Z",
+    "authentication": "none",
+    "observations": [
+      {
+        "label": "latest-api",
+        "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/releases/latest",
+        "method": "GET",
+        "status": 200,
+        "hops": [
+          {
+            "host": "api.github.com",
+            "status": 200
+          }
+        ],
+        "bytes": 29138,
+        "sha256": "81d10dc84937f2d5873c67b5d1d79756abea67e18ad48748846f9c5931787d42",
+        "observedAtUtc": "2026-10-01T03:55:04.081Z",
+        "release": {
+          "tag": "v3.7.9",
+          "draft": false,
+          "prerelease": false,
+          "publishedAt": "2026-09-29T16:38:52Z",
+          "assets": [
+            {
+              "name": "Egoist-Lagom-3.7.9.cdx.json",
+              "size": 15654,
+              "digest": "sha256:395f4d448b4c005fb6bece27e5004c49785117c52209017bafbdd9a6f56490a2",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/Egoist-Lagom-3.7.9.cdx.json"
+            },
+            {
+              "name": "Egoist-Lagom-Setup.exe",
+              "size": 206521508,
+              "digest": "sha256:eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/Egoist-Lagom-Setup.exe"
+            },
+            {
+              "name": "Egoist-Lagom-Setup.exe.sha256",
+              "size": 89,
+              "digest": "sha256:0cb0692276d2f6acedceb43e90cc3808d815210f02a2812a6fa224d6121d2fd6",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/Egoist-Lagom-Setup.exe.sha256"
+            },
+            {
+              "name": "Egoist-Lagom-validation.md",
+              "size": 22303,
+              "digest": "sha256:50c52440094b9b0f19dd7a1f7d60c6dc092e9d85b1362bd7c9f9599867575e73",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/Egoist-Lagom-validation.md"
+            },
+            {
+              "name": "EgoistShield-Setup-3.7.9.exe",
+              "size": 206521508,
+              "digest": "sha256:eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/EgoistShield-Setup-3.7.9.exe"
+            },
+            {
+              "name": "EgoistShield-Setup-3.7.9.exe.sha256",
+              "size": 95,
+              "digest": "sha256:34ba2267fcde44c1f59374f1f9943aa6a39cfa6d46e8b8ebedab79b4bd2d78a6",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/EgoistShield-Setup-3.7.9.exe.sha256"
+            },
+            {
+              "name": "LICENSE.txt",
+              "size": 616,
+              "digest": "sha256:bb2c2bbf13aa5d8e3fdf1e1e57a634215b7f842a739070da8c5e84545c3446c8",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/LICENSE.txt"
+            },
+            {
+              "name": "package-integrity.json",
+              "size": 27944,
+              "digest": "sha256:2797b6dc49943986c015cb363b95c00e8de174911557013d64711ee9ad571add",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/package-integrity.json"
+            },
+            {
+              "name": "release-key-registry.json",
+              "size": 1100,
+              "digest": "sha256:d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/release-key-registry.json"
+            },
+            {
+              "name": "release-key-registry.json.sig",
+              "size": 89,
+              "digest": "sha256:651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/release-key-registry.json.sig"
+            },
+            {
+              "name": "release-manifest.json",
+              "size": 785,
+              "digest": "sha256:55d28b48910b5939115fd3ce80a303842d98425715af13bae80d7c27a55b7ab8",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/release-manifest.json"
+            },
+            {
+              "name": "release-manifest.json.sig",
+              "size": 89,
+              "digest": "sha256:1c796e025d8fb2588bfadeb52ce40b7b185ab064ebff8f32a69a0ad5a30abd16",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/release-manifest.json.sig"
+            },
+            {
+              "name": "root-public-key.pem",
+              "size": 113,
+              "digest": "sha256:30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/root-public-key.pem"
+            },
+            {
+              "name": "stable-channel.json",
+              "size": 785,
+              "digest": "sha256:55d28b48910b5939115fd3ce80a303842d98425715af13bae80d7c27a55b7ab8",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/stable-channel.json"
+            },
+            {
+              "name": "stable-channel.json.sig",
+              "size": 89,
+              "digest": "sha256:1c796e025d8fb2588bfadeb52ce40b7b185ab064ebff8f32a69a0ad5a30abd16",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/stable-channel.json.sig"
+            },
+            {
+              "name": "THIRD-PARTY-NOTICES.txt",
+              "size": 1342,
+              "digest": "sha256:abdc5ecd6f986b70833e96a8ba80a1ac6f81310e583bd5446a8063b61f3d3976",
+              "browserDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/THIRD-PARTY-NOTICES.txt"
+            }
+          ]
+        }
+      },
+      {
+        "label": "candidate-tag-api",
+        "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/releases/tags/v3.8.0",
+        "method": "GET",
+        "status": 404,
+        "hops": [
+          {
+            "host": "api.github.com",
+            "status": 404
+          }
+        ],
+        "observedAtUtc": "2026-10-01T03:55:04.045Z"
+      },
+      {
+        "label": "stable-channel",
+        "url": "https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/stable-channel.json",
+        "method": "GET",
+        "status": 200,
+        "hops": [
+          {
+            "host": "github.com",
+            "status": 302
+          },
+          {
+            "host": "github.com",
+            "status": 302
+          },
+          {
+            "host": "release-assets.githubusercontent.com",
+            "status": 200
+          }
+        ],
+        "bytes": 785,
+        "sha256": "55d28b48910b5939115fd3ce80a303842d98425715af13bae80d7c27a55b7ab8",
+        "observedAtUtc": "2026-10-01T03:55:04.683Z",
+        "manifest": {
+          "version": "3.7.9",
+          "tag": "v3.7.9",
+          "sha256": "eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+          "minimumAppVersion": "3.7.8",
+          "keyId": "release-2026-09-recovery"
+        }
+      },
+      {
+        "label": "stable-channel-signature",
+        "url": "https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/stable-channel.json.sig",
+        "method": "GET",
+        "status": 200,
+        "hops": [
+          {
+            "host": "github.com",
+            "status": 302
+          },
+          {
+            "host": "github.com",
+            "status": 302
+          },
+          {
+            "host": "release-assets.githubusercontent.com",
+            "status": 200
+          }
+        ],
+        "bytes": 89,
+        "sha256": "1c796e025d8fb2588bfadeb52ce40b7b185ab064ebff8f32a69a0ad5a30abd16",
+        "observedAtUtc": "2026-10-01T03:55:04.688Z"
+      },
+      {
+        "label": "latest-key-registry",
+        "url": "https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/release-key-registry.json",
+        "method": "GET",
+        "status": 200,
+        "hops": [
+          {
+            "host": "github.com",
+            "status": 302
+          },
+          {
+            "host": "github.com",
+            "status": 302
+          },
+          {
+            "host": "release-assets.githubusercontent.com",
+            "status": 200
+          }
+        ],
+        "bytes": 1100,
+        "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+        "observedAtUtc": "2026-10-01T03:55:04.560Z",
+        "registry": {
+          "generatedAt": "2026-09-29T12:02:01.705Z",
+          "keyIds": [
+            "release-2026-01",
+            "release-2026-09",
+            "release-2026-09-recovery"
+          ]
+        }
+      },
+      {
+        "label": "latest-key-registry-signature",
+        "url": "https://github.com/egoist-ai1/egoist-lagom/releases/latest/download/release-key-registry.json.sig",
+        "method": "GET",
+        "status": 200,
+        "hops": [
+          {
+            "host": "github.com",
+            "status": 302
+          },
+          {
+            "host": "github.com",
+            "status": 302
+          },
+          {
+            "host": "release-assets.githubusercontent.com",
+            "status": 200
+          }
+        ],
+        "bytes": 89,
+        "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de",
+        "observedAtUtc": "2026-10-01T03:55:04.568Z"
+      },
+      {
+        "label": "candidate-installer-head",
+        "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+        "method": "HEAD",
+        "status": 404,
+        "hops": [
+          {
+            "host": "github.com",
+            "status": 404
+          }
+        ],
+        "observedAtUtc": "2026-10-01T03:55:04.157Z"
+      }
+    ],
+    "newInstallerDownloaded": false,
+    "interpretation": "The candidate tag and installer were unavailable to an unauthenticated client; latest still served3.7.9. Parent identified the candidate as draft. HTTP404 alone does not establish draft status. GitHub public releases/latest excludes draft/prerelease releases."
+  },
+  "nativeAcceptance": {
+    "observedAtUtc": "2026-10-01T03:57:28.434Z",
+    "results": [
+      {
+        "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36811362434",
+        "status": 200,
+        "id": 36811362434,
+        "headSha": "3dae559124015b74dfeaabb12e46621cfd6d4cdc",
+        "state": "completed",
+        "conclusion": "failure",
+        "htmlUrl": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36811362434",
+        "updatedAt": "2026-10-01T03:46:32Z"
+      },
+      {
+        "url": "https://api.github.com/repos/egoist-ai1/egoist-lagom/actions/runs/36811362434/jobs?per_page=100",
+        "status": 200,
+        "jobs": [
+          {
+            "name": "test",
+            "state": "completed",
+            "conclusion": "success",
+            "htmlUrl": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36811362434/job/110206911595",
+            "failedSteps": []
+          },
+          {
+            "name": "installer-diagnostics",
+            "state": "completed",
+            "conclusion": "skipped",
+            "htmlUrl": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36811362434/job/110206912773",
+            "failedSteps": []
+          },
+          {
+            "name": "legacy (3.7.8)",
+            "state": "completed",
+            "conclusion": "failure",
+            "htmlUrl": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36811362434/job/110208640920",
+            "failedSteps": [
+              {
+                "name": "Download the official old release and signed candidate",
+                "number": 7
+              }
+            ]
+          },
+          {
+            "name": "legacy (3.7.9)",
+            "state": "completed",
+            "conclusion": "failure",
+            "htmlUrl": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36811362434/job/110208640946",
+            "failedSteps": [
+              {
+                "name": "Run the actual signed old helper handoff",
+                "number": 8
+              }
+            ]
+          },
+          {
+            "name": "signed-candidate",
+            "state": "completed",
+            "conclusion": "failure",
+            "htmlUrl": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36811362434/job/110208641005",
+            "failedSteps": [
+              {
+                "name": "Install the actual signed release and exercise native services",
+                "number": 8
+              }
+            ]
+          },
+          {
+            "name": "candidate",
+            "state": "completed",
+            "conclusion": "skipped",
+            "htmlUrl": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36811362434/job/110208641701",
+            "failedSteps": []
+          }
+        ]
+      }
+    ],
+    "status": "failed-before-handoff",
+    "detailedCausesProvenance": "Parent root reported exact CI diagnostics; this audit independently read public workflow/job status and source SHA only, and did not download logs or execute native setup.",
+    "detailedCauses": [
+      {
+        "job": "signed-candidate",
+        "result": "fresh Setup exit43 at InstallCoreService; GUI/DNS/TUN acceptance not reached"
+      },
+      {
+        "job": "legacy (3.7.9)",
+        "result": "broad CIM Win32_Service query timed out at5s before Setup; completed old-helper handoff not demonstrated"
+      },
+      {
+        "job": "legacy (3.7.8)",
+        "result": "old public release tag API404 before Setup; parent reports preserved original signed Setup/manifest exists in the project"
+      }
+    ],
+    "noLaterWorkflowInferred": true
+  },
+  "versionEligibility": [
+    {
+      "version": "3.7.7",
+      "newerCandidate": true,
+      "minimumVersionPass": false,
+      "actualClientVerified": false,
+      "interpretation": "Below minimumAppVersion3.7.8; manual migration is required by this candidate contract."
+    },
+    {
+      "version": "3.7.8",
+      "newerCandidate": true,
+      "minimumVersionPass": true,
+      "actualClientVerified": false,
+      "interpretation": "Threshold eligible only; distinct actual3.7.8 verifier/trust/helper remains unproven in this audit."
+    },
+    {
+      "version": "3.7.9",
+      "newerCandidate": true,
+      "minimumVersionPass": true,
+      "actualClientVerified": true,
+      "interpretation": "Actual bundled verifier accepts the candidate offline; public discovery and native installation remain separate unmet acceptance checks."
+    },
+    {
+      "version": "3.8.0",
+      "newerCandidate": false,
+      "minimumVersionPass": true,
+      "actualClientVerified": false,
+      "interpretation": "Same-version comparison does not report this candidate as an update."
+    }
+  ],
+  "actualOldSchedulingContract": {
+    "source": "Installed .vite/build/main.js; static source inspection, not a live scheduler run",
+    "packagedAppProcessRequired": true,
+    "autoUpdateSettingRequired": true,
+    "actualUserSettingObserved": false,
+    "startupCheckDelaySeconds": 10,
+    "successfulCheckDelaySeconds": 86400,
+    "retryableFailureDelaysSeconds": [
+      300,
+      900,
+      3600,
+      10800,
+      86400
+    ],
+    "busyVpnOrMutationDeferralSeconds": 900,
+    "installationGate": "runtime status connected must be explicitly false; combinator mutation idle; pending boot recovery empty; no component update in flight",
+    "guiClosedUpdaterDaemonPresent": false,
+    "guiClosedServiceContinuityTestedHere": false,
+    "highestVersionPersistedStateObserved": false,
+    "authenticode": "Candidate declares not-signed; Ed25519 metadata signing does not provide a Windows Authenticode publisher signature or bypass possible elevation/SmartScreen interaction."
+  },
+  "postPublicationReadback": [
+    {
+      "id": "public-discovery",
+      "required": true,
+      "performed": false,
+      "check": "Unauthenticated latest release API and latest/download/stable-channel.json must resolve to the same published stable v3.8.0 (or a newer deliberately signed candidate), with draft=false and prerelease=false. Verify the actual API asset name, size, browser_download_url and GitHub digest against that signed manifest; do not use the offline API envelope as evidence."
+    },
+    {
+      "id": "public-signatures",
+      "required": true,
+      "performed": false,
+      "check": "Read public stable-channel.json/.sig and versioned release-manifest.json/.sig, compare exact signed bytes with the accepted candidate, rerun the actual old3.7.9 verifier with unchanged bundled trust. Verify root-pinned registry compatibility. A new signing key absent from an old bundle cannot be retroactively trusted by that old client via publishing a registry alone."
+    },
+    {
+      "id": "public-installer-bytes",
+      "required": true,
+      "performed": false,
+      "check": "After publication, fetch the actual versioned installer into a task-owned cache using canonical HTTPS redirects, and verify exact size, SHA256 and SHA512 against the signed metadata and the published API digest."
+    },
+    {
+      "id": "native-install-and-old-handoff",
+      "required": true,
+      "performed": false,
+      "check": "Fix and pass native fresh-install and original-helper upgrade jobs for the exact accepted source commit and Setup SHA256. For3.7.8 use the preserved original signed artifact and prove its actual bundled trust/helper; its missing public tag is not a reason to replace that old bundle with3.7.9 or modify trust/host identity."
+    },
+    {
+      "id": "controlled-real-updater-readback",
+      "required": true,
+      "performed": false,
+      "check": "Run a controlled actual old updater discovery/download/handoff/restart on a suitable acceptance host, confirm final installed version, preserved settings and service state, and distinguish GUI-closed service continuity from updater scheduling. This read-only audit did not execute those steps."
+    }
+  ],
+  "primarySources": [
+    {
+      "title": "GitHub REST API releases",
+      "url": "https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28",
+      "use": "Public/draft release visibility and latest release semantics"
+    }
+  ],
+  "temporaryEvidenceInputHashes": {
+    "auto-update-offline.json": {
+      "bytes": 6732,
+      "sha256": "f4feb0a6efd85ac3d417fed285edf428cafda426fc396b41e37ea6956f106378"
+    },
+    "auto-update-public.json": {
+      "bytes": 9035,
+      "sha256": "e7af69b0c4b432ad1a6aabee1e73f689053172a358e3e7ae7905adea8233527d"
+    },
+    "auto-update-native-run.json": {
+      "bytes": 2630,
+      "sha256": "9fe7f3fd15c3e870c53285d39f8202853ab264e9d70e5a62bbb92d216f3e74c9"
+    },
+    "read-installed-updater.mjs": {
+      "bytes": 1924,
+      "sha256": "a983d7747d1806b87e44138776790e1a18c01de93d610d18757cc55b04976ab3"
+    },
+    "offline-installed-updater.mjs": {
+      "bytes": 12140,
+      "sha256": "19ce98bdd071440c5abdb3c614663a0ee88714027c52f77a62f0458c5c4223ea"
+    },
+    "read-public-update-feed.mjs": {
+      "bytes": 4697,
+      "sha256": "41ed66322fb68bb6c628eea48ab723ccff6f41ad926cc298c54c535f533f2320"
+    }
+  },
+  "limitations": [
+    "No complete discovery/download/install/restart update was executed.",
+    "No3.7.8 installed bundle was authenticated by this audit.",
+    "No private signing key was needed or read.",
+    "No claim of months of uninterrupted service or universal device compatibility follows from these checks.",
+    "This report binds the observed3dae candidate. Rebuilt Setup or different signed metadata requires renewed hash/signature/public/native acceptance evidence."
+  ]
+}

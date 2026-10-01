@@ -46,8 +46,16 @@ function extractDnsLeakIpFromTxt(records) {
 	return null;
 }
 /** Loopback-резолвер означает, что запросы идут через локальный компонент. */
+function canonicalDnsProbeResolver(raw) {
+	if (typeof raw !== "string") return null;
+	const address = raw.trim().replace(/^\[|\]$/g, "");
+	if (isIP(address) === 4) return address;
+	if (isIP(address) !== 6) return null;
+	try { return new URL(`http://[${address}]/`).hostname.toLowerCase(); } catch { return null; }
+}
 function isLoopback(address) {
-	return address === "127.0.0.1" || address === "::1" || address.startsWith("127.");
+	const canonical = canonicalDnsProbeResolver(address);
+	return canonical === "[::1]" || canonical?.startsWith("127.") === true;
 }
 function verdictFrom$1(checks) {
 	const relevant = checks.filter((check) => check.status !== "skipped");
@@ -85,15 +93,16 @@ function buildDnsLeakTestResult(snapshot) {
 		const comparable = expected.filter((value) => !isLoopback(value));
 		const usesLocalForwarder = expected.some(isLoopback);
 		if (comparable.length > 0) {
-			const matches = comparable.includes(resolverIp);
+			const observedResolver = canonicalDnsProbeResolver(resolverIp);
+			const matches = observedResolver !== null && comparable.some((value) => canonicalDnsProbeResolver(value) === observedResolver);
 			checks.push({
 				id: "dns-path",
 				title: "DNS идёт через резолвер приложения",
-				status: matches ? "pass" : "fail",
+				status: matches ? "pass" : "warn",
 				observed: resolverIp,
 				expected: comparable.join(", "),
-				explanation: matches ? "Наблюдаемый резолвер соответствует настроенному резолверу приложения." : "Запросы уходят к резолверу, который приложение не настраивало: это реальная утечка выбранного режима DNS.",
-				recommendedAction: matches ? null : "Применить настройки DNS заново"
+				explanation: matches ? "Внешний адрес рекурсивного резолвера совпал с ожидаемым. Это наблюдение не доказывает настройки адаптеров, владельца локальной службы или путь всех DNS-запросов." : "Внешний адрес рекурсивного резолвера отличается от ожидаемого. Провайдер DNS может использовать другой адрес для исходящих запросов; это не доказательство утечки.",
+				recommendedAction: matches ? null : "Проверить настройки DNS"
 			});
 		} else if (usesLocalForwarder) {
 			checks.push({
@@ -102,7 +111,7 @@ function buildDnsLeakTestResult(snapshot) {
 				status: "warn",
 				observed: resolverIp,
 				expected: "адрес upstream локального резолвера",
-				explanation: "Адаптеры направлены на локальный резолвер приложения, поэтому снаружи виден адрес его upstream-провайдера, а не 127.0.0.1. Совпадение адресов здесь доказать нельзя.",
+				explanation: "В настройках выбран локальный резолвер. Внешняя проба показывает адрес рекурсивного upstream-провайдера; она не читает настройки адаптеров и не подтверждает владельца локального DNS.",
 				recommendedAction: null
 			});
 			limitations.push("Локальный резолвер: подтвердить путь по адресу рекурсивного резолвера невозможно, нужна tokenized-проба.");
@@ -116,7 +125,8 @@ function buildDnsLeakTestResult(snapshot) {
 			recommendedAction: "Открыть настройки DNS"
 		});
 	} else if (mode === "user-external") {
-		const unexpectedSubstitution = expected.length > 0 && !expected.includes(resolverIp);
+		const observedResolver = canonicalDnsProbeResolver(resolverIp);
+		const unexpectedSubstitution = expected.length > 0 && (observedResolver === null || !expected.some((value) => canonicalDnsProbeResolver(value) === observedResolver));
 		checks.push({
 			id: "dns-path",
 			title: "DNS: внешний резолвер пользователя",
@@ -139,9 +149,13 @@ function buildDnsLeakTestResult(snapshot) {
 		});
 		limitations.push("Проверка DNS внутри туннеля требует контролируемого authoritative endpoint.");
 	}
+	limitations.push("Адрес из внешней DNS-пробы не подтверждает путь всех запросов, текущую конфигурацию адаптеров или принадлежность локального резолвера приложению.");
+	const verdict = verdictFrom$1(checks);
 	return {
-		verdict: verdictFrom$1(checks),
+		verdict: mode === "app-managed" && verdict === "protected" ? "partial" : verdict,
 		mode: "system_proxy",
+		dnsMode: mode,
+		scope: "resolver-observation",
 		checks,
 		limitations,
 		testedAt: (/* @__PURE__ */ new Date()).toISOString(),

@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 1,
+  "completedAt": "2026-09-30T23:29:15.735669+00:00",
+  "baseCommit": "5d0d58b44076843e639723ef267e7b8d2605e481",
+  "sourceState": "uncommitted shared product hardening; exact input hashes recorded",
+  "scope": "Production renderer/CSS and real browser rendering with explicitly inert local IPC fixtures. No SCM, registry, network policy, reboot or real VPN server acceptance.",
+  "nativeSystemMutations": 0,
+  "focusedTests": {
+    "passed": 19,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 72.626
+  },
+  "rendered": {
+    "cases": 23,
+    "screenshots": 25,
+    "horizontalOverflow": 0,
+    "blockedEnabledControlCenters": 0,
+    "pageErrors": 0,
+    "failedInteractions": 0,
+    "textContrastMinimum": 5.8116,
+    "dpi": "Browser emulation deviceScaleFactor2 + logical530x360, not native Windows DPI",
+    "dialogExit": "Settled-state snapshot waits for actual outgoing dialog detachment; transient intentional modal/notification overlays remain part of the UI"
+  },
+  "before": {
+    "layoutCases": 26,
+    "textContrastFailure": 3.6339,
+    "inputHashes": {
+      "src/recovered/renderer.js": "9e103f340cd6a61c7a367ab435317a0bb08a5682b45e7c1d59cedb49465384dc",
+      "src/brand/CompactRuby.jsx": "c0e3e9e4bee3d7dc75ee0401548d76bf7680870578317331d6a42dbc93997ec6",
+      "src/brand/ShieldWidget.jsx": "d5ace4194703f8a81f81965f0260f2a674a5f861372bc555c42761468d100416",
+      "src/brand/tokens.css": "8adfb221368502c6b7ff140f2a95b93019c22fbdcf37aa9a261ef3daaaacc452",
+      "src/brand/compact-ruby.css": "89649a4502938da9f07ca93a41020b40c03f1a22465993b188d9c0cf44f1972a",
+      "src/brand/compact-surfaces.css": "8edfdc79c2c9ad69a2df64cace3f9b08d869ee371d4b71540db41621bf9b8686",
+      "src/brand/shield-widget.css": "14808d43790c7d2e123b52fbd34744f7debbe448477dc9f0b6e172e7b2beb082"
+    },
+    "scope": "Inherited UI inputs before these finishing changes; 26 cases passed geometry/interaction, one DNS caption contrast pair failed"
+  },
+  "performanceMedians": [
+    {
+      "count": 0,
+      "before": {
+        "readyAfterMs": 83.89,
+        "taskMs": 24.15,
+        "scriptMs": 3.84,
+        "layoutMs": 5.99,
+        "jsHeapMiB": 5.049,
+        "renderedServerRows": 0,
+        "nodes": 639,
+        "renderedElements": 164
+      },
+      "after": {
+        "readyAfterMs": 75.72,
+        "taskMs": 30.89,
+        "scriptMs": 4.05,
+        "layoutMs": 11.59,
+        "jsHeapMiB": 5.14,
+        "renderedServerRows": 0,
+        "nodes": 688,
+        "renderedElements": 189
+      }
+    },
+    {
+      "count": 60,
+      "before": {
+        "readyAfterMs": 97,
+        "taskMs": 50.39,
+        "scriptMs": 15.33,
+        "layoutMs": 10.23,
+        "jsHeapMiB": 6.224,
+        "renderedServerRows": 60,
+        "nodes": 2081,
+        "renderedElements": 999
+      },
+      "after": {
+        "readyAfterMs": 119.22,
+        "taskMs": 62.4,
+        "scriptMs": 16.95,
+        "layoutMs": 16.51,
+        "jsHeapMiB": 6.305,
+        "renderedServerRows": 60,
+        "nodes": 2128,
+        "renderedElements": 1023
+      }
+    },
+    {
+      "count": 500,
+      "before": {
+        "readyAfterMs": 208.35,
+        "taskMs": 167.6,
+        "scriptMs": 51.47,
+        "layoutMs": 36.6,
+        "jsHeapMiB": 10.334,
+        "renderedServerRows": 500,
+        "nodes": 12581,
+        "renderedElements": 7159
+      },
+      "after": {
+        "readyAfterMs": 112.64,
+        "taskMs": 73.35,
+        "scriptMs": 23.04,
+        "layoutMs": 16.69,
+        "jsHeapMiB": 6.273,
+        "renderedServerRows": 60,
+        "nodes": 2147,
+        "renderedElements": 1031
+      }
+    },
+    {
+      "count": 2000,
+      "before": {
+        "readyAfterMs": 576.77,
+        "taskMs": 581.7,
+        "scriptMs": 189.85,
+        "layoutMs": 135.87,
+        "jsHeapMiB": 26.503,
+        "renderedServerRows": 2000,
+        "nodes": 48579,
+        "renderedElements": 28159
+      },
+      "after": {
+        "readyAfterMs": 128.14,
+        "taskMs": 77.78,
+        "scriptMs": 33.23,
+        "layoutMs": 15.16,
+        "jsHeapMiB": 5.703,
+        "renderedServerRows": 60,
+        "nodes": 1865,
+        "renderedElements": 1031
+      }
+    }
+  ],
+  "sourceHashes": {
+    "DESIGN.md": {
+      "sha256Raw": "ea2c2a9d38c1b7b3592d1e7fd740283d2406d69bca248d629926ee323352e1ee",
+      "sha256Lf": "ea2c2a9d38c1b7b3592d1e7fd740283d2406d69bca248d629926ee323352e1ee",
+      "bytes": 12791
+    },
+    "src/recovered/renderer.js": {
+      "sha256Raw": "239422fec61ff64a8724e20c5e1c2898efd6d824b77177967bbd8bab62d95f4c",
+      "sha256Lf": "63155227e2a1fc0b3cc3fc1be82bcb8b077bebd98e44dec28975b7b5f492dca2",
+      "bytes": 671242
+    },
+    "src/brand/CompactRuby.jsx": {
+      "sha256Raw": "3aa915daa28ee8472f437b92f83bbfec593f36e846f3328e519b08233da69c63",
+      "sha256Lf": "67e4dd5765316b78645d08180b13fe42d14993907b53620d9d1c2ee898921a6b",
+      "bytes": 37143
+    },
+    "src/brand/ShieldWidget.jsx": {
+      "sha256Raw": "b504b5b73ca63db296b456f6c3c56c3f37bfd1c006053add63b0cbbfce8dc46a",
+      "sha256Lf": "a397ba972c158680e2754418f8a23234e71a8cc751b63b89ba10761256b61fa3",
+      "bytes": 19302
+    },
+    "src/brand/tokens.css": {
+      "sha256Raw": "8adfb221368502c6b7ff140f2a95b93019c22fbdcf37aa9a261ef3daaaacc452",
+      "sha256Lf": "8adfb221368502c6b7ff140f2a95b93019c22fbdcf37aa9a261ef3daaaacc452",
+      "bytes": 4068
+    },
+    "src/brand/compact-ruby.css": {
+      "sha256Raw": "0869d3bb33bbac2c4de4751484f106192cd9d81f1284d79bcd018fb850b87a11",
+      "sha256Lf": "0869d3bb33bbac2c4de4751484f106192cd9d81f1284d79bcd018fb850b87a11",
+      "bytes": 21450
+    },
+    "src/brand/compact-surfaces.css": {
+      "sha256Raw": "31db3ebbc3ce2f2b4b6515a91e5b194ccb776a77a0b16057d384a8235b65ffa5",
+      "sha256Lf": "31db3ebbc3ce2f2b4b6515a91e5b194ccb776a77a0b16057d384a8235b65ffa5",
+      "bytes": 60847
+    },
+    "src/brand/shield-widget.css": {
+      "sha256Raw": "b947066263d7fd8d312d3d009fc1cb920b253f23f653c1f0ad3b32ef00e766b5",
+      "sha256Lf": "b947066263d7fd8d312d3d009fc1cb920b253f23f653c1f0ad3b32ef00e766b5",
+      "bytes": 14133
+    },
+    "tests/production-ui-hardening.test.mjs": {
+      "sha256Raw": "acae7d00e86368571a058a461b870521051117133dbc84e2becfd316e90a6d68",
+      "sha256Lf": "a59dee7e8f7b2a8be27f03923f894a5dc775728da2e0f9af01db0ca39a2b61ab",
+      "bytes": 12599
+    },
+    "tests/ui-service-readiness.test.mjs": {
+      "sha256Raw": "ac589a7285433f6514175782734da89616e9325b70e6e35b8405c7a7ff998b50",
+      "sha256Lf": "ac589a7285433f6514175782734da89616e9325b70e6e35b8405c7a7ff998b50",
+      "bytes": 4121
+    },
+    "docs/product-hardening-2026-10-01/ui-verify.mjs": {
+      "sha256Raw": "f5c502242dafbbfdb692ed8a7c3a66ecf141838d5d0d0e86f24a2d82aad006c6",
+      "sha256Lf": "da86ee5d5af194b9c33ac9f2be742254efa5ad8ee7a72585dfc3f956bbc694d2",
+      "bytes": 30249
+    }
+  },
+  "additionalRenderedInputHashes": {
+    "src/recovered/renderer.css": "fcbd72b6254116f5a81d941718320502ab2aa6b31a69fdca2936d8a05d999aaa",
+    "src/brand/final-polish.css": "b04721633a7dd0445aa3a7e2b1fd126b9468124c8e0d96970ba9c394dfa8db32",
+    "package-lock.json": "1ef59660bca88dcbbe5dea9a22c8867431c1c475e216b8c751ea049701cd0fce",
+    "src/brand/icons/activity.svg": "5489b0cf28b38342b38e34f49d7a3c4fbd01fc9794c578a251b04e54b9a9d259",
+    "src/brand/icons/arrow-right.svg": "c3a0b0ac966c4e483b1116c8d6e171bd71606ae086b541e9ffe4f98d57b448a7",
+    "src/brand/icons/auto-select.svg": "9d7c7ea0fcdb84ca686ecda0a2f534a9493972675f536cd3b6b03588275d5e07",
+    "src/brand/icons/auto-update.svg": "ffaa154429807e45388e1ec0cd964a0f3cd1dfced6d3df04c0ffc2570c92f90d",
+    "src/brand/icons/brand-shield.svg": "af5b2205d501772f1e14ca776d56ff4f63c0956801c943dd29020248675d113f",
+    "src/brand/icons/check.svg": "50a9948262924cab885604402f03c571511d375d931e2d7fe356d3abf7739fb9",
+    "src/brand/icons/chevron-down.svg": "795b9220d1ec635be0496973bf8c62c05b6e928d5930209f1331cc2c6050a243",
+    "src/brand/icons/cleanup.svg": "00338baf6166afabac15a46fe1bd89f7b33697b117d924d36c64a551de26edde",
+    "src/brand/icons/close.svg": "1b731d347ad16d22c622be9bfbf07227a0bbd6efc3e91a42e65b2d964dde9c81",
+    "src/brand/icons/copy.svg": "de52d06e91c665721ded4da22d89d199b5551efc4087cbe5d639b24e33bcb14f",
+    "src/brand/icons/dns.svg": "81d959283926a37a5b98ca5594a02858c16188c3ef4790dd964f47585bf7a88f",
+    "src/brand/icons/download.svg": "ea5a106be2221d408d8ee37d0e2c41f3c86f79feab2272c49817470928432fe2",
+    "src/brand/icons/export.svg": "21f48e2e725808b7b0b1ecb7fa11d902bc0789aeee4293f29d7928724b5ae00d",
+    "src/brand/icons/external-link.svg": "1d1709b7fe512e82a05eff348067e2da32fa1a979bce744b7f3eea0d1c6d2b55",
+    "src/brand/icons/filter.svg": "2f7a66c0628dbdc79a5b79cc7f9922ec5e73d6e453543e28628fbc77e3e3e5f1",
+    "src/brand/icons/folder.svg": "7bde9b7a675548d6e427c296b3b847a956e94e9d44e2f8f3f96f40c40917fc92",
+    "src/brand/icons/help.svg": "c97f7a7fdeb7cd3ea15df30b59cc816a64e1b30da3ccba2cb9e0c0c20ea54699",
+    "src/brand/icons/import.svg": "c654d61797f403cd7c5bc06805d6a75fa453ee5104dd81d57d45f077c1905d32",
+    "src/brand/icons/info.svg": "14a6b2827f5d162e6d14ca07c886258e0a75b90c5978b1fe0eadf2b76ef53b30",
+    "src/brand/icons/location.svg": "11df0f0bcfd023cf4eb91f21b7bb7875b3ebdf1feb49a0320b9f772454b14b17",
+    "src/brand/icons/logs.svg": "03c6fda5aeb45e6615762645a342accfc84640dc8a0cb81862fa8fe69558f9ad",
+    "src/brand/icons/maximize.svg": "5813a5eb37d00e46907394f6788803984bcd0936e4588ef2445520e04f4adf6d",
+    "src/brand/icons/minimize.svg": "216dd5cc052b33ab2e51eb717dfdc21f61d314c0d4e376041f2b81efff6a2670",
+    "src/brand/icons/notifications.svg": "748fa1e0078cdb08c5b21192715aa875cc0ba3528d70063d7ea9e40c9e954af8",
+    "src/brand/icons/overview.svg": "0afaae7b93f718531ba95f887a99aea8397fd68f265b98a6ffc101f41bd22cb0",
+    "src/brand/icons/power.svg": "a6846de47a7421dff7ca089d43a96848717eecdcbf282b035b700a08b3716fb6",
+    "src/brand/icons/privacy.svg": "f9ce26919e332e64e7a219fb5aa3834c157498bad82815e97c228d6c4c9f47de",
+    "src/brand/icons/reconnect.svg": "a8822d227f39c7f490ea8335e4ca178a7722e29543ce1c65cdd5658100672ce7",
+    "src/brand/icons/refresh.svg": "81567a2a35949270a1beacc0c55c030613b8fd812d0f67909ed0ec507e78c3b8",
+    "src/brand/icons/restore.svg": "23d972e67ee9523f625b1afd7cd34b2937d0d858416e80e4fd2b096074eb94d3",
+    "src/brand/icons/route.svg": "70a66d178d43e9af84fcabf318d613fbe4c00d6eb7fc54f93c517974b9f098b5",
+    "src/brand/icons/save.svg": "a9a824e09232a665d173679d5ed70656d083c9b2f0e9c4e11d9edafe28067e9e",
+    "src/brand/icons/service.svg": "f2be9327ea0b28b66abf79d6924ffa8098563a656bf7d1e74bf2801539209e76",
+    "src/brand/icons/settings.svg": "03788aa72e58a0a68f630195aea5e782ba945c8679ca643c1a16820dcefb06a7",
+    "src/brand/icons/shield-off.svg": "eff56e5c24618abe7d7e7281207b99ce7ccc06dda036546ed760f7e23ec5fff6",
+    "src/brand/icons/speedtest.svg": "037ac429605f8b3f97e564c9c97b6fffa767309ffad89d01bf374d47dc3e3bd6",
+    "src/brand/icons/star.svg": "63785dbf81bdbd644ae9928485d0a5c22f9678206b54c3520b8bdf7cc7360518",
+    "src/brand/icons/startup.svg": "5c59e6a311406f8c7994f1bd978c8e1ef57a9a66137597d7b0d9159814cea28e",
+    "src/brand/icons/system.svg": "439fd2c86ac85e47115cee02f30a5a00dc6511c93bf1530eec40db47b25a8692",
+    "src/brand/icons/telegram.svg": "bd298ff22e37a88390557e95ae75851e83a82e8b4fa27a3a5d4af081c3d432b2",
+    "src/brand/icons/trash.svg": "bd2e78524b1ef03af97e4de8ba49cac64077acec020a0ae3df864f661d3a065a",
+    "src/brand/icons/tray.svg": "d9ca328f25e5b9dfe0ec09415f7778a6a98cd36a7db03b062f8cbc15303c1814",
+    "src/brand/icons/upload.svg": "dc023be9100a4d62ca8444e98573e3e72e13f91aec39ba6e35171e370f528050",
+    "src/brand/icons/vpn.svg": "21f0d7b6683dc348684a467359e2daf63a1ccd7438bf4532547c5a15a60400fa",
+    "src/brand/icons/warning.svg": "58fc57f3c95528b74b04b9a8ebbb2206cfcddec462980b4e956c1932f567d70f",
+    "src/brand/icons/zapret.svg": "3e6a0eb017c5fc0e55992f07ed968341862fe287547ce6d7e9b4808b89d00dd8"
+  },
+  "limitations": [
+    "Local synthetic0/60/500/2000 small row payloads,3runs each; no foreground native FPS or isolated machine benchmark",
+    "Browser fixtures verify UI request shape, state, readiness presentation and hit testing; they do not demonstrate native service startup or remote tunnel reachability",
+    "Native DPI, physical install/reboot/recovery and long soak remain root acceptance work",
+    "An unknown local resolver identity is displayed explicitly; successful DNS response does not assert ownership or application-wide protection"
+  ],
+  "artifactHashes": {
+    "ui-before-layout.json": "d71cd254279c23a1f48009792d4d54b6b0dae4e2620106c70850be22b4bd39e7",
+    "ui-harness-output.txt": "e58cd8ed3443cc765d409a7806093bdc9ff7b99f76ee3d2353f0b4c4909dfdec",
+    "ui-performance-before.json": "633a197d3059dc8abc08f61d6c42287ebe1b8c98a9c70da0f29bccd51b504b1a",
+    "ui-tests.txt": "6d224c05b85e5b68c2b3cf1fdeb7d81d9a5d58f56368edf2bca847b23c425d73",
+    "ui-validation.json": "54880e5f66c1ec4ea9f49abe3c7e9eb8d4aa5d6e0328ae0532f8b8423cab3ba9",
+    "ui-verify.mjs": "f5c502242dafbbfdb692ed8a7c3a66ecf141838d5d0d0e86f24a2d82aad006c6",
+    "ui-screens/1060-dns.png": "bd873bd9fd346be98ed9489451fb931b81346ef1da275aee9d5ec481f01cb32f",
+    "ui-screens/1060-settings.png": "f66c3350c9bdceacb989825e32e0cc919ac092b1305f0693669c32611e5a4dd6",
+    "ui-screens/1060-vpn.png": "233b51f712f7f33542881a752de7d70da6705094a2f683add5496f0c08965964",
+    "ui-screens/340-dns.png": "755c5bbfe7fdac70f91a4d1a5bc5ea84c83eb65ab716de6a46aa69fdb16de97a",
+    "ui-screens/340-settings.png": "75ff9bba61c62c6f9dd7b5a252b4a1127c6d2e447946b396cc62a6582484f2d2",
+    "ui-screens/340-vpn.png": "f4b588c020f0bb2a470e35fce9125b9fdd668de46e0dbeaccce774caf2193b2f",
+    "ui-screens/680-dns.png": "afc6f61669c435cd809d608146ec38171b0a5821e3a15548b3cf4a5abb468e20",
+    "ui-screens/680-settings.png": "e0809a8e72c3e281ec190854ef104195d719ccc6f00dbd1f44a6df41cd88bd42",
+    "ui-screens/680-vpn.png": "ed955eddc7fa4306693efbd8ad7a2dbb6b326a03dee58f87098bf937604f96f4",
+    "ui-screens/dns-exact-https-contract.png": "3f07182230b4c3514477304cc1d7f72e9b6fc5ec7a7ba09f548335d568b0b126",
+    "ui-screens/dns-read-failure.png": "20a03051dfcd2be484cb80f7fba4e76fe1e8cbe7e588df392784d6ed873b1b44",
+    "ui-screens/mini-connected-focus.png": "8e560ca6bb13c9cb1e6962d0066d3a60e82b93cd732b8cffc40647d83b28aa45",
+    "ui-screens/mini-connected-hover.png": "45fe9f6326020c21e7ee031b27b3b9264145e040c01087a5eb0e6563a7730111",
+    "ui-screens/mini-connected.png": "4ae4d5545723b9782583450b5feb86f149286342514a3979efa7bd92ecf51d8a",
+    "ui-screens/mini-off-148.png": "8913e53b1b956d050b1627adfc934dbee07df795b13f7424e995756b48dc5879",
+    "ui-screens/mini-off-296.png": "ec740a33e8242776c00db575ac313a4af9847f738bb5d180c1c3a9e1c3cdff89",
+    "ui-screens/mini-off-bottom-148.png": "8ebc0f72ebc32745fde62c1fae9f31b1595897696df2e6cee6dbb8441297f501",
+    "ui-screens/mini-off-bottom-296.png": "1cfeabcf3f744bd618c50f57fd79d51b34e08b7cebca794ab5320771cf791db6",
+    "ui-screens/mini-pending.png": "cc9e4ca2748c109110fe10e89bd64d892b6b0bb6dfba642a1d9f90c6af0fe55f",
+    "ui-screens/mini-unknown.png": "cd5c4e83060a2fb2bcb7ffb59f95f64a91e8267cf9ca0068d944e660aeec9206",
+    "ui-screens/vpn-2000-search-last.png": "d987f068500f5a847cf8a88ff2a7649b3396241271bdd2dacd03ca90c12c36cc",
+    "ui-screens/vpn-background-action-rejected.png": "4758cf86c6e40602376247eb5226f56626aded19158c1697803e2a801d7d01fc",
+    "ui-screens/vpn-background-on.png": "47e7b22c1db236d525241863fa481bc4cadd39797dca6cb5558bf6eb14b84a83",
+    "ui-screens/vpn-background-unknown.png": "f4fe13801f8a806710ed3a2b40c48d565565ed9c9a57ba18c7a5ca668a3b7af4",
+    "ui-screens/vpn-dpi-browser-emulated-200.png": "c06ff2037012f51a09f9bfca3eb5231f8ecddeca9be096f3bdfbcdd2402c91c1",
+    "ui.md": "ecd537315fdb20d44f76d43c4bfdd184a8802f868a5450f062f50dce2b316c5e"
+  },
+  "nodeVersion": "v24.19.0"
+}

@@ -53,7 +53,7 @@ test('worker failure before service changes ends the branded monitor with an err
     } catch { failed = true; }
     assert.equal(failed, true);
     assert.equal((await fs.readFile(path.join(directory, 'complete.flag'), 'utf8')).trim(), 'worker-failed');
-    assert.match(await fs.readFile(path.join(directory, 'status.txt'), 'utf8'), /^0\|ERROR:/);
+    assert.match(await fs.readFile(path.join(directory, 'status.txt'), 'utf8'), /^0\|ERROR: Установка не завершена/);
   } finally {
     await fs.rm(directory, { recursive: true, force: true });
   }
@@ -87,5 +87,39 @@ test('protected updater records a readable final result for the relaunched app',
     assert.match(result.message, /Службы и DNS проверены/);
   } finally {
     await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('pre-handoff worker failure remains visible when its diagnostic journal cannot be written', {skip:process.platform!=='win32'}, async()=>{
+  const directory=await fs.mkdtemp(path.join(os.tmpdir(),'shield-worker-journal-failure-'));
+  const scriptPath=path.join(directory,'probe.ps1');
+  const literal=(value)=>value.replaceAll("'","''");
+  try {
+    await fs.writeFile(scriptPath,[
+      '\uFEFF$ErrorActionPreference="Stop"',
+      `$source='${literal(path.resolve('scripts/invoke-final-silent-reinstall.ps1'))}'`,
+      '$tokens=$null;$errors=$null',
+      '$ast=[Management.Automation.Language.Parser]::ParseFile($source,[ref]$tokens,[ref]$errors)',
+      'if($errors.Count){throw "Production script did not parse"}',
+      '$fn=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq "Write-BrandedInstallerStatus"},$true)',
+      '. ([scriptblock]::Create($fn.Extent.Text))',
+      '$clause=$ast.Find({param($n)$n -is [Management.Automation.Language.IfStatementAst] -and $n.Clauses[0].Item1.Extent.Text -eq "$"+"Worker"},$true)',
+      'if(-not $clause){throw "Production worker dispatch is missing"}',
+      `$StageDirectory='${literal(directory)}';$Worker=$true`,
+      'function Resolve-FullPath {param($Path,[switch]$MustExist) [IO.Path]::GetFullPath($Path)}',
+      'function Invoke-WorkerMode {throw "Fixture pre-handoff failure"}',
+      'function Test-InstallerServiceMaintenanceOwner {return $false}',
+      'function Add-ReceiptEvent {throw "Fixture journal unavailable"}',
+      '$reason=$null;try {& ([scriptblock]::Create($clause.Extent.Text))} catch {$reason=$_.Exception.Message}',
+      'if($reason -ne "Fixture pre-handoff failure"){throw ("Original worker error was lost: "+$reason)}',
+      'Write-Output "PASS: diagnostic failure does not suppress the terminal pre-handoff error"',
+    ].join('\n'));
+    const {stdout}=await run(powershell,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',scriptPath],{windowsHide:true,timeout:15000});
+    assert.match(stdout,/PASS: diagnostic failure/);
+    assert.equal((await fs.readFile(path.join(directory,'complete.flag'),'utf8')).trim(),'worker-failed');
+    assert.match(await fs.readFile(path.join(directory,'status.txt'),'utf8'),/^0\|ERROR: Установка не завершена/);
+  } finally {
+    assert.equal(await fs.realpath(directory),directory);
+    await fs.rm(directory,{recursive:true,force:true});
   }
 });

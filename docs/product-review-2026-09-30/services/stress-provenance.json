@@ -1,0 +1,355 @@
+{
+  "schemaVersion": 1,
+  "head": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "sdk": "10.0.401",
+  "runtime": "Microsoft.NETCore.App 10.0.12",
+  "productionSources": [
+    {
+      "path": "src/service/--z__ReadOnlyArray.cs",
+      "bytes": 2756,
+      "sha256": "8a14e3a66a55c9a72989287078c98e132232a951d18a3f5e01df7d468423cee7"
+    },
+    {
+      "path": "src/service/--z__ReadOnlySingleElementList.cs",
+      "bytes": 3616,
+      "sha256": "3ff97bc2c15559eba83f70e3416588dcdfa4cb63ee059a489d3d3a80d520b42d"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ActiveTransaction.cs",
+      "bytes": 504,
+      "sha256": "1be4aaeb9464d3f7a50e11e8f2616c304610ce44e695f2862bab9135b1505c90"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/AdminStatusChecker.cs",
+      "bytes": 1107,
+      "sha256": "9ae72832525f7fcf466f397efd7959060669b01348e30324d8671594068f5e51"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/AtomicJsonFile.cs",
+      "bytes": 3846,
+      "sha256": "d89e564835a9266a542fc3be0bfdaf8fe3da4e752137a3003b45b72456170d98"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/BuildInfo.cs",
+      "bytes": 178,
+      "sha256": "11404d3f064572376cae60a04ad3992cd30909efa5ef2c26690ba68422227f4e"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ClientAuthorizer.cs",
+      "bytes": 7152,
+      "sha256": "b3a0e937b8682ee41c48737c46a81b6dbae64d3c1467dda677c144a407ea45fb"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ClientIdentity.cs",
+      "bytes": 183,
+      "sha256": "7d6450032a5d0aef10aa90b97f8587b892fe28d023fc937cac5821c651e85186"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ComponentWorker.cs",
+      "bytes": 11049,
+      "sha256": "8a5a9bf014d0aefba20e043fba25c0957b67ceb2b633f81f6e7044d822508699"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/DnsAdapterSnapshot.cs",
+      "bytes": 209,
+      "sha256": "166e1381e2137f06938fb387c21a886676ff26e49e01143ce71ff79e8704e4f1"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/DnsApplyPayload.cs",
+      "bytes": 247,
+      "sha256": "8e15284e785d2efca1bef613c227ed0eef8efa94fdc6760e689c8e400a6613f4"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/DnsBootstrapRefreshScheduler.cs",
+      "bytes": 3025,
+      "sha256": "6600fe4897ccbc6e2d459459b3b6b0eaa12e7533a4931315fd13eee46285799d"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/DnsMaintenancePolicy.cs",
+      "bytes": 1416,
+      "sha256": "61e06310cd2b8dcea738ff18b3f60271b6c1817abefa24a037ffd3eb1890e36f"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/DnsOwnedState.cs",
+      "bytes": 5645,
+      "sha256": "467daf81e07eb234e2dd109456f62d7d5b19d9582100273fc1f22b668b9f417e"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/EgoistShieldWindowsService.cs",
+      "bytes": 2690,
+      "sha256": "3a28d790d370c08f352ab18b7a8ca6df1b3a597c9198a4f62e0680219ea3df5b"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/IdentityJsonContext.cs",
+      "bytes": 623,
+      "sha256": "69a7e1cc487fbb306decd0f0a69dcf0ecb81d7a2d67334d425694b9e204cd849"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/JsonDefaults.cs",
+      "bytes": 951,
+      "sha256": "b071b84ed735af69efc01d51d65e9d32b77fbfe1e43e394c06cdd60a5408cef9"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/LocalServiceHealthProbe.cs",
+      "bytes": 6279,
+      "sha256": "79f11fae5d8b3fce7b9d2d05662b887014d72d167fe7c88acf384b1403f5fa3d"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/NativeDohApplyPayload.cs",
+      "bytes": 302,
+      "sha256": "7657ad8961533fe66d7777e214834fda7929e24fb4376a21e66d64ed5f863816"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/NativeDohEntrySnapshot.cs",
+      "bytes": 183,
+      "sha256": "3b2232670db438fc95685d764cd399160ee7113131dad660fc3ae11ddb5d717d"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/NativeDohOwnedState.cs",
+      "bytes": 286,
+      "sha256": "3ed99de4fd3d739cf45676d2bdfa390e1a1a271c228cfc7612c3b023a46eaeca"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/NativeDohTransactionSnapshot.cs",
+      "bytes": 187,
+      "sha256": "e1b3bd7ee7103c621fb1e3b4e36247341592dff196e9a835c7fd227d4b0df2d0"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OperationDispatcher.cs",
+      "bytes": 83885,
+      "sha256": "113186fa323da22eea05dd3de18e8f4c70413a5b655de2720fab9e5bc92916b9"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceController.cs",
+      "bytes": 22666,
+      "sha256": "c45250f096a69dfad5a83323e4835cf9c0a656cef0a07247770bfdee90dcfb22"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceIntentStore.cs",
+      "bytes": 2787,
+      "sha256": "266d4b10c505f3716239268b07ed38babc2e71f5cd90ae4e2241cb792b299f18"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServicePayload.cs",
+      "bytes": 185,
+      "sha256": "1579005b187b011666749f694be45c2838c5cb3f760460aee1b2218e39854b05"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceStatus.cs",
+      "bytes": 148,
+      "sha256": "19efd59a60f78571d0a53e020131ed37875a0c6363c744fef3292db7928d8387"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceSupervisor.cs",
+      "bytes": 11680,
+      "sha256": "1d20965724a09fa3c2d009968b398c7fa90efd5512c6411837fc0889572eb878"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedServiceTransition.cs",
+      "bytes": 3617,
+      "sha256": "45dc82db9a44dd0851f6f55faffbe8a6713c53a6be6a214c803f5707685cdb88"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedTcpListenerProbe.cs",
+      "bytes": 10335,
+      "sha256": "018efba76b4222a061e4c4c4351ededf81af94c7e5a5799acb9a44a27c660b07"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/OwnedWrapperLogMaintenance.cs",
+      "bytes": 4296,
+      "sha256": "a24b54ae947058c238eabf52f71edeb80bfeaf4996ecd5497c1a9e191ae1bc38"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/PersistedResponseEntry.cs",
+      "bytes": 192,
+      "sha256": "2b198f29cccada33dc0f758479607edfaccff99f589fd63c3efd16091b57fc63"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/PersistedResponseStore.cs",
+      "bytes": 191,
+      "sha256": "8ee1b6c2f30f60c02fb41efe7e1347b3964400b417532e4960742bac7e655f39"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/PipeServer.cs",
+      "bytes": 10185,
+      "sha256": "bb573b4ea0814d5304837a209e2d7347c689fb0e02abf78134ea2fcaf6e507c7"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/PipeServerIdentityResult.cs",
+      "bytes": 190,
+      "sha256": "b6bc04f20f28ddfe99191c753cfc87fd7d80b4c3c4ad2616c8515a9b99db77c9"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/PipeServerIdentityVerifier.cs",
+      "bytes": 14931,
+      "sha256": "16792ecf1aa154256ec278b0ab0775dcda0a4050db792aef2f0d13173cfda504"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ProcessResult.cs",
+      "bytes": 133,
+      "sha256": "a54a722a2408865acbfef2814c229b6432ddb5316212cc431f22daa4ba9c33d1"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ProcessRunner.cs",
+      "bytes": 4579,
+      "sha256": "09bb6db3f2f3da045d757f5b79d9f41619effa3c5c688a0db1e5115da878ce84"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/Program.cs",
+      "bytes": 8152,
+      "sha256": "2e485f74ea0b0b8448d6474a4a2609de57bb1c1439273e37198e2646a1d175b9"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ProtectedProductRoot.cs",
+      "bytes": 6576,
+      "sha256": "f490bf316bc49752cd730cf81ec313a9ec92e45c5863329f17ace81acc5e0343"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/SelfTest.cs",
+      "bytes": 25649,
+      "sha256": "037becd6140771c37d63de7059b2b9d0b1d7c8262aea6598aa403084d4384287"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceConfig.cs",
+      "bytes": 170,
+      "sha256": "782fd934ee0caac6d1cc0ac4a9d46e2e03ffbbe60fbf74f1a2acecc7d06b81f0"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceConfiguration.cs",
+      "bytes": 1003,
+      "sha256": "cf25692f9d1421ec8794a7efe742e0fe7572b1fcae9234bb5e21f79748f12be8"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceContract.cs",
+      "bytes": 892,
+      "sha256": "512c22858fe6c7abfd2dc7fdc71b42b43dfdf32604d6cf9623a26176702cb742"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceEngine.cs",
+      "bytes": 4943,
+      "sha256": "8c4aafd99dd2e2a3783686c49f1d7bb141fd5e03f63a65cd2bbf1fb7926a568c"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceError.cs",
+      "bytes": 286,
+      "sha256": "a0e23ac28d39343e30649656e416353736d690d5a95a617352f8bbcc933b1cc9"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceLog.cs",
+      "bytes": 3156,
+      "sha256": "952a0b7910656b89541dbd9b1326f385ddc31c6bc7ad9d504a9152abc971398e"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceOperationException.cs",
+      "bytes": 317,
+      "sha256": "7ae927c5e8c86ab7b14da46a7f6cf7d8593c6d5d7bdf1878846e8774a76d3c3c"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceOptions.cs",
+      "bytes": 170,
+      "sha256": "87565b25954eb8be58ce1754d6c2fde310df85443c35cbd60eec3f7ccf658694"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceRequest.cs",
+      "bytes": 391,
+      "sha256": "b0a2f26661a84179f3f99271fcbec8738ae254499243628cfd6e859c137e25c0"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ServiceResponse.cs",
+      "bytes": 1001,
+      "sha256": "3e95dc26cf1d9abb7872699187eea6bef14f038f87b47a9dd3b4eb2ca8974ff3"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/SystemProxyNotifier.cs",
+      "bytes": 2036,
+      "sha256": "5e56356ab9712ff5f2c1693fd69490febf981c12d2e5b2105c4280a532459fc7"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/TelegramListenerSnapshotCommand.cs",
+      "bytes": 4324,
+      "sha256": "c6b94f7e60262e22ac6fdb1823272b17904a6038a6ea982fedfcf3f346688186"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/TransactionJournal.cs",
+      "bytes": 10195,
+      "sha256": "4750f6b1ae36163cc236fa5b8da7c97325c16e502b76aa671a05631a52f39339"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/TransactionPhase.cs",
+      "bytes": 170,
+      "sha256": "7528413abb5df95aea3e9d2d7cd8f0781ab5f4e73db4184bc7708fdae0699a58"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/TrustedPath.cs",
+      "bytes": 4248,
+      "sha256": "923775babb3639de1a08b00e8851681671ce08cf8654ced4857a7ed41afe3609"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/WindowsDnsController.cs",
+      "bytes": 30103,
+      "sha256": "f3cc36c702e66f7a64e03df74e2001f4cb57ff16eee33201257da9de97a7ee3a"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/WindowsNativeDohController.cs",
+      "bytes": 19409,
+      "sha256": "a104eb6feb16dffbc826af823d65107283dce1487fb3057b18ee8b42dc08a6bb"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/WindowsServiceListenerSnapshot.cs",
+      "bytes": 15589,
+      "sha256": "6c328ef0a3fd68d9ba8cce31a2a6a86f9cb2f05e2e198b374d732bb6ee4527c9"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ZapretProfilePayload.cs",
+      "bytes": 179,
+      "sha256": "2f0503a7d85fd6c55d61d2a254e42da3876fac47ad30a46dc5d1cf3f6ce16289"
+    },
+    {
+      "path": "src/service/EgoistShield.Service/ZapretProfileSnapshot.cs",
+      "bytes": 99,
+      "sha256": "c20a9a4c23850d0b578022ef496e1c1a3b45fedbb9cb65b86710e969def4fa2d"
+    },
+    {
+      "path": "src/service/Properties/AssemblyInfo.cs",
+      "bytes": 616,
+      "sha256": "65a153b53a3003c4780e65fef16faa76929409fcdee81764d2ffa6bad568dff0"
+    },
+    {
+      "path": "src/service/System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__ProfileRegex_0.cs",
+      "bytes": 5749,
+      "sha256": "caef7420759362e5254acf2b099200a13beb7d76f09a55fa978cb1f9b9609cd8"
+    },
+    {
+      "path": "src/service/System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__ProxyCredentialRegex_2.cs",
+      "bytes": 4889,
+      "sha256": "6b686412ce5912fa2b7dac7ca710f004cc88b42012de1628c0e3fd01cdfe78ba"
+    },
+    {
+      "path": "src/service/System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__SecretAssignmentRegex_1.cs",
+      "bytes": 6155,
+      "sha256": "b09c1ab763fca22f53f35838145b5065dac11cec7b89322d47827bc4f45b4379"
+    },
+    {
+      "path": "src/service/System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__Utilities.cs",
+      "bytes": 3786,
+      "sha256": "300981686addb45e76dc2b0740c091a302ab4811fab034291746858356ba97e2"
+    }
+  ],
+  "harnessSha256": "05a410891a9b30df57c76a6af70e61ef00a46a222bef43de7dfa61ebbb20b6bb",
+  "resultsSha256": "52736a2c8c8f87197042f3605437f82be23935e5e6ad2ca35b73608b9510384c",
+  "stdoutSha256": "f6e8e82a8aef5b50bdd700e24ff0fac0e2e56d9b941694900cfedd4308d4c15e",
+  "buildWarnings": 141,
+  "buildErrors": 0,
+  "finalHarnessExitCode": 0,
+  "knownLimits": [
+    "No live SCM/DNS/route/registry/install/reboot mutation.",
+    "Component and SCM callback seams are explicitly described; source-class results do not prove external connectivity.",
+    "Native ACL uses current-user owner and extra FullControl in task root, not ProgramData LocalSystem ownership.",
+    "Abrupt crash test observed eight zero-byte orphan temp files; an attempted >=64 KiB capture missed its narrow observation window and did not complete that test.",
+    "Bounded stress duration is not an uptime/soak result.",
+    "firstCallDurationMs in component fault details measures the fault and repeated-call observation cycle, not solely the first call.",
+    "Initial standalone reproduction-script build hit an MSBuild copy failure with a 267-character package DLL path. Short task-run directory and task-root NuGet path corrected the harness; independent rebuild/case completed. No product change is attributed to this harness-path issue."
+  ],
+  "reproductionScriptSha256": "b8d937db96165d4add236d8b354554b9c9dfeef57c5140368aae7bca7decd46e",
+  "independentReproductionScriptCase": "authentic-terminal-marker-startup: compiled with isolated NuGet cache, real named pipe hello/terminal archival confirmed"
+}

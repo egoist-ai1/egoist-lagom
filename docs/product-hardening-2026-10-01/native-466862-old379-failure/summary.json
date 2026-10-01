@@ -1,0 +1,38 @@
+{
+  "sourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "runId": 36834226795,
+  "jobId": 110279863127,
+  "artifactId": 11149026027,
+  "result": "failed",
+  "error": "Native child failed (41): official-old-clean-install; see owned stdout/stderr.",
+  "phase": "original-old-3.7.9-pre-install",
+  "newCandidateExecuted": false,
+  "oldInstallerSha256": "eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+  "files": [
+    {
+      "name": "authenticated-assets.json",
+      "bytes": 2707,
+      "sha256": "7aca395a68f2a53f354a27311669fd4f6e293378f6e11008e6669df5239412e1"
+    },
+    {
+      "name": "download-identity.json",
+      "bytes": 304,
+      "sha256": "ea214079e8a5311703c4d435912df38d6abf4290e1f1769e20137a8a4a2fdcd5"
+    },
+    {
+      "name": "raw-artifact.zip",
+      "bytes": 12669,
+      "sha256": "09995344f926651619a3a6e066ded956ad3aef4893de9d288a2d2f92910e3d5d"
+    },
+    {
+      "name": "raw-job.txt",
+      "bytes": 30939,
+      "sha256": "ae3f9ebed1b1f1881f76cab47ee2d19718c1ed386445202948ec3f04658616c9"
+    },
+    {
+      "name": "windows-production-legacy-upgrade.json",
+      "bytes": 86809,
+      "sha256": "b4131699719c458cf9f9d06c96e70d551526bc1b5f16b8b511b345c42c9fdb7f"
+    }
+  ]
+}

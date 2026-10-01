@@ -1,0 +1,66 @@
+TAP version 13
+# Subtest: fresh runtime cleanup uses fixed native query/stop rather than CIM or broad PowerShell enumeration
+not ok 1 - fresh runtime cleanup uses fixed native query/stop rather than CIM or broad PowerShell enumeration
+  ---
+  duration_ms: 3.2893
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f75d-1042-7df1-9e68-86e8c4a49415\\work\\tg-cleanup-red.mjs:16:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'powershell.exe'
+    - 'C:\\Lagom\\resources\\core-service\\win-x64\\EgoistShield.Service.exe'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'C:\\Lagom\\resources\\core-service\\win-x64\\EgoistShield.Service.exe'
+  actual: 'powershell.exe'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/tg-cleanup-red.mjs:18:9)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+  ...
+# Subtest: arbitrary runtime paths are refused before any child launch
+not ok 2 - arbitrary runtime paths are refused before any child launch
+  ---
+  duration_ms: 0.9612
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f75d-1042-7df1-9e68-86e8c4a49415\\work\\tg-cleanup-red.mjs:21:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/tg-cleanup-red.mjs:22:34)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: unknown cleanup cannot clear saved state or permit copy
+not ok 3 - unknown cleanup cannot clear saved state or permit copy
+  ---
+  duration_ms: 0.8292
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f75d-1042-7df1-9e68-86e8c4a49415\\work\\tg-cleanup-red.mjs:24:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/tg-cleanup-red.mjs:26:2)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 0
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 64.5682

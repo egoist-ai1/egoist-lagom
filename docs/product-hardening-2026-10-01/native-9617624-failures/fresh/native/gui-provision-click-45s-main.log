@@ -1,0 +1,43 @@
+[2026-10-01 11:49:22.477] [info]  [paths] Runtime=production, userData=C:\Users\<user>\AppData\Roaming\Egoist Shield
+[2026-10-01 11:49:22.485] [info]  [boot] createMainWindow:start
+[2026-10-01 11:49:22.485] [info]  [boot] paths preload=C:\Program Files\EgoistShield\resources\app.asar\.vite\build\preload.js, renderer=C:\Program Files\EgoistShield\resources\app.asar\.vite\renderer\main_window\index.html, icon=C:\Program Files\EgoistShield\resources\brand\icon.ico, minimized=false
+[2026-10-01 11:49:22.486] [info]  [boot] ipc security guards installed
+[2026-10-01 11:49:22.487] [info]  [boot] creating BrowserWindow
+[2026-10-01 11:49:22.531] [info]  [boot] BrowserWindow created
+[2026-10-01 11:49:22.537] [info]  [boot] creating StateStore and managers
+[2026-10-01 11:49:24.410] [info]  [boot] system proxy reconciliation:start
+[2026-10-01 11:49:24.413] [info]  [boot] system proxy reconciliation:complete
+[2026-10-01 11:49:24.414] [info]  [boot] registering IPC handlers
+[2026-10-01 11:49:24.415] [info]  [state-store] Initializing a new state profile.
+[2026-10-01 11:49:24.436] [info]  [boot] IPC handlers registered
+[2026-10-01 11:49:24.436] [info]  [boot] loading persisted state
+[2026-10-01 11:49:24.437] [info]  [boot] persisted state loaded
+[2026-10-01 11:49:24.492] [info]  [updater] Persisted auto-update = true
+[2026-10-01 11:49:24.492] [info]  [window] Loading packaged renderer from C:\Program Files\EgoistShield\resources\app.asar\.vite\renderer\main_window\index.html
+[2026-10-01 11:49:24.594] [info]  [window] Main window renderer finished load
+[2026-10-01 11:49:24.595] [info]  [window] loadFile resolved successfully
+[2026-10-01 11:49:24.596] [info]  [boot] createMainWindow:complete
+[2026-10-01 11:49:24.596] [info]  [boot] background recovery:start
+[2026-10-01 11:49:24.622] [info]  [updater] Signed stable channel configured, current=3.8.0
+[2026-10-01 11:49:34.344] [warn]  [dns-diagnostics] Current DNS server read failed; retrying in 5s. Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+Error: Command failed: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command $up = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' } | Select-Object -ExpandProperty InterfaceIndex; $rows = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue | Where-Object { $up -contains $_.InterfaceIndex -and $_.ServerAddresses }; $rows | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress -Depth 4
+
+    at genericNodeError (node:internal/errors:986:15)
+    at wrappedFn (node:internal/errors:540:14)
+    at ChildProcess.exithandler (node:child_process:417:12)
+    at ChildProcess.emit (node:events:514:28)
+    at maybeClose (node:internal/child_process:1141:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:306:5)
+[2026-10-01 11:49:34.863] [info]  [updater] Background check: up-to-date, latest=3.7.9
+[2026-10-01 11:49:43.754] [warn]  [window] console-message level=warning <connection-uri> [activity] APP-ACTION: Error invoking remote method 'telegram-proxy:install-service': CoreServiceRequestError: Не удалось проверить владельца порта Telegram Proxy 127.0.0.1:1443; запуск отменён.
+[2026-10-01 11:49:51.091] [warn]  [updates] Managed component check failed: CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12023, timeoutMs=12000, pid=2676, stdoutBytes=0, stderrBytes=0
+CoreServiceRequestError: Не удалось проверить процессы winws.exe: PowerShell failed: kind=terminated, code=unknown, killed=true, signal=SIGTERM, elapsedMs=12023, timeoutMs=12000, pid=2676, stdoutBytes=0, stderrBytes=0
+    at CoreServiceClient2.requestOnce (<connection-uri>
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (<connection-uri>
+[2026-10-01 11:49:54.864] [error] [boot] background recovery failed: Error: Timed out inspecting network owners before mutation: dns:boot-recovery
+Error: Timed out inspecting network owners before mutation: dns:boot-recovery
+    at Timeout.<anonymous> (<connection-uri>
+    at listOnTimeout (node:internal/timers:685:17)
+    at process.processTimers (node:internal/timers:618:7)

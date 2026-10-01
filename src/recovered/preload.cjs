@@ -24,7 +24,9 @@ electron.contextBridge.exposeInMainWorld("egoistAPI", {
 	},
 	state: {
 		get: () => electron.ipcRenderer.invoke("state:get"),
-		set: (next) => electron.ipcRenderer.invoke("state:set", next)
+		set: (next) => electron.ipcRenderer.invoke("state:set", next),
+		patchSettings: (patch, expectedRevision) => electron.ipcRenderer.invoke("state:patch-settings", { patch, expectedRevision }),
+		patchRules: (patch, expectedRevision) => electron.ipcRenderer.invoke("state:patch-rules", { patch, expectedRevision })
 	},
 	import: {
 		text: (payload) => electron.ipcRenderer.invoke("import:text", payload),
@@ -34,9 +36,15 @@ electron.contextBridge.exposeInMainWorld("egoistAPI", {
 		refreshOne: (url) => electron.ipcRenderer.invoke("subscription:refresh-one", url),
 		refreshAll: () => electron.ipcRenderer.invoke("subscription:refresh-all"),
 		rename: (url, newName) => electron.ipcRenderer.invoke("subscription:rename", url, newName),
-		delete: (url) => electron.ipcRenderer.invoke("subscription:delete", url)
+		delete: (url) => electron.ipcRenderer.invoke("subscription:delete", url),
+		deleteById: (id) => electron.ipcRenderer.invoke("subscription:delete-by-id", { id })
 	},
-	node: { rename: (id, newName) => electron.ipcRenderer.invoke("node:rename", id, newName) },
+	node: {
+		rename: (id, newName) => electron.ipcRenderer.invoke("node:rename", id, newName),
+		select: (id) => electron.ipcRenderer.invoke("node:select", { id }),
+		setFavorite: (id, favorite) => electron.ipcRenderer.invoke("node:set-favorite", { id, favorite }),
+		delete: (id) => electron.ipcRenderer.invoke("node:delete", { id })
+	},
 	network: {
 		inspect: () => electron.ipcRenderer.invoke("network:inspect"),
 		plan: (intent) => electron.ipcRenderer.invoke("network:plan", intent),
@@ -52,6 +60,11 @@ electron.contextBridge.exposeInMainWorld("egoistAPI", {
 		status: () => electron.ipcRenderer.invoke("vpn:status"),
 		diagnose: () => electron.ipcRenderer.invoke("vpn:diagnose"),
 		stressTest: (iterations) => electron.ipcRenderer.invoke("vpn:stress-test", iterations),
+		serviceStatus: () => electron.ipcRenderer.invoke("vpn:service-status"),
+		serviceInstall: (input) => electron.ipcRenderer.invoke("vpn:service-install", input),
+		serviceStart: () => electron.ipcRenderer.invoke("vpn:service-start"),
+		serviceStop: () => electron.ipcRenderer.invoke("vpn:service-stop"),
+		serviceRemove: () => electron.ipcRenderer.invoke("vpn:service-remove"),
 		onFallback: (callback) => subscribeToChannel("fallback-triggered", callback)
 	},
 	runtime: {

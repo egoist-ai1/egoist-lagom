@@ -1,0 +1,1 @@
+Built desktop main, preload, recovered renderer and component worker.

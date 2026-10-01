@@ -1,0 +1,13 @@
+# Telegram: raw32-secret и точечная подпись установки
+
+Исправлен подтверждённый contract defect: валидный **32 hex secret может начинаться с dd**. UI теперь снимает dd только у полного поддержанного 34-символьного вида `/^dd([a-f0-9]{32})$/i`, сохраняя все 32 значащих символа. Изменены ровно три UI-места: `rubyTelegramConfigProblem`, `rubyTelegramConfigKey` и draft-conversion `Ep.T2`. Порт, layout, backend, main, preload и CI этот UI patch не меняет; соответствующий schema/manager fix отдельно принадлежит родителю и уже присутствует в source bindings теста.
+
+Одна новая source-extracted compound regression сначала дала **1 FAIL** на старом UI с уже исправленным backend: «A genuine raw32 secret can begin with dd». После UI-правки весь Telegram first-load файл дал **20/20 PASS**, 0 skipped, 273.4753 ms. Проверены pristine/no-save, dirty payload через настоящий IPC handler → schema → manager validator → readback, равенство raw32/prefixed34 fingerprints, сохранение всех символов и отказ malformed length/nonhex. Native manager side effects остаются явно подписанными fixtures; это не native service PASS. [RED](telegram-secret-ui-fix-red.txt), [GREEN](telegram-secret-ui-fix-green.txt).
+
+Отдельная минимальная правка `tg-install` metadata убирает неточное «оптимизатор» и техническое «owned»: **«Установка службы Telegram»**, **«Настраиваю фоновую службу Telegram и её автозапуск.»** Она не заявляет готовность, пока pending operation не завершена. Другие operation labels не перерабатывались.
+
+`node --check src/recovered/renderer.js` и owned `git diff --check` завершились с кодом 0. [Точный incremental UI diff](telegram-secret-ui-fix.diff), [source/результаты/контрольные суммы](telegram-secret-ui-fix.json).
+
+Предшествующая [visual QA](telegram-final-visual-qa/report.md) остаётся привязана к предварительному renderer LF `947836bac950728a674bdc35fede32a03d7eb2bcfbaaf2019c061235704852f4`: 12 states, 46 повторных center-hit observations, 0 blocked/visible horizontal overflow/page errors. Её снимки содержат прежнее HUD-название и не переобозначаются под новый source. После настоящего нового изменения повторён только затронутый 20-case Telegram regression file; старые 28 adjacent cases, UI gallery и browser screenshots повторно не запускались.
+
+Новый frozen renderer LF SHA-256: `afd252fb3d52b3cfee6fd85001bb7bbc59b1e6b3a7432dcc4378e730a19bb016`; Shield LF: `164234fa4e5e10681333f9e07937e8be61e044624ab61ad65647b84e4d7fa7d1`; test LF: `53494c6a585c5cb149ea85184faa5c6eba9577016668d71774e757c4c8dd800f`. Финальная parent full suite/build/package и fresh signed native UIA/SCM acceptance остаются отдельным необходимым этапом.

@@ -1,0 +1,111 @@
+TAP version 13
+# Subtest: fresh runtime cleanup uses fixed native query/stop rather than CIM or broad PowerShell enumeration
+ok 1 - fresh runtime cleanup uses fixed native query/stop rather than CIM or broad PowerShell enumeration
+  ---
+  duration_ms: 3.6849
+  type: 'test'
+  ...
+# Subtest: arbitrary runtime paths are refused before any child launch
+ok 2 - arbitrary runtime paths are refused before any child launch
+  ---
+  duration_ms: 1.4185
+  type: 'test'
+  ...
+# Subtest: unknown cleanup cannot clear saved state or permit copy
+ok 3 - unknown cleanup cannot clear saved state or permit copy
+  ---
+  duration_ms: 1.1752
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.schemaVersion = 2
+ok 4 - cleanup rejects contradictory or incomplete native proof p => p.schemaVersion = 2
+  ---
+  duration_ms: 0.9261
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.operation = 'other'
+ok 5 - cleanup rejects contradictory or incomplete native proof p => p.operation = 'other'
+  ---
+  duration_ms: 0.8402
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.target = 'legacy'
+ok 6 - cleanup rejects contradictory or incomplete native proof p => p.target = 'legacy'
+  ---
+  duration_ms: 0.7928
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.runtimePath = 'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'
+ok 7 - cleanup rejects contradictory or incomplete native proof p => p.runtimePath = 'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'
+  ---
+  duration_ms: 0.8325
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.quiescent = false
+ok 8 - cleanup rejects contradictory or incomplete native proof p => p.quiescent = false
+  ---
+  duration_ms: 0.8296
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:null,executablePath:target}]
+ok 9 - cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:null,executablePath:target}]
+  ---
+  duration_ms: 1.1159
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'}]
+ok 10 - cleanup rejects contradictory or incomplete native proof p => p.stopped = [{processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:'C:\\\\Foreign\\\\egoistshield-tg-ws-proxy.exe'}]
+  ---
+  duration_ms: 1.6767
+  type: 'test'
+  ...
+# Subtest: cleanup rejects contradictory or incomplete native proof p => p.stopped = [1,2].map(() => ({processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:target}))
+ok 11 - cleanup rejects contradictory or incomplete native proof p => p.stopped = [1,2].map(() => ({processId:42,createdAt:'2026-10-01T00:00:00Z',executablePath:target}))
+  ---
+  duration_ms: 1.1084
+  type: 'test'
+  ...
+# Subtest: legacy cleanup uses only fixed legacy token and validates exact resulting identity
+ok 12 - legacy cleanup uses only fixed legacy token and validates exact resulting identity
+  ---
+  duration_ms: 0.8734
+  type: 'test'
+  ...
+# Subtest: unknown cleanup prevents destination removal
+ok 13 - unknown cleanup prevents destination removal
+  ---
+  duration_ms: 0.8511
+  type: 'test'
+  ...
+# Subtest: actual Windows runtime cleanup terminates only exact-path held harmless child
+not ok 14 - actual Windows runtime cleanup terminates only exact-path held harmless child
+  ---
+  duration_ms: 6924.3989
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\telegram-runtime-cleanup.test.mjs:50:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Command failed: C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f75d-1042-7df1-9e68-86e8c4a49415\work\native-runtime-cleanup-vIfaG0\bin\NativeRuntimeCleanupRegression.exe
+    Unhandled exception. System.IO.IOException: The file 'C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f75d-1042-7df1-9e68-86e8c4a49415\work\native-runtime-cleanup-vIfaG0\fixture\foreign\egoist-cleanup-fixture-87e5f43b4a374378b713aaf3e0ab7cdd.exe' already exists.
+       at System.IO.FileSystem.CopyFile(String sourceFullPath, String destFullPath, Boolean overwrite)
+       at NativeRuntimeCleanupRegression.Program.Main(String[] args) in C:\Users\Egoist\Desktop\�஥���\�ਫ������\Egoist Lagom\tests\NativeRuntimeCleanupRegression\Program.cs:line 26
+       at NativeRuntimeCleanupRegression.Program.<Main>(String[] args)
+    
+  code: 3762504530
+  stack: |-
+    genericNodeError (node:internal/errors:985:15)
+    wrappedFn (node:internal/errors:539:14)
+    ChildProcess.exithandler (node:child_process:417:12)
+    ChildProcess.emit (node:events:509:28)
+    maybeClose (node:internal/child_process:1141:16)
+    ChildProcess._handle.onexit (node:internal/child_process:306:5)
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 13
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7011.7036

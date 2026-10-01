@@ -1,0 +1,29 @@
+✔ native CIM retry returns a complete snapshot and refuses terminal partial reads (1290.0523ms)
+✔ installer diagnostics preserve actual own log bytes and refuse oversized logs (709.4619ms)
+✔ signed Setup and source Core diagnostics refuse a physical host before reading inputs or compiling (1414.7053ms)
+✔ native runtime resolution selects the first real PATH result when two applications share a name (648.6471ms)
+✔ native ACL diagnostics capture actual owner and each raw ACE without changing permissions (714.9911ms)
+✔ native acceptance refuses missing or mismatched hosted runner identities (0.8583ms)
+✔ native payload readback refuses traversal, drive paths and alternate path separators (0.2602ms)
+✔ PowerShell native acceptance host guard and path boundary perform no mutations (722.9799ms)
+✔ an actual native acceptance invocation refuses a non-hosted process before input or mutation (668.626ms)
+✔ native child timeout retires its own process and retains bounded stdout, stderr and failure evidence (1705.9264ms)
+✔ official legacy versions select separate immutable installer/helper pins and reject aliases (1.3733ms)
+✔ both original signed legacy manifests are accepted only for the explicitly selected version (2.8736ms)
+✔ candidate minimum version is compared with the selected legacy version, not a fixed 3.7.9 (0.5141ms)
+✔ legacy gate verifies original real signed metadata with the project pinned public root (2.1925ms)
+✔ legacy gate refuses registry rollback, key replacement and revoked-key revival (1.7017ms)
+✔ pure source-binding boundary requires both signed fields and exact integrity bytes (0.4563ms)
+✔ legacy PowerShell library import performs no native query or mutation and observer matches exact scope (758.6602ms)
+✔ inert legacy snapshot retries a failed cold query, discards partial rows and preserves complete foreign inventory (572.1214ms)
+✔ inert legacy snapshot never returns empty or partial state after failed, nonterminating, empty or malformed CIM reads (594.307ms)
+✔ inert legacy snapshot keeps foreign service/Task comparison strict and refuses Task errors (648.2878ms)
+✔ real legacy script and helper reject a non-hosted process before input or native mutation (2843.94ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5515.2708

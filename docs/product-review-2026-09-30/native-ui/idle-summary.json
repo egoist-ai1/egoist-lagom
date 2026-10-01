@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "scope": "30 seconds idle following own hidden navigation stress; no forced GC or extra image captures. Short trend only, no leak/plateau proof.",
+  "samples": [
+    {
+      "elapsedSeconds": 0,
+      "main": {
+        "rss": 132775936,
+        "heapTotal": 14577664,
+        "heapUsed": 12336824,
+        "external": 7053119,
+        "arrayBuffers": 0
+      },
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 126.625,
+          "privateMiB": 83.7461,
+          "cumulativeCpuSeconds": 21.097426
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 150.5195,
+          "privateMiB": 230.5664,
+          "cumulativeCpuSeconds": 9.324037
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3125,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.10205
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 142.1797,
+          "privateMiB": 80.6367,
+          "cumulativeCpuSeconds": 9.418276
+        }
+      ],
+      "workingSetMiB": 470.6367
+    },
+    {
+      "elapsedSeconds": 5,
+      "main": {
+        "rss": 132915200,
+        "heapTotal": 13529088,
+        "heapUsed": 12280328,
+        "external": 7053925,
+        "arrayBuffers": 0
+      },
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 126.7578,
+          "privateMiB": 84.1406,
+          "cumulativeCpuSeconds": 21.205829
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 150.5352,
+          "privateMiB": 230.5977,
+          "cumulativeCpuSeconds": 9.327384
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3125,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.102139
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 142.1797,
+          "privateMiB": 80.6367,
+          "cumulativeCpuSeconds": 9.420249
+        }
+      ],
+      "workingSetMiB": 470.7852
+    },
+    {
+      "elapsedSeconds": 10,
+      "main": {
+        "rss": 132112384,
+        "heapTotal": 13791232,
+        "heapUsed": 12526316,
+        "external": 7053980,
+        "arrayBuffers": 0
+      },
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 125.9922,
+          "privateMiB": 83.2227,
+          "cumulativeCpuSeconds": 21.275669
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 150.5352,
+          "privateMiB": 230.5977,
+          "cumulativeCpuSeconds": 9.32995
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3125,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.102181
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 141.3125,
+          "privateMiB": 79.6406,
+          "cumulativeCpuSeconds": 9.423503
+        }
+      ],
+      "workingSetMiB": 469.1523
+    },
+    {
+      "elapsedSeconds": 15,
+      "main": {
+        "rss": 132276224,
+        "heapTotal": 14315520,
+        "heapUsed": 12240904,
+        "external": 7052833,
+        "arrayBuffers": 0
+      },
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 126.1484,
+          "privateMiB": 83.3281,
+          "cumulativeCpuSeconds": 21.322479
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 150.5352,
+          "privateMiB": 230.5977,
+          "cumulativeCpuSeconds": 9.332781
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3125,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.102229
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 141.4258,
+          "privateMiB": 79.8945,
+          "cumulativeCpuSeconds": 9.426422
+        }
+      ],
+      "workingSetMiB": 469.4219
+    },
+    {
+      "elapsedSeconds": 20,
+      "main": {
+        "rss": 132743168,
+        "heapTotal": 14577664,
+        "heapUsed": 12112776,
+        "external": 7053105,
+        "arrayBuffers": 0
+      },
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 126.5938,
+          "privateMiB": 83.8281,
+          "cumulativeCpuSeconds": 21.425127
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 150.5352,
+          "privateMiB": 230.5977,
+          "cumulativeCpuSeconds": 9.33546
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3125,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.10232
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 141.5586,
+          "privateMiB": 79.8945,
+          "cumulativeCpuSeconds": 9.429261
+        }
+      ],
+      "workingSetMiB": 470.0
+    },
+    {
+      "elapsedSeconds": 25,
+      "main": {
+        "rss": 133124096,
+        "heapTotal": 13266944,
+        "heapUsed": 11960256,
+        "external": 7052205,
+        "arrayBuffers": 0
+      },
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 126.957,
+          "privateMiB": 84.1875,
+          "cumulativeCpuSeconds": 21.517412
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 150.5352,
+          "privateMiB": 230.5977,
+          "cumulativeCpuSeconds": 9.338176
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3125,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.102366
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 141.5625,
+          "privateMiB": 79.8984,
+          "cumulativeCpuSeconds": 9.432402
+        }
+      ],
+      "workingSetMiB": 470.3672
+    },
+    {
+      "elapsedSeconds": 30,
+      "main": {
+        "rss": 133345280,
+        "heapTotal": 13791232,
+        "heapUsed": 12627228,
+        "external": 7054462,
+        "arrayBuffers": 0
+      },
+      "processes": [
+        {
+          "type": "Browser",
+          "workingSetMiB": 127.168,
+          "privateMiB": 84.3984,
+          "cumulativeCpuSeconds": 21.615735
+        },
+        {
+          "type": "GPU",
+          "workingSetMiB": 150.5352,
+          "privateMiB": 230.5977,
+          "cumulativeCpuSeconds": 9.340735
+        },
+        {
+          "type": "Utility",
+          "workingSetMiB": 51.3125,
+          "privateMiB": 11.707,
+          "cumulativeCpuSeconds": 0.102404
+        },
+        {
+          "type": "Tab",
+          "workingSetMiB": 141.6055,
+          "privateMiB": 79.8984,
+          "cumulativeCpuSeconds": 9.435388
+        }
+      ],
+      "workingSetMiB": 470.6211
+    }
+  ],
+  "rawEvidence": {
+    "name": "idle-readback.json",
+    "sha256": "8f1804e733cfeae1727d7f79dedd003fb277b5f2595113f44cef8176df00c77d",
+    "scope": "own task work; sanitized metrics exported"
+  }
+}

@@ -88,6 +88,41 @@ test('release preparation rejects source trust that differs from the packaged tr
   assert.equal((await fs.readdir(f.dist)).includes('release-manifest.json'), false);
 });
 
+async function currentSourceFixture(t) {
+  const f = await fixture(t);
+  const version = '3.8.0', name = `EgoistShield-Setup-${version}.exe`;
+  await fs.writeFile(path.join(f.base, 'package.json'), JSON.stringify({ version, minimumAutoUpdateVersion: '3.7.8' }));
+  await fs.copyFile(path.join(f.dist, 'Egoist-Lagom-Setup.exe'), path.join(f.dist, name));
+  const integrityPath = path.join(f.dist, 'package-integrity.json');
+  const integrity = JSON.parse(await fs.readFile(integrityPath));
+  integrity.version = version;
+  integrity.installer = { ...integrity.publicInstaller, path: `dist/${name}` };
+  integrity.source = { commit: '1234567890abcdef1234567890abcdef12345678' };
+  await fs.writeFile(integrityPath, JSON.stringify(integrity));
+  return { ...f, integrity, integrityPath };
+}
+
+test('current signed releases bind exact source commit and integrity bytes and refuse later receipt replacement', async t => {
+  const f = await currentSourceFixture(t);
+  const bytes = await fs.readFile(f.integrityPath);
+  const manifest = await prepareReleaseAssets(f.options);
+  assert.equal(manifest.sourceCommit, f.integrity.source.commit);
+  assert.equal(manifest.integrityManifestSha256, createHash('sha256').update(bytes).digest('hex'));
+  assert.deepEqual(await prepareReleaseAssets({ ...f.options, 'verify-only': 'true' }), manifest);
+  await fs.appendFile(f.integrityPath, '\n');
+  await assert.rejects(prepareReleaseAssets({ ...f.options, 'verify-only': 'true' }), /Signed manifest does not match candidate/);
+});
+
+test('3.8 and later release signing refuses missing or ambiguous source identity before output', async t => {
+  const f = await currentSourceFixture(t);
+  for (const commit of [undefined, 'main', 'F'.repeat(40), 'a'.repeat(39), { value: 'a'.repeat(40) }]) {
+    f.integrity.source = commit === undefined ? {} : { commit };
+    await fs.writeFile(f.integrityPath, JSON.stringify(f.integrity));
+    await assert.rejects(prepareReleaseAssets(f.options), /exact source commit/);
+    assert.equal((await fs.readdir(f.dist)).includes('release-manifest.json'), false);
+  }
+});
+
 test('missing late input leaves no partial signed manifest', async t => {
   const f = await fixture(t);
   await assert.rejects(prepareReleaseAssets({ ...f.options, notices: path.join(f.base, 'missing.txt') }), /ENOENT/);
@@ -122,7 +157,7 @@ test('GitHub preflight verifies offline and rejects changed inputs before any AP
   await fs.writeFile(path.join(f.dist, 'Egoist-Lagom-validation.md'), 'Fixture validation evidence');
   const scripts = path.join(f.base, 'scripts');
   await fs.mkdir(scripts);
-  for (const name of ['prepare-release-assets.mjs', 'release-github.py']) await fs.copyFile(fileURLToPath(new URL(`../scripts/${name}`, import.meta.url)), path.join(scripts, name));
+  for (const name of ['prepare-release-assets.mjs', 'release-github.py', 'release-source.py']) await fs.copyFile(fileURLToPath(new URL(`../scripts/${name}`, import.meta.url)), path.join(scripts, name));
   await fs.writeFile(path.join(scripts, 'github-api.py'), 'def request(*args, **kwargs):\n    raise RuntimeError("UNEXPECTED_API_REQUEST")\n');
   const run = mode => spawnSync(process.env.EGOIST_RELEASE_PYTHON, [path.join(scripts, 'release-github.py'), mode], { encoding: 'utf8', env: { ...process.env, EGOIST_NODE: process.execPath, EGOIST_RELEASE_DIST: f.dist, SHIELD_RELEASE_RECEIPT: path.join(f.base, 'release-receipt.json'), PYTHONDONTWRITEBYTECODE: '1' } });
   const verified = run('verify');

@@ -1,0 +1,5 @@
+Unhandled exception. System.InvalidOperationException: native read-only SCM/TCP/process capture retains held managed identity
+   at NativeQueryRegression.Program.Require(Boolean condition, String name, Nullable`1 elapsedMs) in C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeQueryRegression\Program.cs:line 122
+   at NativeQueryRegression.Program.Main(String[] args) in C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeQueryRegression\Program.cs:line 70
+   at NativeQueryRegression.Program.Main(String[] args) in C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeQueryRegression\Program.cs:line 116
+   at NativeQueryRegression.Program.<Main>(String[] args)

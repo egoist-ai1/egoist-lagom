@@ -1,0 +1,375 @@
+{
+  "kind": "real-original-signed-setup-gui-failure-diagnostic",
+  "sourceCommit": "6ab602765f0547299d44f624fc6a150c77ff0511",
+  "runId": "36843831825",
+  "os": "Microsoft Windows NT 10.0.20348.0",
+  "imageOS": "win22",
+  "imageVersion": "20260927.320.1",
+  "parentPowerShell": "7.6.6",
+  "cleanStart": true,
+  "installerExecuted": false,
+  "preInstallExecuted": false,
+  "sourceHashes": [
+    {
+      "path": "src/installer/owned-cleanup.ps1",
+      "sha256": "9B131AC4F14C7C0D2677D899F8F1649029410A6E3FD0332593E00064419B89FB"
+    },
+    {
+      "path": "src/installer/service-maintenance.ps1",
+      "sha256": "D64BE23DD2075C74E753C05D1B6733ED3A74D3C96826017880CBE5FDD0A6BBE3"
+    },
+    {
+      "path": "src/installer/maintenance-boot-recovery.ps1",
+      "sha256": "BBE28F154A2E8330B55804E8828158F17721F4C6B106614FF2B7A8ADF0E33130"
+    }
+  ],
+  "mutations": [],
+  "gui": [],
+  "beforeNetwork": {
+    "dns": [
+      {
+        "index": 1,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 1,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 11,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 11,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 2,
+        "servers": [
+          "168.63.129.16"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 23,
+        "servers": []
+      }
+    ],
+    "defaultRoutes": [
+      {
+        "index": 14,
+        "prefix": "0.0.0.0/0",
+        "nextHop": "10.1.0.1",
+        "metric": 0,
+        "protocol": "NetMgmt"
+      }
+    ],
+    "ipv6Bindings": [
+      {
+        "Name": "Ethernet 3",
+        "Enabled": true
+      },
+      {
+        "Name": "vEthernet (nat)",
+        "Enabled": true
+      }
+    ],
+    "userProxy": {
+      "ProxyEnable": 0,
+      "ProxyServer": null,
+      "ProxyOverride": null,
+      "AutoConfigURL": null
+    },
+    "winHttp": {
+      "WinHttpSettings": [
+        24,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "DefaultConnectionSettings": null
+    }
+  },
+  "beforeServices": null,
+  "beforeTasks": null,
+  "result": "failed",
+  "releaseReady": false,
+  "artifactSourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "originalAuthenticated": {
+    "ok": true,
+    "oldVersion": "3.7.9",
+    "oldReleaseProfile": {
+      "version": "3.7.9",
+      "installerSha256": "eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+      "helperSha256": "f6c232fa15e4e8f1d78c149f973df8b807d58cabd8ef5898b8b5ce0d2279da8e"
+    },
+    "old": {
+      "schemaVersion": 2,
+      "channel": "stable",
+      "version": "3.7.9",
+      "tag": "v3.7.9",
+      "installerName": "EgoistShield-Setup-3.7.9.exe",
+      "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/EgoistShield-Setup-3.7.9.exe",
+      "size": 206521508,
+      "sha256": "eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+      "sha512": "46ac50c71106432eb09d3cf8e47e6b7b402c4b7e1746214ed72dace268dc421b9d369faf37f10392e78c44039dd1a2f0f4415b6681bdc5cf4f0c6b3a83b041bc",
+      "githubDigest": "sha256:eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+      "minimumAppVersion": "3.7.8",
+      "keyId": "release-2026-09-recovery",
+      "authenticodeStatus": "not-signed",
+      "licenseVersion": "1.0",
+      "publishedAt": "2026-09-29T16:08:58.508Z"
+    },
+    "candidate": {
+      "schemaVersion": 2,
+      "channel": "stable",
+      "version": "3.8.0",
+      "tag": "v3.8.0",
+      "installerName": "EgoistShield-Setup-3.8.0.exe",
+      "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+      "size": 277408236,
+      "sha256": "768953bfc01a64f1ea0c776246c0033c39c7c29acd2aafcbd48e08ad3c4e7b09",
+      "sha512": "eba7c77ab5112bec4d268c8075238c3cc58ec15f9711371828d3b59df340dcd0dbe330103b79e4bd6c097b50c05372c4c7df740b2e0f66fbfa7fa28ce3bff90f",
+      "githubDigest": "sha256:768953bfc01a64f1ea0c776246c0033c39c7c29acd2aafcbd48e08ad3c4e7b09",
+      "sourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+      "integrityManifestSha256": "32a42418db6f1d18006f87df282056d6a1c2a3cb3089a10ce0a5ae78882d5966",
+      "minimumAppVersion": "3.7.8",
+      "keyId": "release-2026-09-recovery",
+      "authenticodeStatus": "not-signed",
+      "licenseVersion": "1.0",
+      "publishedAt": "2026-10-01T07:56:12.768Z"
+    },
+    "installed": null,
+    "rootSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+    "oldRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+    "candidateRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+    "candidateManifestSha256": "470fb5892cc407aaa07e1f7f104ce78be5c6f7a4ffd05f8e5d87adf568140973",
+    "integrityManifestSha256": "32a42418db6f1d18006f87df282056d6a1c2a3cb3089a10ce0a5ae78882d5966",
+    "crypto": "real Ed25519 verification over original bytes; no supplied keys",
+    "publicLatestFeedDiscoveryTested": false
+  },
+  "originalVersion": "3.7.9",
+  "oldNetworkCompatibility": {
+    "powerShell": "5.1.20348.5622",
+    "networkMutations": 0,
+    "queries": [
+      {
+        "index": 2,
+        "guid": "{6ACDC5F6-C96B-46C9-8F30-FCB50C621184}",
+        "name": "Ethernet 4",
+        "status": "Up",
+        "family": "IPv4",
+        "result": "failed",
+        "error": "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 2)) AND ((AddressFamily = 2)). Verify query parameters and retry.",
+        "errorId": "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+        "hresult": -2146233087,
+        "elapsedMilliseconds": 711.4896
+      },
+      {
+        "index": 2,
+        "guid": "{6ACDC5F6-C96B-46C9-8F30-FCB50C621184}",
+        "name": "Ethernet 4",
+        "status": "Up",
+        "family": "IPv6",
+        "result": "failed",
+        "error": "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 2)) AND ((AddressFamily = 23)). Verify query parameters and retry.",
+        "errorId": "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+        "hresult": -2146233087,
+        "elapsedMilliseconds": 6.878900000000001
+      },
+      {
+        "index": 11,
+        "guid": "{8B2CD6DF-1047-4769-9F13-FC1609ED91F7}",
+        "name": "vEthernet (nat)",
+        "status": "Up",
+        "family": "IPv4",
+        "result": "complete",
+        "records": 1,
+        "addresses": [],
+        "elapsedMilliseconds": 19.7486
+      },
+      {
+        "index": 11,
+        "guid": "{8B2CD6DF-1047-4769-9F13-FC1609ED91F7}",
+        "name": "vEthernet (nat)",
+        "status": "Up",
+        "family": "IPv6",
+        "result": "complete",
+        "records": 1,
+        "addresses": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ],
+        "elapsedMilliseconds": 11.4387
+      },
+      {
+        "index": 14,
+        "guid": "{4A43953B-29FE-44B4-92B1-4274D7D84F4F}",
+        "name": "Ethernet 3",
+        "status": "Up",
+        "family": "IPv4",
+        "result": "complete",
+        "records": 1,
+        "addresses": [
+          "168.63.129.16"
+        ],
+        "elapsedMilliseconds": 10.9551
+      },
+      {
+        "index": 14,
+        "guid": "{4A43953B-29FE-44B4-92B1-4274D7D84F4F}",
+        "name": "Ethernet 3",
+        "status": "Up",
+        "family": "IPv6",
+        "result": "complete",
+        "records": 1,
+        "addresses": [],
+        "elapsedMilliseconds": 13.321800000000001
+      }
+    ],
+    "kind": "read-only-legacy-dns-query-diagnostic"
+  },
+  "error": "Original installer network prerequisite failed: missing DNS client row or failed query; original bytes and adapter configuration were preserved.",
+  "installerDiagnostics": [
+    {
+      "name": "installer-upgrade-journal.jsonl",
+      "status": "missing"
+    },
+    {
+      "name": "core-service.log",
+      "status": "missing"
+    },
+    {
+      "name": "core-service.previous.log",
+      "status": "missing"
+    }
+  ],
+  "afterNetwork": {
+    "dns": [
+      {
+        "index": 1,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 1,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 11,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 11,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 2,
+        "servers": [
+          "168.63.129.16"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 23,
+        "servers": []
+      }
+    ],
+    "defaultRoutes": [
+      {
+        "index": 14,
+        "prefix": "0.0.0.0/0",
+        "nextHop": "10.1.0.1",
+        "metric": 0,
+        "protocol": "NetMgmt"
+      }
+    ],
+    "ipv6Bindings": [
+      {
+        "Name": "Ethernet 3",
+        "Enabled": true
+      },
+      {
+        "Name": "vEthernet (nat)",
+        "Enabled": true
+      }
+    ],
+    "userProxy": {
+      "ProxyEnable": 0,
+      "ProxyServer": null,
+      "ProxyOverride": null,
+      "AutoConfigURL": null
+    },
+    "winHttp": {
+      "WinHttpSettings": [
+        24,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "DefaultConnectionSettings": null
+    }
+  },
+  "afterServices": null,
+  "afterTasks": null,
+  "networkPreserved": true,
+  "finishedAtUtc": "2026-10-01T09:37:24.8165290+00:00"
+}

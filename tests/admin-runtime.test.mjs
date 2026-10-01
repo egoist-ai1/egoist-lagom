@@ -25,26 +25,27 @@ function loadManager({ helperExists = true, helperResponses = [] } = {}) {
     path,
     fs: { existsSync: candidate => helperExists && candidate === HELPER_PATH },
     process: { platform: 'win32', env: {} },
-    execFile: async (executable, args, options) => {
-      calls.push({ executable, args, options });
+    execFile: async () => { throw new Error('No custom executable should discover process privilege'); },
+    checkNativeExecutionPrivilege: async () => {
+      calls.push({ tokenCheck: true });
+      if (!helperExists) throw new Error('Protected token check unavailable');
       const response = helperResponses.shift();
       if (response instanceof Error) throw response;
-      return response ?? { stdout: JSON.stringify({ ok: true, isAdmin: true }) };
+      const result = JSON.parse(response?.stdout ?? '{"ok":true,"isAdmin":true}');
+      if (result.ok !== true) throw new Error('Token observation failed');
+      return result.isAdmin;
     },
     promisify: fn => fn,
   }, ['VpnRuntimeManager']);
   return { manager: new VpnRuntimeManager(RESOURCES_PATH, 'C:/user-data'), calls };
 }
 
-test('available native token checker prevents a net.exe failure from producing an administrator false negative', async () => {
+test('a validated process token check does not depend on net.exe session availability', async () => {
   const { manager, calls } = loadManager({ helperResponses: [{ stdout: '{"ok":true,"isAdmin":true}' }] });
 
   assert.equal(await manager.isAdmin(), true);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].executable, HELPER_PATH);
-  assert.equal(Array.from(calls[0].args).join(','), '--check-admin');
-  assert.equal(calls[0].options.timeout, 60_000);
-  assert.equal(calls[0].options.windowsHide, true);
+  assert.equal(calls[0].tokenCheck, true);
 });
 
 test('a validated ordinary-user result is cached', async () => {
@@ -58,10 +59,21 @@ test('a validated ordinary-user result is cached', async () => {
 test('a transient native checker failure fails closed without poisoning the admin cache', async () => {
   const { manager, calls } = loadManager({ helperResponses: [new Error('cold runtime timeout'), { stdout: '{"ok":true,"isAdmin":true}' }] });
 
-  assert.equal(await manager.isAdmin(), false);
+  await assert.rejects(manager.isAdmin(), /Не удалось подтвердить привилегии/);
   assert.equal(await manager.isAdmin(), true);
   assert.equal(calls.length, 2);
-  assert.equal(calls.every(call => call.executable === HELPER_PATH), true);
+  assert.equal(calls.every(call => call.tokenCheck === true), true);
+});
+test('an unavailable native checker remains unknown rather than declaring an ordinary user', async () => {
+  const { manager, calls } = loadManager({ helperExists: false });
+  await assert.rejects(manager.isAdmin(), /Не удалось подтвердить привилегии/);
+  assert.equal(manager.cachedIsAdmin, null);
+  assert.equal(calls.length, 1);
+});
+test('malformed token result never poisons the privilege cache', async () => {
+  const { manager } = loadManager({ helperResponses: [{ stdout: '{"ok":true,"isAdmin":"false"}' }] });
+  await assert.rejects(manager.isAdmin(), /Не удалось подтвердить привилегии/);
+  assert.equal(manager.cachedIsAdmin, null);
 });
 
 test('native admin CLI checks the current Windows token before service initialization', () => {

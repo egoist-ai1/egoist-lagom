@@ -1,0 +1,48 @@
+{
+  "nativeInstallationRuns": 0,
+  "sourceFiles": [
+    {
+      "sha256": "0BABF11CDFBD1B2C76F76A37EC7DDDBBB9E903A207A297641BA9659FB4D19A6F",
+      "file": "scripts/invoke-final-silent-reinstall.ps1"
+    },
+    {
+      "sha256": "7908F32FE9298E558C1B7E24622E2ACDDE81C8945BD5389DBFC5EEC502B8038C",
+      "file": "tests/installer-legacy-bootstrap.ps1"
+    }
+  ],
+  "liveScmDnsTunTaskRegistryWrites": 0,
+  "beforeCommit": "9bf77129ccc2aeac741bf109b8ab6c9368fac558",
+  "windowsPowerShell51Groups": 15,
+  "schemaVersion": 1,
+  "ps7Groups": 15,
+  "result": "before-red-after-pass",
+  "evidence": [
+    {
+      "file": "legacy-378-preference-before.txt",
+      "sha256": "0A53EAF31740A2C5107ED7DEA43E236E28A95102E7D0FD8D900EA24476FE9ECA",
+      "bytes": 1669
+    },
+    {
+      "file": "legacy-378-preference-ps7.txt",
+      "sha256": "0D23F4B22166DE941C5E6DD0B38DD4BB264FB3563AFA44D729EADEFEF480AC45",
+      "bytes": 239
+    },
+    {
+      "file": "legacy-378-preference-ps7.json",
+      "sha256": "FF823A79444266A84EAE2C62C3DD887046C5E64408E4A1EC7433CCC7021A1557",
+      "bytes": 1449
+    },
+    {
+      "file": "legacy-378-preference-ps51.txt",
+      "sha256": "AE24A277368F72CBC304CDC553525EB25B66979FE231684BAAB29FA70EA1B7A0",
+      "bytes": 239
+    },
+    {
+      "file": "legacy-378-preference-ps51.json",
+      "sha256": "D5800B827F55A2E6CED0D2CEE58395F5E514B3FF4061A926D330DF3D0C2D18B3",
+      "bytes": 1702
+    }
+  ],
+  "scope": "original3.7.8missingminimizedAfter preference schema with real own JSON files and unchanged production ACL policy",
+  "releaseReady": false
+}

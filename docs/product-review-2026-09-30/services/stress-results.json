@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-09-30T11:38:30.6836208+00:00",
+  "runtime": ".NET 10.0.12",
+  "elapsedSeconds": 31.3513229,
+  "realSystemMutations": false,
+  "notes": "Production C# classes, real own NTFS files/locks/pipes/process kills; OS DNS/SCM adapters never executed. Injected component executors and SCM callbacks are named in individual cases. This is bounded stress, not a months-long soak.",
+  "results": [
+    {
+      "name": "concurrent-intent-and-atomic-read",
+      "outcome": "observation-confirmed",
+      "elapsedMs": 7721.844,
+      "details": {
+        "writes": 420,
+        "reads": 2000,
+        "finalServices": 3,
+        "transientEmptyReads": 468,
+        "transientPartialReads": 0,
+        "finalUpdatesPreserved": true,
+        "orphanTemps": 0,
+        "observation": "Readers should retain all three seeded keys; any empty read is a default/missing read observation, not proof of final state loss."
+      }
+    },
+    {
+      "name": "recovery-status-during-atomic-replace",
+      "outcome": "observation-confirmed",
+      "elapsedMs": 3341.3309,
+      "details": {
+        "writes": 240,
+        "queries": 1600,
+        "falseNoRecoveryRequired": 103,
+        "nullActiveReads": 103,
+        "finalMarkerStillApplying": true,
+        "observation": "No test code deletes the active marker. Read-only production recovery.status reports false/no active marker if AtomicJsonFile.ReadAsync transiently returns default during NTFS replace."
+      }
+    },
+    {
+      "name": "native-lock-write-and-cancellation",
+      "outcome": "observation-confirmed",
+      "elapsedMs": 1190.8315,
+      "details": {
+        "nativeSharingDenialMs": 900.6394,
+        "cancellationCount": 30,
+        "lastGoodPreserved": true,
+        "orphanTemps": 0
+      }
+    },
+    {
+      "name": "native-crash-during-atomic-write",
+      "outcome": "observation-confirmed",
+      "elapsedMs": 994.8218,
+      "details": {
+        "ownedChildKills": 8,
+        "lastGoodPreserved": 8,
+        "orphanTemps": 8,
+        "orphanBytes": 0,
+        "observation": "Abrupt process exit bypasses AtomicJsonFile.finally; no orphan janitor exists in the reviewed startup path. This did not corrupt the target."
+      }
+    },
+    {
+      "name": "serialized-dispatch-and-cache-bound",
+      "outcome": "observation-confirmed",
+      "elapsedMs": 1689.9927,
+      "details": {
+        "mutationRequests": 192,
+        "uniqueMutations": 96,
+        "workerExecutions": 96,
+        "duplicateInFlightReplies": 96,
+        "peakConcurrentMutations": 1,
+        "queryCount": 4096,
+        "retainedCacheEntries": 851,
+        "retainedInflight": 0,
+        "seam": "Injected harmless executor; actual SCM/process engine actions are not tested by this case."
+      }
+    },
+    {
+      "name": "component-result-persistence-fault",
+      "outcome": "observation-confirmed",
+      "elapsedMs": 921.2469,
+      "details": {
+        "firstCallException": "IOException",
+        "firstCallDurationMs": 910.6243,
+        "firstExecutionCompleted": true,
+        "activeTransactionMissingAfterFailure": true,
+        "durableResponseMissingAfterFailure": true,
+        "sameRequestIdExecutions": 2,
+        "repeatedCallOk": true,
+        "severity": "P1 availability/correctness",
+        "seam": "Only the component side effect is an injected harmless file append. Dispatching, durable persistence, in-flight cleanup and FileShare.None failure are real production paths."
+      }
+    },
+    {
+      "name": "authentic-truncated-marker-startup",
+      "outcome": "observation-confirmed",
+      "elapsedMs": 283.1839,
+      "details": {
+        "authenticMarkerBytes": 823,
+        "preservedHeaderBytes": 203,
+        "truncatedBytes": 226,
+        "nativeAcl": {
+          "inheritanceProtected": true,
+          "currentUserOwner": true,
+          "systemAdminFull": true,
+          "usersReadExecute": true,
+          "note": "Native ACL on own root; current user owns the fixture and retains FullControl. Canonical ProgramData LocalSystem ownership/hardening is deliberately not impersonated."
+        },
+        "createAsyncSucceeded": true,
+        "runAsyncException": "JsonException",
+        "recoveryStatusPipeReachable": false,
+        "corruptBytesPreserved": true,
+        "severity": "P1 autonomous recovery/readiness",
+        "note": "The failure occurs after hardening/config construction in real ServiceEngine.RunAsync before PipeServer.RunAsync. This fixture never invokes DNS/SCM or canonical ProgramData hardening."
+      }
+    },
+    {
+      "name": "authentic-terminal-marker-startup",
+      "outcome": "observation-confirmed",
+      "elapsedMs": 58.8367,
+      "details": {
+        "nativeAcl": {
+          "inheritanceProtected": true,
+          "currentUserOwner": true,
+          "systemAdminFull": true,
+          "usersReadExecute": true,
+          "note": "Native ACL on own root; current user owns the fixture and retains FullControl. Canonical ProgramData LocalSystem ownership/hardening is deliberately not impersonated."
+        },
+        "realNamedPipeHello": true,
+        "terminalMarkerArchived": true,
+        "durableTerminalResponseRestored": true,
+        "scope": "Console dev-client identity only in the own pipe; production installed-client authorization is unchanged and not exercised."
+      }
+    },
+    {
+      "name": "intent-corruption-fail-closed",
+      "outcome": "observation-confirmed",
+      "elapsedMs": 24.8542,
+      "details": {
+        "checks": 30,
+        "rejectedChecks": 30,
+        "scmStatusCalls": 0,
+        "recoveryCalls": 0,
+        "observation": "Safe refusal; corrupted durable intent also prevents later DNS/bootstrap checks in the enclosing RunSupervisionAsync sequence until state is repaired."
+      }
+    },
+    {
+      "name": "journal-response-count-and-latency",
+      "outcome": "observation-confirmed",
+      "elapsedMs": 14964.6419,
+      "details": {
+        "writes": 600,
+        "retainedEntries": 512,
+        "firstEntryEvicted": true,
+        "fileBytes": 656339,
+        "first100MedianMs": 21.8887,
+        "last100MedianMs": 20.2298,
+        "p95Ms": 35.3612,
+        "observation": "Count is bounded, but serialized bytes are not bounded. Every durable response rewrites the whole retained store. Long-term same-id replay protection ends after eviction."
+      }
+    },
+    {
+      "name": "log-native-sharing-violation",
+      "outcome": "observation-confirmed",
+      "elapsedMs": 132.2167,
+      "details": {
+        "deniedWrites": 500,
+        "escapedFailures": 0,
+        "recoveredWrite": true,
+        "elapsedMs": 129.2031
+      }
+    }
+  ]
+}

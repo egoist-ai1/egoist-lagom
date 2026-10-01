@@ -1,0 +1,329 @@
+﻿2026-10-01T08:57:05.6348070Z Current runner version: '2.337.0'
+2026-10-01T08:57:05.6391740Z ##[group]Runner Image Provisioner
+2026-10-01T08:57:05.6392690Z Hosted Compute Agent
+2026-10-01T08:57:05.6393259Z Version: 20260901.588
+2026-10-01T08:57:05.6393840Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+2026-10-01T08:57:05.6394525Z Build Date: 2026-09-01T19:56:44Z
+2026-10-01T08:57:05.6395525Z Worker ID: {b668c5d9-b566-439a-9453-a6aaebb617b9}
+2026-10-01T08:57:05.6396440Z Azure Region: eastus
+2026-10-01T08:57:05.6397773Z ##[endgroup]
+2026-10-01T08:57:05.6399339Z ##[group]Operating System
+2026-10-01T08:57:05.6399982Z Microsoft Windows Server 2025
+2026-10-01T08:57:05.6401148Z 10.0.26100
+2026-10-01T08:57:05.6401699Z Datacenter
+2026-10-01T08:57:05.6402233Z ##[endgroup]
+2026-10-01T08:57:05.6402724Z ##[group]Runner Image
+2026-10-01T08:57:05.6403340Z Image: windows-2025-vs2026
+2026-10-01T08:57:05.6403893Z Version: 20260925.250.1
+2026-10-01T08:57:05.6405638Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260925.250/images/windows/Windows2025-VS2026-Readme.md
+2026-10-01T08:57:05.6407242Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260925.250
+2026-10-01T08:57:05.6409987Z ##[endgroup]
+2026-10-01T08:57:05.6411122Z ##[group]GITHUB_TOKEN Permissions
+2026-10-01T08:57:05.6413660Z Contents: write
+2026-10-01T08:57:05.6415305Z Metadata: read
+2026-10-01T08:57:05.6415888Z ##[endgroup]
+2026-10-01T08:57:05.6417994Z Secret source: Actions
+2026-10-01T08:57:05.6419264Z Cache mode: write
+2026-10-01T08:57:05.6419999Z Prepare workflow directory
+2026-10-01T08:57:05.6821817Z Prepare all required actions
+2026-10-01T08:57:05.6869706Z Getting action download info
+2026-10-01T08:57:05.8479979Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-01T08:57:05.9950613Z Download action repository 'actions/setup-dotnet@v6' (SHA:a98b56852c35b8e3190ac28c8c2271da59106c68)
+2026-10-01T08:57:06.2365438Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-10-01T08:57:06.4187660Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-01T08:57:06.7849650Z Complete job name: installer-diagnostics (3.7.8)
+2026-10-01T08:57:06.9547429Z ##[group]Run actions/checkout@v4
+2026-10-01T08:57:06.9548510Z with:
+2026-10-01T08:57:06.9548946Z   persist-credentials: false
+2026-10-01T08:57:06.9549498Z   repository: egoist-ai1/egoist-lagom
+2026-10-01T08:57:06.9554129Z   token: ***
+2026-10-01T08:57:06.9554546Z   ssh-strict: true
+2026-10-01T08:57:06.9554968Z   ssh-user: git
+2026-10-01T08:57:06.9555384Z   clean: true
+2026-10-01T08:57:06.9556088Z   sparse-checkout-cone-mode: true
+2026-10-01T08:57:06.9556648Z   fetch-depth: 1
+2026-10-01T08:57:06.9557068Z   fetch-tags: false
+2026-10-01T08:57:06.9557702Z   show-progress: true
+2026-10-01T08:57:06.9558173Z   lfs: false
+2026-10-01T08:57:06.9558587Z   submodules: false
+2026-10-01T08:57:06.9559029Z   set-safe-directory: true
+2026-10-01T08:57:06.9559582Z   allow-unsafe-pr-checkout: false
+2026-10-01T08:57:06.9560383Z ##[endgroup]
+2026-10-01T08:57:07.1369578Z Syncing repository: egoist-ai1/egoist-lagom
+2026-10-01T08:57:07.1371409Z ##[group]Getting Git version info
+2026-10-01T08:57:07.1372209Z Working directory is 'D:\a\egoist-lagom\egoist-lagom'
+2026-10-01T08:57:07.2447275Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-10-01T08:57:07.6549582Z git version 2.55.0.windows.5
+2026-10-01T08:57:07.6607075Z ##[endgroup]
+2026-10-01T08:57:07.6627996Z Temporarily overriding HOME='D:\a\_temp\46227f10-6dfc-45f2-983f-f69ebde7f859' before making global git config changes
+2026-10-01T08:57:07.6632954Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-01T08:57:07.6639735Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\egoist-lagom\egoist-lagom
+2026-10-01T08:57:07.7369929Z Deleting the contents of 'D:\a\egoist-lagom\egoist-lagom'
+2026-10-01T08:57:07.7376951Z ##[group]Initializing the repository
+2026-10-01T08:57:07.7385583Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\egoist-lagom\egoist-lagom
+2026-10-01T08:57:07.8268041Z Initialized empty Git repository in D:/a/egoist-lagom/egoist-lagom/.git/
+2026-10-01T08:57:07.8315276Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/egoist-ai1/egoist-lagom
+2026-10-01T08:57:07.8975652Z ##[endgroup]
+2026-10-01T08:57:07.8977755Z ##[group]Disabling automatic garbage collection
+2026-10-01T08:57:07.8988301Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-10-01T08:57:07.9303153Z ##[endgroup]
+2026-10-01T08:57:07.9305007Z ##[group]Setting up auth
+2026-10-01T08:57:07.9315170Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-01T08:57:07.9630419Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-01T08:57:09.5947537Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-01T08:57:09.6252033Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-01T08:57:10.2077042Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-01T08:57:10.2328755Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-01T08:57:10.7950843Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-10-01T08:57:10.8274626Z ##[endgroup]
+2026-10-01T08:57:10.8276304Z ##[group]Fetching the repository
+2026-10-01T08:57:10.8292824Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +5086586140306a7401ebe6d52e94211b2278633e:refs/remotes/origin/codex/lagom-production-audit
+2026-10-01T08:57:12.7582006Z From https://github.com/egoist-ai1/egoist-lagom
+2026-10-01T08:57:12.7583160Z  * [new ref]         5086586140306a7401ebe6d52e94211b2278633e -> origin/codex/lagom-production-audit
+2026-10-01T08:57:12.7626142Z ##[endgroup]
+2026-10-01T08:57:12.7627514Z ##[group]Determining the checkout info
+2026-10-01T08:57:12.7629200Z ##[endgroup]
+2026-10-01T08:57:12.7637716Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-10-01T08:57:12.8081349Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-10-01T08:57:12.8413652Z ##[group]Checking out the ref
+2026-10-01T08:57:12.8423621Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B codex/lagom-production-audit refs/remotes/origin/codex/lagom-production-audit
+2026-10-01T08:57:13.4986589Z Switched to a new branch 'codex/lagom-production-audit'
+2026-10-01T08:57:13.5063456Z branch 'codex/lagom-production-audit' set up to track 'origin/codex/lagom-production-audit'.
+2026-10-01T08:57:13.5141012Z ##[endgroup]
+2026-10-01T08:57:13.5563064Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-10-01T08:57:13.5829102Z 5086586140306a7401ebe6d52e94211b2278633e
+2026-10-01T08:57:13.5868618Z ##[group]Removing auth
+2026-10-01T08:57:13.5878260Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-01T08:57:13.6176398Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-01T08:57:14.1830403Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-01T08:57:14.2092694Z http.https://github.com/.extraheader
+2026-10-01T08:57:14.2137697Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-10-01T08:57:14.2447398Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-01T08:57:14.7819541Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-01T08:57:14.8123545Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-01T08:57:15.3482851Z ##[endgroup]
+2026-10-01T08:57:15.3886529Z ##[group]Run ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+2026-10-01T08:57:15.3887341Z [36;1m./tests/windows-production-acceptance.ps1 -Mode GuardOnly[0m
+2026-10-01T08:57:15.3888410Z [36;1mif ($env:DIAGNOSTIC_ALL_VERSIONS -eq 'true' -and ($env:DIAGNOSTIC_RELEASE_ID -eq '' -or $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true')) { throw 'Original version diagnostics require an authenticated signed candidate.' }[0m
+2026-10-01T08:57:15.3889743Z [36;1mif ($env:DIAGNOSTIC_RELEASE_ID -ne '' -and $env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { throw 'Choose either signed Setup or source Core diagnostics.' }[0m
+2026-10-01T08:57:15.4814484Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T08:57:15.4815000Z env:
+2026-10-01T08:57:15.4815299Z   DIAGNOSTIC_RELEASE_ID: 400757269
+2026-10-01T08:57:15.4815676Z   DIAGNOSTIC_ALL_VERSIONS: true
+2026-10-01T08:57:15.4815964Z   CORE_CONFIGURATION_DIAGNOSTIC: false
+2026-10-01T08:57:15.4816317Z ##[endgroup]
+2026-10-01T08:57:16.1047160Z Native host guards passed; no mutation performed.
+2026-10-01T08:57:16.1959104Z ##[group]Run actions/setup-node@v4
+2026-10-01T08:57:16.1959423Z with:
+2026-10-01T08:57:16.1959609Z   node-version: 24
+2026-10-01T08:57:16.1959805Z   always-auth: false
+2026-10-01T08:57:16.1960001Z   check-latest: false
+2026-10-01T08:57:16.1962646Z   token: ***
+2026-10-01T08:57:16.1962827Z ##[endgroup]
+2026-10-01T08:57:16.3722110Z Found in cache @ C:\hostedtoolcache\windows\node\24.21.0\x64
+2026-10-01T08:57:16.3729799Z (node:6588) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-01T08:57:16.3730967Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-01T08:57:16.3733714Z ##[group]Environment details
+2026-10-01T08:57:22.2331835Z node: v24.21.0
+2026-10-01T08:57:22.2332189Z npm: 11.19.0
+2026-10-01T08:57:22.2332470Z yarn: 1.22.22
+2026-10-01T08:57:22.2333067Z ##[endgroup]
+2026-10-01T08:57:22.2685426Z ##[group]Run npm ci --ignore-scripts --no-audit --fund=false --cache (Join-Path $env:RUNNER_TEMP 'lagom-diagnostic-npm-cache')
+2026-10-01T08:57:22.2686497Z [36;1mnpm ci --ignore-scripts --no-audit --fund=false --cache (Join-Path $env:RUNNER_TEMP 'lagom-diagnostic-npm-cache')[0m
+2026-10-01T08:57:22.2687109Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T08:57:22.2761269Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T08:57:22.2761750Z ##[endgroup]
+2026-10-01T08:57:27.3397611Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+2026-10-01T08:57:27.3955633Z npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+2026-10-01T08:57:27.5652824Z npm warn deprecated rcedit@5.0.2: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+2026-10-01T08:57:28.7122602Z 
+2026-10-01T08:57:28.7123188Z added 33 packages in 6s
+2026-10-01T08:57:30.2992834Z ##[group]Run ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+2026-10-01T08:57:30.2993956Z [36;1m./tests/windows-production-acceptance.ps1 -Mode GuardOnly[0m
+2026-10-01T08:57:30.2994991Z [36;1mif ($env:DIAGNOSTIC_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Invalid diagnostic release ID.' }[0m
+2026-10-01T08:57:30.2996286Z [36;1mif ($env:DIAGNOSTIC_VARIANT -cnotin @('candidate','3.7.8','3.7.9')) { throw 'Invalid diagnostic version selection.' }[0m
+2026-10-01T08:57:30.2997240Z [36;1m$head = (git rev-parse HEAD).Trim()[0m
+2026-10-01T08:57:30.2998276Z [36;1mif ($LASTEXITCODE -ne 0 -or $head -cne $env:GITHUB_SHA) { throw 'Diagnostic harness checkout differs from the actual workflow SHA.' }[0m
+2026-10-01T08:57:30.2999629Z [36;1m$text = gh api ("repos/egoist-ai1/egoist-lagom/releases/" + $env:DIAGNOSTIC_RELEASE_ID)[0m
+2026-10-01T08:57:30.3000478Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T08:57:30.3001081Z [36;1m$release = $text | ConvertFrom-Json[0m
+2026-10-01T08:57:30.3002214Z [36;1m$version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version[0m
+2026-10-01T08:57:30.3004211Z [36;1mif ([string]$release.id -cne $env:DIAGNOSTIC_RELEASE_ID -or -not $release.draft -or $release.tag_name -cne "v$version" -or $release.target_commitish -cnotmatch '^[a-f0-9]{40}$') { throw 'Diagnostic candidate must be an exact unpublished source-bound draft.' }[0m
+2026-10-01T08:57:30.3006480Z [36;1m$selectionText = gh release view "v$version" --repo 'egoist-ai1/egoist-lagom' --json databaseId,tagName,isDraft[0m
+2026-10-01T08:57:30.3007504Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T08:57:30.3008098Z [36;1m$selection = $selectionText | ConvertFrom-Json[0m
+2026-10-01T08:57:30.3009603Z [36;1mif ([string]$selection.databaseId -cne $env:DIAGNOSTIC_RELEASE_ID -or -not $selection.isDraft -or $selection.tagName -cne $release.tag_name) { throw 'Diagnostic tag resolves to different bytes.' }[0m
+2026-10-01T08:57:30.3011280Z [36;1m$assets = Join-Path $env:RUNNER_TEMP 'lagom-signed-diagnostic-assets'[0m
+2026-10-01T08:57:30.3012266Z [36;1mif (Test-Path -LiteralPath $assets) { throw 'Diagnostic asset directory must be fresh.' }[0m
+2026-10-01T08:57:30.3013215Z [36;1mNew-Item -ItemType Directory -Path $assets | Out-Null[0m
+2026-10-01T08:57:30.3015617Z [36;1mgh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $assets --pattern "EgoistShield-Setup-$version.exe" --pattern 'package-integrity.json' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'[0m
+2026-10-01T08:57:30.3017968Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T08:57:30.3018977Z [36;1m$integrity = Get-Content -LiteralPath (Join-Path $assets 'package-integrity.json') -Raw | ConvertFrom-Json[0m
+2026-10-01T08:57:30.3020479Z [36;1mif ($integrity.source.commit -cne $release.target_commitish) { throw 'Artifact source differs from the exact draft target.' }[0m
+2026-10-01T08:57:30.3022139Z [36;1m# These aliases are local verifier inputs copied from authenticated[0m
+2026-10-01T08:57:30.3023040Z [36;1m# bytes; they are never claimed to have been downloaded or published.[0m
+2026-10-01T08:57:30.3024346Z [36;1mCopy-Item -LiteralPath (Join-Path $assets "EgoistShield-Setup-$version.exe") -Destination (Join-Path $assets 'Egoist-Lagom-Setup.exe')[0m
+2026-10-01T08:57:30.3026055Z [36;1mCopy-Item -LiteralPath (Join-Path $assets 'release-manifest.json') -Destination (Join-Path $assets 'stable-channel.json')[0m
+2026-10-01T08:57:30.3027695Z [36;1mCopy-Item -LiteralPath (Join-Path $assets 'release-manifest.json.sig') -Destination (Join-Path $assets 'stable-channel.json.sig')[0m
+2026-10-01T08:57:30.3029745Z [36;1mCopy-Item -LiteralPath 'resources/release/root-public-key.pem' -Destination (Join-Path $assets 'root-public-key.pem')[0m
+2026-10-01T08:57:30.3033867Z [36;1m$manifest = Get-Content -LiteralPath (Join-Path $assets 'release-manifest.json') -Raw | ConvertFrom-Json[0m
+2026-10-01T08:57:30.3035760Z [36;1m[IO.File]::WriteAllText((Join-Path $assets "EgoistShield-Setup-$version.exe.sha256"), ($manifest.sha256 + "  EgoistShield-Setup-$version.exe`n"), [Text.UTF8Encoding]::new($false))[0m
+2026-10-01T08:57:30.3037872Z [36;1m[IO.File]::WriteAllText((Join-Path $assets 'Egoist-Lagom-Setup.exe.sha256'), ($manifest.sha256 + "  Egoist-Lagom-Setup.exe`n"), [Text.UTF8Encoding]::new($false))[0m
+2026-10-01T08:57:30.3039330Z [36;1mnode scripts/prepare-release-assets.mjs --dist $assets --verify-only true[0m
+2026-10-01T08:57:30.3040134Z [36;1mif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T08:57:30.3040917Z [36;1m"LAGOM_DIAGNOSTIC_ASSETS=$assets" >> $env:GITHUB_ENV[0m
+2026-10-01T08:57:30.3041601Z [36;1mif ($env:DIAGNOSTIC_VARIANT -cne 'candidate') {[0m
+2026-10-01T08:57:30.3042764Z [36;1m  $oldAssets = Join-Path $env:RUNNER_TEMP 'lagom-original-diagnostic-assets'[0m
+2026-10-01T08:57:30.3043857Z [36;1m  if (Test-Path -LiteralPath $oldAssets) { throw 'Original diagnostic assets must be fresh.' }[0m
+2026-10-01T08:57:30.3044716Z [36;1m  if ($env:DIAGNOSTIC_VARIANT -ceq '3.7.8') {[0m
+2026-10-01T08:57:30.3045994Z [36;1m    gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $assets --pattern 'legacy-local-EgoistShield-Setup-3.7.8.exe' --pattern 'legacy-local-3.7.8-release-manifest.json' --pattern 'legacy-local-3.7.8-release-manifest.json.sig'[0m
+2026-10-01T08:57:30.3047090Z [36;1m    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T08:57:30.3047884Z [36;1m    node tests/windows-legacy-local-transport.mjs stage --sidecars $assets --candidate-registry $assets --old-assets $oldAssets --source-release-id $env:DIAGNOSTIC_RELEASE_ID[0m
+2026-10-01T08:57:30.3048687Z [36;1m    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T08:57:30.3048988Z [36;1m  } else {[0m
+2026-10-01T08:57:30.3049348Z [36;1m    $oldReleaseText = gh api 'repos/egoist-ai1/egoist-lagom/releases/tags/v3.7.9'[0m
+2026-10-01T08:57:30.3049805Z [36;1m    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T08:57:30.3050157Z [36;1m    $oldRelease = $oldReleaseText | ConvertFrom-Json[0m
+2026-10-01T08:57:30.3050883Z [36;1m    if ($oldRelease.tag_name -cne 'v3.7.9' -or $oldRelease.draft -or -not $oldRelease.published_at) { throw 'Original diagnostic 3.7.9 must be the published release.' }[0m
+2026-10-01T08:57:30.3051635Z [36;1m    New-Item -ItemType Directory -Path $oldAssets | Out-Null[0m
+2026-10-01T08:57:30.3052806Z [36;1m    gh release download 'v3.7.9' --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern 'EgoistShield-Setup-3.7.9.exe' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'[0m
+2026-10-01T08:57:30.3053921Z [36;1m    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }[0m
+2026-10-01T08:57:30.3054201Z [36;1m  }[0m
+2026-10-01T08:57:30.3054461Z [36;1m  "LAGOM_DIAGNOSTIC_OLD_ASSETS=$oldAssets" >> $env:GITHUB_ENV[0m
+2026-10-01T08:57:30.3054914Z [36;1m  "LAGOM_DIAGNOSTIC_OLD_VERSION=$env:DIAGNOSTIC_VARIANT" >> $env:GITHUB_ENV[0m
+2026-10-01T08:57:30.3055273Z [36;1m}[0m
+2026-10-01T08:57:30.3124891Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T08:57:30.3125233Z env:
+2026-10-01T08:57:30.3127880Z   GH_TOKEN: ***
+2026-10-01T08:57:30.3128083Z   DIAGNOSTIC_RELEASE_ID: 400757269
+2026-10-01T08:57:30.3128320Z   DIAGNOSTIC_VARIANT: 3.7.8
+2026-10-01T08:57:30.3128526Z ##[endgroup]
+2026-10-01T08:57:30.8730647Z Native host guards passed; no mutation performed.
+2026-10-01T08:57:39.5252382Z {"version":"3.8.0","tag":"v3.8.0","keyId":"release-2026-09-recovery","sha256":"768953bfc01a64f1ea0c776246c0033c39c7c29acd2aafcbd48e08ad3c4e7b09","size":277408236}
+2026-10-01T08:57:41.9516120Z {
+2026-10-01T08:57:41.9516531Z   "ok": true,
+2026-10-01T08:57:41.9516877Z   "schemaVersion": 1,
+2026-10-01T08:57:41.9518243Z   "transport": "original-signed-local-generation",
+2026-10-01T08:57:41.9518636Z   "oldVersion": "3.7.8",
+2026-10-01T08:57:41.9518913Z   "publishedOriginVerified": false,
+2026-10-01T08:57:41.9519218Z   "sourceReleaseId": 400757269,
+2026-10-01T08:57:41.9519513Z   "sourceReleaseIdRole": "transport-draft",
+2026-10-01T08:57:41.9519869Z   "draftApiStatusVerifiedByTransporter": false,
+2026-10-01T08:57:41.9520297Z   "harnessSourceCommit": "5086586140306a7401ebe6d52e94211b2278633e",
+2026-10-01T08:57:41.9520869Z   "harnessSourceCommitOrigin": "GITHUB_SHA observed at staging; not a legacy generation commit",
+2026-10-01T08:57:41.9521358Z   "stagedAtUtc": "2026-10-01T08:57:41.947Z",
+2026-10-01T08:57:41.9521615Z   "sourceAssetNames": [
+2026-10-01T08:57:41.9521899Z     "legacy-local-EgoistShield-Setup-3.7.8.exe",
+2026-10-01T08:57:41.9522262Z     "legacy-local-3.7.8-release-manifest.json",
+2026-10-01T08:57:41.9522616Z     "legacy-local-3.7.8-release-manifest.json.sig"
+2026-10-01T08:57:41.9522892Z   ],
+2026-10-01T08:57:41.9523265Z   "rootSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+2026-10-01T08:57:41.9523907Z   "originalRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+2026-10-01T08:57:41.9524586Z   "originalManifestSha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3",
+2026-10-01T08:57:41.9525889Z   "crypto": "Original byte equality and existing pinned-root Ed25519 verification",
+2026-10-01T08:57:41.9526290Z   "files": [
+2026-10-01T08:57:41.9526463Z     {
+2026-10-01T08:57:41.9526696Z       "name": "EgoistShield-Setup-3.7.8.exe",
+2026-10-01T08:57:41.9527019Z       "bytes": 194405835,
+2026-10-01T08:57:41.9527427Z       "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+2026-10-01T08:57:41.9528264Z       "sha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61"
+2026-10-01T08:57:41.9528896Z     },
+2026-10-01T08:57:41.9529069Z     {
+2026-10-01T08:57:41.9529269Z       "name": "release-manifest.json",
+2026-10-01T08:57:41.9529513Z       "bytes": 785,
+2026-10-01T08:57:41.9530065Z       "sha256": "06ed4b49b2375936acfd0805f0cc0008f5ad0caf63400a743311a9928dfab9a3",
+2026-10-01T08:57:41.9531094Z       "sha512": "e641d56a223bcacf6d3c5ead4154320b43c39cbc4730531e45bb615c23659597d057a644214d84844c5699e751de5f3bd187caa82d576cf5d71c9c7f02864d3f"
+2026-10-01T08:57:41.9531775Z     },
+2026-10-01T08:57:41.9531935Z     {
+2026-10-01T08:57:41.9532151Z       "name": "release-manifest.json.sig",
+2026-10-01T08:57:41.9532416Z       "bytes": 89,
+2026-10-01T08:57:41.9532760Z       "sha256": "c6b36d487342ab878e3428e1487a6e60e4599740574c22c090445f0b96eecb37",
+2026-10-01T08:57:41.9533609Z       "sha512": "341367541cb4a1bb5edec728cfa16ca239eaea52a4fcdc1de60b2118cfc5b4d81345a102011d1f61b1b2748bbba3be709e94e90a7e7882eb96ad9ce4b950fee5"
+2026-10-01T08:57:41.9534328Z     },
+2026-10-01T08:57:41.9534489Z     {
+2026-10-01T08:57:41.9534714Z       "name": "release-key-registry.json",
+2026-10-01T08:57:41.9534986Z       "bytes": 1100,
+2026-10-01T08:57:41.9535352Z       "sha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+2026-10-01T08:57:41.9536183Z       "sha512": "bded048a60b337c800daa8006d0613d42489612d939117b5852d10df6dc8f475f46d5060b55eec89d5769845c41f9c40ff29b755b9b1f3750b361d10a44dba3b"
+2026-10-01T08:57:41.9536799Z     },
+2026-10-01T08:57:41.9536952Z     {
+2026-10-01T08:57:41.9537170Z       "name": "release-key-registry.json.sig",
+2026-10-01T08:57:41.9537440Z       "bytes": 89,
+2026-10-01T08:57:41.9537791Z       "sha256": "651104184902338cd00dcc38baff0dadc718946c26e1326e204cdd6eaaa5a6de",
+2026-10-01T08:57:41.9538637Z       "sha512": "b14a4e0a0984b9aa9c7ace9c6d8b38b7b88f79d47ff0a717d9bad9d7b5a288065cac84b1373c850b1e82d83ee1f7c373c8cdeba90d9ff9f6d5b60945cba0aff1"
+2026-10-01T08:57:41.9539502Z     }
+2026-10-01T08:57:41.9539659Z   ],
+2026-10-01T08:57:41.9539842Z   "installerExecuted": false,
+2026-10-01T08:57:41.9540198Z   "publicFeedDiscoveryTested": false
+2026-10-01T08:57:41.9540458Z }
+2026-10-01T08:57:42.0387010Z ##[group]Run if ($env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -CoreConfigurationOnly }
+2026-10-01T08:57:42.0388044Z [36;1mif ($env:CORE_CONFIGURATION_DIAGNOSTIC -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -CoreConfigurationOnly }[0m
+2026-10-01T08:57:42.0389522Z [36;1melseif ($env:LAGOM_DIAGNOSTIC_OLD_ASSETS) { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS -OriginalAssetsDirectory $env:LAGOM_DIAGNOSTIC_OLD_ASSETS -OriginalVersion $env:LAGOM_DIAGNOSTIC_OLD_VERSION -GuiFailureDiagnostic }[0m
+2026-10-01T08:57:42.0391340Z [36;1melseif ($env:LAGOM_DIAGNOSTIC_ASSETS -and $env:DIAGNOSTIC_ALL_VERSIONS -eq 'true') { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS -GuiFailureDiagnostic }[0m
+2026-10-01T08:57:42.0392680Z [36;1melseif ($env:LAGOM_DIAGNOSTIC_ASSETS) { ./tests/windows-installer-diagnostics.ps1 -SignedCandidateAssetsDirectory $env:LAGOM_DIAGNOSTIC_ASSETS }[0m
+2026-10-01T08:57:42.0393417Z [36;1melse { ./tests/windows-installer-diagnostics.ps1 }[0m
+2026-10-01T08:57:42.0462786Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-01T08:57:42.0463136Z env:
+2026-10-01T08:57:42.0463434Z   LAGOM_DIAGNOSTIC_ASSETS: D:\a\_temp\lagom-signed-diagnostic-assets
+2026-10-01T08:57:42.0463950Z   LAGOM_DIAGNOSTIC_OLD_ASSETS: D:\a\_temp\lagom-original-diagnostic-assets
+2026-10-01T08:57:42.0464345Z   LAGOM_DIAGNOSTIC_OLD_VERSION: 3.7.8
+2026-10-01T08:57:42.0464613Z   CORE_CONFIGURATION_DIAGNOSTIC: false
+2026-10-01T08:57:42.0464867Z   DIAGNOSTIC_ALL_VERSIONS: true
+2026-10-01T08:57:42.0465102Z ##[endgroup]
+2026-10-01T08:57:42.5857891Z Native host guards passed; no mutation performed.
+2026-10-01T08:58:02.9774661Z {"phase":"PreInstall","installRoot":"C:\\Program Files\\EgoistShield","command":"takeown.exe","output":"SUCCESS: The file (or folder): \"C:\\ProgramData\\EgoistShield\\installer\" now owned by the administrators group.","timestamp":"2026-10-01T08:57:57.7690292+00:00","exitCode":0,"stage":"installer-state-root-takeown"}
+2026-10-01T08:58:02.9778371Z {"phase":"PreInstall","installRoot":"C:\\Program Files\\EgoistShield","command":"takeown.exe","output":"SUCCESS: The file (or folder): \"C:\\ProgramData\\EgoistShield\\installer\\upgrade-journal.json\" now owned by the administrators group.","timestamp":"2026-10-01T08:57:58.7984572+00:00","exitCode":0,"stage":"installer-state-child-takeown"}
+2026-10-01T08:58:02.9780975Z {"phase":"PreInstall","installRoot":"C:\\Program Files\\EgoistShield","timestamp":"2026-10-01T08:57:59.3925480+00:00","services":0,"stage":"service-registrations-backed-up"}
+2026-10-01T08:58:02.9783488Z {"phase":"RollbackUpgrade","installRoot":"C:\\Program Files\\EgoistShield","command":"takeown.exe","output":"SUCCESS: The file (or folder): \"C:\\ProgramData\\EgoistShield\\installer\" now owned by the administrators group.","timestamp":"2026-10-01T08:58:01.9491904+00:00","exitCode":0,"stage":"installer-state-root-takeown"}
+2026-10-01T08:58:02.9786485Z {"phase":"RollbackUpgrade","installRoot":"C:\\Program Files\\EgoistShield","command":"takeown.exe","output":"SUCCESS: The file (or folder): \"C:\\ProgramData\\EgoistShield\\installer\\service-backup\" now owned by the administrators group. SUCCESS: The file (or folder): \"C:\\ProgramData\\EgoistShield\\installer\\service-backup\\manifest.json\" now owned by the administrators group.","timestamp":"2026-10-01T08:58:02.0267176+00:00","exitCode":0,"stage":"installer-state-child-takeown"}
+2026-10-01T08:58:02.9789441Z {"phase":"RollbackUpgrade","installRoot":"C:\\Program Files\\EgoistShield","command":"takeown.exe","output":"SUCCESS: The file (or folder): \"C:\\ProgramData\\EgoistShield\\installer\\upgrade-journal.json\" now owned by the administrators group.","timestamp":"2026-10-01T08:58:02.0570087+00:00","exitCode":0,"stage":"installer-state-child-takeown"}
+2026-10-01T08:58:02.9798674Z {"phase":"RollbackUpgrade","installRoot":"C:\\Program Files\\EgoistShield","timestamp":"2026-10-01T08:58:02.0842841+00:00","directories":0,"stage":"optional-runtime-restored"}
+2026-10-01T08:58:02.9801785Z {"phase":"RollbackUpgrade","installRoot":"C:\\Program Files\\EgoistShield","timestamp":"2026-10-01T08:58:02.1278173+00:00","services":0,"stage":"service-registrations-restored"}
+2026-10-01T08:58:03.0705940Z [31;1mException: [0mD:\a\egoist-lagom\egoist-lagom\tests\windows-production-acceptance.ps1:194[0m
+2026-10-01T08:58:03.0706980Z [31;1m[0m[36;1mLine |[0m
+2026-10-01T08:58:03.0708563Z [31;1m[0m[36;1m[36;1m 194 | [0m … Code -ne 0){[36;1mthrow "Native child failed ($($child.ExitCode)): $Label; [0m …[0m
+2026-10-01T08:58:03.0709930Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+2026-10-01T08:58:03.0711019Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mNative child failed (41): signed-diagnostic-clean-install; see owned stdout/stderr.[0m
+2026-10-01T08:58:03.0974753Z ##[error]Process completed with exit code 1.
+2026-10-01T08:58:03.1195858Z ##[group]Run actions/upload-artifact@v4
+2026-10-01T08:58:03.1196206Z with:
+2026-10-01T08:58:03.1196582Z   name: lagom-installer-diagnostics-5086586140306a7401ebe6d52e94211b2278633e-3.7.8
+2026-10-01T08:58:03.1197021Z   retention-days: 7
+2026-10-01T08:58:03.1197230Z   if-no-files-found: error
+2026-10-01T08:58:03.1197498Z   path: D:\a\_temp/lagom-installer-diagnostics
+2026-10-01T08:58:03.1197794Z   compression-level: 6
+2026-10-01T08:58:03.1198002Z   overwrite: false
+2026-10-01T08:58:03.1198211Z   include-hidden-files: false
+2026-10-01T08:58:03.1198425Z env:
+2026-10-01T08:58:03.1198717Z   LAGOM_DIAGNOSTIC_ASSETS: D:\a\_temp\lagom-signed-diagnostic-assets
+2026-10-01T08:58:03.1199189Z   LAGOM_DIAGNOSTIC_OLD_ASSETS: D:\a\_temp\lagom-original-diagnostic-assets
+2026-10-01T08:58:03.1199577Z   LAGOM_DIAGNOSTIC_OLD_VERSION: 3.7.8
+2026-10-01T08:58:03.1199821Z ##[endgroup]
+2026-10-01T08:58:03.3103025Z (node:1280) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-01T08:58:03.3104407Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-01T08:58:03.3198377Z With the provided path, there will be 9 files uploaded
+2026-10-01T08:58:03.3203594Z Artifact name is valid!
+2026-10-01T08:58:03.3205843Z Root directory input is valid!
+2026-10-01T08:58:03.5464266Z Beginning upload of artifact content to blob storage
+2026-10-01T08:58:03.5874502Z (node:1280) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-01T08:58:03.6281218Z Uploaded bytes 5352
+2026-10-01T08:58:03.6802801Z Finished uploading artifact content to blob storage!
+2026-10-01T08:58:03.6804417Z SHA256 digest of uploaded artifact zip is 55367eb5f93168e57582f44494672fc08356d7d6aa8ef13e03de291179630f52
+2026-10-01T08:58:03.6806419Z Finalizing artifact upload
+2026-10-01T08:58:03.8848729Z Artifact lagom-installer-diagnostics-5086586140306a7401ebe6d52e94211b2278633e-3.7.8.zip successfully finalized. Artifact ID 11151040728
+2026-10-01T08:58:03.8850615Z Artifact lagom-installer-diagnostics-5086586140306a7401ebe6d52e94211b2278633e-3.7.8 has been successfully uploaded! Final size is 5352 bytes. Artifact ID is 11151040728
+2026-10-01T08:58:03.8860660Z Artifact download URL: https://github.com/egoist-ai1/egoist-lagom/actions/runs/36839550966/artifacts/11151040728
+2026-10-01T08:58:03.9194340Z Post job cleanup.
+2026-10-01T08:58:04.1168941Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-10-01T08:58:04.1461037Z git version 2.55.0.windows.5
+2026-10-01T08:58:04.1535771Z Temporarily overriding HOME='D:\a\_temp\cf00f4f7-01ff-4377-94dd-7d6f93ce548f' before making global git config changes
+2026-10-01T08:58:04.1537241Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-01T08:58:04.1546647Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\egoist-lagom\egoist-lagom
+2026-10-01T08:58:04.1850756Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-01T08:58:04.2146947Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-01T08:58:04.7666666Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-01T08:58:04.7958698Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-01T08:58:05.3447597Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-01T08:58:05.3769747Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-01T08:58:05.9212875Z Cleaning up orphan processes
+2026-10-01T08:58:05.9505855Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

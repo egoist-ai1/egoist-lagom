@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-30T19:40:41.727Z",
+  "expectedBaselineCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "scope": "Actual schema/candidate URL validation functions with synthetic public metadata. No signatures generated, remote request, executable or service launched.",
+  "cases": [
+    {
+      "kind": "canonical",
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+      "expected": true,
+      "manifestAccepted": true,
+      "launchAccepted": true
+    },
+    {
+      "kind": "unexpected-port",
+      "url": "https://github.com:8443/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+      "expected": false,
+      "manifestAccepted": true,
+      "launchAccepted": true
+    },
+    {
+      "kind": "inert-url-credentials",
+      "url": "https://fixture-user:inert-password@github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+      "expected": false,
+      "manifestAccepted": true,
+      "launchAccepted": true
+    },
+    {
+      "kind": "plain-http",
+      "url": "http://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+      "expected": false,
+      "manifestAccepted": false,
+      "launchAccepted": false
+    },
+    {
+      "kind": "wrong-host",
+      "url": "https://audit.invalid/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+      "expected": false,
+      "manifestAccepted": false,
+      "launchAccepted": false
+    },
+    {
+      "kind": "query",
+      "url": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe?inert=1",
+      "expected": false,
+      "manifestAccepted": false,
+      "launchAccepted": false
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "src/recovered/electron/ipc/release-trust.js",
+      "sha256": "213e71798e93eb9c27bbc8d80e6016d09765a753d791a5197137f89700080d43"
+    },
+    {
+      "path": "src/recovered/electron/ipc/desktop-updater.js",
+      "sha256": "72523aef188e2a8210d5a597980c19cf74ea74feeda55297a6cbd078f1ac7af3"
+    }
+  ],
+  "limitation": "A signed stable manifest or trusted producer error is required to reach this URL. This reproduction does not bypass Ed25519 or prove SSRF from an untrusted renderer."
+}

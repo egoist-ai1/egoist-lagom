@@ -21,15 +21,17 @@ function telegramFixture(ownership = foreignListener) {
         const createdAt = '2026-09-29T12:00:00.000Z';
         const ownerCreatedAt = '2026-09-29T12:00:02.000Z';
         return { stdout: JSON.stringify({
-          schemaVersion: 1, operation: 'telegram-listener-snapshot', serviceName: 'EgoistShieldTelegramProxy',
+          schemaVersion: 2, operation: 'telegram-listener-snapshot', serviceName: 'EgoistShieldTelegramProxy',
           port: Number(_args[2]), snapshotAvailable: true, stable: true, serviceState: 'Running',
-          serviceProcessId: 100, rootProcessPathVerified: true,
-          ipv4: { ...ownership, state: ownership.state === 'none' ? 'missing' : ownership.state, ownerCreatedAt },
+          serviceProcessId: 100, rootProcessPathVerified: true, rootProcessCreatedAt: createdAt,
+          ipv4: { ...ownership, state: ownership.state === 'none' ? 'missing' : ownership.state, ownerCreatedAt,
+            rootPid: ownership.state === 'owned' ? 100 : null, rootCreatedAt: ownership.state === 'owned' ? createdAt : null },
           ipv6: { state: 'missing', ownerPid: null },
-          snapshot: { processes: [
-            { processId: 100, createdAt, executablePath: 'C:\\Lagom\\Telegram\\service-wrapper\\egoistshield-telegram-proxy-service.exe' },
-            { processId: ownership.ownerPid, createdAt: ownerCreatedAt },
-          ], listeners: [] },
+          snapshot: { serviceProcessId: 100, serviceState: 'Running', stable: true, processes: [
+            { processId: 100, parentProcessId: 1, createdAt, executablePath: 'C:\\Lagom\\Telegram\\service-wrapper\\egoistshield-telegram-proxy-service.exe' },
+            ...(ownership.ownerPid == null ? [] : [{ processId: ownership.ownerPid, parentProcessId: ownership.state === 'owned' ? 100 : 0,
+              createdAt: ownerCreatedAt, executablePath: ownership.state === 'owned' ? 'C:\\Lagom\\Telegram\\runtime\\egoistshield-tg-ws-proxy.exe' : 'C:\\Relay\\egoist-tg-proxy.exe' }]),
+          ], listeners: ownership.ownerPid == null ? [] : [{ localAddress: '127.0.0.1', localPort: Number(_args[2]), owningProcess: ownership.ownerPid }] },
         }) };
       }
       return { stdout: JSON.stringify(ownership) };

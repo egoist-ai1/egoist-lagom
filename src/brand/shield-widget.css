@@ -1,9 +1,9 @@
-@font-face{font-family:'Unbounded';font-style:normal;font-display:swap;font-weight:200 900;src:url('./fonts/unbounded-cyrillic-ext.woff2') format('woff2');unicode-range:U+0460-052F,U+1C80-1C88,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}
-@font-face{font-family:'Unbounded';font-style:normal;font-display:swap;font-weight:200 900;src:url('./fonts/unbounded-cyrillic.woff2') format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
-@font-face{font-family:'Unbounded';font-style:normal;font-display:swap;font-weight:200 900;src:url('./fonts/unbounded-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 html:has(.shield-widget-window),body:has(.shield-widget-window){background:#0a0a0a;overflow:hidden!important;margin:0;padding:0;height:100%;max-height:100vh}
 .shield-widget-window{width:100%;height:100%;max-height:100vh;min-height:0;overflow:hidden!important;background:#0a0a0a;color:#f4f4f5;user-select:none;scrollbar-width:none;-ms-overflow-style:none}
-html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-window)::-webkit-scrollbar,.shield-widget-window::-webkit-scrollbar,.shield-widget-container::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-window)::-webkit-scrollbar,.shield-widget-window::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+.shield-widget-container::-webkit-scrollbar{width:4px}
+.shield-widget-container::-webkit-scrollbar-thumb{background:var(--control-line);border-radius:3px}
+.shield-widget-container::-webkit-scrollbar-track{background:transparent}
 
 .shield-widget-container{
   --shield-line:rgba(255,255,255,0.1);
@@ -13,14 +13,17 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
   flex-direction:column;
   height:100%;
   min-height:100%;
-  max-height:100vh;
+  max-height:none;
   box-sizing:border-box;
   padding:8px 16px 6px;
   border:none;
   background:#0a0a0a;
-  font-family:'Unbounded',-apple-system,BlinkMacSystemFont,sans-serif !important;
+  font-family:var(--font-display);
   -webkit-font-smoothing:antialiased;
-  overflow:hidden!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  scrollbar-width:thin;
+  scrollbar-gutter:stable;
 }
 
 .shield-widget-header{
@@ -81,8 +84,8 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
 
 .shield-widget-hero{
   display:flex;
-  flex:1;
-  min-height:0;
+  flex:1 0 auto;
+  min-height:min-content;
   flex-direction:column;
   align-items:center;
   justify-content:center;
@@ -120,14 +123,14 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
 .shield-widget-emblem{
   display:grid;
   place-items:center;
-  width:126px;
-  height:134px;
+  width:106px;
+  height:114px;
   flex:none;
   margin:0 auto;
 }
 .shield-widget-symbol{
-  width:116px;
-  height:124px;
+  width:96px;
+  height:104px;
   overflow:visible;
   transition:filter 0.4s, color 0.4s;
 }
@@ -156,7 +159,7 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
 .shield-power{
   stroke:#ffffff;
   opacity:0.95;
-  transition:stroke 0.3s, opacity 0.3s;
+  transition:stroke var(--motion-feedback), opacity var(--motion-feedback);
 }
 .shield-connected-check{
   opacity:0;
@@ -167,13 +170,13 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
 }
 
 /* Hover effects */
-.shield-interactive-trigger:hover .shield-base-fill{
+.shield-interactive-trigger:is(:hover,:focus-visible) .shield-base-fill{
   fill:#27272a;
 }
-.shield-interactive-trigger:hover .shield-outer-border{
+.shield-interactive-trigger:is(:hover,:focus-visible) .shield-outer-border{
   stroke:#ffffff;
 }
-.shield-interactive-trigger:hover .shield-power{
+.shield-interactive-trigger:is(:hover,:focus-visible) .shield-power{
   stroke:#ffffff;
   opacity:1;
 }
@@ -215,13 +218,14 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
   visibility:visible;
   stroke-dashoffset:0;
 }
-[data-phase='connected'] .shield-interactive-trigger:hover .shield-power{
+[data-phase='connected'] .shield-interactive-trigger:is(:hover,:focus-visible) .shield-power{
   opacity:1;
   visibility:visible;
 }
-[data-phase='connected'] .shield-interactive-trigger:hover .shield-connected-check{
+[data-phase='connected'] .shield-interactive-trigger:is(:hover,:focus-visible) .shield-connected-check{
   opacity:0;
   visibility:hidden;
+  transition:none;
 }
 [data-phase='connected'] .shield-travel-edge{
   opacity:0;
@@ -339,13 +343,14 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
   border-radius:8px;
   padding:6px 10px;
   margin-bottom:4px;
-  font-size:10px;
+  font-family:var(--font-sans);
+  font-size:12px;
   line-height:1.35;
   color:#d4d4d8;
   user-select:text;
   flex:none;
-  max-height:92px;
-  overflow:auto;
+  max-height:none;
+  overflow:visible;
 }
 .shield-widget-error summary{
   min-height:24px;
@@ -366,8 +371,8 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
 
 /* Footer Controls */
 .shield-widget-footer{
-  height:36px;
-  min-height:36px;
+  height:auto;
+  min-height:54px;
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -387,11 +392,19 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
   gap:7px;
 }
 .shield-switch-group>span{
-  font-size:11.5px;
+  font-size:12px;
   font-weight:800;
   letter-spacing:0.4px;
   color:#ffffff;
 }
+.shield-switch-group>span>small{display:block;color:var(--muted);font-family:var(--font-sans);font-size:11px;line-height:1.4;font-weight:500;letter-spacing:0}
+.shield-operation-scope{margin:6px 0 0;font-family:var(--font-sans);font-size:11px;color:var(--muted);line-height:1.4;text-align:center;overflow-wrap:anywhere}
+.shield-on-connect-preferences{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 12px;flex:none;min-width:0;margin:8px 0 0;padding:8px 0 6px;border:0;border-top:1px solid var(--line);font-family:var(--font-sans)}
+.shield-on-connect-preferences legend{padding:0 6px;color:var(--muted);font-size:11px;line-height:1.5;text-align:center}
+.shield-on-connect-preferences label{display:flex;align-items:center;gap:5px;min-height:26px;font-size:12px;line-height:1.5;color:var(--ink);cursor:pointer}
+.shield-on-connect-preferences input{accent-color:var(--action);width:15px;height:15px;margin:0}
+.shield-on-connect-preferences input:focus-visible{outline:2px solid var(--focus-ring);outline-offset:3px}
+.shield-on-connect-preferences:disabled{opacity:.7}
 
 .shield-switch-toggle{
   position:relative;
@@ -506,7 +519,7 @@ html:has(.shield-widget-window)::-webkit-scrollbar,body:has(.shield-widget-windo
 [data-error='true'] .shield-widget-emblem{width:88px;height:94px}
 [data-error='true'] .shield-widget-symbol{width:80px;height:86px}
 @media(max-height:250px){
-  .shield-widget-container{height:auto;min-height:100%;overflow-y:auto!important}
+  .shield-widget-container{height:100%;min-height:0;overflow-y:auto!important}
   .shield-widget-hero{flex:none;min-height:114px;padding:4px 0}
   .shield-widget-emblem{width:66px;height:70px}
   .shield-widget-symbol{width:60px;height:64px}

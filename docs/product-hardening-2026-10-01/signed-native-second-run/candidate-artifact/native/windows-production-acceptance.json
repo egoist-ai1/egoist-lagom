@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "kind": "actual-native-hosted-windows-acceptance",
+  "sourceCommit": "3dae559124015b74dfeaabb12e46621cfd6d4cdc",
+  "candidateVersion": "3.8.0",
+  "installer": {
+    "path": "D:\\a\\egoist-lagom\\egoist-lagom\\dist\\october-3dae55912401\\EgoistShield-Setup-3.8.0.exe",
+    "sha256": "5D3BCAA41B39BA7C123E5D683F483F8796FE6652A23B525628278DBC673F14B8",
+    "bytes": 277426678
+  },
+  "host": {
+    "computerName": "runnervmfi6oq",
+    "os": "Microsoft Windows NT 10.0.26100.0",
+    "powershell": "7.6.6",
+    "administrator": true,
+    "runnerEnvironment": "github-hosted",
+    "githubRunId": "36811362434",
+    "githubRunAttempt": "1"
+  },
+  "startedAtUtc": "2026-10-01T03:45:46.2133348+00:00",
+  "result": "failed",
+  "cleanStartVerified": true,
+  "mutations": [
+    {
+      "atUtc": "2026-10-01T03:45:47.8903851+00:00",
+      "kind": "setup-clean-install",
+      "target": "C:\\Program Files\\EgoistShield",
+      "purpose": "Actual generated candidate silent installation."
+    }
+  ],
+  "checks": [],
+  "gui": [],
+  "networkReadbacks": [],
+  "privateStateReadbacks": [],
+  "beforeNetwork": {
+    "dns": [
+      {
+        "index": 1,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 1,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 10,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 10,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 2,
+        "servers": [
+          "168.63.129.16"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 23,
+        "servers": []
+      }
+    ],
+    "defaultRoutes": [
+      {
+        "index": 14,
+        "prefix": "0.0.0.0/0",
+        "nextHop": "10.1.0.1",
+        "metric": 1,
+        "protocol": "NetMgmt"
+      }
+    ],
+    "ipv6Bindings": [
+      {
+        "Name": "Ethernet 3",
+        "Enabled": true
+      },
+      {
+        "Name": "vEthernet (nat)",
+        "Enabled": true
+      }
+    ],
+    "userProxy": {
+      "ProxyEnable": 0,
+      "ProxyServer": null,
+      "ProxyOverride": null,
+      "AutoConfigURL": null
+    },
+    "winHttp": {
+      "WinHttpSettings": [
+        24,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "DefaultConnectionSettings": null
+    }
+  },
+  "releaseReady": false,
+  "releaseGates": [
+    {
+      "name": "Reboot/interrupted installation SYSTEM recovery",
+      "status": "not-tested",
+      "reason": "A live hosted runner cannot reboot within this job. Actual Task registration/principal/action/removal are exercised."
+    },
+    {
+      "name": "System DNS from ordinary GUI, persistence and restoration",
+      "status": "not-tested",
+      "reason": "Separate actual installed DNS gate must pass."
+    },
+    {
+      "name": "Background VPN native TUN, recovery and ordinary GUI OFF",
+      "status": "not-tested",
+      "reason": "Separate actual installed VPN gate must pass."
+    },
+    {
+      "name": "Driver-backed Zapret end-to-end",
+      "status": "not-tested",
+      "reason": "No unrelated driver or default-route filtering on the hosted control connection."
+    },
+    {
+      "name": "3.7.9 legacy worker automatic update chain",
+      "status": "not-tested",
+      "reason": "Requires separately authenticated official old Setup and signed candidate release feed; new-helper same-version reinstall does not prove it."
+    },
+    {
+      "name": "3.7.7 and 3.7.8 update trust compatibility",
+      "status": "not-tested",
+      "reason": "No authenticated legacy update chain is asserted."
+    },
+    {
+      "name": "GUI IPC from an actual standard Windows user token",
+      "status": "not-tested",
+      "reason": "The hosted runner token is administrator; asInvoker resource/shortcut readback does not prove standard-user authorization."
+    },
+    {
+      "name": "72 hour/7 day soak/month-scale uptime",
+      "status": "not-tested",
+      "reason": "Bounded native acceptance is not a long-duration pilot."
+    }
+  ],
+  "error": "Native child failed (43): clean-install; see owned stdout/stderr.",
+  "finishedAtUtc": "2026-10-01T03:46:27.0371991+00:00",
+  "actualUninstallCompleted": false,
+  "finalServices": null,
+  "finalTasks": null
+}

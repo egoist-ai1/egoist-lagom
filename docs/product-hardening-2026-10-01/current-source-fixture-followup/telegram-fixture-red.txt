@@ -1,0 +1,133 @@
+TAP version 13
+# Subtest: Shield preemption never evicts a live VPN mutation, even after its timestamp looks stale
+ok 1 - Shield preemption never evicts a live VPN mutation, even after its timestamp looks stale
+  ---
+  duration_ms: 28.2753
+  type: 'test'
+  ...
+# Subtest: Shield preemption cannot bypass steady VPN ownership on timeout
+ok 2 - Shield preemption cannot bypass steady VPN ownership on timeout
+  ---
+  duration_ms: 11.6641
+  type: 'test'
+  ...
+# Subtest: Core mutations from separate clients are serialized before reaching the service
+ok 3 - Core mutations from separate clients are serialized before reaching the service
+  ---
+  duration_ms: 1.7254
+  type: 'test'
+  ...
+# Subtest: Core mutation queue advances after a failed mutation
+ok 4 - Core mutation queue advances after a failed mutation
+  ---
+  duration_ms: 0.827
+  type: 'test'
+  ...
+# Subtest: Direct Zapret auto-select restores an unusable owned DNS resolver before probing
+ok 5 - Direct Zapret auto-select restores an unusable owned DNS resolver before probing
+  ---
+  duration_ms: 1.4305
+  type: 'test'
+  ...
+# Subtest: Shield handoff waits for VPN owner and verifies stop before invoking the operation
+ok 6 - Shield handoff waits for VPN owner and verifies stop before invoking the operation
+  ---
+  duration_ms: 1.113
+  type: 'test'
+  ...
+# Subtest: Shield handoff reports failed VPN stop and never runs the Shield mutation
+ok 7 - Shield handoff reports failed VPN stop and never runs the Shield mutation
+  ---
+  duration_ms: 0.8479
+  type: 'test'
+  ...
+# Subtest: Telegram ownership discovery failure never falls back to image-name killing or clears state
+not ok 8 - Telegram ownership discovery failure never falls back to image-name killing or clears state
+  ---
+  duration_ms: 3.0333
+  type: 'test'
+  location: 'C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\lagom-runtime-regressions.test.mjs:124:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /CIM unavailable/. Input:
+    
+    'ReferenceError: process is not defined'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'process is not defined'
+  name: 'ReferenceError'
+  stack: |-
+    TelegramProxyManager.stopProcessesUsingManagedRuntime (evalmachine.<anonymous>:966:23)
+    TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/lagom-runtime-regressions.test.mjs:132:31)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1382:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+    Test.postRun (node:internal/test_runner/test:1522:19)
+    Test.run (node:internal/test_runner/test:1447:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/lagom-runtime-regressions.test.mjs:132:3)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: Auto-select completion is compact enough for legacy Core envelopes while retaining the UI result
+ok 9 - Auto-select completion is compact enough for legacy Core envelopes while retaining the UI result
+  ---
+  duration_ms: 78.5611
+  type: 'test'
+  ...
+# Subtest: Auto-select compaction enforces a byte budget for pathological diagnostics
+ok 10 - Auto-select compaction enforces a byte budget for pathological diagnostics
+  ---
+  duration_ms: 53.2828
+  type: 'test'
+  ...
+# Subtest: Component worker compacts only the completed Zapret auto-select response
+ok 11 - Component worker compacts only the completed Zapret auto-select response
+  ---
+  duration_ms: 3.9692
+  type: 'test'
+  ...
+# Subtest: Built UI styles contain no red accent colors
+ok 12 - Built UI styles contain no red accent colors
+  ---
+  duration_ms: 2.3167
+  type: 'test'
+  ...
+# Subtest: installer and background desktop PowerShell helpers never open visible console windows
+ok 13 - installer and background desktop PowerShell helpers never open visible console windows
+  ---
+  duration_ms: 3.5242
+  type: 'test'
+  ...
+# Subtest: Generated DNS snapshot is valid Windows PowerShell syntax
+ok 14 - Generated DNS snapshot is valid Windows PowerShell syntax
+  ---
+  duration_ms: 552.2628
+  type: 'test'
+  ...
+# Subtest: Installer uses one canonical path and never kills network processes by image name
+ok 15 - Installer uses one canonical path and never kills network processes by image name
+  ---
+  duration_ms: 2.6098
+  type: 'test'
+  ...
+# Subtest: Installer cleanup recognizes current and legacy owned DNS journals
+ok 16 - Installer cleanup recognizes current and legacy owned DNS journals
+  ---
+  duration_ms: 1.2986
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 15
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 812.7264

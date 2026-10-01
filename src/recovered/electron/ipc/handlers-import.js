@@ -265,47 +265,87 @@ function registerImportHandlers({ stateStore }) {
 			newName: rawName
 		});
 		const current = stateStore.get();
-		const next = {
-			...current,
-			subscriptions: current.subscriptions.map((s) => s.url === url ? {
-				...s,
-				name: newName
-			} : s)
-		};
-		await stateStore.set(next);
-		return true;
+		const selectedId = current.subscriptions.find((item) => item.url === url)?.id;
+		if (!selectedId) return false;
+		let renamed = false;
+		await stateStore.update((latest) => ({
+			...latest,
+			subscriptions: latest.subscriptions.map((item) => {
+				if (item.id !== selectedId) return item;
+				renamed = true;
+				return { ...item, name: newName };
+			})
+		}));
+		return renamed;
+	});
+	const removeSubscriptionById = async (id) => {
+		let removed = false;
+		await stateStore.update((current) => {
+			if (!current.subscriptions.some((item) => item.id === id)) return current;
+			removed = true;
+			const nodes = current.nodes.filter((node) => node.subscriptionId !== id);
+			return {
+				...current,
+				nodes,
+				activeNodeId: nodes.some((node) => node.id === current.activeNodeId) ? current.activeNodeId : nodes[0]?.id ?? null,
+				subscriptions: current.subscriptions.filter((item) => item.id !== id)
+			};
+		});
+		return removed;
+	};
+	ipcMain.handle("subscription:delete-by-id", async (_event, rawInput) => {
+		const { id } = SubscriptionIdInputSchema.parse(rawInput);
+		return removeSubscriptionById(id);
 	});
 	ipcMain.handle("subscription:delete", async (_event, rawUrl) => {
 		const url = SubscriptionUrlInputSchema.parse(rawUrl);
-		const current = stateStore.get();
-		const subscription = current.subscriptions.find((item) => item.url === url);
-		if (!subscription) return false;
-		const subscriptionId = subscription.id;
-		const nodes = subscriptionId ? current.nodes.filter((node) => node.subscriptionId !== subscriptionId) : current.nodes;
-		const activeNodeId = current.activeNodeId && nodes.some((node) => node.id === current.activeNodeId) ? current.activeNodeId : nodes[0]?.id ?? null;
-		await stateStore.set({
-			...current,
-			nodes,
-			activeNodeId,
-			subscriptions: current.subscriptions.filter((item) => item.url !== url)
-		});
-		return true;
+		const selectedId = stateStore.get().subscriptions.find((item) => item.url === url)?.id;
+		return selectedId ? removeSubscriptionById(selectedId) : false;
 	});
 	ipcMain.handle("node:rename", async (_event, rawId, rawName) => {
 		const { id, newName } = RenameNodeInputSchema.parse({
 			id: rawId,
 			newName: rawName
 		});
-		const current = stateStore.get();
-		const next = {
+		let renamed = false;
+		await stateStore.update((current) => ({
 			...current,
-			nodes: current.nodes.map((n) => n.id === id ? {
-				...n,
-				name: newName
-			} : n)
-		};
-		await stateStore.set(next);
-		return true;
+			nodes: current.nodes.map((node) => {
+				if (node.id !== id) return node;
+				renamed = true;
+				return { ...node, name: newName };
+			})
+		}));
+		return renamed;
+	});
+	ipcMain.handle("node:select", async (_event, rawInput) => {
+		const { id } = SelectNodeInputSchema.parse(rawInput);
+		return stateStore.update((current) => {
+			if (id !== null && !current.nodes.some((node) => node.id === id)) throw new Error("NODE_NOT_FOUND");
+			return { ...current, activeNodeId: id };
+		});
+	});
+	ipcMain.handle("node:set-favorite", async (_event, rawInput) => {
+		const { id, favorite } = NodeFavoriteInputSchema.parse(rawInput);
+		return stateStore.update((current) => {
+			if (!current.nodes.some((node) => node.id === id)) throw new Error("NODE_NOT_FOUND");
+			return {
+				...current,
+				nodes: current.nodes.map((node) => node.id === id ? { ...node, metadata: { ...node.metadata, favorite: String(favorite) } } : node)
+			};
+		});
+	});
+	ipcMain.handle("node:delete", async (_event, rawInput) => {
+		const { id } = NodeIdInputSchema.parse(rawInput);
+		return stateStore.update((current) => {
+			if (!current.nodes.some((node) => node.id === id)) throw new Error("NODE_NOT_FOUND");
+			const nodes = current.nodes.filter((node) => node.id !== id);
+			return {
+				...current,
+				nodes,
+				activeNodeId: current.activeNodeId === id ? nodes[0]?.id ?? null : current.activeNodeId
+			};
+		});
 	});
 }
 //#endregion

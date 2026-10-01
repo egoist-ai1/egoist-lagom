@@ -14,6 +14,9 @@ class KillSwitch {
   isActive() { return false; }
 }
 
+const { ConfigBuilder } = loadRecovered('electron/ipc/config-builder', {}, ['ConfigBuilder']);
+const { buildProtocolRuntimePlan } = loadRecovered('shared/protocol-matrix', {}, ['buildProtocolRuntimePlan']);
+
 function loadVpnRuntimeManager({ baseline = false, platform = process.platform, bindings = {} } = {}) {
   const previousBaseline = process.env.SHIELD_BASELINE;
   if (baseline) process.env.SHIELD_BASELINE = '1';
@@ -35,7 +38,10 @@ function loadVpnRuntimeManager({ baseline = false, platform = process.platform, 
       XRAY_PLAN: { exeName: 'xray.exe' },
       readVersionFile: async () => null,
       compareLooseVersions: () => 0,
-      ...bindings
+      runtimeExecutionEnvironment: (_lease, inherited) => inherited,
+      buildProtocolRuntimePlan,
+      ...bindings,
+      ConfigBuilder: { ...ConfigBuilder, ...bindings.ConfigBuilder }
     }, ['VpnRuntimeManager']).VpnRuntimeManager;
   } finally {
     if (previousBaseline === undefined) delete process.env.SHIELD_BASELINE;
@@ -231,6 +237,7 @@ test('recognizes only the recorded Windows Xray TUN route initialization failure
   const manager = new VpnRuntimeManager('.', '.');
   const events = [];
   manager.isAdmin = async () => true;
+  manager.verifyRuntimeCandidate = async () => ({ runtimePath: 'xray.exe', release() {}, watch() {} });
   manager.resolveRuntimePath = async () => ({ runtimeKind: 'xray', runtimePath: 'xray.exe' });
   manager.resolveXrayTunRuntime = async (_configuredPath, runtime) => ({ ok: true, runtime });
   manager.terminateSession = async (_session, cleanup) => events.push({ type: 'terminate', cleanup });

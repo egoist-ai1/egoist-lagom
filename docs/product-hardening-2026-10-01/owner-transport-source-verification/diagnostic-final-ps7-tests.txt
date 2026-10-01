@@ -1,0 +1,12 @@
+✔ native CIM retry returns a complete snapshot and refuses terminal partial reads (1296.3917ms)
+✔ installer diagnostics preserve actual own log bytes and refuse oversized logs (741.6046ms)
+✔ signed Setup and source Core diagnostics refuse a physical host before reading inputs or compiling (1366.0986ms)
+✔ native runtime resolution selects the first real PATH result when two applications share a name (633.2104ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4095.88

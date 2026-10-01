@@ -7,10 +7,16 @@ var runtimeEnvironment = detectRuntimeEnvironment({
 	isPackaged: app.isPackaged,
 	nodeEnv: process.env.NODE_ENV
 });
+if (runtimeEnvironment === "production" && !isTrustedGuiLaunchArguments(process.argv.slice(1))) {
+	console.error("Egoist Lagom cannot start with debugging, alternate application or child-process arguments.");
+	app.exit(64);
+	throw new Error("Unsupported production GUI launch arguments.");
+}
 var appPathConfig = buildAppPathConfig({
 	defaultUserDataDir: path.join(app.getPath("appData"), "Egoist Shield"),
 	environment: runtimeEnvironment,
-	pid: process.pid
+	pid: process.pid,
+	testUserDataDir: process.env?.LAGOM_TEST_USER_DATA_DIR
 });
 if (appPathConfig.userDataDir !== app.getPath("userData")) app.setPath("userData", appPathConfig.userDataDir);
 if (appPathConfig.sessionDataDir) app.setPath("sessionData", appPathConfig.sessionDataDir);
@@ -73,11 +79,16 @@ function cancelDeferredStartupTimers() {
 }
 var backgroundUpdateInFlight = false;
 var backgroundUpdateFailures = 0;
+var autoUpdatePreferenceGeneration = 0;
 async function canInstallDesktopUpdate() {
 	const idle = () => Boolean(globalNetworkCombinatorManager?.isMutationIdle()) && pendingBootRecovery.size === 0 && !componentUpdateInFlight;
 	if (!globalRuntimeManager || !idle()) return false;
 	const status = await globalRuntimeManager.status();
-	return status?.connected === false && idle();
+	if (status?.temporaryRuntimeActive === true) return false;
+	const background = status?.backgroundService;
+	if (background && (background.observation?.state !== "observed" || typeof background.serviceInstalled !== "boolean" || typeof background.running !== "boolean" || !["running", "stopped", "not-installed"].includes(background.serviceState))) return false;
+	const preservedBackground = status?.executionMode === "background-service" && status.temporaryRuntimeActive === false && background?.serviceInstalled === true && background.running === true && background.serviceState === "running" && background.observation?.state === "observed";
+	return (status?.connected === false || preservedBackground) && idle();
 }
 function scheduleNextUpdateCheck(delayMs) {
 	if (updateCheckInterval) clearTimeout(updateCheckInterval);
@@ -101,10 +112,15 @@ function backgroundUpdateRetryDelay(result) {
 async function runBackgroundUpdateCheck() {
 	if (!autoUpdateEnabled || backgroundUpdateInFlight || isQuitting) return;
 	backgroundUpdateInFlight = true;
+	const preferenceGeneration = autoUpdatePreferenceGeneration;
 	let nextDelay = 86400 * 1e3;
 	let dispatched = false;
 	try {
 		const result = toPublicUpdateResult(await desktopUpdater.check());
+		if (preferenceGeneration !== autoUpdatePreferenceGeneration) {
+			nextDelay = 0;
+			return;
+		}
 		emitUpdateResult(result);
 		if (result.phase === "available" && result.latestVersion && autoUpdateEnabled && !desktopUpdater.installPromise) {
 			if (!(await canInstallDesktopUpdate())) {
@@ -118,9 +134,11 @@ async function runBackgroundUpdateCheck() {
 				body: `Доверенная версия ${result.latestVersion} загружается и будет установлена с сохранением сетевых настроек.`,
 				silent: true
 			}).show();
-			const installed = toPublicUpdateResult(await desktopUpdater.checkAndInstall());
+			const installed = toPublicUpdateResult(await desktopUpdater.checkAndInstall({
+				shouldContinue: () => autoUpdateEnabled && !isQuitting && preferenceGeneration === autoUpdatePreferenceGeneration
+			}));
 			emitUpdateResult(installed);
-			nextDelay = backgroundUpdateRetryDelay(installed);
+			nextDelay = installed.failureCode === "cancelled" ? 0 : backgroundUpdateRetryDelay(installed);
 			if (installed.phase === "restarting") {
 				dispatched = true;
 				scheduleDeferredStartup(() => {
@@ -195,8 +213,16 @@ ipcMain.handle("updater:last-result", async (event) => {
 ipcMain.handle("updater:set-auto", async (event, enabled) => {
 	assertTrustedIpcEvent(event);
 	if (typeof enabled !== "boolean") throw new TypeError("enabled must be boolean");
-	if (globalStateStore) await globalStateStore.patch({ settings: { autoUpdate: enabled } });
+	const previous = autoUpdateEnabled;
 	autoUpdateEnabled = enabled;
+	if (!enabled) autoUpdatePreferenceGeneration += 1;
+	const preferenceGeneration = autoUpdatePreferenceGeneration;
+	try {
+		if (globalStateStore) await globalStateStore.patch({ settings: { autoUpdate: enabled } });
+	} catch (error) {
+		if (autoUpdatePreferenceGeneration === preferenceGeneration && autoUpdateEnabled === enabled) autoUpdateEnabled = previous;
+		throw error;
+	}
 	logger.info(`[updater] autoCheck set to ${enabled}`);
 	if (!enabled && updateCheckInterval) {
 		clearTimeout(updateCheckInterval);
@@ -288,6 +314,7 @@ function setupManagedComponentUpdateChecks() {
 var mainWindow = null;
 var tray = null;
 var globalRuntimeManager = null;
+var globalVpnServiceManager = null;
 var globalGravitylessDnsManager = null;
 var globalSystemDohManager = null;
 var globalZapretManager = null;
@@ -388,15 +415,23 @@ function applyRendererScalePolicy(window) {
 var SINGBOX_TRAFFIC_URL = "http://127.0.0.1:9090/traffic";
 var XRAY_API_PORT = 10085;
 async function performGracefulShutdown() {
+	if (runtimeEnvironment === "test") {
+		logger.info("[exit] Isolated test profile: automatic system cleanup is disabled.");
+		return;
+	}
 	const persistedState = globalStateStore?.get();
+	let keepZapretSuspended = Boolean(globalRuntimeManager?.backgroundService);
 	const result = await runShutdownSteps([
 		...globalRuntimeManager ? [{
 			name: "vpn-runtime",
-			run: () => globalRuntimeManager.disconnect()
+			run: async () => {
+				const outcome = await globalRuntimeManager.shutdownApplicationRuntime();
+				if (typeof outcome?.keepZapretSuspended === "boolean") keepZapretSuspended = outcome.keepZapretSuspended;
+			}
 		}] : [],
 		...globalZapretManager && persistedState?.settings.zapretSuspendDuringVpn ? [{
-			name: "zapret-restore",
-			run: () => globalZapretManager.restoreAfterVpnIfNeeded(persistedState.settings.zapretSuspendDuringVpn, persistedState.settings.zapretProfile, { skipIdleStatus: true })
+			name: "zapret-policy",
+			run: () => keepZapretSuspended ? void 0 : globalZapretManager.restoreAfterVpnIfNeeded(persistedState.settings.zapretSuspendDuringVpn, persistedState.settings.zapretProfile, { skipIdleStatus: true })
 		}] : [],
 		...globalTelegramProxyManager ? [{
 			name: "telegram-proxy",
@@ -1003,20 +1038,21 @@ async function createMainWindow() {
 		if (mainWindow) applyRendererScalePolicy(mainWindow);
 	});
 	logger.info("[boot] creating StateStore and managers");
-	const stateStore = new StateStore(USER_DATA_DIR, app.isPackaged ? path.join(process.resourcesPath, "installation.json") : void 0);
+	const productionRuntime = runtimeEnvironment === "production";
+	const stateStore = new StateStore(USER_DATA_DIR, productionRuntime ? path.join(process.resourcesPath, "installation.json") : void 0);
 	globalStateStore = stateStore;
 	configureSystemProxyOwnershipState(USER_DATA_DIR);
 	configureDnsTransactionStore({
-		programDataDir: process.env.ProgramData ?? null,
+		programDataDir: productionRuntime ? process.env.ProgramData ?? null : null,
 		userDataDir: USER_DATA_DIR,
 		version: app.getVersion()
 	});
 	const protectedRuntimeRoot = resolveProtectedRuntimeRoot({
-		packaged: app.isPackaged,
+		packaged: productionRuntime,
 		programDataDir: process.env.ProgramData,
 		userDataDir: USER_DATA_DIR
 	});
-	const coreServiceCandidate = app.isPackaged ? new CoreServiceClient() : void 0;
+	const coreServiceCandidate = productionRuntime ? new CoreServiceClient() : void 0;
 	const coreServiceAvailable = coreServiceCandidate ? await coreServiceCandidate.isAvailable().catch(() => false) : false;
 	const coreService = coreServiceCandidate;
 	if (coreServiceCandidate && !coreServiceAvailable) logger.warn("[boot] EgoistShieldCore is not ready yet; privileged actions will retry the authenticated service.");
@@ -1025,19 +1061,21 @@ async function createMainWindow() {
 	if (!globalSystemDohManager) globalSystemDohManager = useComponentService(new SystemDohManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "SystemDoH"), coreService), "SystemDoH", coreService);
 	if (!globalZapretManager) globalZapretManager = useComponentService(new ZapretManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "Zapret"), coreService), "Zapret", coreService);
 	if (!globalTelegramProxyManager) globalTelegramProxyManager = useComponentService(new TelegramProxyManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "TelegramProxy"), coreService), "TelegramProxy", coreService);
-	await reconcileOwnedSystemStateBeforeUi();
+	if (!globalVpnServiceManager) globalVpnServiceManager = useComponentService(new VpnServiceManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "Vpn")), "Vpn", coreService);
+	globalRuntimeManager.attachBackgroundService(globalVpnServiceManager);
+	if (productionRuntime) await reconcileOwnedSystemStateBeforeUi();
 	logger.info("[boot] registering IPC handlers");
 	globalNetworkCombinatorManager = await registerIpcHandlers(mainWindow, stateStore, globalRuntimeManager, globalGravitylessDnsManager, globalSystemDohManager, globalZapretManager, globalTelegramProxyManager, () => pendingBootRecovery.size === 0);
 	logger.info("[boot] IPC handlers registered");
 	logger.info("[boot] loading persisted state");
-	const loadedState = await stateStore.load();
+	const loadedState = stateStore.get();
 	logger.info("[boot] persisted state loaded");
 	try {
-		syncWindowsLoginItemSettings({
+		if (productionRuntime) await syncWindowsLoginItemSettings({
 			app,
 			settings: loadedState.settings
 		});
-		const removedLegacyTasks = app.isPackaged ? await cleanupOwnedLegacyWindowsStartupTasks() : [];
+		const removedLegacyTasks = productionRuntime ? await cleanupOwnedLegacyWindowsStartupTasks({ app }) : [];
 		if (removedLegacyTasks.length > 0) logger.info(`[boot] Removed legacy duplicate startup tasks: ${removedLegacyTasks.join(", ")}`);
 		applyLoggerSettings(loadedState.settings);
 	} catch (error) {
@@ -1045,7 +1083,15 @@ async function createMainWindow() {
 	}
 	autoUpdateEnabled = loadedState.settings.autoUpdate;
 	logger.info(`[updater] Persisted auto-update = ${autoUpdateEnabled}`);
+	const recoveryWindow = mainWindow;
+	const rendererRecovery = new RendererRecoveryController({
+		reload: () => recoveryWindow.webContents.reload(),
+		canReload: () => !isQuitting && mainWindow === recoveryWindow && !recoveryWindow.isDestroyed() && !recoveryWindow.webContents.isDestroyed(),
+		onResult: result => logger.warn("[window] renderer recovery:", result)
+	});
+	mainWindow.once("closed", () => rendererRecovery.dispose());
 	mainWindow.webContents.on("did-finish-load", () => {
+		rendererRecovery.loaded();
 		if (mainWindow) applyRendererScalePolicy(mainWindow);
 		logger.info("[window] Main window renderer finished load");
 	});
@@ -1055,13 +1101,7 @@ async function createMainWindow() {
 	});
 	mainWindow.webContents.on("render-process-gone", (_event, details) => {
 		logger.error(`[window] render-process-gone reason=${details.reason} exitCode=${details.exitCode ?? "unknown"}`);
-		if (details.reason === "crashed" || details.reason === "killed") {
-			try {
-				if (mainWindow && !mainWindow.isDestroyed()) {
-					mainWindow.webContents.reload();
-				}
-			} catch {}
-		}
+		rendererRecovery.failed(details.reason);
 	});
 	mainWindow.webContents.on("console-message", (details) => {
 		const { level, lineNumber, message, sourceId } = details;
@@ -1087,7 +1127,7 @@ async function createMainWindow() {
 		if (windowStateTimer) clearTimeout(windowStateTimer);
 		mainWindow = null;
 	});
-	recoverBackgroundFeaturesAfterRendererLoad(loadedState).catch((error) => {
+	if (productionRuntime) recoverBackgroundFeaturesAfterRendererLoad(loadedState).catch((error) => {
 		logger.error("[boot] background recovery failed:", error);
 	});
 	logger.info("[boot] createMainWindow:complete");
@@ -1172,8 +1212,10 @@ else {
 			await createMainWindow();
 			createTray();
 			startTrafficMonitoring();
-			setupAutoUpdater();
-			setupManagedComponentUpdateChecks();
+			if (runtimeEnvironment === "production") {
+				setupAutoUpdater();
+				setupManagedComponentUpdateChecks();
+			}
 			app.on("activate", async () => {
 				if (!mainWindow) await createMainWindow();
 			});

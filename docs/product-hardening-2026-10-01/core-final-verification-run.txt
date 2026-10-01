@@ -1,0 +1,23 @@
+RUN: corrupt-and-foreign-journal-diagnostics
+PASS: corrupt-and-foreign-journal-diagnostics; 6177ms; {"authenticTruncatedPhases":7,"diagnosticReplies":21,"rejectedMutations":7,"maxHelloMs":257.2292,"corruptionPreserved":true,"foreignBytesPreserved":true,"foreignExecutorCalls":0,"offlineRecoveryRefused":true,"actualNamedPipes":true,"aclScope":"Own test root, current SID owner; no claim of ProgramData LocalSystem integration."}
+RUN: untrusted-configuration-read-only-startup
+PASS: untrusted-configuration-read-only-startup; 2979ms; {"startupCases":7,"realDiagnosticReplies":14,"refusedMutations":7,"refusedWorkerQueries":7,"callerInstallRootIgnoredWhenConfigInvalid":true,"untrustedConfigNeverAuthorizesGui":true,"configBytesPreserved":true,"testAuthorization":"Explicit console dev-client override on own pipe; production GUI verification is unchanged and not bypassed.","productionAcceptancePending":"Native installed Core/GUI authorization in a LocalSystem ProgramData environment."}
+RUN: durable-intent-write-denial-and-crash
+PASS: durable-intent-write-denial-and-crash; 27175ms; {"responseDeniedExecutions":1,"knownResultReplays":100,"unknownDeniedExecutions":1,"refusedUnknownReplays":100,"payloadMismatchRefused":true,"newRequestIdBlocked":true,"readOnlyObservations":1,"unknownIntentNotClearedByCurrentState":true,"liveCompletedIntentRetiredWithoutExecution":true,"actualCleanupWriteDenialDeferred":true,"cleanupResumedByNewRequestWithoutOldExecution":true,"knownCleanupDoesNotClearUnknownSibling":true,"realCrashChildren":32,"crashEffects":24,"replayExecutionsAfterCrash":0,"crashScope":"Own harmless children exit at 4 boundaries; terminal/response boundaries use actual journal APIs. This is bounded intent/replay verification, not a permanent exactly-once guarantee."}
+RUN: VPN-explicit-start-stop-intent-before-worker
+PASS: VPN-explicit-start-stop-intent-before-worker; 990ms; {"explicitLifecycleMethods":4,"workerExecutions":4,"committedReplaysAfterRestart":4,"workerStatusQueries":1,"preEffectStartStopIntentVerified":true,"latestOffIntentPreserved":true,"scope":"Actual Core dispatcher/journal/intent store with injected harmless executor. No SCM/native VPN launch; host/config acceptance is a separate R25 test."}
+RUN: response-and-memory-byte-budgets
+PASS: response-and-memory-byte-budgets; 16645ms; {"durableWrites":90,"durableBytes":4139235,"durableEntries":42,"durableLimitBytes":4194304,"giantFirstResponseBytes":3145728,"giantExecutions":1,"oversizedReplayReceipt":"OPERATION_RESULT_NOT_RETAINED","readOnlyQueries":90,"cachedEntries":40,"cachedResponseBytes":8197200,"cacheLimitBytes":8388608,"unresolvedIntentsRetainedAtCapacity":128,"capacityOverflowRefused":true,"unresolvedIntentsEvicted":false,"retentionScope":"Old completed responses may be evicted; no indefinite historical replay guarantee."}
+RUN: native-route-monotonic-cache
+PASS: native-route-monotonic-cache; 2ms; {"calls":3,"cachedWithin30Seconds":true,"expiredAt30Seconds":true,"reverseElapsedInvalidates":true,"systemWallClockModified":false,"actualProductionMethod":true,"nativeNetworkWrites":0,"seam":"Injected monotonic elapsed clock and read-only PowerShell adapter; actual controller cache/lock code."}
+RUN: integrated-Core-self-test
+Owned DNS baseline self-tests passed: 10
+Component worker response self-test passed: malformed-json
+Component worker response self-test passed: missing-result
+Component worker response self-test passed: healthy
+Installer maintenance self-tests passed: marker fixtures=6; blocked mutations=84; blocked component queries=12; offline empty DNS restores=6; trailing separator checks=24; queued mutation race=1; cancellable startup wait=1; hosted recovery/pipe gate=1
+Recovery startup policy self-tests passed: policies=4; repeated repairs=4; supervisor fixtures=5; Disabled races=2; SCM failure steps=4; runner exceptions=2; cancellation boundaries=5; unknown service refusal=1
+Core typed persistence and durable component-intent self-test passed.
+EgoistShield.Service self-test passed; protocol=1; version=3.8.0
+PASS: integrated-Core-self-test; 18537ms; {"passed":true}
+PASS: 7 production groups; 72,52s

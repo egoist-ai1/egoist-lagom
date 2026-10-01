@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "run": "fresh full postpackage Node baseline",
+  "rawLogSha256": "c502f19b28b76b67a13f1505af93e0cce0d9bbf469f8d17fb2ae0a70edfc9c3c",
+  "tests": 633,
+  "pass": 633,
+  "fail": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "todo": 0,
+  "durationMs": 19267.4615
+}

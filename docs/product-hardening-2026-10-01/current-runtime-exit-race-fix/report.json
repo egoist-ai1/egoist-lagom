@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "kind": "current-runtime-exit-race-fix",
+  "recordedAt": "2026-10-01T15:19:51.451883+00:00",
+  "baseSourceCommit": "d8a899095bd71a0bcb6409a3c39019b25a3f5a27",
+  "frozen": true,
+  "sourceFiles": [
+    {
+      "path": "src/service/EgoistShield.Service/WindowsServiceListenerSnapshot.cs",
+      "sha256": "960d9ea44ded3db8aa9ce22ae2e1478ca785a14fb878852ade25ba978071f26e",
+      "size": 28749
+    },
+    {
+      "path": "tests/NativeRuntimeCleanupRegression/Program.cs",
+      "sha256": "11f788ea38203998b9291fed93a7ac6033573e0be38d25eb4dd585ded9e9cada",
+      "size": 9911
+    }
+  ],
+  "actualRootRed": {
+    "tests": 984,
+    "pass": 983,
+    "fail": 1,
+    "skip": 0,
+    "evidence": "root-full-source-d8a899-red.txt",
+    "failure": "CaptureRuntimeProcesses identity-read IOException after actual child exit"
+  },
+  "localBefore": {
+    "tests": 14,
+    "pass": 14,
+    "fail": 0,
+    "skip": 0,
+    "durationMs": 3456.6525,
+    "limitation": "Transient root failure did not reproduce in this local pre-fix 12-cycle run."
+  },
+  "isolatedCompile": {
+    "errors": 0,
+    "warnings": 136,
+    "suppressed": false
+  },
+  "evidence": [
+    {
+      "path": "actual-native-final.txt",
+      "sha256": "365d556274c7406ca53fa5f7fbccb268fb5b491726ce50eae905fc668c1198df",
+      "size": 6404
+    },
+    {
+      "path": "actual-native-repeat-1.txt",
+      "sha256": "eceb287f260364b68b1cea9aa1c4ae982a33b6b10dc695187aec008090dbc6c6",
+      "size": 6385
+    },
+    {
+      "path": "actual-native-repeat-2.txt",
+      "sha256": "b40d0b2db356ff05ea36e2a2a66bf3778c7e57089be9fecaf37772b68fa11f6b",
+      "size": 6385
+    },
+    {
+      "path": "actual-native-repeat-3.txt",
+      "sha256": "462eaab3a41c738f1161d6e1745f21a80ee9b2c80f104b5d4b17da39372a3f1a",
+      "size": 6385
+    },
+    {
+      "path": "actual-native-repeat-4.txt",
+      "sha256": "26c6fd19c56d877db857bff56d1008a72597c2959d9646f532ab9ddbbae0feed",
+      "size": 6385
+    },
+    {
+      "path": "actual-native.txt",
+      "sha256": "a1c8771b8ced8173520077c935dbed3b1079f31e4cb2de0e3061cb3f2c73c9e5",
+      "size": 6405
+    },
+    {
+      "path": "compile-final.txt",
+      "sha256": "636af53ebf9199522c6949146a4e7e36fa11067bb53952eb93130b72d3ea661c",
+      "size": 139623
+    },
+    {
+      "path": "compile.txt",
+      "sha256": "fd98e85a43d9592b7d199b1d7335ef378dd9e049042985f982d0bd62999a5706",
+      "size": 139623
+    },
+    {
+      "path": "focused-before.txt",
+      "sha256": "7c52d3deb3211953c77a54c3f2e57c7b84b206faf9750958c8a37a5101981b72",
+      "size": 3869
+    },
+    {
+      "path": "focused-final-green.txt",
+      "sha256": "5968d612dc2d28279a68614935826df74b9597dd33b1b44cd43ad75df41b83c8",
+      "size": 3870
+    },
+    {
+      "path": "focused-green.txt",
+      "sha256": "e3b53d172b2bd9abe96d2a1b83b44f169a8c2cc0abf881c666179ce282195f4c",
+      "size": 3870
+    },
+    {
+      "path": "root-full-source-d8a899-red.json",
+      "sha256": "6b0c8ef10775bd8c9e75e45a5e30644c53cb4b7555ba37819c114b7d0f96fff1",
+      "size": 727
+    },
+    {
+      "path": "root-full-source-d8a899-red.txt",
+      "sha256": "cf4ec774513dd84cc903d2638a3c2087e299baae082480497ead04c916e43013",
+      "size": 233889
+    }
+  ],
+  "changes": [
+    "On identity IOException the candidate is omitted only after WAIT_OBJECT_0 from the same held SYNCHRONIZE handle.",
+    "Preparation skips proven exited original query handles and proves exit again if termination OpenProcess fails.",
+    "Pre-terminate identity-read or TerminateProcess failures are omitted only after the same held termination handle is signaled.",
+    "Birth/path checks, live/unreadable/WAIT_FAILED refusal, snapshot bounds, 8-second cancellation, fixed CLI selectors and final native quiescence stay intact."
+  ],
+  "limits": [
+    "No deterministic instrumentation proves the exact late-query catch branch was hit in every local run; root actual RED demonstrates the race.",
+    "Bounded own-child cycles do not establish exhaustive scheduler coverage or months-long uptime.",
+    "Valid physical product cleanup CLI, SCM, DNS, registry, network/GUI operations, package/sign/install/publication were not performed.",
+    "Read-only listener/WinWS ownership methods and other production files were not modified.",
+    "Parent must perform full source and disposable signed current candidate verification."
+  ],
+  "focusedGreenBeforeFixtureBudgetCorrection": {
+    "tests": 14,
+    "pass": 14,
+    "fail": 0,
+    "skip": 0,
+    "durationMs": 3931.0798
+  },
+  "focusedGreen": {
+    "tests": 14,
+    "pass": 14,
+    "fail": 0,
+    "skip": 0,
+    "durationMs": 3806.391
+  },
+  "actualNativeBeforeFixtureBudgetCorrection": {
+    "runs": 5,
+    "checksPerRun": 54,
+    "checksPassed": 270,
+    "ownExitCaptureCyclesPerRun": 12,
+    "ownExitCaptureCyclesTotal": 60,
+    "allPassed": true,
+    "timings": [
+      [
+        {
+          "name": "actual native cleanup stops exact held owned identity",
+          "passed": true,
+          "milliseconds": 16.7099
+        },
+        {
+          "name": "native recheck proves owned runtime quiescent without restarting a kill loop",
+          "passed": true,
+          "milliseconds": 10.5364
+        }
+      ],
+      [
+        {
+          "name": "actual native cleanup stops exact held owned identity",
+          "passed": true,
+          "milliseconds": 16.7147
+        },
+        {
+          "name": "native recheck proves owned runtime quiescent without restarting a kill loop",
+          "passed": true,
+          "milliseconds": 10.3077
+        }
+      ],
+      [
+        {
+          "name": "actual native cleanup stops exact held owned identity",
+          "passed": true,
+          "milliseconds": 23.3763
+        },
+        {
+          "name": "native recheck proves owned runtime quiescent without restarting a kill loop",
+          "passed": true,
+          "milliseconds": 11.7755
+        }
+      ],
+      [
+        {
+          "name": "actual native cleanup stops exact held owned identity",
+          "passed": true,
+          "milliseconds": 26.9674
+        },
+        {
+          "name": "native recheck proves owned runtime quiescent without restarting a kill loop",
+          "passed": true,
+          "milliseconds": 11.7019
+        }
+      ],
+      [
+        {
+          "name": "actual native cleanup stops exact held owned identity",
+          "passed": true,
+          "milliseconds": 21.7792
+        },
+        {
+          "name": "native recheck proves owned runtime quiescent without restarting a kill loop",
+          "passed": true,
+          "milliseconds": 12.0769
+        }
+      ]
+    ]
+  },
+  "actualNative": {
+    "runs": 1,
+    "checksPerRun": 54,
+    "checksPassed": 54,
+    "ownExitCaptureCyclesPerRun": 12,
+    "ownExitCaptureCyclesTotal": 12,
+    "allPassed": true,
+    "fixtureDeadline": "Each cycle creates8s CTS after child exit/readiness; production deadline unchanged.",
+    "timings": [
+      {
+        "name": "actual native cleanup stops exact held owned identity",
+        "passed": true,
+        "milliseconds": 19.1906
+      },
+      {
+        "name": "native recheck proves owned runtime quiescent without restarting a kill loop",
+        "passed": true,
+        "milliseconds": 10.897
+      }
+    ]
+  }
+}

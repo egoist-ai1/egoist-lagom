@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-09-29T21:33:04.382348+00:00",
+  "baselineCommit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+  "runtime": ".NET 10.0.12",
+  "scope": "exact source harness; no production mutations",
+  "findings": [
+    {
+      "id": "SVC-01",
+      "reproduced": true,
+      "error": "A mutation cannot use the component query endpoint.",
+      "workerStarts": 0
+    },
+    {
+      "id": "SVC-02",
+      "reproduced": true,
+      "cachedAllowed": true,
+      "freshError": "IDENTITY_PROBE_SCOPE",
+      "persistedMutationReplayAllowed": true
+    },
+    {
+      "id": "SVC-03",
+      "reproduced": true,
+      "checksWhileClockBehind": 100,
+      "recoveriesWhileClockBehind": 0,
+      "recoveriesAfterClockCatchesUp": 1,
+      "futureOffsetDays": 14
+    },
+    {
+      "id": "SVC-04",
+      "reproduced": true,
+      "firstCompleted": true,
+      "afterClockRollbackExecuted": false,
+      "clockRollbackDays": 14
+    },
+    {
+      "id": "SVC-05",
+      "reproduced": true,
+      "expectedBeforeAnyScmAccess": "PROTECTED_ROOT_UNVERIFIED",
+      "actualErrors": {
+        "start": "UnauthorizedAccessException",
+        "install": "FileNotFoundException",
+        "repair-auto-recovery": "UnauthorizedAccessException",
+        "restore-auto-start": "UnauthorizedAccessException"
+      },
+      "proofLimit": "no commands executed: trusted-root and missing-file checks intercepted baseline; SCM start exploit remains source-only"
+    }
+  ]
+}

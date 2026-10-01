@@ -1,0 +1,1013 @@
+﻿[CmdletBinding()]
+param(
+  [ValidateSet('Run','GuardOnly')][string]$Mode='Run',
+  [string]$IntegrityManifestPath='',
+  [string]$EvidenceDirectory='',
+  [ValidatePattern('^$|^[a-f0-9]{40}$')][string]$ExpectedSourceCommit='',
+  [switch]$LibraryOnly
+)
+Set-StrictMode -Version 2.0
+$ErrorActionPreference='Stop'
+
+function Get-NativeAcceptanceEnvironmentErrors {
+  param([hashtable]$Environment,[bool]$Administrator,[bool]$Windows)
+  $errors=[Collections.Generic.List[string]]::new()
+  $required=@{GITHUB_ACTIONS='true';CI='true';RUNNER_ENVIRONMENT='github-hosted';RUNNER_OS='Windows';GITHUB_REPOSITORY='egoist-ai1/egoist-lagom'}
+  foreach($name in $required.Keys){if([string]$Environment[$name] -cne $required[$name]){$errors.Add($name)}}
+  foreach($name in @('GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT')){if([string]$Environment[$name] -cnotmatch '^[1-9][0-9]*$'){$errors.Add($name)}}
+  if([string]$Environment.GITHUB_SHA -cnotmatch '^[a-f0-9]{40}$'){$errors.Add('GITHUB_SHA')}
+  if(-not $Windows){$errors.Add('Windows')};if(-not $Administrator){$errors.Add('ElevatedAdministrator')}
+  return $errors.ToArray()
+}
+function Assert-NativeOrdinaryPath {
+  param([string]$Path,[switch]$Leaf)
+  $current=[IO.Path]::GetFullPath($Path);$first=$true
+  while($current){
+    $item=Get-Item -LiteralPath $current -Force -ErrorAction Stop
+    if(($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0){throw "Reparse path refused: $current"}
+    if($first -and ($Leaf -and $item.PSIsContainer -or -not $Leaf -and -not $item.PSIsContainer)){throw "Native path type mismatch: $current"}
+    $parent=[IO.Path]::GetDirectoryName($current.TrimEnd('\'))
+    if(-not $parent -or $parent -eq $current){break};$current=$parent;$first=$false
+  }
+}
+function Assert-NativePathWithin {
+  param([string]$Path,[string]$Root)
+  if(-not [IO.Path]::IsPathRooted($Path) -or -not [IO.Path]::IsPathRooted($Root)){throw 'Native acceptance requires absolute paths.'}
+  $full=[IO.Path]::GetFullPath($Path).TrimEnd('\');$container=[IO.Path]::GetFullPath($Root).TrimEnd('\')
+  if(-not $full.StartsWith($container+'\',[StringComparison]::OrdinalIgnoreCase)){throw "Native acceptance path escaped its scope: $full"}
+  return $full
+}
+function Resolve-NativeApplication {
+  param([string]$Name)
+  $command=Get-Command -Name $Name -CommandType Application -ErrorAction Stop | Select-Object -First 1
+  $executable=[string]$command.Source
+  if(-not [IO.Path]::IsPathRooted($executable)){throw "Native application did not resolve to one absolute path: $Name"}
+  Assert-NativeOrdinaryPath -Path $executable -Leaf
+  return $executable
+}
+function Get-NativePathAclSnapshot {
+  param([string]$Path)
+  Assert-NativeOrdinaryPath -Path $Path -Leaf:([IO.File]::Exists($Path))
+  $acl=Get-Acl -LiteralPath $Path
+  return [ordered]@{path=$Path;owner=$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value;sddl=$acl.Sddl;protected=$acl.AreAccessRulesProtected;canonical=$acl.AreAccessRulesCanonical;rules=@(foreach($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){[ordered]@{sid=$rule.IdentityReference.Value;rights=[int]$rule.FileSystemRights;type=[string]$rule.AccessControlType;inherited=$rule.IsInherited;inheritance=[int]$rule.InheritanceFlags;propagation=[int]$rule.PropagationFlags}})}
+}
+function Assert-NativeAdministratorAcl {
+  param([Security.AccessControl.FileSystemSecurity]$Security,[string]$Path,[switch]$InstallationPath)
+  $trusted=@('S-1-5-18','S-1-5-32-544')
+  if($InstallationPath){
+    if(-not [IO.Path]::IsPathRooted($Path)){throw 'Installation ACL scope requires an absolute path.'}
+    $canonicalRoot=[IO.Path]::GetFullPath((Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'EgoistShield')).TrimEnd('\')
+    $full=[IO.Path]::GetFullPath($Path).TrimEnd('\')
+    if($full -ine $canonicalRoot -and -not $full.StartsWith($canonicalRoot+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Installation ACL scope escaped canonical Program Files.'}
+    $trusted+='S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464'
+  }
+  if($Security.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $trusted){throw "Untrusted installation owner: $Path"}
+  $write=[Security.AccessControl.FileSystemRights]::Write -bor [Security.AccessControl.FileSystemRights]::Delete -bor [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor [Security.AccessControl.FileSystemRights]::TakeOwnership
+  foreach($rule in $Security.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){
+    if(($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0){continue}
+    if($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and $rule.IdentityReference.Value -notin $trusted -and ($rule.FileSystemRights -band $write) -ne 0){throw "Untrusted write/delete ACE: $Path; SID=$($rule.IdentityReference.Value); rights=$([int]$rule.FileSystemRights); inherited=$($rule.IsInherited); SDDL=$($Security.Sddl)"}
+  }
+}
+function Assert-NativeAdministratorOwned {
+  param([string]$Path,[switch]$InstallationPath)
+  Assert-NativeOrdinaryPath -Path $Path -Leaf:([IO.File]::Exists($Path))
+  $acl=Get-Acl -LiteralPath $Path
+  Assert-NativeAdministratorAcl -Security $acl -Path $Path -InstallationPath:$InstallationPath
+  return [ordered]@{path=$Path;owner=$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value;sddl=$acl.Sddl}
+}
+function Get-NativeNetworkFingerprint {
+  $dns=@(Get-DnsClientServerAddress | Sort-Object InterfaceIndex,AddressFamily | ForEach-Object {[ordered]@{index=$_.InterfaceIndex;family=[int]$_.AddressFamily;servers=@($_.ServerAddresses)}})
+  $routes=@(Get-NetRoute -PolicyStore ActiveStore | Where-Object {$_.DestinationPrefix -in @('0.0.0.0/0','::/0')} | Sort-Object InterfaceIndex,DestinationPrefix,NextHop | ForEach-Object {[ordered]@{index=$_.InterfaceIndex;prefix=$_.DestinationPrefix;nextHop=$_.NextHop;metric=$_.RouteMetric;protocol=[string]$_.Protocol}})
+  $bindings=@(Get-NetAdapterBinding -ComponentID ms_tcpip6 | Sort-Object Name | Select-Object Name,Enabled)
+  $proxy=[ordered]@{};$key=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Microsoft\Windows\CurrentVersion\Internet Settings')
+  try{foreach($name in @('ProxyEnable','ProxyServer','ProxyOverride','AutoConfigURL')){$proxy[$name]=if($key){$key.GetValue($name,$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)}else{$null}}}finally{if($key){$key.Dispose()}}
+  $winHttp=[ordered]@{};$key=[Microsoft.Win32.Registry]::LocalMachine.OpenSubKey('SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\Connections')
+  try{foreach($name in @('WinHttpSettings','DefaultConnectionSettings')){$bytes=if($key){$key.GetValue($name,$null)}else{$null};$winHttp[$name]=if($bytes -is [byte[]]){[Convert]::ToBase64String($bytes)}else{$bytes}}}finally{if($key){$key.Dispose()}}
+  return [ordered]@{dns=$dns;defaultRoutes=$routes;ipv6Bindings=$bindings;userProxy=$proxy;winHttp=$winHttp}
+}
+function Get-NativeCimSnapshot {
+  param([ValidateSet('Win32_Service','Win32_Process')][string]$ClassName,[string]$Filter='')
+  for($attempt=1;$attempt -le 2;$attempt++){
+    try{
+      $query=@{ClassName=$ClassName;OperationTimeoutSec=30;ErrorAction='Stop'}
+      if($Filter){$query.Filter=$Filter}
+      return @(Get-CimInstance @query)
+    }catch{
+      if($attempt -eq 2){throw}
+      Start-Sleep -Milliseconds 250
+    }
+  }
+}
+function Get-NativeProductServices {
+  $filter="Name LIKE 'EgoistShield%' OR Name LIKE 'EgoistLagom%' OR Name='zapret' OR Name='SystemDoH' OR Name='TGWSProxy' OR Name='TelegramProxy'"
+  return @(Get-NativeCimSnapshot Win32_Service -Filter $filter | Sort-Object Name | Select-Object Name,State,StartMode,StartName,PathName,ProcessId)
+}
+function Get-NativeProductTasks {
+  return @(Get-ScheduledTask | Where-Object {$_.TaskName -match '(?i)Egoist(?:Shield|Lagom)'} | Sort-Object TaskPath,TaskName | Select-Object TaskName,TaskPath,State)
+}
+function Copy-NativeInstallerDiagnostics {
+  $captured=@()
+  $inputs=@(
+    @{source=(Join-Path $script:DataRoot 'installer\upgrade-journal.json');name='installer-upgrade-journal.jsonl';maximum=1048576},
+    @{source=(Join-Path $script:DataRoot 'Service\service.log');name='core-service.log';maximum=6291456},
+    @{source=(Join-Path $script:DataRoot 'Service\service.log.1');name='core-service.previous.log';maximum=6291456}
+  )
+  foreach($entry in $inputs){
+    $record=[ordered]@{name=$entry.name;status='missing'}
+    try{
+      [void](Assert-NativePathWithin $entry.source $script:DataRoot)
+      if(Test-Path -LiteralPath $entry.source -PathType Leaf){
+        Assert-NativeOrdinaryPath -Path $entry.source -Leaf
+        $bytes=(Get-Item -LiteralPath $entry.source).Length
+        if($bytes -gt $entry.maximum){throw 'Diagnostic file exceeded its explicit bound; original retained.'}
+        $destination=Join-Path $script:Work $entry.name
+        [void](Assert-NativePathWithin $destination $script:Work)
+        Copy-Item -LiteralPath $entry.source -Destination $destination -ErrorAction Stop
+        $record.status='captured';$record.bytes=(Get-Item -LiteralPath $destination).Length;$record.sha256=(Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+      }
+    }catch{$record.status='refused-or-unavailable';$record.error=$_.Exception.Message}
+    $captured+=$record
+  }
+  return $captured
+}
+function Get-NativeProcessIdentity {
+  param([int]$ProcessId)
+  $row=Get-NativeCimSnapshot Win32_Process -Filter "ProcessId = $ProcessId"
+  if(-not $row -or -not $row.CreationDate -or -not $row.ExecutablePath){throw "Unreadable native process identity: $ProcessId"}
+  return [ordered]@{processId=[int]$row.ProcessId;parentProcessId=[int]$row.ParentProcessId;executable=[string]$row.ExecutablePath;createdUtc=([DateTimeOffset]$row.CreationDate).ToUniversalTime().ToString('o')}
+}
+function Assert-NativeService {
+  param([string]$Name,[string]$Executable,[switch]$Running)
+  $services=@(Get-NativeProductServices | Where-Object {$_.Name -eq $Name})
+  if($services.Count -ne 1){throw "Actual SCM service missing or ambiguous: $Name"};$service=$services[0]
+  if($service.PathName.Trim().Trim('"') -ine $Executable -or $service.StartMode -ne 'Auto' -or $service.StartName -notin @('LocalSystem','NT AUTHORITY\SYSTEM')){throw "SCM path/start/account contract failed: $Name"}
+  if($Running -and ($service.State -ne 'Running' -or [int]$service.ProcessId -le 0)){throw "SCM readiness failed: $Name"}
+  $identity=if($Running){Get-NativeProcessIdentity ([int]$service.ProcessId)}else{$null}
+  if($identity -and $identity.executable -ine $Executable){throw "SCM live process path mismatch: $Name"}
+  return [ordered]@{scm=$service;process=$identity}
+}
+function Get-NativeRecoveryPolicy {
+  param([string]$Name)
+  $key=[Microsoft.Win32.Registry]::LocalMachine.OpenSubKey('SYSTEM\CurrentControlSet\Services\'+$Name)
+  if(-not $key){throw "Missing SCM recovery policy: $Name"}
+  try{
+    [byte[]]$bytes=$key.GetValue('FailureActions',$null)
+    if(-not $bytes -or $bytes.Length -lt 44){throw "Truncated SCM recovery policy: $Name"}
+    $count=[BitConverter]::ToUInt32($bytes,12);$offset=[BitConverter]::ToUInt32($bytes,16)
+    if($count -lt 3 -or $count -gt 8 -or $offset -lt 20 -or $offset+$count*8 -gt $bytes.Length){throw "Invalid recovery layout: $Name"}
+    $actions=@();for($i=0;$i -lt $count;$i++){$actions+=[ordered]@{type=[BitConverter]::ToUInt32($bytes,[int]($offset+$i*8));delayMs=[BitConverter]::ToUInt32($bytes,[int]($offset+$i*8+4))}}
+    $policy=[ordered]@{start=[int]$key.GetValue('Start',-1);resetSeconds=[BitConverter]::ToUInt32($bytes,0);nonCrash=[int]$key.GetValue('FailureActionsOnNonCrashFailures',0);actions=$actions}
+    if($policy.start -ne 2 -or $policy.resetSeconds -lt 3600 -or $policy.nonCrash -ne 1 -or @($actions | Where-Object {$_.type -ne 1 -or $_.delayMs -le 0 -or $_.delayMs -gt 60000}).Count -ne 0){throw "Automatic restart-only policy failed: $Name"}
+    return $policy
+  }finally{$key.Dispose()}
+}
+function Save-NativeReceipt {$script:Receipt | ConvertTo-Json -Depth 28 | Set-Content -LiteralPath $script:ReceiptPath -Encoding utf8}
+function Add-NativeMutation {
+  param([string]$Kind,[string]$Target,[string]$Purpose)
+  $script:Receipt.mutations+=[ordered]@{atUtc=[DateTimeOffset]::UtcNow.ToString('o');kind=$Kind;target=$Target;purpose=$Purpose};Save-NativeReceipt
+}
+function Invoke-NativeBounded {
+  param([string]$Executable,[string[]]$Arguments,[string]$Label,[int]$TimeoutSeconds=300)
+  Assert-NativeOrdinaryPath -Path $Executable -Leaf
+  $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$Executable;$info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.RedirectStandardOutput=$true;$info.RedirectStandardError=$true
+  foreach($argument in $Arguments){$info.ArgumentList.Add([string]$argument)}
+  $child=[Diagnostics.Process]::new();$child.StartInfo=$info;$watch=[Diagnostics.Stopwatch]::StartNew()
+  try{
+    if(-not $child.Start()){throw "Native child failed to start: $Label"}
+    $stdout=$child.StandardOutput.ReadToEndAsync();$stderr=$child.StandardError.ReadToEndAsync()
+    if(-not $child.WaitForExit($TimeoutSeconds*1000)){
+      $killError=$null
+      try{if(-not $child.HasExited){$child.Kill()}}catch{$killError=$_.Exception.Message}
+      $exited=$child.WaitForExit(5000)
+      $drainError=$null
+      try{[void]([Threading.Tasks.Task]::WhenAll([Threading.Tasks.Task[]]@($stdout,$stderr)).Wait(2000))}catch{$drainError=$_.Exception.Message}
+      $out=if($stdout.Status -eq [Threading.Tasks.TaskStatus]::RanToCompletion){$stdout.GetAwaiter().GetResult()}else{''}
+      $err=if($stderr.Status -eq [Threading.Tasks.TaskStatus]::RanToCompletion){$stderr.GetAwaiter().GetResult()}else{''}
+      [IO.File]::WriteAllText((Join-Path $script:Work ($Label+'.stdout.txt')),$out.Substring(0,[Math]::Min($out.Length,1048576)),[Text.UTF8Encoding]::new($false))
+      [IO.File]::WriteAllText((Join-Path $script:Work ($Label+'.stderr.txt')),$err.Substring(0,[Math]::Min($err.Length,1048576)),[Text.UTF8Encoding]::new($false))
+      [ordered]@{result='failed-timeout';processId=$child.Id;executable=$Executable;timeoutSeconds=$TimeoutSeconds;elapsedMilliseconds=[Math]::Round($watch.Elapsed.TotalMilliseconds,2);exitObserved=$exited;stdoutComplete=($stdout.Status -eq [Threading.Tasks.TaskStatus]::RanToCompletion);stderrComplete=($stderr.Status -eq [Threading.Tasks.TaskStatus]::RanToCompletion);stdoutTruncated=($out.Length -gt 1048576);stderrTruncated=($err.Length -gt 1048576);killError=$killError;drainError=$drainError} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $script:Work ($Label+'.timeout.json')) -Encoding utf8
+      throw "Native child exceeded ${TimeoutSeconds}s: $Label; bounded timeout evidence retained."
+    }
+    $out=$stdout.GetAwaiter().GetResult();$err=$stderr.GetAwaiter().GetResult()
+    [IO.File]::WriteAllText((Join-Path $script:Work ($Label+'.stdout.txt')),$out,[Text.UTF8Encoding]::new($false));[IO.File]::WriteAllText((Join-Path $script:Work ($Label+'.stderr.txt')),$err,[Text.UTF8Encoding]::new($false))
+    if($out.Length -gt 1048576 -or $err.Length -gt 1048576){throw "Native output limit exceeded: $Label"}
+    if($child.ExitCode -ne 0){throw "Native child failed ($($child.ExitCode)): $Label; see owned stdout/stderr."}
+    return [ordered]@{exitCode=$child.ExitCode;elapsedMilliseconds=[Math]::Round($watch.Elapsed.TotalMilliseconds,2);stdout=$out}
+  }finally{$child.Dispose()}
+}
+function Wait-NativeCondition {
+  param([scriptblock]$Condition,[string]$Label,[int]$TimeoutSeconds=90,[switch]$StopOnError)
+  $watch=[Diagnostics.Stopwatch]::StartNew();$lastError=''
+  do{try{$value=& $Condition;if($value){return $value}}catch{if($StopOnError){throw};$lastError=$_.Exception.Message};Start-Sleep -Milliseconds 250}while($watch.Elapsed.TotalSeconds -lt $TimeoutSeconds)
+  throw "Actual native observation timed out: $Label ($lastError)"
+}
+function Assert-NativeNetworkPreserved {
+  param([string]$Label)
+  $current=Get-NativeNetworkFingerprint;$before=$script:Receipt.beforeNetwork | ConvertTo-Json -Depth 12 -Compress;$after=$current | ConvertTo-Json -Depth 12 -Compress
+  $script:Receipt.networkReadbacks+=[ordered]@{phase=$Label;preserved=($before -ceq $after);snapshot=$current};Save-NativeReceipt
+  if($before -cne $after){throw "Runner DNS/default route/IPv6/proxy preservation failed: $Label"}
+}
+function Assert-NativeNoGui {if(@(Get-NativeCimSnapshot Win32_Process -Filter "Name = 'EgoistShield.exe'").Count -ne 0){throw 'GUI remains after the actual close/quit control.'}}
+
+function Get-NativePeResource {
+  param([string]$Executable,[switch]$Integrity)
+  if(-not ('LagomAcceptanceResources' -as [type])){
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class LagomAcceptanceResources {
+  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] public static extern IntPtr LoadLibraryEx(string path,IntPtr file,uint flags);
+  [DllImport("kernel32.dll",EntryPoint="FindResourceW",CharSet=CharSet.Unicode,SetLastError=true)] public static extern IntPtr FindId(IntPtr module,IntPtr name,IntPtr type);
+  [DllImport("kernel32.dll",EntryPoint="FindResourceW",CharSet=CharSet.Unicode,SetLastError=true)] public static extern IntPtr FindText(IntPtr module,string name,string type);
+  [DllImport("kernel32.dll",SetLastError=true)] public static extern uint SizeofResource(IntPtr module,IntPtr resource);
+  [DllImport("kernel32.dll",SetLastError=true)] public static extern IntPtr LoadResource(IntPtr module,IntPtr resource);
+  [DllImport("kernel32.dll")] public static extern IntPtr LockResource(IntPtr resource);
+  [DllImport("kernel32.dll")] public static extern bool FreeLibrary(IntPtr module);
+}
+'@
+  }
+  # DATAFILE | IMAGE_RESOURCE maps the reviewed PE without running entry points.
+  $module=[LagomAcceptanceResources]::LoadLibraryEx($Executable,[IntPtr]::Zero,0x22)
+  if($module -eq [IntPtr]::Zero){throw 'Native PE resource map failed.'}
+  try{
+    $resource=if($Integrity){[LagomAcceptanceResources]::FindText($module,'ELECTRONASAR','INTEGRITY')}else{[LagomAcceptanceResources]::FindId($module,[IntPtr]1,[IntPtr]24)}
+    if($resource -eq [IntPtr]::Zero){throw 'Actual PE manifest/integrity resource is missing.'}
+    $size=[LagomAcceptanceResources]::SizeofResource($module,$resource)
+    if($size -eq 0 -or $size -gt 65536){throw 'Invalid native PE resource size.'}
+    $data=[LagomAcceptanceResources]::LockResource([LagomAcceptanceResources]::LoadResource($module,$resource))
+    if($data -eq [IntPtr]::Zero){throw 'Native resource data is unreadable.'}
+    $bytes=[byte[]]::new($size);[Runtime.InteropServices.Marshal]::Copy($data,$bytes,0,$bytes.Length)
+    return [Text.Encoding]::UTF8.GetString($bytes).Trim([char]0,[char]0xFEFF)
+  }finally{[void][LagomAcceptanceResources]::FreeLibrary($module)}
+}
+function Assert-NativeGuiExecutionLevel {
+  param([ValidateSet('gui','worker')][string]$Role,[string]$Level)
+  $expected=if($Role -ceq 'gui'){'requireAdministrator'}else{'asInvoker'}
+  if($Level -cne $expected){throw ("Installed "+$Role+" PE requests an incorrect execution level; expected "+$expected+'.')}
+}
+function Assert-NativeElevatedGuiTokenProof {
+  param($Token,$RunnerToken)
+  foreach($proof in @($Token,$RunnerToken)){
+    if($null -eq $proof -or $proof.elevated -isnot [bool] -or -not $proof.elevated -or $proof.administratorsEnabled -isnot [bool] -or -not $proof.administratorsEnabled){throw 'Elevated GUI requires an actual elevated administrator token and runner.'}
+    if(($proof.integrityRid -isnot [int] -and $proof.integrityRid -isnot [long]) -or $proof.integrityRid -lt 12288 -or $proof.uiAccess -isnot [bool] -or $proof.uiAccess -or ($proof.tokenType -isnot [int] -and $proof.tokenType -isnot [long]) -or $proof.tokenType -ne 1){throw 'Elevated GUI requires high integrity, a primary token and no UIAccess.'}
+    if($proof.userSid -isnot [string] -or $proof.userSid -cnotmatch '^S-[0-9]+(?:-[0-9]+)+$' -or $proof.userSid -cin @('S-1-5-18','S-1-5-19','S-1-5-20') -or ($proof.sessionId -isnot [int] -and $proof.sessionId -isnot [long]) -or $proof.sessionId -lt 0){throw 'Elevated GUI requires a real interactive user SID and session.'}
+  }
+  if($Token.userSid -cne $RunnerToken.userSid -or $Token.sessionId -ne $RunnerToken.sessionId){throw 'Elevated GUI token user/session differs from the actual current runner token.'}
+}
+
+function Assert-NativeGuiElevation {
+  param([switch]$MigrationExpected)
+  $gui=Join-Path $script:InstallRoot 'EgoistShield.exe';$worker=Join-Path $script:InstallRoot 'EgoistShield.Worker.exe'
+  foreach($role in @('gui','worker')){
+    $executable=if($role -ceq 'gui'){$gui}else{$worker}
+    [xml]$manifest=Get-NativePeResource -Executable $executable
+    $level=$manifest.SelectSingleNode("//*[local-name()='requestedExecutionLevel']")
+    if(-not $level){throw 'Installed GUI/Worker PE execution level is missing.'}
+    Assert-NativeGuiExecutionLevel -Role $role -Level $level.GetAttribute('level')
+    $integrity=Get-NativePeResource -Executable $executable -Integrity | ConvertFrom-Json
+    $payload=Get-Content -LiteralPath (Join-Path $script:Work 'installed-payload.json') -Raw | ConvertFrom-Json
+    if(@($integrity | Where-Object {$_.file -eq 'resources\\app.asar' -or $_.file -eq 'resources\app.asar'}).Count -eq 0){throw 'PE ASAR integrity does not identify the installed app.asar.'}
+    foreach($entry in @($integrity)){if($entry.file -match 'app\.asar$' -and ([string]$entry.alg -cne 'sha256' -or [string]$entry.value -cne [string]$payload.asarHeaderSha256)){throw 'Actual PE embedded ASAR header hash differs from installed archive.'}}
+  }
+  $values=@()
+  foreach($hive in @([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryHive]::CurrentUser)){
+    foreach($view in @([Microsoft.Win32.RegistryView]::Registry64,[Microsoft.Win32.RegistryView]::Registry32)){
+      $base=[Microsoft.Win32.RegistryKey]::OpenBaseKey($hive,$view);$key=$base.OpenSubKey('Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers')
+      try{
+        $value=if($key){[string]$key.GetValue($gui,'',[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)}else{''}
+        if($value -match '(?i)(?:^|\s)RUNASADMIN(?:\s|$)'){throw 'The canonical GUI retains a forced RUNASADMIN layer.'}
+        if($MigrationExpected -and $hive -eq [Microsoft.Win32.RegistryHive]::CurrentUser -and $view -eq [Microsoft.Win32.RegistryView]::Registry64 -and $value -notmatch '(?:^|\s)HIGHDPIAWARE(?:\s|$)'){throw 'Upgrade discarded the unrelated HIGHDPIAWARE layer token.'}
+        $values+=[ordered]@{hive=[string]$hive;view=[string]$view;value=$value}
+      }finally{if($key){$key.Dispose()};$base.Dispose()}
+    }
+  }
+  $link=Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'Egoist Lagom.lnk'
+  Assert-NativeOrdinaryPath -Path $link -Leaf
+  $bytes=[IO.File]::ReadAllBytes($link)
+  if($bytes.Length -lt 76 -or [BitConverter]::ToUInt32($bytes,0) -ne 76 -or ([BitConverter]::ToUInt32($bytes,20) -band 0x2000) -ne 0){throw 'Installed Start Menu shortcut retains RunAsUser or has an invalid shell-link header.'}
+  return [ordered]@{guiManifest='requireAdministrator';workerManifest='asInvoker';layers=$values;shortcut=$link;shortcutRunAsUser=$false;embeddedAsarIntegrityVerified=$true}
+}
+function Set-NativeOwnedLegacyLayer {
+  $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
+  [void](Assert-NativeAdministratorOwned $gui -InstallationPath)
+  Add-NativeMutation -Kind 'owned-hkcu-compatibility-fixture' -Target $gui -Purpose 'Preserve HIGHDPIAWARE while migrating the old forced RUNASADMIN token.'
+  $base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::CurrentUser,[Microsoft.Win32.RegistryView]::Registry64)
+  $key=$base.CreateSubKey('Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers')
+  try{$key.SetValue($gui,'~ HIGHDPIAWARE RUNASADMIN',[Microsoft.Win32.RegistryValueKind]::String)}finally{$key.Dispose();$base.Dispose()}
+}
+function Get-NativeTelegramNavigation {
+  param([scriptblock]$FindButton,[string]$Label)
+  $control=Wait-NativeCondition -Condition {
+    $navigation=& $FindButton 'Telegram'
+    if($navigation){return [pscustomobject]@{navigation=$navigation;expand=$null}}
+    $settings=& $FindButton 'Настройки'
+    if($settings){return [pscustomobject]@{navigation=$null;expand=$settings}}
+  } -Label ($Label+' actual initial widget or dashboard control') -TimeoutSeconds 90
+  if($control.navigation){return $control.navigation}
+  ([Windows.Automation.InvokePattern]$control.expand.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
+  return Wait-NativeCondition -Condition {& $FindButton 'Telegram'} -Label ($Label+' actual Telegram navigation after opening dashboard') -TimeoutSeconds 60
+}
+
+function Copy-NativeGuiLog {
+  param([Diagnostics.ProcessStartInfo]$StartInfo,[ValidatePattern('^[a-z0-9-]+$')][string]$Label)
+  $record=[ordered]@{name=($Label+'-main.log');status='missing'}
+  try{
+    $appData=[string]$StartInfo.Environment['APPDATA']
+    if(-not $appData -or -not [IO.Path]::IsPathRooted($appData)){throw 'Actual GUI launch environment has no absolute APPDATA.'}
+    $source=Join-Path $appData 'Egoist Shield\logs\main.log'
+    [void](Assert-NativePathWithin $source $appData)
+    if(Test-Path -LiteralPath $source -PathType Leaf){
+      Assert-NativeOrdinaryPath -Path $source -Leaf
+      $bytes=(Get-Item -LiteralPath $source).Length
+      if($bytes -gt 6291456){throw 'GUI diagnostic log exceeded its explicit bound; original retained.'}
+      $destination=Join-Path $script:Work $record.name
+      [void](Assert-NativePathWithin $destination $script:Work)
+      Copy-Item -LiteralPath $source -Destination $destination -ErrorAction Stop
+      $record.status='captured';$record.bytes=(Get-Item -LiteralPath $destination).Length;$record.sha256=(Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+    }
+  }catch{$record.status='refused-or-unavailable';$record.error=$_.Exception.Message}
+  return $record
+}
+
+function Save-NativeGuiFailureObservation {
+  param([Diagnostics.Process]$Process,$Root,[ValidatePattern('^[a-z0-9-]+$')][string]$Label)
+  $record=[ordered]@{label=$Label;observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');processId=$Process.Id;mainLog=(Copy-NativeGuiLog -StartInfo $Process.StartInfo -Label $Label);controls=@();readbackErrors=@()}
+  try{$Process.Refresh();$record.exited=$Process.HasExited;if($Process.HasExited){$record.exitCode=$Process.ExitCode}else{$record.windowHandle=[long]$Process.MainWindowHandle}}catch{$record.readbackErrors+=$_.Exception.Message}
+  if($Root){
+    try{
+      if($Root.Current.ProcessId -ne $Process.Id){throw 'Observation root belongs to a different GUI.'}
+      $controls=$Root.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.Condition]::TrueCondition)
+      $record.totalElements=$controls.Count
+      for($index=0;$index -lt $controls.Count -and $record.controls.Count -lt 160;$index++){
+        $current=$controls[$index].Current
+        if($current.ControlType.ProgrammaticName -notin @('ControlType.Button','ControlType.Text','ControlType.Window')){continue}
+        $name=[string]$current.Name
+        if($name.Length -gt 512){$name=$name.Substring(0,512)}
+        $record.controls+=[ordered]@{type=$current.ControlType.ProgrammaticName;name=$name;enabled=$current.IsEnabled;offscreen=$current.IsOffscreen}
+      }
+    }catch{$record.readbackErrors+=$_.Exception.Message}
+  }
+  $file=Join-Path $script:Work ($Label+'-failure-observation.json')
+  [void](Assert-NativePathWithin $file $script:Work)
+  [IO.File]::WriteAllText($file,($record|ConvertTo-Json -Depth 8),[Text.UTF8Encoding]::new($false))
+}
+
+function Invoke-NativeGui {
+  param([ValidateSet('provision-telegram','check-telegram')][string]$Action,[string]$Label)
+  Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+  $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
+  [void](Assert-NativeAdministratorOwned $gui -InstallationPath)
+  Add-NativeMutation -Kind 'canonical-gui-native-uia' -Target $gui -Purpose $Action
+  $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$gui;$info.WorkingDirectory=$script:InstallRoot;$info.UseShellExecute=$false;$info.CreateNoWindow=$true
+  $info.RedirectStandardOutput=$true;$info.RedirectStandardError=$true
+  foreach($name in @($info.Environment.Keys)){if($name -match '^(ELECTRON_RUN_AS_NODE|NODE_OPTIONS|NODE_PATH|LAGOM_TEST_USER_DATA_DIR|SHIELD_.*|EGOIST_.*)$'){[void]$info.Environment.Remove($name)}}
+  $info.Environment['NODE_ENV']='production'
+  # No remote debugger, renderer-accessibility flag, development path or special
+  # Core authority is added. InvokePattern operates the actual shipped buttons.
+  $child=[Diagnostics.Process]::new();$child.StartInfo=$info;$closed=$false;$started=$false;$root=$null;$stdout=$null;$stderr=$null
+  try{
+    $started=$child.Start();if(-not $started){throw 'Canonical GUI did not start.'}
+    $stdout=$child.StandardOutput.ReadToEndAsync();$stderr=$child.StandardError.ReadToEndAsync()
+    $hwnd=Wait-NativeCondition -Condition {$child.Refresh();if($child.HasExited){throw "Canonical GUI exited before exposing a window (exit $($child.ExitCode))."};if($child.MainWindowHandle -ne [IntPtr]::Zero){return $child.MainWindowHandle}} -Label 'Canonical GUI native window' -TimeoutSeconds 90 -StopOnError
+    if($child.MainModule.FileName -ine $gui){throw 'Actual GUI executable identity changed.'}
+    $root=[Windows.Automation.AutomationElement]::FromHandle($hwnd)
+    if(-not $root -or $root.Current.ProcessId -ne $child.Id){throw 'Native UIA root does not belong to the exact launched GUI.'}
+    $buttonType=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Button)
+    $findButton={param([string]$Name)
+      $nameCondition=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty,$Name)
+      $condition=[Windows.Automation.AndCondition]::new($buttonType,$nameCondition)
+      $buttons=$root.FindAll([Windows.Automation.TreeScope]::Descendants,$condition)
+      if($buttons.Count -eq 1 -and $buttons[0].Current.IsEnabled){return $buttons[0]}
+    }
+    $nav=Get-NativeTelegramNavigation -FindButton $findButton -Label 'Canonical GUI'
+    ([Windows.Automation.InvokePattern]$nav.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
+    $wrapper=Join-Path $script:DataRoot 'Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe'
+    if($Action -eq 'provision-telegram'){
+      $installButton=Wait-NativeCondition -Condition {& $findButton 'Установить фоновую службу'} -Label 'Actual Telegram install control' -TimeoutSeconds 60
+      Add-NativeMutation -Kind 'telegram-native-invoke' -Target 'EgoistShieldTelegramProxy' -Purpose ("Invoke shipped install control in exact GUI PID "+$child.Id)
+      ([Windows.Automation.InvokePattern]$installButton.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
+      Save-NativeGuiFailureObservation -Process $child -Root $root -Label ($Label+'-after-invoke')
+      $capture=[ordered]@{watch=[Diagnostics.Stopwatch]::StartNew();next=2;label=$Label}
+      [void](Wait-NativeCondition -Condition {
+        if($capture.next -le 45 -and $capture.watch.Elapsed.TotalSeconds -ge $capture.next){
+          Save-NativeGuiFailureObservation -Process $child -Root $root -Label ($capture.label+'-click-'+$capture.next+'s')
+          $capture.next=if($capture.next -eq 2){15}elseif($capture.next -eq 15){45}else{999}
+        }
+        Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running
+      } -Label 'Telegram installed through genuine GUI control' -TimeoutSeconds 240)
+    }else{[void](Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running)}
+    $completion=Wait-NativeTelegramGuiCompletion -FindButton $findButton -Process $child -Root $root -Label $Label
+    $config=Get-Content -LiteralPath (Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json') -Raw | ConvertFrom-Json
+    $port=[int]$config.port
+    [void](Assert-NativeTelegramEndpoint -Port $port)
+    $core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
+    $workers=@(Get-NativeCimSnapshot Win32_Process -Filter "Name = 'EgoistShield.Worker.exe'" | Where-Object {$_.ExecutablePath -ieq (Join-Path $script:InstallRoot 'EgoistShield.Worker.exe') -and [int]$_.ParentProcessId -eq [int]$core.scm.ProcessId})
+    if($workers.Count -ne 1){throw 'Genuine GUI IPC did not leave one exact protected Core worker.'}
+    $owner=Invoke-CimMethod -InputObject $workers[0] -MethodName GetOwnerSid
+    if($owner.ReturnValue -ne 0 -or $owner.Sid -ne 'S-1-5-18'){throw 'Actual protected component worker is not LocalSystem.'}
+    $pattern=$null
+    if(-not $root.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'Actual GUI does not expose the native window close pattern.'}
+    ([Windows.Automation.WindowPattern]$pattern).Close()
+    if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'GUI did not exit normally through the native close control.'};$closed=$true
+    $result=[ordered]@{ok=$true;mode=$Action;mainProcessId=$child.Id;arguments=@();automation='native UIAutomation InvokePattern and WindowPattern';operationCompletion=$completion;productionOverride=$false;coreWorker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;installResult=[ordered]@{serviceInstalled=$true;serviceRunning=$true;running=$true;portConflict=[ordered]@{port=$port;host=[string]$config.host}};exitCode=$child.ExitCode}
+    $result | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $script:Work ($Label+'.json')) -Encoding utf8
+    $script:Receipt.gui+=$result;Save-NativeReceipt;return $result
+  }catch{
+    if($started){try{Save-NativeGuiFailureObservation -Process $child -Root $root -Label $Label}catch{Write-Warning ('GUI observation unavailable: '+$_.Exception.Message)}}
+    throw
+  }finally{
+    if($started -and -not $closed -and -not $child.HasExited){
+      # Only the handle created in this function is canceled on test failure.
+      # SCM processes and other GUIs are never selected for this cleanup.
+      $child.Kill();[void]$child.WaitForExit(5000)
+    }
+    foreach($stream in @(@{task=$stdout;name='stdout'},@{task=$stderr;name='stderr'})){
+      if($stream.task -and $stream.task.IsCompletedSuccessfully){$text=$stream.task.GetAwaiter().GetResult();if($text.Length -gt 1048576){$text=$text.Substring(0,1048576)+"`n[diagnostic truncated after 1 MiB]"};[IO.File]::WriteAllText((Join-Path $script:Work ($Label+'.'+$stream.name+'.txt')),$text,[Text.UTF8Encoding]::new($false))}
+    }
+    $child.Dispose()
+  }
+}
+function Invoke-NativeElevatedGui {
+  Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+  . (Join-Path $PSScriptRoot 'windows-ordinary-gui.ps1') -OrdinaryGuiLibraryOnly
+  $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
+  $elevatedEvidence=Join-Path $script:Work 'elevated-evidence'
+  [void][IO.Directory]::CreateDirectory($elevatedEvidence)
+  Add-NativeMutation -Kind 'elevated-gui-native-uia' -Target $gui -Purpose 'Actual Windows administrator GUI stops and starts the installed Telegram service through the shipped Core broker.'
+  $lease=$null;$child=$null;$closed=$false;$operationError=$null;$cleanup=$null
+  $script:Receipt.elevatedGui=[ordered]@{ok=$false;result='running';launch=$null;actualProcess=$null;exitCode=$null;cleanup=$null;managementMode='administrator-required';normalUacPromptObserved=$false}
+  Save-NativeReceipt
+  try{
+    $lease=Start-ElevatedGuiLease -CanonicalInstalledGuiPath $gui -IntegrityManifestPath $script:ManifestPath -ExpectedSourceCommit $script:SourceCommit -WorkRoot $script:Work -EvidenceDirectory $elevatedEvidence
+    $proof=$lease.Receipt
+    $script:Receipt.elevatedGui.launch=$proof
+    if($proof.launchPolicy -cne 'elevated' -or $proof.elevatedGui -ne $true -or $proof.guiRequestedExecutionLevel -cne 'requireAdministrator'){throw 'Elevated GUI lease did not prove the explicit current-token launch policy.'}
+    Assert-NativeElevatedGuiTokenProof -Token $proof.token -RunnerToken $proof.runnerToken
+    if($proof.executable -ine $gui -or @($proof.arguments).Count -ne 0 -or $proof.source.commit -cne $script:SourceCommit -or $proof.artifactSourceCommit -cne $script:SourceCommit -or $proof.harnessSourceCommit -cne $script:SourceCommit){throw 'Elevated GUI launch/source identity mismatch.'}
+    $child=[Diagnostics.Process]::GetProcessById([int]$proof.processId)
+    $identity=Get-NativeProcessIdentity $child.Id
+    if($identity.executable -ine $gui -or [Math]::Abs(([DateTimeOffset]::Parse($proof.startTimeUtc).UtcDateTime-$child.StartTime.ToUniversalTime()).TotalMilliseconds) -gt 20){throw 'Elevated GUI creation identity changed.'}
+    $hwnd=[IntPtr]([long]$proof.mainWindowHandle)
+    $root=[Windows.Automation.AutomationElement]::FromHandle($hwnd)
+    if(-not $root -or $root.Current.ProcessId -ne $child.Id){throw 'Native UIA root does not belong to the exact elevated GUI.'}
+    $buttonType=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Button)
+    $findButton={param([string]$Name)
+      $named=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty,$Name)
+      $buttons=$root.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.AndCondition]::new($buttonType,$named))
+      if($buttons.Count -eq 1 -and $buttons[0].Current.IsEnabled){return $buttons[0]}
+    }
+    $navigation=Get-NativeTelegramNavigation -FindButton $findButton -Label 'Elevated GUI'
+    ([Windows.Automation.InvokePattern]$navigation.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
+    $wrapper=Join-Path $script:DataRoot 'Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe'
+    $before=Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running
+    $stop=Wait-NativeCondition -Condition {& $findButton 'Остановить'} -Label 'Elevated GUI actual stop control' -TimeoutSeconds 60
+    ([Windows.Automation.InvokePattern]$stop.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
+    $stopped=Wait-NativeCondition -Condition {
+      $row=@(Get-NativeProductServices | Where-Object {$_.Name -eq 'EgoistShieldTelegramProxy'})
+      if($row.Count -eq 1 -and $row[0].PathName.Trim().Trim('"') -ieq $wrapper -and $row[0].State -eq 'Stopped' -and [int]$row[0].ProcessId -eq 0){return $row[0]}
+    } -Label 'Real SCM Telegram stop through elevated GUI/Core IPC' -TimeoutSeconds 90
+    $start=Wait-NativeCondition -Condition {& $findButton 'Запустить'} -Label 'Elevated GUI actual start control' -TimeoutSeconds 60
+    ([Windows.Automation.InvokePattern]$start.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
+    $after=Wait-NativeCondition -Condition {Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running} -Label 'Real SCM Telegram start through elevated GUI/Core IPC' -TimeoutSeconds 90
+    if($after.process.processId -eq $before.process.processId -and $after.process.createdUtc -ceq $before.process.createdUtc){throw 'Elevated GUI restart did not produce a new verified service identity.'}
+    $completion=Wait-NativeTelegramGuiCompletion -FindButton $findButton -Process $child -Root $root -Label 'Elevated GUI'
+    $configuration=Get-Content -LiteralPath (Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json') -Raw | ConvertFrom-Json
+    $endpoint=Assert-NativeTelegramEndpoint -Port ([int]$configuration.port)
+    $core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
+    $workers=@(Get-NativeCimSnapshot Win32_Process -Filter "Name = 'EgoistShield.Worker.exe'" | Where-Object {$_.ExecutablePath -ieq (Join-Path $script:InstallRoot 'EgoistShield.Worker.exe') -and [int]$_.ParentProcessId -eq [int]$core.scm.ProcessId})
+    if($workers.Count -ne 1){throw 'Elevated GUI IPC did not use one exact protected Core worker.'}
+    $owner=Invoke-CimMethod -InputObject $workers[0] -MethodName GetOwnerSid
+    if($owner.ReturnValue -ne 0 -or $owner.Sid -ne 'S-1-5-18'){throw 'Elevated GUI component operation was not executed by the LocalSystem worker.'}
+    $pattern=$null
+    if(-not $root.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'Elevated GUI lacks native close pattern.'}
+    ([Windows.Automation.WindowPattern]$pattern).Close()
+    if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'Elevated GUI did not exit normally.'};$closed=$true
+    $script:Receipt.elevatedGui=[ordered]@{ok=$true;result='passed-elevated-gui-ipc';managementMode='administrator-required';normalUacPromptObserved=$false;launch=$proof;actualProcess=$identity;automation='native UIAutomation InvokePattern and WindowPattern';operationCompletion=$completion;before=$before;stopped=$stopped;after=$after;endpoint=$endpoint;worker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;exitCode=$child.ExitCode;cleanup=$null}
+    Save-NativeReceipt
+  }catch{$operationError=$_;$script:Receipt.elevatedGui.ok=$false;$script:Receipt.elevatedGui.result='failed';$script:Receipt.elevatedGui.error=$_.Exception.Message;Save-NativeReceipt}
+  finally{
+    if($lease){
+      try{$cleanup=Stop-ElevatedGuiLease -Lease $lease;if(-not $closed -or -not $cleanup.exitedNormally -or $cleanup.exitCode -ne 0){throw 'Elevated GUI cleanup did not follow a normal successful GUI exit.'}}
+      catch{if(-not $operationError){$operationError=$_};$script:Receipt.elevatedGui.ok=$false;$script:Receipt.elevatedGui.result='failed';$script:Receipt.elevatedGui.error=$operationError.Exception.Message}
+    }
+    if($child){$child.Dispose()}
+    $destination=Join-Path $script:Evidence 'elevated-gui';[void][IO.Directory]::CreateDirectory($destination)
+    foreach($file in @(Get-ChildItem -LiteralPath $elevatedEvidence -File)){Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $destination $file.Name)}
+    if($lease){foreach($name in @('source-hashes.json','build.txt','run.stdout.txt','run.stderr.txt')){$file=Join-Path $lease.Build.Directory $name;if(Test-Path -LiteralPath $file -PathType Leaf){Copy-Item -LiteralPath $file -Destination (Join-Path $destination $name)}}}
+    if($script:Receipt.Contains('elevatedGui')){$script:Receipt.elevatedGui.cleanup=$cleanup;Save-NativeReceipt}
+  }
+  if($operationError){throw $operationError}
+  Assert-NativeNoGui
+  [void](Assert-NativeTelegramEndpoint -Port ([int]$configuration.port))
+  Assert-NativePrivateState 'after-elevated-gui-operation'
+  Assert-NativeNetworkPreserved 'elevated-gui-stop-start-and-close'
+  $gate=@($script:Receipt.releaseGates | Where-Object {$_.name -eq 'GUI IPC from an actual elevated Windows user token'})
+  if($gate.Count -ne 1){throw 'Elevated GUI release gate is missing or ambiguous.'}
+  $gate[0].status='passed';$gate[0].reason='Actual current Windows GUI token: elevated, Administrators enabled, high integrity, same user/session, primary and no UIAccess. GUI manifest requires administrator through normal Windows UAC; no filtered-token or sandbox bypass is used. Genuine shipped UI controls stopped and restarted SCM Telegram through the protected LocalSystem Core worker; normal GUI exit and zero-orphan cleanup verified.'
+  $script:Receipt.checks+=[ordered]@{name='actual-elevated-gui-core-broker-service-stop-start-and-normal-quit';ok=$true};Save-NativeReceipt
+}
+
+function Assert-NativePrivateState {
+  param([string]$Label)
+  $records=@()
+  foreach($relative in @('Runtime\TelegramProxy\config.json','Runtime\TelegramProxy\state.json','Runtime\Vpn','Service\Vpn')){
+    $file=Join-Path $script:DataRoot $relative
+    if(-not (Test-Path -LiteralPath $file)){
+      if($relative -eq 'Runtime\TelegramProxy\config.json'){throw 'Actual Telegram credential configuration is missing.'}
+      $records+=[ordered]@{path=$file;exists=$false};continue
+    }
+    $protected=Assert-NativeAdministratorOwned $file
+    $acl=Get-Acl -LiteralPath $file
+    foreach($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){
+      if(($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0){continue}
+      if($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and $rule.IdentityReference.Value -notin @('S-1-5-18','S-1-5-32-544') -and ($rule.FileSystemRights -band [Security.AccessControl.FileSystemRights]::ReadData) -ne 0){throw "Credential state is readable by an unrelated principal before backup: $file"}
+    }
+    $records+=[ordered]@{path=$file;exists=$true;owner=$protected.owner;privateContent=$true;sddl=$acl.Sddl}
+  }
+  $script:Receipt.privateStateReadbacks+=[ordered]@{phase=$Label;records=$records};Save-NativeReceipt
+}
+function New-NativePrivateStateFixture {
+  $directory=Join-Path $script:DataRoot 'Service\Vpn'
+  if(Test-Path -LiteralPath $directory){throw 'Private fixture cannot overwrite existing VPN state.'}
+  Add-NativeMutation -Kind 'inactive-private-file-fixture' -Target $directory -Purpose 'Actual installer preservation/ACL/uninstall boundary; no VPN service or connection is created.'
+  [void][IO.Directory]::CreateDirectory($directory)
+  $security=[Security.AccessControl.DirectorySecurity]::new()
+  $security.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544'));$security.SetAccessRuleProtection($true,$false)
+  foreach($sid in @('S-1-5-18','S-1-5-32-544')){
+    $security.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($sid),[Security.AccessControl.FileSystemRights]::FullControl,[Security.AccessControl.InheritanceFlags]'ContainerInherit,ObjectInherit',[Security.AccessControl.PropagationFlags]::None,[Security.AccessControl.AccessControlType]::Allow))
+  }
+  Set-Acl -LiteralPath $directory -AclObject $security
+  [void](Assert-NativeAdministratorOwned $directory)
+  $file=Join-Path $directory '.native-acceptance-sentinel'
+  [IO.File]::WriteAllText($file,('inactive-native-filesystem-fixture-'+[Guid]::NewGuid().ToString('N')),[Text.UTF8Encoding]::new($false))
+  $script:Receipt.inactiveVpnFixture=[ordered]@{path=$file;sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash;actualVpnConnectionConfigured=$false;actualVpnServiceInstalled=$false}
+  Save-NativeReceipt
+}
+function Read-NativeTelegramEndpointSnapshot {
+  param([int]$Port,[int]$TimeoutMilliseconds)
+  # Existing child retirement/drain allowance is reserved inside the endpoint deadline.
+  $seconds=[Math]::Min(4,[Math]::Floor(($TimeoutMilliseconds-7000)/1000))
+  if($seconds -lt 1){throw 'Telegram endpoint deadline cannot admit another bounded snapshot.'}
+  $result=Invoke-NativeBounded -Executable $script:Core -Arguments @('--telegram-listener-snapshot','--port',[string]$Port) -Label ('telegram-listener-'+$Port) -TimeoutSeconds ([int]$seconds)
+  if([Text.Encoding]::UTF8.GetByteCount($result.stdout) -gt 65536){throw 'Telegram snapshot exceeded its output bound.'}
+  return $result.stdout | ConvertFrom-Json
+}
+function Test-NativeTelegramTcp {
+  param([int]$Port,[int]$TimeoutMilliseconds)
+  if($TimeoutMilliseconds -le 0){throw 'Telegram endpoint deadline expired before TCP.'}
+  $client=[Net.Sockets.TcpClient]::new()
+  try{return $client.ConnectAsync('127.0.0.1',$Port).Wait([Math]::Min(3000,$TimeoutMilliseconds)) -and $client.Connected}finally{$client.Dispose()}
+}
+function ConvertTo-NativeTelegramUtcInstant {
+  param($Value)
+  if($Value -is [DateTimeOffset]){return $Value.ToUniversalTime()}
+  if($Value -is [DateTime]){
+    if($Value.Kind -eq [DateTimeKind]::Unspecified){throw 'Telegram identity timestamp has no known timezone.'}
+    return ([DateTimeOffset]$Value).ToUniversalTime()
+  }
+  if($Value -isnot [string] -or $Value -cnotmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,7})?(?:Z|[+-]\d{2}:\d{2})$'){throw 'Telegram identity timestamp is not an explicit ISO UTC/offset instant.'}
+  return ([DateTimeOffset]::Parse($Value,[Globalization.CultureInfo]::InvariantCulture)).ToUniversalTime()
+}
+function Get-NativeTelegramSnapshotState {
+  param($Value,[int]$Port,$Service)
+  if($Value.schemaVersion -ne 2 -or $Value.operation -cne 'telegram-listener-snapshot' -or $Value.serviceName -cne 'EgoistShieldTelegramProxy' -or $Value.port -ne $Port -or
+     $Value.snapshotAvailable -isnot [bool] -or -not $Value.snapshotAvailable -or $Value.stable -isnot [bool] -or -not $Value.stable -or
+     $Value.serviceState -cne 'Running' -or $Value.rootProcessPathVerified -isnot [bool] -or -not $Value.rootProcessPathVerified -or $Value.managedProcessId -ne $null){throw 'Unknown or incomplete actual Telegram native snapshot.'}
+  $snapshot=$Value.snapshot
+  if(-not $snapshot -or $snapshot.stable -isnot [bool] -or -not $snapshot.stable -or $snapshot.serviceState -cne 'Running' -or
+     $snapshot.serviceProcessId -ne $Value.serviceProcessId -or $Value.serviceProcessId -ne $Service.process.processId){throw 'Actual Telegram SCM process identity changed.'}
+  $rows=@($snapshot.processes);$listeners=@($snapshot.listeners)
+  if($rows.Count -gt 128 -or $listeners.Count -gt 128){throw 'Actual Telegram snapshot row bound exceeded.'}
+  $byId=@{}
+  foreach($row in $rows){
+    if(-not $row -or $row.processId -isnot [long] -and $row.processId -isnot [int] -or $row.processId -le 0 -or $row.processId -gt [int]::MaxValue -or $byId.ContainsKey([int]$row.processId)){throw 'Incomplete or duplicate actual Telegram process row.'}
+    $byId[[int]$row.processId]=$row
+  }
+  $root=$byId[[int]$Value.serviceProcessId]
+  $expected=Join-Path $script:DataRoot 'Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe'
+  if(-not $root -or $root.executablePath -ine $expected -or -not $root.createdAt -or -not $Value.rootProcessCreatedAt){throw 'Actual Telegram root path/birth proof is unavailable.'}
+  $birth=(ConvertTo-NativeTelegramUtcInstant $root.createdAt)
+  if($birth -ne (ConvertTo-NativeTelegramUtcInstant $Value.rootProcessCreatedAt) -or [Math]::Abs(($birth-(ConvertTo-NativeTelegramUtcInstant $Service.process.createdUtc)).Ticks) -gt 10){throw 'Actual Telegram root birth changed.'}
+  foreach($listener in $listeners){
+    if(-not $listener -or $listener.localPort -ne $Port -or $listener.localAddress -notin @('127.0.0.1','::1')){throw 'Actual Telegram listener is non-loopback or malformed.'}
+    $current=[int]$listener.owningProcess;$seen=[Collections.Generic.HashSet[int]]::new();$found=$false
+    for($depth=0;$depth -lt 32 -and $current -gt 0;$depth++){
+      if(-not $seen.Add($current) -or -not $byId.ContainsKey($current)){break};$row=$byId[$current]
+      if(-not $row.createdAt -or -not $row.executablePath -or (ConvertTo-NativeTelegramUtcInstant $row.createdAt) -lt $birth){break}
+      if($current -eq [int]$Value.serviceProcessId){$found=$true;break}
+      $parent=$byId[[int]$row.parentProcessId]
+      if(-not $parent -or -not $parent.createdAt -or (ConvertTo-NativeTelegramUtcInstant $parent.createdAt) -gt (ConvertTo-NativeTelegramUtcInstant $row.createdAt)){break};$current=[int]$row.parentProcessId
+    }
+    if(-not $found){throw 'Actual Telegram endpoint owner/birth is not a verified SCM descendant.'}
+  }
+  if($Value.ownership -cne $Value.ipv4.state -or $Value.ipv6Ownership -cne $Value.ipv6.state){throw 'Contradictory Telegram family ownership.'}
+  foreach($family in @($Value.ipv4,$Value.ipv6)){
+    if($family.state -notin @('owned','missing')){throw 'Actual Telegram listener is foreign or ownership unknown.'}
+    if($family.state -eq 'owned' -and ($family.rootPid -ne $Value.serviceProcessId -or -not $family.rootCreatedAt -or
+      (ConvertTo-NativeTelegramUtcInstant $family.rootCreatedAt) -ne $birth -or -not $family.ownerCreatedAt -or
+      -not $byId.ContainsKey([int]$family.ownerPid) -or (ConvertTo-NativeTelegramUtcInstant $family.ownerCreatedAt) -ne (ConvertTo-NativeTelegramUtcInstant $byId[[int]$family.ownerPid].createdAt))){throw 'Incomplete actual Telegram family owner identity.'}
+  }
+  if($listeners.Count -eq 0){if($Value.ipv4.state -ne 'missing' -or $Value.ipv6.state -ne 'missing'){throw 'Contradictory Telegram absence proof.'};return 'pending'}
+  if($Value.ipv4.state -ne 'owned' -and $Value.ipv6.state -ne 'owned'){throw 'Actual Telegram listener ownership was not established.'}
+  return 'ready'
+}
+function Save-NativeTelegramEndpointObservation {
+  param([int]$Port,[string]$Result,[double]$ElapsedMilliseconds,$LastSnapshot,[string]$ErrorMessage='',[int]$TimeoutSeconds=30)
+  $record=[ordered]@{observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');port=$Port;result=$Result;endpointBudgetSeconds=$TimeoutSeconds;elapsedMilliseconds=[Math]::Round($ElapsedMilliseconds,2);lastSnapshot=$LastSnapshot;error=$ErrorMessage}
+  $previous=if($script:Receipt.Contains('telegramEndpointObservations')){@($script:Receipt.telegramEndpointObservations)}else{@()}
+  $script:Receipt.telegramEndpointObservations=@(@($previous)+@($record) | Select-Object -Last 16)
+  Save-NativeReceipt
+}
+function Assert-NativeTelegramEndpoint {
+  param([int]$Port,[ValidateRange(1,30)][int]$TimeoutSeconds=30)
+  if($Port -lt 1024 -or $Port -gt 65535){throw 'Invalid actual Telegram loopback port.'}
+  $wrapper=Join-Path $script:DataRoot 'Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe'
+  # Preserve the independent SCM path/account/startup gate before the bounded listener phase.
+  $service=Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running
+  $watch=[Diagnostics.Stopwatch]::StartNew();$last=$null
+  try{
+    do{
+      $remaining=[int]($TimeoutSeconds*1000-$watch.Elapsed.TotalMilliseconds)
+      if($remaining -le 0){throw 'Actual Telegram endpoint readiness deadline timed out.'}
+      $before=Read-NativeTelegramEndpointSnapshot -Port $Port -TimeoutMilliseconds $remaining
+      $last=$before.snapshot
+      if($watch.Elapsed.TotalMilliseconds -ge $TimeoutSeconds*1000){throw 'Actual Telegram endpoint readiness deadline timed out.'}
+      $state=Get-NativeTelegramSnapshotState -Value $before -Port $Port -Service $service
+      if($state -eq 'pending'){
+        $remaining=[int]($TimeoutSeconds*1000-$watch.Elapsed.TotalMilliseconds)
+        if($remaining -gt 0){Start-Sleep -Milliseconds ([Math]::Min(250,$remaining))};continue
+      }
+      $remaining=[int]($TimeoutSeconds*1000-$watch.Elapsed.TotalMilliseconds)
+      if(-not (Test-NativeTelegramTcp -Port $Port -TimeoutMilliseconds $remaining)){throw 'Actual Telegram TCP readiness failed.'}
+      $remaining=[int]($TimeoutSeconds*1000-$watch.Elapsed.TotalMilliseconds)
+      if($remaining -le 0){throw 'Actual Telegram endpoint deadline expired after TCP.'}
+      $after=Read-NativeTelegramEndpointSnapshot -Port $Port -TimeoutMilliseconds $remaining;$last=$after.snapshot
+      if((Get-NativeTelegramSnapshotState -Value $after -Port $Port -Service $service) -ne 'ready' -or $after.serviceProcessId -ne $before.serviceProcessId -or
+         (ConvertTo-NativeTelegramUtcInstant $after.rootProcessCreatedAt) -ne (ConvertTo-NativeTelegramUtcInstant $before.rootProcessCreatedAt)){throw 'Actual Telegram root/listener changed during TCP proof.'}
+      if($watch.Elapsed.TotalMilliseconds -ge $TimeoutSeconds*1000){throw 'Actual Telegram endpoint readiness deadline timed out.'}
+      Save-NativeTelegramEndpointObservation -Port $Port -Result 'ready' -ElapsedMilliseconds $watch.Elapsed.TotalMilliseconds -LastSnapshot $last -TimeoutSeconds $TimeoutSeconds
+      return [ordered]@{service=$service;endpoints=@($after.snapshot.listeners);tcpConnected=$true;nativeSnapshot=$after;readinessMilliseconds=[Math]::Round($watch.Elapsed.TotalMilliseconds,2)}
+    }while($watch.Elapsed.TotalMilliseconds -lt $TimeoutSeconds*1000)
+    throw 'Actual Telegram endpoint readiness deadline timed out.'
+  }catch{
+    $primary=$_
+    try{Save-NativeTelegramEndpointObservation -Port $Port -Result 'failed' -ElapsedMilliseconds $watch.Elapsed.TotalMilliseconds -LastSnapshot $last -ErrorMessage $primary.Exception.Message -TimeoutSeconds $TimeoutSeconds}catch{Write-Warning ('Telegram endpoint evidence unavailable: '+$_.Exception.Message)}
+    throw $primary
+  }
+}
+function Get-NativeTelegramGuiVisibleError {
+  param($Root)
+  $title='Действие не выполнено'
+  $condition=[Windows.Automation.AndCondition]::new(
+    [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Text),
+    [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty,$title))
+  foreach($element in $Root.FindAll([Windows.Automation.TreeScope]::Descendants,$condition)){
+    if($element.Current.ControlType -eq [Windows.Automation.ControlType]::Text -and $element.Current.Name -ceq $title -and -not $element.Current.IsOffscreen){return [ordered]@{title=$title;observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}}
+  }
+  return $null
+}
+function Wait-NativeTelegramGuiCompletion {
+  param([scriptblock]$FindButton,$Process,$Root,[string]$Label,[ValidateRange(1,45)][int]$TimeoutSeconds=45)
+  return Wait-NativeCondition -Label ($Label+' actual Telegram operation completion') -TimeoutSeconds $TimeoutSeconds -StopOnError -Condition {
+    $Process.Refresh();if($Process.HasExited){throw 'Actual GUI exited before Telegram operation completion.'}
+    if($Root.Current.ProcessId -ne $Process.Id){throw 'Telegram completion observation root changed GUI identity.'}
+    if(Get-NativeTelegramGuiVisibleError -Root $Root){throw 'Actual GUI reports failed Telegram operation: Действие не выполнено.'}
+    $stop=& $FindButton 'Остановить'
+    if($stop -and $stop.Current.Name -ceq 'Остановить' -and $stop.Current.IsEnabled -and -not $stop.Current.IsOffscreen){return [ordered]@{name='Остановить';enabled=$true;processId=$Process.Id;observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}}
+  }
+}
+function Assert-NativeGuiStartupTaskXml {
+  param([string]$XmlText,$State,[bool]$ExpectedEnabled)
+  if($State.owner -cne 'EgoistShield' -or $State.purpose -cne 'gui-login-startup' -or [string]$State.userSid -cnotmatch '^S-1-5-21-[0-9]+-[0-9]+-[0-9]+-[0-9]+$' -or $State.taskName -cne ('EgoistLagom-GuiAutostart-'+$State.userSid) -or $State.taskPath -cne ('\'+$State.taskName)){throw 'Native GUI startup task namespace/user is not exact.'}
+  $xml=[Xml.XmlDocument]::new();$xml.XmlResolver=$null;$xml.LoadXml($XmlText)
+  $ns=[Xml.XmlNamespaceManager]::new($xml.NameTable);$ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task')
+  $principals=@($xml.SelectNodes('/t:Task/t:Principals/t:Principal',$ns));$actions=@($xml.SelectNodes('/t:Task/t:Actions/*',$ns));$triggers=@($xml.SelectNodes('/t:Task/t:Triggers/*',$ns))
+  if($principals.Count -ne 1 -or $actions.Count -ne 1 -or $actions[0].LocalName -cne 'Exec' -or $triggers.Count -ne 1 -or $triggers[0].LocalName -cne 'LogonTrigger'){throw 'Native GUI startup task must have one interactive principal, exact executable action and logon trigger.'}
+  $requirements=@{
+    '/t:Task/t:RegistrationInfo/t:Author'='EgoistShield'
+    '/t:Task/t:Principals/t:Principal/t:UserId'=[string]$State.userSid
+    '/t:Task/t:Principals/t:Principal/t:LogonType'='InteractiveToken'
+    '/t:Task/t:Principals/t:Principal/t:RunLevel'='HighestAvailable'
+    '/t:Task/t:Triggers/t:LogonTrigger/t:UserId'=[string]$State.userSid
+    '/t:Task/t:Triggers/t:LogonTrigger/t:Enabled'='true'
+    '/t:Task/t:Actions/t:Exec/t:Command'=(Join-Path $script:InstallRoot 'EgoistShield.exe')
+    '/t:Task/t:Actions/t:Exec/t:Arguments'='--background --minimized'
+    '/t:Task/t:Actions/t:Exec/t:WorkingDirectory'=$script:InstallRoot
+    '/t:Task/t:Settings/t:ExecutionTimeLimit'='PT0S'
+    '/t:Task/t:Settings/t:MultipleInstancesPolicy'='IgnoreNew'
+    '/t:Task/t:Settings/t:AllowStartOnDemand'='false'
+    '/t:Task/t:Settings/t:Enabled'=if($ExpectedEnabled){'true'}else{'false'}
+  }
+  $defaults=@{'/t:Task/t:Settings/t:MultipleInstancesPolicy'='IgnoreNew';'/t:Task/t:Settings/t:Enabled'='true';'/t:Task/t:Triggers/t:LogonTrigger/t:Enabled'='true'}
+  foreach($name in $requirements.Keys){
+    $nodes=$xml.SelectNodes($name,$ns);if($nodes.Count -gt 1){throw ('Actual GUI startup Scheduler XML duplicates: '+$name)}
+    $value=if($nodes.Count -eq 1){$nodes[0].InnerText}elseif($defaults.ContainsKey($name)){$defaults[$name]}else{$null}
+    if($name -in @('/t:Task/t:Principals/t:Principal/t:UserId','/t:Task/t:Triggers/t:LogonTrigger/t:UserId')){
+      if([string]::IsNullOrWhiteSpace($value)){throw 'Actual GUI startup user identity is missing.'}
+      $value=if($value.StartsWith('S-',[StringComparison]::Ordinal)){[Security.Principal.SecurityIdentifier]::new($value).Value}else{([Security.Principal.NTAccount]::new($value)).Translate([Security.Principal.SecurityIdentifier]).Value}
+    }
+    if($value -cne $requirements[$name]){throw ('Actual GUI startup Scheduler XML differs: '+$name)}
+  }
+  $description=$xml.SelectNodes('/t:Task/t:RegistrationInfo/t:Description',$ns)
+  if($description.Count -ne 1 -or $description[0].InnerText -cnotmatch '^Verified per-user Egoist Lagom GUI startup; RegistrationId=([a-f0-9]{32})$'){throw 'Actual GUI startup Scheduler protected registration nonce is missing.'}
+  $registrationId=$Matches[1]
+  $uri=$xml.SelectNodes('/t:Task/t:RegistrationInfo/t:URI',$ns)
+  if($uri.Count -ne 1 -or ($uri[0].InnerText -cne ('egoistshield:gui-login-startup:v1:'+$State.userSid+':'+$registrationId) -and $uri[0].InnerText -cne $State.taskPath)){throw 'Actual GUI startup Scheduler registration URI differs from its exact protected identity/task path.'}
+  return [ordered]@{highestAvailable=$true;interactiveToken=$true;userSid=$State.userSid;executionTimeLimit='PT0S';arguments='--background --minimized';enabled=$ExpectedEnabled;registrationId=$registrationId;description=$description[0].InnerText;uri=$uri[0].InnerText;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false}
+}
+function Invoke-NativeGuiStartupOperation {
+  param([ValidateSet('Sync','Verify')][string]$Operation,[ValidateSet('true','false')][string]$Enabled='false',[string]$Label,[bool]$ExpectedEnabled)
+  $helper=Join-Path $script:InstallRoot 'resources\installer\gui-login-startup.ps1'
+  [void](Assert-NativeAdministratorOwned $helper -InstallationPath)
+  $invoke=Invoke-NativeBounded -Executable $script:NativePowerShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$helper,'-Operation',$Operation,'-Enabled',$Enabled) -Label $Label -TimeoutSeconds 45
+  $state=$invoke.stdout | ConvertFrom-Json
+  if($state.verified -isnot [bool] -or -not $state.verified -or $state.enabled -isnot [bool] -or $state.enabled -ne $ExpectedEnabled -or $state.suspended -isnot [bool] -or $state.suspended -or $state.userSid -cne $script:Receipt.elevatedGui.launch.token.userSid){throw 'Actual GUI startup public helper state differs from the verified elevated interactive user/intent.'}
+  $record=[ordered]@{operation=$Operation;enabledArgument=$Enabled;state=$state;helperSha256=(Get-FileHash -LiteralPath $helper -Algorithm SHA256).Hash;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false}
+  if($ExpectedEnabled){
+    $task=Get-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction Stop
+    $xmlText=Export-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction Stop
+    $record.scheduler=Assert-NativeGuiStartupTaskXml -XmlText $xmlText -State $state -ExpectedEnabled $true
+    if($Operation -ceq 'Verify' -and $script:Receipt.guiStartup.operations.Count -gt 0 -and $record.scheduler.registrationId -cne $script:Receipt.guiStartup.operations[0].scheduler.registrationId){throw 'Restored GUI startup task registration differs from the originally authenticated enabled task.'}
+    $file=Join-Path $script:Work ($Label+'.task.xml')
+    [IO.File]::WriteAllText($file,$xmlText,[Text.UTF8Encoding]::new($false))
+    $record.schedulerXml=[ordered]@{file=([IO.Path]::GetFileName($file));sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash;bytes=(Get-Item -LiteralPath $file).Length}
+    $receipt=Join-Path $script:DataRoot ('GuiStartup\'+$state.userSid+'.json')
+    $record.protectedReceipt=Assert-NativeAdministratorOwned $receipt
+    $saved=Get-Content -LiteralPath $receipt -Raw | ConvertFrom-Json
+    if($saved.owner -cne 'EgoistShield' -or $saved.purpose -cne 'gui-login-startup' -or $saved.userSid -cne $state.userSid -or $saved.registrationId -cnotmatch '^[a-f0-9]{32}$' -or $record.scheduler.registrationId -cne $saved.registrationId){throw 'Actual GUI startup task registration is not bound to its protected owner receipt.'}
+    if([string]$task.Principal.LogonType -cne 'Interactive' -or [string]$task.Principal.RunLevel -cne 'Highest'){throw 'Actual Scheduler principal readback is not highest interactive.'}
+  }else{
+    if(Get-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction SilentlyContinue){throw 'GUI startup disable did not remove the exact owned task.'}
+    if(Test-Path -LiteralPath (Join-Path $script:DataRoot ('GuiStartup\'+$state.userSid+'.json'))){throw 'GUI startup disable retained the exact protected ownership receipt.'}
+  }
+  $script:Receipt.guiStartup.operations+=,$record;Save-NativeReceipt
+  Assert-NativeNoGui;Assert-NativeNetworkPreserved $Label
+  return $record
+}
+function Observe-NativeGuiStartupSuspension {
+  if(-not $script:Receipt.Contains('guiStartup') -or $script:Receipt.guiStartup.disabledDuringTransaction){return}
+  $state=$script:Receipt.guiStartup.operations[0].state
+  $task=Get-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction Stop
+  if($task.Settings.Enabled -ne $false){return}
+  $receiptPath=Join-Path $script:DataRoot ('GuiStartup\'+$state.userSid+'.json')
+  [void](Assert-NativeAdministratorOwned $receiptPath)
+  $saved=Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
+  if($saved.owner -cne 'EgoistShield' -or $saved.purpose -cne 'gui-login-startup' -or $saved.userSid -cne $state.userSid -or $saved.suspended -ne $true -or $saved.resumeEnabled -ne $true){throw 'Disabled GUI startup task lacks its owned suspended enabled-intent receipt.'}
+  $xmlText=Export-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction Stop
+  $proof=Assert-NativeGuiStartupTaskXml -XmlText $xmlText -State $state -ExpectedEnabled $false
+  if($proof.registrationId -cne $script:Receipt.guiStartup.operations[0].scheduler.registrationId -or $proof.registrationId -cne $saved.registrationId){throw 'Suspended GUI startup task registration no longer matches its original protected owner receipt.'}
+  $file=Join-Path $script:Work 'gui-startup-suspended.task.xml'
+  [IO.File]::WriteAllText($file,$xmlText,[Text.UTF8Encoding]::new($false))
+  $script:Receipt.guiStartup.disabledDuringTransaction=$true
+  $script:Receipt.guiStartup.suspension=[ordered]@{scheduler=$proof;receiptSha256=(Get-FileHash -LiteralPath $receiptPath -Algorithm SHA256).Hash;schedulerXmlSha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash;observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}
+  Save-NativeReceipt
+}
+
+function Assert-NativeBootTask {
+  param([string]$Stage)
+  $taskName='EgoistShield-InstallerBootRecovery-'+[IO.Path]::GetFileName($Stage)
+  $task=Get-ScheduledTask -TaskName $taskName -TaskPath '\' -ErrorAction Stop
+  [xml]$xml=Export-ScheduledTask -TaskName $taskName -TaskPath '\'
+  $ns=[Xml.XmlNamespaceManager]::new($xml.NameTable);$ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task')
+  $principal=$xml.SelectSingleNode('/t:Task/t:Principals/t:Principal',$ns);$action=$xml.SelectSingleNode('/t:Task/t:Actions/t:Exec',$ns)
+  if(-not $principal -or -not $action -or $principal.UserId -notin @('S-1-5-18','SYSTEM') -or $principal.RunLevel -ne 'HighestAvailable' -or [string]$task.Principal.LogonType -ne 'ServiceAccount' -or @($xml.SelectNodes('/t:Task/t:Triggers/t:BootTrigger',$ns)).Count -ne 1 -or [string]$action.Command -ine $script:NativePowerShell -or -not ([string]$action.Arguments).Contains((Join-Path $Stage 'invoke-final-silent-reinstall.ps1')) -or -not ([string]$action.Arguments).Contains('"-Recover"') -or -not ([string]$action.Arguments).Contains($Stage)){throw 'Actual registered boot Task principal/action/trigger does not match the protected stage.'}
+  $xml.Save((Join-Path $script:Work ($taskName+'.xml')))
+  return [ordered]@{taskName=$taskName;taskPath=$task.TaskPath;state=[string]$task.State;principal='S-1-5-18';logonType=[string]$task.Principal.LogonType;highest=$true;bootTrigger=$true;action=[string]$action.Command;arguments=[string]$action.Arguments;actualBootExecuted=$false}
+}
+function Invoke-NativeProtectedReinstall {
+  $helper=Join-Path $script:InstallRoot 'resources\installer\invoke-final-silent-reinstall.ps1'
+  Add-NativeMutation -Kind 'protected-reinstall' -Target $script:InstallRoot -Purpose 'Actual same-version upgrade while Core/TG retain automatic recovery.'
+  $dispatch=Invoke-NativeBounded -Executable $script:NativePowerShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',$helper,'-InstallerPath',$script:Installer,'-IntegrityManifestPath',$script:ManifestPath,'-ExpectedVersion',$script:Version,'-ExpectedSha256',$script:InstallerHash,'-NoRunAfter','-DelaySeconds','8') -Label 'protected-reinstall-dispatch' -TimeoutSeconds 90
+  $result=$dispatch.stdout | ConvertFrom-Json
+  if($result.dispatched -ne $true -or [string]$result.runId -cnotmatch '^[a-f0-9]{32}$'){throw 'Production reinstall returned no protected run identity.'}
+  $stage=Join-Path $script:DeferredRoot ([string]$result.runId)
+  if([IO.Path]::GetFullPath([string]$result.state) -ine (Join-Path $stage 'state.json')){throw 'Production stage escaped its canonical root.'}
+  [void](Assert-NativeAdministratorOwned $stage)
+  $script:Receipt.reinstall=[ordered]@{stage=$stage;dispatched=$true;bootTask=$null;completed=$false};Save-NativeReceipt
+  $taskName='EgoistShield-InstallerBootRecovery-'+[string]$result.runId;$watch=[Diagnostics.Stopwatch]::StartNew()
+  do{
+    Observe-NativeGuiStartupSuspension
+    $task=Get-ScheduledTask -TaskName $taskName -TaskPath '\' -ErrorAction SilentlyContinue
+    if($task -and -not $script:Receipt.reinstall.bootTask){
+      $script:Receipt.reinstall.bootTask=Assert-NativeBootTask -Stage $stage
+      foreach($name in @('state.json','boot-recovery.json','invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1','gui-login-startup.ps1')){[void](Assert-NativeAdministratorOwned (Join-Path $stage $name))};Save-NativeReceipt
+    }
+    if(Test-Path -LiteralPath (Join-Path $stage 'complete.flag') -PathType Leaf){break};Start-Sleep -Milliseconds 200
+  }while($watch.Elapsed.TotalSeconds -lt 900)
+  if(-not (Test-Path -LiteralPath (Join-Path $stage 'complete.flag') -PathType Leaf)){throw 'Actual protected reinstall exceeded 15 minutes; production recovery state retained.'}
+  foreach($name in @('receipt.json','state.json','boot-recovery.json','worker.stdout.log','worker.stderr.log')){$file=Join-Path $stage $name;if(Test-Path -LiteralPath $file -PathType Leaf){Copy-Item -LiteralPath $file -Destination (Join-Path $script:Work ('reinstall-'+$name))}}
+  $receipt=Get-Content -LiteralPath (Join-Path $stage 'receipt.json') -Raw | ConvertFrom-Json
+  $events=if($receipt.PSObject.Properties['events']){@($receipt.events)}else{@()}
+  if(@($events | Where-Object {$_.stage -eq 'verify' -and $_.status -eq 'succeeded'}).Count -ne 1){throw 'Reinstall complete flag lacks actual successful verification receipt.'}
+  if(-not $script:Receipt.reinstall.bootTask){throw 'Actual production SYSTEM Task registration was never observed.'}
+  [void](Wait-NativeCondition -Condition {if(-not (Get-ScheduledTask -TaskName $taskName -TaskPath '\' -ErrorAction SilentlyContinue)){return $true}} -Label 'Production Task unregistration' -TimeoutSeconds 30)
+  $script:Receipt.reinstall.completed=$true;$script:Receipt.reinstall.elapsedSeconds=[Math]::Round($watch.Elapsed.TotalSeconds,2);$script:Receipt.reinstall.taskRemoved=$true;Save-NativeReceipt
+}
+function Stop-NativeVerifiedCoreForRecovery {
+  $before=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
+  $target=[Diagnostics.Process]::GetProcessById([int]$before.process.processId)
+  try{
+    $handle=$target.Handle
+    if($handle -eq [IntPtr]::Zero -or $target.MainModule.FileName -ine $script:Core -or [Math]::Abs(($target.StartTime.ToUniversalTime()-[DateTimeOffset]::Parse($before.process.createdUtc).UtcDateTime).TotalMilliseconds) -gt 1 -or (Get-FileHash -LiteralPath $script:Core -Algorithm SHA256).Hash -ine $script:CoreHash){throw 'Held Core handle/path/birth/hash does not match SCM.'}
+    Add-NativeMutation -Kind 'held-owned-core-crash' -Target ($script:Core+' PID '+$before.process.processId) -Purpose 'Observe real SCM restart without GUI.'
+    $watch=[Diagnostics.Stopwatch]::StartNew();$target.Kill();[void]$target.WaitForExit(5000)
+    $after=Wait-NativeCondition -Condition {$value=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running;if([int]$value.process.processId -ne [int]$before.process.processId -and [DateTimeOffset]::Parse($value.process.createdUtc) -gt [DateTimeOffset]::Parse($before.process.createdUtc)){return $value}} -Label 'Actual SCM Core crash recovery' -TimeoutSeconds 90
+    $verify=Invoke-NativeBounded -Executable $script:Core -Arguments @('--verify-pipe-server') -Label 'core-after-crash-pipe' -TimeoutSeconds 15
+    $hello=$verify.stdout | ConvertFrom-Json
+    if($hello.ok -ne $true -or $hello.code -ne 'VERIFIED' -or [int]$hello.serverProcessId -ne [int]$after.process.processId -or [int]$hello.serviceProcessId -ne [int]$after.process.processId){throw 'Actual recovered Core pipe identity was not verified.'}
+    $script:Receipt.coreRecovery=[ordered]@{before=$before;after=$after;elapsedSeconds=[Math]::Round($watch.Elapsed.TotalSeconds,2);actualGuiRunning=$false;pipe=$hello};Save-NativeReceipt
+  }finally{$target.Dispose()}
+}
+
+function Assert-NativeCleanStart {
+  if(@(Get-NativeProductServices).Count -ne 0){throw 'Existing product/shared-name services make clean acceptance unsafe.'}
+  if(@(Get-NativeProductTasks).Count -ne 0){throw 'Existing product Tasks make clean acceptance unsafe.'}
+  foreach($target in @($script:InstallRoot,$script:DataRoot,$script:InstallerDataRoot,(Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Egoist Shield'),(Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'EgoistShield'))){if(Test-Path -LiteralPath $target){throw "Existing product directory makes acceptance unsafe: $target"}}
+  if(@(Get-NativeCimSnapshot Win32_Process | Where-Object {$_.Name -match '^Egoist(?:Shield|Lagom)'}).Count -ne 0){throw 'Existing product processes make acceptance unsafe.'}
+  foreach($path in @('SOFTWARE\EgoistShield','SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EgoistShield')){
+    $key=[Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($path)
+    if($key){$key.Dispose();throw "Existing product registration makes acceptance unsafe: $path"}
+  }
+}
+function Assert-NativeNetworkGuiReceipts {
+  param($Receipt,[string]$SourceCommit,[string]$InstalledGuiPath,[string]$ExpectedIntegritySha256)
+  if($SourceCommit -cnotmatch '^[a-f0-9]{40}$' -or $ExpectedIntegritySha256 -cnotmatch '^[a-fA-F0-9]{64}$'){throw 'Network GUI source/integrity identity is invalid.'}
+  $launches=@($Receipt.gui | Where-Object {($_.PSObject.Properties.Name -contains 'launch') -and $null -ne $_.launch})
+  $cleanups=@($Receipt.gui | Where-Object {($_.PSObject.Properties.Name -contains 'cleanup') -and $null -ne $_.cleanup})
+  if($launches.Count -ne 2 -or $cleanups.Count -ne 2 -or @($launches.operation | Select-Object -Unique).Count -ne 2){throw 'Network GUI requires two distinct operations and exactly two paired normal-close receipts.'}
+  foreach($entry in $launches){
+    $proof=$entry.launch
+    if($proof.launchPolicy -cne 'elevated' -or $proof.elevatedGui -ne $true -or $proof.guiRequestedExecutionLevel -cne 'requireAdministrator'){throw 'Network GUI launch does not prove the administrator manifest and current-token policy.'}
+    Assert-NativeElevatedGuiTokenProof -Token $proof.token -RunnerToken $proof.runnerToken
+    if($proof.executable -ine $InstalledGuiPath -or @($proof.arguments).Count -ne 0 -or $proof.source.commit -cne $SourceCommit -or $proof.artifactSourceCommit -cne $SourceCommit -or $proof.harnessSourceCommit -cne $SourceCommit -or $proof.source.version -cne $Receipt.candidateVersion -or [string]$proof.source.integrityManifestSha256 -cnotmatch '^[a-fA-F0-9]{64}$' -or $proof.source.integrityManifestSha256 -ine $ExpectedIntegritySha256){throw 'Network GUI launch identity differs from the exact installed signed source/payload.'}
+    if(($proof.processId -isnot [int] -and $proof.processId -isnot [long]) -or $proof.processId -le 0 -or [string]::IsNullOrWhiteSpace([string]$proof.startTimeUtc)){throw 'Network GUI launched process birth identity is absent.'}
+    $paired=@($cleanups | Where-Object {$_.operation -ceq $entry.operation -and $_.cleanup.launch.processId -eq $proof.processId -and $_.cleanup.launch.startTimeUtc -ceq $proof.startTimeUtc})
+    if($paired.Count -ne 1){throw 'Network GUI normal close is not bound to the same operation/process birth.'}
+    $final=$paired[0].cleanup
+    if($final.stage -cne 'completed' -or $final.exitedNormally -isnot [bool] -or -not $final.exitedNormally -or ($final.exitCode -isnot [int] -and $final.exitCode -isnot [long]) -or $final.exitCode -ne 0 -or $final.cleanup.noOrphans -isnot [bool] -or -not $final.cleanup.noOrphans -or ($final.cleanup.activeProcesses -isnot [int] -and $final.cleanup.activeProcesses -isnot [long]) -or $final.cleanup.activeProcesses -ne 0){throw 'Network GUI lacks normal exit zero and zero-orphan job readback.'}
+    if($final.launch.launchPolicy -cne 'elevated' -or $final.launch.elevatedGui -ne $true -or $final.launch.source.commit -cne $SourceCommit -or $final.launch.executable -ine $InstalledGuiPath){throw 'Network GUI cleanup launch proof differs from the elevated source identity.'}
+  }
+}
+
+function Invoke-NativeNetworkGates {
+  $nativeShell=[Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+  foreach($kind in @('dns','vpn')){
+    $childWork=Join-Path $script:Work ($kind+'-native')
+    $childEvidence=Join-Path $childWork 'evidence'
+    $harness=Join-Path $PSScriptRoot ('windows-'+$kind+'-native-acceptance.ps1')
+    Assert-NativeOrdinaryPath -Path $harness -Leaf
+    try{
+      [void](Invoke-NativeBounded -Executable $nativeShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-File',$harness,'-IntegrityManifestPath',$script:ManifestPath,'-ExpectedSourceCommit',$script:SourceCommit,'-EvidenceDirectory',$childEvidence) -Label ($kind+'-native-gate') -TimeoutSeconds 1200)
+      $file=if($kind -eq 'dns'){'windows-dns-native-acceptance.json'}else{'vpn-native-receipt.json'}
+      $path=Join-Path $childEvidence $file
+      Assert-NativeOrdinaryPath -Path $path -Leaf
+      $rawReceipt=Get-Content -LiteralPath $path -Raw
+      $receipt=if((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')){ConvertFrom-Json -InputObject $rawReceipt -DateKind String}else{ConvertFrom-Json -InputObject $rawReceipt}
+      if($receipt.sourceCommit -cne $script:SourceCommit -or $receipt.candidateVersion -cne $script:Version){throw 'Network gate receipt differs from the actual installed candidate.'}
+      if($kind -eq 'dns'){
+        if($receipt.kind -cne 'actual-native-elevated-gui-windows-doh' -or $receipt.result -cne 'passed' -or $receipt.guardian.stage -cne 'disarmed'){throw 'Actual DNS gate did not pass with normal restoration.'}
+        $name='System DNS from elevated GUI, persistence and restoration'
+      }else{
+        if($receipt.kind -cne 'actual-hosted-production-background-vpn-native-acceptance' -or $receipt.status -cne 'passed' -or $receipt.nativeAcceptancePassed -ne $true -or @($receipt.cleanup.errors).Count){throw 'Actual VPN gate did not pass with verified normal cleanup.'}
+        $name='Background VPN native TUN, recovery and elevated GUI OFF'
+      }
+      Assert-NativeNetworkGuiReceipts -Receipt $receipt -SourceCommit $script:SourceCommit -InstalledGuiPath (Join-Path $script:InstallRoot 'EgoistShield.exe') -ExpectedIntegritySha256 (Get-FileHash -LiteralPath $script:ManifestPath -Algorithm SHA256).Hash
+      $gate=@($script:Receipt.releaseGates | Where-Object {$_.name -ceq $name})
+      if($gate.Count -ne 1){throw 'Network release gate identity is ambiguous.'}
+      $gate[0].status='passed';$gate[0].reason='Actual installed candidate, elevated high/admin GUI with exact source/executable/process birth, paired normal close and zero-orphan cleanup, and independent native readback; detailed receipt retained.'
+      $script:Receipt.checks+=[ordered]@{name=($kind+'-actual-native-network-gate');ok=$true;receipt=($kind+'-native/evidence/'+$file);sha256=(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash}
+      Assert-NativeNoGui;Assert-NativeNetworkPreserved ($kind+'-native-restoration');Save-NativeReceipt
+    }finally{
+      if(Test-Path -LiteralPath $childWork){
+        Assert-NativeOrdinaryPath -Path $childWork
+        foreach($entry in @(Get-ChildItem -LiteralPath $childWork -Recurse -Force)){if(($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0){throw 'Network evidence contains an unexpected reparse point.'}}
+        Copy-Item -LiteralPath $childWork -Destination (Join-Path $script:Evidence ($kind+'-native')) -Recurse -Force
+      }
+    }
+  }
+}
+
+function Invoke-NativeAcceptance {
+  $environment=@{}
+  foreach($name in @('GITHUB_ACTIONS','CI','RUNNER_ENVIRONMENT','RUNNER_OS','GITHUB_REPOSITORY','GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','GITHUB_SHA')){$environment[$name]=[Environment]::GetEnvironmentVariable($name)}
+  $windows=[Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT
+  $administrator=$windows -and ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+  $errors=@(Get-NativeAcceptanceEnvironmentErrors -Environment $environment -Administrator $administrator -Windows $windows)
+  if($errors.Count -ne 0){throw ('Native acceptance host guard refused before mutation: '+($errors -join ', '))}
+  if($PSVersionTable.PSVersion.Major -lt 7 -or -not [Environment]::Is64BitProcess){throw 'PowerShell 7 x64 required for bounded native argument handling.'}
+  Assert-NativeOrdinaryPath -Path $env:RUNNER_TEMP;Assert-NativeOrdinaryPath -Path $env:GITHUB_WORKSPACE
+  $script:Work=Join-Path ([IO.Path]::GetFullPath($env:RUNNER_TEMP)) ('lagom-native-'+$environment.GITHUB_RUN_ID+'-'+$environment.GITHUB_RUN_ATTEMPT)
+  if($Mode -eq 'GuardOnly'){Write-Output 'Native host guards passed; no mutation performed.';return}
+  if($ExpectedSourceCommit -cne $environment.GITHUB_SHA){throw 'Source identity must equal the actual hosted Actions commit.'}
+  $script:SourceCommit=$ExpectedSourceCommit
+  $script:ManifestPath=Assert-NativePathWithin -Path $IntegrityManifestPath -Root $env:GITHUB_WORKSPACE
+  Assert-NativeOrdinaryPath -Path $script:ManifestPath -Leaf
+  $manifest=Get-Content -LiteralPath $script:ManifestPath -Raw | ConvertFrom-Json
+  if($manifest.product -ne 'Egoist Lagom' -or [string]$manifest.version -cnotmatch '^\d+\.\d+\.\d+$' -or [string]$manifest.source.commit -cne $script:SourceCommit -or [string]$manifest.installer.sha256 -cnotmatch '^[a-fA-F0-9]{64}$'){throw 'Candidate integrity identity invalid.'}
+  $relative=[string]$manifest.installer.path
+  if($relative -cnotmatch '^dist/(?:[a-zA-Z0-9_-]+/)*EgoistShield-Setup-\d+\.\d+\.\d+\.exe$'){throw 'Candidate installer path is not canonical.'}
+  $script:Installer=Assert-NativePathWithin -Path (Join-Path $env:GITHUB_WORKSPACE $relative) -Root $env:GITHUB_WORKSPACE
+  Assert-NativeOrdinaryPath -Path $script:Installer -Leaf
+  $script:InstallerHash=(Get-FileHash -LiteralPath $script:Installer -Algorithm SHA256).Hash
+  if($script:InstallerHash -ine [string]$manifest.installer.sha256 -or (Get-Item -LiteralPath $script:Installer).Length -ne [long]$manifest.installer.bytes){throw 'Actual Setup differs from its source-bound integrity receipt.'}
+  $script:Version=[string]$manifest.version
+  $script:InstallRoot=Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'EgoistShield'
+  $script:DataRoot=Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) 'EgoistShield'
+  $script:InstallerDataRoot=Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) 'EgoistShieldInstaller'
+  $script:DeferredRoot=Join-Path $script:InstallerDataRoot 'DeferredRuns'
+  $script:Core=Join-Path $script:InstallRoot 'resources\core-service\win-x64\EgoistShield.Service.exe'
+  $entries=@($manifest.payload | Where-Object {$_.path -ceq 'resources/core-service/win-x64/EgoistShield.Service.exe'})
+  if($entries.Count -ne 1){throw 'Source-bound payload does not identify the candidate Core.'};$script:CoreHash=[string]$entries[0].sha256
+  $script:NativePowerShell=Join-Path ([Environment]::GetFolderPath('Windows')) 'System32\WindowsPowerShell\v1.0\powershell.exe'
+  $script:Node=Resolve-NativeApplication 'node'
+  $script:NodeHelper=Join-Path $PSScriptRoot 'windows-production-acceptance.mjs'
+  Assert-NativeCleanStart
+  if(Test-Path -LiteralPath $script:Work){throw 'Acceptance work already exists; inspect the prior attempt.'}
+  if(-not $EvidenceDirectory){$EvidenceDirectory=Join-Path $script:Work 'evidence'}
+  $script:Evidence=Assert-NativePathWithin -Path $EvidenceDirectory -Root $env:RUNNER_TEMP
+  $ancestor=$script:Evidence
+  while(-not (Test-Path -LiteralPath $ancestor)){$ancestor=[IO.Path]::GetDirectoryName($ancestor)}
+  Assert-NativeOrdinaryPath -Path $ancestor
+  New-Item -ItemType Directory -Path $script:Work,$script:Evidence -Force | Out-Null
+  $script:ReceiptPath=Join-Path $script:Work 'windows-production-acceptance.json'
+  $script:Receipt=[ordered]@{
+    schemaVersion=1;kind='actual-native-hosted-windows-acceptance';sourceCommit=$script:SourceCommit;candidateVersion=$script:Version
+    installer=[ordered]@{path=$script:Installer;sha256=$script:InstallerHash;bytes=[long]$manifest.installer.bytes}
+    host=[ordered]@{computerName=$env:COMPUTERNAME;os=[Environment]::OSVersion.VersionString;powershell=$PSVersionTable.PSVersion.ToString();administrator=$administrator;runnerEnvironment=$env:RUNNER_ENVIRONMENT;githubRunId=$env:GITHUB_RUN_ID;githubRunAttempt=$env:GITHUB_RUN_ATTEMPT}
+    guiLaunchContract=[ordered]@{managementMode='administrator-required';guiManifest='requireAdministrator';workerManifest='asInvoker';authorization='normal Windows UAC; explicit administrator GUI product contract';restrictedTokenAcceptanceRequested=$false;normalUacPromptObserved=$false};startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');result='running';cleanStartVerified=$true;mutations=@();checks=@();gui=@();networkReadbacks=@();privateStateReadbacks=@();beforeNetwork=(Get-NativeNetworkFingerprint);releaseReady=$false
+    releaseGates=@(
+      [ordered]@{name='Reboot/interrupted installation SYSTEM recovery';status='not-tested';reason='A live hosted runner cannot reboot within this job. Actual Task registration/principal/action/removal are exercised.'},
+      [ordered]@{name='System DNS from elevated GUI, persistence and restoration';status='not-tested';reason='Separate actual installed DNS gate must pass.'},
+      [ordered]@{name='Background VPN native TUN, recovery and elevated GUI OFF';status='not-tested';reason='Separate actual installed VPN gate must pass.'},
+      [ordered]@{name='Driver-backed Zapret end-to-end';status='not-tested';reason='No unrelated driver or default-route filtering on the hosted control connection.'},
+      [ordered]@{name='3.7.9 legacy worker automatic update chain';status='not-tested';reason='Requires separately authenticated official old Setup and signed candidate release feed; new-helper same-version reinstall does not prove it.'},
+      [ordered]@{name='3.7.7 and 3.7.8 update trust compatibility';status='not-tested';reason='No authenticated legacy update chain is asserted.'},
+      [ordered]@{name='GUI IPC from an actual elevated Windows user token';status='not-tested';reason='Requires actual administrator GUI token/source identity, genuine service Stop/Start IPC, LocalSystem worker and normal close.'},
+      [ordered]@{name='72 hour/7 day soak/month-scale uptime';status='not-tested';reason='Bounded native acceptance is not a long-duration pilot.'}
+    )
+  };Save-NativeReceipt
+  $uninstalled=$false;$primaryError=$null
+  try{
+    Add-NativeMutation -Kind 'setup-clean-install' -Target $script:InstallRoot -Purpose 'Actual generated candidate silent installation.'
+    $install=Invoke-NativeBounded -Executable $script:Installer -Arguments @('/S') -Label 'clean-install' -TimeoutSeconds 600
+    $script:Receipt.checks+=[ordered]@{name='actual-generated-setup-clean-install';ok=$true;milliseconds=$install.elapsedMilliseconds}
+    $acls=@();foreach($relative in @('','EgoistShield.exe','EgoistShield.Worker.exe','resources','resources\app.asar','resources\component-worker.cjs','resources\worker-host-integrity.json','resources\core-service\win-x64\EgoistShield.Service.exe')){$acls+=Assert-NativeAdministratorOwned (Join-Path $script:InstallRoot $relative) -InstallationPath};$script:Receipt.acls=$acls
+    $options=[ordered]@{installRoot=$script:InstallRoot;integrity=$script:ManifestPath;sourceCommit=$script:SourceCommit;version=$script:Version;output=(Join-Path $script:Work 'installed-payload.json')}
+    $optionsPath=Join-Path $script:Work 'installed-payload.options.json';$options | ConvertTo-Json | Set-Content -LiteralPath $optionsPath -Encoding utf8
+    [void](Invoke-NativeBounded -Executable $script:Node -Arguments @($script:NodeHelper,'verify-payload',$optionsPath) -Label 'installed-payload' -TimeoutSeconds 180)
+    $script:Receipt.elevation=Assert-NativeGuiElevation
+    $script:Receipt.checks+=[ordered]@{name='actual-installed-payload-fuses-asar-worker-inventory-acls-and-administrator-gui-manifest';ok=$true;receipt='installed-payload.json'}
+    $script:Receipt.core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running;$script:Receipt.corePolicy=Get-NativeRecoveryPolicy 'EgoistShieldCore'
+    Assert-NativeNoGui;Assert-NativeNetworkPreserved 'clean-install'
+    $gui=Invoke-NativeGui -Action 'provision-telegram' -Label 'gui-provision';Assert-NativeNoGui
+    $port=[int]$gui.installResult.portConflict.port
+    $script:Receipt.telegramWithoutGui=Assert-NativeTelegramEndpoint -Port $port;$script:Receipt.telegramPolicy=Get-NativeRecoveryPolicy 'EgoistShieldTelegramProxy'
+    $script:Receipt.checks+=[ordered]@{name='actual-production-gui-ipc-telegram-persists-after-gui-quit';ok=$true};Assert-NativeNetworkPreserved 'gui-close'
+    Invoke-NativeElevatedGui
+    Invoke-NativeNetworkGates
+    Stop-NativeVerifiedCoreForRecovery;Assert-NativeNoGui
+    $script:Receipt.telegramAfterCoreCrash=Assert-NativeTelegramEndpoint -Port $port;Assert-NativeNetworkPreserved 'core-crash-recovery'
+    New-NativePrivateStateFixture;Assert-NativePrivateState 'before-private-backup'
+    $script:Receipt.guiStartup=[ordered]@{kind='actual-packaged-gui-startup-helper-task-lifecycle';operations=@();disabledDuringTransaction=$false;restoredAfterReinstall=$false;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false}
+    Add-NativeMutation -Kind 'actual-owned-gui-startup-opt-in-task' -Target 'current verified interactive user' -Purpose 'Actual packaged public Sync/Verify helper and Task Scheduler highest interactive readback; no logon is provoked.'
+    [void](Invoke-NativeGuiStartupOperation -Operation Sync -Enabled true -Label 'gui-startup-enable' -ExpectedEnabled $true)
+    Set-NativeOwnedLegacyLayer;Invoke-NativeProtectedReinstall
+    if(-not $script:Receipt.guiStartup.disabledDuringTransaction){throw 'Enabled GUI startup task was not actually observed suspended during the reinstall transaction.'}
+    [void](Invoke-NativeGuiStartupOperation -Operation Verify -Label 'gui-startup-after-reinstall' -ExpectedEnabled $true)
+    $script:Receipt.guiStartup.restoredAfterReinstall=$true;Save-NativeReceipt
+    [void](Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running);[void](Get-NativeRecoveryPolicy 'EgoistShieldCore');[void](Get-NativeRecoveryPolicy 'EgoistShieldTelegramProxy')
+    $script:Receipt.telegramAfterReinstall=Assert-NativeTelegramEndpoint -Port $port
+    if((Get-FileHash -LiteralPath $script:Receipt.inactiveVpnFixture.path -Algorithm SHA256).Hash -cne $script:Receipt.inactiveVpnFixture.sha256){throw 'Actual upgrade changed private inactive VPN filesystem fixture.'}
+    Assert-NativePrivateState 'after-private-state-preservation'
+    $script:Receipt.elevationMigration=Assert-NativeGuiElevation -MigrationExpected
+    Assert-NativeNoGui;Assert-NativeNetworkPreserved 'protected-reinstall'
+    [void](Invoke-NativeGui -Action 'check-telegram' -Label 'gui-after-reinstall');Assert-NativeNoGui
+    $script:Receipt.checks+=[ordered]@{name='actual-protected-reinstall-with-recovery-services-and-system-task-registration-roundtrip';ok=$true;actualReboot=$false}
+    [void](Invoke-NativeGuiStartupOperation -Operation Sync -Enabled false -Label 'gui-startup-disable' -ExpectedEnabled $false)
+    $script:Receipt.checks+=[ordered]@{name='actual-packaged-gui-startup-highest-interactive-enable-suspend-restore-disable';ok=$true;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false};Save-NativeReceipt
+    $uninstaller=Join-Path $script:InstallRoot 'Uninstall Egoist Shield.exe'
+    [void](Assert-NativeAdministratorOwned $uninstaller -InstallationPath)
+    Add-NativeMutation -Kind 'owned-uninstall' -Target $script:InstallRoot -Purpose 'Actual candidate uninstall and owned cleanup.'
+    [void](Invoke-NativeBounded -Executable $uninstaller -Arguments @('/S') -Label 'uninstall' -TimeoutSeconds 300)
+    [void](Wait-NativeCondition -Condition {if(-not (Test-Path -LiteralPath $script:InstallRoot)){return $true}} -Label 'Actual uninstaller completion' -TimeoutSeconds 90)
+    if(@(Get-NativeProductServices).Count -ne 0 -or @(Get-NativeProductTasks).Count -ne 0){throw 'Product SCM/Task residue remains after actual uninstall.'}
+    foreach($relative in @('Service\Vpn','Runtime\TelegramProxy')){if(Test-Path -LiteralPath (Join-Path $script:DataRoot $relative)){throw 'Actual uninstall retained owned private VPN/TG state.'}}
+    Assert-NativeNoGui;Assert-NativeNetworkPreserved 'uninstall';$uninstalled=$true
+    $script:Receipt.checks+=[ordered]@{name='actual-uninstall-removes-owned-scm-tasks-and-preserves-runner-network';ok=$true}
+    $script:Receipt.result='passed-bounded-native-acceptance'
+  }catch{$primaryError=$_;$script:Receipt.result='failed';$script:Receipt.error=$_.Exception.Message}
+  finally{
+    $script:Receipt.finishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');$script:Receipt.actualUninstallCompleted=$uninstalled
+    $script:Receipt.installerDiagnostics=@(Copy-NativeInstallerDiagnostics)
+    try{$script:Receipt.finalServices=Get-NativeProductServices;$script:Receipt.finalTasks=Get-NativeProductTasks}catch{$script:Receipt.finalReadbackError=$_.Exception.Message}
+    Save-NativeReceipt
+    foreach($file in @(Get-ChildItem -LiteralPath $script:Work -File)){Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $script:Evidence $file.Name) -Force}
+    # Do not conceal a failure by broad-killing or manually repairing a partly
+    # installed product. Recovery state and logs remain on the disposable runner.
+  }
+  if($primaryError){throw $primaryError}
+  Write-Output ('Actual bounded native acceptance passed. Receipt: '+$script:ReceiptPath+'; untested gates: '+@($script:Receipt.releaseGates | Where-Object {$_.status -ne 'passed'}).Count)
+}
+
+if($LibraryOnly){return}
+Invoke-NativeAcceptance

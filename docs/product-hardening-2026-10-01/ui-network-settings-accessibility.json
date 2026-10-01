@@ -1,0 +1,30 @@
+{
+  "browser": "151.0.7922.34",
+  "nativeWindowsUiaVerified": false,
+  "summary": "- strong: Маршрутизация VPN\n- text: Режим соединения, DNS и правила",
+  "summaryAx": [
+    {
+      "role": "DisclosureTriangle",
+      "name": "Маршрутизация VPN Режим соединения, DNS и правила",
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "expanded",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": false
+          }
+        }
+      ]
+    }
+  ],
+  "route": "- combobox \"Режим маршрутизации VPN\":\n  - option \"Весь трафик через VPN\" [selected]\n  - option \"По правилам · остальное напрямую\"",
+  "dns": "- combobox \"DNS соединения VPN\":\n  - option \"Авто · по ядру VPN\" [selected]\n  - option \"Встроенные DNS\"\n  - option \"DNS системы\"\n  - option \"Свой HTTPS DNS (DoH)\"",
+  "processDialog": "- dialog \"Добавить правило процесса VPN\":\n  - heading \"Добавить правило процесса VPN\" [level=2]\n  - button \"Закрыть правило VPN\"\n  - paragraph: Имя .exe-файла, например browser.exe. Правила процессов требуют TUN.\n  - text: Процесс для правила VPN\n  - textbox \"Процесс для правила VPN\":\n    - /placeholder: browser.exe\n  - text: Действие правила VPN\n  - combobox \"Действие правила VPN\":\n    - option \"Через VPN\" [selected]\n    - option \"Напрямую\"\n    - option \"Блокировать\"\n  - button \"Отмена\"\n  - button \"Сохранить правило\""
+}

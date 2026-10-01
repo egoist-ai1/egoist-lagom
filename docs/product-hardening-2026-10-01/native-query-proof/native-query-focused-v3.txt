@@ -1,0 +1,208 @@
+TAP version 13
+# Subtest: Telegram not-installed preflight uses native TCP snapshot without PowerShell
+ok 1 - Telegram not-installed preflight uses native TCP snapshot without PowerShell
+  ---
+  duration_ms: 18.4486
+  type: 'test'
+  ...
+# Subtest: Telegram stopped preflight uses native TCP snapshot without PowerShell
+ok 2 - Telegram stopped preflight uses native TCP snapshot without PowerShell
+  ---
+  duration_ms: 0.8753
+  type: 'test'
+  ...
+# Subtest: native Telegram running wrapper requires real path, birth and child ancestry proof
+ok 3 - native Telegram running wrapper requires real path, birth and child ancestry proof
+  ---
+  duration_ms: 5.0824
+  type: 'test'
+  ...
+# Subtest: native managed Telegram proof uses fixed CLI PID/birth with exact allowed runtime path
+ok 4 - native managed Telegram proof uses fixed CLI PID/birth with exact allowed runtime path
+  ---
+  duration_ms: 4.1037
+  type: 'test'
+  ...
+# Subtest: native foreign listener blocks service installation before any runtime publication
+ok 5 - native foreign listener blocks service installation before any runtime publication
+  ---
+  duration_ms: 1.2363
+  type: 'test'
+  ...
+# Subtest: native changed, malformed or unavailable listener proof never claims a free port
+ok 6 - native changed, malformed or unavailable listener proof never claims a free port
+  ---
+  duration_ms: 3.8898
+  type: 'test'
+  ...
+# Subtest: WinWS empty and complete process sets use fixed native CLI without CIM or command lines
+ok 7 - WinWS empty and complete process sets use fixed native CLI without CIM or command lines
+  ---
+  duration_ms: 4.4106
+  type: 'test'
+  ...
+# Subtest: WinWS unreadable, duplicated, malformed and unapproved rows fail closed without exposing output
+ok 8 - WinWS unreadable, duplicated, malformed and unapproved rows fail closed without exposing output
+  ---
+  duration_ms: 7.4041
+  type: 'test'
+  ...
+# Subtest: actual Windows native CLI/API probe uses only own harmless child and ephemeral listeners
+ok 9 - actual Windows native CLI/API probe uses only own harmless child and ephemeral listeners
+  ---
+  duration_ms: 2186.7736
+  type: 'test'
+  ...
+# Subtest: foreign Relay listener cannot make a running Telegram wrapper ready
+ok 10 - foreign Relay listener cannot make a running Telegram wrapper ready
+  ---
+  duration_ms: 4.0902
+  type: 'test'
+  ...
+# Subtest: Telegram foreign-port preflight prevents runtime publication, stop and another spawn
+ok 11 - Telegram foreign-port preflight prevents runtime publication, stop and another spawn
+  ---
+  duration_ms: 1.6625
+  type: 'test'
+  ...
+# Subtest: Telegram readiness wait rejects a foreign port even when SCM remains running
+ok 12 - Telegram readiness wait rejects a foreign port even when SCM remains running
+  ---
+  duration_ms: 0.9589
+  type: 'test'
+  ...
+# Subtest: Telegram unknown listener ownership blocks start without exposing command details
+ok 13 - Telegram unknown listener ownership blocks start without exposing command details
+  ---
+  duration_ms: 0.8677
+  type: 'test'
+  ...
+# Subtest: an owned Telegram listener remains ready and preserves its configured port
+ok 14 - an owned Telegram listener remains ready and preserves its configured port
+  ---
+  duration_ms: 1.1522
+  type: 'test'
+  ...
+# Subtest: an unknown Telegram owner stays unready and does not claim the port is free
+ok 15 - an unknown Telegram owner stays unready and does not claim the port is free
+  ---
+  duration_ms: 0.9079
+  type: 'test'
+  ...
+# Subtest: current foreign or unknown Telegram ownership takes precedence over an old action error
+ok 16 - current foreign or unknown Telegram ownership takes precedence over an old action error
+  ---
+  duration_ms: 2.1894
+  type: 'test'
+  ...
+# Subtest: PowerShell ownership snapshot accepts the actual service grandchild and refuses foreign Relay
+ok 17 - PowerShell ownership snapshot accepts the actual service grandchild and refuses foreign Relay
+  ---
+  duration_ms: 763.5038
+  type: 'test'
+  ...
+# Subtest: PowerShell IPv6 ownership cannot hide a foreign IPv4 listener behind localhost
+ok 18 - PowerShell IPv6 ownership cannot hide a foreign IPv4 listener behind localhost
+  ---
+  duration_ms: 724.5088
+  type: 'test'
+  ...
+# Subtest: PowerShell standalone ownership checks the saved process creation time and executable
+ok 19 - PowerShell standalone ownership checks the saved process creation time and executable
+  ---
+  duration_ms: 558.6957
+  type: 'test'
+  ...
+# Subtest: Telegram CIM service fallback returns the service PID without assigning the PowerShell PID variable
+ok 20 - Telegram CIM service fallback returns the service PID without assigning the PowerShell PID variable
+  ---
+  duration_ms: 176.4172
+  type: 'test'
+  ...
+# Subtest: a changing Telegram listener snapshot is unknown rather than a free or ready port
+ok 21 - a changing Telegram listener snapshot is unknown rather than a free or ready port
+  ---
+  duration_ms: 1.1544
+  type: 'test'
+  ...
+# Subtest: pending Telegram service reports unconfirmed readiness without a stale failure
+ok 22 - pending Telegram service reports unconfirmed readiness without a stale failure
+  ---
+  duration_ms: 1.0213
+  type: 'test'
+  ...
+# Subtest: Zapret startStandalone disables a stopped automatic SCM registration before spawning
+ok 23 - Zapret startStandalone disables a stopped automatic SCM registration before spawning
+  ---
+  duration_ms: 3.4677
+  type: 'test'
+  ...
+# Subtest: Zapret restartStandalone disables a stopped automatic SCM registration before spawning
+ok 24 - Zapret restartStandalone disables a stopped automatic SCM registration before spawning
+  ---
+  duration_ms: 1.157
+  type: 'test'
+  ...
+# Subtest: Zapret unknown SCM state cannot enter standalone mode
+ok 25 - Zapret unknown SCM state cannot enter standalone mode
+  ---
+  duration_ms: 1.2545
+  type: 'test'
+  ...
+# Subtest: temporary VPN suspension preserves Zapret service startup mode
+ok 26 - temporary VPN suspension preserves Zapret service startup mode
+  ---
+  duration_ms: 1.46
+  type: 'test'
+  ...
+# Subtest: actual harmless PowerShell-boundary child exit retains metadata and original cause
+ok 27 - actual harmless PowerShell-boundary child exit retains metadata and original cause
+  ---
+  duration_ms: 66.3447
+  type: 'test'
+  ...
+# Subtest: actual own child timeout differs from nonzero exit without claiming provider cause
+ok 28 - actual own child timeout differs from nonzero exit without claiming provider cause
+  ---
+  duration_ms: 215.215
+  type: 'test'
+  ...
+# Subtest: actual nonexistent own executable spawn failure has no PID and no path disclosure
+ok 29 - actual nonexistent own executable spawn failure has no PID and no path disclosure
+  ---
+  duration_ms: 2.8568
+  type: 'test'
+  ...
+# Subtest: actual output-limit failure is distinct from timeout and never emits captured output
+ok 30 - actual output-limit failure is distinct from timeout and never emits captured output
+  ---
+  duration_ms: 52.2033
+  type: 'test'
+  ...
+# Subtest: successful own PowerShell-boundary child keeps stdout unchanged
+ok 31 - successful own PowerShell-boundary child keeps stdout unchanged
+  ---
+  duration_ms: 48.1845
+  type: 'test'
+  ...
+# Subtest: invalid JSON output is a fixed safe parse error while preserving SyntaxError cause
+ok 32 - invalid JSON output is a fixed safe parse error while preserving SyntaxError cause
+  ---
+  duration_ms: 47.4385
+  type: 'test'
+  ...
+# Subtest: unrecognized error string fields are not reflected into public diagnostics
+ok 33 - unrecognized error string fields are not reflected into public diagnostics
+  ---
+  duration_ms: 1.2827
+  type: 'test'
+  ...
+1..33
+# tests 33
+# suites 0
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2324.7462

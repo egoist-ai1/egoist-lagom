@@ -1,0 +1,21 @@
+[2026-10-01 08:58:47.320] [info]  [paths] Runtime=production, userData=C:\Users\<user>\AppData\Roaming\Egoist Shield
+[2026-10-01 08:58:47.327] [info]  [boot] createMainWindow:start
+[2026-10-01 08:58:47.328] [info]  [boot] paths preload=C:\Program Files\EgoistShield\resources\app.asar\.vite\build\preload.js, renderer=C:\Program Files\EgoistShield\resources\app.asar\.vite\renderer\main_window\index.html, icon=C:\Program Files\EgoistShield\resources\brand\icon.ico, minimized=false
+[2026-10-01 08:58:47.328] [info]  [boot] ipc security guards installed
+[2026-10-01 08:58:47.330] [info]  [boot] creating BrowserWindow
+[2026-10-01 08:58:47.364] [info]  [boot] BrowserWindow created
+[2026-10-01 08:58:47.375] [info]  [boot] creating StateStore and managers
+[2026-10-01 08:58:49.276] [info]  [boot] system proxy reconciliation:start
+[2026-10-01 08:58:49.280] [info]  [boot] system proxy reconciliation:complete
+[2026-10-01 08:58:49.282] [info]  [boot] registering IPC handlers
+[2026-10-01 08:58:49.283] [info]  [state-store] Initializing a new state profile.
+[2026-10-01 08:58:49.344] [info]  [boot] IPC handlers registered
+[2026-10-01 08:58:49.345] [info]  [boot] loading persisted state
+[2026-10-01 08:58:49.345] [info]  [boot] persisted state loaded
+[2026-10-01 08:58:49.410] [info]  [updater] Persisted auto-update = true
+[2026-10-01 08:58:49.411] [info]  [window] Loading packaged renderer from C:\Program Files\EgoistShield\resources\app.asar\.vite\renderer\main_window\index.html
+[2026-10-01 08:58:49.503] [info]  [window] Main window renderer finished load
+[2026-10-01 08:58:49.504] [info]  [window] loadFile resolved successfully
+[2026-10-01 08:58:49.504] [info]  [boot] createMainWindow:complete
+[2026-10-01 08:58:49.505] [info]  [boot] background recovery:start
+[2026-10-01 08:58:49.532] [info]  [updater] Signed stable channel configured, current=3.8.0

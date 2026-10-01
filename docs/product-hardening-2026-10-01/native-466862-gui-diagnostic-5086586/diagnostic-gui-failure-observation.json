@@ -1,0 +1,245 @@
+{
+  "label": "diagnostic-gui",
+  "observedAtUtc": "2026-10-01T09:02:53.9114743+00:00",
+  "processId": 4684,
+  "mainLog": {
+    "name": "diagnostic-gui-main.log",
+    "status": "captured",
+    "bytes": 6822,
+    "sha256": "F115ADC4CC8849026608FEC0C63499C7C6A7B195D3BF81CCB7AE498B39B26669"
+  },
+  "controls": [
+    {
+      "type": "ControlType.Button",
+      "name": "Egoist Lagom: обзор",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Перейти в мини-щит",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Свернуть",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Развернуть или восстановить окно",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Закрыть приложение",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Обзор",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "VPN",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "DNS",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Профили DPI",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Telegram",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Настройки",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "О приложении",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Версия Lagom",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Telegram",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Локальный прокси и подключение",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Управление Telegram",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Локальный прокси и фоновая служба Telegram.",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Расширенные настройки",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Расширенные настройки",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Установить фоновую службу",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Запустить",
+      "enabled": false,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Добавить в приложение",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Удалить",
+      "enabled": false,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Версия ",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "1.7.0",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Последняя ",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "1.7.0",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Проверить обновление",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Статус и логи",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Прокси",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "не запущен",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Автозапуск",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "не установлена",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Маршрут",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "не активен",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Журнал событий",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Button",
+      "name": "Открыть",
+      "enabled": true,
+      "offscreen": false
+    },
+    {
+      "type": "ControlType.Text",
+      "name": "Логи пока не получены",
+      "enabled": true,
+      "offscreen": false
+    }
+  ],
+  "readbackErrors": [],
+  "exited": false,
+  "windowHandle": 196704,
+  "totalElements": 58
+}

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "capturedAtUtc": "2026-09-30T23:25:04.9299863+00:00",
+  "kind": "native-acceptance-harness-readiness-only",
+  "baseCommit": "5d0d58b44076843e639723ef267e7b8d2605e481",
+  "sourceIsUncommitted": true,
+  "files": [
+    {
+      "path": "tests/windows-production-acceptance.ps1",
+      "bytes": 47283,
+      "sha256": "77348d56a525dad41fc8b272399f215696ae11467cab4e3714b9ca5a5dae28ca"
+    },
+    {
+      "path": "tests/windows-production-acceptance.mjs",
+      "bytes": 5990,
+      "sha256": "ded21a7546a95e0cfda0aa4704a76a7b95c9024fb2888bf2d81b3ec66a85a66e"
+    },
+    {
+      "path": "tests/windows-production-guard.test.mjs",
+      "bytes": 5244,
+      "sha256": "3c198c3dfd5ab482e3e91014902677a22ccf9aeccc97fdfb52430410a328fc8f"
+    }
+  ],
+  "localValidation": {
+    "nodeVersion": "24.19.0",
+    "guardTestsPassed": 4,
+    "guardTestsFailed": 0,
+    "guardTestsSkipped": 0,
+    "guardDurationMs": 1787.5895,
+    "powerShellParserErrors": 0,
+    "scriptAnalyzerErrors": 0,
+    "scriptAnalyzerWarnings": 10,
+    "actualLocalGuardRefused": true,
+    "physicalHostScmDnsTaskRegistryMutations": 0
+  },
+  "nativeAcceptance": {
+    "actualRuns": 0,
+    "result": "not-yet-run",
+    "releaseReady": false
+  },
+  "ciCommand": "./tests/windows-production-acceptance.ps1 -IntegrityManifestPath (Join-Path $env:GITHUB_WORKSPACE \"dist/package-integrity.json\") -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:SHIELD_EVIDENCE_DIR \"native\")"
+}

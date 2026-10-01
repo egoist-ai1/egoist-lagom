@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: Telegram not-installed preflight uses native TCP snapshot without PowerShell
+ok 1 - Telegram not-installed preflight uses native TCP snapshot without PowerShell
+  ---
+  duration_ms: 3.104
+  type: 'test'
+  ...
+# Subtest: Telegram stopped preflight uses native TCP snapshot without PowerShell
+ok 2 - Telegram stopped preflight uses native TCP snapshot without PowerShell
+  ---
+  duration_ms: 0.8683
+  type: 'test'
+  ...
+# Subtest: native Telegram running wrapper requires real path, birth and child ancestry proof
+ok 3 - native Telegram running wrapper requires real path, birth and child ancestry proof
+  ---
+  duration_ms: 4.9649
+  type: 'test'
+  ...
+# Subtest: native managed Telegram proof uses fixed CLI PID/birth with exact allowed runtime path
+ok 4 - native managed Telegram proof uses fixed CLI PID/birth with exact allowed runtime path
+  ---
+  duration_ms: 4.1761
+  type: 'test'
+  ...
+# Subtest: native foreign listener blocks service installation before any runtime publication
+ok 5 - native foreign listener blocks service installation before any runtime publication
+  ---
+  duration_ms: 1.8812
+  type: 'test'
+  ...
+# Subtest: native changed, malformed or unavailable listener proof never claims a free port
+ok 6 - native changed, malformed or unavailable listener proof never claims a free port
+  ---
+  duration_ms: 3.7527
+  type: 'test'
+  ...
+# Subtest: WinWS empty and complete process sets use fixed native CLI without CIM or command lines
+ok 7 - WinWS empty and complete process sets use fixed native CLI without CIM or command lines
+  ---
+  duration_ms: 3.5851
+  type: 'test'
+  ...
+# Subtest: WinWS unreadable, duplicated, malformed and unapproved rows fail closed without exposing output
+ok 8 - WinWS unreadable, duplicated, malformed and unapproved rows fail closed without exposing output
+  ---
+  duration_ms: 6.3475
+  type: 'test'
+  ...
+# Subtest: actual Windows native CLI/API probe uses only own harmless child and ephemeral listeners
+ok 9 - actual Windows native CLI/API probe uses only own harmless child and ephemeral listeners
+  ---
+  duration_ms: 3773.2573
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3851.8002

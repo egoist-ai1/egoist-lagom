@@ -53,6 +53,7 @@ internal sealed class ComponentWorker : IDisposable
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private WorkerRequests _requests = new();
     private Process? _process;
+    private ProtectedExecutable? _workerLease;
     private bool _disposed;
 
     public ComponentWorker(string installRoot)
@@ -73,8 +74,10 @@ internal sealed class ComponentWorker : IDisposable
         if (payload.ValueKind != JsonValueKind.Object) throw new ArgumentException("Component payload must be an object.");
         string component = payload.GetProperty("component").GetString() ?? "";
         string method = payload.GetProperty("method").GetString() ?? "";
-        if (component is not ("SystemDoH" or "Zapret" or "TelegramProxy")) throw new ArgumentException("Unknown component.");
-        if (query && method is not ("status" or "listProfiles" or "getUserLists" or "dryRunProfile" or "checkForUpdates" or "shouldCheckUpdates" or "tailLogs" or "cancelAutoSelect" or "autoSelectProgress"))
+        if (component is not ("SystemDoH" or "Zapret" or "TelegramProxy" or "Vpn")) throw new ArgumentException("Unknown component.");
+        if (component == "Vpn" && (method is not ("status" or "installService" or "startService" or "stopService" or "removeService") || query && method != "status"))
+            throw new ArgumentException("Unsupported VPN service operation.");
+        if (query && method is not ("status" or "listProfiles" or "getUserLists" or "dryRunProfile" or "checkForUpdates" or "shouldCheckUpdates" or "tailLogs" or "cancelAutoSelect" or "autoSelectProgress" or "bootstrapServers"))
             throw new ArgumentException("A mutation cannot use the component query endpoint.");
         if (!payload.TryGetProperty("args", out JsonElement args) || args.ValueKind != JsonValueKind.Array || args.GetArrayLength() > 4)
             throw new ArgumentException("Invalid component arguments.");
@@ -97,7 +100,10 @@ internal sealed class ComponentWorker : IDisposable
                 worker = _process!;
                 requests = _requests;
                 requests.Add(id, completion);
-                string line = JsonSerializer.Serialize(new { id, component, method, args, query });
+                string? requestId = payload.TryGetProperty("requestId", out var requestIdValue) && requestIdValue.ValueKind == JsonValueKind.String
+                    ? requestIdValue.GetString() : null;
+                if (requestId is { Length: > 128 }) throw new ArgumentException("Component correlation ID exceeds its limit.");
+                string line = JsonSerializer.Serialize(new { id, component, method, args, query, requestId });
                 await worker.StandardInput.WriteLineAsync(line.AsMemory(), deadline.Token);
                 await worker.StandardInput.FlushAsync(deadline.Token);
             }
@@ -130,8 +136,14 @@ internal sealed class ComponentWorker : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_process is { HasExited: false } && !_requests.Failed) return;
-        try { if (_process is { HasExited: false }) _process.Kill(entireProcessTree: true); } catch { }
+        if (_process is { HasExited: false })
+        {
+            _process.Kill(entireProcessTree: true);
+            if (!_process.WaitForExit(5000)) throw new IOException("Previous component worker did not stop; a second worker will not be started.");
+        }
         _process?.Dispose();
+        _workerLease?.Dispose();
+        _workerLease = null;
         _process = _startWorker();
         Process worker = _process;
         var requests = new WorkerRequests();
@@ -144,10 +156,9 @@ internal sealed class ComponentWorker : IDisposable
 
     private Process StartInstalledWorker()
     {
-        string executable = Path.Combine(_installRoot, "EgoistShield.exe");
+        string executable = Path.Combine(_installRoot, "EgoistShield.Worker.exe");
         string script = Path.Combine(_installRoot, "resources", "component-worker.cjs");
-        TrustedPath.AssertPathUnderRoot(executable, _installRoot, requireLeaf: true);
-        TrustedPath.AssertPathUnderRoot(script, _installRoot, requireLeaf: true);
+        _workerLease = ProtectedExecutable.OpenHost(_installRoot, "worker");
         var start = new ProcessStartInfo(executable)
         {
             UseShellExecute = false, CreateNoWindow = true,
@@ -157,10 +168,21 @@ internal sealed class ComponentWorker : IDisposable
             WorkingDirectory = _installRoot,
         };
         start.ArgumentList.Add(script);
-        foreach (string key in new[] { "NODE_OPTIONS", "NODE_PATH", "ELECTRON_ENABLE_LOGGING", "ELECTRON_ENABLE_STACK_DUMPING" }) start.Environment.Remove(key);
+        // Start from a small machine-owned environment. Runtime injection knobs
+        // (Node, OpenSSL, .NET profilers, PATH and user temp) are not inherited.
+        start.Environment.Clear();
         start.Environment["ELECTRON_RUN_AS_NODE"] = "1";
         start.Environment["NODE_ENV"] = "production";
-        return Process.Start(start) ?? throw new InvalidOperationException("Component worker did not start.");
+        start.Environment["ProgramData"] = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+        start.Environment["SystemRoot"] = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        start.Environment["PATH"] = Environment.GetFolderPath(Environment.SpecialFolder.System) + ";" + Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        start.Environment["COMSPEC"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "cmd.exe");
+        string temporary = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "EgoistShield", "Service", "ComponentWorker", "Temp");
+        Directory.CreateDirectory(temporary);
+        start.Environment["TEMP"] = temporary;
+        start.Environment["TMP"] = temporary;
+        try { return Process.Start(start) ?? throw new InvalidOperationException("Component worker did not start."); }
+        catch { _workerLease.Dispose(); _workerLease = null; throw; }
     }
 
     private static async Task DrainErrorsAsync(Process worker)
@@ -216,6 +238,16 @@ internal sealed class ComponentWorker : IDisposable
         var completion = requests.Remove(id);
         if (completion == null) return;
         if (ok) completion.TrySetResult(result);
+        else if (response.TryGetProperty("errorCode", out var errorCodeValue))
+        {
+            string? errorCode = errorCodeValue.ValueKind == JsonValueKind.String ? errorCodeValue.GetString() : null;
+            if (errorCode is not ("VPN_SERVICE_VALIDATION_FAILED" or "VPN_SERVICE_ROLLBACK_VERIFIED" or "VPN_SERVICE_ROLLBACK_UNKNOWN"))
+            {
+                completion.TrySetException(new IOException("Worker returned an unsupported structured error; operation outcome is unknown."));
+                return;
+            }
+            completion.TrySetException(new ServiceOperationException(errorCode == "VPN_SERVICE_ROLLBACK_UNKNOWN" ? "OPERATION_OUTCOME_UNKNOWN" : errorCode, error ?? "VPN service operation failed."));
+        }
         else completion.TrySetException(new InvalidOperationException(error));
     }
 
@@ -229,7 +261,7 @@ internal sealed class ComponentWorker : IDisposable
             _requests.Fail(new ObjectDisposedException(nameof(ComponentWorker)));
             var worker = _process;
             _process = null;
-            if (worker == null) return;
+            if (worker == null) { _workerLease?.Dispose(); _workerLease = null; return; }
             try { worker.StandardInput.Close(); } catch { }
             try
             {
@@ -240,7 +272,7 @@ internal sealed class ComponentWorker : IDisposable
                 }
             }
             catch { }
-            finally { worker.Dispose(); }
+            finally { worker.Dispose(); _workerLease?.Dispose(); _workerLease = null; }
         }
         finally { _writeLock.Release(); }
     }

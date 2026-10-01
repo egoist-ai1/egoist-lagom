@@ -1,0 +1,16 @@
+✔ official legacy versions select separate immutable installer/helper pins and reject aliases (1.5504ms)
+✔ both original signed legacy manifests are accepted only for the explicitly selected version (3.7228ms)
+✔ candidate minimum version is compared with the selected legacy version, not a fixed 3.7.9 (0.7168ms)
+✔ legacy gate verifies original real signed metadata with the project pinned public root (2.7811ms)
+✔ legacy gate refuses registry rollback, key replacement and revoked-key revival (1.8841ms)
+✔ pure source-binding boundary requires both signed fields and exact integrity bytes (0.5279ms)
+✔ legacy PowerShell library import performs no native query or mutation and observer matches exact scope (295.3615ms)
+✔ real legacy script and helper reject a non-hosted process before input or native mutation (1298.2125ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1718.6743

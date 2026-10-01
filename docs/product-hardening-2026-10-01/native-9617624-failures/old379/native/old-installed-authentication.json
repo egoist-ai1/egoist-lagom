@@ -1,0 +1,59 @@
+{
+  "ok": true,
+  "oldVersion": "3.7.9",
+  "oldReleaseProfile": {
+    "version": "3.7.9",
+    "installerSha256": "eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+    "helperSha256": "f6c232fa15e4e8f1d78c149f973df8b807d58cabd8ef5898b8b5ce0d2279da8e"
+  },
+  "old": {
+    "schemaVersion": 2,
+    "channel": "stable",
+    "version": "3.7.9",
+    "tag": "v3.7.9",
+    "installerName": "EgoistShield-Setup-3.7.9.exe",
+    "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/EgoistShield-Setup-3.7.9.exe",
+    "size": 206521508,
+    "sha256": "eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+    "sha512": "46ac50c71106432eb09d3cf8e47e6b7b402c4b7e1746214ed72dace268dc421b9d369faf37f10392e78c44039dd1a2f0f4415b6681bdc5cf4f0c6b3a83b041bc",
+    "githubDigest": "sha256:eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+    "minimumAppVersion": "3.7.8",
+    "keyId": "release-2026-09-recovery",
+    "authenticodeStatus": "not-signed",
+    "licenseVersion": "1.0",
+    "publishedAt": "2026-09-29T16:08:58.508Z"
+  },
+  "candidate": {
+    "schemaVersion": 2,
+    "channel": "stable",
+    "version": "3.8.0",
+    "tag": "v3.8.0",
+    "installerName": "EgoistShield-Setup-3.8.0.exe",
+    "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe",
+    "size": 277407436,
+    "sha256": "d77eb1b2ecac06df191cf2953653213377068beaaa3b0e447297e17f468b026c",
+    "sha512": "7f6d506b756bbceee7d6ad0715d6657d0b848a7b0a319663521bd393b2210c66568bf80134910cd01088797a56212a595e5ef35b01adc9f926b64412a214bffd",
+    "githubDigest": "sha256:d77eb1b2ecac06df191cf2953653213377068beaaa3b0e447297e17f468b026c",
+    "sourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+    "integrityManifestSha256": "2ec11314f2760fec3dcbf09d988c82c07ca279b8a0cfd4f651b0fbabcf0faf42",
+    "minimumAppVersion": "3.7.8",
+    "keyId": "release-2026-09-recovery",
+    "authenticodeStatus": "not-signed",
+    "licenseVersion": "1.0",
+    "publishedAt": "2026-10-01T11:32:43.820Z"
+  },
+  "installed": {
+    "version": "3.7.9",
+    "rootSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+    "registrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+    "helperSha256": "f6c232fa15e4e8f1d78c149f973df8b807d58cabd8ef5898b8b5ce0d2279da8e",
+    "candidateAcceptedByInstalledBundledKey": true
+  },
+  "rootSha256": "30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7",
+  "oldRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+  "candidateRegistrySha256": "d3cbbd5b636adbb5f47733be32197f0d7dd7ed3294d8785b1aa4b9bb51197dbc",
+  "candidateManifestSha256": "352a39d7f5fdc9b55619786e250544a27d2903de19b8f984864a89505d7ae5b2",
+  "integrityManifestSha256": "2ec11314f2760fec3dcbf09d988c82c07ca279b8a0cfd4f651b0fbabcf0faf42",
+  "crypto": "real Ed25519 verification over original bytes; no supplied keys",
+  "publicLatestFeedDiscoveryTested": false
+}

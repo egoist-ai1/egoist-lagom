@@ -1,0 +1,898 @@
+{
+  "schema": 1,
+  "version": "3.8.0",
+  "scope": "actual built3.8.0 isolated test profile; no mocked IPC, focus/media/pseudo-state emulation or system mutations; no foreground FPS guarantee",
+  "matrix": [
+    {
+      "screen": "overview",
+      "size": "wide",
+      "viewport": {
+        "width": 1360,
+        "height": 900
+      },
+      "document": {
+        "width": 1360,
+        "height": 900
+      },
+      "bodyWidth": 1360,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "connection",
+      "size": "wide",
+      "viewport": {
+        "width": 1360,
+        "height": 900
+      },
+      "document": {
+        "width": 1360,
+        "height": 900
+      },
+      "bodyWidth": 1360,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "dns",
+      "size": "wide",
+      "viewport": {
+        "width": 1360,
+        "height": 900
+      },
+      "document": {
+        "width": 1360,
+        "height": 900
+      },
+      "bodyWidth": 1360,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "profiles",
+      "size": "wide",
+      "viewport": {
+        "width": 1360,
+        "height": 900
+      },
+      "document": {
+        "width": 1360,
+        "height": 900
+      },
+      "bodyWidth": 1360,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "telegram",
+      "size": "wide",
+      "viewport": {
+        "width": 1360,
+        "height": 900
+      },
+      "document": {
+        "width": 1360,
+        "height": 900
+      },
+      "bodyWidth": 1360,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "settings",
+      "size": "wide",
+      "viewport": {
+        "width": 1360,
+        "height": 900
+      },
+      "document": {
+        "width": 1360,
+        "height": 900
+      },
+      "bodyWidth": 1360,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "overview",
+      "size": "minimum",
+      "viewport": {
+        "width": 1000,
+        "height": 680
+      },
+      "document": {
+        "width": 1000,
+        "height": 680
+      },
+      "bodyWidth": 1000,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "connection",
+      "size": "minimum",
+      "viewport": {
+        "width": 1000,
+        "height": 680
+      },
+      "document": {
+        "width": 1000,
+        "height": 680
+      },
+      "bodyWidth": 1000,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "dns",
+      "size": "minimum",
+      "viewport": {
+        "width": 1000,
+        "height": 680
+      },
+      "document": {
+        "width": 1000,
+        "height": 680
+      },
+      "bodyWidth": 1000,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "profiles",
+      "size": "minimum",
+      "viewport": {
+        "width": 1000,
+        "height": 680
+      },
+      "document": {
+        "width": 1000,
+        "height": 680
+      },
+      "bodyWidth": 1000,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "telegram",
+      "size": "minimum",
+      "viewport": {
+        "width": 1000,
+        "height": 680
+      },
+      "document": {
+        "width": 1000,
+        "height": 680
+      },
+      "bodyWidth": 1000,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "settings",
+      "size": "minimum",
+      "viewport": {
+        "width": 1000,
+        "height": 680
+      },
+      "document": {
+        "width": 1000,
+        "height": 680
+      },
+      "bodyWidth": 1000,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "overview",
+      "size": "zoom200",
+      "viewport": {
+        "width": 680,
+        "height": 450
+      },
+      "document": {
+        "width": 680,
+        "height": 450
+      },
+      "bodyWidth": 680,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "connection",
+      "size": "zoom200",
+      "viewport": {
+        "width": 680,
+        "height": 450
+      },
+      "document": {
+        "width": 680,
+        "height": 450
+      },
+      "bodyWidth": 680,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "dns",
+      "size": "zoom200",
+      "viewport": {
+        "width": 680,
+        "height": 450
+      },
+      "document": {
+        "width": 680,
+        "height": 450
+      },
+      "bodyWidth": 680,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "profiles",
+      "size": "zoom200",
+      "viewport": {
+        "width": 680,
+        "height": 450
+      },
+      "document": {
+        "width": 680,
+        "height": 450
+      },
+      "bodyWidth": 680,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "telegram",
+      "size": "zoom200",
+      "viewport": {
+        "width": 680,
+        "height": 450
+      },
+      "document": {
+        "width": 680,
+        "height": 450
+      },
+      "bodyWidth": 680,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "settings",
+      "size": "zoom200",
+      "viewport": {
+        "width": 680,
+        "height": 450
+      },
+      "document": {
+        "width": 680,
+        "height": 450
+      },
+      "bodyWidth": 680,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "overview",
+      "size": "minimum-zoom200",
+      "viewport": {
+        "width": 500,
+        "height": 340
+      },
+      "document": {
+        "width": 500,
+        "height": 340
+      },
+      "bodyWidth": 500,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "connection",
+      "size": "minimum-zoom200",
+      "viewport": {
+        "width": 500,
+        "height": 340
+      },
+      "document": {
+        "width": 500,
+        "height": 340
+      },
+      "bodyWidth": 500,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "dns",
+      "size": "minimum-zoom200",
+      "viewport": {
+        "width": 500,
+        "height": 340
+      },
+      "document": {
+        "width": 500,
+        "height": 340
+      },
+      "bodyWidth": 500,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "profiles",
+      "size": "minimum-zoom200",
+      "viewport": {
+        "width": 500,
+        "height": 340
+      },
+      "document": {
+        "width": 500,
+        "height": 340
+      },
+      "bodyWidth": 500,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "telegram",
+      "size": "minimum-zoom200",
+      "viewport": {
+        "width": 500,
+        "height": 340
+      },
+      "document": {
+        "width": 500,
+        "height": 340
+      },
+      "bodyWidth": 500,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    },
+    {
+      "screen": "settings",
+      "size": "minimum-zoom200",
+      "viewport": {
+        "width": 500,
+        "height": 340
+      },
+      "document": {
+        "width": 500,
+        "height": 340
+      },
+      "bodyWidth": 500,
+      "horizontalOverflow": 0,
+      "fonts": {
+        "body": "Manrope, \"Segoe UI\", sans-serif",
+        "status": "loaded"
+      }
+    }
+  ],
+  "pageErrors": [],
+  "interactions": [
+    {
+      "name": "tab keyboard right",
+      "version": "3.8.0",
+      "hidden": true
+    },
+    {
+      "name": "tab keyboard home",
+      "version": "3.8.0",
+      "hidden": true
+    },
+    {
+      "name": "help actual hover",
+      "version": "3.8.0",
+      "hidden": true
+    },
+    {
+      "name": "help Escape closes overlay",
+      "version": "3.8.0",
+      "hidden": true
+    },
+    {
+      "name": "visible setting descriptions",
+      "version": "3.8.0",
+      "hidden": true
+    },
+    {
+      "name": "full to mini",
+      "version": "3.8.0",
+      "hidden": true
+    },
+    {
+      "name": "mini to full",
+      "version": "3.8.0",
+      "hidden": true
+    }
+  ],
+  "scrollAndOverlap": [
+    {
+      "screen": "vpn",
+      "size": "wide-zoom200",
+      "geometry": {
+        "overlaps": [],
+        "nested": [
+          {
+            "class": "vpn-side-stack",
+            "overlaps": 0
+          }
+        ],
+        "scrollHeight": 982,
+        "clientHeight": 346,
+        "panels": [
+          {
+            "class": "panel vpn-servers-panel",
+            "top": 117.3984375,
+            "bottom": 400.3984375,
+            "height": 283
+          },
+          {
+            "class": "vpn-side-stack",
+            "top": 414.3984375,
+            "bottom": 1065.3984375,
+            "height": 651
+          }
+        ]
+      },
+      "lastControl": {
+        "label": "Удалить подписку",
+        "top": 256.3984375,
+        "bottom": 296.3984375,
+        "stageTop": 103.3984375,
+        "stageBottom": 449,
+        "inside": true
+      },
+      "nativeHidden": true
+    },
+    {
+      "screen": "dns",
+      "size": "wide-zoom200",
+      "geometry": {
+        "overlaps": [],
+        "nested": [
+          {
+            "class": "side-stack",
+            "overlaps": 0
+          }
+        ],
+        "scrollHeight": 1067,
+        "clientHeight": 346,
+        "panels": [
+          {
+            "class": "panel dns-form",
+            "top": 117.3984375,
+            "bottom": 636.5859375,
+            "height": 519.1875
+          },
+          {
+            "class": "side-stack",
+            "top": 650.5859375,
+            "bottom": 1150.0859375,
+            "height": 499.5
+          }
+        ]
+      },
+      "lastControl": {
+        "label": "Проверить DNS",
+        "top": 374.0859375,
+        "bottom": 414.0859375,
+        "stageTop": 103.3984375,
+        "stageBottom": 449,
+        "inside": true
+      },
+      "nativeHidden": true
+    },
+    {
+      "screen": "zapret",
+      "size": "wide-zoom200",
+      "geometry": {
+        "overlaps": [],
+        "nested": [
+          {
+            "class": "zapret-main",
+            "overlaps": 0
+          }
+        ],
+        "scrollHeight": 1166,
+        "clientHeight": 346,
+        "panels": [
+          {
+            "class": "panel config-list",
+            "top": 117.3984375,
+            "bottom": 567.296875,
+            "height": 449.8984375
+          },
+          {
+            "class": "zapret-main",
+            "top": 579.296875,
+            "bottom": 1249.796875,
+            "height": 670.5
+          }
+        ]
+      },
+      "lastControl": {
+        "label": "Маршруты",
+        "top": 259.296875,
+        "bottom": 293.296875,
+        "stageTop": 103.3984375,
+        "stageBottom": 449,
+        "inside": true
+      },
+      "nativeHidden": true
+    },
+    {
+      "screen": "telegram-proxy",
+      "size": "wide-zoom200",
+      "geometry": {
+        "overlaps": [],
+        "nested": [],
+        "scrollHeight": 720,
+        "clientHeight": 346,
+        "panels": [
+          {
+            "class": "panel telegram-form",
+            "top": 117.3984375,
+            "bottom": 470.09375,
+            "height": 352.6953125
+          },
+          {
+            "class": "panel telegram-status",
+            "top": 484.09375,
+            "bottom": 803.59375,
+            "height": 319.5
+          }
+        ]
+      },
+      "lastControl": {
+        "label": "Открыть",
+        "top": 288.09375,
+        "bottom": 328.09375,
+        "stageTop": 103.3984375,
+        "stageBottom": 449,
+        "inside": true
+      },
+      "nativeHidden": true
+    },
+    {
+      "screen": "settings",
+      "size": "wide-zoom200",
+      "geometry": {
+        "overlaps": [],
+        "nested": [
+          {
+            "class": "settings-section-list settings-preferences-list",
+            "overlaps": 0
+          },
+          {
+            "class": "settings-section-list settings-service-list",
+            "overlaps": 0
+          }
+        ],
+        "scrollHeight": 1505,
+        "clientHeight": 346,
+        "panels": [
+          {
+            "class": "panel settings-surface settings-preferences-surface",
+            "top": 117.3984375,
+            "bottom": 922.53125,
+            "height": 805.1328125
+          },
+          {
+            "class": "panel settings-surface settings-service-surface",
+            "top": 932.53125,
+            "bottom": 1576.8203125,
+            "height": 644.2890625
+          }
+        ]
+      },
+      "lastControl": {
+        "label": "Экспортировать диагностику",
+        "top": 311.8203125,
+        "bottom": 353.8203125,
+        "stageTop": 103.3984375,
+        "stageBottom": 449,
+        "inside": true
+      },
+      "nativeHidden": true
+    },
+    {
+      "screen": "vpn",
+      "size": "minimum-zoom200",
+      "geometry": {
+        "overlaps": [],
+        "nested": [
+          {
+            "class": "vpn-side-stack",
+            "overlaps": 0
+          }
+        ],
+        "scrollHeight": 1034,
+        "clientHeight": 236,
+        "panels": [
+          {
+            "class": "panel vpn-servers-panel",
+            "top": 117.3984375,
+            "bottom": 452.1484375,
+            "height": 334.75
+          },
+          {
+            "class": "vpn-side-stack",
+            "top": 466.1484375,
+            "bottom": 1117.1484375,
+            "height": 651
+          }
+        ]
+      },
+      "lastControl": {
+        "label": "Удалить подписку",
+        "top": 201.1484375,
+        "bottom": 241.1484375,
+        "stageTop": 103.3984375,
+        "stageBottom": 339,
+        "inside": true
+      },
+      "nativeHidden": true
+    },
+    {
+      "screen": "dns",
+      "size": "minimum-zoom200",
+      "geometry": {
+        "overlaps": [],
+        "nested": [
+          {
+            "class": "side-stack",
+            "overlaps": 0
+          }
+        ],
+        "scrollHeight": 1067,
+        "clientHeight": 236,
+        "panels": [
+          {
+            "class": "panel dns-form",
+            "top": 117.3984375,
+            "bottom": 636.5859375,
+            "height": 519.1875
+          },
+          {
+            "class": "side-stack",
+            "top": 650.5859375,
+            "bottom": 1150.0859375,
+            "height": 499.5
+          }
+        ]
+      },
+      "lastControl": {
+        "label": "Проверить DNS",
+        "top": 264.0859375,
+        "bottom": 304.0859375,
+        "stageTop": 103.3984375,
+        "stageBottom": 339,
+        "inside": true
+      },
+      "nativeHidden": true
+    },
+    {
+      "screen": "zapret",
+      "size": "minimum-zoom200",
+      "geometry": {
+        "overlaps": [],
+        "nested": [
+          {
+            "class": "zapret-main",
+            "overlaps": 0
+          }
+        ],
+        "scrollHeight": 1114,
+        "clientHeight": 236,
+        "panels": [
+          {
+            "class": "panel config-list",
+            "top": 117.3984375,
+            "bottom": 514.4921875,
+            "height": 397.09375
+          },
+          {
+            "class": "zapret-main",
+            "top": 526.4921875,
+            "bottom": 1196.9921875,
+            "height": 670.5
+          }
+        ]
+      },
+      "lastControl": {
+        "label": "Маршруты",
+        "top": 203.9921875,
+        "bottom": 237.9921875,
+        "stageTop": 103.3984375,
+        "stageBottom": 339,
+        "inside": true
+      },
+      "nativeHidden": true
+    },
+    {
+      "screen": "telegram-proxy",
+      "size": "minimum-zoom200",
+      "geometry": {
+        "overlaps": [],
+        "nested": [],
+        "scrollHeight": 824,
+        "clientHeight": 236,
+        "panels": [
+          {
+            "class": "panel telegram-form",
+            "top": 117.3984375,
+            "bottom": 574.09375,
+            "height": 456.6953125
+          },
+          {
+            "class": "panel telegram-status",
+            "top": 588.09375,
+            "bottom": 907.59375,
+            "height": 319.5
+          }
+        ]
+      },
+      "lastControl": {
+        "label": "Открыть",
+        "top": 201.09375,
+        "bottom": 241.09375,
+        "stageTop": 103.3984375,
+        "stageBottom": 339,
+        "inside": true
+      },
+      "nativeHidden": true
+    },
+    {
+      "screen": "settings",
+      "size": "minimum-zoom200",
+      "geometry": {
+        "overlaps": [],
+        "nested": [
+          {
+            "class": "settings-section-list settings-preferences-list",
+            "overlaps": 0
+          },
+          {
+            "class": "settings-section-list settings-service-list",
+            "overlaps": 0
+          }
+        ],
+        "scrollHeight": 1595,
+        "clientHeight": 236,
+        "panels": [
+          {
+            "class": "panel settings-surface settings-preferences-surface",
+            "top": 117.3984375,
+            "bottom": 939.9296875,
+            "height": 822.53125
+          },
+          {
+            "class": "panel settings-surface settings-service-surface",
+            "top": 949.9296875,
+            "bottom": 1666.203125,
+            "height": 716.2734375
+          }
+        ]
+      },
+      "lastControl": {
+        "label": "Экспортировать диагностику",
+        "top": 201.703125,
+        "bottom": 243.703125,
+        "stageTop": 103.3984375,
+        "stageBottom": 339,
+        "inside": true
+      },
+      "nativeHidden": true
+    },
+    {
+      "screen": "about",
+      "focusContained": true,
+      "escapeCloses": true
+    }
+  ],
+  "rendererCrash": {
+    "elapsedMs": 390,
+    "gone": {
+      "reason": "crashed",
+      "exitCode": 2
+    },
+    "visible": false,
+    "focused": false
+  },
+  "rendererPidChanged": true,
+  "candidateClosedViaUi": true,
+  "productionServicesAfterCandidateClose": [
+    {
+      "name": "EgoistShieldCore",
+      "state": "Running",
+      "startMode": "Auto"
+    },
+    {
+      "name": "EgoistShieldSystemDoH",
+      "state": "Running",
+      "startMode": "Auto"
+    },
+    {
+      "name": "EgoistShieldTelegramProxy",
+      "state": "Running",
+      "startMode": "Auto"
+    }
+  ],
+  "limitations": [
+    "isolated test profile; system mutations disabled",
+    "hidden capture does not measure foreground FPS",
+    "one crash measures did-finish-load, not first paint",
+    "connected3.8 state not forced;3.7.9 native evidence and source regression separate",
+    "mini200 scroll reachability not fully accepted",
+    "no new3.8 install/reboot/multi-day soak"
+  ]
+}

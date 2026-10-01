@@ -1,0 +1,346 @@
+TAP version 13
+# Subtest: Telegram not-installed preflight uses native TCP snapshot without PowerShell
+ok 1 - Telegram not-installed preflight uses native TCP snapshot without PowerShell
+  ---
+  duration_ms: 3.2293
+  type: 'test'
+  ...
+# Subtest: Telegram stopped preflight uses native TCP snapshot without PowerShell
+ok 2 - Telegram stopped preflight uses native TCP snapshot without PowerShell
+  ---
+  duration_ms: 0.8661
+  type: 'test'
+  ...
+# Subtest: native Telegram running wrapper requires real path, birth and child ancestry proof
+ok 3 - native Telegram running wrapper requires real path, birth and child ancestry proof
+  ---
+  duration_ms: 5.0985
+  type: 'test'
+  ...
+# Subtest: native managed Telegram proof uses fixed CLI PID/birth with exact allowed runtime path
+ok 4 - native managed Telegram proof uses fixed CLI PID/birth with exact allowed runtime path
+  ---
+  duration_ms: 4.4108
+  type: 'test'
+  ...
+# Subtest: native foreign listener blocks service installation before any runtime publication
+ok 5 - native foreign listener blocks service installation before any runtime publication
+  ---
+  duration_ms: 1.3153
+  type: 'test'
+  ...
+# Subtest: native changed, malformed or unavailable listener proof never claims a free port
+ok 6 - native changed, malformed or unavailable listener proof never claims a free port
+  ---
+  duration_ms: 3.9941
+  type: 'test'
+  ...
+# Subtest: WinWS empty and complete process sets use fixed native CLI without CIM or command lines
+ok 7 - WinWS empty and complete process sets use fixed native CLI without CIM or command lines
+  ---
+  duration_ms: 3.6432
+  type: 'test'
+  ...
+# Subtest: WinWS unreadable, duplicated, malformed and unapproved rows fail closed without exposing output
+ok 8 - WinWS unreadable, duplicated, malformed and unapproved rows fail closed without exposing output
+  ---
+  duration_ms: 7.473
+  type: 'test'
+  ...
+# Subtest: actual Windows native CLI/API probe uses only own harmless child and ephemeral listeners
+ok 9 - actual Windows native CLI/API probe uses only own harmless child and ephemeral listeners
+  ---
+  duration_ms: 1938.306
+  type: 'test'
+  ...
+# Subtest: foreign Relay listener cannot make a running Telegram wrapper ready
+ok 10 - foreign Relay listener cannot make a running Telegram wrapper ready
+  ---
+  duration_ms: 4.8101
+  type: 'test'
+  ...
+# Subtest: Telegram foreign-port preflight prevents runtime publication, stop and another spawn
+ok 11 - Telegram foreign-port preflight prevents runtime publication, stop and another spawn
+  ---
+  duration_ms: 2.0679
+  type: 'test'
+  ...
+# Subtest: Telegram readiness wait rejects a foreign port even when SCM remains running
+ok 12 - Telegram readiness wait rejects a foreign port even when SCM remains running
+  ---
+  duration_ms: 1.3331
+  type: 'test'
+  ...
+# Subtest: Telegram unknown listener ownership blocks start without exposing command details
+ok 13 - Telegram unknown listener ownership blocks start without exposing command details
+  ---
+  duration_ms: 1.3777
+  type: 'test'
+  ...
+# Subtest: an owned Telegram listener remains ready and preserves its configured port
+ok 14 - an owned Telegram listener remains ready and preserves its configured port
+  ---
+  duration_ms: 1.5183
+  type: 'test'
+  ...
+# Subtest: an unknown Telegram owner stays unready and does not claim the port is free
+ok 15 - an unknown Telegram owner stays unready and does not claim the port is free
+  ---
+  duration_ms: 1.1876
+  type: 'test'
+  ...
+# Subtest: current foreign or unknown Telegram ownership takes precedence over an old action error
+ok 16 - current foreign or unknown Telegram ownership takes precedence over an old action error
+  ---
+  duration_ms: 2.5209
+  type: 'test'
+  ...
+# Subtest: PowerShell ownership snapshot accepts the actual service grandchild and refuses foreign Relay
+ok 17 - PowerShell ownership snapshot accepts the actual service grandchild and refuses foreign Relay
+  ---
+  duration_ms: 738.0692
+  type: 'test'
+  ...
+# Subtest: PowerShell IPv6 ownership cannot hide a foreign IPv4 listener behind localhost
+ok 18 - PowerShell IPv6 ownership cannot hide a foreign IPv4 listener behind localhost
+  ---
+  duration_ms: 698.3917
+  type: 'test'
+  ...
+# Subtest: PowerShell standalone ownership checks the saved process creation time and executable
+ok 19 - PowerShell standalone ownership checks the saved process creation time and executable
+  ---
+  duration_ms: 484.0104
+  type: 'test'
+  ...
+# Subtest: Telegram CIM service fallback returns the service PID without assigning the PowerShell PID variable
+ok 20 - Telegram CIM service fallback returns the service PID without assigning the PowerShell PID variable
+  ---
+  duration_ms: 124.2193
+  type: 'test'
+  ...
+# Subtest: a changing Telegram listener snapshot is unknown rather than a free or ready port
+ok 21 - a changing Telegram listener snapshot is unknown rather than a free or ready port
+  ---
+  duration_ms: 1.1805
+  type: 'test'
+  ...
+# Subtest: pending Telegram service reports unconfirmed readiness without a stale failure
+ok 22 - pending Telegram service reports unconfirmed readiness without a stale failure
+  ---
+  duration_ms: 1.0072
+  type: 'test'
+  ...
+# Subtest: Zapret startStandalone disables a stopped automatic SCM registration before spawning
+ok 23 - Zapret startStandalone disables a stopped automatic SCM registration before spawning
+  ---
+  duration_ms: 2.9532
+  type: 'test'
+  ...
+# Subtest: Zapret restartStandalone disables a stopped automatic SCM registration before spawning
+ok 24 - Zapret restartStandalone disables a stopped automatic SCM registration before spawning
+  ---
+  duration_ms: 0.9109
+  type: 'test'
+  ...
+# Subtest: Zapret unknown SCM state cannot enter standalone mode
+ok 25 - Zapret unknown SCM state cannot enter standalone mode
+  ---
+  duration_ms: 0.9633
+  type: 'test'
+  ...
+# Subtest: temporary VPN suspension preserves Zapret service startup mode
+ok 26 - temporary VPN suspension preserves Zapret service startup mode
+  ---
+  duration_ms: 1.0952
+  type: 'test'
+  ...
+# Subtest: actual harmless PowerShell-boundary child exit retains metadata and original cause
+ok 27 - actual harmless PowerShell-boundary child exit retains metadata and original cause
+  ---
+  duration_ms: 53.7513
+  type: 'test'
+  ...
+# Subtest: actual own child timeout differs from nonzero exit without claiming provider cause
+ok 28 - actual own child timeout differs from nonzero exit without claiming provider cause
+  ---
+  duration_ms: 211.8448
+  type: 'test'
+  ...
+# Subtest: actual nonexistent own executable spawn failure has no PID and no path disclosure
+ok 29 - actual nonexistent own executable spawn failure has no PID and no path disclosure
+  ---
+  duration_ms: 2.4362
+  type: 'test'
+  ...
+# Subtest: actual output-limit failure is distinct from timeout and never emits captured output
+ok 30 - actual output-limit failure is distinct from timeout and never emits captured output
+  ---
+  duration_ms: 50.2159
+  type: 'test'
+  ...
+# Subtest: successful own PowerShell-boundary child keeps stdout unchanged
+ok 31 - successful own PowerShell-boundary child keeps stdout unchanged
+  ---
+  duration_ms: 46.7599
+  type: 'test'
+  ...
+# Subtest: invalid JSON output is a fixed safe parse error while preserving SyntaxError cause
+ok 32 - invalid JSON output is a fixed safe parse error while preserving SyntaxError cause
+  ---
+  duration_ms: 45.2877
+  type: 'test'
+  ...
+# Subtest: unrecognized error string fields are not reflected into public diagnostics
+ok 33 - unrecognized error string fields are not reflected into public diagnostics
+  ---
+  duration_ms: 1.2001
+  type: 'test'
+  ...
+# Subtest: HTTP errors cannot pass endpoint checks; curl ignores inherited proxies and config
+ok 34 - HTTP errors cannot pass endpoint checks; curl ignores inherited proxies and config
+  ---
+  duration_ms: 8.0008
+  type: 'test'
+  ...
+# Subtest: voice probe uses only a valid recent Discord media endpoint and distinguishes TLS from media
+ok 35 - voice probe uses only a valid recent Discord media endpoint and distinguishes TLS from media
+  ---
+  duration_ms: 2.3229
+  type: 'test'
+  ...
+# Subtest: a forced TLS fallback cannot hide a failed default-client endpoint check
+ok 36 - a forced TLS fallback cannot hide a failed default-client endpoint check
+  ---
+  duration_ms: 2.3972
+  type: 'test'
+  ...
+# Subtest: automatic sweep probes only ordinary HTTPS for Discord and YouTube
+ok 37 - automatic sweep probes only ordinary HTTPS for Discord and YouTube
+  ---
+  duration_ms: 1.2196
+  type: 'test'
+  ...
+# Subtest: image/CDN and DNS reachability alone cannot produce a usable profile
+ok 38 - image/CDN and DNS reachability alone cannot produce a usable profile
+  ---
+  duration_ms: 1.2225
+  type: 'test'
+  ...
+# Subtest: ownership requires exact executable identity, not a command-line reference or neighbouring folder
+ok 39 - ownership requires exact executable identity, not a command-line reference or neighbouring folder
+  ---
+  duration_ms: 1.9574
+  type: 'test'
+  ...
+# Subtest: standalone cleanup ignores a recycled PID in its saved state
+ok 40 - standalone cleanup ignores a recycled PID in its saved state
+  ---
+  duration_ms: 1.3093
+  type: 'test'
+  ...
+# Subtest: an unkillable owned process aborts cleanup without clearing recovery state
+ok 41 - an unkillable owned process aborts cleanup without clearing recovery state
+  ---
+  duration_ms: 132.1446
+  type: 'test'
+  ...
+# Subtest: external conflict detection rejects without deleting a host service
+ok 42 - external conflict detection rejects without deleting a host service
+  ---
+  duration_ms: 1.4938
+  type: 'test'
+  ...
+# Subtest: unavailable process inventory is a failure, not evidence that all processes stopped
+ok 43 - unavailable process inventory is a failure, not evidence that all processes stopped
+  ---
+  duration_ms: 3.3869
+  type: 'test'
+  ...
+# Subtest: auto-select tests every profile twice, then recommends without starting a winner
+ok 44 - auto-select tests every profile twice, then recommends without starting a winner
+  ---
+  duration_ms: 609.8222
+  type: 'test'
+  ...
+# Subtest: auto-select rejects a one-pass success and continues until a candidate repeats it
+ok 45 - auto-select rejects a one-pass success and continues until a candidate repeats it
+  ---
+  duration_ms: 631.1407
+  type: 'test'
+  ...
+# Subtest: a full 23-profile report ranks complete coverage before lower latency
+ok 46 - a full 23-profile report ranks complete coverage before lower latency
+  ---
+  duration_ms: 7149.3984
+  type: 'test'
+  ...
+# Subtest: auto-select restores the previously running service, never the recommended profile
+ok 47 - auto-select restores the previously running service, never the recommended profile
+  ---
+  duration_ms: 626.2023
+  type: 'test'
+  ...
+# Subtest: auto-select does not advance or save a winner after cleanup failure
+ok 48 - auto-select does not advance or save a winner after cleanup failure
+  ---
+  duration_ms: 313.2952
+  type: 'test'
+  ...
+# Subtest: failed sweep preparation restarts a service it already stopped
+ok 49 - failed sweep preparation restarts a service it already stopped
+  ---
+  duration_ms: 1.4755
+  type: 'test'
+  ...
+# Subtest: cancel during a pending start never launches another candidate or retains a winner
+ok 50 - cancel during a pending start never launches another candidate or retains a winner
+  ---
+  duration_ms: 1.3862
+  type: 'test'
+  ...
+# Subtest: a process that exits during HTTPS checks cannot be selected
+ok 51 - a process that exits during HTTPS checks cannot be selected
+  ---
+  duration_ms: 612.5883
+  type: 'test'
+  ...
+# Subtest: renderer callback and memory read failures cannot leave the selection lock stuck
+ok 52 - renderer callback and memory read failures cannot leave the selection lock stuck
+  ---
+  duration_ms: 628.4432
+  type: 'test'
+  ...
+# Subtest: endpoint probe concurrency is bounded and preserves input order
+ok 53 - endpoint probe concurrency is bounded and preserves input order
+  ---
+  duration_ms: 78.1243
+  type: 'test'
+  ...
+# Subtest: spawn error is consumed and rejected, without an unhandled EventEmitter error
+ok 54 - spawn error is consumed and rejected, without an unhandled EventEmitter error
+  ---
+  duration_ms: 608.0625
+  type: 'test'
+  ...
+# Subtest: explicit disconnect disables autostart while internal suspension preserves startup policy
+ok 55 - explicit disconnect disables autostart while internal suspension preserves startup policy
+  ---
+  duration_ms: 1.955
+  type: 'test'
+  ...
+# Subtest: starting a service enables autostart and requires its winws child before reporting success
+ok 56 - starting a service enables autostart and requires its winws child before reporting success
+  ---
+  duration_ms: 2.0033
+  type: 'test'
+  ...
+1..56
+# tests 56
+# suites 0
+# pass 56
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11489.9583

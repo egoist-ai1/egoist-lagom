@@ -2251,18 +2251,36 @@ var ZapretManager = class {
 		return (await this.listWinwsProcesses()).length > 0;
 	}
 	async listWinwsProcesses() {
+		const startedAt = performance.now();
+		let pending;
 		try {
-			const trimmed = (await this.execPowerShell("$ErrorActionPreference = 'Stop'; $procs = Get-CimInstance Win32_Process -Filter \"Name='winws.exe'\" | Select-Object ProcessId, ExecutablePath, CommandLine, CreationDate; if (-not $procs) { '[]' } else { $procs | ConvertTo-Json -Compress }", 12e3)).trim();
-			if (!trimmed) throw new Error("Пустой ответ проверки процессов.");
-			const parsed = JSON.parse(trimmed);
-			return (Array.isArray(parsed) ? parsed : [parsed]).map((entry) => ({
-				pid: Number(entry.ProcessId ?? 0),
-				commandLine: String(entry.CommandLine ?? ""),
-				executablePath: String(entry.ExecutablePath ?? ""),
-				startedAt: parseWmiDateToIso(entry.CreationDate)
-			})).filter((entry) => entry.pid > 0);
+			const executable = path.join(this.resourcesPath, "core-service", "win-x64", "EgoistShield.Service.exe");
+			pending = execFileAsync$1(executable, ["--winws-process-snapshot"], { windowsHide: true, timeout: 12e3, maxBuffer: 64 * 1024 });
+			const { stdout } = await pending;
+			const parsed = JSON.parse(stdout.trim());
+			if (parsed?.schemaVersion !== 1 || parsed.operation !== "winws-process-snapshot" || parsed.processName !== "winws.exe" || parsed.snapshotAvailable !== true || parsed.identityComplete !== true || !Array.isArray(parsed.processes) || parsed.processes.length > 128) throw new Error("Неполный ответ проверки процессов.");
+			const ids = new Set();
+			return parsed.processes.map((entry) => {
+				if (!entry || !Number.isInteger(entry.processId) || entry.processId <= 0 || entry.processId > 2147483647 || ids.has(entry.processId) || !Number.isInteger(entry.parentProcessId) || entry.parentProcessId < 0 || entry.parentProcessId > 2147483647 || typeof entry.executablePath !== "string" || !path.isAbsolute(entry.executablePath) || path.basename(entry.executablePath).toLowerCase() !== "winws.exe" || typeof entry.createdAt !== "string" || !Number.isFinite(Date.parse(entry.createdAt))) throw new Error("Личность процесса не подтверждена.");
+				ids.add(entry.processId);
+				return { pid: entry.processId, commandLine: "", executablePath: entry.executablePath, startedAt: new Date(entry.createdAt).toISOString() };
+			});
 		} catch (error) {
-			throw new Error(`Не удалось проверить процессы winws.exe: ${error instanceof Error ? error.message : String(error)}`);
+			const knownCodes = ["ENOENT", "EACCES", "EPERM", "EINVAL", "EAGAIN", "ENOMEM", "ENOTDIR", "EISDIR", "ENOSYS", "UNKNOWN", "ERR_CHILD_PROCESS_STDIO_MAXBUFFER"];
+			const childPid = pending?.child?.pid;
+			const outputBytes = (value) => Buffer.isBuffer(value) ? value.length : typeof value === "string" ? Buffer.byteLength(value, "utf8") : null;
+			const diagnostic = Object.freeze({
+				kind: error instanceof SyntaxError ? "invalid-json" : error?.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" ? "output-limit" : error?.killed === true ? "terminated" : typeof error?.code === "number" ? "exit" : knownCodes.includes(error?.code) ? "spawn" : "invalid-snapshot",
+				code: Number.isInteger(error?.code) && error.code >= -2147483648 && error.code <= 4294967295 ? error.code : knownCodes.includes(error?.code) ? error.code : "unknown",
+				killed: error?.killed === true,
+				signal: error?.signal == null ? null : ["SIGTERM", "SIGKILL", "SIGINT", "SIGBREAK", "SIGABRT", "SIGSEGV", "SIGILL", "SIGFPE"].includes(error.signal) ? error.signal : "unknown",
+				elapsedMs: Math.max(0, Math.round(performance.now() - startedAt)), timeoutMs: 12000,
+				pid: Number.isInteger(childPid) && childPid > 0 && childPid <= 4294967295 ? childPid : null,
+				stdoutBytes: outputBytes(error?.stdout), stderrBytes: outputBytes(error?.stderr)
+			});
+			const failure = new Error(`Не удалось проверить процессы winws.exe: native snapshot failed: ${Object.entries(diagnostic).map(([key, value]) => `${key}=${value}`).join(", ")}`, { cause: error });
+			failure.nativeQueryDiagnostic = diagnostic;
+			throw failure;
 		}
 	}
 	async listIntegratedWinwsProcesses() {
@@ -2273,9 +2291,6 @@ var ZapretManager = class {
 		const expected = path.resolve(this.workDir, "core", "bin", "winws.exe").toLowerCase();
 		if (info.executablePath) {
 			return path.resolve(info.executablePath).toLowerCase() === expected;
-		}
-		if (serviceRunning && !info.executablePath && !info.commandLine) {
-			return true;
 		}
 		return false;
 	}
@@ -2716,16 +2731,44 @@ var ZapretManager = class {
 		});
 	}
 	async execPowerShell(command, timeoutMs = 8e3) {
-		const { stdout } = await execFileAsync$1(resolveWindowsExecutable("powershell.exe"), [
-			"-NoProfile",
-			"-NonInteractive",
-			"-Command",
-			command
-		], {
-			windowsHide: true,
-			timeout: timeoutMs
-		});
-		return stdout;
+		const startedAt = performance.now();
+		let pending;
+		try {
+			pending = execFileAsync$1(resolveWindowsExecutable("powershell.exe"), [
+				"-NoProfile",
+				"-NonInteractive",
+				"-Command",
+				command
+			], {
+				windowsHide: true,
+				timeout: timeoutMs
+			});
+			const { stdout } = await pending;
+			return stdout;
+		} catch (error) {
+			const knownCodes = ["ENOENT", "EACCES", "EPERM", "EINVAL", "EAGAIN", "ENOMEM", "ENOTDIR", "EISDIR", "ENOSYS", "UNKNOWN", "ERR_CHILD_PROCESS_STDIO_MAXBUFFER"];
+			const code = Number.isInteger(error?.code) && error.code >= -2147483648 && error.code <= 4294967295 ? error.code : knownCodes.includes(error?.code) ? error.code : "unknown";
+			const killed = error?.killed === true;
+			const signal = error?.signal == null ? null : ["SIGTERM", "SIGKILL", "SIGINT", "SIGBREAK", "SIGABRT", "SIGSEGV", "SIGILL", "SIGFPE"].includes(error.signal) ? error.signal : "unknown";
+			const childPid = pending?.child?.pid;
+			const outputBytes = (value) => Buffer.isBuffer(value) ? value.length : typeof value === "string" ? Buffer.byteLength(value, "utf8") : null;
+			const diagnostic = Object.freeze({
+				kind: code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" ? "output-limit" : killed ? "terminated" : typeof code === "number" ? "exit" : code === "unknown" ? "unknown" : "spawn",
+				code,
+				killed,
+				signal,
+				elapsedMs: Math.max(0, Math.round(performance.now() - startedAt)),
+				timeoutMs: Number.isSafeInteger(timeoutMs) && timeoutMs >= 0 ? timeoutMs : null,
+				pid: Number.isInteger(childPid) && childPid > 0 && childPid <= 4294967295 ? childPid : null,
+				stdoutBytes: outputBytes(error?.stdout),
+				stderrBytes: outputBytes(error?.stderr)
+			});
+			// Keep native cause in process; the worker/Core message contains no command or captured text.
+			const failure = new Error(`PowerShell failed: ${Object.entries(diagnostic).map(([key, value]) => `${key}=${value}`).join(", ")}`, { cause: error });
+			failure.name = "PowerShellExecutionError";
+			failure.powerShellDiagnostic = diagnostic;
+			throw failure;
+		}
 	}
 	async fetchText(url, timeoutMs) {
 		const controller = new AbortController();

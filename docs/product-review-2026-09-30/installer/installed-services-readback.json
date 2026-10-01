@@ -1,0 +1,34 @@
+{
+  "checkedAtUtc": "2026-09-30T14:48:18.3164044Z",
+  "operation": "read-only",
+  "installedVersion": "3.7.9",
+  "services": [
+    {
+      "Name": "EgoistShieldCore",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 4904
+    },
+    {
+      "Name": "EgoistShieldSystemDoH",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 47196
+    },
+    {
+      "Name": "EgoistShieldTelegramProxy",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 4920
+    },
+    {
+      "Name": "EgoistShieldZapret",
+      "State": "Running",
+      "StartMode": "Auto",
+      "ProcessId": 37816
+    }
+  ],
+  "maintenanceMarkerExists": false,
+  "sourceFixInstalled": false,
+  "scope": "SCM snapshot only; not protocol readiness/reboot/soak proof"
+}

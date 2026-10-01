@@ -12,15 +12,25 @@
 * `logger.warn(msg, { primaryError, backupError })`) иначе печатались бы
 * через util.inspect с полными стеками и абсолютными путями пользователя.
 */
-function redactLogValue(value, depth = 0) {
+function redactLogValue(value, depth = 0, ancestors = new WeakSet()) {
 	if (typeof value === "string") return redactDiagnosticText(value);
 	if (value instanceof Error) return redactDiagnosticText(`${value.name}: ${value.message}${value.stack ? `\n${value.stack}` : ""}`);
-	if (depth >= 4 || value === null || typeof value !== "object") return value;
-	if (Array.isArray(value)) return value.map((item) => redactLogValue(item, depth + 1));
-	const source = value;
-	const result = {};
-	for (const key of Object.keys(source)) result[key] = redactLogValue(source[key], depth + 1);
-	return result;
+	if (value === null || typeof value !== "object") return value;
+	if (depth >= 4) return "<depth-limit>";
+	if (ancestors.has(value)) return "<circular>";
+	ancestors.add(value);
+	try {
+		if (Array.isArray(value)) return value.map((item) => redactLogValue(item, depth + 1, ancestors));
+		const result = {};
+		for (const [key, entry] of Object.entries(value)) {
+			if (isDiagnosticSecretKey(key)) result[key] = "<redacted>";
+			else if (isDiagnosticUrlKey(key)) result[key] = redactDiagnosticObject({ [key]: entry })[key];
+			else result[key] = redactLogValue(entry, depth + 1, ancestors);
+		}
+		return result;
+	} finally {
+		ancestors.delete(value);
+	}
 }
 log.hooks.push((message) => {
 	message.data = message.data.map((item) => redactLogValue(item));

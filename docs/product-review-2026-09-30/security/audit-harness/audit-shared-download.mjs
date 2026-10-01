@@ -1,0 +1,51 @@
+// Audit-only baseline defect reproducer. Arguments: absolute project path, own task work outside project.
+// Inert files/controlled loopback only. The assertions demonstrate the baseline defects; they are not post-fix tests.
+import fs, { promises } from 'node:fs';
+import path from 'node:path';
+import http from 'node:http';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+import { promisify } from 'node:util';
+import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
+const project = process.argv[2];
+const work = process.argv[3];
+if (!project || !work || !path.isAbsolute(project) || !path.isAbsolute(work)) throw new Error('Pass an absolute project path and your own task work outside the project.');
+const normalizedProject = path.resolve(project).toLowerCase();
+const normalizedWork = path.resolve(work).toLowerCase();
+if (normalizedWork === normalizedProject || normalizedWork.startsWith(normalizedProject + path.sep)) throw new Error('Work must be the active task runtime outside the project.');
+const root=path.join(work,'shared-download-fixture');
+await promises.mkdir(root,{recursive:true});
+const safe=fs.readFileSync(path.join(project,'src/recovered/electron/ipc/safe-network.js'),'utf8');
+const github=fs.readFileSync(path.join(project,'src/recovered/electron/ipc/github-release.js'),'utf8');
+const {fetchWithRetry}=vm.runInNewContext(safe+'\n({fetchWithRetry})',{fetch,Buffer,URL,Response,AbortController,setTimeout,clearTimeout,Date});
+const server=http.createServer((request,response)=>{
+ response.writeHead(200,{'content-type':'application/octet-stream'});
+ response.write(Buffer.from('INERT PARTIAL ARCHIVE\n'));
+});
+await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+const url=`http://127.0.0.1:${server.address().port}/stall`;
+const api=vm.runInNewContext(github+'\n({downloadFileWithProgress})',{promisify,execFile,path,promises,Buffer,fetchWithRetry:(url,options)=>fetchWithRetry(url,{...options,timeoutMs:60,retries:0})});
+let result='pending';
+const download=api.downloadFileWithProgress(url,path.join(root,'partial.zip')).then(()=>{result='resolved';},error=>{result='rejected';return error.name;});
+const started=Date.now();
+await new Promise(resolve=>setTimeout(resolve,320));
+const stalled={configuredTransportTimeoutMs:60,waitedMs:Date.now()-started,stateAfterTimeout:result,partialBytes:(await promises.stat(path.join(root,'partial.zip'))).size,bodyStalled:true,nativeFetch:true,scope:'Actual shared helper + actual safe-network transport, only the header budget shortened for this fixture. Native loopback headers and partial chunk never complete. External fixture shutdown cleans only its sockets.'};
+assert.equal(result,'pending');
+server.closeAllConnections();
+await new Promise(resolve=>server.close(resolve));
+await download;
+let canceled=0;
+const body=new ReadableStream({start(controller){controller.enqueue(Buffer.from('INERT'));},cancel(){canceled++;}});
+const failApi=vm.runInNewContext(github+'\n({downloadFileWithProgress})',{promisify,execFile,path,promises,Buffer,fetchWithRetry:async()=>({response:new Response(body,{status:200})})});
+const directory=path.join(root,'not-a-file');
+await promises.mkdir(directory,{recursive:true});
+let diskError;
+try{await failApi.downloadFileWithProgress('https://audit.invalid/inert',directory);}catch(error){diskError=error.code;}
+assert.ok(diskError);
+assert.equal(canceled,0);
+const cleanup={kind:'file-open-failure-before-cleanup',actualFilesystemError:diskError,responseBodyCancelCalls:canceled,bodyLocked:body.locked,scope:'Controlled response stream plus actual own-directory open failure. No real URL contacted.'};
+await body.cancel();
+const resultDocument={schemaVersion:1,checkedAt:new Date().toISOString(),expectedBaselineCommit:'199236e3b227f9885c2beef64faffbe9e9a35583',sourceFiles:[['src/recovered/electron/ipc/safe-network.js',safe],['src/recovered/electron/ipc/github-release.js',github]].map(([path,content])=>({path,sha256:createHash('sha256').update(content).digest('hex')})),bodyStall:stalled,fileOpenFailure:cleanup,limitations:['No download to a public endpoint, native engine or Windows service launched.','320 ms with a controlled 60 ms header budget is a transport-phase invariant test, not a 60-second production outage.','Maximum disk exhaustion and archive expansion were not exercised.']};
+await promises.writeFile(path.join(work,'shared-download-reproductions.json'),JSON.stringify(resultDocument,null,2)+'\n');
+console.log(JSON.stringify({bodyPendingBeyondBudget:stalled.stateAfterTimeout==='pending',partialBytes:stalled.partialBytes,openedFileFailureUncanceled:canceled===1&&cleanup.responseBodyCancelCalls===0,binaryExecuted:false}));

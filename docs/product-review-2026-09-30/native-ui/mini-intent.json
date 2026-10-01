@@ -1,0 +1,15 @@
+{
+  "scope": "actual idle test-profile UI; this is intent display, not operational service evidence",
+  "intent": [
+    {
+      "label": "Зашифрованный DNS",
+      "checked": "true",
+      "title": "DNS включится при подключении"
+    },
+    {
+      "label": "Telegram Proxy",
+      "checked": "true",
+      "title": "Telegram включится при подключении"
+    }
+  ]
+}

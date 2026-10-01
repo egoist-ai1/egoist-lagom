@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "kind": "telegram-native-cleanup-source-fixture-followup",
+  "recordedAt": "2026-10-01T15:11:28.236322+00:00",
+  "baseSourceCommit": "ac817bc6a2534aaa47cf21798041d3cfa41bbaca",
+  "frozen": true,
+  "changedFile": {
+    "path": "tests/lagom-runtime-regressions.test.mjs",
+    "sha256": "d0451791c97744df0510cd92558fb27afb60dd68a57aa721428c010eda926538",
+    "size": 15624
+  },
+  "red": {
+    "tests": 16,
+    "pass": 15,
+    "fail": 1,
+    "skip": 0,
+    "durationMs": 812.7264,
+    "cause": "Legacy injected fixture omitted process and expected CIM/PowerShell after production native cleanup change."
+  },
+  "green": {
+    "tests": 16,
+    "pass": 16,
+    "fail": 0,
+    "skip": 0,
+    "durationMs": 840.2289
+  },
+  "preservedAssertions": [
+    "Discovery error object is propagated without replacement.",
+    "Exactly one child invocation.",
+    "Exact fixed core-service/win-x64/EgoistShield.Service.exe executable and --telegram-runtime-cleanup --runtime primary arguments; no image-name kill fallback.",
+    "clearManagedState is never invoked after discovery refusal."
+  ],
+  "productionChanged": false,
+  "nativeCleanupRerun": false,
+  "csharpBuild": false,
+  "physicalServiceNetworkRegistryGuiMutations": false,
+  "evidence": [
+    {
+      "path": "telegram-fixture-red.txt",
+      "sha256": "5a8664d47a6af61d407652cfddd53b5bad6a5b16a2d30fe3f0b2f84e6c051e28"
+    },
+    {
+      "path": "telegram-fixture-green.txt",
+      "sha256": "0e71852c179a92c2e0df00ee4ffec78ba9893583c292ac55e6e88f41f7aff1be"
+    }
+  ],
+  "limits": [
+    "The changed Telegram failure fixture uses injected exec failure, not an actual protected-process experiment.",
+    "Root owns independent installer EBUSY fixture and full-source verification.",
+    "Previous frozen reports and production source were not edited."
+  ]
+}

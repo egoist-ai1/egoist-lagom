@@ -1,0 +1,10 @@
+{
+  "candidateReleaseId": 400907438,
+  "publishedOldOriginVerified": true,
+  "candidateTag": "v3.8.0",
+  "oldVersion": "3.7.9",
+  "oldTransport": "published-original-release",
+  "oldReleaseId": 399337228,
+  "sourceCommit": "9617624b888d9e8bd2b1df1e60ca4a21947f5c2d",
+  "candidateDraft": true
+}

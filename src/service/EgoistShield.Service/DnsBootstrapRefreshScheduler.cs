@@ -37,8 +37,11 @@ internal sealed class DnsBootstrapRefreshScheduler
                 if (pair.Key is not ("native" or "local") || pair.Value == null || !Uri.TryCreate(pair.Value.Url, UriKind.Absolute, out var savedUri) || savedUri.Scheme != Uri.UriSchemeHttps)
                     throw new InvalidOperationException("DNS bootstrap maintenance state contains an invalid mode or URL.");
             DateTimeOffset now = _utcNow();
-            if (schedule.Modes.TryGetValue(mode, out var previous) && previous.Url == url &&
-                now - previous.At < (previous.Completed ? TimeSpan.FromHours(1) : TimeSpan.FromMinutes(15))) return false;
+            if (schedule.Modes.TryGetValue(mode, out var previous) && previous.Url == url)
+            {
+                TimeSpan age = now - previous.At;
+                if (age >= TimeSpan.Zero && age < (previous.Completed ? TimeSpan.FromHours(1) : TimeSpan.FromMinutes(15))) return false;
+            }
             // Persist before invoking the worker/transaction: a killed Core must
             // not forget the minimum retry interval or replay a partial refresh.
             schedule.Modes[mode] = new Attempt(url, now, false);

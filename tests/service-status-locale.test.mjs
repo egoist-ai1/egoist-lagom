@@ -103,7 +103,7 @@ test('sc.exe parser preserves pending, missing, and unknown fallback behaviour',
   assert.deepEqual(JSON.parse(JSON.stringify(await queryTelegramService(missing, { cim: cimFallback }))), cimFallback);
 });
 
-test('System DoH parses Russian running and pending states without falling back to CIM', async () => {
+test('System DoH parses Russian running, pending, and confirmed missing states without falling back to CIM', async () => {
   const running = await querySystemDohService({ stdout: RUSSIAN_SYSTEM_DOH_RUNNING_OUTPUT });
   assert.equal(running.status.installed, true);
   assert.equal(running.status.running, true);
@@ -116,6 +116,8 @@ test('System DoH parses Russian running and pending states without falling back 
   assert.equal(pending.status.state, 'start-pending');
   assert.deepEqual(pending.calls, ['Windows/sc.exe']);
   const missing = await querySystemDohService(Object.assign(new Error('sc.exe query failed'), { code: 1060 }));
+  assert.equal(missing.status.installed, false);
+  assert.equal(missing.status.running, false);
   assert.equal(missing.status.state, 'not-installed');
-  assert.deepEqual(missing.calls, ['Windows/sc.exe', 'Windows/powershell.exe']);
+  assert.deepEqual(missing.calls, ['Windows/sc.exe']);
 });

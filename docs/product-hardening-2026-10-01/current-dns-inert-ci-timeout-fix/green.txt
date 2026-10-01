@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: DNS provider contract is pinned to HTTPS URLs and documented v4/v6 pairs
+ok 1 - DNS provider contract is pinned to HTTPS URLs and documented v4/v6 pairs
+  ---
+  duration_ms: 1.3914
+  type: 'test'
+  ...
+# Subtest: independent DNS wire preflight accepts matching positive reply and rejects incorrect protocol replies
+ok 2 - independent DNS wire preflight accepts matching positive reply and rejects incorrect protocol replies
+  ---
+  duration_ms: 1.3872
+  type: 'test'
+  ...
+# Subtest: packet parser requires bidirectional TLS at actual approved resolver in the query window
+ok 3 - packet parser requires bidirectional TLS at actual approved resolver in the query window
+  ---
+  duration_ms: 0.8696
+  type: 'test'
+  ...
+# Subtest: TCP443 without TLS, one direction, unrelated provider, or unrelated time cannot prove encrypted DNS
+ok 4 - TCP443 without TLS, one direction, unrelated provider, or unrelated time cannot prove encrypted DNS
+  ---
+  duration_ms: 0.3225
+  type: 'test'
+  ...
+# Subtest: a matching plaintext TCP DNS probe makes TLS evidence fail
+ok 5 - a matching plaintext TCP DNS probe makes TLS evidence fail
+  ---
+  duration_ms: 0.1924
+  type: 'test'
+  ...
+# Subtest: truncated blocks, unsupported links and oversized snapshots fail closed
+ok 6 - truncated blocks, unsupported links and oversized snapshots fail closed
+  ---
+  duration_ms: 0.2559
+  type: 'test'
+  ...
+# Subtest: actual Run/GuardOnly/Guardian/Query invocation refuses physical non-hosted process before input or writes
+ok 7 - actual Run/GuardOnly/Guardian/Query invocation refuses physical non-hosted process before input or writes
+  ---
+  duration_ms: 1350.7833
+  type: 'test'
+  ...
+# Subtest: library import is inert and own native file/path boundary rejects reparse ancestors
+ok 8 - library import is inert and own native file/path boundary rejects reparse ancestors
+  ---
+  duration_ms: 550.9357
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1986.4104

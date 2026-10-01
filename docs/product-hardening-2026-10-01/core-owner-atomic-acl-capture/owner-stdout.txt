@@ -1,0 +1,299 @@
+OWNER_EVIDENCE_DIR=D:\a\_temp\lagom-installer-diagnostics\core-owner-18975928
+EVIDENCE=D:\a\_temp\lagom-installer-diagnostics\core-owner-18975928\receipt.json
+FAILED_GROUP_COUNT=1
+[
+  {
+    "name": "nonproduction-atomic-files",
+    "error": "System.Exception: Nonproduction file ACL changed.\r\n   at CoreOwnerRegression.TestProgram.Check(Boolean condition, String error) in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-18975928\\core-owner-regression.cs:line 181\r\n   at CoreOwnerRegression.TestProgram.<>c__DisplayClass5_0.<<Main>b__6>d.MoveNext() in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-18975928\\core-owner-regression.cs:line 132\r\n--- End of stack trace from previous location ---\r\n   at CoreOwnerRegression.TestProgram.Run(String name, Func`1 action, Func`1 captureFailure) in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-18975928\\core-owner-regression.cs:line 185",
+    "diagnostics": {
+      "initial": {
+        "sddl": "O:BAD:(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)",
+        "owner": "S-1-5-32-544",
+        "controlFlags": "DiscretionaryAclPresent, SelfRelative",
+        "controlFlagsMask": 32772,
+        "protectedDacl": false,
+        "canonicalDacl": true,
+        "rules": [
+          {
+            "sid": "S-1-5-32-544",
+            "rights": "FullControl",
+            "rightsMask": 2032127,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          },
+          {
+            "sid": "S-1-5-18",
+            "rights": "FullControl",
+            "rightsMask": 2032127,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": "ReadAndExecute, Synchronize",
+            "rightsMask": 1179817,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          }
+        ]
+      },
+      "final": {
+        "sddl": "O:BAD:AI(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)",
+        "owner": "S-1-5-32-544",
+        "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+        "controlFlagsMask": 33796,
+        "protectedDacl": false,
+        "canonicalDacl": true,
+        "rules": [
+          {
+            "sid": "S-1-5-32-544",
+            "rights": "FullControl",
+            "rightsMask": 2032127,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          },
+          {
+            "sid": "S-1-5-18",
+            "rights": "FullControl",
+            "rightsMask": 2032127,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": "ReadAndExecute, Synchronize",
+            "rightsMask": 1179817,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          }
+        ]
+      },
+      "completedReplacementWrites": 256,
+      "completedReads": 256,
+      "validReads": 256,
+      "falseMissing": 0
+    }
+  }
+]
+DIAGNOSTIC_LOG_TAIL=D:\a\_temp\lagom-installer-diagnostics\core-owner-18975928\run.log; maxBytes=16384
+{
+  "schemaVersion": 1,
+  "actualSystem": false,
+  "actualAdministrator": true,
+  "productionFilesystemWrites": 0,
+  "results": [
+    {
+      "name": "owner-selection",
+      "passed": true,
+      "evidence": {
+        "systemOwner": "S-1-5-18",
+        "administratorOwner": "S-1-5-32-544",
+        "untrustedDenied": true,
+        "unknownDenied": true
+      }
+    },
+    {
+      "name": "descriptor-matrix",
+      "passed": true,
+      "evidence": [
+        {
+          "owner": "S-1-5-18",
+          "privateData": true,
+          "directory": true,
+          "sddl": "O:SYD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)"
+        },
+        {
+          "owner": "S-1-5-18",
+          "privateData": true,
+          "directory": false,
+          "sddl": "O:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)"
+        },
+        {
+          "owner": "S-1-5-18",
+          "privateData": false,
+          "directory": true,
+          "sddl": "O:SYD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)"
+        },
+        {
+          "owner": "S-1-5-18",
+          "privateData": false,
+          "directory": false,
+          "sddl": "O:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;BU)"
+        },
+        {
+          "owner": "S-1-5-32-544",
+          "privateData": true,
+          "directory": true,
+          "sddl": "O:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)"
+        },
+        {
+          "owner": "S-1-5-32-544",
+          "privateData": true,
+          "directory": false,
+          "sddl": "O:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)"
+        },
+        {
+          "owner": "S-1-5-32-544",
+          "privateData": false,
+          "directory": true,
+          "sddl": "O:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)"
+        },
+        {
+          "owner": "S-1-5-32-544",
+          "privateData": false,
+          "directory": false,
+          "sddl": "O:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;BU)"
+        }
+      ]
+    },
+    {
+      "name": "tampered-readback-denied",
+      "passed": true,
+      "evidence": {
+        "refusals": 6
+      }
+    },
+    {
+      "name": "actual-windows-token",
+      "passed": true,
+      "evidence": {
+        "actualSystem": false,
+        "actualAdministrator": true,
+        "selectedOwner": "S-1-5-32-544",
+        "productionFilesystemWrites": 0
+      }
+    },
+    {
+      "name": "own-ntfs-create-before-content",
+      "passed": true,
+      "evidence": {
+        "actualOwnedNtfs": true,
+        "emptyHandleAclReadbackBeforeContent": true,
+        "appendVerified": true,
+        "fixtureOwner": "actual token user",
+        "productionAclApply": false
+      }
+    },
+    {
+      "name": "live-log-reader-sharing",
+      "passed": true,
+      "evidence": {
+        "originalReaderFailure": "System.IO.IOException",
+        "actualOpenWriter": true,
+        "sharedReaderPass": true,
+        "writerShareUnchanged": "Read",
+        "cancellationPreserved": true,
+        "maxBytes": 8388608,
+        "oversizedRefused": true
+      }
+    },
+    {
+      "name": "nonproduction-atomic-files",
+      "passed": false,
+      "error": "System.Exception: Nonproduction file ACL changed.\r\n   at CoreOwnerRegression.TestProgram.Check(Boolean condition, String error) in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-18975928\\core-owner-regression.cs:line 181\r\n   at CoreOwnerRegression.TestProgram.\u003C\u003Ec__DisplayClass5_0.\u003C\u003CMain\u003Eb__6\u003Ed.MoveNext() in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-18975928\\core-owner-regression.cs:line 132\r\n--- End of stack trace from previous location ---\r\n   at CoreOwnerRegression.TestProgram.Run(String name, Func\u00601 action, Func\u00601 captureFailure) in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-18975928\\core-owner-regression.cs:line 185",
+      "diagnostics": {
+        "initial": {
+          "sddl": "O:BAD:(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)",
+          "owner": "S-1-5-32-544",
+          "controlFlags": "DiscretionaryAclPresent, SelfRelative",
+          "controlFlagsMask": 32772,
+          "protectedDacl": false,
+          "canonicalDacl": true,
+          "rules": [
+            {
+              "sid": "S-1-5-32-544",
+              "rights": "FullControl",
+              "rightsMask": 2032127,
+              "accessType": "Allow",
+              "inheritance": "None",
+              "propagation": "None",
+              "inherited": true
+            },
+            {
+              "sid": "S-1-5-18",
+              "rights": "FullControl",
+              "rightsMask": 2032127,
+              "accessType": "Allow",
+              "inheritance": "None",
+              "propagation": "None",
+              "inherited": true
+            },
+            {
+              "sid": "S-1-5-32-545",
+              "rights": "ReadAndExecute, Synchronize",
+              "rightsMask": 1179817,
+              "accessType": "Allow",
+              "inheritance": "None",
+              "propagation": "None",
+              "inherited": true
+            }
+          ]
+        },
+        "final": {
+          "sddl": "O:BAD:AI(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)",
+          "owner": "S-1-5-32-544",
+          "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+          "controlFlagsMask": 33796,
+          "protectedDacl": false,
+          "canonicalDacl": true,
+          "rules": [
+            {
+              "sid": "S-1-5-32-544",
+              "rights": "FullControl",
+              "rightsMask": 2032127,
+              "accessType": "Allow",
+              "inheritance": "None",
+              "propagation": "None",
+              "inherited": true
+            },
+            {
+              "sid": "S-1-5-18",
+              "rights": "FullControl",
+              "rightsMask": 2032127,
+              "accessType": "Allow",
+              "inheritance": "None",
+              "propagation": "None",
+              "inherited": true
+            },
+            {
+              "sid": "S-1-5-32-545",
+              "rights": "ReadAndExecute, Synchronize",
+              "rightsMask": 1179817,
+              "accessType": "Allow",
+              "inheritance": "None",
+              "propagation": "None",
+              "inherited": true
+            }
+          ]
+        },
+        "completedReplacementWrites": 256,
+        "completedReads": 256,
+        "validReads": 256,
+        "falseMissing": 0
+      }
+    },
+    {
+      "name": "nonproduction-log-and-hardening",
+      "passed": true,
+      "evidence": {
+        "appendPreserved": true,
+        "redactionPreserved": true,
+        "rotationPreserved": true,
+        "nonproductionAclUnchanged": true
+      }
+    }
+  ]
+}
+

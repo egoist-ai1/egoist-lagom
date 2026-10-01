@@ -1,0 +1,225 @@
+{
+  "kind": "real-source-phase-installer-diagnostic",
+  "sourceCommit": "62f0f2ecd06dbcb68e3a37ec8937dc74448d0c77",
+  "runId": "36798923145",
+  "os": "Microsoft Windows NT 10.0.26100.0",
+  "parentPowerShell": "7.6.6",
+  "cleanStart": true,
+  "installerExecuted": false,
+  "preInstallExecuted": true,
+  "sourceHashes": [
+    {
+      "path": "src/installer/owned-cleanup.ps1",
+      "sha256": "D2E591AB8B2B1DEFC61A88FB4E4AC1D18BF3D68F7554599F013613D81EABEC62"
+    },
+    {
+      "path": "src/installer/service-maintenance.ps1",
+      "sha256": "D64BE23DD2075C74E753C05D1B6733ED3A74D3C96826017880CBE5FDD0A6BBE3"
+    },
+    {
+      "path": "src/installer/maintenance-boot-recovery.ps1",
+      "sha256": "BBE28F154A2E8330B55804E8828158F17721F4C6B106614FF2B7A8ADF0E33130"
+    }
+  ],
+  "beforeNetwork": {
+    "dns": [
+      {
+        "index": 1,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 1,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 11,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 11,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 2,
+        "servers": [
+          "168.63.129.16"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 23,
+        "servers": []
+      }
+    ],
+    "defaultRoutes": [
+      {
+        "index": 14,
+        "prefix": "0.0.0.0/0",
+        "nextHop": "10.1.0.1",
+        "metric": 1,
+        "protocol": "NetMgmt"
+      }
+    ],
+    "ipv6Bindings": [
+      {
+        "Name": "Ethernet 3",
+        "Enabled": true
+      },
+      {
+        "Name": "vEthernet (nat)",
+        "Enabled": true
+      }
+    ],
+    "userProxy": {
+      "ProxyEnable": 0,
+      "ProxyServer": null,
+      "ProxyOverride": null,
+      "AutoConfigURL": null
+    },
+    "winHttp": {
+      "WinHttpSettings": [
+        24,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "DefaultConnectionSettings": null
+    }
+  },
+  "beforeServices": null,
+  "beforeTasks": null,
+  "result": "failed",
+  "safety": {
+    "exitCode": 0,
+    "elapsedMilliseconds": 3231.91,
+    "stdout": "INSTALL-SAFETY: PASSED\r\n"
+  },
+  "error": "Native child failed (1): source-pre-install; see owned stdout/stderr.",
+  "afterNetwork": {
+    "dns": [
+      {
+        "index": 1,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 1,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 11,
+        "family": 2,
+        "servers": []
+      },
+      {
+        "index": 11,
+        "family": 23,
+        "servers": [
+          "fec0:0:0:ffff::1",
+          "fec0:0:0:ffff::2",
+          "fec0:0:0:ffff::3"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 2,
+        "servers": [
+          "168.63.129.16"
+        ]
+      },
+      {
+        "index": 14,
+        "family": 23,
+        "servers": []
+      }
+    ],
+    "defaultRoutes": [
+      {
+        "index": 14,
+        "prefix": "0.0.0.0/0",
+        "nextHop": "10.1.0.1",
+        "metric": 1,
+        "protocol": "NetMgmt"
+      }
+    ],
+    "ipv6Bindings": [
+      {
+        "Name": "Ethernet 3",
+        "Enabled": true
+      },
+      {
+        "Name": "vEthernet (nat)",
+        "Enabled": true
+      }
+    ],
+    "userProxy": {
+      "ProxyEnable": 0,
+      "ProxyServer": null,
+      "ProxyOverride": null,
+      "AutoConfigURL": null
+    },
+    "winHttp": {
+      "WinHttpSettings": [
+        24,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "DefaultConnectionSettings": null
+    }
+  },
+  "afterServices": null,
+  "afterTasks": null,
+  "networkPreserved": true,
+  "finishedAtUtc": "2026-10-01T01:00:15.1239685+00:00"
+}

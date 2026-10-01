@@ -22,7 +22,7 @@ function describeDrop(status) {
 	return `Состояние VPN: ${status.lifecycle || "неизвестно"}`;
 }
 /**
-* Классифицирует причину срыва по тексту ошибки (MED-08).
+* Классифицирует причину срыва по структурным полям и явным сообщениям.
 *
 * Сетевые отказы и аварийный выход runtime допускают ограниченные повторы.
 * Ошибки авторизации и конфигурации
@@ -30,8 +30,15 @@ function describeDrop(status) {
 */
 function classifyReconnectFailure(reason) {
 	if (!reason) return "unknown";
-	const text = reason.toLowerCase();
-	if (/unauthor|unauthentic|auth fail|authentication|invalid user|invalid password|forbidden|403|401|bad credential|подписка|срок действия|неверн(ый|ые) (логин|пароль|ключ)/.test(text)) return "auth";
+	const detail = typeof reason === "object" ? reason : {};
+	const status = detail.httpStatus ?? detail.statusCode ?? detail.status;
+	if (status === 401 || status === 403) return "auth";
+	const code = String(detail.code ?? detail.reason ?? "").toLowerCase();
+	if (detail.kind === "auth" || /^(auth_failed|authentication_failed|invalid_credentials)$/.test(code)) return "auth";
+	if (detail.kind === "config" || /^(invalid_config|invalid_configuration|unsupported_protocol)$/.test(code)) return "config";
+	if (detail.kind === "network" || /^(econn|enet|ehost|enotfound|eai_again|etimedout)/.test(code)) return "network";
+	const text = String(typeof reason === "string" ? reason : detail.message ?? detail.details ?? detail.reason ?? "").toLowerCase();
+	if (/unauthor|unauthentic|auth fail|authentication|invalid user|invalid password|forbidden|\bhttp(?:\/\d(?:\.\d)?)?\s+(?:status\s*[:=]?\s*)?(?:401|403)\b|bad credential|подписка|срок действия|неверн(ый|ые) (логин|пароль|ключ)/.test(text)) return "auth";
 	if (/config|конфиг|parse|invalid (json|uri|url|address|port)|unsupported protocol|missing field|некоррект|не найден.*(файл|runtime)|runtime не найден|failed to parse/.test(text)) return "config";
 	if (/runtime.*(?:exited|crash|заверш|terminated)|процесс.*заверш/.test(text)) return "runtime";
 	if (/timeout|timed out|timedout|etimedout|econn|econnreset|econnrefused|enet|enetunreach|ehostunreach|enotfound|eai_again|dns|network|нет сети|соединение|маршрут|unreachable|refused|reset by peer|tls|handshake|socket/.test(text)) return "network";
@@ -147,8 +154,10 @@ var VpnReconnectSupervisor = class {
 			circuitOpen: false,
 			requiredAction: null
 		};
+		return this.generation;
 	}
-	recordConnectionResult(status) {
+	recordConnectionResult(status, generation = this.generation) {
+		if (generation !== this.generation) return;
 		this.attemptInFlight = false;
 		if (isVerifiedConnection(status)) {
 			this.armHealthyConnection();
@@ -203,7 +212,7 @@ var VpnReconnectSupervisor = class {
 			}
 			if (!this.state.armed || this.retryTimer) return;
 			const reason = describeDrop(status);
-			const failureClass = classifyReconnectFailure(reason);
+			const failureClass = classifyReconnectFailure({ ...status, ...status.diagnostic, message: reason });
 			this.state = {
 				...this.state,
 				lastReason: reason,
@@ -279,7 +288,7 @@ var VpnReconnectSupervisor = class {
 			this.state = {
 				...this.state,
 				lastReason: reason,
-				failureClass: classifyReconnectFailure(reason)
+				failureClass: classifyReconnectFailure({ ...result, ...result.diagnostic, message: reason })
 			};
 		} catch (error) {
 			if (generation !== this.generation) return;
@@ -287,7 +296,7 @@ var VpnReconnectSupervisor = class {
 			this.state = {
 				...this.state,
 				lastReason: reason,
-				failureClass: classifyReconnectFailure(reason)
+				failureClass: classifyReconnectFailure(error)
 			};
 		} finally {
 			if (generation === this.generation) this.attemptInFlight = false;

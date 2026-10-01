@@ -1,0 +1,213 @@
+{
+    "schemaVersion":  1,
+    "scope":  "actual production functions with controlled SCM/registry/service boundaries",
+    "productionSourceSha256":  "CACA6ED98EF87E74895B83C6B4B513E9DD0435D2B91F4E1EBDA780508340822E",
+    "powerShellVersion":  "5.1.26100.9168",
+    "caseCount":  38,
+    "passed":  38,
+    "failed":  0,
+    "actualEchoArguments":  148,
+    "ownedChildTimeoutKills":  1,
+    "forbiddenHostCalls":  0,
+    "realScmMutations":  0,
+    "realRegistryMutations":  0,
+    "realNetworkMutations":  0,
+    "cases":  [
+                  {
+                      "name":  "actual WinPS native argv preserves empty whitespace unicode quotes and trailing slashes",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "actual native process returns nonzero exit status",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "actual native timeout terminates only its owned child handle",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "oversized native argv rejected before start",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "missing legacy registration is created by SCM with exact command and dependency groups",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "existing stopped owned registration is configured and remains Disabled",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "foreign same-name registration prevents config and registry import",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "running owned registration is refused before config and import",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "ownership change immediately before SCM mutation is refused",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "ownership change after SCM return prevents registry import",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "old stage without checked metadata is refused and original backup retained",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported service type 32 is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported service type 272 is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported service type 1 is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported service type 2 is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported service type 0 is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported account DOMAIN\\User is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported account NT AUTHORITY\\LocalService is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported account NT SERVICE\\Legacy is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "tampered registry backup is refused before SCM mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "foreign registry section is refused before SCM mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "ambiguous unquoted executable is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "case-sensitive command argument mismatch is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "missing registry integrity metadata is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported error control is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported service-name quote is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "registry section with surrounding whitespace cannot escape ownership",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported dependency separator is refused before mutation",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "failed SCM Disabled readback prevents registry import",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "literal wildcard alias starts its own service despite foreign compatible name",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "foreign same-name service is refused before start",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "ownership change immediately before start cannot start foreign service",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "literal missing alias does not accept foreign wildcard match",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "checked SCM runner rejects nonzero native status",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "snapshot preserves unexpanded command and complete checked SCM metadata",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "unsupported registration rejected during snapshot before export and stop",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "snapshot preserves raw environment path while checking expanded live command",
+                      "passed":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "snapshot provider failure is not treated as empty services",
+                      "passed":  true,
+                      "error":  ""
+                  }
+              ],
+    "unicodeFixtureFirstCodePoint":  1055,
+    "nativeLimitations":  [
+                              "No real SCM create/config/import/start",
+                              "No native boot or power-loss recovery",
+                              "No full upgrade installer run"
+                          ]
+}

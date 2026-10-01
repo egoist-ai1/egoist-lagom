@@ -34,6 +34,20 @@ var TG_WS_PROXY_BUNDLED_CANDIDATES = [
 	TG_WS_PROXY_LEGACY_EXE_NAME
 ];
 var TELEGRAM_PROXY_LOG_TAIL_BYTES = 128 * 1024;
+function telegramListenerUnknown(stage, reason, error = null) {
+	const diagnostic = { stage, reason };
+	if (Number.isInteger(error?.code)) diagnostic.exitCode = error.code;
+	if (error?.killed === true) diagnostic.childKilled = true;
+	return { state: "unknown", ownerPid: null, ownerName: null, diagnostic };
+}
+function telegramListenerInspectionDiagnostic(listener) {
+	const stages = ["request", "child-query", "contract", "snapshot", "identity", "tcp-check", "readiness"];
+	const reasons = ["invalid-request", "child-query-timeout", "child-query-failed", "budget-exhausted", "invalid-contract", "invalid-json", "snapshot-unavailable", "snapshot-unstable", "service-state-transition", "identity-unavailable", "identity-changed", "ownership-unavailable", "snapshot-tcp-disagreement"];
+	const stage = stages.includes(listener?.diagnostic?.stage) ? listener.diagnostic.stage : "readiness";
+	const reason = reasons.includes(listener?.diagnostic?.reason) ? listener.diagnostic.reason : "ownership-unavailable";
+	const state = ["owned", "none", "foreign", "unknown"].includes(listener?.state) ? listener.state : "unknown";
+	return { ownership: state, stage, reason };
+}
 function isRecord(value) {
 	return typeof value === "object" && value !== null;
 }
@@ -60,7 +74,7 @@ function normalizePositiveFloat(value, fallback) {
 	return value;
 }
 function normalizeTelegramProxySecret(value) {
-	const trimmed = value.trim().replace(/^dd/i, "");
+	const trimmed = value.trim().replace(/^dd([0-9a-f]{32})$/i, "$1");
 	return /^[0-9a-f]{32}$/i.test(trimmed) ? trimmed.toLowerCase() : randomBytes(16).toString("hex");
 }
 function isLoopbackHost(value) {
@@ -115,7 +129,7 @@ function validateTelegramProxyConfig(config) {
 	const host = config.host.trim();
 	if (!isLoopbackHost(host)) throw new Error("Локальный Telegram Proxy может слушать только 127.0.0.1, ::1 или localhost. Публикация прокси в локальную сеть заблокирована.");
 	if (!Number.isInteger(config.port) || config.port < 1024 || config.port > 65535) throw new Error("Порт Telegram Proxy должен быть целым числом от 1024 до 65535.");
-	const secret = config.secret.trim().replace(/^dd/i, "");
+	const secret = config.secret.trim().replace(/^dd([0-9a-f]{32})$/i, "$1");
 	if (!/^[0-9a-f]{32}$/i.test(secret)) throw new Error("Secret должен содержать ровно 32 шестнадцатеричных символа.");
 	if (!Array.isArray(config.dcIp)) throw new Error("Список прямых Telegram DC имеет неверный формат.");
 	const submittedDcEndpoints = config.dcIp.map((item) => String(item).trim()).filter(Boolean);
@@ -641,8 +655,15 @@ var TelegramProxyManager = class {
 		}
 		if (service.state === "unknown") throw new Error("Не удалось подтвердить состояние службы Telegram Proxy перед запуском.");
 		if (service.running) {
+			const readinessDeadline = Date.now() + TG_WS_PROXY_SERVICE_START_TIMEOUT_MS;
 			const listener = await this.inspectListener(config.port, config.host, { serviceRunning: true });
-			if (listener.state === "foreign" || listener.state === "unknown") throw new Error(this.listenerOwnershipError(config.port, config.host, listener));
+			if (listener.state === "foreign") throw new Error(this.listenerOwnershipError(config.port, config.host, listener));
+			if (listener.state === "unknown") {
+				await this.waitForServiceReady(config.port, Math.max(0, readinessDeadline - Date.now()), config.host, listener);
+				this.lastError = null;
+				this.invalidateStatusCache();
+				return this.status({ force: true });
+			}
 			if (listener.ready) {
 				this.lastError = null;
 				await this.appendProxyLog("INFO", "Служба TG Proxy уже работает, состояние подтверждено.");
@@ -963,14 +984,26 @@ var TelegramProxyManager = class {
 		throw lastError instanceof Error ? lastError : /* @__PURE__ */ new Error("Не удалось скопировать runtime TG WS Proxy.");
 	}
 	async stopProcessesUsingManagedRuntime(runtimePath) {
-		const target = path.win32.normalize(runtimePath).replace(/'/g, "''");
-		const script = [
-			"$ErrorActionPreference = 'Stop'",
-			`$target = [System.IO.Path]::GetFullPath('${target}')`,
-			"$processes = @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and [string]::Equals([System.IO.Path]::GetFullPath($_.ExecutablePath), $target, [System.StringComparison]::OrdinalIgnoreCase) })",
-			"foreach ($item in $processes) { Stop-Process -Id $item.ProcessId -Force -ErrorAction Stop }"
-		].join("; ");
-		await execFileAsync$3(resolveWindowsExecutable("powershell.exe"), ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script], { windowsHide: true, timeout: 10000 });
+		const programData = process.env.ProgramData ?? process.env.PROGRAMDATA;
+		if (process.platform !== "win32" || typeof programData !== "string" || !path.win32.isAbsolute(programData) || !path.win32.isAbsolute(runtimePath))
+			throw new Error("Protected Telegram runtime cleanup path is unavailable.");
+		const root = path.win32.join(programData, "EgoistShield", "Runtime", "TelegramProxy", "runtime");
+		const target = path.win32.normalize(runtimePath);
+		const matches = (left, right) => typeof left === "string" && path.win32.isAbsolute(left) && path.win32.normalize(left).toLowerCase() === path.win32.normalize(right).toLowerCase();
+		const kind = matches(target, path.win32.join(root, TG_WS_PROXY_MANAGED_EXE_NAME)) ? "primary" : matches(target, path.win32.join(root, TG_WS_PROXY_LEGACY_EXE_NAME)) ? "legacy" : null;
+		if (!kind) throw new Error("Telegram cleanup requires an exact protected product runtime.");
+		const executable = path.join(this.resourcesPath, "core-service", "win-x64", "EgoistShield.Service.exe");
+		const { stdout } = await execFileAsync$3(executable, ["--telegram-runtime-cleanup", "--runtime", kind], { windowsHide: true, timeout: 10000, maxBuffer: 65536 });
+		if (typeof stdout !== "string" || stdout.length > 65536) throw new Error("Telegram runtime cleanup returned an invalid proof.");
+		const proof = JSON.parse(stdout);
+		const identities = new Set();
+		if (!proof || proof.schemaVersion !== 1 || proof.operation !== "telegram-runtime-cleanup" || proof.target !== kind || !matches(proof.runtimePath, target) || proof.cleanupComplete !== true || proof.quiescent !== true || !Array.isArray(proof.stopped) || proof.stopped.length > 128)
+			throw new Error("Telegram runtime cleanup could not prove quiescence.");
+		for (const row of proof.stopped) {
+			if (!row || !Number.isSafeInteger(row.processId) || row.processId <= 0 || identities.has(row.processId) || typeof row.createdAt !== "string" || !Number.isFinite(Date.parse(row.createdAt)) || Date.parse(row.createdAt) <= 0 || !matches(row.executablePath, target))
+				throw new Error("Telegram runtime cleanup returned an invalid process identity.");
+			identities.add(row.processId);
+		}
 		await this.clearManagedState();
 	}
 	async stopStaleTelegramProxyProcesses() {
@@ -1163,68 +1196,77 @@ var TelegramProxyManager = class {
 	* MED-03: команды `sc config/failure/failureflag` выполнялись с подавлением
 	* ошибок, поэтому интерфейс мог показывать обещанный автозапуск, ни разу его
 	* не подтвердив. Вывод `sc.exe` локализован и не является машинным API,
-	* поэтому фактическое состояние читается из служебного раздела реестра SCM.
+	* поэтому фактическое состояние читается напрямую через QueryServiceConfig/2 SCM.
 	*/
 	async ensureServicePersistence() {
 		let verification = await this.verifyServiceRecoveryConfiguration();
 		if (verification.ok) return verification;
+		if (verification.readbackAvailable === false) throw new Error(`Не удалось прочитать фактические параметры ${TG_WS_PROXY_SERVICE_NAME}: ${verification.details.join("; ")}`, { cause: verification.cause });
 		await this.appendProxyLog("WARN", `Параметры фоновой службы требуют восстановления: ${verification.details.join("; ")}`);
-		if (this.coreService) {
-			await this.coreService.installOwnedService(TG_WS_PROXY_SERVICE_NAME);
-		} else await this.configureServiceRecovery();
+		if (this.coreService) await this.coreService.installOwnedService(TG_WS_PROXY_SERVICE_NAME);
+		else await this.configureServiceRecovery();
 		verification = await this.verifyServiceRecoveryConfiguration();
-		if (!verification.ok) throw new Error(`Не удалось подтвердить Automatic + restart recovery для ${TG_WS_PROXY_SERVICE_NAME}: ${verification.details.join("; ")}`);
+		if (!verification.ok) throw new Error(`Не удалось подтвердить Automatic + restart recovery для ${TG_WS_PROXY_SERVICE_NAME}: ${verification.details.join("; ")}`, { cause: verification.cause });
 		return verification;
 	}
 	async verifyServiceRecoveryConfiguration() {
-		const details = [];
-		let startTypeAuto = false;
-		let delayedAutoStart = false;
-		let failureActionsConfigured = false;
-		let failureFlagSet = false;
+		const result = { ok: false, readbackAvailable: false, startTypeAuto: false, delayedAutoStart: false,
+			failureActionsConfigured: false, failureFlagSet: false, details: [] };
+		let payload;
 		try {
-			const script = [
-				`$key = Get-Item -LiteralPath '${`Registry::HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\${TG_WS_PROXY_SERVICE_NAME}`}' -ErrorAction Stop`,
-				"$start = $key.GetValue('Start', $null)",
-				"$delayed = $key.GetValue('DelayedAutoStart', 0)",
-				"$failure = $key.GetValue('FailureActions', $null)",
-				"$failureFlag = $key.GetValue('FailureActionsOnNonCrashFailures', 0)",
-				"$failureBytes = if ($failure -is [byte[]]) { $failure.Length } else { 0 }",
-				"[pscustomobject]@{ start = [int]$start; delayed = [int]$delayed; failureBytes = [int]$failureBytes; failureFlag = [int]$failureFlag } | ConvertTo-Json -Compress"
-			].join("; ");
-			const { stdout } = await execFileAsync$3(resolveWindowsExecutable("powershell.exe"), [
-				"-NoProfile",
-				"-NonInteractive",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-Command",
-				script
-			], {
-				windowsHide: true,
-				timeout: 8e3,
-				maxBuffer: 1024 * 1024
+			const nativePath = path.join(this.resourcesPath, "core-service", "win-x64", "EgoistShield.Service.exe");
+			const { stdout } = await execFileAsync$3(nativePath, ["--telegram-service-recovery"], {
+				windowsHide: true, timeout: 4e3, maxBuffer: 65536
 			});
-			const registry = JSON.parse(stdout.trim());
-			startTypeAuto = registry.start === 2;
-			delayedAutoStart = registry.delayed === 1;
-			failureActionsConfigured = Number(registry.failureBytes ?? 0) > 0;
-			failureFlagSet = registry.failureFlag === 1;
+			if (typeof stdout !== "string" || Buffer.byteLength(stdout, "utf8") > 65536) throw new Error("Native recovery payload exceeds its bound.");
+			payload = JSON.parse(stdout.trim());
+			if (!payload || payload.schemaVersion !== 1 || payload.operation !== "telegram-service-recovery" ||
+				payload.serviceName !== TG_WS_PROXY_SERVICE_NAME || payload.snapshotAvailable !== true ||
+				payload.stable !== true || typeof payload.installed !== "boolean") throw new Error("Native SCM recovery snapshot is incomplete.");
+			if (payload.installed === false) {
+				if (payload.identityVerified !== false) throw new Error("Native SCM absence proof is contradictory.");
+				result.readbackAvailable = true;
+				result.details.push("Служба не установлена");
+			} else {
+				const uint32 = value => Number.isInteger(value) && value >= 0 && value <= 4294967295;
+				if (payload.identityVerified !== true || !uint32(payload.startType) || payload.startType > 4 ||
+					typeof payload.delayedAutoStart !== "boolean" || !uint32(payload.resetPeriodSeconds) ||
+					typeof payload.failureActionsOnNonCrashFailures !== "boolean" || !Array.isArray(payload.actions) || payload.actions.length > 128 ||
+					payload.actions.some(action => !action || !["none", "restart", "reboot", "command"].includes(action.type) || !uint32(action.delayMs)))
+					throw new Error("Native SCM recovery identity or policy is incomplete.");
+				result.readbackAvailable = true;
+				result.startTypeAuto = payload.startType === 2;
+				result.delayedAutoStart = payload.delayedAutoStart;
+				result.failureActionsConfigured = payload.resetPeriodSeconds === 3600 && payload.actions.length === 3 &&
+					payload.actions.every((action, index) => action.type === "restart" && action.delayMs === [5000, 10000, 60000][index]);
+				result.failureFlagSet = payload.failureActionsOnNonCrashFailures;
+				if (!result.startTypeAuto) result.details.push("Start не равен 2 (Automatic)");
+				if (!result.failureActionsConfigured) result.details.push("SCM restart recovery не соответствует reset=3600, restart/5000/10000/60000");
+				if (!result.failureFlagSet) result.details.push("FailureActionsOnNonCrashFailures не выставлен");
+				result.ok = result.startTypeAuto && result.failureActionsConfigured && result.failureFlagSet;
+			}
 		} catch (error) {
-			details.push(`registry read: ${error instanceof Error ? error.message : String(error)}`);
+			Object.defineProperty(result, "cause", { value: error, enumerable: false });
+			let stage = "contract";
+			let win32 = null;
+			if (typeof error?.stdout === "string" && Buffer.byteLength(error.stdout, "utf8") <= 65536) {
+				try {
+					const diagnostic = JSON.parse(error.stdout.trim());
+					if (diagnostic?.schemaVersion === 1 && diagnostic.operation === "telegram-service-recovery" &&
+						diagnostic.serviceName === TG_WS_PROXY_SERVICE_NAME && diagnostic.snapshotAvailable === false && diagnostic.stable === false &&
+						typeof diagnostic.error?.stage === "string" && /^[a-z-]{1,64}$/.test(diagnostic.error.stage)) {
+						stage = diagnostic.error.stage;
+						if (Number.isInteger(diagnostic.error.win32) && diagnostic.error.win32 >= 0 && diagnostic.error.win32 <= 4294967295) win32 = diagnostic.error.win32;
+					}
+				} catch { /* Untrusted command output never becomes policy evidence. */ }
+			}
+			const code = typeof error?.code === "number" && Number.isInteger(error.code) ? error.code :
+				typeof error?.code === "string" && /^[A-Z0-9_]{1,32}$/.test(error.code) ? error.code : "unavailable";
+			const signal = typeof error?.signal === "string" && /^SIG[A-Z0-9]{1,16}$/.test(error.signal) ? error.signal : "none";
+			result.details.push(`SCM read unavailable: stage=${stage}, win32=${win32 ?? "unknown"}, code=${code}, signal=${signal}, killed=${error?.killed === true}`);
 		}
-		if (!startTypeAuto) details.push("Start не равен 2 (Automatic)");
-		if (!failureActionsConfigured) details.push("FailureActions отсутствует или пуст");
-		if (!failureFlagSet) details.push("FailureActionsOnNonCrashFailures не выставлен");
-		const ok = startTypeAuto && failureActionsConfigured && failureFlagSet;
-		if (!ok) await this.appendProxyLog("WARN", `Конфигурация автозапуска службы подтверждена не полностью: ${details.join("; ")}`);
-		return {
-			ok,
-			startTypeAuto,
-			delayedAutoStart,
-			failureActionsConfigured,
-			failureFlagSet,
-			details
-		};
+		if (!result.ok) await this.appendProxyLog("WARN", `Конфигурация автозапуска службы подтверждена не полностью: ${result.details.join("; ")}`);
+		return result;
 	}
 	async execServiceWrapper(wrapperPath, args, ignoreFailure) {
 		try {
@@ -1447,76 +1489,100 @@ var TelegramProxyManager = class {
 		if (rawState === "STOPPENDING") return "stop-pending";
 		return "unknown";
 	}
-	async waitForServiceReady(port, timeoutMs, host = "127.0.0.1") {
-		const deadline = Date.now() + timeoutMs;
+	async waitForServiceReady(port, timeoutMs, host = "127.0.0.1", initialListener = null) {
+		const deadline = Date.now() + Math.max(0, Math.min(TG_WS_PROXY_SERVICE_START_TIMEOUT_MS, timeoutMs));
 		let lastState = "unknown";
 		let lastPortOpen = false;
+		let lastListener = initialListener;
 		while (Date.now() < deadline) {
 			const status = await this.queryServiceStatus();
 			lastState = status.state;
+			if (Date.now() >= deadline) break;
 			if (status.state === "start-pending") {
 				await new Promise((resolve) => setTimeout(resolve, Math.min(500, Math.max(1, deadline - Date.now()))));
 				continue;
 			}
 			const listener = await this.inspectListener(port, host, { serviceRunning: status.running, timeoutMs: Math.max(1, Math.min(4000, deadline - Date.now())) });
-			if (listener.state === "foreign" || listener.state === "unknown") throw new Error(this.listenerOwnershipError(port, host, listener));
+			lastListener = listener;
+			if (listener.state === "foreign") throw new Error(this.listenerOwnershipError(port, host, listener));
 			lastPortOpen = listener.ready;
-			if (status.running && listener.ready) return;
+			if (status.running && listener.ready && Date.now() < deadline) return;
 			if (status.state === "stopped" || status.state === "not-installed") break;
-			await new Promise((resolve) => setTimeout(resolve, 500));
+			const remaining = deadline - Date.now();
+			if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, Math.min(500, remaining)));
 		}
 		const portHint = lastPortOpen ? `слушатель ${host}:${port} подтверждён` : `готовность слушателя ${host}:${port} не подтверждена`;
-		throw new Error(`Служба ${TG_WS_PROXY_SERVICE_NAME} не подтвердила запуск: состояние ${lastState}, ${portHint}.`);
+		const error = new Error(`Служба ${TG_WS_PROXY_SERVICE_NAME} не подтвердила запуск: состояние ${lastState}, ${portHint}.`);
+		error.code = "TELEGRAM_PROXY_READINESS_UNCONFIRMED";
+		error.diagnostic = telegramListenerInspectionDiagnostic(lastListener);
+		await this.appendProxyLog("WARN", `[readiness] ${JSON.stringify(error.diagnostic)}`).catch(() => {});
+		throw error;
 	}
 	async queryListenerOwnership(port, host, { serviceRunning = false, managedState = null, timeoutMs = 4000 } = {}) {
 		try {
-			if (serviceRunning) return await this.queryNativeServiceListenerOwnership(port, host, timeoutMs);
-			const script = buildTelegramProxyListenerOwnershipScript(port, host, {
-				serviceRunning,
-				wrapperPath: path.join(this.appDataDir, "service-wrapper", TG_WS_PROXY_SERVICE_EXE_NAME),
-				managedPid: managedState?.pid,
-				managedStartedAt: managedState?.startedAt,
-				managedRuntimePaths: TG_WS_PROXY_MANAGED_CANDIDATES.map((name) => path.join(this.runtimeDir, name))
-			});
-			const { stdout } = await execFileAsync$3(resolveWindowsExecutable("powershell.exe"), ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script], { windowsHide: true, timeout: Math.max(1, Math.min(4000, timeoutMs)), maxBuffer: 64 * 1024 });
-			const value = JSON.parse(stdout.trim());
-			if (!["none", "owned", "foreign"].includes(value?.state)) throw new Error("Invalid listener ownership result");
-			if (value.state !== "none" && (!Number.isInteger(value.ownerPid) || value.ownerPid <= 0)) throw new Error("Invalid listener process identity");
-			return { state: value.state, ownerPid: value.ownerPid ?? null, ownerName: typeof value.ownerName === "string" ? value.ownerName.replace(/[\x00-\x1f]/g, "").slice(0, 80) : null };
-		} catch {
-			return { state: "unknown", ownerPid: null, ownerName: null };
+			return await this.queryNativeServiceListenerOwnership(port, host, timeoutMs, { serviceRunning, managedState });
+		} catch (error) {
+			return telegramListenerUnknown(error?.name === "SyntaxError" ? "contract" : "child-query", error?.name === "SyntaxError" ? "invalid-json" : error?.code === "ETIMEDOUT" || error?.timedOut === true ? "child-query-timeout" : "child-query-failed", error);
 		}
 	}
-	async queryNativeServiceListenerOwnership(port, host, timeoutMs) {
-		const unknown = { state: "unknown", ownerPid: null, ownerName: null };
-		if (!Number.isInteger(port) || port < 1 || port > 65535 || typeof host !== "string" || !isLoopbackHost(host)) return unknown;
+	async queryNativeServiceListenerOwnership(port, host, timeoutMs, { serviceRunning = false, managedState = null } = {}) {
+		const unknown = telegramListenerUnknown("contract", "invalid-contract");
+		if (!Number.isInteger(port) || port < 1 || port > 65535 || typeof host !== "string" || !isLoopbackHost(host)) return telegramListenerUnknown("request", "invalid-request");
 		const deadline = Date.now() + Math.max(1, Math.min(4000, timeoutMs));
 		const executable = path.join(this.resourcesPath, "core-service", "win-x64", "EgoistShield.Service.exe");
 		const wrapperPath = path.resolve(this.appDataDir, "service-wrapper", TG_WS_PROXY_SERVICE_EXE_NAME).toLowerCase();
+		const managedPaths = TG_WS_PROXY_MANAGED_CANDIDATES.map((name) => path.resolve(this.runtimeDir, name).toLowerCase());
+		const savedStart = managedState == null ? null : Date.parse(managedState.startedAt);
+		if (managedState != null && (!Number.isInteger(managedState.pid) || managedState.pid <= 0 || managedState.pid > 2147483647 || !Number.isSafeInteger(savedStart) || savedStart <= 0)) return unknown;
+		const args = ["--telegram-listener-snapshot", "--port", String(port)];
+		if (managedState != null) args.push("--managed-pid", String(managedState.pid), "--managed-started-at", String(savedStart));
 		const address = host.trim().toLowerCase().replace(/^\[|\]$/g, "");
 		let prior = null;
 		for (let read = 0; read < 2; read++) {
 			const remaining = deadline - Date.now();
-			if (remaining <= 0) return unknown;
-			const { stdout } = await execFileAsync$3(executable, ["--telegram-listener-snapshot", "--port", String(port)], { windowsHide: true, timeout: remaining, maxBuffer: 64 * 1024 });
+			if (remaining <= 0) return telegramListenerUnknown("child-query", "budget-exhausted");
+			const { stdout } = await execFileAsync$3(executable, args, { windowsHide: true, timeout: remaining, maxBuffer: 64 * 1024 });
 			const value = JSON.parse(stdout.trim());
-			if (value?.schemaVersion !== 1 || value.operation !== "telegram-listener-snapshot" || value.serviceName !== TG_WS_PROXY_SERVICE_NAME || value.port !== port || value.snapshotAvailable !== true || value.stable !== true || value.serviceState !== "Running" || value.rootProcessPathVerified !== true) return unknown;
+			if (value?.schemaVersion !== 2 || value.operation !== "telegram-listener-snapshot" || value.serviceName !== TG_WS_PROXY_SERVICE_NAME || value.port !== port) return unknown;
+			if (value.snapshotAvailable !== true) return telegramListenerUnknown("snapshot", "snapshot-unavailable");
+			if (value.stable !== true) return telegramListenerUnknown("snapshot", "snapshot-unstable");
+			if (!["Running", "Stopped"].includes(value.serviceState) || serviceRunning && value.serviceState !== "Running") return telegramListenerUnknown("snapshot", "service-state-transition");
 			const rows = value.snapshot?.processes;
-			if (!Array.isArray(rows) || rows.length > 128 || !Array.isArray(value.snapshot.listeners) || value.snapshot.listeners.length > 128) return unknown;
+			if (!Array.isArray(rows) || rows.length > 128 || rows.some((row) => !row || !Number.isInteger(row.processId) || row.processId <= 0 || !Number.isInteger(row.parentProcessId) || row.parentProcessId < 0) || new Set(rows.map((row) => row.processId)).size !== rows.length || !Array.isArray(value.snapshot.listeners) || value.snapshot.listeners.length > 128 || value.snapshot.serviceProcessId !== value.serviceProcessId || value.snapshot.serviceState !== value.serviceState || value.snapshot.stable !== true) return unknown;
+			if (value.snapshot.listeners.some((row) => !row || row.localPort !== port || !Number.isInteger(row.owningProcess) || row.owningProcess <= 0 || typeof row.localAddress !== "string" || !["127.0.0.1", "::1", "0.0.0.0", "::"].includes(row.localAddress) && isIP(row.localAddress) === 0)) return unknown;
 			const roots = rows.filter((row) => row.processId === value.serviceProcessId);
 			const root = roots.length === 1 ? roots[0] : null;
-			if (!Number.isInteger(value.serviceProcessId) || value.serviceProcessId <= 0 || !root || typeof root.executablePath !== "string" || path.resolve(root.executablePath).toLowerCase() !== wrapperPath || !Number.isFinite(Date.parse(root.createdAt))) return unknown;
+			if (!Number.isInteger(value.serviceProcessId) || value.serviceProcessId < 0) return unknown;
+			if (value.serviceState === "Running" && (value.serviceProcessId <= 0 || value.rootProcessPathVerified !== true || !root || typeof root.executablePath !== "string" || path.resolve(root.executablePath).toLowerCase() !== wrapperPath || !Number.isFinite(Date.parse(root.createdAt)) || value.rootProcessCreatedAt !== root.createdAt)) return unknown;
+			if (value.serviceState === "Stopped" && value.serviceProcessId !== 0) return unknown;
+			const managedRoot = managedState == null ? null : rows.find((row) => row.processId === managedState.pid);
+			if (managedState != null && (value.managedProcessId !== managedState.pid || value.managedIdentityVerified !== true || !managedRoot || typeof managedRoot.executablePath !== "string" || !managedPaths.includes(path.resolve(managedRoot.executablePath).toLowerCase()) || !Number.isFinite(Date.parse(managedRoot.createdAt)) || Date.parse(managedRoot.createdAt) < savedStart - 30000 || Date.parse(managedRoot.createdAt) > savedStart + 5000 || value.managedRootCreatedAt !== managedRoot.createdAt)) return unknown;
 			const families = address === "localhost" ? [value.ipv4, value.ipv6] : [address === "::1" ? value.ipv6 : value.ipv4];
 			if (families.some((family) => !family || !["owned", "foreign", "missing", "unknown"].includes(family.state))) return unknown;
 			const selected = families.find((family) => family.state === "foreign") ?? families.find((family) => family.state === "unknown") ?? families.find((family) => family.state === "owned") ?? families[0];
-			if (selected.state === "unknown") return unknown;
+			if (selected.state === "unknown") return telegramListenerUnknown("snapshot", "ownership-unavailable");
 			if (selected.state !== "missing" && (!Number.isInteger(selected.ownerPid) || selected.ownerPid <= 0)) return unknown;
 			const result = { state: selected.state === "missing" ? "none" : selected.state, ownerPid: selected.ownerPid ?? null, ownerName: typeof selected.ownerName === "string" ? selected.ownerName.replace(/[\x00-\x1f]/g, "").slice(0, 80) : null };
-			if (result.state === "foreign") return result;
-			const owner = result.state === "owned" ? rows.find((row) => row.processId === result.ownerPid) : null;
-			if (result.state === "owned" && (!owner || !Number.isFinite(Date.parse(owner.createdAt)) || Date.parse(owner.createdAt) < Date.parse(root.createdAt) || selected.ownerCreatedAt !== owner.createdAt)) return unknown;
-			const identity = JSON.stringify([result.state, value.serviceProcessId, root.createdAt, result.ownerPid, owner?.createdAt ?? null]);
-			if (prior && prior.identity !== identity) return unknown;
+			const owner = result.state === "none" ? null : rows.find((row) => row.processId === result.ownerPid);
+			if (result.state !== "none" && (!owner || typeof owner.executablePath !== "string" || !path.isAbsolute(owner.executablePath) || !Number.isFinite(Date.parse(owner.createdAt)) || selected.ownerCreatedAt !== owner.createdAt)) return unknown;
+			if (result.state === "owned") {
+				const proofRoot = selected.rootPid === root?.processId ? root : selected.rootPid === managedRoot?.processId ? managedRoot : null;
+				if (!proofRoot || selected.rootCreatedAt !== proofRoot.createdAt || Date.parse(owner.createdAt) < Date.parse(proofRoot.createdAt)) return unknown;
+				let cursor = owner;
+				const seen = new Set();
+				for (let depth = 0; depth < 32 && cursor.processId !== proofRoot.processId; depth++) {
+					if (seen.has(cursor.processId)) return unknown;
+					seen.add(cursor.processId);
+					const parent = rows.find((row) => row.processId === cursor.parentProcessId);
+					if (!parent || !Number.isFinite(Date.parse(parent.createdAt)) || Date.parse(parent.createdAt) > Date.parse(cursor.createdAt)) return unknown;
+					cursor = parent;
+				}
+				if (cursor.processId !== proofRoot.processId) return unknown;
+			}
+			const identity = JSON.stringify([result.state, value.serviceState, value.serviceProcessId, root?.createdAt ?? null, result.ownerPid, owner?.createdAt ?? null,
+				rows.map((row) => [row.processId, row.parentProcessId, row.createdAt, row.executablePath]).sort((left, right) => left[0] - right[0]),
+				value.snapshot.listeners.map((row) => [row.localAddress, row.localPort, row.owningProcess]).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)))]);
+			if (prior && prior.identity !== identity) return telegramListenerUnknown("identity", "identity-changed");
 			prior = { identity, result };
 		}
 		return prior?.result ?? unknown;
@@ -1524,7 +1590,7 @@ var TelegramProxyManager = class {
 	async inspectListener(port, host = "127.0.0.1", options = {}) {
 		const [ownership, open] = await Promise.all([this.queryListenerOwnership(port, host, options), this.isLocalTcpPortOpen(port, host)]);
 		const state = ownership.state === "none" && open ? "unknown" : ownership.state;
-		return { ...ownership, state, open, ready: state === "owned" && open };
+		return { ...ownership, ...(ownership.state === "none" && open ? telegramListenerUnknown("tcp-check", "snapshot-tcp-disagreement") : {}), state, open, ready: state === "owned" && open };
 	}
 	describeListenerOwner(listener) {
 		return `${listener.ownerName || "другим процессом"}${listener.ownerPid ? ` (PID ${listener.ownerPid})` : ""}`;

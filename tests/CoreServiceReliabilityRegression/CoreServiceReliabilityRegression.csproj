@@ -5,11 +5,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ServiceSourceRoot Condition="'$(ServiceSourceRoot)' == ''">../../src/service/EgoistShield.Service</ServiceSourceRoot>
     <ComponentWorkerSource Condition="'$(ComponentWorkerSource)' == ''">$(ServiceSourceRoot)/ComponentWorker.cs</ComponentWorkerSource>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(ServiceSourceRoot)/AtomicJsonFile.cs" Link="AtomicJsonFile.cs" />
+    <Compile Include="$(ServiceSourceRoot)/ProtectedProductRoot.cs" Link="ProtectedProductRoot.cs" />
+    <Compile Include="$(ServiceSourceRoot)/AtomicJsonReadResult.cs" Link="AtomicJsonReadResult.cs" />
     <Compile Include="$(ServiceSourceRoot)/JsonDefaults.cs" Link="JsonDefaults.cs" />
     <Compile Include="$(ServiceSourceRoot)/TrustedPath.cs" Link="TrustedPath.cs" />
     <Compile Include="$(ServiceSourceRoot)/OwnedServiceStatus.cs" Link="OwnedServiceStatus.cs" />
@@ -24,5 +27,12 @@
     <Compile Include="$(ServiceSourceRoot)/DnsBootstrapRefreshScheduler.cs" Link="DnsBootstrapRefreshScheduler.cs" />
     <Compile Include="$(ServiceSourceRoot)/DnsAdapterSnapshot.cs" Link="DnsAdapterSnapshot.cs" />
     <Compile Include="$(ComponentWorkerSource)" Link="ComponentWorker.cs" />
+    <Compile Include="$(ServiceSourceRoot)/ProtectedExecutable.cs" Link="ProtectedExecutable.cs" />
+    <Compile Include="$(ServiceSourceRoot)/ClientAuthorizer.cs" Link="ClientAuthorizer.cs" />
+    <Compile Include="$(ServiceSourceRoot)/ClientIdentity.cs" Link="ClientIdentity.cs" />
+    <Compile Include="$(ServiceSourceRoot)/GuiLaunchPolicy.cs" Link="GuiLaunchPolicy.cs" />
+    <Compile Include="$(ServiceSourceRoot)/ServiceConfig.cs" Link="ServiceConfig.cs" />
+    <Compile Include="$(ServiceSourceRoot)/ServiceOptions.cs" Link="ServiceOptions.cs" />
+    <Compile Include="$(ServiceSourceRoot)/ServiceOperationException.cs" Link="ServiceOperationException.cs" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: current candidate authenticates genuinely signed generated fixture with explicit inert root pin
+ok 1 - current candidate authenticates genuinely signed generated fixture with explicit inert root pin
+  ---
+  duration_ms: 4.263
+  type: 'test'
+  ...
+# Subtest: project default root pin rejects generated fixture rather than importing a test trust override
+ok 2 - project default root pin rejects generated fixture rather than importing a test trust override
+  ---
+  duration_ms: 0.9696
+  type: 'test'
+  ...
+# Subtest: real bundled public registry authenticates under the immutable real project root
+ok 3 - real bundled public registry authenticates under the immutable real project root
+  ---
+  duration_ms: 4.0924
+  type: 'test'
+  ...
+# Subtest: current signed manifest tampering fails Ed25519 verification over original bytes
+ok 4 - current signed manifest tampering fails Ed25519 verification over original bytes
+  ---
+  duration_ms: 0.8901
+  type: 'test'
+  ...
+# Subtest: current signed integrity binding rejects changed original bytes
+ok 5 - current signed integrity binding rejects changed original bytes
+  ---
+  duration_ms: 0.9673
+  type: 'test'
+  ...
+# Subtest: current signed source commit cannot be substituted
+ok 6 - current signed source commit cannot be substituted
+  ---
+  duration_ms: 0.7797
+  type: 'test'
+  ...
+# Subtest: genuinely root-signed candidate registry rollback is rejected against bundled baseline
+ok 7 - genuinely root-signed candidate registry rollback is rejected against bundled baseline
+  ---
+  duration_ms: 0.5379
+  type: 'test'
+  ...
+# Subtest: current candidate registry tampering fails pinned-root signature verification
+ok 8 - current candidate registry tampering fails pinned-root signature verification
+  ---
+  duration_ms: 0.5355
+  type: 'test'
+  ...
+# Subtest: current options bind exact source and own runner paths without accepting legacy or trust overrides
+ok 9 - current options bind exact source and own runner paths without accepting legacy or trust overrides
+  ---
+  duration_ms: 0.9172
+  type: 'test'
+  ...
+# Subtest: actual task-local installer stream verifies SHA256, SHA512 and byte count
+ok 10 - actual task-local installer stream verifies SHA256, SHA512 and byte count
+  ---
+  duration_ms: 6.633
+  type: 'test'
+  ...
+# Subtest: current installer streaming refuses authenticated sha256 mismatch
+ok 11 - current installer streaming refuses authenticated sha256 mismatch
+  ---
+  duration_ms: 3.3365
+  type: 'test'
+  ...
+# Subtest: current installer streaming refuses authenticated sha512 mismatch
+ok 12 - current installer streaming refuses authenticated sha512 mismatch
+  ---
+  duration_ms: 3.1244
+  type: 'test'
+  ...
+# Subtest: current installer streaming refuses authenticated size mismatch
+ok 13 - current installer streaming refuses authenticated size mismatch
+  ---
+  duration_ms: 2.7759
+  type: 'test'
+  ...
+# Subtest: current CLI refuses physical/non-hosted process before options read or output write
+ok 14 - current CLI refuses physical/non-hosted process before options read or output write
+  ---
+  duration_ms: 64.5915
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 162.0147

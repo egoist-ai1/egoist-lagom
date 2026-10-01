@@ -48,19 +48,19 @@ async function fixture(mode = 'valid') {
 
 test('official Electron pin records identical archive digest and immutable release sources', async () => {
   const pin = JSON.parse(await fs.readFile(path.join(root, 'scripts/electron-runtime.json'), 'utf8'));
-  assert.equal(pin.version, '44.4.5');
+  assert.equal(pin.version, '44.5.1');
   assert.equal(pin.platform, 'win32');
   assert.equal(pin.arch, 'x64');
-  assert.equal(pin.asset.sha256, '11c395820a5aaa8ebcc0686b476d0ac98a730274ebfbdc8cf5538a7c2815cb5d');
-  assert.equal(pin.asset.bytes, 158184819);
-  assert.equal(pin.shasums.sha256, 'a0379166a35f9d3e2e1b63a72b90ddfe54a9558c56a3bde82e98f63823591d72');
+  assert.equal(pin.asset.sha256, '9b382492dcfee91f8f9e92c91f7972550a1b95d2299cac72279dab33a600d7db');
+  assert.equal(pin.asset.bytes, 157998329);
+  assert.equal(pin.shasums.sha256, '8cfa7460b2aaac1812bfeed3c6957d14ad384b9f31ae0407ba5e64bb6b43ec3e');
 });
 
 test('offline verification authenticates every extracted runtime file against the pinned ZIP', isolated, async () => {
   const f = await fixture();
   try {
     const runtime = await verifyPinnedElectronRuntime(f.root, { python });
-    assert.equal(runtime.version, '44.4.5');
+    assert.equal(runtime.version, '44.5.1');
     assert.equal(runtime.files.find(entry => entry.path === 'electron.exe').sha256, await sha256File(path.join(f.runtime, 'electron.exe')));
     assert.ok(runtime.integritySources.includes('official GitHub asset.digest'));
     assert.ok(runtime.files.some(entry => entry.path === 'locales/ru.pak'));
@@ -68,7 +68,7 @@ test('offline verification authenticates every extracted runtime file against th
 });
 
 for (const [name, mutate, expected] of [
-  ['corrupt archive', async f => fs.appendFile(path.join(f.cache, 'electron-v44.4.5-win32-x64.zip'), 'corrupt'), /archive checksum mismatch/],
+  ['corrupt archive', async f => fs.appendFile(path.join(f.cache, 'electron-v44.5.1-win32-x64.zip'), 'corrupt'), /archive checksum mismatch/],
   ['modified extracted DLL', async f => fs.writeFile(path.join(f.runtime, 'ffmpeg.dll'), 'modified'), /runtime checksum mismatch/],
   ['injected stale DLL', async f => fs.writeFile(path.join(f.runtime, 'libEGL.dll'), 'stale runtime'), /runtime file set mismatch/],
   ['missing runtime locale', async f => fs.rm(path.join(f.runtime, 'locales/ru.pak')), /runtime file set mismatch/],
@@ -150,14 +150,15 @@ test('staging uses all new runtime files and product resources without old runti
     const out = path.join(f.root, 'out/new');
     const staged = await stageElectronPayload({ runtime, out, recoveredResources: resources });
     assert.equal(await fs.readFile(path.join(out, 'LICENSE'), 'utf8'), 'fresh-runtime:LICENSE');
-    assert.equal(await fs.readFile(path.join(out, 'version'), 'utf8'), '44.4.5');
+    assert.ok(staged.provenance.executable.modifiedFor.includes('requireAdministrator GUI manifest'));
+    assert.equal(await fs.readFile(path.join(out, 'version'), 'utf8'), '44.5.1');
     assert.equal(await fs.readFile(path.join(out, 'resources/brand/icon.ico'), 'utf8'), 'product icon');
-    for (const relative of ['electron.exe', 'libEGL.dll', 'resources/default_app.asar', 'resources/app.asar', 'resources/core-service/old.dll', 'resources/scripts/system-control/old.ps1']) assert.equal(await fs.stat(path.join(out, ...relative.split('/'))).catch(() => null), null, relative);
+    for (const relative of ['electron.exe', 'libEGL.dll', 'resources/default_app.asar', 'resources/app.asar', 'resources/core-service/old.dll', 'resources/scripts/system-control/old.ps1', 'resources/elevate.exe']) assert.equal(await fs.stat(path.join(out, ...relative.split('/'))).catch(() => null), null, relative);
     assert.equal(await fs.readFile(path.join(out, 'resources/scripts/product-script.ps1'), 'utf8'), 'retained script');
     await fs.appendFile(path.join(out, 'EgoistShield.exe'), '-product-branding');
     const receipt = await addElectronToRuntimeManifest(out, staged);
     const component = JSON.parse(await fs.readFile(path.join(out, 'resources/runtime/manifest.json'), 'utf8')).components.find(entry => entry.name === 'electron');
-    assert.equal(component.version, '44.4.5');
+    assert.equal(component.version, '44.5.1');
     assert.equal(component.upstream.repositoryUrl, 'https://github.com/electron/electron');
     assert.equal(component.autoApplyAllowed, false);
     assert.equal(component.fileCount, 1);
@@ -165,7 +166,7 @@ test('staging uses all new runtime files and product resources without old runti
     assert.equal(receipt.provenancePath, 'resources/runtime/electron/provenance.json');
     assert.equal(component.files[0].sha256, await sha256File(path.join(out, ...receipt.provenancePath.split('/'))));
     assert.equal(await fs.stat(path.join(out, 'resources/electron-runtime-provenance.json')).catch(() => null), null);
-    assert.equal(JSON.parse(await fs.readFile(path.join(out, ...receipt.provenancePath.split('/')), 'utf8')).version, '44.4.5');
+    assert.equal(JSON.parse(await fs.readFile(path.join(out, ...receipt.provenancePath.split('/')), 'utf8')).version, '44.5.1');
     assert.equal(receipt.runtimeFiles.find(entry => entry.path === 'EgoistShield.exe').upstreamSha256, runtime.files.find(entry => entry.path === 'electron.exe').sha256);
     assert.equal(receipt.runtimeFiles.find(entry => entry.path === 'EgoistShield.exe').sha256, await sha256File(path.join(out, 'EgoistShield.exe')));
     await assertInstallerHealth(out);
@@ -191,11 +192,12 @@ test('staging rejects an injected runtime file even after an earlier successful 
   } finally { await f.close(); }
 });
 
-test('production packaging verifies the pin before replacing output and embeds runtime/admin/version provenance', async () => {
+test('production packaging pins the runtime and requests GUI administrator rights while the worker retains its caller token', async () => {
   const source = await fs.readFile(path.join(root, 'scripts/package-windows.mjs'), 'utf8');
   assert.ok(source.indexOf('const electronRuntime = await verifyPinnedElectronRuntime(root)') < source.indexOf('await fs.rm(out,'));
   assert.doesNotMatch(source, /fs\.cp\(recoveredApp, out/);
-  assert.match(source, /'requested-execution-level': 'requireAdministrator'/);
+  assert.match(source, /rcedit\(guiExecutable,[^\n]*'requested-execution-level': 'requireAdministrator'/);
+  assert.match(source, /rcedit\(workerExecutable,[^\n]*'requested-execution-level': 'asInvoker'/);
   assert.match(source, /electronRuntime: packagedElectron/);
   assert.match(source, /packagedElectron\.runtimeFiles\.map/);
   assert.match(source, /resources\/runtime\/electron\/provenance\.json/);

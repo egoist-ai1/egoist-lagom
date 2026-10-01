@@ -1,0 +1,1419 @@
+{
+  "schemaVersion": 1,
+  "scope": "Independent read-only review of actual installed Program Files ACL failure; only new reports and own temporary evidence created",
+  "conclusion": "Approve root scoped test-only TrustedInstaller correction; no production ACL/source change needed for this evidenced failure",
+  "releaseReady": false,
+  "sourceHeadAtReview": "ea574389f6be8f5417ed934c19364e51d094475b",
+  "frozenProductionCommit": "d1ea1cf54b6b6b33508f1b0edb448be169441fca",
+  "productionDiffSinceFrozen": [],
+  "finding": {
+    "initialRun": 36827157218,
+    "initialJob": 110257232843,
+    "initialFailure": "Original Assert-NativeAdministratorOwned rejected exact inherited TrustedInstaller effective FullControl on Program Files install root",
+    "mutableMask": 852310,
+    "mutableMaskHex": "0xD0156",
+    "falsePositiveFromSynchronizeReadPermissions": false,
+    "creatorOwnerInheritOnlyWasCause": false,
+    "exactTrustedInstallerSid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+    "hostedCaptureRun": 36829137408,
+    "hostedCaptureJob": 110261490512,
+    "installerSha256": "5126040C1375A3622C6F48A7DB63A7ECD7B759D2A1DA1C4E20B232EECBEF1BC8",
+    "installerExit": 0,
+    "elapsedMilliseconds": 54824.71,
+    "networkPreserved": true,
+    "captureReleaseReady": false,
+    "capture": {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-installed-acl-capture\\installer-diagnostic.json",
+      "bytes": 20516,
+      "sha256": "0A69ADFA97DFF64A2302F61462C50EB51DA46A2D3DDABD42035D508AA04CC10C"
+    },
+    "captureSummary": {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\docs\\product-hardening-2026-10-01\\native-installed-acl-capture\\summary.json",
+      "bytes": 776,
+      "sha256": "1A7B0C164A9643D1C2FBB2E4E010C5DF1A3C11559925C89A3B5C7F64635BC181"
+    },
+    "capturedAcls": [
+      {
+        "path": "C:\\Program Files\\EgoistShield\\",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;CIIOID;GA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;ID;FA;;;SY)(A;OICIIOID;GA;;;SY)(A;ID;FA;;;BA)(A;OICIIOID;GA;;;BA)(A;ID;0x1200a9;;;BU)(A;OICIIOID;GXGR;;;BU)(A;OICIIOID;GA;;;CO)(A;ID;0x1200a9;;;AC)(A;OICIIOID;GXGR;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)(A;OICIIOID;GXGR;;;S-1-15-2-2)",
+        "protected": false,
+        "canonical": true,
+        "rules": [
+          {
+            "sid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+            "rights": 268435456,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 1,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-5-18",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-18",
+            "rights": 268435456,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-5-32-544",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-544",
+            "rights": 268435456,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": -1610612736,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-3-0",
+            "rights": 268435456,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-15-2-1",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-1",
+            "rights": -1610612736,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-15-2-2",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-2",
+            "rights": -1610612736,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          }
+        ]
+      },
+      {
+        "path": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+        "protected": false,
+        "canonical": true,
+        "rules": [
+          {
+            "sid": "S-1-5-18",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-544",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-1",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-2",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          }
+        ]
+      },
+      {
+        "path": "C:\\Program Files\\EgoistShield\\EgoistShield.Worker.exe",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+        "protected": false,
+        "canonical": true,
+        "rules": [
+          {
+            "sid": "S-1-5-18",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-544",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-1",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-2",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          }
+        ]
+      },
+      {
+        "path": "C:\\Program Files\\EgoistShield\\resources",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;CIIOID;GA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;ID;FA;;;SY)(A;OICIIOID;GA;;;SY)(A;ID;FA;;;BA)(A;OICIIOID;GA;;;BA)(A;ID;0x1200a9;;;BU)(A;OICIIOID;GXGR;;;BU)(A;OICIIOID;GA;;;CO)(A;ID;0x1200a9;;;AC)(A;OICIIOID;GXGR;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)(A;OICIIOID;GXGR;;;S-1-15-2-2)",
+        "protected": false,
+        "canonical": true,
+        "rules": [
+          {
+            "sid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+            "rights": 268435456,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 1,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-5-18",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-18",
+            "rights": 268435456,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-5-32-544",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-544",
+            "rights": 268435456,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": -1610612736,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-3-0",
+            "rights": 268435456,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-15-2-1",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-1",
+            "rights": -1610612736,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          },
+          {
+            "sid": "S-1-15-2-2",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-2",
+            "rights": -1610612736,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 3,
+            "propagation": 2
+          }
+        ]
+      },
+      {
+        "path": "C:\\Program Files\\EgoistShield\\resources\\app.asar",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+        "protected": false,
+        "canonical": true,
+        "rules": [
+          {
+            "sid": "S-1-5-18",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-544",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-1",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-2",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          }
+        ]
+      },
+      {
+        "path": "C:\\Program Files\\EgoistShield\\resources\\component-worker.cjs",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+        "protected": false,
+        "canonical": true,
+        "rules": [
+          {
+            "sid": "S-1-5-18",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-544",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-1",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-2",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          }
+        ]
+      },
+      {
+        "path": "C:\\Program Files\\EgoistShield\\resources\\worker-host-integrity.json",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+        "protected": false,
+        "canonical": true,
+        "rules": [
+          {
+            "sid": "S-1-5-18",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-544",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-1",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-2",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          }
+        ]
+      },
+      {
+        "path": "C:\\Program Files\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-1643835476-1616584234-1346609752-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)",
+        "protected": false,
+        "canonical": true,
+        "rules": [
+          {
+            "sid": "S-1-5-18",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-544",
+            "rights": 2032127,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-1",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          },
+          {
+            "sid": "S-1-15-2-2",
+            "rights": 1179817,
+            "type": "Allow",
+            "inherited": true,
+            "inheritance": 0,
+            "propagation": 0
+          }
+        ]
+      }
+    ]
+  },
+  "reviewedCurrentSource": [
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\windows-production-acceptance.ps1",
+      "bytes": 64456,
+      "sha256": "5BB62B9AEA28C5BDF38EFA7A4E12128BD75DB90DA19D392721543D19CB64B8D2",
+      "projectRelativePath": "tests/windows-production-acceptance.ps1"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\windows-installation-acl.test.mjs",
+      "bytes": 4066,
+      "sha256": "5BFC9CAED62ED2AA0A67A3D3C26C1B801A222AA43F7BCFFBEA9B012B30F1A0AE",
+      "projectRelativePath": "tests/windows-installation-acl.test.mjs"
+    },
+    {
+      "path": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\src\\service\\EgoistShield.Service\\ProtectedExecutable.cs",
+      "bytes": 15686,
+      "sha256": "815F4CC8D0E68DAA8FF9F7C192E8ED12AA8B0DE3E539BF2D4A14291AADACE21F",
+      "projectRelativePath": "src/service/EgoistShield.Service/ProtectedExecutable.cs"
+    }
+  ],
+  "frozenOriginalSources": {
+    "commit": "d1ea1cf54b6b6b33508f1b0edb448be169441fca",
+    "files": [
+      {
+        "sha256": "BD67AABBAE1695B6454B05532FCFD65ADBA9EEA259A864A96C7D27151B7D7582",
+        "file": "tests/windows-production-acceptance.ps1"
+      },
+      {
+        "sha256": "815F4CC8D0E68DAA8FF9F7C192E8ED12AA8B0DE3E539BF2D4A14291AADACE21F",
+        "file": "src/service/EgoistShield.Service/ProtectedExecutable.cs"
+      },
+      {
+        "sha256": "53D3E99CD0D6071C039FE1BC6C2E3696C135040FBA31622B991DDDE0A52980F6",
+        "file": "src/installer/owned-cleanup.ps1"
+      },
+      {
+        "sha256": "1AE8445ED0238B0472C96B3152712F95C35D1C3B452E7218E27E3B3CEE9BBBEB",
+        "file": "scripts/invoke-final-silent-reinstall.ps1"
+      }
+    ]
+  },
+  "verification": {
+    "frozenProductionDescriptorAnalysis": {
+      "schemaVersion": 1,
+      "scope": "in-memory descriptor and exact frozen production predicate analysis, not actual installed-host acceptance",
+      "runtime": "10.0.12",
+      "casesPassed": 23,
+      "mutableMask": 852310,
+      "mutableMaskHex": "0xD0156",
+      "rights": [
+        {
+          "name": "Write",
+          "mask": 278,
+          "mutableIntersection": 278
+        },
+        {
+          "name": "Delete",
+          "mask": 65536,
+          "mutableIntersection": 65536
+        },
+        {
+          "name": "DeleteSubdirectoriesAndFiles",
+          "mask": 64,
+          "mutableIntersection": 64
+        },
+        {
+          "name": "ChangePermissions",
+          "mask": 262144,
+          "mutableIntersection": 262144
+        },
+        {
+          "name": "TakeOwnership",
+          "mask": 524288,
+          "mutableIntersection": 524288
+        },
+        {
+          "name": "ReadPermissions",
+          "mask": 131072,
+          "mutableIntersection": 0
+        },
+        {
+          "name": "ReadAndExecute",
+          "mask": 131241,
+          "mutableIntersection": 0
+        },
+        {
+          "name": "Synchronize",
+          "mask": 1048576,
+          "mutableIntersection": 0
+        }
+      ],
+      "outcomes": [
+        {
+          "name": "SY-BA-base",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)",
+          "originalNativeBaseAccepted": true,
+          "proposedInstallOnlyAccepted": true,
+          "unchangedPrivateBaseAccepted": true,
+          "actualFrozenProductionExecutableAccepted": true,
+          "originalRejectedRules": []
+        },
+        {
+          "name": "TI-effective-inherited",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;ID;FA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;ID;0x1200a9;;;BU)(A;ID;0x1200a9;;;AC)(A;ID;0x1200a9;;;S-1-15-2-2)(A;OICIIOID;FA;;;CO)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": true,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": true,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+              "rights": "FullControl",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "inherited": true,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "TI-owner",
+          "sddl": "O:S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464D:(A;;FA;;;SY)(A;;FA;;;BA)(A;;FA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": true,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": true,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+              "rights": "FullControl",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "TI-inherit-only",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;OICIIO;FA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)",
+          "originalNativeBaseAccepted": true,
+          "proposedInstallOnlyAccepted": true,
+          "unchangedPrivateBaseAccepted": true,
+          "actualFrozenProductionExecutableAccepted": true,
+          "originalRejectedRules": []
+        },
+        {
+          "name": "creator-owner-inherit-only",
+          "sddl": "O:BAD:(A;OICIIO;FA;;;CO)(A;;FA;;;SY)(A;;FA;;;BA)",
+          "originalNativeBaseAccepted": true,
+          "proposedInstallOnlyAccepted": true,
+          "unchangedPrivateBaseAccepted": true,
+          "actualFrozenProductionExecutableAccepted": true,
+          "originalRejectedRules": []
+        },
+        {
+          "name": "creator-owner-effective",
+          "sddl": "O:BAD:(A;;FA;;;CO)(A;;FA;;;SY)(A;;FA;;;BA)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-3-0",
+              "rights": "FullControl",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "users-read-execute-sync",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;BU)",
+          "originalNativeBaseAccepted": true,
+          "proposedInstallOnlyAccepted": true,
+          "unchangedPrivateBaseAccepted": true,
+          "actualFrozenProductionExecutableAccepted": true,
+          "originalRejectedRules": []
+        },
+        {
+          "name": "users-sync-only",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x100000;;;BU)",
+          "originalNativeBaseAccepted": true,
+          "proposedInstallOnlyAccepted": true,
+          "unchangedPrivateBaseAccepted": true,
+          "actualFrozenProductionExecutableAccepted": true,
+          "originalRejectedRules": []
+        },
+        {
+          "name": "users-read-permissions-only",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;RC;;;BU)",
+          "originalNativeBaseAccepted": true,
+          "proposedInstallOnlyAccepted": true,
+          "unchangedPrivateBaseAccepted": true,
+          "actualFrozenProductionExecutableAccepted": true,
+          "originalRejectedRules": []
+        },
+        {
+          "name": "counterfeit-service-sid",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;FA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478465)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478465",
+              "rights": "FullControl",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "ordinary-owner",
+          "sddl": "O:BUD:(A;;FA;;;SY)(A;;FA;;;BA)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": []
+        },
+        {
+          "name": "users-inherited-full",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;ID;FA;;;BU)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-32-545",
+              "rights": "FullControl",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "inherited": true,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "app-package-write",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x100002;;;AC)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-15-2-1",
+              "rights": "CreateFiles, Synchronize",
+              "mask": 1048578,
+              "mutableIntersection": 2,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "restricted-package-delete",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x110000;;;S-1-15-2-2)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-15-2-2",
+              "rights": "Delete, Synchronize",
+              "mask": 1114112,
+              "mutableIntersection": 65536,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "users-inherit-only-write-current",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;OICIIO;0x100002;;;BU)",
+          "originalNativeBaseAccepted": true,
+          "proposedInstallOnlyAccepted": true,
+          "unchangedPrivateBaseAccepted": true,
+          "actualFrozenProductionExecutableAccepted": true,
+          "originalRejectedRules": []
+        },
+        {
+          "name": "users-CreateFiles",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x100002;;;BU)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-32-545",
+              "rights": "CreateFiles, Synchronize",
+              "mask": 1048578,
+              "mutableIntersection": 2,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "users-CreateDirectories",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x100004;;;BU)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-32-545",
+              "rights": "CreateDirectories, Synchronize",
+              "mask": 1048580,
+              "mutableIntersection": 4,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "users-WriteExtendedAttributes",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x100010;;;BU)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-32-545",
+              "rights": "WriteExtendedAttributes, Synchronize",
+              "mask": 1048592,
+              "mutableIntersection": 16,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "users-WriteAttributes",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x100100;;;BU)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-32-545",
+              "rights": "WriteAttributes, Synchronize",
+              "mask": 1048832,
+              "mutableIntersection": 256,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "users-Delete",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x110000;;;BU)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-32-545",
+              "rights": "Delete, Synchronize",
+              "mask": 1114112,
+              "mutableIntersection": 65536,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "users-DeleteSubdirectoriesAndFiles",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x100040;;;BU)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-32-545",
+              "rights": "DeleteSubdirectoriesAndFiles, Synchronize",
+              "mask": 1048640,
+              "mutableIntersection": 64,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "users-ChangePermissions",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x140000;;;BU)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-32-545",
+              "rights": "ChangePermissions, Synchronize",
+              "mask": 1310720,
+              "mutableIntersection": 262144,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        },
+        {
+          "name": "users-TakeOwnership",
+          "sddl": "O:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x180000;;;BU)",
+          "originalNativeBaseAccepted": false,
+          "proposedInstallOnlyAccepted": false,
+          "unchangedPrivateBaseAccepted": false,
+          "actualFrozenProductionExecutableAccepted": false,
+          "originalRejectedRules": [
+            {
+              "sid": "S-1-5-32-545",
+              "rights": "TakeOwnership, Synchronize",
+              "mask": 1572864,
+              "mutableIntersection": 524288,
+              "inherited": false,
+              "inheritance": "None",
+              "propagation": "None"
+            }
+          ]
+        }
+      ],
+      "physicalFilesystemAclWrites": 0,
+      "setupLaunches": 0,
+      "scmDnsTaskRegistryMutations": 0
+    },
+    "frozenProductionDescriptorReceipt": {
+      "analysisSourceSha256": "0DCF6F9B752B6BB57AAA8238AD57FB7B16AFD2EC9A818CDF351BF6ECBBCCCA68",
+      "buildExitCode": 0,
+      "productionPredicateAssemblySha256": "51229DF304B25EFC2241D6B37FD319CCB0ECEF2DAF23DE353017D91CAAF8E362",
+      "runExitCode": 0
+    },
+    "capturedActualDescriptorsAgainstCurrentHelper": {
+      "scope": "captured actual hosted SDDL evaluated in memory; no live installed host",
+      "actualCaptureRunId": "36829137408",
+      "capturedPaths": 8,
+      "installationAcceptedPaths": 8,
+      "strictTiRejectedPaths": 2,
+      "physicalAclReads": 0,
+      "physicalAclWrites": 0,
+      "liveSystemMutations": 0,
+      "rows": [
+        {
+          "path": "C:\\Program Files\\EgoistShield\\",
+          "installationAccepted": true,
+          "strictSystemAdministratorRefused": true
+        },
+        {
+          "path": "C:\\Program Files\\EgoistShield\\EgoistShield.exe",
+          "installationAccepted": true,
+          "strictSystemAdministratorRefused": false
+        },
+        {
+          "path": "C:\\Program Files\\EgoistShield\\EgoistShield.Worker.exe",
+          "installationAccepted": true,
+          "strictSystemAdministratorRefused": false
+        },
+        {
+          "path": "C:\\Program Files\\EgoistShield\\resources",
+          "installationAccepted": true,
+          "strictSystemAdministratorRefused": true
+        },
+        {
+          "path": "C:\\Program Files\\EgoistShield\\resources\\app.asar",
+          "installationAccepted": true,
+          "strictSystemAdministratorRefused": false
+        },
+        {
+          "path": "C:\\Program Files\\EgoistShield\\resources\\component-worker.cjs",
+          "installationAccepted": true,
+          "strictSystemAdministratorRefused": false
+        },
+        {
+          "path": "C:\\Program Files\\EgoistShield\\resources\\worker-host-integrity.json",
+          "installationAccepted": true,
+          "strictSystemAdministratorRefused": false
+        },
+        {
+          "path": "C:\\Program Files\\EgoistShield\\resources\\core-service\\win-x64\\EgoistShield.Service.exe",
+          "installationAccepted": true,
+          "strictSystemAdministratorRefused": false
+        }
+      ]
+    },
+    "currentRootDescriptorTest": {
+      "actualExitCode": 0,
+      "node": "24.19.0",
+      "shell": "PowerShell 7",
+      "groupsPassed": 1,
+      "positiveCases": 5,
+      "negativeCases": 21,
+      "physicalAclReads": 0,
+      "physicalAclWrites": 0,
+      "log": {
+        "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\ni\\current-scoped-test.log",
+        "bytes": 258,
+        "sha256": "31AD1A7BD13FA5877622CBB0D557A922BB951F43AF47B9BB0107960CF635FD64"
+      }
+    },
+    "actualOwnNtfsGenericMapping": {
+      "kind": "actual-own-empty-NTFS-generic-mapping",
+      "os": "Microsoft Windows NT 10.0.26200.0",
+      "filesystem": "NTFS",
+      "actualAdministrator": false,
+      "fixtureFiles": 4,
+      "contentBytes": 0,
+      "setupLaunches": 0,
+      "liveSystemMutations": 0,
+      "failures": 0,
+      "rows": [
+        {
+          "name": "GA",
+          "api": "CreateFileW-security-at-creation",
+          "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\ni\\generic\\fixtures-8f700fef11c44d799198602c82abaa53\\GA.empty",
+          "suppliedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)(A;;GA;;;BU)",
+          "observedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FA;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+          "observedBuiltinUsers": {
+            "sid": "S-1-5-32-545",
+            "mask": 2032127,
+            "mutableIntersection": 852310,
+            "propagation": 0,
+            "inherited": false,
+            "type": "Allow"
+          },
+          "effectiveGenericBits": 0,
+          "specificMutableBitsPresent": true,
+          "rules": [
+            {
+              "sid": "S-1-5-32-545",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            },
+            {
+              "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            }
+          ]
+        },
+        {
+          "name": "GA",
+          "api": "SetNamedSecurityInfoW-explicit-DACL",
+          "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\ni\\generic\\fixtures-8f700fef11c44d799198602c82abaa53\\GA.empty",
+          "suppliedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)(A;;GA;;;BU)",
+          "observedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FA;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+          "observedBuiltinUsers": {
+            "sid": "S-1-5-32-545",
+            "mask": 2032127,
+            "mutableIntersection": 852310,
+            "propagation": 0,
+            "inherited": false,
+            "type": "Allow"
+          },
+          "effectiveGenericBits": 0,
+          "specificMutableBitsPresent": true,
+          "rules": [
+            {
+              "sid": "S-1-5-32-545",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            },
+            {
+              "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            }
+          ]
+        },
+        {
+          "name": "GW",
+          "api": "CreateFileW-security-at-creation",
+          "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\ni\\generic\\fixtures-8f700fef11c44d799198602c82abaa53\\GW.empty",
+          "suppliedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)(A;;GW;;;BU)",
+          "observedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FW;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+          "observedBuiltinUsers": {
+            "sid": "S-1-5-32-545",
+            "mask": 1179926,
+            "mutableIntersection": 278,
+            "propagation": 0,
+            "inherited": false,
+            "type": "Allow"
+          },
+          "effectiveGenericBits": 0,
+          "specificMutableBitsPresent": true,
+          "rules": [
+            {
+              "sid": "S-1-5-32-545",
+              "mask": 1179926,
+              "mutableIntersection": 278,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            },
+            {
+              "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            }
+          ]
+        },
+        {
+          "name": "GW",
+          "api": "SetNamedSecurityInfoW-explicit-DACL",
+          "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\ni\\generic\\fixtures-8f700fef11c44d799198602c82abaa53\\GW.empty",
+          "suppliedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)(A;;GW;;;BU)",
+          "observedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FW;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+          "observedBuiltinUsers": {
+            "sid": "S-1-5-32-545",
+            "mask": 1179926,
+            "mutableIntersection": 278,
+            "propagation": 0,
+            "inherited": false,
+            "type": "Allow"
+          },
+          "effectiveGenericBits": 0,
+          "specificMutableBitsPresent": true,
+          "rules": [
+            {
+              "sid": "S-1-5-32-545",
+              "mask": 1179926,
+              "mutableIntersection": 278,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            },
+            {
+              "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            }
+          ]
+        },
+        {
+          "name": "GR",
+          "api": "CreateFileW-security-at-creation",
+          "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\ni\\generic\\fixtures-8f700fef11c44d799198602c82abaa53\\GR.empty",
+          "suppliedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)(A;;GR;;;BU)",
+          "observedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FR;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+          "observedBuiltinUsers": {
+            "sid": "S-1-5-32-545",
+            "mask": 1179785,
+            "mutableIntersection": 0,
+            "propagation": 0,
+            "inherited": false,
+            "type": "Allow"
+          },
+          "effectiveGenericBits": 0,
+          "specificMutableBitsPresent": false,
+          "rules": [
+            {
+              "sid": "S-1-5-32-545",
+              "mask": 1179785,
+              "mutableIntersection": 0,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            },
+            {
+              "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            }
+          ]
+        },
+        {
+          "name": "GR",
+          "api": "SetNamedSecurityInfoW-explicit-DACL",
+          "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\ni\\generic\\fixtures-8f700fef11c44d799198602c82abaa53\\GR.empty",
+          "suppliedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)(A;;GR;;;BU)",
+          "observedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FR;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+          "observedBuiltinUsers": {
+            "sid": "S-1-5-32-545",
+            "mask": 1179785,
+            "mutableIntersection": 0,
+            "propagation": 0,
+            "inherited": false,
+            "type": "Allow"
+          },
+          "effectiveGenericBits": 0,
+          "specificMutableBitsPresent": false,
+          "rules": [
+            {
+              "sid": "S-1-5-32-545",
+              "mask": 1179785,
+              "mutableIntersection": 0,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            },
+            {
+              "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            }
+          ]
+        },
+        {
+          "name": "GX",
+          "api": "CreateFileW-security-at-creation",
+          "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\ni\\generic\\fixtures-8f700fef11c44d799198602c82abaa53\\GX.empty",
+          "suppliedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)(A;;GX;;;BU)",
+          "observedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FX;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+          "observedBuiltinUsers": {
+            "sid": "S-1-5-32-545",
+            "mask": 1179808,
+            "mutableIntersection": 0,
+            "propagation": 0,
+            "inherited": false,
+            "type": "Allow"
+          },
+          "effectiveGenericBits": 0,
+          "specificMutableBitsPresent": false,
+          "rules": [
+            {
+              "sid": "S-1-5-32-545",
+              "mask": 1179808,
+              "mutableIntersection": 0,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            },
+            {
+              "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            }
+          ]
+        },
+        {
+          "name": "GX",
+          "api": "SetNamedSecurityInfoW-explicit-DACL",
+          "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\ni\\generic\\fixtures-8f700fef11c44d799198602c82abaa53\\GX.empty",
+          "suppliedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:P(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)(A;;GX;;;BU)",
+          "observedSddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FX;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+          "observedBuiltinUsers": {
+            "sid": "S-1-5-32-545",
+            "mask": 1179808,
+            "mutableIntersection": 0,
+            "propagation": 0,
+            "inherited": false,
+            "type": "Allow"
+          },
+          "effectiveGenericBits": 0,
+          "specificMutableBitsPresent": false,
+          "rules": [
+            {
+              "sid": "S-1-5-32-545",
+              "mask": 1179808,
+              "mutableIntersection": 0,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            },
+            {
+              "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "mask": 2032127,
+              "mutableIntersection": 852310,
+              "propagation": 0,
+              "inherited": false,
+              "type": "Allow"
+            }
+          ]
+        }
+      ]
+    },
+    "genericBuild": {
+      "sdk": "10.0.401",
+      "runtime": "10.0.12",
+      "buildExit": 0,
+      "runExit": 0,
+      "errors": 0,
+      "warnings": 0,
+      "source": {
+        "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\ni\\generic\\Program.cs",
+        "bytes": 5958,
+        "sha256": "A282A9F7671F69271A2C6271B5E8D6F0E8AA35B272F8631ABF0BBCFE2198425D"
+      },
+      "receipt": {
+        "path": "C:\\Users\\Egoist\\Projects\\.agent-brain\\chat-runtime\\tasks\\01a0f425-9e46-7cd0-bc68-d12af2678068\\work\\ni\\generic\\fixtures-8f700fef11c44d799198602c82abaa53\\receipt.json",
+        "bytes": 11071,
+        "sha256": "C32D3108861533886528FCD0B6F0513B556599DF340011AD160BF6E13D11F97A"
+      }
+    }
+  },
+  "requiredNegativeInvariants": [
+    "Reject owner outside exact trusted scope",
+    "Reject effective mutable Allow for ordinary user, Users, app-package, CREATOR OWNER or another service SID",
+    "Reject exact TrustedInstaller in private Service/installer/staging scope",
+    "Reject relative, sibling-prefix and escaping traversal installation paths",
+    "Wrapper checks physical ordinary object type and all ancestors for reparse before Get-Acl",
+    "Ignore only InheritOnly for current object's effective rights; inspect effective child rights separately",
+    "Private root and staging exact SYSTEM/Administrators protections remain separate and unchanged"
+  ],
+  "limitations": [
+    "Hosted diagnostic executed real signed Setup but declared releaseReady false; a full source-bound native acceptance remains required",
+    "Current scoped helper was independently tested against saved actual SDDL in memory, not via local application installation",
+    "Actual own NTFS generic mapping proof is Windows10.0.26200 CreateFileW and SetNamedSecurityInfoW followed by .NET filesystem ACL readback, not every possible filesystem/provider",
+    "Raw synthetic generic SDDL is not itself proof of an unmapped effective ACL on disk",
+    "No installer, SCM, DNS, Tasks, registry or production-directory writes were performed by this review"
+  ],
+  "primarySources": [
+    "https://learn.microsoft.com/en-us/dotnet/api/system.security.accesscontrol.filesystemrights?view=net-10.0",
+    "https://learn.microsoft.com/en-us/windows/win32/fileio/file-security-and-access-rights",
+    "https://learn.microsoft.com/en-us/windows/win32/secauthz/ace-inheritance-rules",
+    "https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-mapgenericmask"
+  ]
+}

@@ -1,0 +1,36 @@
+✔ official Electron pin records identical archive digest and immutable release sources (3.3499ms)
+✔ offline verification authenticates every extracted runtime file against the pinned ZIP (225.6427ms)
+✔ offline cache rejects corrupt archive (164.7076ms)
+✔ offline cache rejects modified extracted DLL (188.8037ms)
+✔ offline cache rejects injected stale DLL (172.1193ms)
+✔ offline cache rejects missing runtime locale (177.1627ms)
+✔ offline cache rejects altered official checksum file (173.774ms)
+✔ offline cache rejects inconsistent GitHub asset digest (168.7437ms)
+✔ offline cache rejects inconsistent publication date (172.6018ms)
+✔ offline cache rejects oversized checksum file (173.8236ms)
+✔ runtime ZIP rejects unsafe before staging (197.1546ms)
+✔ runtime ZIP rejects case-collision before staging (177.3741ms)
+✔ runtime ZIP rejects symlink before staging (181.2802ms)
+✔ runtime ZIP rejects wrong-version before staging (181.7958ms)
+✔ staging uses all new runtime files and product resources without old runtime DLLs, ASAR or Core (2174.1026ms)
+✔ staging rejects an injected runtime file even after an earlier successful verification (211.9284ms)
+✔ production packaging verifies the pin before replacing output and embeds runtime/ordinary GUI/version provenance (0.5361ms)
+✔ KnownDLL bootstrap accepts only a unanimous native System32 identity (0.8027ms)
+✔ actual Windows token probe returns a verified boolean (624.9038ms)
+✔ user runtime installation follows actual token and does not promise elevation (412.1137ms)
+✔ privileged execution environment discards startup injection and resolves system paths from native lease (0.3382ms)
+✔ fuse parser rejects absent, duplicate, changed schema and malformed policy (0.2821ms)
+✔ fuse mutation has exact readback for gui (11.3461ms)
+✔ fuse mutation has exact readback for worker (5.4606ms)
+✔ fuse mutation refuses hardlinked files and removed configured fuses (7.2587ms)
+✔ execution verifier rejects custom privilege paths and linked files before launch (5.6678ms)
+✔ privileged bootstrap rejects user-owned fake verifier before executing it (563.4631ms)
+✔ worker inventory authenticates actual files and refuses mutated upstream or linked native payload (30.5462ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4799.1311

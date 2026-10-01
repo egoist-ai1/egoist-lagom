@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "observedAtUtc": "2026-10-01T07:27:07.144Z",
+  "scope": "readonly-public-check-tool-guards-and-real-original378379-verifier-negative-fixtures",
+  "passed": 41,
+  "failed": 0,
+  "skipped": 0,
+  "publicHttpRequests": 0,
+  "nativeExecution": 0,
+  "toolSha256": "dc505068de3a4a81a3ed747eae995216aaf59c5a8321a6a15a50f55e26d27a1b",
+  "testSource": {
+    "bytes": 7639,
+    "sha256": "540dadb54688bc6aefe54ff8ae3d95fe128614115b483f813c839b03abd3860b"
+  },
+  "boundedTestOutput": {
+    "bytes": 2332,
+    "sha256": "2ae9bb9f429b564b8f4f76ed98a6797c2c0aea48af260da43f556c0627f2b6f2",
+    "text": "✔ CLI rejects unconfirmed public mode (0.915ms)\n✔ CLI rejects unknown mode (0.0926ms)\n✔ CLI rejects unknown option (0.0453ms)\n✔ CLI rejects duplicate cache (0.057ms)\n✔ CLI rejects relative cache (0.0843ms)\n✔ CLI rejects project cache (0.1129ms)\n✔ CLI rejects root cache (0.1317ms)\n✔ CLI rejects publication flag on prepare (0.0731ms)\n✔ HTTPS guard rejects HTTP (0.1205ms)\n✔ HTTPS guard rejects foreign host (0.1496ms)\n✔ HTTPS guard rejects host suffix (0.091ms)\n✔ HTTPS guard rejects userinfo (0.063ms)\n✔ HTTPS guard rejects unapproved port (0.1258ms)\n✔ HTTPS guard rejects fragment (0.0563ms)\n✔ HTTPS guard rejects canonical query (0.2874ms)\n✔ prepare mode is locally runnable (0.1043ms)\n✔ confirmed public mode and its approved ID are explicit (0.1376ms)\n✔ confirmed public mode without an ID is refused (0.0866ms)\n✔ candidate outside project dist is refused (0.0984ms)\n✔ candidate relative path is refused (0.0548ms)\n✔ invalid public ID -1 is refused (0.0767ms)\n✔ invalid public ID 0 is refused (0.0413ms)\n✔ invalid public ID 1.5 is refused (0.0368ms)\n✔ invalid public ID 9007199254740992 is refused (0.0543ms)\n✔ source binding rejects a different signed-candidate commit (0.4635ms)\n✔ candidate expectations use exact manifest fields (0.0374ms)\n✔ malformed source commit is refused before git/network (0.0917ms)\n✔ 3.7.8 authenticates its actual original public registry (2.6856ms)\n✔ 3.7.8 rejects tampered stable metadata (1.7129ms)\n✔ 3.7.8 rejects tampered stable signature (1.7278ms)\n✔ 3.7.8 rejects a disagreeing API digest (2.2439ms)\n✔ 3.7.8 rejects wrong canonical installer origin (2.035ms)\n✔ 3.7.8 exact gate rejects wrong size and digests (834.1165ms)\n✔ 3.7.8 rejects altered original bundled registry (2.0082ms)\n✔ 3.7.9 authenticates its actual original public registry (4.9702ms)\n✔ 3.7.9 rejects tampered stable metadata (1.6099ms)\n✔ 3.7.9 rejects tampered stable signature (1.6337ms)\n✔ 3.7.9 rejects a disagreeing API digest (1.7155ms)\n✔ 3.7.9 rejects wrong canonical installer origin (1.5608ms)\n✔ 3.7.9 exact gate rejects wrong size and digests (832.1114ms)\n✔ 3.7.9 rejects altered original bundled registry (2.0033ms)\nℹ tests 41\nℹ suites 0\nℹ pass 41\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1770.9035\n"
+  }
+}

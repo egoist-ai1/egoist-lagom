@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 1,
+  "suite": "installer-service-maintenance",
+  "caseCount": 43,
+  "passed": 43,
+  "failed": 0,
+  "productionSourceSha256": "516CC2B55ACCBC0AEBA7FA7451CEEECB8DAE958FFF6B5AEB7DA6981E9E740EB1",
+  "productionFunctions": [
+    "Get-InstallerServicePolicy",
+    "Set-InstallerServiceStartMode",
+    "Get-InstallerServiceState",
+    "Stop-InstallerOwnedService",
+    "Suspend-InstallerServiceRestarts",
+    "Restore-InstallerServiceStartModes"
+  ],
+  "powerShellVersion": "5.1.26100.9168",
+  "boundary": "Actual production functions, in-memory SCM/registry/process identity and virtual time, actual task-owned JSON snapshots",
+  "forbiddenHostCallAttempts": 0,
+  "realOsMutations": {
+    "scm": 0,
+    "registry": 0,
+    "network": 0,
+    "processKills": 0
+  },
+  "unverified": [
+    "Native Windows SCM queued recovery behavior",
+    "Real installer upgrade/rollback",
+    "Power interruption/reboot recovery",
+    "Multi-process installer watchdog",
+    "Long duration service availability"
+  ],
+  "cases": [
+    {
+      "name": "durable snapshot required before any mutation",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "snapshot mismatch rejects entire set before partial mutation",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "snapshot delayed-auto mismatch rejects before mutation",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "duplicate saved registration refuses before mutation",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "malformed durable snapshot does not authorize quiescence",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "foreign record invalidates the complete suspend set",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "Core disabled and stopped before component policy changes",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "legacy Core alias recognized by executable identity",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "queued restart independent of recovery array is blocked by Disabled",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "queued restart fixture detects failure-actions-only suppression",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "original policy survives suspend and mixed-mode restoration",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "original recovery settings remain intact during temporary startup pause",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "partial suspend failure can restore all original startup modes",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "startup readback failure prevents stop or Core callback",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "foreign exclusive service is never configured or stopped",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "foreign shared basename service is never configured",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "arbitrary owned alias can be paused and restored",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "legacy alias with wildcard brackets is queried as a literal service name",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "policy resume preserves newly migrated ImagePath",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "policy resume rejects registration replaced by foreign executable",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "post-change foreign registration fails policy readback",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "surviving verified process is killed by its held handle and disposed",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "reused PID birth cannot authorize termination",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "CIM process with foreign executable cannot be killed",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "fresh process path mismatch rejects even another owned executable",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "foreign cohosted service prevents process kill",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "CIM ownership unavailable fails closed before process kill",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "missing surviving CIM record is not successful drain",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "changed surviving service registration prevents process kill",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "missing process creation evidence prevents termination",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "process exit timeout is not successful stop",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "process handle access failure cannot authorize termination",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "zero process handle cannot authorize termination",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "missing native process cannot mask a still-running registration",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "transient stopped sample does not satisfy stable stop",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "graceful stopped service is confirmed twice without process kill",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "SCM state query unavailable is not absence",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "specific service-not-found state is accepted as absence",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "registry query unavailable does not silently skip service",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "missing registry service causes no SCM mutation",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "invalid preserved mode rejects before configuration",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "Automatic synonym restores Auto with delayed startup",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "unsupported driver start mode rejects policy read",
+      "passed": true,
+      "error": null
+    }
+  ],
+  "verifiedAtUtc": "2026-09-30T14:26:27.0247048+00:00",
+  "productSourcePath": "src/installer/service-maintenance.ps1",
+  "testSources": [
+    {
+      "path": "tests/installer-service-maintenance.ps1",
+      "sha256": "8C0E82B460E1989BFA8D219E8A4CC7F1E3CA48A2E779F596EDCFE9163229D986"
+    },
+    {
+      "path": "tests/installer-service-maintenance.test.mjs",
+      "sha256": "DEF2ED66BBA0CAFFA1BC02F3B4389F3006D31850295926285B9BE3B12057D679"
+    }
+  ],
+  "nodeTestResult": {
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "durationMs": 1307.2388
+  },
+  "redBeforeFix": {
+    "productionSourceSha256": "4D1AB9BF546290F47C64279E9F9D182A7AB7B4FF759574152F5437C720325445",
+    "case": "process handle access failure cannot authorize termination",
+    "observed": "Expected refusal was absent with a managed C# getter throwing; explicit nonzero handle validation was subsequently added",
+    "scope": "Production PowerShell control flow over an inert managed fixture; no native process was attached or killed"
+  }
+}

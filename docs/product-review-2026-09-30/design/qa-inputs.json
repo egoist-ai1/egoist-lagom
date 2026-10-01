@@ -1,0 +1,183 @@
+{
+  "schema": 1,
+  "status": "proposal-only",
+  "baselineCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "auditedAtUtc": "2026-09-30T12:00:44.2582877Z",
+  "productRuntimeEdited": false,
+  "preservedFeatures": {
+    "mapped": 45,
+    "duplicateIds": 0,
+    "differences": 0,
+    "expected": 45
+  },
+  "frozenInputsAndOutputs": [
+    {
+      "file": "docs/product-review-2026-09-30/design-audit.md",
+      "bytes": 34412,
+      "sha256": "6785276b1c790927d88f04d466245ec8d313e3cd7346298b9f1b3fc56dbc7048"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/feature-preservation.json",
+      "bytes": 11778,
+      "sha256": "35c2116921905321874141139276cbc3ac29dd9f00a884037ef4d8bbb3d85f8a"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/icons-proposal.svg",
+      "bytes": 1586,
+      "sha256": "3dfe7b14bf65fd2f2c6997516cc107203d34921b72d71396579620d2adafc737"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/layout-map.svg",
+      "bytes": 5403,
+      "sha256": "d2388a3a45a4f7ff20cf97e93b1c7b651f9d04fe2838390611ff553c4aea3caa"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/preview.css",
+      "bytes": 13440,
+      "sha256": "e028cd591ed63da921eec41758e10069e8b7caae9f62e50719ad9884327aacec"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/preview.html",
+      "bytes": 26328,
+      "sha256": "b82a497ca5011bda31e6e2e41470801ae4441d72ac3233e908b69d14defc4184"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/preview.js",
+      "bytes": 2384,
+      "sha256": "8b7b5a7b18791c9eb5b531f46f70f4bd56177d673267c978d0ca3385b61c28a8"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/tokens-proposal.css",
+      "bytes": 2253,
+      "sha256": "c16917676c6b0235cdbb40099dddb058e088e64f740f7d301bb2af461574721f"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/validation.json",
+      "bytes": 22489,
+      "sha256": "d9db40ec17da4cd96f79c4222520979d4385f9eab4a9f3ab7c95c325e0482564"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/verify-preview.mjs",
+      "bytes": 7285,
+      "sha256": "c2a1fecfcb84f005733475e13919f579da03f6434ea8c50adaae8962067da929"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/assets/manrope-cyrillic.woff2",
+      "bytes": 14500,
+      "sha256": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/assets/manrope-latin.woff2",
+      "bytes": 24836,
+      "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/assets/manrope-OFL.txt",
+      "bytes": 4383,
+      "sha256": "d826ab6583b12c26807d8716a545bdbbb672df04f48608a364ba9efdbe501c30"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/assets/unbounded-cyrillic.woff2",
+      "bytes": 31424,
+      "sha256": "e30bf6a6063b6a47232bbd657e24c7cf4fdaf76fc2c50d92d9ee63e2ad2087cf"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/assets/unbounded-latin.woff2",
+      "bytes": 50904,
+      "sha256": "22f9b928aa3928a896340422b54d690fbb5875c30eae4c106f029c61f2289fd6"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/assets/unbounded-OFL.txt",
+      "bytes": 4390,
+      "sha256": "48a780bc857729859e54d1e691b05792894a26634edc1c4b5dbeabffe6941758"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/screenshots/minimum-zoom200-equivalent-mini.png",
+      "bytes": 26576,
+      "sha256": "ce6e819e221d6d8eaf2b6a31017daffd0c110db0d476405ea7b0bc07cd2b76b2"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/screenshots/minimum-zoom200-equivalent-settings.png",
+      "bytes": 29989,
+      "sha256": "0864b17fcacd5b9a82c46b6c102918452b35f3918c7d8ad8b690c69340390cd3"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/screenshots/wide-dns.png",
+      "bytes": 99777,
+      "sha256": "dcb4b13ac25fedbb33ce7e77b0cda6b4a856a7d685ea0b025ba3a7f4d762d5cb"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/screenshots/wide-mini.png",
+      "bytes": 62385,
+      "sha256": "9cc60fc93b1675f6693b9be15ef85a58aba378bcc7caeb050524f4c5bb1dc978"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/screenshots/wide-overview.png",
+      "bytes": 101728,
+      "sha256": "baab22f96074a1b289b419648042e3c4b699207fa4b7601fb29886018a58332b"
+    },
+    {
+      "file": "docs/product-review-2026-09-30/design/screenshots/wide-settings.png",
+      "bytes": 123589,
+      "sha256": "270e77342df36701970d2e0fe9edef5a9e37317dd5bcc5aff93d027bd02bd668"
+    }
+  ],
+  "baselineSource": [
+    {
+      "file": "scripts/build.mjs",
+      "bytes": 12009,
+      "sha256": "319bd58181992c64c98325c3b19ad1bf0c283c9a94da3f70c68565c0493afc7b"
+    },
+    {
+      "file": "src/brand/tokens.css",
+      "bytes": 3845,
+      "sha256": "fb257a2a99de07c7707851d778b3db5f313c4f3cea44c934ed235669a19e4dad"
+    },
+    {
+      "file": "src/brand/CompactRuby.jsx",
+      "bytes": 23982,
+      "sha256": "ca1bc9453f3b93a921f76cdec2cdae95edad86c82c7d9b026ec6588eea5a0f0d"
+    },
+    {
+      "file": "src/brand/ShieldWidget.jsx",
+      "bytes": 16473,
+      "sha256": "cb0b34255de4e5a4b256ea262e96d84f79fd253c08af61d902ee7859bc082162"
+    },
+    {
+      "file": "src/brand/compact-ruby.css",
+      "bytes": 18862,
+      "sha256": "309b20b1e689def2f91a30a143e3d49b90697c810dbb3c4565a5695b0617b8db"
+    },
+    {
+      "file": "src/brand/compact-surfaces.css",
+      "bytes": 60475,
+      "sha256": "bb73969a415746c2d804a1e2911488d64b8cb22158f35617f6353495d2a20131"
+    },
+    {
+      "file": "src/brand/shield-widget.css",
+      "bytes": 12691,
+      "sha256": "3fc866305c28115b6601cc1cb686b9e76bbc09668557ef791a3b212ce83f128a"
+    },
+    {
+      "file": "src/brand/final-polish.css",
+      "bytes": 4639,
+      "sha256": "b04721633a7dd0445aa3a7e2b1fd126b9468124c8e0d96970ba9c394dfa8db32"
+    },
+    {
+      "file": "src/recovered/renderer.js",
+      "bytes": 652349,
+      "sha256": "baacbd72b9bbec6bbce7e94c3fb8d9addda47e88e6cde3d6926c649737fa00d7"
+    },
+    {
+      "file": "src/recovered/electron/ipc/handlers-system.js",
+      "bytes": 70573,
+      "sha256": "a97ea28a035e8f316c80194388abf91ff1ccd87e4aefe21924cfad8ee3b58182"
+    }
+  ],
+  "limitations": [
+    "Standalone inert HTML; no native service or connected state acceptance.",
+    "36 proposal cases; latest mini-only four-case pass; remaining32 historical unchanged proposal cases.",
+    "No foreground FPS or native200% certification.",
+    "Root merges approved decisions into existing DESIGN.md; this package remains proposal."
+  ]
+}

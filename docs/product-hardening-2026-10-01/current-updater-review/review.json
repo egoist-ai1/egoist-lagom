@@ -1,0 +1,57 @@
+{
+  "kind": "current-updater-source-review-and-regression",
+  "currentVersion": "3.8.0",
+  "futureVersionExample": "3.8.1",
+  "nativeUpdateAcceptance": false,
+  "productExecuted": false,
+  "scmMutated": false,
+  "published": false,
+  "fixedFinding": {
+    "priority": "P2",
+    "code": "automatic-preference-ignored-during-download",
+    "files": ["src/recovered/electron/main.js", "src/recovered/electron/ipc/desktop-updater.js"],
+    "manualInstallationWithAutoDisabledRetained": true,
+    "offOnRevivesOldAttempt": false,
+    "inFlightTimerRaceCovered": true,
+    "helperSpawnIsCancellationBoundary": true
+  },
+  "remainingFinding": {
+    "priority": "P1",
+    "code": "elevated-preparation-is-not-ready-handoff",
+    "source": "scripts/invoke-final-silent-reinstall.ps1",
+    "line": 2076,
+    "outerReturnsZeroBeforeElevatedPreparationCompletes": true,
+    "updaterWaitsForHandoffSignal": false,
+    "nativeReproductionPerformed": false,
+    "parentNotified": true
+  },
+  "checks": {
+    "red": {"total": 7, "passed": 2, "failed": 5, "skipped": 0},
+    "finalCancellationSchedulerRetryStream": {"total": 23, "passed": 23, "failed": 0, "skipped": 0},
+    "expandedTrustAndDownload": {"total": 70, "passed": 69, "failed": 0, "skipped": 1},
+    "optionalSkippedCase": "Task-owned concurrent TLS lab requires LAGOM_DNS_TEST_PYTHON or LAGOM_DNS_TEST_OPENSSL.",
+    "initialExpandedRun": "Own-work-directory guard rejected missing LAGOM_TRUST_TEST_WORK; corrected run above passed.",
+    "fixtureLimits": "Real extracted updater control flow, disk streaming and digests; inert transport/authentication inputs/helper boundary. No native installer or service acceptance.",
+    "existingTestsChanged": false
+  },
+  "scheduling": {
+    "requiresPackagedElectronProcess": true,
+    "firstCheckMs": 10000,
+    "normalCheckMs": 86400000,
+    "busyDeferralMs": 900000,
+    "retryDelaysMs": [300000, 900000, 3600000, 10800000, 86400000],
+    "cancelledReenabledAttemptFollowupMs": 0
+  },
+  "download": {"maximumBytes": 1073741824, "bodyAttempts": 3, "headerAttemptTimeoutMs": 60000, "bodyTimeoutMs": 1200000, "idleTimeoutMs": 30000},
+  "sources": [
+    "src/recovered/electron/ipc/desktop-updater.js",
+    "src/recovered/electron/ipc/release-trust.js",
+    "src/recovered/electron/ipc/safe-network.js",
+    "src/recovered/electron/ipc/github-release.js",
+    "src/recovered/electron/main.js",
+    "scripts/invoke-final-silent-reinstall.ps1",
+    "scripts/prepare-release-assets.mjs",
+    "resources/release/release-key-registry.json",
+    "tests/auto-update-cancellation.test.mjs"
+  ]
+}

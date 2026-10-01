@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 1,
+  "clientDate": "2026-10-01",
+  "sourceReadyForParentIntegration": true,
+  "productionSourceFrozen": true,
+  "releaseReady": false,
+  "installedOrPublishedByThisWorker": false,
+  "architecture": {
+    "serviceName": "EgoistShieldVpn",
+    "snapshot": "Service/Vpn/connection.json",
+    "derived": "Runtime/Vpn",
+    "runtime": "fixed installed pinned sing-box",
+    "host": "fixed installed Core --run-vpn-runtime",
+    "proxyPort": 10838,
+    "explicitOptIn": true
+  },
+  "node": {
+    "passed": 23,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 871.091,
+    "command": "node --test tests/production-vpn-service.test.mjs tests/component-facade.test.mjs tests/component-dns-routing-reliability.test.mjs",
+    "controlledLeafSeams": [
+      "SCM command",
+      "privilege",
+      "private directory application",
+      "native status read"
+    ],
+    "realFiles": true
+  },
+  "pinnedRuntimeCheck": {
+    "version": "1.14.0",
+    "sha256": "64B1DFAED6FA758295233FD0BEC8B32CF2115F29773ADBF38E0F026C3C7986F2",
+    "size": 44954624,
+    "manifestSha256": "B3D78B9C523FC91BA3C98942C9C18820C1FCE48F5E44BA70E4DFD7C07BA5B12F",
+    "protocols": [
+      "vless",
+      "vmess",
+      "trojan",
+      "shadowsocks",
+      "socks",
+      "http",
+      "hysteria2",
+      "tuic",
+      "wireguard"
+    ],
+    "allAccepted": true,
+    "tunStarts": 0
+  },
+  "native": {
+    "passed": true,
+    "groups": [
+      {
+        "name": "protected-config-contract",
+        "cases": 10,
+        "pass": true
+      },
+      {
+        "name": "intent-restore-conflict",
+        "cases": 3,
+        "pass": true
+      },
+      {
+        "name": "complete-private-dacl",
+        "cases": 5,
+        "pass": true,
+        "ownNtfsReadDenied": true
+      },
+      {
+        "name": "actual-loopback-socks",
+        "cases": 64,
+        "pass": true
+      },
+      {
+        "name": "job-at-process-creation-parent-crash",
+        "cases": 8,
+        "pass": true
+      }
+    ],
+    "elapsedMs": 3221.8137,
+    "nativeScmMutations": 0,
+    "dnsMutations": 0,
+    "tunStarts": 0,
+    "persistentTasks": 0,
+    "totalCases": 90,
+    "sdk": "10.0.401",
+    "buildErrors": 0,
+    "buildWarnings": 137,
+    "sourceSnapshotCount": 76,
+    "ownNtfsAclApplied": true,
+    "productionProgramDataAclApplied": false,
+    "systemOwnerAppliedByHarness": false,
+    "nativeScmAcceptance": false,
+    "nativeWrapperCrashAcceptance": false
+  },
+  "privateAcl": {
+    "roots": [
+      "Service",
+      "installer",
+      "Runtime/Vpn",
+      "Runtime/TelegramProxy",
+      "Runtime/SystemDoH"
+    ],
+    "ownerAndReadbackInProduction": true,
+    "completeDacl": true,
+    "allowedPrincipals": [
+      "S-1-5-18",
+      "S-1-5-32-544"
+    ],
+    "recursiveReset": false,
+    "ownNtfsReadDenied": true,
+    "windowsPowerShellParserErrors": 0,
+    "inMemoryProductionDaclConstructors": 2,
+    "powershellAclWrites": 0
+  },
+  "rollbackCodes": [
+    "VPN_SERVICE_VALIDATION_FAILED",
+    "VPN_SERVICE_ROLLBACK_VERIFIED",
+    "VPN_SERVICE_ROLLBACK_UNKNOWN"
+  ],
+  "limits": [
+    "No physical SCM/DNS/TUN/tasks/registry mutation by this worker",
+    "Local SOCKS readiness is not remote connectivity or global route proof",
+    "Native install/update/rollback/reboot/GUI-close/WinSW-crash acceptance pending",
+    "Real sustained network pilot pending; no months-long guarantee"
+  ],
+  "sourceSnapshotMatches": [
+    "EgoistShield.Service/ServiceContract.cs",
+    "EgoistShield.Service/OwnedServiceController.cs",
+    "EgoistShield.Service/OwnedServiceIntentStore.cs",
+    "EgoistShield.Service/OwnedServiceSupervisor.cs",
+    "EgoistShield.Service/OwnedTcpListenerProbe.cs",
+    "EgoistShield.Service/WindowsServiceListenerSnapshot.cs",
+    "EgoistShield.Service/ProtectedProductRoot.cs",
+    "EgoistShield.Service/VpnRuntimeHost.cs",
+    "EgoistShield.Service/VpnServiceConfiguration.cs",
+    "EgoistShield.Service/VpnServiceHealthProbe.cs",
+    "EgoistShield.Service/VpnServiceStatusCommand.cs"
+  ],
+  "sourceHashes": [
+    {
+      "file": "src/recovered/electron/ipc/vpn-service-manager.js",
+      "sha256": "E6AB59E7A23483B68564A518753561345A107CE66AFA073FCD797E7A91812B64"
+    },
+    {
+      "file": "src/component-protocol.js",
+      "sha256": "18A53DA2AB4984BECB9D246D3D828AE41F5384A297F289BC79F9A9C83C951672"
+    },
+    {
+      "file": "src/recovered/electron/ipc/protected-runtime-root.js",
+      "sha256": "18A7D145279D52C0A7C45D513CC75AB33917BF92902F650AFFAB6D15631B5F6B"
+    },
+    {
+      "file": "src/recovered/order.json",
+      "sha256": "E5B75292EDD9C8BCCDACFB5BF84272278100881E79800788D1B35C38FD81D276"
+    },
+    {
+      "file": "src/recovered/electron/ipc/ipc-schemas.js",
+      "sha256": "230FDF7876E626833C4D8E35808E1FCA149081C733F4FAA646B4D94DAAB13FF2"
+    },
+    {
+      "file": "src/recovered/electron/ipc/config-builder.js",
+      "sha256": "993C62F24206FE216CC1CCACF6CF449B1FF77A31B116AC5E01BB7B04105556DA"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/ServiceContract.cs",
+      "sha256": "B15A7BA46D666C9EF0FCF71A8EE9B92A9D50B8D84A98078D3CA45CCC5A52BE75"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/OwnedServiceController.cs",
+      "sha256": "DAA7537B76CC81F01FE751BFD010B236DEA5A261DE41D136091E2D5875D42ABC"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/OwnedServiceIntentStore.cs",
+      "sha256": "FD325F50752CEB207593820BB0CD0AA2AE584A1B3C67EC20EE963C9170C263D1"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/OwnedServiceSupervisor.cs",
+      "sha256": "9FF7FEA39D04DFDE3C9E6E95C2A1AB8A18949CA2C88C1DA40D7A9CFA587615A3"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/OwnedTcpListenerProbe.cs",
+      "sha256": "AE4B4BB8AA06FFBFBF86DC0C6BD9731195DCEFC6CEE648A3F46E77A23642FF18"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/WindowsServiceListenerSnapshot.cs",
+      "sha256": "D1E401DAD92B0EE9815BBE85E97748A62BE67553948F6853C59C3C5BC8A710BC"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/ProtectedProductRoot.cs",
+      "sha256": "7D7697BBC04BE63A7AC2EEADB4C6E7B0F7262A0B17B6BBF7C01A6B0CD817F5A3"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/VpnRuntimeHost.cs",
+      "sha256": "321B39AB1CFA47822D335D8254730749ACB82F6613BCCF61CE2BBF138D924FC5"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/VpnServiceConfiguration.cs",
+      "sha256": "7EB23A06DD3519C7B15A2B7F4FAE2C433CC1BA49744F261E8EDE1AD1F429502F"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/VpnServiceHealthProbe.cs",
+      "sha256": "346219D4F3A18FE03017CBF703CD695F8D35DF6232D2D6953FE81DD0DFD2E683"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/VpnServiceStatusCommand.cs",
+      "sha256": "8CFCA9F1EB16A2461DDD72D10E70DA8390260B4172D803DEA6D6524BB7EFA431"
+    },
+    {
+      "file": "tests/production-vpn-service.test.mjs",
+      "sha256": "FB50179E0E62AFF7DA427CEBBBD909ADC6CA009A2A34735FB3291CA33A4E5332"
+    },
+    {
+      "file": "tests/vpn-service-native.cs",
+      "sha256": "C24B16DF62FE0DE2C397354A05AFE2CCBBA014A77D296EB0679FCFC3C5E030EF"
+    },
+    {
+      "file": "tests/vpn-service-native.ps1",
+      "sha256": "0856CE2A6F2CCA6AE7D74370E4E155ACBFADABD8A52C45230F752B23E9330B8D"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "vpn-native-receipt.json",
+      "sha256": "18B0CA10BECC5F94A0F276595256EF6BB587829CBAEF69F383B0EA02AD9C287F"
+    },
+    {
+      "file": "vpn-native-run.txt",
+      "sha256": "F62D3375843859B23EAC22225612AC32579BE22174EC015657F5089082BE88BB"
+    },
+    {
+      "file": "vpn-native-build.txt",
+      "sha256": "FD6514A6C5F8482D58B742C7F9E25F2850C50A7852F3AE8A788537FB2C904F44"
+    },
+    {
+      "file": "vpn-node-tests.txt",
+      "sha256": "FBA728436BB12E481B5736FF0616487BD1872C94AE73558106A5CCAAF2AE472C"
+    },
+    {
+      "file": "vpn-private-acl-parser.txt",
+      "sha256": "B2058C4683B5FA7E855636F3DA5E0430BE989E8516A719347DCFDE41C9D50DBA"
+    },
+    {
+      "file": "vpn-private-acl-source.ps1",
+      "sha256": "79FD2B62D89663C3707D290EBF0A9E56A865D6A6E4FF80FCB131A1C2B542D7B6"
+    },
+    {
+      "file": "vpn-private-acl-parser.ps1",
+      "sha256": "3DAAB591D340756F587F17AEBCE4AB852C6C2EF1D60686EFD6287EC9659C3980"
+    },
+    {
+      "file": "vpn-private-acl-parser.mjs",
+      "sha256": "4D029576B1799FF8F3130D3CC13ED5D25F76F895F575E6A6B0C155B40F0DD50B"
+    },
+    {
+      "file": "vpn-report.md",
+      "sha256": "F95C7FE102A8F3F0C65DE43A4020C92A06E54926725011760DF1EE397E37745F"
+    },
+    {
+      "file": "vpn-architecture.md",
+      "sha256": "147259588AB77B9B7B1487F2DEF8CD22EBF5814199B195CB7B28AD51E1319BE5"
+    }
+  ]
+}

@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-10-01T13:49:47.773976+00:00",
+  "baseHead": "15aea7863c8bfaa59fec2ac8c68924ef46ad12a7",
+  "ownedChangedFile": "tests/telegram-native-listener.test.mjs",
+  "sha256": "700d78d511fb597edb1dcd31617848da1f3993c6be0996b5896c350030e5dc7e",
+  "bytes": 9987,
+  "sha256LfNormalized": "700d78d511fb597edb1dcd31617848da1f3993c6be0996b5896c350030e5dc7e",
+  "beforeGitBlobSha256": "dfd1c45cab2829d0c64e53a2be5ef917e6c46581fa622d74cf73d56a6dea99b6",
+  "frozen": true,
+  "productionFilesAndExistingNativeTestMatchBaseHead": true,
+  "productionChanged": false,
+  "diffCheck": "PASS",
+  "diffStat": {
+    "files": 1,
+    "insertions": 81,
+    "deletions": 24
+  },
+  "confirmedCause": "Old fixture produced schemaVersion 1 and omitted v2 root/snapshot/parent/executable identities. Positive cases failed immediately; mutation negatives could falsely pass without reaching the second response. Old standalone test also expected the removed PowerShell query route.",
+  "changes": [
+    "Base fixture now carries coherent schema-v2 root birth, SCM inner/header state and PID, managed identity fields, absolute child path, parent PID, endpoint owner/root birth.",
+    "Foreign IPv6 and pending foreign responses include actual row-shaped PID/path/birth and two fresh reads; original state/PID/name and refusal expectations retained.",
+    "Explicit IPv6 uses owned IPv6 with foreign IPv4, preventing accidental family selection from passing.",
+    "Stopped/standalone saved-process check requires two fixed native CLI proofs plus exact PID/saved birth arguments, canonical executable and bounded timeout; no environment override.",
+    "Missing port fixture removes TCP rows; independent port-open contradiction still returns unknown/ready false.",
+    "Existing mutation negatives require valid first response and calls===2; PID reuse edits update corresponding birth proof to exercise changed-identity fingerprint.",
+    "Three additional mutation negatives reject obsolete schema, contradictory SCM snapshot and missing ancestry."
+  ],
+  "red": {
+    "command": "node --test tests/telegram-native-listener.test.mjs",
+    "observedExitCode": 1,
+    "tests": 18,
+    "pass": 11,
+    "fail": 7,
+    "skip": 0,
+    "durationMs": 1107.4326
+  },
+  "green": {
+    "command": "node --test --test-reporter=tap tests/telegram-native-listener.test.mjs tests/native-process-query.test.mjs",
+    "taskLocalEnvironment": "LAGOM_TEST_TEMP set only for the child test process and selected parent environment restored",
+    "observedExitCode": 0,
+    "tests": 30,
+    "pass": 30,
+    "fail": 0,
+    "skip": 0,
+    "durationMs": 2827.0225,
+    "telegramTests": 21,
+    "nativeTests": 9
+  },
+  "compile": {
+    "observedExitCode": 0,
+    "errors": 0,
+    "warnings": 136,
+    "warningsSuppressed": false,
+    "elapsed": "00:00:01.74"
+  },
+  "actualNativeProof": {
+    "kind": "actual-harmless-native-query-regression",
+    "checks": [
+      {
+        "name": "harmless child starts",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "readiness belongs to held child",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "native Toolhelp/path/creation identifies actual owned child",
+        "passed": true,
+        "elapsedMs": 12.6047
+      },
+      {
+        "name": "native IPv4 table identifies actual listener PID",
+        "passed": true,
+        "elapsedMs": 1.89
+      },
+      {
+        "name": "native IPv6 table identifies actual listener PID",
+        "passed": true,
+        "elapsedMs": 1.5954
+      },
+      {
+        "name": "native capture retains actual held child independently of unreadable SCM root",
+        "passed": true,
+        "elapsedMs": 32.9702
+      },
+      {
+        "name": "actual unreadable SYSTEM SCM root remains unknown without escalation",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "inert stopped-SCM classifier accepts actual child only with explicit fixture path",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "wrong managed path remains unknown",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "changed managed creation time remains unknown",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "real listener is foreign without any approved root",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "partial managed identity cannot become owned",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "unavailable snapshot remains unknown",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "actual fixed WinWS CLI reads harmless native child",
+        "passed": true,
+        "elapsedMs": 110.6176
+      },
+      {
+        "name": "actual CLI marks unreadable identities explicitly rather than dropping rows",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "actual Telegram CLI refuses unapproved physical fixture path",
+        "passed": true,
+        "elapsedMs": 120.2798
+      },
+      {
+        "name": "fixed WinWS CLI forbids arbitrary query arguments",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "read-only listener CLI forbids service mode composition",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "cancelled fixed process capture stops",
+        "passed": true
+      },
+      {
+        "name": "owned child exits and closes listeners",
+        "passed": true,
+        "elapsedMs": null
+      },
+      {
+        "name": "closed actual listener is removed from native table",
+        "passed": true,
+        "elapsedMs": null
+      }
+    ],
+    "actualNativeApis": true,
+    "administrator": false,
+    "scmWrites": false,
+    "dnsWrites": false,
+    "registryWrites": false,
+    "serviceInstallationVerified": false,
+    "remoteConnectivityVerified": false
+  },
+  "actualScmObservation": {
+    "phase": "held-fixture-capture",
+    "available": true,
+    "stable": false,
+    "ownedChildRow": true,
+    "ownedBirthMatches": true,
+    "scmState": "Running",
+    "scmRootReadable": false
+  },
+  "evidence": [
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-fixture-followup/actual-native.txt",
+      "sha256": "8cc01a5f1fd9757337d472d37293e9846d6d952ab6a0b61d75e67785e9d814bf",
+      "bytes": 2355
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-fixture-followup/compile.txt",
+      "sha256": "6d16de73e574182479c64543f0fb2938a5a331f39b7e761cb024f1ec5f6a9fe2",
+      "bytes": 135710
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-fixture-followup/fixture.patch",
+      "sha256": "e08cc1ebcb06a2a131a878d427e6e5a12f730aea360dd2b315d388017669d9da",
+      "bytes": 10830
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-fixture-followup/green.txt",
+      "sha256": "40a693f23d4cb63b9a953e6a344016b6c482d6e20e5fb561afd7e2619de9d426",
+      "bytes": 6193
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-fixture-followup/red.txt",
+      "sha256": "a5b86088fc853d5f716a4334aa70c9a81cceae560c1ba5560c541770e364d5db",
+      "bytes": 7868
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/native-query-fixture-followup/telegram-native-listener.before.mjs",
+      "sha256": "dfd1c45cab2829d0c64e53a2be5ef917e6c46581fa622d74cf73d56a6dea99b6",
+      "bytes": 7098
+    }
+  ],
+  "isolatedBinaryBindings": [
+    {
+      "file": "NativeQueryRegression.exe",
+      "sha256": "8938df112ac4301fa58d68fd14607d270d036968ed6793f7fe8b0edc4427f6bf",
+      "bytes": 162304
+    },
+    {
+      "file": "NativeQueryRegression.dll",
+      "sha256": "8a26027adf62826ae7d2988ce33e6562b5a23ce053a8508c9c21b43d72cf9aa4",
+      "bytes": 780800
+    }
+  ],
+  "limits": [
+    "Only fixture test source modified; full source-bound suite pending parent.",
+    "Native probe is real Windows API/EXE with own harmless loopback child, not the sealed release installer.",
+    "Physical SYSTEM SCM root remains unreadable to ordinary token and unknown; inert stopped-SCM classifier is explicitly a fixture.",
+    "No service/SCM/DNS/registry/GUI modifications, install/package/sign/publication or escalation.",
+    "Original certificate welcome creation/reuse uncertainty remains recorded in prior native-query-analysis; no certificate-store action performed."
+  ]
+}

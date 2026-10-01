@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "taskId": "01a0f42c-32b2-79a2-beba-be99c620a2c8",
+  "owner": "/root/ui_finish",
+  "generatedAt": "2026-10-01T10:39:11.357Z",
+  "status": "UI source frozen; fresh signed native GUI/service acceptance pending",
+  "nodeVersion": "v24.19.0",
+  "scope": {
+    "productionFiles": [
+      "src/recovered/renderer.js",
+      "src/brand/ShieldWidget.jsx"
+    ],
+    "addedTest": "tests/telegram-first-load.test.mjs",
+    "backendChanged": false,
+    "mainChanged": false,
+    "preloadChanged": false,
+    "ciChanged": false,
+    "portChanged": false
+  },
+  "sources": {
+    "src/recovered/renderer.js": {
+      "bytes": 677879,
+      "sha256": "a06576f5ff87e05449cc7562cd58265021baeafbb3015f7b6c30ff045e890420",
+      "sha256LF": "947836bac950728a674bdc35fede32a03d7eb2bcfbaaf2019c061235704852f4"
+    },
+    "src/brand/ShieldWidget.jsx": {
+      "bytes": 22513,
+      "sha256": "82b9d4eae6b224bf58c9080a8bc0b2d6a1161e94d397d56473ab36daf383c084",
+      "sha256LF": "f467345c8dbf156008bcc0d8af0c959fe00a9403201ae28d4d4d2f4fddfa4e91"
+    },
+    "tests/telegram-first-load.test.mjs": {
+      "bytes": 23010,
+      "sha256": "bfd235b439c489b7bbfa19e5a11b2fbf156f9f9e067f1ad8db91dab0bc3c382d",
+      "sha256LF": "bfd235b439c489b7bbfa19e5a11b2fbf156f9f9e067f1ad8db91dab0bc3c382d"
+    },
+    "tests/production-ui-hardening.test.mjs": {
+      "bytes": 12599,
+      "sha256": "acae7d00e86368571a058a461b870521051117133dbc84e2becfd316e90a6d68",
+      "sha256LF": "a59dee7e8f7b2a8be27f03923f894a5dc775728da2e0f9af01db0ca39a2b61ab"
+    },
+    "tests/ui-service-readiness.test.mjs": {
+      "bytes": 4121,
+      "sha256": "ac589a7285433f6514175782734da89616e9325b70e6e35b8405c7a7ff998b50",
+      "sha256LF": "ac589a7285433f6514175782734da89616e9325b70e6e35b8405c7a7ff998b50"
+    },
+    "tests/zapret-history.test.mjs": {
+      "bytes": 10527,
+      "sha256": "91bf816af79ec98f35e895d53dfdbb2b07f00b15fbb1e63d2124ea5ef8f2f43c",
+      "sha256LF": "91bf816af79ec98f35e895d53dfdbb2b07f00b15fbb1e63d2124ea5ef8f2f43c"
+    },
+    "src/recovered/electron/ipc/ipc-schemas.js": {
+      "bytes": 12445,
+      "sha256": "5a3363f0cd6da4d356ca31cefb0e4412369fcdf890597c4ab53623f336393a38",
+      "sha256LF": "5a3363f0cd6da4d356ca31cefb0e4412369fcdf890597c4ab53623f336393a38"
+    },
+    "src/recovered/electron/ipc/handlers-telegram-proxy.js": {
+      "bytes": 2034,
+      "sha256": "f72332e206682306004afe9e68843686f6e2fa50c0a8b28b8aed3d29f2d689f2",
+      "sha256LF": "f72332e206682306004afe9e68843686f6e2fa50c0a8b28b8aed3d29f2d689f2"
+    },
+    "src/recovered/electron/ipc/telegram-proxy-manager.js": {
+      "bytes": 79063,
+      "sha256": "fe4d8c49ff791d1c4c5f05db29b1735e1ef241ef45a8193ed66bc89c5affe39c",
+      "sha256LF": "fe4d8c49ff791d1c4c5f05db29b1735e1ef241ef45a8193ed66bc89c5affe39c"
+    }
+  },
+  "report": {
+    "file": "telegram-first-load-fix.md",
+    "bytes": 8551,
+    "sha256": "cc05adf04bb9c880c3ae5a1869561fbd66864294fe601843a2df92155d09ca2e",
+    "sha256LF": "cc05adf04bb9c880c3ae5a1869561fbd66864294fe601843a2df92155d09ca2e"
+  },
+  "evidence": {
+    "telegram-first-load-fix-tests.txt": {
+      "bytes": 5065,
+      "sha256": "b66dda8a04cb53f0f24e56e974dcbed43da7afc0d090bb1aaad1ce20b0e3ee7e",
+      "sha256LF": "bc804972fdd4bcc3ad62c5c36e23afcf9eb3478ed5c30fdbd7dbdc9adc91c975"
+    },
+    "telegram-first-load-fix-original-negative.txt": {
+      "bytes": 3782,
+      "sha256": "676e701fb83712378e47d03f690aafe5cada64d5ff4f5e59d881f4590eeb2c2e",
+      "sha256LF": "4c2c47fd6f518e4858f9bef85ff0ff545457eb845b8b66aa6015c30cb15fc789"
+    },
+    "telegram-first-load-fix-guards-negative.txt": {
+      "bytes": 2766,
+      "sha256": "feea89a6a6a3fd3b542035c65037234a00f14fef675eec296c0b1415f2d0810c",
+      "sha256LF": "f57299231756a1aff544864aaf4bd5f2fa151a6bb3751b330ae497f720b8289b"
+    },
+    "telegram-first-load-fix.diff": {
+      "bytes": 41406,
+      "sha256": "e3a9994e6ad38e57b66fb9fd40545036ac60fba4f77a988d4085df30bb9f366e",
+      "sha256LF": "1be1f21b59c3bdab4e919cc7adaad18f2330062b7fbb4ea7ce2085eed9207b76"
+    }
+  },
+  "positive": {
+    "kind": "Source-extracted actual production callbacks and real IPC/schema/manager validation with explicit React/native-side-effect fixtures; not native GUI proof",
+    "command": "node --test tests/telegram-first-load.test.mjs tests/production-ui-hardening.test.mjs tests/ui-service-readiness.test.mjs tests/zapret-history.test.mjs",
+    "tests": 47,
+    "passed": 47,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 304.0813,
+    "newTelegramTests": 19,
+    "existingAdjacentTests": 28,
+    "exitCode": 0
+  },
+  "originalNegative": {
+    "kind": "Same current regression assertions against verified original frozen UI source fixtures",
+    "command": "LAGOM_TELEGRAM_UI_SOURCE_DIR=<verified original fixture directory> node --test --test-name-pattern=\"early full-batch|initial delayed|initial rejected|authoritative pristine\" tests/telegram-first-load.test.mjs",
+    "sourceHashes": {
+      "src/recovered/renderer.js": {
+        "bytes": 671308,
+        "sha256": "83c23387e581151eae23bcf2f2f945a8dc0c3d1fd18aa67145b6a6d6370f3d5a",
+        "sha256LF": "9e05041f0efa329bfe6a55622291dec66a7a8f6c17526f9290fb216bdace8438"
+      },
+      "src/brand/ShieldWidget.jsx": {
+        "bytes": 19302,
+        "sha256": "b504b5b73ca63db296b456f6c3c56c3f37bfd1c006053add63b0cbbfce8dc46a",
+        "sha256LF": "a397ba972c158680e2754418f8a23234e71a8cc751b63b89ba10761256b61fa3"
+      }
+    },
+    "testSHA256": "bfd235b439c489b7bbfa19e5a11b2fbf156f9f9e067f1ad8db91dab0bc3c382d",
+    "tests": 4,
+    "passed": 0,
+    "failed": 4,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 169.293,
+    "exitCode": 1,
+    "expectedFailure": true
+  },
+  "guardsNegative": {
+    "scope": "SOURCE-ONLY negative fixture derived from frozen source; disable lifecycle + polling protection to prove regression sensitivity; NOT production/native",
+    "originalRendererSHA256LF": "947836bac950728a674bdc35fede32a03d7eb2bcfbaaf2019c061235704852f4",
+    "negativeRendererSHA256": "8c0ff44c28618b91d35fe5b899d4d6d4664e6c50a0357b5505b44848e3632fb5",
+    "negativeShieldSHA256": "82b9d4eae6b224bf58c9080a8bc0b2d6a1161e94d397d56473ab36daf383c084",
+    "testSHA256": "bfd235b439c489b7bbfa19e5a11b2fbf156f9f9e067f1ad8db91dab0bc3c382d",
+    "operations": [
+      {
+        "before": "  O.useEffect(() => {\n    rendererMounted.current = true;\n    return () => {\n      rendererMounted.current = false;\n      readGeneration.current += 1;\n      telegramReadSequence.current += 1;\n    };\n  }, []);\n",
+        "after": "",
+        "count": 1
+      },
+      {
+        "before": "!rendererMounted.current || ",
+        "after": "",
+        "count": 8
+      },
+      {
+        "before": " || f2.current.has(`telegram-sidecar`) || telegramForegroundReads.current > 0",
+        "after": "",
+        "count": 1
+      }
+    ],
+    "command": "LAGOM_TELEGRAM_UI_SOURCE_DIR=<derived source-only negative fixture directory> node --test --test-name-pattern=\"actual busy polling|actual lifetime cleanup\" tests/telegram-first-load.test.mjs",
+    "tests": 2,
+    "passed": 0,
+    "failed": 2,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 83.5447,
+    "exitCode": 1,
+    "expectedFailure": true
+  },
+  "syntax": {
+    "command": "node --check src/recovered/renderer.js",
+    "exitCode": 0
+  },
+  "diffWhitespace": {
+    "command": "git diff --check -- src/recovered/renderer.js src/brand/ShieldWidget.jsx tests/telegram-first-load.test.mjs",
+    "exitCode": 0
+  },
+  "capturedProductionDiff": {
+    "file": "telegram-first-load-fix.diff",
+    "bytes": 41406,
+    "sha256": "e3a9994e6ad38e57b66fb9fd40545036ac60fba4f77a988d4085df30bb9f366e",
+    "sha256LF": "1be1f21b59c3bdab4e919cc7adaad18f2330062b7fbb4ea7ce2085eed9207b76",
+    "trackedFiles": 2,
+    "files": {
+      "src/brand/ShieldWidget.jsx": {
+        "insertions": 36,
+        "deletions": 0
+      },
+      "src/recovered/renderer.js": {
+        "insertions": 98,
+        "deletions": 27
+      }
+    }
+  },
+  "nativeOriginalEvidence": {
+    "file": "native-466862-gui-diagnostic-5086586/diagnostic-gui.stderr.txt",
+    "bytes": 19123,
+    "sha256": "cc371fa4885071e92e8ad464fba9d59c79b9346b961d19aed529db727cef5f2f",
+    "sha256LF": "cc371fa4885071e92e8ad464fba9d59c79b9346b961d19aed529db727cef5f2f",
+    "claim": "Parent-accepted signed ORIGINAL diagnostic: real GUI invocation save-config fails with secret Zod validation. This does not establish native PASS of the fixed source."
+  },
+  "checksCovered": [
+    "Early full/quick-batch Telegram adoption while unrelated promises remain pending",
+    "Delayed/rejected initial status disables config-dependent actions and real read-only retry recovers",
+    "Unknown/stale/malformed config never becomes green readiness or default config write",
+    "Pristine validated authoritative config installs without saveConfig",
+    "Dirty draft validates, preflights, saves once and confirms ack plus readback before action",
+    "Empty secret, rejected save, ok:false, changed readback and external preflight drift block action",
+    "Conflict resolution, async edit lock and repeated-action guard preserve draft",
+    "Known stop/remove remain available without config read",
+    "Action generation, Telegram read sequence and unmount reject late results",
+    "Actual busy polling effect cannot cancel its own foreground preflight",
+    "Config validator follows actual IPC/manager intersection"
+  ],
+  "nativeGuiPass": false,
+  "nativeFreshServiceInstallVerified": false,
+  "applicationLaunches": 0,
+  "browserLaunches": 0,
+  "nativeSystemMutations": 0,
+  "commitsByThisAgent": 0,
+  "sharedBuildsByThisAgent": 0,
+  "limits": [
+    "Minimal React/JSX VM adapter checks production callbacks, not native rendering/accessibility/timing.",
+    "Native service side effects in regression tests are labelled fixtures, not SCM/privilege evidence.",
+    "Parent full suite, final build and fresh signed native acceptance remain pending at publication.",
+    "Existing Telegram API has no atomic CAS; external writes between preflight/save/readback can still conflict.",
+    "Historical screenshots and performance receipts keep their earlier source bindings; no new screenshot or months-long soak claim."
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "sourceCommit": "168115e7304caa5154370bb8e3021ed6c9ed5c74",
+  "runId": 36875880105,
+  "jobId": 110418652139,
+  "artifactId": 11169502946,
+  "artifactSha256": "f1696929b0733455586d63245940de4025194ce9987f0b4a5bc79e8349dcb561",
+  "actualNativeAcceptancePassed": false,
+  "actualCurrentAuthenticationPassed": true,
+  "sourceTestsPassed": true,
+  "coreInstallObserved": true,
+  "telegramServiceInstallObserved": false,
+  "failure": "Core TG runtime cleanup still uses CIM Win32_Process inventory followed by Stop-Process; command fails before Telegram SCM creation. GUI DNS boot recovery owner-inspection deadline also elapsed.",
+  "files": [
+    {
+      "path": "download-identity.json",
+      "bytes": 293,
+      "sha256": "ab42960e883ffbc7179be1294391815b6fbb6b8b6998f4b9ae37d366392cebe9"
+    },
+    {
+      "path": "native/clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "native/clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "native/core-service.log",
+      "bytes": 799,
+      "sha256": "6028d34a25092b810e5f5bf0a9c5d94a60a39fd94fbca9cd380a1c977b5e3a96"
+    },
+    {
+      "path": "native/gui-provision-after-invoke-failure-observation.json",
+      "bytes": 6625,
+      "sha256": "857cea5c5a14ef5bea8f38ce9ad94ce594d7ad0da5122fbf061a49faf81d492b"
+    },
+    {
+      "path": "native/gui-provision-after-invoke-main.log",
+      "bytes": 1883,
+      "sha256": "e1843dfb3d1750bbda621632788a6e21b690ef64b5ea42b82e1c8c22b7a33925"
+    },
+    {
+      "path": "native/gui-provision-click-15s-failure-observation.json",
+      "bytes": 6619,
+      "sha256": "a9999d70adbf017491cebb1099bcc49fcdb8a8e1b8730e4e1dc80b6aca46c681"
+    },
+    {
+      "path": "native/gui-provision-click-15s-main.log",
+      "bytes": 1971,
+      "sha256": "50ab08ca87ad957d72e22abddd7bde82d51fc57259870a570ad7f62f2745029a"
+    },
+    {
+      "path": "native/gui-provision-click-2s-failure-observation.json",
+      "bytes": 6617,
+      "sha256": "268c875a379b2406762007e9ed7403d7ca70a4a794394839dcda3c74ad6c5966"
+    },
+    {
+      "path": "native/gui-provision-click-2s-main.log",
+      "bytes": 1883,
+      "sha256": "e1843dfb3d1750bbda621632788a6e21b690ef64b5ea42b82e1c8c22b7a33925"
+    },
+    {
+      "path": "native/gui-provision-click-45s-failure-observation.json",
+      "bytes": 6565,
+      "sha256": "6ce2489013f09801682241c46feee50486fbcac9eaae457282d1966f2902b3ed"
+    },
+    {
+      "path": "native/gui-provision-click-45s-main.log",
+      "bytes": 2553,
+      "sha256": "e483e2f1dbfdd4d5047feb069d2987ae0df1d389de91362cd20b1b7019cbfdef"
+    },
+    {
+      "path": "native/gui-provision-failure-observation.json",
+      "bytes": 6545,
+      "sha256": "b48fb0d2b67492b19d84ae63a86c506f2ed00e70f405fdad5a2365c0892147c0"
+    },
+    {
+      "path": "native/gui-provision-main.log",
+      "bytes": 2553,
+      "sha256": "e483e2f1dbfdd4d5047feb069d2987ae0df1d389de91362cd20b1b7019cbfdef"
+    },
+    {
+      "path": "native/gui-provision.stderr.txt",
+      "bytes": 1610,
+      "sha256": "51a398a53bbed305aece92208a55aa1bdfb78887a02ca0c3985f8cc07b4f8931"
+    },
+    {
+      "path": "native/gui-provision.stdout.txt",
+      "bytes": 1621,
+      "sha256": "ddd7a6b5120c466fa103ffb7aafab970d3380e49429d98eb8ca5c7df0fd5ae61"
+    },
+    {
+      "path": "native/installed-payload.json",
+      "bytes": 20080,
+      "sha256": "68da2537a202ad0d7e2f07bdabb51042f9d7658a679c3bdba18ba270e31af1e0"
+    },
+    {
+      "path": "native/installed-payload.options.json",
+      "bytes": 330,
+      "sha256": "00711417fd0a0d7a701806861c5e19dbe5ac41f32c8c6814afc516b7014e867b"
+    },
+    {
+      "path": "native/installed-payload.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "native/installed-payload.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "native/installer-upgrade-journal.jsonl",
+      "bytes": 7214,
+      "sha256": "c529b4bcef7eacccac106d602d37a61487a36b2231a903226c6215d10ed672a4"
+    },
+    {
+      "path": "native/windows-production-acceptance.json",
+      "bytes": 12191,
+      "sha256": "6e523ef054beb120e1374cc3a3fc198ef875063e8cf680b7ecdb9dbcaac4b688"
+    },
+    {
+      "path": "signed-fresh-authentication.json",
+      "bytes": 1955,
+      "sha256": "c30da2a79e5de6d3396ac84e2282870352d5e02132cdfc307a11820b0eed7231"
+    }
+  ],
+  "physicalInstallationChanged": false,
+  "publicationChanged": false
+}

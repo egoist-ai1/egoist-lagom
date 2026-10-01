@@ -117,7 +117,7 @@ internal sealed class OwnedServiceSupervisor
                         _observations[name] = observation;
                     }
                 }
-                bool ownsTcpEndpoint = name == "EgoistShieldTelegramProxy";
+                bool ownsTcpEndpoint = name is "EgoistShieldTelegramProxy" or "EgoistShieldVpn";
                 var health = status.State == "stopped" && !ownsTcpEndpoint ? LocalServiceHealth.Unresponsive : await _probe(name, cancellationToken);
                 if (health is LocalServiceHealth.Responsive or LocalServiceHealth.ScmOnly)
                 {
@@ -140,7 +140,8 @@ internal sealed class OwnedServiceSupervisor
                 _observations[name] = observation;
                 // Three observations spanning at least 30 seconds distinguish a
                 // transient startup/network event from a persistent local failure.
-                bool recentlyRecovered = intent.LastRecoveryAt.HasValue && _utcNow() - intent.LastRecoveryAt.Value < TimeSpan.FromMinutes(5);
+                TimeSpan? recoveryAge = intent.LastRecoveryAt.HasValue ? _utcNow() - intent.LastRecoveryAt.Value : null;
+                bool recentlyRecovered = recoveryAge >= TimeSpan.Zero && recoveryAge < TimeSpan.FromMinutes(5);
                 if (observation.Failures < 3 || now - observation.FailureSince < TimeSpan.FromSeconds(30) ||
                     now < observation.NextAttempt || recentlyRecovered) continue;
 

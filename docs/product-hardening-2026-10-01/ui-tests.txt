@@ -1,0 +1,27 @@
+✔ failed component reads retain previous facts as stale and cannot confirm current readiness (0.6106ms)
+✔ missing first result has unknown observation and no invented false running fact (0.0904ms)
+✔ unknown shield component cannot be replaced by an enabled future preference (0.4164ms)
+✔ subscription target is selected by stable ID and falls back to active node ownership (0.1011ms)
+✔ quick DPI start preserves installed service mode and confirms post-command readiness (1.1179ms)
+✔ mini separates actual DNS and Telegram switches from on-connect preferences (0.1109ms)
+✔ renderer uses narrow mutation APIs and applies only the latest status generation (0.5988ms)
+✔ settings conflicts retain fresh backend state and provide a concrete retry explanation (0.6416ms)
+✔ DNS hostname alias declares the actual HTTPS DoH transport (1.539ms)
+✔ large server lists retain every stable ID in bounded pages and clamp removed pages (1.2817ms)
+✔ server search reaches later pages with Cyrillic, address and protocol without changing original list (0.6091ms)
+✔ background VPN acknowledges commands only after fresh process and startup readback (0.9768ms)
+✔ a running DNS process without a confirmed DNS response remains unready (0.0869ms)
+✔ DoH UI rejects unsupported DoT and malformed input and preserves the real HTTPS port and query (1.4076ms)
+✔ UI rejects running SCM wrappers when the actual runtime is unavailable (0.4521ms)
+✔ UI accepts confirmed runtime readiness and preserves older status compatibility (0.0832ms)
+✔ UI distinguishes a running DNS worker from failed DNS verification (0.0653ms)
+✔ stopping Telegram requires its background service to stop, even without a listener (0.8586ms)
+✔ preload preserves successful update result payload and removes the listener (3.0782ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 72.626

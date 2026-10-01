@@ -1,0 +1,153 @@
+{
+  "harnessSourceCommit": "5086586140306a7401ebe6d52e94211b2278633e",
+  "artifactSourceCommit": "466862cc00b36277460ccc94cb47f4df891ac14b",
+  "runId": 36839550966,
+  "releaseId": 400757269,
+  "releaseAcceptance": false,
+  "physicalHostMutations": 0,
+  "cases": {
+    "old378": {
+      "jobId": 110295100593,
+      "artifactId": 11151040728,
+      "originalVersion": "3.7.8",
+      "result": "failed",
+      "error": "Native child failed (41): signed-diagnostic-clean-install; see owned stdout/stderr.",
+      "networkPreserved": true
+    },
+    "old379": {
+      "jobId": 110295100672,
+      "artifactId": 11150442996,
+      "originalVersion": "3.7.9",
+      "result": "failed",
+      "error": "Native child failed (41): signed-diagnostic-clean-install; see owned stdout/stderr.",
+      "networkPreserved": true
+    }
+  },
+  "files": [
+    {
+      "path": "old378/raw-artifact.zip",
+      "bytes": 5352,
+      "sha256": "55367eb5f93168e57582f44494672fc08356d7d6aa8ef13e03de291179630f52"
+    },
+    {
+      "path": "old378/raw-job.txt",
+      "bytes": 34801,
+      "sha256": "0ab9e59bb0e28e593494519f97f1edcaba0cde1a16f3babe553dd22b6644df03"
+    },
+    {
+      "path": "old378/installer-diagnostic.json",
+      "bytes": 8057,
+      "sha256": "acb795fad9991e766ed8a3ec0048e5cdc922d1efb008de13ec805aac80e94790"
+    },
+    {
+      "path": "old378/installer-upgrade-journal.jsonl",
+      "bytes": 2368,
+      "sha256": "de766d799e0f5ddeab65640f7c1e62b7fd25ba79612b101ddea25b57c8c42e02"
+    },
+    {
+      "path": "old378/original-authentication.json",
+      "bytes": 2707,
+      "sha256": "b3192c8e627561f4099f1cf39af959d68556bbabe29379899db518460dccbf93"
+    },
+    {
+      "path": "old378/original-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/original-diagnostic-authentication.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/signed-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/signed-diagnostic-authentication.stdout.txt",
+      "bytes": 163,
+      "sha256": "04fda8faeee5f8b6a2c25945b30dc6ad73442bc39b3ee6bf20c1adbe45cecaa7"
+    },
+    {
+      "path": "old378/signed-diagnostic-clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old378/signed-diagnostic-clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/raw-artifact.zip",
+      "bytes": 8048,
+      "sha256": "28cde221df26428037038049d29d4b3548be4b2e324cef5ba262f1998f52a6fb"
+    },
+    {
+      "path": "old379/raw-job.txt",
+      "bytes": 30474,
+      "sha256": "8f575c130ef862e8d530d7c4696ef440746666fbb8e9a717d4e25b0a4f9948af"
+    },
+    {
+      "path": "old379/original-authentication.json",
+      "bytes": 2707,
+      "sha256": "7aca395a68f2a53f354a27311669fd4f6e293378f6e11008e6669df5239412e1"
+    },
+    {
+      "path": "old379/installer-diagnostic.json",
+      "bytes": 12865,
+      "sha256": "9fb41bc77312572e03e612b15b6ac54676dc4b34af5108e635c43f224d97daad"
+    },
+    {
+      "path": "old379/installer-upgrade-journal.jsonl",
+      "bytes": 2368,
+      "sha256": "25a0d923891f55da2a364c894f74c05bf1264a2453f68375ee51e67a7385a207"
+    },
+    {
+      "path": "old379/original-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/original-diagnostic-authentication.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/original-network-readback.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/original-network-readback.ps1",
+      "bytes": 1408,
+      "sha256": "c2036ac4ea64c4c9a759d2108bc907cb175c9b7a6ed2f7090bc52a029899e52d"
+    },
+    {
+      "path": "old379/original-network-readback.stdout.txt",
+      "bytes": 4323,
+      "sha256": "dd8a1845766142ba46b0353908668b0fb53ad3d47c4038ba3f8aeb2836a6d7bb"
+    },
+    {
+      "path": "old379/signed-diagnostic-authentication.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/signed-diagnostic-authentication.stdout.txt",
+      "bytes": 163,
+      "sha256": "04fda8faeee5f8b6a2c25945b30dc6ad73442bc39b3ee6bf20c1adbe45cecaa7"
+    },
+    {
+      "path": "old379/signed-diagnostic-clean-install.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "old379/signed-diagnostic-clean-install.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

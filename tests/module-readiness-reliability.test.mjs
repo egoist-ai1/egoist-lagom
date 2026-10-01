@@ -58,3 +58,40 @@ test('configured DoH with a failed verification is degraded and keeps DNS owners
   assert.equal(dns.health, 'warn');
   assert.deepEqual(Array.from(dns.ownedLocks), ['dns', 'dns-verify']);
 });
+
+function vpnInspectors(status) {
+  return buildNetworkModuleInspectors({
+    stateStore: { get: () => ({ settings: { zapretSuspendDuringVpn: true, killSwitch: true, routeMode: 'global' } }) },
+    runtimeManager: { status: async () => status },
+  });
+}
+
+test('an enabled background VPN retains route ownership until observed stopped and disabled', async () => {
+  const background = { serviceInstalled: true, backgroundEnabled: true, serviceRunning: true, running: false, serviceState: 'running', startType: 'auto' };
+  const cases = [background, { ...background, serviceRunning: false, serviceState: 'stopped' },
+    { ...background, backgroundEnabled: false, serviceRunning: false, serviceState: 'stopped' }];
+  for (const backgroundService of cases) {
+    const result = await vpnInspectors({ connected: false, executionMode: 'background-service', lifecycle: 'failed', backgroundService }).vpn();
+    assert.equal(result.status, 'degraded');
+    assert.equal(result.health, 'warn');
+    assert.deepEqual(Array.from(result.ownedLocks), ['traffic-route', 'dns-verify', 'zapret-suspend']);
+  }
+  const stopped = await vpnInspectors({ connected: false, lifecycle: 'idle', executionMode: 'none',
+    backgroundService: { ...background, backgroundEnabled: false, running: false, serviceRunning: false, serviceState: 'stopped', startType: 'disabled' } }).vpn();
+  assert.equal(stopped.ownedLocks.length, 0);
+});
+
+test('background SOCKS readiness does not claim a Windows system proxy or GUI kill switch', async () => {
+  const status = { connected: true, executionMode: 'background-service', proxyPort: 10838, egressVerified: false,
+    backgroundService: { serviceInstalled: true, backgroundEnabled: true, serviceRunning: true, running: true, serviceState: 'running', startType: 'auto' } };
+  const modules = vpnInspectors(status);
+  const result = await modules.vpn();
+  assert.equal(result.health, 'warn');
+  assert.equal(result.ownedLocks.includes('system-proxy'), false);
+  assert.equal(result.ownedLocks.includes('firewall-kill-switch'), false);
+  assert.equal((await modules['system-proxy']()).ownedLocks.length, 0);
+  assert.equal((await modules.firewall()).ownedLocks.length, 0);
+  const temporary = vpnInspectors({ connected: true, executionMode: 'temporary', proxyPort: 10809, egressVerified: true });
+  assert.equal((await temporary['system-proxy']()).status, 'active');
+  assert.equal((await temporary.firewall()).status, 'active');
+});

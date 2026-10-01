@@ -34,6 +34,7 @@ internal static class Program
                 await Check("boot recovery policy repair is bounded and preserves stopped intent", RecoveryPolicyAsync);
                 await Check("explicit stop and disabled races beat recovery", StopRacesAsync);
                 await Check("recovery backoff survives Core restart", RecoveryBackoffAsync);
+                await Check("clock correction preserves bounded service recovery", RecoveryClockRollbackAsync);
                 await Check("offline and unknown probes never trigger recovery", DeferredHealthAsync);
                 await Check("foreign Telegram listener cannot cause a running/stopped recovery storm", TelegramCollisionAsync);
                 await Check("listener ownership validates process ancestry, birth time and endpoint", ListenerOwnershipAsync);
@@ -44,10 +45,12 @@ internal static class Program
                 await Check("malformed durable intent prevents recovery", InvalidIntentAsync);
                 await Check("new DNS adapter selection preserves existing and static settings", DnsMaintenanceSelectionAsync);
                 await Check("bootstrap refresh deadline persists across restart and concurrent checks", BootstrapScheduleAsync);
+                await Check("clock correction cannot suspend DNS bootstrap refresh", BootstrapClockRollbackAsync);
                 await Check("DNS SERVFAIL proves local liveness", DnsServfailAsync);
                 await Check("DNS TCP fallback and unresponsive transport", DnsTcpFallbackAsync);
                 await Check("DNS identity/question checks and malformed packet stress", DnsPacketChecksAsync);
                 await Check("worker replies correlate and operation error keeps protocol alive", WorkerHealthyAsync);
+                await Check("pure bootstrap query crosses the actual Core worker boundary", WorkerBootstrapQueryAsync);
                 await Check("worker malformed frame fails all pending requests", WorkerMalformedAsync);
                 await Check("oversized unterminated worker frame fails within a bound", WorkerOversizedAsync);
                 await Check("blocked worker stdin cannot hold the mutation indefinitely", WorkerBlockedInputAsync);
@@ -216,6 +219,21 @@ internal static class Program
             await fixture.Store.SetRunningAsync(ServiceName, true, default); await fixture.FailThree(fixture.Create());
             Assert(fixture.Recoveries == 0, "Offline or unknown local health must not trigger a speculative restart.");
         }
+    }
+
+    private static async Task RecoveryClockRollbackAsync()
+    {
+        var fixture = new SupervisionFixture { Status = new(ServiceName, "stopped", "auto", true) };
+        await fixture.Store.SetRunningAsync(ServiceName, true, default);
+        await fixture.Store.MarkRecoveryAsync(ServiceName, fixture.Utc.AddDays(14), default);
+        var supervisor = fixture.Create();
+        await fixture.FailThree(supervisor);
+        Assert(fixture.Recoveries == 1, "A future durable recovery timestamp suppressed recovery after clock correction.");
+        await fixture.FailThree(supervisor, 110);
+        await fixture.FailThree(fixture.Create(), 160);
+        Assert(fixture.Recoveries == 1, "Correcting a future timestamp removed the in-process or persisted minimum recovery interval.");
+        fixture.Now = TimeSpan.FromSeconds(390); await supervisor.CheckAsync(default);
+        Assert(fixture.Recoveries == 2, "The bounded recovery interval did not expire after clock correction.");
     }
 
     private static async Task TelegramCollisionAsync()
@@ -406,6 +424,28 @@ internal static class Program
         return Task.CompletedTask;
     }
 
+    private static async Task BootstrapClockRollbackAsync()
+    {
+        foreach (bool fail in new[] { false, true })
+        {
+            string root = Path.Combine(_work, "bootstrap-clock-" + fail);
+            DateTimeOffset now = DateTimeOffset.Parse("2026-10-14T00:00:00Z");
+            int calls = 0;
+            var scheduler = new DnsBootstrapRefreshScheduler(root, () => now);
+            const string url = "https://custom.example/dns-query";
+            Task Refresh(CancellationToken _) { calls++; return fail ? Task.FromException(new IOException("controlled failure")) : Task.CompletedTask; }
+            async Task Attempt() { if (fail) await Expect<IOException>(() => scheduler.RunIfDueAsync("native", url, Refresh, default)); else Assert(await scheduler.RunIfDueAsync("native", url, Refresh, default), "Refresh was not due."); }
+            await Attempt();
+            now = now.AddDays(-14);
+            await Attempt();
+            var concurrent = await Task.WhenAll(Enumerable.Range(0, 100).Select(_ => scheduler.RunIfDueAsync("native", url, Refresh, default)));
+            Assert(calls == 2 && concurrent.All(value => !value), "Clock correction did not permit exactly one bounded retry.");
+            Assert(!await new DnsBootstrapRefreshScheduler(root, () => now).RunIfDueAsync("native", url, Refresh, default), "Restart after clock correction forgot the newly recorded cooldown.");
+            now = now.AddMinutes(fail ? 15 : 60); await Attempt();
+            Assert(calls == 3, "The corrected successful/failed bootstrap cooldown never expired.");
+        }
+    }
+
     private static async Task DnsServfailAsync()
     {
         using var udp = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
@@ -481,6 +521,22 @@ internal static class Program
         var calls = new[] { Request(worker, "status"), Request(worker, "autoSelectProgress") };
         foreach (var call in calls) await Expect<IOException>(() => call.WaitAsync(TimeSpan.FromSeconds(3)));
         await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
+    }
+
+    private static async Task WorkerBootstrapQueryAsync()
+    {
+        string log = Path.Combine(_work, "worker-bootstrap.jsonl");
+        using Process process = await StartFixtureAsync("echo", log);
+        using var worker = Worker(() => process, TimeSpan.FromSeconds(3));
+        try
+        {
+            var payload = JsonDefaults.ToElement(new { component = "SystemDoH", method = "bootstrapServers", args = new object[] { "https://custom.example/dns-query", false } });
+            var result = await worker.ExecuteAsync(payload, true, default);
+            Assert(result.GetString() == "bootstrapServers" && File.ReadAllLines(log).Length == 1, "The pure bootstrap query was rejected or replayed at the actual C# worker boundary.");
+            await Expect<ArgumentException>(() => Request(worker, "apply", true));
+            Assert(File.ReadAllLines(log).Length == 1, "Whitelisting bootstrap enabled a mutation on the query endpoint.");
+        }
+        finally { Kill(process); }
     }
 
     private static async Task WorkerOversizedAsync()

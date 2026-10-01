@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "173804fe1e0071a1d50aa48a7e136fb8a4d73744",
+  "runId": 36821978104,
+  "jobId": 110239329657,
+  "artifactId": 11143054405,
+  "artifactZipSha256": "e285a11ebc83a16d68f39a79042b7cae176452fbc710126894aae893f2a1b825",
+  "actualAdministrator": true,
+  "ownerGroupsPassed": 7,
+  "ownerGroupsFailed": 1,
+  "failedGroup": "nonproduction-atomic-files",
+  "actualFailure": "System.Exception: Nonproduction file ACL changed.\r\n   at CoreOwnerRegression.TestProgram.Check(Boolean condition, String error) in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-ab25fc53\\core-owner-regression.cs:line 160\r\n   at CoreOwnerRegression.TestProgram.<>c.<<Main>b__5_6>d.MoveNext() in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-ab25fc53\\core-owner-regression.cs:line 128\r\n--- End of stack trace from previous location ---\r\n   at CoreOwnerRegression.TestProgram.Run(String name, Func`1 action) in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-ab25fc53\\core-owner-regression.cs:line 164",
+  "beforeAfterSddlCaptured": false,
+  "rootCauseEstablished": false,
+  "actualCoreConfigureExitCode": 0,
+  "configureMilliseconds": 311.82,
+  "actualConfigurationOwner": "S-1-5-32-544",
+  "networkPreserved": true,
+  "installerExecuted": false,
+  "nativeReleaseAcceptancePassed": false,
+  "files": [
+    {
+      "name": "configure-stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "configure-stdout.txt",
+      "bytes": 56,
+      "sha256": "768af6fa77e054e58bb8e1724f7e785b5527b8357a2f320fb450ee4b68df490d"
+    },
+    {
+      "name": "installer-diagnostic.json",
+      "bytes": 45134,
+      "sha256": "d1d7d9d8374508245099c6dca35fe397e5a4233e228237e40bcb0aa64dfe44e8"
+    },
+    {
+      "name": "native-job.txt",
+      "bytes": 20496,
+      "sha256": "53f3b62c8bb3a910fd066db51f8586f374959f53a74c9a9d2849b51cdaf8083b"
+    },
+    {
+      "name": "owner-build.log",
+      "bytes": 84562,
+      "sha256": "7f95eaafb1ee82ce69d7e061fbbd6a120d94137fc6d9345aa43bd199b474fa35"
+    },
+    {
+      "name": "owner-receipt.json",
+      "bytes": 17248,
+      "sha256": "d50d8a5bd967e2f8ba77f998c28428441f0d48ad51ec2ff51328a439fc42f365"
+    },
+    {
+      "name": "owner-results.json",
+      "bytes": 4125,
+      "sha256": "acc29d4c5e6ab53450db4f1e1a4d2c0416c5bbeab63bf33c9a7b086129239413"
+    },
+    {
+      "name": "owner-run.log",
+      "bytes": 4127,
+      "sha256": "13d1c68fe12024c74d7bcbf40f00401101cd3a4847d99a5f3dbfc25c3ff2e0db"
+    },
+    {
+      "name": "owner-stderr.txt",
+      "bytes": 690,
+      "sha256": "85d1a31a1a9119143a4081de700acc64003af1adbc3128973b73eb2890032433"
+    },
+    {
+      "name": "owner-stdout.txt",
+      "bytes": 5122,
+      "sha256": "a1efd30374c0e60a343ac19ef83497dc1c7b2ad6aa3ce8d63a7d7dda8e0da365"
+    }
+  ]
+}

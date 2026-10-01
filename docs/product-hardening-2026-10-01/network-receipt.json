@@ -1,0 +1,341 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-09-30T23:38:20.323227+00:00",
+  "scope": "network protocol and GUI/background VPN integration source acceptance; no native installation",
+  "project": "Egoist Lagom",
+  "candidateVersion": "3.8.0",
+  "git": {
+    "branch": "codex/lagom-production-audit",
+    "head": "5d0d58b44076843e639723ef267e7b8d2605e481",
+    "testedWorkingTreeChanges": true
+  },
+  "runtime": {
+    "node": "v24.19.0",
+    "python": "3.12.14",
+    "tlsCertificateVerification": "enabled; own trusted test CA"
+  },
+  "sources": [
+    {
+      "path": "src/recovered/electron/ipc/dns-leak-test.js",
+      "bytes": 11843,
+      "sha256": "820e189c9c44d303e38762d34e2304d84cb903cdc296c5125a42cc4477b5aab7",
+      "sha256LfNormalized": "820e189c9c44d303e38762d34e2304d84cb903cdc296c5125a42cc4477b5aab7"
+    },
+    {
+      "path": "src/recovered/electron/ipc/gravityless-dns-manager.js",
+      "bytes": 28030,
+      "sha256": "8db7ea22e6b73093bb9590621f213fe71d6ba2c534c6148af66c74a0e669f5f1",
+      "sha256LfNormalized": "8db7ea22e6b73093bb9590621f213fe71d6ba2c534c6148af66c74a0e669f5f1"
+    },
+    {
+      "path": "src/recovered/electron/ipc/route-probe.js",
+      "bytes": 16672,
+      "sha256": "148c747dc9886cc2017d290edf302392e122e3a8e4ff2f77e638cedc634d4e71",
+      "sha256LfNormalized": "148c747dc9886cc2017d290edf302392e122e3a8e4ff2f77e638cedc634d4e71"
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers-vpn.js",
+      "bytes": 80290,
+      "sha256": "33814c09d896e49bfa16483fd74b188b9b4d3b61b78db99cc616de85f267dbbb",
+      "sha256LfNormalized": "33814c09d896e49bfa16483fd74b188b9b4d3b61b78db99cc616de85f267dbbb"
+    },
+    {
+      "path": "src/recovered/electron/ipc/vpn-manager.js",
+      "bytes": 70529,
+      "sha256": "46d137ff4f6c522a0273eb7c4d913372ac110752c9d45d2405c23354f3e9d02c",
+      "sha256LfNormalized": "46d137ff4f6c522a0273eb7c4d913372ac110752c9d45d2405c23354f3e9d02c"
+    },
+    {
+      "path": "src/recovered/electron/ipc/vpn-reconnect-supervisor.js",
+      "bytes": 13440,
+      "sha256": "f87ac0d28204149194736917a879ae35f5fd8274bb65a949e0ef3e8f703bc038",
+      "sha256LfNormalized": "f87ac0d28204149194736917a879ae35f5fd8274bb65a949e0ef3e8f703bc038"
+    }
+  ],
+  "tests": [
+    {
+      "path": "tests/production-network-protocols.test.mjs",
+      "bytes": 32508,
+      "sha256": "a203359c321af04967f5b8815a3bab6280b4799aebc14941c396153b594182c4",
+      "sha256LfNormalized": "a203359c321af04967f5b8815a3bab6280b4799aebc14941c396153b594182c4"
+    },
+    {
+      "path": "tests/production-vpn-background-integration.test.mjs",
+      "bytes": 17837,
+      "sha256": "4bff2a0ced3290c01b09d97a6201f3e9607fae5641395880c94b409445529509",
+      "sha256LfNormalized": "4bff2a0ced3290c01b09d97a6201f3e9607fae5641395880c94b409445529509"
+    },
+    {
+      "path": "tests/admin-runtime.test.mjs",
+      "bytes": 4056,
+      "sha256": "3cd88bb2c470175cdbe2a3eddb8578debf4d398105c4dac897f9a3efb764fdc2",
+      "sha256LfNormalized": "3cd88bb2c470175cdbe2a3eddb8578debf4d398105c4dac897f9a3efb764fdc2"
+    },
+    {
+      "path": "tests/vpn-runtime-selection.test.mjs",
+      "bytes": 5025,
+      "sha256": "ab6f3a18b29f5c6f7e9eeae18cbaea3c7d87b1585b2fc63f8890813f0038f2e1",
+      "sha256LfNormalized": "ab6f3a18b29f5c6f7e9eeae18cbaea3c7d87b1585b2fc63f8890813f0038f2e1"
+    },
+    {
+      "path": "tests/vpn-tun-lifecycle.test.mjs",
+      "bytes": 10363,
+      "sha256": "0b50e71b75716f82e6c08b451193fea5a514474ba8d63c5161000d51ee8f0bd0",
+      "sha256LfNormalized": "0b50e71b75716f82e6c08b451193fea5a514474ba8d63c5161000d51ee8f0bd0"
+    }
+  ],
+  "dependenciesAtReceipt": [
+    {
+      "path": "src/native-runtime-trust.js",
+      "bytes": 17714,
+      "sha256": "1eea805829755a49bfdf481b12dd5b8658c0101fee7c59ad5c53673444f4edfe",
+      "sha256LfNormalized": "1eea805829755a49bfdf481b12dd5b8658c0101fee7c59ad5c53673444f4edfe"
+    },
+    {
+      "path": "src/recovered/electron/ipc/vpn-service-manager.js",
+      "bytes": 21785,
+      "sha256": "e6ab59e7a23483b68564a518753561345a107ce66afa073fcd797e7a91812b64",
+      "sha256LfNormalized": "e6ab59e7a23483b68564a518753561345a107ce66afa073fcd797e7a91812b64"
+    },
+    {
+      "path": "tests/load-recovered.mjs",
+      "bytes": 1552,
+      "sha256": "341dd85e33404e3a87ba3874cfd10d6c221e334e6c0b8856ed3a83edb5564f8a",
+      "sha256LfNormalized": "341dd85e33404e3a87ba3874cfd10d6c221e334e6c0b8856ed3a83edb5564f8a"
+    }
+  ],
+  "beforeFollowupSnapshots": [
+    {
+      "path": "before-followup/gravityless-dns-manager.js",
+      "bytes": 25472,
+      "sha256": "a6c7324171141d55f9e8a8d97f216e9684fbe9b73c4403ec64bf0e3fba566636",
+      "sha256LfNormalized": "a6c7324171141d55f9e8a8d97f216e9684fbe9b73c4403ec64bf0e3fba566636"
+    },
+    {
+      "path": "before-followup/handlers-vpn.js",
+      "bytes": 71678,
+      "sha256": "8a8fc70d890358fcb2bf865598096c1434beb05b5dc857abaca3f9577e6fe7d5",
+      "sha256LfNormalized": "8a8fc70d890358fcb2bf865598096c1434beb05b5dc857abaca3f9577e6fe7d5"
+    },
+    {
+      "path": "before-followup/route-probe.js",
+      "bytes": 15410,
+      "sha256": "1ed398fd4e9a3ffd9b9e9c72023d8859008bc47a1d63d0882acd41d324135ebf",
+      "sha256LfNormalized": "1ed398fd4e9a3ffd9b9e9c72023d8859008bc47a1d63d0882acd41d324135ebf"
+    },
+    {
+      "path": "handlers-vpn-before-start-rollback.js",
+      "bytes": 79714,
+      "sha256": "92d071aeae706c0c2d218eb12d5943f33d42a9ec994160bd66eff32d3e69f8e5",
+      "sha256LfNormalized": "92d071aeae706c0c2d218eb12d5943f33d42a9ec994160bd66eff32d3e69f8e5"
+    }
+  ],
+  "checks": {
+    "nodeSyntax": [
+      {
+        "exitCode": 0,
+        "path": "src/recovered/electron/ipc/dns-leak-test.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "src/recovered/electron/ipc/gravityless-dns-manager.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "src/recovered/electron/ipc/route-probe.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "src/recovered/electron/ipc/handlers-vpn.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "src/recovered/electron/ipc/vpn-manager.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "src/recovered/electron/ipc/vpn-reconnect-supervisor.js"
+      },
+      {
+        "exitCode": 0,
+        "path": "tests/production-network-protocols.test.mjs"
+      },
+      {
+        "exitCode": 0,
+        "path": "tests/production-vpn-background-integration.test.mjs"
+      },
+      {
+        "exitCode": 0,
+        "path": "tests/admin-runtime.test.mjs"
+      },
+      {
+        "exitCode": 0,
+        "path": "tests/vpn-runtime-selection.test.mjs"
+      },
+      {
+        "exitCode": 0,
+        "path": "tests/vpn-tun-lifecycle.test.mjs"
+      }
+    ],
+    "gitDiffCheck": {
+      "exitCode": 0,
+      "scope": [
+        "src/recovered/electron/ipc/dns-leak-test.js",
+        "src/recovered/electron/ipc/gravityless-dns-manager.js",
+        "src/recovered/electron/ipc/route-probe.js",
+        "src/recovered/electron/ipc/handlers-vpn.js",
+        "src/recovered/electron/ipc/vpn-manager.js",
+        "src/recovered/electron/ipc/vpn-reconnect-supervisor.js",
+        "tests/production-network-protocols.test.mjs",
+        "tests/production-vpn-background-integration.test.mjs",
+        "tests/admin-runtime.test.mjs",
+        "tests/vpn-runtime-selection.test.mjs",
+        "tests/vpn-tun-lifecycle.test.mjs"
+      ]
+    },
+    "testLogs": [
+      {
+        "path": "network-evidence/network-accepted-tests.txt",
+        "bytes": 6243,
+        "sha256": "1a1c1ebc033ba1142a27513364d8eb3de75fe25e5b911879b9e74243ac62bd36",
+        "sha256LfNormalized": "927558b5a8a2677d2a1f942eca3c7dec40f299acab5635293476a3199dadfdd1",
+        "exitCode": 0,
+        "scope": "final frozen network source: five focused test files",
+        "summary": {
+          "tests": 56,
+          "pass": 56,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 2786.1225
+        }
+      },
+      {
+        "path": "network-evidence/network-background-final.txt",
+        "bytes": 2864,
+        "sha256": "c1d7b3ee962c904b0b06be8745916f85f2cf2d41150c4972f143227d9a160c75",
+        "sha256LfNormalized": "450e0a1ccf60f1f44833b94ed34e7193d72c0529838f96ddebe872bcfce167d9",
+        "exitCode": 0,
+        "scope": "final background source + TUN lifecycle + strict UI readiness",
+        "summary": {
+          "tests": 27,
+          "pass": 27,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 2082.1218
+        }
+      },
+      {
+        "path": "network-evidence/network-before-followup.txt",
+        "bytes": 4773,
+        "sha256": "84626c61db8099e6eac8660887329055973f7013037b31cb350cb8dac7c6eaed",
+        "sha256LfNormalized": "0e8298ab56d3d82fd47c7c2ed936929f812c4bbdadc3a60224cc978e78890ac2",
+        "exitCode": 1,
+        "scope": "three reproducible pre-follow-up product failures",
+        "summary": {
+          "tests": 17,
+          "pass": 14,
+          "fail": 3,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 1336.7217
+        }
+      },
+      {
+        "path": "network-evidence/dns-recursor-before.txt",
+        "bytes": 1202,
+        "sha256": "66571b9cdbc191ca56cdcaf9cac4d26b1132c5f253ba004086c578c749bdbd41",
+        "sha256LfNormalized": "f45fe7324dab1717e2ad54890fad330cac041fa1d5b2bd3d7cb3de45a4d24902",
+        "exitCode": 1,
+        "scope": "pre-fix external recursor address incorrectly declared DNS bypass",
+        "summary": {
+          "tests": 1,
+          "pass": 0,
+          "fail": 1,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 65.9633
+        }
+      },
+      {
+        "path": "network-evidence/network-start-before.txt",
+        "bytes": 1188,
+        "sha256": "d1fcd263561eeae373fb16dabc5788776b53bba0697bf3ea2c823b4b5fa2fd77",
+        "sha256LfNormalized": "fc1c2408bdda343b0efabf4fa48e326a583b9dcfdaf2fe91c8a0d7cf27e7549b",
+        "exitCode": 1,
+        "scope": "pre-fix failed background start did not restore Zapret",
+        "summary": {
+          "tests": 2,
+          "pass": 1,
+          "fail": 1,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 302.8587
+        }
+      }
+    ]
+  },
+  "stress": {
+    "dnsCancellation": {
+      "requests": 64,
+      "cancelled": 64,
+      "clientUdpSocketsRemaining": 0,
+      "serverTcpSocketsRemaining": 0
+    },
+    "dnsUdpStress": {
+      "requests": 256,
+      "successes": 256,
+      "malformedOrForeignPackets": 1280,
+      "totalPeerPackets": 1536,
+      "elapsedMs": 527.125,
+      "clientSocketsRemaining": 0
+    },
+    "connectDrip": {
+      "deadlineMs": 70,
+      "elapsedMs": 80.396,
+      "serverSocketsRemaining": 0
+    },
+    "connectCancellation": {
+      "requests": 64,
+      "cancelled": 64,
+      "elapsedMs": 152.682,
+      "clientSocketsRemaining": 0,
+      "serverSocketsRemaining": 0
+    },
+    "tlsStress": {
+      "requests": 80,
+      "completed": 48,
+      "malformedRejected": 16,
+      "cancelled": 16,
+      "decodedPayloadBytes": 48000,
+      "usedBudgetBytes": 48800,
+      "reservedBytesRemaining": 0,
+      "serverSocketsRemaining": 0,
+      "elapsedMs": 264.653
+    }
+  },
+  "claims": {
+    "realLoopbackUdpTcpTls": true,
+    "realOwnedChildShutdown": true,
+    "nativeScmInstallation": false,
+    "nativeTunRouteMutation": false,
+    "hostDnsAdapterMutation": false,
+    "rebootAcceptance": false,
+    "monthsContinuousOperation": false,
+    "publishedOrInstalledCandidate": false
+  },
+  "limitations": [
+    "Protocol peers use actual loopback sockets and TLS; Windows SCM boundary in background IPC tests is controlled.",
+    "TUN/route matrix tests validate observed inputs; these tests do not alter or certify actual Windows routes.",
+    "A DNS question answer or public recursor address does not prove local resolver ownership or leak protection for all applications.",
+    "Background execution is explicit optional pinned sing-box TUN; custom runtime and GUI Kill Switch are rejected.",
+    "Watchdog external egress proof requires GUI; Core service recovery/native startup need their separate acceptance.",
+    "This source receipt is not packaged installer/reboot/release/signature or months-long soak acceptance."
+  ]
+}

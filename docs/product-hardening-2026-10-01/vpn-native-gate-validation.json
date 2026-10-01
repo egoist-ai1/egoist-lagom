@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "kind": "hosted-vpn-gate-safe-local-validation",
+  "acceptedAt": "2026-10-01T01:57:43.8308822+00:00",
+  "nativeAcceptancePassed": false,
+  "nativeGateStatus": "prepared-not-executed",
+  "sourceCommitInspected": "62f0f2ecd06dbcb68e3a37ec8937dc74448d0c77",
+  "sourceHashConvention": "SHA256 of actual frozen working files",
+  "sourceHashes": [
+    {
+      "file": "tests/windows-vpn-native-acceptance.ps1",
+      "sha256": "A8B611082EC04C7053079D511F29685926257B55A174A1CD844AC9A49784AF3A"
+    },
+    {
+      "file": "tests/windows-vpn-native-probe.cs",
+      "sha256": "427D28CCBF6D1E1FD20AA302FDE01BB7E44F458E4BF774086F3C73B3A6CECBFF"
+    },
+    {
+      "file": "tests/windows-vpn-production-acceptance.mjs",
+      "sha256": "29A6DB9DCD3AF7C826C6B2326BFE5A83D5A3634C8CB336183206D7121E0FBF35"
+    }
+  ],
+  "powerShellParserErrors": 0,
+  "pureHostedGuardCases": 11,
+  "pureHostedGuardPassed": 11,
+  "actualPhysicalRunRefusedBeforeWrite": true,
+  "actualPhysicalScmMutations": 0,
+  "actualPhysicalTunRuns": 0,
+  "actualPhysicalDnsSettingMutations": 0,
+  "actualPhysicalGuiOperations": 0,
+  "safeSocks": {
+    "schemaVersion": 1,
+    "kind": "safe-local-socks-fixture-test",
+    "cases": 9,
+    "passed": 9,
+    "actualLoopbackSockets": 9,
+    "actualTunRuns": 0,
+    "nativeScmMutations": 0,
+    "dnsMutations": 0,
+    "nativeAcceptancePassed": false,
+    "externalDial": false
+  },
+  "safeProbe": {
+    "schemaVersion": 1,
+    "kind": "actual-safe-loopback-plain-tcp-native-probe",
+    "cases": 5,
+    "passed": 5,
+    "actualLoopbackSockets": 5,
+    "actualTunRuns": 0,
+    "nativeScmMutations": 0,
+    "dnsMutations": 0,
+    "guiOperations": 0,
+    "nativeAcceptancePassed": false,
+    "executableSha256": "b05006c2193d16d5be0ccf4fda200a02a4eef055a291115b67596fb2b3b6dd02",
+    "sourceSha256": "427d28ccbf6d1e1fd20aa302fde01bb7e44f458e4bf774086f3c73b3a6cecbff"
+  },
+  "preEnableConfigSafety": {
+    "kind": "pre-enable-config-safety-contract",
+    "cases": 11,
+    "passed": 11,
+    "nativeAcceptancePassed": false,
+    "actualTunRuns": 0
+  },
+  "safeNativeRead": {
+    "kind": "safe-read-only-native-argv-and-wire-dns",
+    "parserErrors": 0,
+    "nativeArgvCases": 1,
+    "nativeArgvPassed": 1,
+    "dnsApi": "DnsQuery_W",
+    "dnsOptions": "0x1148",
+    "dnsHost": "github.com.",
+    "resolvedAddresses": [
+      "140.82.121.3"
+    ],
+    "elapsedMs": 79,
+    "dnsSettingMutations": 0,
+    "nativeScmMutations": 0,
+    "actualTunRuns": 0,
+    "guiOperations": 0,
+    "nativeAcceptancePassed": false,
+    "sourceSha256": "A8B611082EC04C7053079D511F29685926257B55A174A1CD844AC9A49784AF3A"
+  },
+  "nativeConfigurationChecks": [
+    {
+      "name": "clean-profile",
+      "configSha256": "52940d3c2275ce1e7c4c76da4eb24aa94cdfd9cd89cbe6b7a1a88e35a7c55060",
+      "nativeCheckAccepted": true,
+      "routeFinal": "proxy",
+      "autoDetectInterface": true,
+      "tunAutoRoute": true,
+      "tunStrictRoute": true,
+      "interfaceName": "egoist-vpn",
+      "dnsServerTypes": [
+        "https",
+        "udp",
+        "udp"
+      ],
+      "dnsProxyDetour": true,
+      "processRules": []
+    },
+    {
+      "name": "proposed-selected-system",
+      "configSha256": "1270194a48468c4989f081897ecdab16fc725bbd2602d4003690178e59e06851",
+      "nativeCheckAccepted": true,
+      "routeFinal": "direct",
+      "autoDetectInterface": true,
+      "tunAutoRoute": true,
+      "tunStrictRoute": true,
+      "interfaceName": "egoist-vpn",
+      "dnsServerTypes": [
+        "local",
+        "udp"
+      ],
+      "dnsProxyDetour": false,
+      "processRules": [
+        {
+          "process_name": [
+            "LagomVpnNativeProbe.exe"
+          ],
+          "outbound": "proxy"
+        }
+      ]
+    }
+  ],
+  "runtime": {
+    "version": "1.14.0",
+    "sha256": "aad0ede010eafa7b277e520464f3a66fde820103d737eff739f40f3cc9451dcc",
+    "bytes": 81819136,
+    "manifestSha256": "dff0af01b85601b9261c5d872cf5f5ac56d1ff91b0c6bc53e36b97c118c1af52"
+  },
+  "limitations": [
+    "SCM/TUN/Windows UIA/recovery/native emergency cleanup are pending execution on exact signed hosted installed candidate.",
+    "Controlled fixture does not prove external VPN-provider availability.",
+    "Reboot and months-long soak remain separate acceptance gates."
+  ]
+}

@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "scope": "actual production functions with controlled SCM/registry/service boundaries",
+  "productionSourceSha256": "3AD1A0FD65B3A8F42B2644C6CF8B375BC92981A504F5050C486AD769F26475FD",
+  "powerShellVersion": "5.1.26100.9168",
+  "caseCount": 38,
+  "passed": 38,
+  "failed": 0,
+  "actualEchoArguments": 148,
+  "ownedChildTimeoutKills": 1,
+  "forbiddenHostCalls": 0,
+  "realScmMutations": 0,
+  "realRegistryMutations": 0,
+  "realNetworkMutations": 0,
+  "cases": [
+    {
+      "name": "actual WinPS native argv preserves empty whitespace unicode quotes and trailing slashes",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "actual native process returns nonzero exit status",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "actual native timeout terminates only its owned child handle",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "oversized native argv rejected before start",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "missing legacy registration is created by SCM with exact command and dependency groups",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "existing stopped owned registration is configured and remains Disabled",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "foreign same-name registration prevents config and registry import",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "running owned registration is refused before config and import",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "ownership change immediately before SCM mutation is refused",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "ownership change after SCM return prevents registry import",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "old stage without checked metadata is refused and original backup retained",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported service type 32 is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported service type 272 is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported service type 1 is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported service type 2 is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported service type 0 is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported account DOMAIN\\User is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported account NT AUTHORITY\\LocalService is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported account NT SERVICE\\Legacy is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "tampered registry backup is refused before SCM mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "foreign registry section is refused before SCM mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "ambiguous unquoted executable is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "case-sensitive command argument mismatch is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "missing registry integrity metadata is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported error control is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported service-name quote is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "registry section with surrounding whitespace cannot escape ownership",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported dependency separator is refused before mutation",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "failed SCM Disabled readback prevents registry import",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "literal wildcard alias starts its own service despite foreign compatible name",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "foreign same-name service is refused before start",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "ownership change immediately before start cannot start foreign service",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "literal missing alias does not accept foreign wildcard match",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "checked SCM runner rejects nonzero native status",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "snapshot preserves unexpanded command and complete checked SCM metadata",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "unsupported registration rejected during snapshot before export and stop",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "snapshot preserves raw environment path while checking expanded live command",
+      "passed": true,
+      "error": ""
+    },
+    {
+      "name": "snapshot provider failure is not treated as empty services",
+      "passed": true,
+      "error": ""
+    }
+  ],
+  "unicodeFixtureFirstCodePoint": 1055,
+  "nativeLimitations": [
+    "No real SCM create/config/import/start or real service failure-restart queue",
+    "No real registry/DNS/network mutations; only owned temporary files and harmless child processes",
+    "SCM empty group/depend values, registration cache visibility, failure-actions import and queued restart require native acceptance",
+    "No full upgrade installer run or locked-payload migration",
+    "R29: no boot/power-loss recovery implementation",
+    "R30: live hung-worker lease prevents watchdog recovery; no cancellation/verified termination/bounded retry implementation",
+    "Confirmed terminal recovery flag defect remains open; marker survives but future watchdog retry is blocked",
+    "No months-long stability measurement"
+  ],
+  "generatedAtUtc": "2026-09-30T16:26:55.3027022Z",
+  "taskId": "01a0f2e8-78f3-7110-9d6f-8765864083dd",
+  "sourceState": "Source frozen; source-ready generic registration changes, not an installed or published release.",
+  "files": [
+    {
+      "path": "scripts/invoke-final-silent-reinstall.ps1",
+      "sha256": "3AD1A0FD65B3A8F42B2644C6CF8B375BC92981A504F5050C486AD769F26475FD",
+      "bytes": 94503
+    },
+    {
+      "path": "src/installer/service-maintenance.ps1",
+      "sha256": "516CC2B55ACCBC0AEBA7FA7451CEEECB8DAE958FFF6B5AEB7DA6981E9E740EB1",
+      "bytes": 8017
+    },
+    {
+      "path": "tests/installer-service-registration.ps1",
+      "sha256": "F65912B0B51C934FE739A19131F36BE235AE92371B6681D3D6E65F6D301DD26E",
+      "bytes": 24988
+    },
+    {
+      "path": "tests/installer-service-registration.test.mjs",
+      "sha256": "4EEC6DAE5631A78FF3E24DEAC9917F4C817C6B6BADA673980EF35C50DEBD5671",
+      "bytes": 2144
+    }
+  ],
+  "nativeArgumentEvidence": {
+    "fixtureRunsRecorded": 2,
+    "nativeCommandLaunchesPerFixture": 4,
+    "echoCommandLaunchesPerFixture": 2,
+    "nonzeroExitCommandLaunchesPerFixture": 1,
+    "timeoutCommandLaunchesPerFixture": 1,
+    "nativeCommandLaunchesAcrossDirectAndNodeRuns": 8,
+    "ownedTimeoutKillsAcrossDirectAndNodeRuns": 2,
+    "echoArgumentsPerFixture": 148,
+    "echoArgumentComparison": "Ordinal UTF-8/base64 round-trip of every argument; count checked before comparison.",
+    "includes": [
+      "Empty argument",
+      "Empty group/depend SCM values",
+      "Whitespace",
+      "Cyrillic and Chinese",
+      "Nested double quotes",
+      "Backslashes before quotes",
+      "Trailing backslashes",
+      "Literal shell metacharacters",
+      "Full 18-element create/config-style SCM argv"
+    ],
+    "compiledCommand": {
+      "sha256": "06D740256A91127229C96EFC97B0EA556BF7EBC9BD161A6CF24414D6FACEDED4",
+      "bytes": 5120,
+      "source": "Embedded harmless C# command in tests/installer-service-registration.ps1",
+      "locationScope": "Task-owned temporary work",
+      "identity": "Exact child handle held by Process object; no PID lookup to kill"
+    },
+    "hostProcessesIncludedInNativeCommandCount": false
+  },
+  "nodeCompatibilitySuite": {
+    "testFiles": [
+      "tests/installer-service-registration.test.mjs",
+      "tests/final-silent-reinstall.test.mjs",
+      "tests/installer-wrapper-migration.test.mjs",
+      "tests/installer-maintenance-lifecycle.test.mjs",
+      "tests/installer-recovery-reporting.test.mjs"
+    ],
+    "exitCode": 0,
+    "tests": 11,
+    "passed": 11,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 7420.18,
+    "fullLogSha256": "AE8BE732A08A31114FEA8FA10A70E689BE309E205092D2172A832C01C04DD875",
+    "fixtureScope": "AST-selected production functions; controlled SCM/registry/service calls; actual harmless own native argv and timeout command runs."
+  },
+  "additionalConfirmedOpenRisk": {
+    "code": "Terminal flag after unsuccessful recovery stops future watchdog recovery",
+    "sourceLocators": [
+      "scripts/invoke-final-silent-reinstall.ps1:1318",
+      "scripts/invoke-final-silent-reinstall.ps1:1335",
+      "scripts/invoke-final-silent-reinstall.ps1:1346",
+      "scripts/invoke-final-silent-reinstall.ps1:1364",
+      "scripts/invoke-final-silent-reinstall.ps1:1463"
+    ],
+    "result": {
+      "schemaVersion": 1,
+      "productionSourceSha256": "3AD1A0FD65B3A8F42B2644C6CF8B375BC92981A504F5050C486AD769F26475FD",
+      "scope": "Actual production watchdog/recovery with controlled SCM/marker/lease boundaries and own isolated files",
+      "markerStillActive": true,
+      "recoveryStatuses": [
+        "recovering",
+        "recovery-warning"
+      ],
+      "terminalFlag": "watchdog-recovered",
+      "attemptsAfterFirst": 1,
+      "attemptsAfterSecond": 1,
+      "forbiddenHostCalls": 0,
+      "realScmMutations": 0,
+      "realRegistryMutations": 0,
+      "realNetworkMutations": 0,
+      "realProcessKills": 0
+    },
+    "probeSha256": "171ED945C3C510B4D60535F12B25FE9016A60FA9E673833435A74EF494B74136",
+    "implemented": false
+  }
+}

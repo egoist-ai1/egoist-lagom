@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "capturedUtc": "2026-10-01T10:04:54.899Z",
+  "taskId": "01a0f425-9e46-7cd0-bc68-d12af2678068",
+  "title": "Production Zapret PowerShell query diagnostics",
+  "releaseReady": false,
+  "sourceFrozen": true,
+  "observedProblem": "Actual signed fresh380 SYSTEM component.query log exposes only reconstructed error.message. It loses original execFile code/killed/signal/pid/elapsed and cannot distinguish timeout, native exit or failed spawn.",
+  "productionScope": [
+    "src/recovered/electron/ipc/zapret-manager.js:listWinwsProcesses",
+    "src/recovered/electron/ipc/zapret-manager.js:execPowerShell"
+  ],
+  "originalSourceSha256": "FFC62CDD5103045620CABBA6C0C90B8890E38688DBD61CC0531A7830FD942D73",
+  "sources": [
+    {
+      "path": "src/recovered/electron/ipc/zapret-manager.js",
+      "bytes": 134504,
+      "sha256": "142367C88F2697AE1F9D95AB320CEE7938AD8BB7F07393CA21EEC4FB97ECCFE2"
+    },
+    {
+      "path": "tests/zapret-query-diagnostics.test.mjs",
+      "bytes": 7577,
+      "sha256": "A2D8E7736637304E3303A6E30FB9BA6A048E83CA07BC13BDC4B942771D0B1A77"
+    }
+  ],
+  "change": {
+    "fields": [
+      "kind",
+      "code",
+      "killed",
+      "signal",
+      "elapsedMs",
+      "timeoutMs",
+      "pid",
+      "stdoutBytes",
+      "stderrBytes"
+    ],
+    "clock": "performance.now monotonic duration rounded to integer milliseconds",
+    "pidOrigin": "The original promise returned by promisify(execFile).child.pid, positive integer or null",
+    "scalarPolicy": "Fixed known code/signal strings and bounded numeric code/PID; unfamiliar strings become unknown.",
+    "kindValues": [
+      "exit",
+      "terminated",
+      "spawn",
+      "output-limit",
+      "unknown"
+    ],
+    "causePreserved": "WinWS error.cause -> PowerShellExecutionError.cause -> original native error. Native cause is nonenumerable and retained only in process.",
+    "coreVisibleErrorMessage": "Fixed prefix plus safe scalar metadata; no command, output text, child argv/path or user configuration is included.",
+    "stdoutStderrPolicy": "Byte counts only, no stderr free text. Buffer length is exact; string length is UTF8 byte length of the existing decoded execFile API result, not an assertion of original pipe encoding.",
+    "invalidJsonPolicy": "Fixed safe JSON parse message; original SyntaxError remains cause without echoing its output excerpt.",
+    "diffInsertions": 40,
+    "diffDeletions": 11,
+    "timeoutRetryEnvironmentOwnershipBehaviorChanged": false,
+    "existingWorkerProtocolOrCoreChanged": false
+  },
+  "verification": {
+    "nodeVersion": "24.19.0",
+    "systemToken": false,
+    "administrativeToken": false,
+    "before": {
+      "command": "node --test tests/zapret-query-diagnostics.test.mjs",
+      "actualTestExitCode": 1,
+      "tests": 7,
+      "pass": 1,
+      "fail": 6,
+      "skipped": 0,
+      "durationMs": 535.3263,
+      "meaning": "Original production wrapper did not preserve metadata/cause and exposed synthetic input/output in public errors."
+    },
+    "afterFocused": {
+      "command": "node --test --test-reporter=tap tests/zapret-query-diagnostics.test.mjs",
+      "actualTestExitCode": 0,
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "duration_ms": 495.6971,
+      "receipt": {
+        "capturedUtc": "2026-10-01T10:00:50.8531668+00:00",
+        "exitCode": 0,
+        "nodeVersion": "v24.19.0",
+        "testFile": "tests/zapret-query-diagnostics.test.mjs",
+        "sourceSha256": "142367C88F2697AE1F9D95AB320CEE7938AD8BB7F07393CA21EEC4FB97ECCFE2",
+        "testSha256": "A2D8E7736637304E3303A6E30FB9BA6A048E83CA07BC13BDC4B942771D0B1A77",
+        "logSha256": "85DD964EFBA39C071D6DC84E5BE0FDEC69EA8EF3C6055F147275C9E877F8FEE0"
+      }
+    },
+    "afterCompatibility": {
+      "command": "node --test --test-reporter=tap tests/zapret-query-diagnostics.test.mjs tests/zapret-selection-lifecycle.test.mjs tests/zapret-hybrid-profile.test.mjs tests/network-lifecycle-reliability.test.mjs tests/autoselect-windows-feedback.test.mjs",
+      "tests": 66,
+      "pass": 66,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "duration_ms": 11463.164,
+      "processExitReceiptPersisted": false,
+      "resultBasis": "Completed TAP1..66 with zero failed/cancelled/skipped tests; standalone new module also has separate actual exit0 receipt."
+    },
+    "regressionGroups": [
+      "actual harmless child exit retains metadata and original cause through WinWS wrapper",
+      "actual own child timeout differs from nonzero exit without claiming provider cause",
+      "actual nonexistent own executable spawn failure has no PID and no path disclosure",
+      "actual output-limit failure is distinct from timeout and never emits captured output",
+      "successful own child keeps stdout and WinWS empty-result semantics unchanged",
+      "invalid JSON output is a fixed safe parse error while preserving SyntaxError cause",
+      "unrecognized error string fields are not reflected into public diagnostics"
+    ],
+    "actualHarmlessChildCases": [
+      "native exit7",
+      "own200ms timeout",
+      "ENOENT nonexistent own fixture executable",
+      "default1MiB output limit",
+      "success[]",
+      "invalid JSON synthetic output"
+    ],
+    "syntheticInputPropertyCase": "Unknown code/signal strings and synthetic input/stdout/stderr are suppressed; original error remains accessible only as cause.",
+    "messageBoundRegression": "Each public failure message <=512 characters and omits synthetic sensitive marker, input/CommandLine, executable path and captured stdout/stderr.",
+    "diffCheck": {
+      "command": "git diff --check -- src/recovered/electron/ipc/zapret-manager.js",
+      "exitCode": 0
+    },
+    "evidence": [
+      {
+        "file": "diagnostics-red.log",
+        "bytes": 9973,
+        "sha256": "23EF20DFCA089CED06C3B10A52192545A525BB070CC1D947554B50254B949132"
+      },
+      {
+        "file": "diagnostics-green.log",
+        "bytes": 15888,
+        "sha256": "4D3F5A3DD0CF9B89B4DF8D904A8E2912D756B19ED42116914C39E0A33701DCD9"
+      },
+      {
+        "file": "diagnostics-focused.log",
+        "bytes": 1783,
+        "sha256": "85DD964EFBA39C071D6DC84E5BE0FDEC69EA8EF3C6055F147275C9E877F8FEE0"
+      },
+      {
+        "file": "focused-receipt.json",
+        "bytes": 422,
+        "sha256": "1ACDE8B72C1855D623E74797A9CE1AE7F86FF01232866B18B753943178A5EB20"
+      }
+    ]
+  },
+  "environmentProbeReports": [
+    {
+      "path": "docs/product-hardening-2026-10-01/worker-powershell-environment-probe.md",
+      "bytes": 4425,
+      "sha256": "6FC343A33F0FF69E03C2131590CABC4C1E22EB58A23D24AE1D37283D6C245F26"
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/worker-powershell-environment-probe.json",
+      "bytes": 9095,
+      "sha256": "9B5C7076A047A20B7AF3A0603D1CFE64ECD1AAD518B83858120E22C7684CB217"
+    }
+  ],
+  "limitations": [
+    "No actual SYSTEM worker or WinPS CIM failure was reproduced by these own harmless Node children. They verify production error wrapping and native child metadata, not the hosted provider root cause.",
+    "The earlier actual normal-vs-eight-key WinPS A/B succeeded under a nonadmin user; adding missing environment variables is not justified.",
+    "kind=terminated/killed=true records observed child termination; it is not a claim that the WMI provider caused a timeout. Elapsed, budget, code and signal are retained for the next actual native decision.",
+    "No app/Setup/service start, SCM/DNS/Tasks/registry mutation, live process stop, SYSTEM impersonation, UI/CI/main/ComponentWorker/protocol edit, build/package/commit/push or publication was performed.",
+    "Parent integration/build/sign and actual source-bound hosted SYSTEM execution remain required. No uptime or release-readiness claim follows from this change."
+  ],
+  "nextDecisiveObservation": "Read the next actual source-bound SYSTEM Core component.query error: code/killed/signal/elapsed/pid/output byte counts now survive the existing message-only worker protocol; use them before any timeout/environment fix.",
+  "primaryReference": "https://nodejs.org/download/release/v24.19.0/docs/api/child_process.html#child_processexecfilefile-args-options-callback"
+}

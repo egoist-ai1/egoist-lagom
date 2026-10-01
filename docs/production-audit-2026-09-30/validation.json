@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "version": "3.8.0",
+  "baselineCommit": "d56eb9327fa75a88e91fae62b8d7ea3ed095dcf2",
+  "node": {
+    "tests": 633,
+    "pass": 633,
+    "fail": 0,
+    "skip": 0,
+    "durationMs": 16594.5506,
+    "logSha256": "05a963208526963e688730786c627ad4014f3be7f8d34aebacfe73f29c5450f6",
+    "scope": "Full source suite against first3.8 package; actual OpenSSL/TLS, packaged Xray, installer PlanOnly; no live service reinstall."
+  },
+  "csharp": {
+    "coreGroups": 27,
+    "nativeDohGroups": 17,
+    "wrapperLogGroups": 10,
+    "wrapperRotations": 144,
+    "actualCoreIntegration": true,
+    "packagedCoreSelfTest": "PASS protocol1/version3.8.0",
+    "compilerWarnings": 141
+  },
+  "ui": {
+    "matrix": 24,
+    "interactions": 7,
+    "geometryAndScroll": 10,
+    "aboutFocusEscape": true,
+    "rendererCrashTrials": 1,
+    "rendererDidFinishLoadMs": 390,
+    "fullEvidence": "native-ui/acceptance.json"
+  },
+  "artifactInitial": {
+    "sourceCommit": "6ee6ad78f14425fa20b74b673521a489acc65b27",
+    "mandatoryPayload": 85,
+    "licenseInventory": 276,
+    "asarBuildFiles": 126,
+    "fontFiles": 8,
+    "nativeSourceArchives": 144,
+    "finalReceipt": "../../dist/production-audit-3.8.0.json"
+  },
+  "npmAuditKnown": 0,
+  "ciLocal": {
+    "actionlint": "PASS",
+    "powershellParsedBlocks": 17,
+    "workflowSha256": "b35b5dc4a56a6521e4a743de420d4062897c9b462b0fce9489e77bec37858891",
+    "hosted": "Run36644018803 tool resolver failed; fixed. Run36645329326 trust fixture cleanup raced pending cache writer; deterministic regression and drainage fixed. Nextresult is finalartifact receipt."
+  },
+  "limitations": [
+    "No actual3.8 clean install/upgrade/uninstall/reboot",
+    "No new3.8 external VPN/Telegram delivery acceptance",
+    "No72h/7day/month soak",
+    "WinSW embeddedlog4net2.xEOL unresolved",
+    "Native corresponding-source/build coverage incomplete",
+    "No Authenticode publisher certificate",
+    "Current GUI required for VPN/TUN and updates",
+    "Old3.7.7 needs manual trust migration"
+  ]
+}

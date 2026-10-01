@@ -91,7 +91,7 @@ function buildNetworkCombinatorInspection(input) {
 		sidecar: module.sidecar ?? false
 	}));
 	return {
-		productVersion: input.productVersion ?? "3.5.4",
+		productVersion: input.productVersion ?? "unknown",
 		mode: "diagnostics-first",
 		modules,
 		activeLocks: unique(modules.flatMap((module) => module.ownedLocks)),

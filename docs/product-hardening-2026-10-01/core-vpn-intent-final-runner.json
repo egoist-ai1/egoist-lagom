@@ -1,0 +1,11 @@
+{
+  "reads": 50000,
+  "runnerSha256": "7031F6361FE4C2CEAD6992281D3FD7E8416FFE08B8922A9384B2FDFE72BC2687",
+  "case": "vpn",
+  "sourceFileCount": 76,
+  "harnessSha256": "38AACB0DBBFA509BC885199A662B8E7315D494D0285677D1BE32705A66F01344",
+  "replaces": 10000,
+  "schemaVersion": 1,
+  "sdk": "C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\.tools\\dotnet-10.0.401\\dotnet.exe",
+  "sdkVersion": "10.0.401"
+}

@@ -64,7 +64,7 @@ function candidateEquals(left, right) {
 }
 function buildCandidate(trust, releaseUrl) {
 	const manifest = trust.manifest;
-	if (trust.trustStatus !== "trusted" || !trust.manifestVerified || !manifest || !trust.manifestDigest || !trust.keyId) throw new UpdaterError("signature-invalid", "Релиз не прошёл проверку Ed25519 и заблокирован.");
+	if (trust.trustStatus !== "trusted" || !trust.manifestVerified || !manifest || !trust.manifestDigest || !trust.keyId) throw new UpdaterError(trust.failureCode ?? "signature-invalid", trust.warnings?.join(" ") || "Релиз не прошёл проверку Ed25519 и заблокирован.", trust.retryable === true);
 	return {
 		version: manifest.version,
 		minimumAppVersion: manifest.minimumAppVersion,
@@ -96,7 +96,7 @@ async function computeFileDigest(filePath, algorithm) {
 function assertCanonicalCandidateUrl(candidate) {
 	const url = new URL(candidate.assetUrl);
 	const expectedPath = `/${APP_RELEASE_OWNER}/${APP_RELEASE_REPOSITORY}/releases/download/${candidate.tag}/${candidate.assetName}`;
-	if (url.protocol !== "https:" || url.hostname !== "github.com" || url.pathname !== expectedPath || url.search || url.hash) throw new UpdaterError("candidate-mismatch", "Адрес Setup не совпадает с доверенным release channel.");
+	if (url.protocol !== "https:" || url.hostname !== "github.com" || url.username || url.password || url.port || url.pathname !== expectedPath || url.search || url.hash) throw new UpdaterError("candidate-mismatch", "Адрес Setup не совпадает с доверенным release channel.");
 }
 function buildProtectedUpdaterLaunch(candidate, options, finalPath) {
 	const updatesDir = path.dirname(finalPath);
@@ -154,7 +154,7 @@ var DesktopUpdater = class {
 		});
 		return this.checkPromise;
 	}
-	async checkAndInstall() {
+	async checkAndInstall({ shouldContinue = null } = {}) {
 		if (this.installPromise) return {
 			ok: false,
 			phase: "blocked",
@@ -163,7 +163,7 @@ var DesktopUpdater = class {
 			failureCode: "busy",
 			retryable: true
 		};
-		this.installPromise = this.checkAndInstallInternal().finally(() => {
+		this.installPromise = this.checkAndInstallInternal(shouldContinue).finally(() => {
 			this.installPromise = null;
 		});
 		return this.installPromise;
@@ -207,7 +207,8 @@ var DesktopUpdater = class {
 				expectedVersion: version,
 				expectedInstallerName: assetName,
 				expectedInstallerUrl: canonicalUrl,
-				headers: this.headers
+				headers: this.headers,
+				userDataDir: this.options.userDataDir
 			});
 			return {
 				candidate: buildCandidate(trust, release.html_url ?? APP_RELEASE_PAGE_URL),
@@ -215,14 +216,19 @@ var DesktopUpdater = class {
 				warnings: trust.warnings
 			};
 		} catch (error) {
+			if (error instanceof UpdaterError && ["signature-invalid", "key-unknown", "key-revoked", "anti-rollback", "manifest-invalid", "manifest-missing", "candidate-mismatch", "unsupported-channel"].includes(error.code)) throw error;
 			apiError = error;
 		}
 		const fallbackTrust = await verifyStableChannelTrust({
 			manifestUrl: STABLE_CHANNEL_URL,
 			signatureUrl: STABLE_CHANNEL_SIGNATURE_URL,
-			headers: this.headers
+			headers: this.headers,
+			userDataDir: this.options.userDataDir
 		});
-		if (fallbackTrust.trustStatus !== "trusted") throw mapUnknownError(apiError ?? new Error(fallbackTrust.warnings.join(" ")));
+		if (fallbackTrust.trustStatus !== "trusted") {
+			if (fallbackTrust.failureCode) throw new UpdaterError(fallbackTrust.failureCode, fallbackTrust.warnings?.join(" ") || "Подписанный stable-канал не прошёл проверку доверия.", fallbackTrust.retryable === true);
+			throw mapUnknownError(apiError ?? new Error(fallbackTrust.warnings.join(" ")));
+		}
 		return {
 			candidate: buildCandidate(fallbackTrust, APP_RELEASE_PAGE_URL),
 			release: null,
@@ -245,15 +251,17 @@ var DesktopUpdater = class {
 		try {
 			const resolution = await this.resolveTrustedCandidate();
 			const { candidate } = resolution;
+			const warnings = resolution.warnings ?? [];
+			const withWarnings = (message) => warnings.length ? `${message} ${warnings.join(" ")}` : message;
 			if (!candidate) {
-				const message = `Публичный релиз ${resolution.publicVersion} не новее установленной версии ${this.options.currentVersion}.`;
+				const message = withWarnings(`Публичный релиз ${resolution.publicVersion} не новее установленной версии ${this.options.currentVersion}.`);
 				emit(this.options, { phase: "up-to-date", message, version: resolution.publicVersion, percent: 100 });
 				return { ok: true, phase: "up-to-date", currentVersion: this.options.currentVersion,
-					latestVersion: resolution.publicVersion, releaseHistory: await this.fetchReleaseHistory(), message };
+					latestVersion: resolution.publicVersion, releaseHistory: await this.fetchReleaseHistory(), warnings, message };
 			}
 			const compared = compareLooseVersions(candidate.version, this.options.currentVersion);
 			if (compared <= 0) {
-				const message = compared === 0 ? `Установлена последняя версия ${this.options.currentVersion}.` : `Локальная версия ${this.options.currentVersion} новее stable-канала.`;
+				const message = withWarnings(compared === 0 ? `Установлена последняя версия ${this.options.currentVersion}.` : `Локальная версия ${this.options.currentVersion} новее stable-канала.`);
 				emit(this.options, {
 					phase: "up-to-date",
 					message,
@@ -266,14 +274,16 @@ var DesktopUpdater = class {
 					currentVersion: this.options.currentVersion,
 					latestVersion: candidate.version,
 					releaseHistory: await this.fetchReleaseHistory(),
+					warnings,
 					message
 				};
 			}
 			await this.enforceAntiRollback(candidate);
 			if (compareLooseVersions(this.options.currentVersion, candidate.minimumAppVersion) < 0) throw new UpdaterError("migration-required", `Для обновления требуется Egoist Lagom ${candidate.minimumAppVersion} или новее. Один раз установите проверенный Setup из страницы релиза.`);
+			const message = withWarnings(`Версия ${candidate.version} проверена и готова к установке.`);
 			emit(this.options, {
 				phase: "available",
-				message: `Доступна доверенная версия ${candidate.version}.`,
+				message,
 				version: candidate.version,
 				percent: 0
 			});
@@ -284,7 +294,8 @@ var DesktopUpdater = class {
 				latestVersion: candidate.version,
 				candidate,
 				releaseHistory: await this.fetchReleaseHistory(),
-				message: resolution.warnings.length > 0 ? `Версия ${candidate.version} проверена. Windows может показать SmartScreen/UAC.` : `Версия ${candidate.version} проверена и готова к установке.`
+				warnings,
+				message
 			};
 		} catch (error) {
 			const result = failureResult(this.options.currentVersion, error);
@@ -295,26 +306,34 @@ var DesktopUpdater = class {
 			return result;
 		}
 	}
-	async checkAndInstallInternal() {
+	async checkAndInstallInternal(shouldContinue = null) {
 		const checked = await this.check();
 		if (!checked.ok || checked.phase !== "available" || !checked.candidate) return checked;
 		const candidate = checked.candidate;
+		let warnings = checked.warnings ?? [];
+		let helperLaunchCommitted = false;
+		const withWarnings = (message) => warnings.length ? `${message} ${warnings.join(" ")}` : message;
+		const assertContinuation = () => {
+			if (shouldContinue !== null && shouldContinue() !== true) throw new UpdaterError("cancelled", "Автоматическое обновление отменено: настройка изменена или приложение закрывается.", true);
+		};
 		try {
+			assertContinuation();
 			assertCanonicalCandidateUrl(candidate);
 			const partialPath = path.join(this.updatesDirectory(), `${candidate.assetName}.partial`);
 			const finalPath = path.join(this.updatesDirectory(), candidate.assetName);
 			emit(this.options, {
 				phase: "downloading",
-				message: `Загружаем ${candidate.version}…`,
+				message: withWarnings(`Загружаем ${candidate.version}…`),
 				version: candidate.version,
 				percent: 0,
 				transferred: 0,
 				total: candidate.size
 			});
-			await this.downloadCandidateWithRetry(candidate, partialPath);
+			await this.downloadCandidateWithRetry(candidate, partialPath, warnings, assertContinuation);
+			assertContinuation();
 			emit(this.options, {
 				phase: "verifying",
-				message: "Проверяем Ed25519, SHA-256, SHA-512 и размер…",
+				message: withWarnings("Проверяем Ed25519, SHA-256, SHA-512 и размер…"),
 				version: candidate.version,
 				percent: 100
 			});
@@ -323,6 +342,7 @@ var DesktopUpdater = class {
 			if (sha256 !== candidate.sha256 || sha512 !== candidate.sha512) throw new UpdaterError("integrity-failed", "Контрольная сумма Setup не совпала; файл удалён.");
 			const rechecked = await this.check();
 			if (!rechecked.ok || rechecked.phase !== "available" || !rechecked.candidate || !candidateEquals(candidate, rechecked.candidate)) throw new UpdaterError("candidate-mismatch", "Release candidate изменился во время загрузки; запуск заблокирован.");
+			warnings = rechecked.warnings ?? warnings;
 			await promises.rm(finalPath, { force: true });
 			await promises.rename(partialPath, finalPath);
 			await promises.rm(`${partialPath}.json`, { force: true });
@@ -337,10 +357,12 @@ var DesktopUpdater = class {
 				if (!(await promises.stat(required).catch(() => null))?.isFile()) throw new UpdaterError("installer-launch-failed", "В установленной версии отсутствует компонент защищённого обновления.", true);
 			}
 			await writeJsonAtomic(launch.manifestPath, launch.manifest);
+			assertContinuation();
 			if (this.options.canInstall && !(await this.options.canInstall())) throw new UpdaterError("busy", "Обновление отложено до отключения VPN и завершения изменений компонентов.", true);
+			assertContinuation();
 			emit(this.options, {
 				phase: "installing",
-				message: "Запускаем защищённое обновление с видимым ходом установки…",
+				message: withWarnings("Запускаем защищённое обновление с видимым ходом установки…"),
 				version: candidate.version,
 				percent: 100
 			});
@@ -350,15 +372,18 @@ var DesktopUpdater = class {
 				"-ExpectedSha256", candidate.sha256, "-InstallerUiPath", launch.uiPath, "-InstallerFontPath", launch.fontPath,
 				"-HandoffSignalPath", launch.signalPath, "-FromVersion", this.options.currentVersion, "-DelaySeconds", "8"];
 			if (this.options.restartMinimized?.()) args.push("-MinimizedAfter");
+			assertContinuation();
 			const child = spawn(powershell, args, { stdio: "ignore", windowsHide: true });
+			helperLaunchCommitted = Number.isInteger(child.pid) && child.pid > 0;
 			const exitCode = await new Promise((resolve, reject) => {
+				child.once("spawn", () => { helperLaunchCommitted = true; });
 				child.once("error", () => reject(new UpdaterError("installer-launch-failed", "Не удалось запустить защищённое обновление.", true)));
 				child.once("close", resolve);
 			});
 			if (exitCode !== 0) throw new UpdaterError("installer-launch-failed", "Защищённое обновление не запустилось. Приложение и службы сохранены; подробности в журнале.", true);
 			emit(this.options, {
 				phase: "restarting",
-				message: "Мастер запущен. Egoist Lagom перезапустится после обновления.",
+				message: withWarnings("Мастер запущен. Egoist Lagom перезапустится после обновления."),
 				version: candidate.version,
 				percent: 100
 			});
@@ -368,7 +393,8 @@ var DesktopUpdater = class {
 				currentVersion: this.options.currentVersion,
 				latestVersion: candidate.version,
 				candidate,
-				message: "Проверенный мастер обновления запущен."
+				warnings,
+				message: withWarnings("Проверенный мастер обновления запущен.")
 			};
 		} catch (error) {
 			const mapped = mapUnknownError(error);
@@ -376,7 +402,7 @@ var DesktopUpdater = class {
 				"download-failed",
 				"timeout",
 				"offline"
-			].includes(mapped.code)) await this.removeCandidateFiles(candidate).catch(() => void 0);
+			].includes(mapped.code) && !helperLaunchCommitted) await this.removeCandidateFiles(candidate).catch(() => void 0);
 			const result = failureResult(this.options.currentVersion, mapped);
 			emit(this.options, {
 				phase: result.phase,
@@ -386,18 +412,20 @@ var DesktopUpdater = class {
 			return result;
 		}
 	}
-	async downloadCandidateWithRetry(candidate, partialPath) {
+	async downloadCandidateWithRetry(candidate, partialPath, warnings = [], assertContinuation = null) {
 		for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt += 1) {
 			try {
-				await this.downloadCandidate(candidate, partialPath);
+				assertContinuation?.();
+				await this.downloadCandidate(candidate, partialPath, warnings, assertContinuation);
 				return;
 			} catch (error) {
+				assertContinuation?.();
 				const mapped = mapUnknownError(error);
 				if (!["download-failed", "timeout", "offline"].includes(mapped.code) || attempt === DOWNLOAD_ATTEMPTS) throw mapped;
 				const transferred = Math.min(candidate.size, (await promises.stat(partialPath).catch(() => null))?.size ?? 0);
 				emit(this.options, {
 					phase: "downloading",
-					message: `Соединение прервалось. Продолжаем загрузку (${attempt + 1}/${DOWNLOAD_ATTEMPTS})…`,
+					message: [`Соединение прервалось. Продолжаем загрузку (${attempt + 1}/${DOWNLOAD_ATTEMPTS})…`, ...warnings].join(" "),
 					version: candidate.version,
 					percent: Math.min(99, Math.floor(transferred / candidate.size * 100)),
 					transferred,
@@ -407,7 +435,7 @@ var DesktopUpdater = class {
 			}
 		}
 	}
-	async downloadCandidate(candidate, partialPath) {
+	async downloadCandidate(candidate, partialPath, warnings = [], assertContinuation = null) {
 		await promises.mkdir(this.updatesDirectory(), { recursive: true });
 		const metadataPath = `${partialPath}.json`;
 		let metadata = await readJsonFile(metadataPath);
@@ -433,75 +461,84 @@ var DesktopUpdater = class {
 		}
 		const { response } = await fetchWithRetry(candidate.assetUrl, {
 			headers,
-			redirect: "follow",
+			validateUrl: rawUrl => {
+				const url = new URL(rawUrl);
+				if (url.protocol !== "https:" || url.username || url.password || url.port || url.hash || !ALLOWED_REDIRECT_HOSTS.has(url.hostname.toLowerCase())) {
+					throw new UpdaterError("redirect-blocked", "GitHub перенаправил загрузку на недоверенный адрес.");
+				}
+			},
+			maxRedirects: 4,
 			timeoutMs: 6e4,
 			retries: 2,
 			retryBaseDelayMs: 1e3
 		});
-		const finalUrl = new URL(response.url || candidate.assetUrl);
-		if (finalUrl.protocol !== "https:" || !ALLOWED_REDIRECT_HOSTS.has(finalUrl.hostname.toLowerCase())) throw new UpdaterError("redirect-blocked", "GitHub перенаправил загрузку на недоверенный адрес.");
-		const append = existingSize > 0 && response.status === 206;
-		if (append) {
-			const range = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(response.headers.get("content-range") ?? "");
-			if (!range || Number(range[1]) !== existingSize || Number(range[2]) < existingSize || Number(range[2]) >= candidate.size || Number(range[3]) !== candidate.size) {
-				await response.body?.cancel().catch(() => void 0);
-				throw new UpdaterError("integrity-failed", "Продолжение загрузки не совпадает с подписанным размером и сохранённой позицией.");
-			}
-		}
-		if (existingSize > 0 && !append) {
-			existingSize = 0;
-			await promises.rm(partialPath, { force: true });
-		}
-		const contentLength = Number.parseInt(response.headers.get("content-length") ?? "0", 10) || 0;
-		const expectedTransferred = append ? existingSize + contentLength : contentLength;
-		if (contentLength > 0 && expectedTransferred > candidate.size) throw new UpdaterError("integrity-failed", "Сервер сообщил размер больше подписанного manifest.");
-		const etag = response.headers.get("etag");
-		await writeJsonAtomic(metadataPath, {
-			schemaVersion: 1,
-			version: candidate.version,
-			assetUrl: candidate.assetUrl,
-			expectedSize: candidate.size,
-			etag
-		});
-		if (!response.body) throw new UpdaterError("download-failed", "Сервер не вернул содержимое Setup.", true);
-		const file = await promises.open(partialPath, append ? "a" : "w");
-		const reader = response.body.getReader();
-		let transferred = existingSize;
-		let timedOut = false;
+		let file;
+		let reader;
+		let timeout;
 		let idleTimeout;
-		const refreshIdleTimeout = () => {
-			clearTimeout(idleTimeout);
-			idleTimeout = setTimeout(() => {
+		try {
+			const finalUrl = new URL(response.url || candidate.assetUrl);
+			if (finalUrl.protocol !== "https:" || finalUrl.username || finalUrl.password || finalUrl.port || finalUrl.hash || !ALLOWED_REDIRECT_HOSTS.has(finalUrl.hostname.toLowerCase())) throw new UpdaterError("redirect-blocked", "GitHub перенаправил загрузку на недоверенный адрес.");
+			const append = existingSize > 0 && response.status === 206;
+			if (append) {
+				const range = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(response.headers.get("content-range") ?? "");
+				if (!range || Number(range[1]) !== existingSize || Number(range[2]) < existingSize || Number(range[2]) >= candidate.size || Number(range[3]) !== candidate.size) {
+					throw new UpdaterError("integrity-failed", "Продолжение загрузки не совпадает с подписанным размером и сохранённой позицией.");
+				}
+			}
+			if (existingSize > 0 && !append) {
+				existingSize = 0;
+				await promises.rm(partialPath, { force: true });
+			}
+			const contentLength = Number.parseInt(response.headers.get("content-length") ?? "0", 10) || 0;
+			const expectedTransferred = append ? existingSize + contentLength : contentLength;
+			if (contentLength > 0 && expectedTransferred > candidate.size) throw new UpdaterError("integrity-failed", "Сервер сообщил размер больше подписанного manifest.");
+			const etag = response.headers.get("etag");
+			await writeJsonAtomic(metadataPath, {
+				schemaVersion: 1,
+				version: candidate.version,
+				assetUrl: candidate.assetUrl,
+				expectedSize: candidate.size,
+				etag
+			});
+			if (!response.body) throw new UpdaterError("download-failed", "Сервер не вернул содержимое Setup.", true);
+			file = await promises.open(partialPath, append ? "a" : "w");
+			reader = response.body.getReader();
+			let transferred = existingSize;
+			let timedOut = false;
+			const refreshIdleTimeout = () => {
+				clearTimeout(idleTimeout);
+				idleTimeout = setTimeout(() => {
+					timedOut = true;
+					reader.cancel().catch(() => void 0);
+				}, DOWNLOAD_IDLE_TIMEOUT_MS);
+			};
+			timeout = setTimeout(() => {
 				timedOut = true;
 				reader.cancel().catch(() => void 0);
-			}, DOWNLOAD_IDLE_TIMEOUT_MS);
-		};
-		const timeout = setTimeout(() => {
-			timedOut = true;
-			reader.cancel().catch(() => void 0);
-		}, DOWNLOAD_TIMEOUT_MS);
-		try {
+			}, DOWNLOAD_TIMEOUT_MS);
 			refreshIdleTimeout();
 			while (true) {
+				assertContinuation?.();
 				let chunk;
 				try {
 					chunk = await reader.read();
 				} catch {
 					throw new UpdaterError("download-failed", "Соединение загрузки прервалось; сохранённая часть будет проверена и использована при повторе.", true);
 				}
+				assertContinuation?.();
 				const { done, value } = chunk;
 				if (done) break;
 				if (!value) continue;
 				refreshIdleTimeout();
 				transferred += value.byteLength;
 				if (transferred > candidate.size || transferred > UPDATE_MAX_BYTES) {
-					await reader.cancel().catch(() => void 0);
 					throw new UpdaterError("integrity-failed", "Загрузка превысила подписанный размер Setup.");
 				}
 				await file.writeFile(Buffer.from(value));
 				emit(this.options, {
 					phase: "downloading",
-					message: `Загружаем ${candidate.version}…`,
+					message: [`Загружаем ${candidate.version}…`, ...warnings].join(" "),
 					version: candidate.version,
 					percent: Math.min(99, Math.floor(transferred / candidate.size * 100)),
 					transferred,
@@ -513,9 +550,11 @@ var DesktopUpdater = class {
 		} finally {
 			clearTimeout(timeout);
 			clearTimeout(idleTimeout);
-			await reader.cancel().catch(() => void 0);
-			reader.releaseLock?.();
-			await file.close();
+			if (reader) {
+				await reader.cancel().catch(() => void 0);
+				reader.releaseLock?.();
+			} else await response.body?.cancel().catch(() => void 0);
+			await file?.close();
 		}
 	}
 	updatesDirectory() {

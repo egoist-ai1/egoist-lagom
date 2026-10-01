@@ -1,0 +1,22 @@
+
+7-Zip 26.03 (x64) : Copyright (c) 1999-2026 Igor Pavlov : 2026-09-03
+
+Scanning the drive for archives:
+1 file, 206521508 bytes (197 MiB)
+
+Extracting archive: D:\a\_temp\lagom-signed-legacy-3.7.9\old\EgoistShield-Setup-3.7.9.exe
+--
+Path = D:\a\_temp\lagom-signed-legacy-3.7.9\old\EgoistShield-Setup-3.7.9.exe
+Type = Nsis
+Physical Size = 206521508
+Method = LZMA:23
+Solid = +
+Headers Size = 37162
+Embedded Stub Size = 410624
+SubType = NSIS-3 Unicode
+
+Everything is Ok
+
+Files: 179
+Size:       637697403
+Compressed: 206521508

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "closedAt": "2026-09-30T12:01:57.677Z",
+  "method": "actual owned X button",
+  "rendererClosed": true,
+  "ownPidAbsent": true,
+  "ownDebugListeners": 0,
+  "installedVersionScope": "3.7.9; point-in-time readback, no new install or reboot",
+  "services": [
+    {
+      "Name": "EgoistShieldCore",
+      "State": "Running",
+      "StartMode": "Auto"
+    },
+    {
+      "Name": "EgoistShieldSystemDoH",
+      "State": "Running",
+      "StartMode": "Auto"
+    },
+    {
+      "Name": "EgoistShieldTelegramProxy",
+      "State": "Running",
+      "StartMode": "Auto"
+    },
+    {
+      "Name": "EgoistShieldZapret",
+      "State": "Running",
+      "StartMode": "Auto"
+    }
+  ],
+  "liveSystemMutatedByUiHarness": false,
+  "rawEvidence": [
+    {
+      "name": "close-readback.json",
+      "sha256": "644b1b159296ce6751b117a9732feb6e20d0b989b06c8fa5bb4558c24ca02da4",
+      "scope": "own task work; sanitized metrics exported"
+    },
+    {
+      "name": "scm-final.json",
+      "sha256": "e45abcc9e2be0f9d7e7790b29a4df53f6c1828d34c51409ca49cbf352687415e",
+      "scope": "own task work; sanitized metrics exported"
+    }
+  ]
+}

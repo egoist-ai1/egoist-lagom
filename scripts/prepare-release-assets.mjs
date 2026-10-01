@@ -42,7 +42,12 @@ export async function prepareReleaseAssets(options = {}) {
   if (!/^\d+\.\d+\.\d+$/.test(minimumAppVersion)) throw new Error('Invalid minimum auto-update version');
   const installerName = pkg.version === '3.7.1' ? 'Egoist-Lagom-Setup.exe' : `EgoistShield-Setup-${pkg.version}.exe`;
   const installer = await fs.readFile(path.join(dist, installerName));
-  const integrity = JSON.parse(await fs.readFile(path.join(dist, 'package-integrity.json'), 'utf8'));
+  const integrityBytes = await fs.readFile(path.join(dist, 'package-integrity.json'));
+  const integrity = JSON.parse(integrityBytes);
+  const [releaseMajor, releaseMinor] = pkg.version.split('.').map(Number);
+  const requiresSourceBinding = releaseMajor > 3 || releaseMajor === 3 && releaseMinor >= 8;
+  const sourceCommit = integrity.source?.commit;
+  if ((requiresSourceBinding || sourceCommit !== undefined) && (typeof sourceCommit !== 'string' || !/^[a-f0-9]{40}$/.test(sourceCommit))) throw new Error('Candidate package integrity requires an exact source commit.');
   const installerReceipt = installerName === 'Egoist-Lagom-Setup.exe' ? integrity.publicInstaller : integrity.installer;
   if (!installer.length || installer.length > 1024 ** 3 || integrity.version !== pkg.version || installerReceipt?.bytes !== installer.length || typeof installerReceipt?.sha256 !== 'string' || installerReceipt.sha256.toLowerCase() !== hash(installer) || path.basename(installerReceipt?.path ?? '') !== installerName) throw new Error('Installer does not match package-integrity.json');
   const publicAlias = await fs.readFile(path.join(dist, 'Egoist-Lagom-Setup.exe'));
@@ -53,7 +58,7 @@ export async function prepareReleaseAssets(options = {}) {
     const bytes = trust.files[name];
     if (!packed || packed.bytes !== bytes.length || String(packed.sha256).toLowerCase() !== hash(bytes)) throw new Error(`Source trust differs from packaged trust: ${name}; rebuild the installer`);
   }
-  const expected = { schemaVersion: 2, channel: 'stable', version: pkg.version, tag: `v${pkg.version}`, installerName, canonicalDownloadUrl: `https://github.com/egoist-ai1/egoist-lagom/releases/download/v${pkg.version}/${installerName}`, size: installer.length, sha256: hash(installer), sha512: hash(installer, 'sha512'), githubDigest: `sha256:${hash(installer)}` };
+  const expected = { schemaVersion: 2, channel: 'stable', version: pkg.version, tag: `v${pkg.version}`, installerName, canonicalDownloadUrl: `https://github.com/egoist-ai1/egoist-lagom/releases/download/v${pkg.version}/${installerName}`, size: installer.length, sha256: hash(installer), sha512: hash(installer, 'sha512'), githubDigest: `sha256:${hash(installer)}`, ...(sourceCommit ? { sourceCommit, integrityManifestSha256: hash(integrityBytes) } : {}) };
   if (options['verify-only']) {
     if (options['verify-only'] !== 'true') throw new Error('--verify-only requires true');
     const bytes = await fs.readFile(path.join(dist, 'release-manifest.json'));

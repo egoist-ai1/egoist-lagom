@@ -1,0 +1,7 @@
+RUN: typed-atomic-read-and-replace
+ATOMIC_COUNTERS: writes=10000; reads=50000; falseMissing=3; unavailable=0; malformed=0
+System.InvalidOperationException: Atomic replace returned false absence/corrupt read: writes=10000; reads=50000; missing=3; unavailable=0; malformed=0.
+   at CorePersistenceProduction.TestProgram.Assert(Boolean valid, String text) in C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\core-persistence-production.cs:line 50
+   at CorePersistenceProduction.TestProgram.AtomicReads() in C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\core-persistence-production.cs:line 108
+   at CorePersistenceProduction.TestProgram.Check(String name, Func`1 test) in C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\core-persistence-production.cs:line 54
+   at CorePersistenceProduction.TestProgram.Main(String[] args) in C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\core-persistence-production.cs:line 30

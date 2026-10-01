@@ -1,0 +1,115 @@
+{
+  "recordedAtUtc": "2026-10-01T01:16:46.497095+00:00",
+  "taskId": "01a0f42c-32b2-79a2-beba-be99c620a2c8",
+  "status": "UI source frozen; targeted rendered acceptance passed",
+  "scope": "Supported production routing/DNS/TUN/rule controls, narrow settings/rules CAS APIs, native HTML dialog, dedicated notification row; no native host mutation",
+  "tests": {
+    "node": "24.19.0",
+    "count": 46,
+    "passed": 46,
+    "failed": 0,
+    "skipped": 0,
+    "exitCode": 0,
+    "durationMs": 804.0696,
+    "command": "node --test tests/production-ui-network-settings.test.mjs tests/production-ui-hardening.test.mjs tests/ui-service-readiness.test.mjs tests/zapret-history.test.mjs tests/state-rules-patch.test.mjs"
+  },
+  "rendered": {
+    "browser": "151.0.7922.34",
+    "statesAndScreenshots": 20,
+    "interactionGroups": 11,
+    "errors": 0,
+    "externalRequests": 0,
+    "horizontalOverflows": 0,
+    "blockedVisibleEnabledControlCenters": 0,
+    "nativeSystemMutations": 0,
+    "nativeWindowsUiaVerified": false,
+    "nativeWindowsDpiVerified": false
+  },
+  "boundedRendererMountOnlyVerified": true,
+  "sourceHashes": {
+    "src/brand/CompactRuby.jsx": {
+      "sha256Raw": "652eb41b16eefa65ef6af2f49b5c468a3b9bd676ed7281c42cd5efbca18feeb0",
+      "sha256Lf": "652eb41b16eefa65ef6af2f49b5c468a3b9bd676ed7281c42cd5efbca18feeb0",
+      "bytes": 59198
+    },
+    "src/brand/compact-surfaces.css": {
+      "sha256Raw": "a10318a6ac62f6090efb76fffbcb220f764d84841b97cb929a82b3f6c0498098",
+      "sha256Lf": "a10318a6ac62f6090efb76fffbcb220f764d84841b97cb929a82b3f6c0498098",
+      "bytes": 66719
+    },
+    "src/recovered/renderer.js": {
+      "sha256Raw": "83c23387e581151eae23bcf2f2f945a8dc0c3d1fd18aa67145b6a6d6370f3d5a",
+      "sha256Lf": "9e05041f0efa329bfe6a55622291dec66a7a8f6c17526f9290fb216bdace8438",
+      "bytes": 671308
+    },
+    "tests/production-ui-network-settings.test.mjs": {
+      "sha256Raw": "3f093dd37fcc7c02daaabf05ce9f2cdb320414c8dbd26edff015badef4f3dd22",
+      "sha256Lf": "3f093dd37fcc7c02daaabf05ce9f2cdb320414c8dbd26edff015badef4f3dd22",
+      "bytes": 9575
+    },
+    "src/recovered/preload.cjs": {
+      "sha256Raw": "b43a139cb749c3240857b47b48b45086f5a242b7c7ece51c8a29a8bb929f8d23",
+      "sha256Lf": "f7bf8512b57708e85c707ba37757965662a2f80915f3d78543596816b1d578a7",
+      "bytes": 13305
+    },
+    "src/recovered/electron/ipc/ipc-schemas.js": {
+      "sha256Raw": "5a3363f0cd6da4d356ca31cefb0e4412369fcdf890597c4ab53623f336393a38",
+      "sha256Lf": "5a3363f0cd6da4d356ca31cefb0e4412369fcdf890597c4ab53623f336393a38",
+      "bytes": 12445
+    },
+    "src/recovered/electron/ipc/state-store.js": {
+      "sha256Raw": "88e9244153aa07395994d9d8ef2cfad1250a286905f4175e56bd79f046f92b4b",
+      "sha256Lf": "712c8d87a4844b413e68cb10c6221bfbf1e1007099e81cef6656a5d9fbe91e86",
+      "bytes": 20849
+    },
+    "src/recovered/electron/ipc/handlers-system.js": {
+      "sha256Raw": "f049ebdefd5a484e0b1122e683e3498fc50f853b4d923d24472e3a90f45ea2c0",
+      "sha256Lf": "dcce86d5e4c3d943d92bc21eee8cfc4ea2c0b276224967c7c59310a05eb6ad59",
+      "bytes": 70037
+    },
+    "src/recovered/electron/ipc/config-builder.js": {
+      "sha256Raw": "3a73011f06b7c31f4fe2bf2c5922da11523975a073249cbd7772b1653bc786b9",
+      "sha256Lf": "3a73011f06b7c31f4fe2bf2c5922da11523975a073249cbd7772b1653bc786b9",
+      "bytes": 24395
+    },
+    "docs/product-hardening-2026-10-01/ui-network-settings-verify.mjs": {
+      "sha256Raw": "2ebe55abdf974874836fdaf00e5a8309f68f2c2039fe24febcd1520d731a025c",
+      "sha256Lf": "2ebe55abdf974874836fdaf00e5a8309f68f2c2039fe24febcd1520d731a025c",
+      "bytes": 28020
+    }
+  },
+  "artifacts": {
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-browser-200-reduced.png": "9adbb694a6def1c89acf42ffb5d2e027e496ef90414351d4ca9e9d8a280dc070",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-collapsed.png": "0fd22291fd29e18fc1f8cfc46defd184e01ade5be242f1d4143d9ad79a7ac358",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-custom-invalid.png": "3c3cfbf64e129f106c10174ab77d297126f4c45ca5782d6477f0918e2b5a7967",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-custom-saved.png": "c1aff4bf42d803fb83fc58c1f4eb168b1da63d7328479daeef5edd3dab050f35",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-default.png": "6f93229309fd3f2389a9962c14d94958192c70e46deb470c2f5fb85a009459c9",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-explicit-background-apply.png": "2e0db6677e85ad096141548e30bbfca8d5245641107f5ba8146bd9838fae7c1d",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-hud-1060.png": "2e0db6677e85ad096141548e30bbfca8d5245641107f5ba8146bd9838fae7c1d",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-hud-400.png": "c5e3c57560e87c47a7f306373ae36bfbd34a3e73f2de6f2d31c346d51620de3a",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-hud-600.png": "aa9f4ab24a107062ea3f06bdfe8724a2585fda7c0ffd29d0f97b00d828ca30a1",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-narrow.png": "8a115f195a3acd4eb5f4f137aaa52dfd38d1a5a7f86dbab9a834c8c3fa9d2c0e",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-rule-conflict.png": "beff94bb8cbe156a2bd7737237569d8424142afc21f2ab13136384d83c502717",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-rule-dialog-narrow.png": "e97010d842313f122bd97afcd2c136b5768f9a11e0925b60c7a58c12f51cb3f3",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-rule-dialog-unknown.png": "b526f6f88a0a5d78587c54e6dbca10ef67350e0afd84b01f4d3cc96886527229",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-rule-dialog.png": "cf4cbb48c84134318451ca9ad57f8b8e7b907c545ef409ae3b104b4f8df98c5b",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-rules.png": "0588bbbd837502c697aeecb2d2c91089d19d5f5fa0735cab55465f1dee74f913",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-save-pending.png": "c2671db049205a3ad3d6337186117e8f1b87d236e03da7420fa4e0ec9296ac51",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-selected-system-process.png": "3be933c07d414861e6bad8d8d997ba34c8a578ba3dfac9deb9f7b3208afadb51",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-settings-conflict.png": "c166982c044f0d25d182a80222e17056ec826f23459d2dd5cb3615f621c48579",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-unknown.png": "77b342e3a7be2ae2a5a8f31f290ed1498d7813a3aed3f57d43096430cd4da831",
+    "docs/product-hardening-2026-10-01/ui-network-screens/network-settings-write-failure.png": "3a4183b7370b2de362919c7170568fb50af949f691a2dde640e274afbd5daf01",
+    "docs/product-hardening-2026-10-01/ui-network-settings.md": "4de54bbfadbc88acee17e8607a9310837b7e5bbe89bfe7559de94ae0d2b96868",
+    "docs/product-hardening-2026-10-01/ui-network-settings-validation.json": "67344804a4388a00590b1c110f769b228734cd0ca5f3671efdadb8bda3c600a9",
+    "docs/product-hardening-2026-10-01/ui-network-settings-accessibility.json": "3b6fb65c441bb4b5ae130dba2ab44f46cfb3bbad901a42de845620f3d06f978f",
+    "docs/product-hardening-2026-10-01/ui-network-tests.txt": "001d7e90ba53f02df98480e433e9c4d8e8396b01b6995d3df27799d255f65bcf",
+    "docs/product-hardening-2026-10-01/ui-network-harness.txt": "4154c7798bf4e864ab50bd1dff79ed25c160ef7b5c31fbf53e6239e0f0193954"
+  },
+  "limits": [
+    "Inert IPC fixtures prove UI behavior only; background snapshot behavior independently requires actual native gate.",
+    "UIA accessibility names confirmed in Chromium AX, not a physical Windows UIA run.",
+    "Browser200% and reduced motion are browser cases, not physical DPI or FPS certification.",
+    "Prior broad UI/profile receipt retains historical source bindings; unchanged broad matrix/profile not rerun for this addendum.",
+    "No promise of months of native service uptime from targeted UI/Node checks."
+  ]
+}

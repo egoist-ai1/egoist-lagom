@@ -1,0 +1,85 @@
+{
+    "powerShell":  "5.1.20348.5622",
+    "networkMutations":  0,
+    "queries":  [
+                    {
+                        "index":  10,
+                        "guid":  "{A2266A23-9D35-438E-B006-659345702C6E}",
+                        "name":  "vEthernet (nat)",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "complete",
+                        "records":  1,
+                        "addresses":  [
+
+                                      ],
+                        "elapsedMilliseconds":  390.0901
+                    },
+                    {
+                        "index":  10,
+                        "guid":  "{A2266A23-9D35-438E-B006-659345702C6E}",
+                        "name":  "vEthernet (nat)",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "complete",
+                        "records":  1,
+                        "addresses":  [
+                                          "fec0:0:0:ffff::1",
+                                          "fec0:0:0:ffff::2",
+                                          "fec0:0:0:ffff::3"
+                                      ],
+                        "elapsedMilliseconds":  5.3949000000000007
+                    },
+                    {
+                        "index":  14,
+                        "guid":  "{B48526A1-AF18-446A-A672-482F1E830563}",
+                        "name":  "Ethernet 3",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "complete",
+                        "records":  1,
+                        "addresses":  [
+                                          "168.63.129.16"
+                                      ],
+                        "elapsedMilliseconds":  5.067
+                    },
+                    {
+                        "index":  14,
+                        "guid":  "{B48526A1-AF18-446A-A672-482F1E830563}",
+                        "name":  "Ethernet 3",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "complete",
+                        "records":  1,
+                        "addresses":  [
+
+                                      ],
+                        "elapsedMilliseconds":  4.9071
+                    },
+                    {
+                        "index":  18,
+                        "guid":  "{7EAA5F6C-3DD7-4B2D-A3ED-1F12A767420B}",
+                        "name":  "Ethernet 4",
+                        "status":  "Up",
+                        "family":  "IPv4",
+                        "result":  "failed",
+                        "error":  "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 18)) AND ((AddressFamily = 2)). Verify query parameters and retry.",
+                        "errorId":  "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+                        "hresult":  -2146233087,
+                        "elapsedMilliseconds":  108.78970000000001
+                    },
+                    {
+                        "index":  18,
+                        "guid":  "{7EAA5F6C-3DD7-4B2D-A3ED-1F12A767420B}",
+                        "name":  "Ethernet 4",
+                        "status":  "Up",
+                        "family":  "IPv6",
+                        "result":  "failed",
+                        "error":  "No matching MSFT_DNSClientServerAddress objects found by CIM query for instances of the ROOT/StandardCimv2/MSFT_DNSClientServerAddress class on the  CIM server: SELECT * FROM MSFT_DNSClientServerAddress  WHERE ((InterfaceIndex = 18)) AND ((AddressFamily = 23)). Verify query parameters and retry.",
+                        "errorId":  "CmdletizationQuery_NotFound,Get-DnsClientServerAddress",
+                        "hresult":  -2146233087,
+                        "elapsedMilliseconds":  3.5899
+                    }
+                ],
+    "kind":  "read-only-legacy-dns-query-diagnostic"
+}
