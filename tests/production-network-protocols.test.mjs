@@ -277,23 +277,49 @@ const vpnApi = extra => load('handlers-vpn', { process: { env: {} }, http, tls, 
   app: { getVersion: () => 'fixture' }, ...extra },
   ['openRouteProbeTls', 'measureDownloadEndpoint', 'measureUploadEndpoint']);
 test('actual CONNECT drip cannot extend the absolute handshake budget', async t => {
-  const server = http.createServer(), sockets = new Set(), drips = new Set();
-  server.on('connection', socket => { sockets.add(socket); socket.on('error', () => {}); socket.on('close', () => sockets.delete(socket)); });
+  const server = http.createServer(), sockets = new Set(), clients = new Set(), drips = new Set(), closeEvents = [];
+  let proxyRequest, clientSocket;
+  server.on('connection', socket => {
+    sockets.add(socket); socket.on('error', () => {});
+    closeEvents.push(new Promise(resolve => socket.once('close', () => { sockets.delete(socket); resolve(); })));
+  });
   server.on('connect', (_req, socket) => {
+    // CONNECT transfers the readable stream to this fixture, including peer FIN.
+    socket.once('end', () => socket.end()); socket.resume();
     socket.write('HTTP/1.1 200 Connection Established\r\nX-Drip: ');
     const interval = setInterval(() => { if (!socket.destroyed) socket.write('a'); }, 10);
     drips.add(interval); socket.once('close', () => { clearInterval(interval); drips.delete(interval); });
   });
   await new Promise(r => server.listen(0, '127.0.0.1', r));
-  t.after(async () => { for (const i of drips) clearInterval(i); for (const s of sockets) s.destroy(); await new Promise(r => server.close(r)); });
+  t.after(async () => { for (const i of drips) clearInterval(i); for (const s of sockets) s.destroy(); for (const s of clients) s.destroy(); await new Promise(r => server.close(r)); });
+  const countedHttp = { ...http, request(...args) {
+    proxyRequest = http.request(...args);
+    proxyRequest.once('socket', socket => {
+      clientSocket = socket; clients.add(socket);
+      closeEvents.push(new Promise(resolve => socket.once('close', () => { clients.delete(socket); resolve(); })));
+    });
+    return proxyRequest;
+  } };
   const caller = new AbortController(), cutoff = setTimeout(() => caller.abort(), 350);
   const started = performance.now();
-  await assert.rejects(vpnApi().openRouteProbeTls({ name: 'own drip', host: 'fixture.example' }, server.address().port, 70, caller.signal));
+  await assert.rejects(vpnApi({ http: countedHttp }).openRouteProbeTls({ name: 'own drip', host: 'fixture.example' }, server.address().port, 70, caller.signal));
   const elapsed = performance.now() - started; clearTimeout(cutoff);
   assert.ok(elapsed < 250, `drip held the operation for ${elapsed.toFixed(2)} ms`);
-  await wait(35); assert.equal(sockets.size, 0);
-  recordNetworkEvidence('connectDrip', { deadlineMs: 70, elapsedMs: Number(elapsed.toFixed(3)), serverSocketsRemaining: sockets.size });
-  t.diagnostic(`CONNECT elapsed=${elapsed.toFixed(2)} ms, deadline=70 ms, caller safety cutoff=350 ms, own server sockets=0`);
+  assert.equal(caller.signal.aborted, false, 'the absolute handshake deadline must settle before caller cancellation');
+  assert.equal(proxyRequest?.destroyed, true, 'the actual CONNECT request must be destroyed on deadline');
+  assert.equal(clientSocket?.destroyed, true, 'the actual held client socket must be destroyed on deadline');
+  assert.equal(closeEvents.length, 2, 'both actual endpoints must have close observers');
+  const closeStarted = performance.now(); let closeTimeout;
+  try {
+    await Promise.race([Promise.all(closeEvents), new Promise((_resolve, reject) => {
+      closeTimeout = setTimeout(() => reject(new Error('owned CONNECT endpoints did not emit close within 35 ms')), 35);
+    })]);
+  } finally { clearTimeout(closeTimeout); }
+  assert.equal(clients.size, 0); assert.equal(sockets.size, 0);
+  const closureMs = Number((performance.now() - closeStarted).toFixed(3));
+  recordNetworkEvidence('connectDrip', { deadlineMs: 70, elapsedMs: Number(elapsed.toFixed(3)), closeObservationBoundMs: 35, closureMs,
+    requestDestroyed: proxyRequest.destroyed, clientDestroyed: clientSocket.destroyed, clientSocketsRemaining: clients.size, serverSocketsRemaining: sockets.size });
+  t.diagnostic(`CONNECT elapsed=${elapsed.toFixed(2)} ms, deadline=70 ms, caller safety cutoff=350 ms, close events=${closureMs} ms, own client/server sockets=0`);
 });
 test('actual stalled CONNECT cancellation stops every owned connection', async t => {
   const server = http.createServer(), sockets = new Set(), clients = new Set();
