@@ -1705,12 +1705,17 @@ function Save-SystemNetworkBaseline {
     $proxyValues[$name] = Get-RegistryValueSnapshot $internetSettings $name
   }
 
+  # A connected virtual adapter can have no DNS client row for one or both
+  # address families. Enumerate once so an absent row is not a failed CIM
+  # query; a provider failure still aborts before any network/service change.
+  $dnsRecords = @(Get-DnsClientServerAddress -ErrorAction Stop)
   $adapters = @(
     foreach ($adapter in @(Get-UplinkNetworkAdapters)) {
-      $ipv4 = @(Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily IPv4 -ErrorAction Stop |
-        Select-Object -ExpandProperty ServerAddresses)
-      $ipv6 = @(Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -AddressFamily IPv6 -ErrorAction Stop |
-        Select-Object -ExpandProperty ServerAddresses)
+      $ipv4Rows = @($dnsRecords | Where-Object { [int]$_.InterfaceIndex -eq [int]$adapter.ifIndex -and [int]$_.AddressFamily -eq 2 })
+      $ipv6Rows = @($dnsRecords | Where-Object { [int]$_.InterfaceIndex -eq [int]$adapter.ifIndex -and [int]$_.AddressFamily -eq 23 })
+      if ($ipv4Rows.Count -eq 0 -and $ipv6Rows.Count -eq 0) { continue }
+      $ipv4 = @($ipv4Rows | Select-Object -ExpandProperty ServerAddresses)
+      $ipv6 = @($ipv6Rows | Select-Object -ExpandProperty ServerAddresses)
       $guid = [string]$adapter.InterfaceGuid
       $ipv4NameServer = (Get-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\$guid" -Name NameServer -ErrorAction SilentlyContinue).NameServer
       $ipv6NameServer = (Get-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters\Interfaces\$guid" -Name NameServer -ErrorAction SilentlyContinue).NameServer
@@ -1720,6 +1725,8 @@ function Save-SystemNetworkBaseline {
         name = [string]$adapter.Name
         ipv4 = @($ipv4)
         ipv6 = @($ipv6)
+        ipv4Captured = $ipv4Rows.Count -gt 0
+        ipv6Captured = $ipv6Rows.Count -gt 0
         ipv4Static = -not [string]::IsNullOrWhiteSpace([string]$ipv4NameServer)
         ipv6Static = -not [string]::IsNullOrWhiteSpace([string]$ipv6NameServer)
       }
@@ -1814,6 +1821,8 @@ function Restore-SystemNetworkBaseline {
       Select-Object -First 1
     if (-not $adapter) { continue }
     foreach ($family in @("ipv4", "ipv6")) {
+      $capturedProperty = $family + 'Captured'
+      if ($saved.PSObject.Properties.Name -contains $capturedProperty -and $saved.$capturedProperty -ne $true) { continue }
       $addresses = @(if ($family -eq "ipv4") { $saved.ipv4 } else { $saved.ipv6 })
       $isStatic = if ($family -eq "ipv4") { $saved.ipv4Static -eq $true } else { $saved.ipv6Static -eq $true }
       if (-not $isStatic -or $addresses.Count -eq 0) {
