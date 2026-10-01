@@ -9,3 +9,4 @@ docs/product-hardening-2026-10-01/** -text whitespace=cr-at-eol
 tests/fixtures/AtomicJsonFile.ead2.cs -text whitespace=cr-at-eol
 docs/product-hardening-2026-09-30/**/*.txt whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof
 docs/product-hardening-2026-10-01/**/*.txt whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof
+docs/product-hardening-2026-10-01/auto-update-public-final.baselines/*/installerGate.js -text whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof
