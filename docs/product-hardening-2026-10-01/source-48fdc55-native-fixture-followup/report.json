@@ -1,0 +1,29 @@
+{
+  "sourceBefore": "48fdc55417214a84275501a3410d7c17ba0c9c36",
+  "failedCiRunId": 36873726615,
+  "failedCiJobId": 110407710640,
+  "cause": "C# actual CLI test still expected schema1; production returns strict schema2.",
+  "changedProduction": false,
+  "nativeRegressionGroupsPassed": 17,
+  "elapsedSeconds": 8.12,
+  "runtime": ".NET10.0.12",
+  "actualWindowsReadOnlyCommand": true,
+  "nativeScmDnsGuiInstallationTested": false,
+  "files": [
+    {
+      "path": "ci-red.txt",
+      "bytes": 271113,
+      "sha256": "bea31d36085844fd21acbf6642e2c57bcfdfb5a290d3f56de284c8ce31612816"
+    },
+    {
+      "path": "native-green.txt",
+      "bytes": 72043,
+      "sha256": "54d0e2f2339726634bd43cdd7ebddb07f58f571e5b7eee84fc589efb2ec29ff9"
+    },
+    {
+      "path": "actual-read-only-cli.json",
+      "bytes": 854,
+      "sha256": "fe76147cf0163ed7770347bee095ca881933a08c8832025c9df427dec55c3fc7"
+    }
+  ]
+}

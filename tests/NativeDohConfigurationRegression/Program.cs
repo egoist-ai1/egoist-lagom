@@ -427,7 +427,7 @@ internal static class Program
         }
         finally { Console.SetOut(beforeOut); Console.SetError(beforeError); }
         string json = output.ToString().Trim(); using var doc = JsonDocument.Parse(json); var value = doc.RootElement;
-        Assert(value.GetProperty("schemaVersion").GetInt32() == 1 && value.GetProperty("operation").GetString() == "telegram-listener-snapshot" &&
+        Assert(value.GetProperty("schemaVersion").GetInt32() == 2 && value.GetProperty("operation").GetString() == "telegram-listener-snapshot" &&
             value.GetProperty("serviceName").GetString() == "EgoistShieldTelegramProxy" && value.GetProperty("port").GetInt32() == 49123 &&
             !value.GetProperty("remoteConnectivityVerified").GetBoolean() && error.ToString().Length == 0 && Encoding.UTF8.GetByteCount(json) <= 60 * 1024 && elapsed.Elapsed < TimeSpan.FromSeconds(4),
             "Actual inspection emitted another mode, unbounded output or a false remote-connectivity claim.");
