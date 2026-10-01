@@ -15,6 +15,10 @@ on:
         description: Install and test the candidate on this disposable Windows runner
         type: boolean
         default: false
+      installer_diagnostics:
+        description: Capture actual source installer phase diagnostics on a clean disposable Windows runner
+        type: boolean
+        default: false
       signed_legacy_release_id:
         description: Signed draft release ID for an independent actual 3.7.9 updater acceptance
         type: string
@@ -24,6 +28,27 @@ permissions:
   contents: read
 
 jobs:
+  installer-diagnostics:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.installer_diagnostics }}
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Diagnose exact native installer phases
+        shell: pwsh
+        run: ./tests/windows-installer-diagnostics.ps1
+      - name: Upload source phase diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lagom-installer-diagnostics-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: error
+          path: ${{ runner.temp }}/lagom-installer-diagnostics
+
   test:
     runs-on: windows-latest
     timeout-minutes: 35
