@@ -9,6 +9,9 @@ const library=quote(path.resolve('tests/windows-production-acceptance.ps1'));
 const fixture=`
 $ErrorActionPreference='Stop';[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);. '${library}' -LibraryOnly;
 $script:ActualTcp=(Get-Command Test-NativeTelegramTcp).ScriptBlock;
+$script:ActualReadSnapshot=(Get-Command Read-NativeTelegramEndpointSnapshot).ScriptBlock;
+$script:ActualGuiError=if(Get-Command Get-NativeTelegramGuiVisibleError -ErrorAction SilentlyContinue){(Get-Command Get-NativeTelegramGuiVisibleError).ScriptBlock}else{$null};
+function Get-NativeTelegramGuiVisibleError {return $null};
 $script:DataRoot='C:\\ProgramData\\EgoistShield';$script:Receipt=[ordered]@{};
 $script:birth='2026-10-01T00:00:00.0000000Z';$script:ownerBirth='2026-10-01T00:00:01.0000000Z';
 function Assert-NativeService {param($Name,$Executable,[switch]$Running)
@@ -74,4 +77,62 @@ test('actual own loopback TCP is accepted between inert identity-contract snapsh
  $result=Assert-NativeTelegramEndpoint -Port ${server.address().port} -TimeoutSeconds 2;@{kind='actual-own-loopback-tcp-with-inert-scm-identity';tcpConnected=$result.tcpConnected;reads=$script:reads;scmVerified=$false}|ConvertTo-Json -Compress;`;
  const r=await new Promise((resolve,reject)=>{import('node:child_process').then(({execFile})=>execFile(shell,['-NoLogo','-NoProfile','-NonInteractive','-Command',command],{encoding:'utf8',windowsHide:true,timeout:20000},(error,stdout,stderr)=>error?reject(new Error(stdout+stderr)):resolve(JSON.parse(stdout))));});
  assert.equal(r.tcpConnected,true);assert.equal(r.scmVerified,false);assert.equal(r.reads,2);
+});
+
+// Accepted run36900894787 JSON bytes, replayed with inert SCM/transport; no product CLI is executed.
+const recordedNativeJsonBase64='eyJzY2hlbWFWZXJzaW9uIjoyLCJvcGVyYXRpb24iOiJ0ZWxlZ3JhbS1saXN0ZW5lci1zbmFwc2hvdCIsInNlcnZpY2VOYW1lIjoiRWdvaXN0U2hpZWxkVGVsZWdyYW1Qcm94eSIsInBvcnQiOjE0NDMsInNuYXBzaG90QXZhaWxhYmxlIjp0cnVlLCJzdGFibGUiOnRydWUsInNlcnZpY2VTdGF0ZSI6IlJ1bm5pbmciLCJzZXJ2aWNlUHJvY2Vzc0lkIjo4NzgwLCJyb290UHJvY2Vzc1BhdGhWZXJpZmllZCI6dHJ1ZSwicm9vdFByb2Nlc3NDcmVhdGVkQXQiOiIyMDI2LTEwLTAxVDE3OjQ5OjQyLjQ3NDQ2KzAwOjAwIiwibWFuYWdlZFByb2Nlc3NJZCI6bnVsbCwibWFuYWdlZElkZW50aXR5VmVyaWZpZWQiOmZhbHNlLCJtYW5hZ2VkUm9vdENyZWF0ZWRBdCI6bnVsbCwib3duZXJzaGlwIjoib3duZWQiLCJpcHY2T3duZXJzaGlwIjoibWlzc2luZyIsImlwdjQiOnsic3RhdGUiOiJvd25lZCIsIm93bmVyUGlkIjoxMzg0LCJvd25lck5hbWUiOiJlZ29pc3RzaGllbGQtdGctd3MtcHJveHkuZXhlIiwib3duZXJDcmVhdGVkQXQiOiIyMDI2LTEwLTAxVDE3OjQ5OjQyLjc1NTIxNCswMDowMCIsInJvb3RQaWQiOjg3ODAsInJvb3RDcmVhdGVkQXQiOiIyMDI2LTEwLTAxVDE3OjQ5OjQyLjQ3NDQ2KzAwOjAwIn0sImlwdjYiOnsic3RhdGUiOiJtaXNzaW5nIiwib3duZXJQaWQiOm51bGwsIm93bmVyTmFtZSI6bnVsbCwib3duZXJDcmVhdGVkQXQiOm51bGwsInJvb3RQaWQiOm51bGwsInJvb3RDcmVhdGVkQXQiOm51bGx9LCJzbmFwc2hvdCI6eyJzZXJ2aWNlUHJvY2Vzc0lkIjo4NzgwLCJzZXJ2aWNlU3RhdGUiOiJSdW5uaW5nIiwicHJvY2Vzc2VzIjpbeyJwcm9jZXNzSWQiOjg3ODAsInBhcmVudFByb2Nlc3NJZCI6OTYwLCJjcmVhdGVkQXQiOiIyMDI2LTEwLTAxVDE3OjQ5OjQyLjQ3NDQ2KzAwOjAwIiwiZXhlY3V0YWJsZVBhdGgiOiJDOlxcUHJvZ3JhbURhdGFcXEVnb2lzdFNoaWVsZFxcUnVudGltZVxcVGVsZWdyYW1Qcm94eVxcc2VydmljZS13cmFwcGVyXFxlZ29pc3RzaGllbGQtdGVsZWdyYW0tcHJveHktc2VydmljZS5leGUifSx7InByb2Nlc3NJZCI6MTM4NCwicGFyZW50UHJvY2Vzc0lkIjo0MzI4LCJjcmVhdGVkQXQiOiIyMDI2LTEwLTAxVDE3OjQ5OjQyLjc1NTIxNCswMDowMCIsImV4ZWN1dGFibGVQYXRoIjoiQzpcXFByb2dyYW1EYXRhXFxFZ29pc3RTaGllbGRcXFJ1bnRpbWVcXFRlbGVncmFtUHJveHlcXHJ1bnRpbWVcXGVnb2lzdHNoaWVsZC10Zy13cy1wcm94eS5leGUifSx7InByb2Nlc3NJZCI6NDMyOCwicGFyZW50UHJvY2Vzc0lkIjo4NzgwLCJjcmVhdGVkQXQiOiIyMDI2LTEwLTAxVDE3OjQ5OjQyLjU3NjA5OTMrMDA6MDAiLCJleGVjdXRhYmxlUGF0aCI6IkM6XFxQcm9ncmFtRGF0YVxcRWdvaXN0U2hpZWxkXFxSdW50aW1lXFxUZWxlZ3JhbVByb3h5XFxydW50aW1lXFxlZ29pc3RzaGllbGQtdGctd3MtcHJveHkuZXhlIn1dLCJsaXN0ZW5lcnMiOlt7ImxvY2FsQWRkcmVzcyI6IjEyNy4wLjAuMSIsImxvY2FsUG9ydCI6MTQ0Mywib3duaW5nUHJvY2VzcyI6MTM4NH1dLCJzdGFibGUiOnRydWV9LCJyZW1vdGVDb25uZWN0aXZpdHlWZXJpZmllZCI6ZmFsc2V9';
+const parsedSnapshotFixture=`
+Set-Item Function:Read-NativeTelegramEndpointSnapshot -Value $script:ActualReadSnapshot;
+$script:Core='C:\\inert-native-json-fixture\\EgoistShield.Service.exe';
+$script:nativeJson=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${recordedNativeJsonBase64}'));
+$script:birth='2026-10-01T17:49:42.4744600+00:00';
+function Assert-NativeService {param($Name,$Executable,[switch]$Running)
+ [ordered]@{scm=[pscustomobject]@{Name='EgoistShieldTelegramProxy';ProcessId=8780;StartMode='Auto';StartName='LocalSystem'};process=[ordered]@{processId=8780;createdUtc=$script:birth;executable=(Join-Path $script:DataRoot 'Runtime\\TelegramProxy\\service-wrapper\\egoistshield-telegram-proxy-service.exe')}};
+}
+function Invoke-NativeBounded {param($Executable,$Arguments,$Label,$TimeoutSeconds)
+ $script:reads++;if($Executable -cne $script:Core -or ($Arguments -join '|') -cne '--telegram-listener-snapshot|--port|1443' -or $TimeoutSeconds -ne 4){throw 'Actual snapshot reader changed its fixed command/budget contract'};
+ [pscustomobject]@{stdout=$script:nativeJson;stderr='';exitCode=0};
+}
+`;
+test('recorded native JSON fractional birth survives the actual snapshot parser losslessly', {skip:process.platform!=='win32'},()=>{
+ const r=run(parsedSnapshotFixture+`
+ $result=Assert-NativeTelegramEndpoint -Port 1443;
+ $expected=[DateTimeOffset]::Parse($script:birth,[Globalization.CultureInfo]::InvariantCulture);
+ foreach($value in @($script:birth,$result.nativeSnapshot.rootProcessCreatedAt,$expected,$expected.UtcDateTime)){
+  $instant=ConvertTo-NativeTelegramUtcInstant $value;if($instant -ne $expected){throw 'DateTime/DateTimeOffset/string birth normalization lost a tick'};
+ }
+ if($script:reads -ne 2 -or $script:tcp -ne 1){throw 'Recorded JSON bypassed TCP/fresh snapshot gates'};
+ @{kind='accepted-json-replay-with-inert-scm-transport';rootType=$result.nativeSnapshot.rootProcessCreatedAt.GetType().Name;psMajor=$PSVersionTable.PSVersion.Major;reads=$script:reads;utcBirth=$expected.ToString('o')}|ConvertTo-Json -Compress;`);
+ assert.equal(r.reads,2);assert.equal(r.utcBirth,'2026-10-01T17:49:42.4744600+00:00');
+ assert.equal(r.rootType,r.psMajor>=7?'DateTime':'String');
+});
+for(const [name,change,error,reads,tcp] of [
+ ['parent','$p.snapshot.processes[2].createdAt="2026-10-01T17:49:42.7552141+00:00"','SCM descendant',1,0],
+ ['owner','$p.ipv4.ownerCreatedAt="2026-10-01T17:49:42.7552141+00:00"','family owner identity',1,0],
+ ['fresh root','if($script:reads -eq 2){$p.rootProcessCreatedAt="2026-10-01T17:49:42.4744601+00:00";$p.snapshot.processes[0].createdAt=$p.rootProcessCreatedAt;$p.ipv4.rootCreatedAt=$p.rootProcessCreatedAt}','changed during TCP proof',2,1]
+]){
+ test(`100ns ${name} mismatch remains an exact native identity refusal after real JSON parsing`, {skip:process.platform!=='win32'},()=>{
+  const r=run(parsedSnapshotFixture+`
+   function Invoke-NativeBounded {param($Executable,$Arguments,$Label,$TimeoutSeconds);$script:reads++;$p=$script:nativeJson|ConvertFrom-Json;${change};[pscustomobject]@{stdout=($p|ConvertTo-Json -Depth 12 -Compress);stderr='';exitCode=0}};
+   $refused=$false;try{[void](Assert-NativeTelegramEndpoint -Port 1443)}catch{if($_.Exception.Message -notmatch '${error}'){throw};$refused=$true};
+   if(-not $refused -or $script:reads -ne ${reads} -or $script:tcp -ne ${tcp}){throw '100ns ${name} mismatch was accepted or used the wrong rejection gate'};
+   @{kind='inert-native-identity-boundary';refused=$refused;reads=$script:reads;tcpCalls=$script:tcp}|ConvertTo-Json -Compress;`);
+  assert.equal(r.refused,true);assert.equal(r.reads,reads);assert.equal(r.tcpCalls,tcp);
+ });
+}
+test('an enabled Stop with a visible error toast refuses GUI completion while offscreen history does not', {skip:process.platform!=='win32'},()=>{
+ const r=run(`
+ Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes;
+ $own=Get-Process -Id $PID;$root=[pscustomobject]@{Current=[pscustomobject]@{ProcessId=$PID}};
+ $script:toast=[pscustomobject]@{Current=[pscustomobject]@{Name='Действие не выполнено';ControlType=[Windows.Automation.ControlType]::Text;IsOffscreen=$true}};
+ $root|Add-Member -MemberType ScriptMethod -Name FindAll -Value {param($Scope,$Condition);return @($script:toast)};
+ if($script:ActualGuiError){Set-Item Function:Get-NativeTelegramGuiVisibleError -Value $script:ActualGuiError}else{function Get-NativeTelegramGuiVisibleError {param($Root);if(-not $script:toast.Current.IsOffscreen){return $script:toast}}};
+ $find={param($Name);[pscustomobject]@{Current=[pscustomobject]@{Name='Остановить';IsEnabled=$true;IsOffscreen=$false}}};
+ $past=Wait-NativeTelegramGuiCompletion -FindButton $find -Process $own -Root $root -Label 'inert-offscreen-toast' -TimeoutSeconds 1;
+ if(-not $past.enabled){throw 'Offscreen historical text was treated as current failure'};
+ $script:toast.Current.IsOffscreen=$false;$refused=$false;
+ try{[void](Wait-NativeTelegramGuiCompletion -FindButton $find -Process $own -Root $root -Label 'inert-visible-toast' -TimeoutSeconds 1)}catch{if($_.Exception.Message -notmatch 'reports failed Telegram operation'){throw};$refused=$true};
+ if(-not $refused){throw 'Visible actual error toast was hidden by enabled Stop control'};
+ @{kind='inert-uia-error-title-contract';refused=$refused;offscreenAccepted=$past.enabled}|ConvertTo-Json -Compress;`);
+ assert.equal(r.refused,true);assert.equal(r.offscreenAccepted,true);
 });
