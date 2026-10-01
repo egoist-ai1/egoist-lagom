@@ -1,0 +1,27 @@
+{
+  "groups": 14,
+  "passed": [
+    "free lease",
+    "bounded busy refusal and sequential handoff",
+    "abandoned lease",
+    "cancellation before acquiring",
+    "literal process and canonical stage scope",
+    "actual own watchdog process quiescence",
+    "fresh native observation preflight refusal",
+    "real own JSON files: exact bool projection and malformed/type/owner rejection",
+    "original 3.7.8 schema: absent minimizedAfter defaults false and preserves exact runAfter",
+    "real in-memory Windows DACL policy; exact own-file bounded reader; no native ACL changes",
+    "actual own-file oversize/native untrusted-owner refusal",
+    "actual own canonical-looking junction refused; scoped nonrecursive cleanup",
+    "actual dispatch prefix refuses malformed bool state before lease/staging mutation",
+    "actual dispatch AST: inherited false/true/minimized, explicit NoRunAfter priority, branded restriction"
+  ],
+  "liveServiceMutations": 0,
+  "liveDnsMutations": 0,
+  "taskRegistrations": 0,
+  "hostAclMutations": 0,
+  "nativeRegistryMutations": 0,
+  "launchBeforeAfterChecked": false,
+  "aclTestScope": "real in-memory Windows security descriptors supplied by a scoped fixture leaf; actual nonadmin own-file owner is rejected",
+  "scope": "actual production lease/observer/dispatch AST; own files/Local mutex/hidden children; controlled DNS and ACL leaves; no installer execution or host ACL writes"
+}

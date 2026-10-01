@@ -11,8 +11,21 @@ import { acceptanceEnvironmentErrors, relativePayloadPath } from './windows-prod
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const official379InstallerSha256 = 'eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6';
 export const official379HelperSha256 = 'f6c232fa15e4e8f1d78c149f973df8b807d58cabd8ef5898b8b5ce0d2279da8e';
+const officialLegacyReleases = Object.freeze({
+  '3.7.8': Object.freeze({ version: '3.7.8',
+    installerSha256: '34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927',
+    helperSha256: 'e33bca4550b6e130287c8bb2d5c0dccf30b76e033bf99520e81d6c2acda609f5' }),
+  '3.7.9': Object.freeze({ version: '3.7.9', installerSha256: official379InstallerSha256,
+    helperSha256: official379HelperSha256 }),
+});
 const pinnedRootSha256 = '30c069d617b6e6b1792e7fb6e0f73c17fb659676dd90f6a55d50bc537ac862e7';
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+
+export function officialLegacyRelease(version) {
+  assert.ok(typeof version === 'string' && Object.hasOwn(officialLegacyReleases, version),
+    'Explicit oldVersion must be exactly 3.7.8 or 3.7.9.');
+  return officialLegacyReleases[version];
+}
 
 export function decodeLegacySignature(bytes) {
   assert.ok(bytes.length <= 1024, 'Detached signature exceeds its limit.');
@@ -25,7 +38,7 @@ export function decodeLegacySignature(bytes) {
 
 export function authenticateLegacyRegistry(bytes, signature, rootBytes, now = Date.now()) {
   assert.ok(bytes.length > 0 && bytes.length <= 256 * 1024, 'Registry exceeds its limit.');
-  assert.equal(digest(rootBytes), pinnedRootSha256, 'Root is not the project/public 3.7.9 pinned root.');
+  assert.equal(digest(rootBytes), pinnedRootSha256, 'Root is not the project/public legacy pinned root.');
   const root = createPublicKey(rootBytes);
   assert.equal(root.asymmetricKeyType, 'ed25519');
   assert.equal(verify(null, bytes, root, decodeLegacySignature(signature)), true, 'Invalid pinned-root registry signature.');
@@ -87,6 +100,26 @@ export function authenticateLegacyManifest(bytes, signature, trust, expectedVers
   return manifest;
 }
 
+export function authenticateOfficialLegacyManifest(bytes, signature, trust, oldVersion, now = Date.now()) {
+  const release = officialLegacyRelease(oldVersion);
+  const manifest = authenticateLegacyManifest(bytes, signature, trust, release.version, now);
+  assert.equal(manifest.sha256, release.installerSha256,
+    `Installer is not the audited official ${release.version} release.`);
+  return manifest;
+}
+
+export function assertCandidateSupportsLegacyVersion(manifest, oldVersion) {
+  const release = officialLegacyRelease(oldVersion);
+  assert.ok(typeof manifest.minimumAppVersion === 'string' && /^\d+\.\d+\.\d+$/.test(manifest.minimumAppVersion),
+    'Invalid candidate minimum version.');
+  const minimum = manifest.minimumAppVersion.split('.').map(Number);
+  assert.ok(minimum.every(Number.isSafeInteger), 'Invalid candidate minimum version.');
+  const installed = release.version.split('.').map(Number);
+  const different = minimum.findIndex((number, index) => number !== installed[index]);
+  assert.ok(different === -1 || minimum[different] < installed[different],
+    `Candidate minimum version excludes ${release.version}.`);
+}
+
 export function assertSignedCandidateSource(manifest, integrityBytes, expectedSourceCommit) {
   assert.match(expectedSourceCommit, /^[a-f0-9]{40}$/);
   assert.equal(manifest.sourceCommit, expectedSourceCommit, 'Signed candidate source commit differs.');
@@ -130,6 +163,7 @@ function within(file, root) {
 }
 
 async function verifyAssets(options) {
+  const oldReleaseProfile = officialLegacyRelease(options.oldVersion);
   const rootBytes = await boundedRead(path.join(projectRoot, 'resources/release/root-public-key.pem'), 4096);
   const oldBytes = await boundedRead(path.join(options.oldAssets, 'release-key-registry.json'), 256 * 1024);
   const oldSig = await boundedRead(path.join(options.oldAssets, 'release-key-registry.json.sig'), 1024);
@@ -138,18 +172,15 @@ async function verifyAssets(options) {
     await boundedRead(path.join(options.candidateAssets, 'release-key-registry.json'), 256 * 1024),
     await boundedRead(path.join(options.candidateAssets, 'release-key-registry.json.sig'), 1024), rootBytes);
   assertLegacyRegistrySuccessor(oldTrust, candidateTrust);
-  const old = authenticateLegacyManifest(await boundedRead(path.join(options.oldAssets, 'release-manifest.json'), 128 * 1024),
-    await boundedRead(path.join(options.oldAssets, 'release-manifest.json.sig'), 1024), oldTrust, '3.7.9');
-  assert.equal(old.sha256, official379InstallerSha256, 'Installer is not the audited official 3.7.9 release.');
+  const old = authenticateOfficialLegacyManifest(await boundedRead(path.join(options.oldAssets, 'release-manifest.json'), 128 * 1024),
+    await boundedRead(path.join(options.oldAssets, 'release-manifest.json.sig'), 1024), oldTrust, oldReleaseProfile.version);
   const candidateBytes = await boundedRead(path.join(options.candidateAssets, 'release-manifest.json'), 128 * 1024);
   const candidateSig = await boundedRead(path.join(options.candidateAssets, 'release-manifest.json.sig'), 1024);
   const candidate = authenticateLegacyManifest(candidateBytes, candidateSig, candidateTrust, '3.8.0');
   // The old bundled registry must already accept this exact real signing key.
   // Remote registry migration and latest-feed discovery are separate gates.
   authenticateLegacyManifest(candidateBytes, candidateSig, oldTrust, '3.8.0');
-  const numbers = candidate.minimumAppVersion.split('.').map(Number);
-  assert.ok(numbers[0] < 3 || numbers[0] === 3 && (numbers[1] < 7 || numbers[1] === 7 && numbers[2] <= 9),
-    'Candidate minimum version excludes 3.7.9.');
+  assertCandidateSupportsLegacyVersion(candidate, oldReleaseProfile.version);
   const integrityBytes = await boundedRead(options.integrityPath, 16 * 1024 * 1024);
   assertSignedCandidateSource(candidate, integrityBytes, options.sourceCommit);
   for (const [manifest, directory] of [[old, options.oldAssets], [candidate, options.candidateAssets]]) {
@@ -168,11 +199,14 @@ async function verifyAssets(options) {
     const installedTrust = authenticateLegacyRegistry(installedRegistry, installedSig, rootBytes);
     authenticateLegacyManifest(candidateBytes, candidateSig, installedTrust, '3.8.0');
     const helper = path.join(options.installedRoot, 'resources/installer/invoke-final-silent-reinstall.ps1');
-    assert.equal((await hashes(helper)).sha256, official379HelperSha256, 'Actual installed legacy helper differs from audited 3.7.9.');
-    installed = { rootSha256: digest(rootBytes), registrySha256: installedTrust.digest, helperSha256: official379HelperSha256,
+    assert.equal((await hashes(helper)).sha256, oldReleaseProfile.helperSha256,
+      `Actual installed legacy helper differs from audited ${oldReleaseProfile.version}.`);
+    installed = { version: oldReleaseProfile.version, rootSha256: digest(rootBytes), registrySha256: installedTrust.digest,
+      helperSha256: oldReleaseProfile.helperSha256,
       candidateAcceptedByInstalledBundledKey: true };
   }
-  return { old, candidate, installed, rootSha256: digest(rootBytes), oldRegistrySha256: oldTrust.digest,
+  return { oldVersion: oldReleaseProfile.version, oldReleaseProfile, old, candidate, installed,
+    rootSha256: digest(rootBytes), oldRegistrySha256: oldTrust.digest,
     candidateRegistrySha256: candidateTrust.digest, candidateManifestSha256: digest(candidateBytes),
     integrityManifestSha256: digest(integrityBytes), crypto: 'real Ed25519 verification over original bytes; no supplied keys',
     publicLatestFeedDiscoveryTested: false };
@@ -227,6 +261,7 @@ async function main() {
   within(options.output, work); within(options.integrityPath, process.env.RUNNER_TEMP);
   assert.match(options.sourceCommit, /^[a-f0-9]{40}$/);
   if (command === 'verify-assets') {
+    officialLegacyRelease(options.oldVersion);
     within(options.oldAssets, process.env.RUNNER_TEMP); within(options.candidateAssets, process.env.RUNNER_TEMP);
     await ordinary(options.oldAssets, true); await ordinary(options.candidateAssets, true);
   }

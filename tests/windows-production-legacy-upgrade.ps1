@@ -1,6 +1,7 @@
 ﻿[CmdletBinding()]
 param(
   [ValidateSet('Run','GuardOnly')][string]$Mode='Run',
+  [ValidateSet('3.7.8','3.7.9')][string]$ExpectedOldVersion='3.7.9',
   [string]$OldReleaseAssetsDirectory='',
   [string]$CandidateReleaseAssetsDirectory='',
   [string]$IntegrityManifestPath='',
@@ -10,7 +11,7 @@ param(
 )
 Set-StrictMode -Version 2.0
 $ErrorActionPreference='Stop'
-$legacyParameters=@{Mode=$Mode;OldReleaseAssetsDirectory=$OldReleaseAssetsDirectory;CandidateReleaseAssetsDirectory=$CandidateReleaseAssetsDirectory;IntegrityManifestPath=$IntegrityManifestPath;EvidenceDirectory=$EvidenceDirectory;ExpectedSourceCommit=$ExpectedSourceCommit;LibraryOnly=$LibraryOnly}
+$legacyParameters=@{Mode=$Mode;ExpectedOldVersion=$ExpectedOldVersion;OldReleaseAssetsDirectory=$OldReleaseAssetsDirectory;CandidateReleaseAssetsDirectory=$CandidateReleaseAssetsDirectory;IntegrityManifestPath=$IntegrityManifestPath;EvidenceDirectory=$EvidenceDirectory;ExpectedSourceCommit=$ExpectedSourceCommit;LibraryOnly=$LibraryOnly}
 . (Join-Path $PSScriptRoot 'windows-production-acceptance.ps1') -LibraryOnly
 # Dot sourcing the read-only library binds its parameters in the caller scope.
 foreach($parameterName in $legacyParameters.Keys){Set-Variable -Name $parameterName -Value $legacyParameters[$parameterName]}
@@ -49,22 +50,26 @@ function Assert-LegacyForeignRegistrationsPreserved {
 }
 function Invoke-LegacyArtifactVerification {
   param([string]$Label,[switch]$Installed)
-  $options=[ordered]@{oldAssets=$script:OldAssets;candidateAssets=$script:CandidateAssets;integrityPath=$script:ManifestPath;sourceCommit=$script:SourceCommit;output=(Join-Path $script:Work ($Label+'.json'))}
+  $options=[ordered]@{oldVersion=$ExpectedOldVersion;oldAssets=$script:OldAssets;candidateAssets=$script:CandidateAssets;integrityPath=$script:ManifestPath;sourceCommit=$script:SourceCommit;output=(Join-Path $script:Work ($Label+'.json'))}
   if($Installed){$options.installedRoot=$script:InstallRoot}
   $file=Join-Path $script:Work ($Label+'.options.json');$options | ConvertTo-Json | Set-Content -LiteralPath $file -Encoding utf8
   [void](Invoke-NativeBounded -Executable $script:Node -Arguments @($script:LegacyNodeHelper,'verify-assets',$file) -Label $Label -TimeoutSeconds 300)
   return Read-LegacyHarnessJson $options.output
 }
-function Invoke-Legacy379Gui {
+function Test-LegacyHarnessProductVersion {
+  param([string]$ActualVersion,[ValidateSet('3.7.8','3.7.9')][string]$ExpectedVersion)
+  return $ActualVersion -ceq $ExpectedVersion -or $ActualVersion -ceq ($ExpectedVersion+'.0')
+}
+function Invoke-LegacyGui {
   Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
   $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
   [void](Assert-NativeAdministratorOwned $gui)
-  if([string](Get-Item -LiteralPath $gui).VersionInfo.ProductVersion -notlike '3.7.9*'){throw 'Actual GUI is not the authenticated old 3.7.9.'}
+  if(-not (Test-LegacyHarnessProductVersion ([string](Get-Item -LiteralPath $gui).VersionInfo.ProductVersion) $ExpectedOldVersion)){throw "Actual GUI is not the authenticated old $ExpectedOldVersion."}
   $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$gui;$info.WorkingDirectory=$script:InstallRoot;$info.UseShellExecute=$false;$info.CreateNoWindow=$true
   foreach($name in @($info.Environment.Keys)){if($name -match '^(ELECTRON_RUN_AS_NODE|NODE_OPTIONS|NODE_PATH|LAGOM_TEST_USER_DATA_DIR|SHIELD_.*|EGOIST_.*)$'){[void]$info.Environment.Remove($name)}}
   $info.Environment['NODE_ENV']='production'
   $child=[Diagnostics.Process]::new();$child.StartInfo=$info;$started=$false;$closed=$false
-  Add-NativeMutation -Kind 'old-canonical-gui-native-uia' -Target $gui -Purpose 'Provision actual Telegram background service through shipped 3.7.9 controls, then normally close GUI.'
+  Add-NativeMutation -Kind 'old-canonical-gui-native-uia' -Target $gui -Purpose "Provision actual Telegram background service through shipped $ExpectedOldVersion controls, then normally close GUI."
   try{
     $started=$child.Start();if(-not $started){throw 'Actual old GUI did not start.'}
     $hwnd=Wait-NativeCondition -Condition {$child.Refresh();if($child.HasExited){throw 'Old GUI exited before its native window was ready.'};if($child.MainWindowHandle -ne [IntPtr]::Zero){return $child.MainWindowHandle}} -Label 'Old canonical GUI native window' -TimeoutSeconds 90
@@ -91,7 +96,7 @@ function Invoke-Legacy379Gui {
     ([Windows.Automation.WindowPattern]$pattern).Close()
     if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'Old GUI did not exit normally through its actual native close control.'};$closed=$true
     Assert-NativeNoGui
-    $result=[ordered]@{version='3.7.9';processId=$child.Id;arguments=@();automation='native UIAutomation InvokePattern/WindowPattern';productionOverride=$false;exitCode=$child.ExitCode;port=$port;host=[string]$config.host;endpoint=$endpoint}
+    $result=[ordered]@{version=$ExpectedOldVersion;processId=$child.Id;arguments=@();automation='native UIAutomation InvokePattern/WindowPattern';productionOverride=$false;exitCode=$child.ExitCode;port=$port;host=[string]$config.host;endpoint=$endpoint}
     $script:Receipt.gui+=$result;Save-NativeReceipt;return $result
   }finally{if($started -and -not $closed -and -not $child.HasExited){$child.Kill();[void]$child.WaitForExit(5000)};$child.Dispose()}
 }
@@ -136,15 +141,16 @@ function Invoke-ActualLegacyBridge {
   $handoffManifest=Join-Path $updates 'desktop-update-integrity.json'
   [ordered]@{schemaVersion=1;product='Egoist Lagom';version='3.8.0';installer=[ordered]@{path='updates/EgoistShield-Setup-3.8.0.exe';bytes=$script:AuthenticatedAssets.candidate.size;sha256=$script:InstallerHash.ToUpperInvariant()}} | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $handoffManifest -Encoding utf8
   $helper=Join-Path $script:InstallRoot 'resources\installer\invoke-final-silent-reinstall.ps1'
-  if((Get-FileHash -LiteralPath $helper -Algorithm SHA256).Hash -ine 'F6C232FA15E4E8F1D78C149F973DF8B807D58CABD8EF5898B8B5CE0D2279DA8E'){throw 'Old installed helper changed after genuine trust verification.'}
-  Add-NativeMutation -Kind 'actual-old-helper-upgrade' -Target $helper -Purpose 'Execute authenticated official installed 3.7.9 helper with signed 3.8.0 installer; do not substitute a new helper or alter recovery policy.'
-  $dispatch=Invoke-NativeBounded -Executable $script:NativePowerShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',$helper,'-InstallerPath',$installer,'-IntegrityManifestPath',$handoffManifest,'-ExpectedVersion','3.8.0','-ExpectedSha256',$script:InstallerHash,'-FromVersion','3.7.9','-NoRunAfter','-DelaySeconds','8') -Label 'old-helper-dispatch' -TimeoutSeconds 90
+  $oldHelperSha256=[string]$script:Receipt.oldInstalledTrust.installed.helperSha256
+  if($oldHelperSha256 -cnotmatch '^[a-f0-9]{64}$' -or [string]$script:Receipt.oldInstalledTrust.installed.version -cne $ExpectedOldVersion -or (Get-FileHash -LiteralPath $helper -Algorithm SHA256).Hash -ine $oldHelperSha256){throw 'Old installed helper changed after genuine trust verification.'}
+  Add-NativeMutation -Kind 'actual-old-helper-upgrade' -Target $helper -Purpose "Execute authenticated official installed $ExpectedOldVersion helper with signed 3.8.0 installer; do not substitute a new helper or alter recovery policy."
+  $dispatch=Invoke-NativeBounded -Executable $script:NativePowerShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',$helper,'-InstallerPath',$installer,'-IntegrityManifestPath',$handoffManifest,'-ExpectedVersion','3.8.0','-ExpectedSha256',$script:InstallerHash,'-FromVersion',$ExpectedOldVersion,'-NoRunAfter','-DelaySeconds','8') -Label 'old-helper-dispatch' -TimeoutSeconds 90
   $result=$dispatch.stdout | ConvertFrom-Json
   if($result.dispatched -ne $true -or [string]$result.runId -cnotmatch '^[a-f0-9]{32}$'){throw 'Old genuine dispatch did not return a canonical stage identity.'}
   $oldStage=Join-Path $script:DeferredRoot ([string]$result.runId)
   if([string]$result.state -ine (Join-Path $oldStage 'state.json') -or [string]$result.receipt -ine (Join-Path $oldStage 'receipt.json')){throw 'Old helper returned a foreign stage.'}
   [void](Assert-NativeAdministratorOwned $oldStage)
-  $script:Receipt.legacyBridge=[ordered]@{oldStage=$oldStage;newStage=$null;oldHelperSha256='f6c232fa15e4e8f1d78c149f973df8b807d58cabd8ef5898b8b5ce0d2279da8e';oldWorker=$null;oldWatchdog=$null;oldComplete=$null;newComplete=$null;bootTask=$null;quiescenceAtNewTask=$false;elapsedSeconds=$null};Save-NativeReceipt
+  $script:Receipt.legacyBridge=[ordered]@{oldVersion=$ExpectedOldVersion;oldStage=$oldStage;newStage=$null;oldHelperSha256=$oldHelperSha256;oldWorker=$null;oldWatchdog=$null;oldComplete=$null;newComplete=$null;bootTask=$null;quiescenceAtNewTask=$false;elapsedSeconds=$null};Save-NativeReceipt
   $observed=@{};$watch=[Diagnostics.Stopwatch]::StartNew();$newStage=$null
   try{
     while($watch.Elapsed.TotalSeconds -lt 1200){
@@ -237,20 +243,20 @@ function Invoke-NativeLegacyUpgrade {
   $ancestor=[IO.Path]::GetDirectoryName($script:Evidence);while(-not (Test-Path -LiteralPath $ancestor)){$ancestor=[IO.Path]::GetDirectoryName($ancestor)};Assert-NativeOrdinaryPath $ancestor
   New-Item -ItemType Directory -Path $script:Work,$script:Evidence | Out-Null
   $script:ReceiptPath=Join-Path $script:Work 'windows-production-legacy-upgrade.json'
-  $script:Receipt=[ordered]@{schemaVersion=1;kind='actual-native-official-3.7.9-helper-upgrade';candidateVersion='3.8.0';candidateSourceCommit=$script:SourceCommit;harnessSourceCommit=$environment.GITHUB_SHA;startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');host=[ordered]@{computerName=$env:COMPUTERNAME;administrator=$administrator;runnerEnvironment=$env:RUNNER_ENVIRONMENT;runId=$env:GITHUB_RUN_ID;runAttempt=$env:GITHUB_RUN_ATTEMPT};result='running';cleanStartVerified=$true;releaseReady=$false;mutations=@();checks=@();gui=@();privateStateReadbacks=@();networkReadbacks=@();beforeNetwork=(Get-NativeNetworkFingerprint);beforeForeignRegistrations=(Get-LegacyForeignRegistrationSnapshot);releaseGates=@('Public/latest feed discovery and old GUI auto-update initiation','Actual reboot/interrupted recovery','3.7.7/3.7.8 trust compatibility','System DNS/TUN/WinDivert endpoints','Actual standard-user GUI token','Long-duration 72-hour/7-day/month-scale pilot')}
+  $script:Receipt=[ordered]@{schemaVersion=1;kind=('actual-native-official-'+$ExpectedOldVersion+'-helper-upgrade');oldVersion=$ExpectedOldVersion;candidateVersion='3.8.0';candidateSourceCommit=$script:SourceCommit;harnessSourceCommit=$environment.GITHUB_SHA;startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');host=[ordered]@{computerName=$env:COMPUTERNAME;administrator=$administrator;runnerEnvironment=$env:RUNNER_ENVIRONMENT;runId=$env:GITHUB_RUN_ID;runAttempt=$env:GITHUB_RUN_ATTEMPT};result='running';cleanStartVerified=$true;releaseReady=$false;mutations=@();checks=@();gui=@();privateStateReadbacks=@();networkReadbacks=@();beforeNetwork=(Get-NativeNetworkFingerprint);beforeForeignRegistrations=(Get-LegacyForeignRegistrationSnapshot);releaseGates=@('Public/latest feed discovery and old GUI auto-update initiation','Actual reboot/interrupted recovery','3.7.7 trust compatibility','System DNS/TUN/WinDivert endpoints','Actual standard-user GUI token','Long-duration 72-hour/7-day/month-scale pilot')}
   $script:Receipt.harnessFiles=@(foreach($file in @($PSCommandPath,$script:LegacyNodeHelper,(Join-Path $PSScriptRoot 'windows-production-acceptance.ps1'),(Join-Path $PSScriptRoot 'windows-production-acceptance.mjs'))){[ordered]@{path=$file;sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()}});Save-NativeReceipt
   $primaryError=$null;$uninstalled=$false
   try{
     $script:AuthenticatedAssets=Invoke-LegacyArtifactVerification -Label 'authenticated-assets'
     $script:Receipt.authenticatedAssets=$script:AuthenticatedAssets;Save-NativeReceipt
     $script:Installer=Join-Path $script:CandidateAssets 'EgoistShield-Setup-3.8.0.exe';$script:InstallerHash=[string]$script:AuthenticatedAssets.candidate.sha256
-    $oldInstaller=Join-Path $script:OldAssets 'EgoistShield-Setup-3.7.9.exe'
-    Add-NativeMutation -Kind 'official-old-setup-clean-install' -Target $script:InstallRoot -Purpose 'Actual original public 3.7.9 installer, authenticated before execution.'
+    $oldInstaller=Join-Path $script:OldAssets ('EgoistShield-Setup-'+$ExpectedOldVersion+'.exe')
+    Add-NativeMutation -Kind 'official-old-setup-clean-install' -Target $script:InstallRoot -Purpose "Actual original public $ExpectedOldVersion installer, authenticated before execution."
     [void](Invoke-NativeBounded -Executable $oldInstaller -Arguments @('/S') -Label 'official-old-clean-install' -TimeoutSeconds 600)
     [void](Assert-NativeService 'EgoistShieldCore' $script:Core -Running);$script:Receipt.oldCorePolicy=Get-NativeRecoveryPolicy 'EgoistShieldCore'
     Assert-NativeNoGui;Assert-NativeNetworkPreserved 'old-clean-install'
     $script:Receipt.oldInstalledTrust=Invoke-LegacyArtifactVerification -Label 'old-installed-authentication' -Installed
-    $gui=Invoke-Legacy379Gui;$port=[int]$gui.port
+    $gui=Invoke-LegacyGui;$port=[int]$gui.port
     $script:Receipt.oldTelegramPolicy=Get-NativeRecoveryPolicy 'EgoistShieldTelegramProxy';$script:Receipt.oldTelegramWithoutGui=Assert-NativeTelegramEndpoint $port
     $configPath=Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json';$configHash=(Get-FileHash -LiteralPath $configPath -Algorithm SHA256).Hash
     Assert-NativeNoGui;Assert-NativeNetworkPreserved 'old-gui-close';Save-NativeReceipt
@@ -267,7 +273,7 @@ function Invoke-NativeLegacyUpgrade {
     $script:Receipt.newTelegramWithoutGui=Assert-NativeTelegramEndpoint $port;$script:Receipt.newTelegramPolicy=Get-NativeRecoveryPolicy 'EgoistShieldTelegramProxy'
     Assert-NativeNoGui;Assert-NativeNetworkPreserved 'old-helper-new-bridge-upgrade';Assert-LegacyForeignRegistrationsPreserved 'upgrade'
     [void](Invoke-NativeGui -Action 'check-telegram' -Label 'actual-new-gui-after-legacy-upgrade');Assert-NativeNoGui
-    $script:Receipt.checks+=[ordered]@{name='real-official-3.7.9-helper-to-signed-3.8.0-bridge';ok=$true;publicLatestFeedDiscovery=$false;actualBoot=$false};Save-NativeReceipt
+    $script:Receipt.checks+=[ordered]@{name=('real-official-'+$ExpectedOldVersion+'-helper-to-signed-3.8.0-bridge');oldVersion=$ExpectedOldVersion;ok=$true;publicLatestFeedDiscovery=$false;actualBoot=$false};Save-NativeReceipt
     $uninstaller=Join-Path $script:InstallRoot 'Uninstall Egoist Shield.exe';[void](Assert-NativeAdministratorOwned $uninstaller)
     Add-NativeMutation -Kind 'actual-owned-candidate-uninstall' -Target $uninstaller -Purpose 'Remove the successfully upgraded product with its actual uninstaller; preserve unrelated services/tasks/network.'
     [void](Invoke-NativeBounded -Executable $uninstaller -Arguments @('/S') -Label 'actual-candidate-uninstall' -TimeoutSeconds 300)

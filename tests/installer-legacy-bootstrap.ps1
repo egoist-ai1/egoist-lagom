@@ -128,13 +128,24 @@ try {
     '{"schemaVersion":1,"owner":"EgoistShield","runAfter":"false","minimizedAfter":false}',
     '{"schemaVersion":1,"owner":"EgoistShield","runAfter":0,"minimizedAfter":false}',
     '{"schemaVersion":1,"owner":"EgoistShield","runAfter":false,"minimizedAfter":null}',
-    '{"schemaVersion":1,"owner":"EgoistShield","runAfter":false}')) {
+    '{"schemaVersion":1,"owner":"EgoistShield","runAfter":false,"minimizedAfter":"false"}',
+    '{"schemaVersion":1,"owner":"EgoistShield","minimizedAfter":false}')) {
     [IO.File]::WriteAllText($launchStateFile,$invalid)
     $refused=$false;try{[void](ConvertFrom-PreviousReinstallLaunchPreference ([IO.File]::ReadAllText($launchStateFile)))}catch{$refused=$true}
     Assert $refused 'Malformed legacy bool preferences were accepted.'
   }
   [IO.File]::WriteAllText($launchStateFile,$validState,[Text.UTF8Encoding]::new($true))
   $groups.Add('real own JSON files: exact bool projection and malformed/type/owner rejection')
+
+  foreach($legacyRunAfter in @($false,$true)) {
+    $legacy378=@{schemaVersion=1;owner='EgoistShield';runAfter=$legacyRunAfter;services=@(@{name='never import'})}|ConvertTo-Json -Depth 4
+    [IO.File]::WriteAllText($launchStateFile,$legacy378,[Text.UTF8Encoding]::new($false))
+    $projection=ConvertFrom-PreviousReinstallLaunchPreference ([IO.File]::ReadAllText($launchStateFile))
+    Assert ($projection.runAfter -eq $legacyRunAfter -and $projection.minimizedAfter -eq $false) 'Original 3.7.8 state without minimizedAfter was rejected or its launch choice changed.'
+    Assert (@($projection.PSObject.Properties).Count -eq 2) 'Legacy 3.7.8 state imported unrelated fields.'
+  }
+  [IO.File]::WriteAllText($launchStateFile,$validState,[Text.UTF8Encoding]::new($true))
+  $groups.Add('original 3.7.8 schema: absent minimizedAfter defaults false and preserves exact runAfter')
 
   # Actual Windows ACL objects exercise the unchanged production policy. A
   # scoped Get-Acl leaf supplies only these owned-fixture descriptors; it does
@@ -212,7 +223,7 @@ try {
     $savedInheritedStage=$env:EGOIST_PROTECTED_REINSTALL_STAGE
     try{
       $env:EGOIST_PROTECTED_REINSTALL_STAGE=$stage;$WaitForPreviousReinstall=$true
-      $refused=$false;try{. ([scriptblock]::Create($dispatchPreferencePrefix))}catch{$refused=$_.Exception.Message -match 'two JSON booleans'}
+      $refused=$false;try{. ([scriptblock]::Create($dispatchPreferencePrefix))}catch{$refused=$_.Exception.Message -match 'runAfter boolean'}
       Assert $refused 'Actual dispatch prefix did not reject malformed preferences before lease/preparation.'
     }finally{$env:EGOIST_PROTECTED_REINSTALL_STAGE=$savedInheritedStage}
   }

@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "kind": "source-only-legacy-version-matrix",
+  "observedAtUtc": "2026-10-01T06:16:39.4124674+03:00",
+  "taskId": "01a0f42c-8e52-7810-89bf-5257f3e06d3e",
+  "head": "9bf77129ccc2aeac741bf109b8ab6c9368fac558",
+  "files": [
+    {
+      "path": "tests\\windows-production-legacy-upgrade.ps1",
+      "sha256": "6e62fd9d76b453e2d79bf0d29424fad78799d8b2659b57f3582a67db4323744b"
+    },
+    {
+      "path": "tests\\windows-production-legacy-upgrade.mjs",
+      "sha256": "af4b16e9fb37b1d9096c56c1481486754b0c90ff41f29cea34f538f6ab17fa04"
+    },
+    {
+      "path": "tests\\windows-production-legacy-guard.test.mjs",
+      "sha256": "ccd1750943f2995bc91f422021255a6fb966165886f5e6b308016ca58c3bf477"
+    },
+    {
+      "path": "docs\\product-hardening-2026-10-01\\legacy-version-matrix.md",
+      "sha256": "93784937edb57b9f53db779246577bf654c0c48c90251c214cb305f864ca3ec6"
+    }
+  ],
+  "original378": {
+    "installer": {
+      "bytes": 194405835,
+      "sha256": "34136729f0924e95af65b7fefd2792763c29694056b8ff76a79c9fe0e325f927",
+      "sha512": "ddd226a18f0ca189c60cb1db4aa6384b837ae1d28266a99a438932a60d91f463cf5c540b426cd4fdb099787051b3765407b69ff13d0d72c7cb4f2b2d5157ba61"
+    },
+    "archivedTrustMatchesOriginalSignedFixture": true,
+    "helperSha256": "e33bca4550b6e130287c8bb2d5c0dccf30b76e033bf99520e81d6c2acda609f5",
+    "helperBytes": 62614,
+    "installerExecuted": false
+  },
+  "original379": {
+    "manifestBytes": 785,
+    "registryBytesMatch378Fixture": true,
+    "metadataDownload": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/"
+  },
+  "tests": [
+    {
+      "sha256": "451994d1690256220b800d58d19d33d40bf060a96dd7a14fc56abcabd6cbe321",
+      "skipped": 0,
+      "failed": 0,
+      "passed": 8,
+      "name": "legacy-version-matrix-tests-ps7.txt"
+    },
+    {
+      "sha256": "6058c8280347b31b43f5dfaef7b2ede4b3ee584cfa0e54cecf76074ee7df1fe9",
+      "skipped": 0,
+      "failed": 0,
+      "passed": 8,
+      "name": "legacy-version-matrix-tests-ps51.txt"
+    }
+  ],
+  "parserErrors": 0,
+  "analyzer": {
+    "warnings": 0,
+    "informational": 0,
+    "findings": [],
+    "errors": 0
+  },
+  "nativeInstalledExecutions": 0,
+  "physicalScmDnsTunTaskRegistryClipboardWrites": 0,
+  "publicLatestFeedDiscoveryTested": false
+}

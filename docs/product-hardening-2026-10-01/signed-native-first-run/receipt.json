@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "runId": 36807040747,
+  "sourceCommit": "9bf77129ccc2aeac741bf109b8ab6c9368fac558",
+  "releaseId": 400603816,
+  "draft": true,
+  "result": "failed-before-native-installation",
+  "testsJob": "passed",
+  "installerExecuted": false,
+  "nativeScmDnsTunMutations": 0,
+  "releaseReady": false,
+  "publishedTagEndpointReadback": 404,
+  "releaseByIdReadback": {
+    "id": 400603816,
+    "tag": "v3.8.0",
+    "draft": true
+  },
+  "graphqlPendingTagReadback": {
+    "databaseId": 400603816,
+    "tagName": "v3.8.0",
+    "isDraft": true
+  },
+  "logs": [
+    {
+      "jobId": 110195431936,
+      "file": "signed-candidate.txt",
+      "bytes": 27343,
+      "sha256": "5c35d3622c770747bcb1cba420f2d8aaec9ac62b3179ff4221ae2ab50b31abaa"
+    },
+    {
+      "jobId": 110195431973,
+      "file": "legacy.txt",
+      "bytes": 25318,
+      "sha256": "71c724d975420c94c9bde8fddf21d06de2189653595398f29c7205f2be4f5385"
+    }
+  ],
+  "fix": "Resolve the pending draft tag using the official gh release view GraphQL fallback, then require exact ID/tag/draft equality.",
+  "sources": [
+    "https://docs.github.com/en/rest/releases/releases#get-a-release-by-tag-name",
+    "https://github.com/cli/cli/blob/trunk/pkg/cmd/release/shared/fetch.go"
+  ]
+}

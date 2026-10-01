@@ -1727,10 +1727,12 @@ function ConvertFrom-PreviousReinstallLaunchPreference {
   $minimized = $previous.PSObject.Properties['minimizedAfter']
   if (-not $schema -or ($schema.Value -isnot [int] -and $schema.Value -isnot [long]) -or $schema.Value -ne 1 -or
       -not $owner -or $owner.Value -isnot [string] -or $owner.Value -cne 'EgoistShield' -or
-      -not $run -or $run.Value -isnot [bool] -or -not $minimized -or $minimized.Value -isnot [bool]) {
-    throw 'Legacy launch preferences require schema 1, verified product owner and two JSON booleans.'
+      -not $run -or $run.Value -isnot [bool] -or ($minimized -and $minimized.Value -isnot [bool])) {
+    throw 'Legacy launch preferences require schema 1, verified product owner, runAfter boolean and an optional minimizedAfter boolean.'
   }
-  return [pscustomobject]@{runAfter=$run.Value; minimizedAfter=$minimized.Value}
+  # Original 3.7.8 schema 1 did not store a minimized launch preference.
+  $minimizedValue = if ($minimized) { $minimized.Value } else { $false }
+  return [pscustomobject]@{runAfter=$run.Value; minimizedAfter=$minimizedValue}
 }
 
 function Get-PreviousReinstallLaunchPreference {

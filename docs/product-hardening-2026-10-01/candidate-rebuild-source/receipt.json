@@ -1,0 +1,96 @@
+{
+  "sourceFiles": [
+    {
+      "sha256": "E74F6C83B10C6B2E5A8C6DD7C4EB93AC7FE1C452EEBD523D48DB50EEAD4823A2",
+      "file": ".github/workflows/ci.yml"
+    },
+    {
+      "sha256": "01BC98129BE8E07266C0BB20174C1C113B4CF021E5F7CE9C3AA467E9291F4706",
+      "file": "package-lock.json"
+    },
+    {
+      "sha256": "0BABF11CDFBD1B2C76F76A37EC7DDDBBB9E903A207A297641BA9659FB4D19A6F",
+      "file": "scripts/invoke-final-silent-reinstall.ps1"
+    },
+    {
+      "sha256": "7908F32FE9298E558C1B7E24622E2ACDDE81C8945BD5389DBFC5EEC502B8038C",
+      "file": "tests/installer-legacy-bootstrap.ps1"
+    },
+    {
+      "sha256": "6E62FD9D76B453E2D79BF0D29424FAD78799D8B2659B57F3582A67DB4323744B",
+      "file": "tests/windows-production-legacy-upgrade.ps1"
+    },
+    {
+      "sha256": "AF4B16E9FB37B1D9096C56C1481486754B0C90FF41F29CEA34F538F6AB17FA04",
+      "file": "tests/windows-production-legacy-upgrade.mjs"
+    },
+    {
+      "sha256": "CCD1750943F2995BC91F422021255A6FB966165886F5E6B308016CA58C3BF477",
+      "file": "tests/windows-production-legacy-guard.test.mjs"
+    },
+    {
+      "sha256": "A574BAC7EC6E98A8BA1765CADBB242F2B5964C965BA8CA4F5EED0F6514BB4639",
+      "file": "README.md"
+    }
+  ],
+  "workingTreeSnapshotBeforeCommit": true,
+  "nativeInstallerExecutedForThisSnapshot": false,
+  "installedBraceExpansion": "1.1.21",
+  "npmAudit": {
+    "productionKnownVulnerabilities": 0,
+    "allKnownVulnerabilities": 0
+  },
+  "sourceReady": true,
+  "schemaVersion": 1,
+  "basedOnCommit": "9bf77129ccc2aeac741bf109b8ab6c9368fac558",
+  "powershellParser": [
+    {
+      "errors": 0,
+      "file": "scripts/invoke-final-silent-reinstall.ps1"
+    },
+    {
+      "errors": 0,
+      "file": "tests/installer-legacy-bootstrap.ps1"
+    },
+    {
+      "errors": 0,
+      "file": "tests/windows-production-legacy-upgrade.ps1"
+    }
+  ],
+  "build": "passed",
+  "node": {
+    "tests": 858,
+    "durationMs": 24479.3414,
+    "skipped": 0,
+    "failed": 0,
+    "passed": 858
+  },
+  "releaseReady": false,
+  "evidence": [
+    {
+      "sha256": "7D569BB33E3C0E2ECA085B828C193C584B6D6319B830A821400D95A0DE31615C",
+      "bytes": 82952,
+      "file": "node.txt"
+    },
+    {
+      "sha256": "F3AB228C9CC464EE80BBCC29B660279E9D66B4645D9E39852DD58CABA9EFDD3E",
+      "bytes": 383,
+      "file": "npm-audit-production.json"
+    },
+    {
+      "sha256": "F3AB228C9CC464EE80BBCC29B660279E9D66B4645D9E39852DD58CABA9EFDD3E",
+      "bytes": 383,
+      "file": "npm-audit-all.json"
+    },
+    {
+      "sha256": "C61F37A013FB06C2BCE5CCFC104D0B355C0894F8C2BB3D90227C02C40213C36F",
+      "bytes": 676,
+      "file": "locked-ci.txt"
+    },
+    {
+      "sha256": "630234ADCCB98F1C42C50639075ABB7B121ABB266986F10D41D9B75B57CC2F25",
+      "bytes": 71,
+      "file": "build.txt"
+    }
+  ]
+}

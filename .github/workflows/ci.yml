@@ -391,9 +391,12 @@ jobs:
           $releaseText = gh api ("repos/egoist-ai1/egoist-lagom/releases/" + $env:SIGNED_RELEASE_ID)
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $release = $releaseText | ConvertFrom-Json
-          $tagText = gh api ("repos/egoist-ai1/egoist-lagom/releases/tags/v" + $version)
+          # REST releases/tags only returns published releases. The CLI also
+          # resolves draft pending tags through GraphQL; pin the resulting ID.
+          $tagText = gh release view "v$version" --repo 'egoist-ai1/egoist-lagom' --json databaseId,tagName,isDraft
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if ($release.tag_name -cne "v$version" -or [string]$release.id -cne $env:SIGNED_RELEASE_ID -or [string]($tagText | ConvertFrom-Json).id -cne $env:SIGNED_RELEASE_ID) { throw 'The selected tag/release identity differs.' }
+          $tagSelection = $tagText | ConvertFrom-Json
+          if ($release.tag_name -cne "v$version" -or [string]$release.id -cne $env:SIGNED_RELEASE_ID -or [string]$tagSelection.databaseId -cne $env:SIGNED_RELEASE_ID -or $tagSelection.tagName -cne $release.tag_name -or $tagSelection.isDraft -ne $release.draft) { throw 'The selected tag/release identity differs.' }
           $signedWork = Join-Path $env:RUNNER_TEMP 'lagom-signed-candidate'
           if (Test-Path -LiteralPath $signedWork) { throw 'Signed candidate work must be fresh.' }
           $oldAssets = Join-Path $signedWork 'old'
@@ -407,7 +410,7 @@ jobs:
           $authWork = Join-Path $env:RUNNER_TEMP ("lagom-legacy-native-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT")
           New-Item -ItemType Directory -Path $authWork | Out-Null
           $options = Join-Path $authWork 'signed-fresh-authentication.options.json'
-          @{ oldAssets=$oldAssets; candidateAssets=$candidateAssets; integrityPath=(Join-Path $candidateAssets 'package-integrity.json'); sourceCommit=$env:GITHUB_SHA; output=(Join-Path $authWork 'signed-fresh-authentication.json') } | ConvertTo-Json | Set-Content -LiteralPath $options -Encoding utf8
+          @{ oldVersion='3.7.9'; oldAssets=$oldAssets; candidateAssets=$candidateAssets; integrityPath=(Join-Path $candidateAssets 'package-integrity.json'); sourceCommit=$env:GITHUB_SHA; output=(Join-Path $authWork 'signed-fresh-authentication.json') } | ConvertTo-Json | Set-Content -LiteralPath $options -Encoding utf8
           node tests/windows-production-legacy-upgrade.mjs verify-assets $options
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item -LiteralPath (Join-Path $authWork 'signed-fresh-authentication.json') -Destination $evidence
@@ -440,8 +443,13 @@ jobs:
           path: ${{ runner.temp }}/lagom-signed-candidate/evidence
 
   legacy:
+    name: legacy (${{ matrix.old_version }})
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.signed_legacy_release_id != '' }}
     needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        old_version: ['3.7.8', '3.7.9']
     runs-on: windows-latest
     timeout-minutes: 45
     permissions:
@@ -479,45 +487,49 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SIGNED_LEGACY_RELEASE_ID: ${{ inputs.signed_legacy_release_id }}
+          SIGNED_OLD_VERSION: ${{ matrix.old_version }}
         run: |
           if ($env:SIGNED_LEGACY_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Invalid signed release ID.' }
+          $oldVersion = $env:SIGNED_OLD_VERSION
+          if ($oldVersion -cnotin @('3.7.8', '3.7.9')) { throw 'Only the two authenticated supported old versions may be tested.' }
           $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid candidate version.' }
-          $oldReleaseText = gh api 'repos/egoist-ai1/egoist-lagom/releases/tags/v3.7.9'
+          $oldReleaseText = gh api ("repos/egoist-ai1/egoist-lagom/releases/tags/v" + $oldVersion)
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $oldRelease = $oldReleaseText | ConvertFrom-Json
           $candidateText = gh api ("repos/egoist-ai1/egoist-lagom/releases/" + $env:SIGNED_LEGACY_RELEASE_ID)
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $candidateRelease = $candidateText | ConvertFrom-Json
-          if ($oldRelease.tag_name -cne 'v3.7.9' -or $oldRelease.draft -or -not $oldRelease.published_at) { throw 'The old release must be official published 3.7.9.' }
+          if ($oldRelease.tag_name -cne "v$oldVersion" -or $oldRelease.draft -or -not $oldRelease.published_at) { throw 'The old release must match the exact official published matrix version.' }
           if ($candidateRelease.tag_name -cne "v$version" -or [string]$candidateRelease.id -cne $env:SIGNED_LEGACY_RELEASE_ID) { throw 'The candidate release identity differs.' }
-          $tagSelection = gh api ("repos/egoist-ai1/egoist-lagom/releases/tags/v" + $version)
+          $tagSelectionText = gh release view "v$version" --repo 'egoist-ai1/egoist-lagom' --json databaseId,tagName,isDraft
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if ([string]($tagSelection | ConvertFrom-Json).id -cne $env:SIGNED_LEGACY_RELEASE_ID) { throw 'Candidate tag resolves to a different release.' }
-          $legacyWork = Join-Path $env:RUNNER_TEMP 'lagom-signed-legacy'
+          $tagSelection = $tagSelectionText | ConvertFrom-Json
+          if ([string]$tagSelection.databaseId -cne $env:SIGNED_LEGACY_RELEASE_ID -or $tagSelection.tagName -cne $candidateRelease.tag_name -or $tagSelection.isDraft -ne $candidateRelease.draft) { throw 'Candidate tag resolves to a different release.' }
+          $legacyWork = Join-Path $env:RUNNER_TEMP ("lagom-signed-legacy-" + $oldVersion)
           if (Test-Path -LiteralPath $legacyWork) { throw 'Signed acceptance work directory must be fresh.' }
           $oldAssets = Join-Path $legacyWork 'old'
           $candidateAssets = Join-Path $legacyWork 'candidate'
           $evidence = Join-Path $legacyWork 'evidence'
           New-Item -ItemType Directory -Path $oldAssets, $candidateAssets, $evidence -Force | Out-Null
-          gh release download 'v3.7.9' --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern 'EgoistShield-Setup-3.7.9.exe' --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
+          gh release download "v$oldVersion" --repo 'egoist-ai1/egoist-lagom' --dir $oldAssets --pattern "EgoistShield-Setup-$oldVersion.exe" --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           gh release download "v$version" --repo 'egoist-ai1/egoist-lagom' --dir $candidateAssets --pattern "EgoistShield-Setup-$version.exe" --pattern 'release-manifest.json' --pattern 'release-manifest.json.sig' --pattern 'release-key-registry.json' --pattern 'release-key-registry.json.sig' --pattern 'package-integrity.json'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          @{ oldReleaseId = $oldRelease.id; candidateReleaseId = $candidateRelease.id; sourceCommit = $env:GITHUB_SHA; candidateTag = $candidateRelease.tag_name; candidateDraft = $candidateRelease.draft } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'download-identity.json') -Encoding utf8
+          @{ oldVersion = $oldVersion; oldReleaseId = $oldRelease.id; candidateReleaseId = $candidateRelease.id; sourceCommit = $env:GITHUB_SHA; candidateTag = $candidateRelease.tag_name; candidateDraft = $candidateRelease.draft } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'download-identity.json') -Encoding utf8
           "LAGOM_LEGACY_WORK=$legacyWork" >> $env:GITHUB_ENV
-      - name: Run actual signed 3.7.9 helper handoff
+      - name: Run the actual signed old helper handoff
         run: |
           $env:SHIELD_DOTNET = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'
           $oldAssets = Join-Path $env:LAGOM_LEGACY_WORK 'old'
           $candidateAssets = Join-Path $env:LAGOM_LEGACY_WORK 'candidate'
-          ./tests/windows-production-legacy-upgrade.ps1 -OldReleaseAssetsDirectory $oldAssets -CandidateReleaseAssetsDirectory $candidateAssets -IntegrityManifestPath (Join-Path $candidateAssets 'package-integrity.json') -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:LAGOM_LEGACY_WORK 'evidence')
+          ./tests/windows-production-legacy-upgrade.ps1 -ExpectedOldVersion '${{ matrix.old_version }}' -OldReleaseAssetsDirectory $oldAssets -CandidateReleaseAssetsDirectory $candidateAssets -IntegrityManifestPath (Join-Path $candidateAssets 'package-integrity.json') -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:LAGOM_LEGACY_WORK 'evidence')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Upload signed legacy acceptance evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: lagom-signed-legacy-acceptance-${{ github.sha }}
+          name: lagom-signed-legacy-${{ matrix.old_version }}-acceptance-${{ github.sha }}
           retention-days: 7
           if-no-files-found: warn
-          path: ${{ runner.temp }}/lagom-signed-legacy/evidence
+          path: ${{ runner.temp }}/lagom-signed-legacy-${{ matrix.old_version }}/evidence

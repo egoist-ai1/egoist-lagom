@@ -1,0 +1,485 @@
+{
+  "schemaVersion": 1,
+  "observedAtUtc": "2026-10-01T03:16:33.508024+00:00",
+  "ciRunId": "36807040747",
+  "sourceBeforeCommit": "9bf77129ccc2aeac741bf109b8ab6c9368fac558",
+  "applicationVersion": "3.8.0",
+  "nodeVersion": "v24.19.0",
+  "scanner": {
+    "version": "12.2.0",
+    "engines": {
+      "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+    },
+    "metadataUrl": "https://registry.npmjs.org/npm/latest",
+    "tarballUrl": "https://registry.npmjs.org/npm/-/npm-12.2.0.tgz",
+    "integrity": "sha512-ZsJjKpTnlmSXOLLXiU1xDCzC4Wlok4IwZmh/aw2KUuXytU7q6qMv/cUT7MoeSf95Slwuw/lRXYefGzGCspHPNQ==",
+    "sha256": "6666b48816b39b86c3febac7b51a4ee4de6c5ca589c382ad8004b6b113f86677",
+    "expandedBytes": 12397700
+  },
+  "lockRepair": {
+    "changedEntry": "node_modules/brace-expansion",
+    "changedFields": [
+      "version",
+      "resolved",
+      "integrity"
+    ],
+    "packageJsonUnchanged": true,
+    "packageSetUnchanged": true,
+    "oldLockSha256": "1ef59660bca88dcbbe5dea9a22c8867431c1c475e216b8c751ea049701cd0fce",
+    "fixedLockSha256": "01bc98129be8e07266c0bb20174c1c113b4cf021e5f7ce9c3aa467e9291f4706",
+    "currentLockSha256": "01bc98129be8e07266c0bb20174c1c113b4cf021e5f7ce9c3aa467e9291f4706",
+    "projectNodeModulesNotModified": true,
+    "currentInstalledBraceVersion": "1.1.18",
+    "stage": "post-adoption"
+  },
+  "packageJsonSha256": "4675708173101d3c631b3a89bc475aafe3f10d191d3f5abc96f25af5a4c49230",
+  "advisories": [
+    {
+      "cve": "CVE-2026-102278",
+      "ghsa": "GHSA-qhr7-859c-m2p7",
+      "severity": "high",
+      "affected1x": "<1.1.20",
+      "fixed1x": "1.1.20",
+      "vendorUrl": "https://github.com/juliangruber/brace-expansion/security/advisories/GHSA-qhr7-859c-m2p7",
+      "publishedAt": "2026-09-29T23:45:17Z",
+      "updatedAt": "2026-09-29T23:45:19Z"
+    },
+    {
+      "cve": "CVE-2026-102276",
+      "ghsa": "GHSA-6j4f-fj2g-mc7p",
+      "severity": "high",
+      "affected1x": "<1.1.19",
+      "fixed1x": "1.1.19",
+      "vendorUrl": "https://github.com/juliangruber/brace-expansion/security/advisories/GHSA-6j4f-fj2g-mc7p",
+      "publishedAt": "2026-09-29T23:44:58Z",
+      "updatedAt": "2026-09-29T23:44:59Z"
+    },
+    {
+      "cve": "CVE-2026-102277",
+      "ghsa": "GHSA-q2hr-2g5m-vwhr",
+      "severity": "moderate",
+      "affected1x": "<1.1.21",
+      "fixed1x": "1.1.21",
+      "vendorUrl": "https://github.com/juliangruber/brace-expansion/security/advisories/GHSA-q2hr-2g5m-vwhr",
+      "publishedAt": "2026-09-29T23:45:39Z",
+      "updatedAt": "2026-09-29T23:45:39Z"
+    }
+  ],
+  "dependencyPath": [
+    "devDependency @electron/asar@3.4.1",
+    "glob@7.2.3/minimatch@3.1.5",
+    "brace-expansion@1.1.18"
+  ],
+  "risk": {
+    "affected": true,
+    "productionModuleFound": false,
+    "scope": "build-only in inspected source and 9bf source-bound local candidate archives",
+    "requiredInput": "untrusted string passed to brace expansion directly or through minimatch/glob",
+    "impact": "availability: native stack exhaustion or event-loop stall; no code-execution/data-exposure finding from these advisories",
+    "wildExploitationAssessed": false
+  },
+  "audits": {
+    "beforeAll": {
+      "auditReportVersion": 2,
+      "vulnerabilities": {
+        "brace-expansion": {
+          "name": "brace-expansion",
+          "severity": "high",
+          "isDirect": false,
+          "via": [
+            {
+              "source": 1240100,
+              "name": "brace-expansion",
+              "dependency": "brace-expansion",
+              "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+              "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+              "severity": "moderate",
+              "cwe": [
+                "CWE-400",
+                "CWE-407"
+              ],
+              "cvss": {
+                "score": 5.3,
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+              },
+              "range": "<1.1.21"
+            },
+            {
+              "source": 1240104,
+              "name": "brace-expansion",
+              "dependency": "brace-expansion",
+              "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+              "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7",
+              "severity": "high",
+              "cwe": [
+                "CWE-400",
+                "CWE-674"
+              ],
+              "cvss": {
+                "score": 7.5,
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+              },
+              "range": "<1.1.20"
+            },
+            {
+              "source": 1240108,
+              "name": "brace-expansion",
+              "dependency": "brace-expansion",
+              "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+              "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p",
+              "severity": "high",
+              "cwe": [
+                "CWE-400",
+                "CWE-674"
+              ],
+              "cvss": {
+                "score": 7.5,
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+              },
+              "range": "<1.1.19"
+            }
+          ],
+          "effects": [],
+          "range": "<=1.1.20",
+          "nodes": [
+            "node_modules/brace-expansion"
+          ],
+          "fixAvailable": true
+        }
+      },
+      "metadata": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 0,
+          "moderate": 0,
+          "high": 1,
+          "critical": 0,
+          "total": 1
+        },
+        "dependencies": {
+          "prod": 6,
+          "dev": 53,
+          "optional": 26,
+          "peer": 0,
+          "peerOptional": 0,
+          "total": 58
+        }
+      }
+    },
+    "beforeProduction": {
+      "auditReportVersion": 2,
+      "vulnerabilities": {},
+      "metadata": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 0,
+          "moderate": 0,
+          "high": 0,
+          "critical": 0,
+          "total": 0
+        },
+        "dependencies": {
+          "prod": 6,
+          "dev": 53,
+          "optional": 26,
+          "peer": 0,
+          "peerOptional": 0,
+          "total": 58
+        }
+      }
+    },
+    "adoptedProjectLockAll": {
+      "auditReportVersion": 2,
+      "vulnerabilities": {},
+      "metadata": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 0,
+          "moderate": 0,
+          "high": 0,
+          "critical": 0,
+          "total": 0
+        },
+        "dependencies": {
+          "prod": 6,
+          "dev": 53,
+          "optional": 26,
+          "peer": 0,
+          "peerOptional": 0,
+          "total": 58
+        }
+      }
+    },
+    "adoptedProjectLockProduction": {
+      "auditReportVersion": 2,
+      "vulnerabilities": {},
+      "metadata": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 0,
+          "moderate": 0,
+          "high": 0,
+          "critical": 0,
+          "total": 0
+        },
+        "dependencies": {
+          "prod": 6,
+          "dev": 53,
+          "optional": 26,
+          "peer": 0,
+          "peerOptional": 0,
+          "total": 58
+        }
+      }
+    },
+    "beforeAllExit": 1,
+    "beforeProductionExit": 0,
+    "adoptedProjectLockAllExit": 0,
+    "adoptedProjectLockProductionExit": 0,
+    "scope": "npm audit evaluates dependency lock; initial worker collection preceded root locked npm ci; final local readback verifies installed1.1.21 with unchanged accepted lock"
+  },
+  "installedTreeBeforeRefresh": {
+    "version": "3.8.0",
+    "name": "egoist-lagom-desktop",
+    "dependencies": {
+      "@electron/asar": {
+        "version": "3.4.1",
+        "resolved": "https://registry.npmjs.org/@electron/asar/-/asar-3.4.1.tgz",
+        "overridden": false,
+        "dependencies": {
+          "minimatch": {
+            "version": "3.1.5",
+            "resolved": "https://registry.npmjs.org/minimatch/-/minimatch-3.1.5.tgz",
+            "overridden": false,
+            "dependencies": {
+              "brace-expansion": {
+                "version": "1.1.18",
+                "resolved": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-1.1.18.tgz",
+                "overridden": false
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "compatibility": {
+    "schemaVersion": 1,
+    "node": "v24.19.0",
+    "passed": true,
+    "ordinaryCases": 19,
+    "isolatedChildren": 6,
+    "moduleVersions": {
+      "before": "1.1.18",
+      "after": "1.1.21"
+    },
+    "observations": [
+      {
+        "phase": "before",
+        "case": "parse-comma-stack",
+        "inputBytes": 40003,
+        "elapsedMs": 5.8202,
+        "outcome": "threw",
+        "errorClass": "RangeError"
+      },
+      {
+        "phase": "after",
+        "case": "parse-comma-stack",
+        "inputBytes": 40003,
+        "elapsedMs": 11.860600000000005,
+        "outcome": "returned",
+        "results": 10001,
+        "resultBytes": 30001
+      },
+      {
+        "phase": "before",
+        "case": "nested-stack",
+        "inputBytes": 8003,
+        "elapsedMs": 230.6118,
+        "outcome": "threw",
+        "errorClass": "RangeError"
+      },
+      {
+        "phase": "after",
+        "case": "nested-stack",
+        "inputBytes": 8003,
+        "elapsedMs": 111.98659999999998,
+        "outcome": "returned",
+        "results": 1,
+        "resultBytes": 8003
+      },
+      {
+        "phase": "before",
+        "case": "rewrite-work",
+        "inputBytes": 32006,
+        "elapsedMs": 3939.2182,
+        "outcome": "returned",
+        "results": 2,
+        "resultBytes": 32003
+      },
+      {
+        "phase": "after",
+        "case": "rewrite-work",
+        "inputBytes": 32006,
+        "elapsedMs": 12.706799999999998,
+        "outcome": "returned",
+        "results": 1,
+        "resultBytes": 32006
+      }
+    ],
+    "scriptSha256": "f6259a255e218caf9c19b7dea9d237c97b0c23a4cca6670043f415ea2c82d541",
+    "oldEntrySha256": "1bb0239fdd42bc5c9778007575ecb2cbf23daa4512a82866f4c997dbd82345ef",
+    "fixedEntrySha256": "c53b4fab560940391af6889ac8fafe67629ec645ca536dd7f10d266713e969bf",
+    "scope": "Own capped Node children and local library inputs. No live network-service or application target testing; one timed rewrite sample is not an uptime/performance guarantee."
+  },
+  "runtimeInventory": {
+    "schemaVersion": 1,
+    "observedAtUtc": "2026-10-01T03:08:02.161Z",
+    "node": "v24.19.0",
+    "ownProjectWrites": false,
+    "inspectedCode": [
+      {
+        "file": ".vite/build/main.js",
+        "sha256": "7d10f59ec46ce902693754505bb984bc14c637f49410deb9df224bad03f9b85c",
+        "vulnerableModuleMarkers": []
+      },
+      {
+        "file": ".vite/build/component-worker.cjs",
+        "sha256": "262b0b85576ea0eea29bb405f0104247b9053d0c58f6a1c709e23ac876555fa2",
+        "vulnerableModuleMarkers": []
+      },
+      {
+        "file": "scripts/package-windows.mjs",
+        "sha256": "ca8fa0351837e1d48c8eb7ca757c1841fe9c168b22c1724c4175f86c5fb21030",
+        "vulnerableModuleMarkers": []
+      },
+      {
+        "file": "scripts/build.mjs",
+        "sha256": "c1a77e5e501be3fd0e890e50e820f9da2991202a1435ce5ec4f5b843062c5024",
+        "vulnerableModuleMarkers": []
+      }
+    ],
+    "sourceMap": {
+      "file": ".vite/build/main.js.map",
+      "sha256": "f4581c8d2f91f77737b4e0d4d25cc7331c12689a3d3e413342201ed90ade6c57",
+      "sourceCount": 197,
+      "vulnerableSources": []
+    },
+    "archives": [
+      {
+        "file": "out/EgoistShield-3.8.0-october-9bf77129ccc2-r2-win-x64/resources/app.asar",
+        "sha256": "ba95da1c9c82b08aa796d431b2b7e89c412537e67bfb6c09fe412aca10212b36",
+        "entries": 187,
+        "vulnerableModuleEntries": [],
+        "embeddedMainSha256": "7d10f59ec46ce902693754505bb984bc14c637f49410deb9df224bad03f9b85c",
+        "embeddedVulnerableMarkers": []
+      },
+      {
+        "file": "out/EgoistShield-3.8.0-october-9bf77129ccc2-win-x64/resources/app.asar",
+        "sha256": "ba95da1c9c82b08aa796d431b2b7e89c412537e67bfb6c09fe412aca10212b36",
+        "entries": 187,
+        "vulnerableModuleEntries": [],
+        "embeddedMainSha256": "7d10f59ec46ce902693754505bb984bc14c637f49410deb9df224bad03f9b85c",
+        "embeddedVulnerableMarkers": []
+      }
+    ],
+    "observedAffectedRuntimeModule": false,
+    "scope": "Local produced3.8.0 ASAR inventories and current compiled entry/source map. This does not substitute for native acceptance of the next superseding signed installer."
+  },
+  "rootIntegration": {
+    "currentInstalledBraceVersion": "1.1.21",
+    "currentLockSha256": "01bc98129be8e07266c0bb20174c1c113b4cf021e5f7ce9c3aa467e9291f4706",
+    "rootReportedLockedCi": "passed with verified own npm12.2.0",
+    "rootReportedBuild": "main/preload/renderer/worker passed",
+    "rootReportedPostInstallAudit": {
+      "allTotal": 0,
+      "omitDevTotal": 0
+    },
+    "rootPrivateEvidenceReadByThisWorker": false,
+    "remainingBuildOnlyDeprecationWarnings": [
+      "inflight",
+      "glob",
+      "rcedit"
+    ]
+  },
+  "fix": {
+    "recommendedVersion": "1.1.21",
+    "withinExistingMinimatchRange": "^1.1.7",
+    "runtimeComponentReplacementNeeded": false,
+    "lockedCiPending": false,
+    "newSignedCandidateBuildRequiredForSourceBinding": true,
+    "nativeCandidateAcceptance": "pending after root rebuild",
+    "releaseReady": false,
+    "publishedByWorker": false
+  },
+  "evidence": [
+    {
+      "file": "npm-audit-all.json",
+      "sha256": "8346c6dfaedf356731d1a153c665b5d7252a6731fcd58ccd44756ad60f1dd985",
+      "bytes": 2405
+    },
+    {
+      "file": "npm-audit-production.json",
+      "sha256": "f08bafd071e2a61422a7a15b1f7ab5f75f6422b9b081df5040603875b1917a5c",
+      "bytes": 361
+    },
+    {
+      "file": "npm-audit-project-fixed-all.json",
+      "sha256": "f08bafd071e2a61422a7a15b1f7ab5f75f6422b9b081df5040603875b1917a5c",
+      "bytes": 361
+    },
+    {
+      "file": "npm-audit-project-fixed-production.json",
+      "sha256": "f08bafd071e2a61422a7a15b1f7ab5f75f6422b9b081df5040603875b1917a5c",
+      "bytes": 361
+    },
+    {
+      "file": "npm-ls-installed-brace-expansion.json",
+      "sha256": "97547db3a1ac6550cddb56b4584d78b851c7c189cc3464bcff7dc67e914c418f",
+      "bytes": 714
+    },
+    {
+      "file": "lock-validation-post-adoption.json",
+      "sha256": "9c3b2f98ec423ddf9e4e83a42feff57e305991e0e4fa346d3b39f30f698d41cf",
+      "bytes": 583
+    },
+    {
+      "file": "brace-compatibility-results.json",
+      "sha256": "13fb46f067e3e378494af9a585265e55cf9517f2337bc49f202960c5998b4f12",
+      "bytes": 1862
+    },
+    {
+      "file": "brace-compatibility.mjs",
+      "sha256": "f6259a255e218caf9c19b7dea9d237c97b0c23a4cca6670043f415ea2c82d541",
+      "bytes": 4059
+    },
+    {
+      "file": "runtime-inventory.json",
+      "sha256": "738fe6a77d83b502a3d531bbe98d7ed9fec765c942eb1e30d02b6934c3aff69a",
+      "bytes": 2042
+    },
+    {
+      "file": "audit-runtime-inventory.mjs",
+      "sha256": "a2d58797a9e7937cb21deb139466ad90daab91df4afd498fd15f2bc8d4a0bf74",
+      "bytes": 3327
+    },
+    {
+      "file": "primary-sources.json",
+      "sha256": "f1a4501b9f7dd8c5958a11f53cb726bb99a4ef178cde1a849219bc37f59167f6",
+      "bytes": 5434
+    },
+    {
+      "file": "npm-cli-origin.json",
+      "sha256": "e56c06e4d3ba9dd0019b4da12c03e8ebdaf38ab6a6dddf6c516ef66a6306ddc1",
+      "bytes": 800
+    }
+  ],
+  "limitations": [
+    "npm12.2.0 was bootstrapped from verified official dist.integrity for this worker; hosted npm CLI version was not assumed identical",
+    "Zero audit findings means no currently reported npm advisories for the audited lock, not absence of all security risks; build-only deprecation warnings remain",
+    "19 ordinary cases and6 capped local children are targeted checks, not a complete proof of all pattern equivalence",
+    "Malformed extreme patterns may now be returned literally at safety bounds; observed old/new outputs intentionally differ there",
+    "The rewrite timings are one local sample, not an application-performance or uptime guarantee",
+    "Native services/DNS/Tasks/registry were not changed; no publication/dispatch or private-key operations occurred"
+  ]
+}

@@ -5,7 +5,8 @@ import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { authenticateLegacyRegistry, authenticateLegacyManifest, assertLegacyRegistrySuccessor,
-  assertSignedCandidateSource, decodeLegacySignature } from './windows-production-legacy-upgrade.mjs';
+  assertSignedCandidateSource, decodeLegacySignature, officialLegacyRelease,
+  authenticateOfficialLegacyManifest, assertCandidateSupportsLegacyVersion } from './windows-production-legacy-upgrade.mjs';
 
 const artifacts = path.resolve('docs/reliability-3.7.9/network/public-artifacts/candidate');
 const root = fs.readFileSync('resources/release/root-public-key.pem');
@@ -13,6 +14,66 @@ const registryBytes = fs.readFileSync(path.join(artifacts, 'release-key-registry
 const registrySignature = fs.readFileSync(path.join(artifacts, 'release-key-registry.json.sig'));
 const manifestBytes = fs.readFileSync(path.join(artifacts, 'release-manifest.json'));
 const manifestSignature = fs.readFileSync(path.join(artifacts, 'release-manifest.json.sig'));
+// Original public v3.7.9 bytes, including the final LF; its registry equals the existing real v3.7.8 fixture.
+const manifest379Bytes = Buffer.from(`{
+  "schemaVersion": 2,
+  "channel": "stable",
+  "version": "3.7.9",
+  "tag": "v3.7.9",
+  "installerName": "EgoistShield-Setup-3.7.9.exe",
+  "canonicalDownloadUrl": "https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.7.9/EgoistShield-Setup-3.7.9.exe",
+  "size": 206521508,
+  "sha256": "eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+  "sha512": "46ac50c71106432eb09d3cf8e47e6b7b402c4b7e1746214ed72dace268dc421b9d369faf37f10392e78c44039dd1a2f0f4415b6681bdc5cf4f0c6b3a83b041bc",
+  "githubDigest": "sha256:eb8db40e80201f5e9bf153368da8131325c0253bbc13a842c95f3f2725e04cc6",
+  "minimumAppVersion": "3.7.8",
+  "keyId": "release-2026-09-recovery",
+  "authenticodeStatus": "not-signed",
+  "licenseVersion": "1.0",
+  "publishedAt": "2026-09-29T16:08:58.508Z"
+}
+`.replaceAll('\r\n', '\n'));
+const manifest379Signature = Buffer.from('TjlBOExkckVQeWlnbVc2YWwrRkdDS1UzM1NSTDg0VGpxNFd1dUFpRjB5Z0hnYkMyb0h6dU1JdzB1Z0RMUU1HSUQ4bEs2SDFSYndGSGRNNlhEUXIxQ3c9PQo=', 'base64');
+
+test('official legacy versions select separate immutable installer/helper pins and reject aliases', () => {
+  const old378 = officialLegacyRelease('3.7.8'), old379 = officialLegacyRelease('3.7.9');
+  assert.equal(old378.installerSha256, JSON.parse(manifestBytes).sha256);
+  assert.equal(old379.installerSha256, JSON.parse(manifest379Bytes).sha256);
+  assert.equal(old378.helperSha256, 'e33bca4550b6e130287c8bb2d5c0dccf30b76e033bf99520e81d6c2acda609f5');
+  assert.equal(old379.helperSha256, 'f6c232fa15e4e8f1d78c149f973df8b807d58cabd8ef5898b8b5ce0d2279da8e');
+  assert.notEqual(old378.helperSha256, old379.helperSha256);
+  assert.ok(Object.isFrozen(old378) && Object.isFrozen(old379));
+  assert.throws(() => { old378.helperSha256 = old379.helperSha256; });
+  for (const invalid of [undefined, null, 378, {}, [], '', '3.7.7', '3.8.0', '3.7.80', '3.7.90',
+    '3.7.8.0', 'v3.7.8', '3.7.8 ', ' 3.7.9', '3.7.9\n', '__proto__', 'constructor'])
+    assert.throws(() => officialLegacyRelease(invalid), /oldVersion must be exactly/);
+});
+
+test('both original signed legacy manifests are accepted only for the explicitly selected version', () => {
+  const trust = authenticateLegacyRegistry(registryBytes, registrySignature, root);
+  assert.equal(manifest379Bytes.length, 785);
+  assert.equal(authenticateOfficialLegacyManifest(manifestBytes, manifestSignature, trust, '3.7.8').version, '3.7.8');
+  assert.equal(authenticateOfficialLegacyManifest(manifest379Bytes, manifest379Signature, trust, '3.7.9').version, '3.7.9');
+  assert.throws(() => authenticateOfficialLegacyManifest(manifestBytes, manifestSignature, trust, '3.7.9'));
+  assert.throws(() => authenticateOfficialLegacyManifest(manifest379Bytes, manifest379Signature, trust, '3.7.8'));
+  assert.throws(() => authenticateOfficialLegacyManifest(manifestBytes, manifest379Signature, trust, '3.7.8'));
+  assert.throws(() => authenticateOfficialLegacyManifest(manifest379Bytes, manifestSignature, trust, '3.7.9'));
+  for (const invalid of [undefined, '', '3.7.7', 'v3.7.9', '3.7.9.0'])
+    assert.throws(() => authenticateOfficialLegacyManifest(manifest379Bytes, manifest379Signature, trust, invalid), /oldVersion/);
+});
+
+test('candidate minimum version is compared with the selected legacy version, not a fixed 3.7.9', () => {
+  // Pure compatibility boundary only; no candidate signature or installation is constructed.
+  for (const oldVersion of ['3.7.8', '3.7.9'])
+    for (const minimumAppVersion of ['0.0.0', '2.99.99', '3.6.100', '3.7.8'])
+      assert.doesNotThrow(() => assertCandidateSupportsLegacyVersion({ minimumAppVersion }, oldVersion));
+  assert.doesNotThrow(() => assertCandidateSupportsLegacyVersion({ minimumAppVersion: '3.7.9' }, '3.7.9'));
+  assert.throws(() => assertCandidateSupportsLegacyVersion({ minimumAppVersion: '3.7.9' }, '3.7.8'), /excludes 3.7.8/);
+  for (const oldVersion of ['3.7.8', '3.7.9'])
+    for (const minimumAppVersion of ['3.7.10', '3.8.0', '4.0.0', undefined, '', '3.7.8x', '3.7.8.0', '9007199254740992.0.0'])
+      assert.throws(() => assertCandidateSupportsLegacyVersion({ minimumAppVersion }, oldVersion));
+  assert.throws(() => assertCandidateSupportsLegacyVersion({ minimumAppVersion: '3.7.8' }, undefined), /oldVersion/);
+});
 
 test('legacy gate verifies original real signed metadata with the project pinned public root', () => {
   const trust = authenticateLegacyRegistry(registryBytes, registrySignature, root);
@@ -67,6 +128,20 @@ test('legacy PowerShell library import performs no native query or mutation and 
     function Get-ScheduledTask { throw 'Unexpected Task query during library import' }
     function New-Item { throw 'Unexpected mutation during library import' }
     . '${file}' -LibraryOnly;
+    if($ExpectedOldVersion -cne '3.7.9'){throw 'Default legacy version changed'};
+    foreach($oldVersion in @('3.7.8','3.7.9')){
+      . '${file}' -ExpectedOldVersion $oldVersion -LibraryOnly;
+      if($ExpectedOldVersion -cne $oldVersion){throw 'Library import lost selected legacy version'};
+      foreach($actual in @($oldVersion,($oldVersion+'.0'))){
+        if(-not (Test-LegacyHarnessProductVersion $actual $oldVersion)){throw 'Exact ProductVersion refused'};
+      };
+      foreach($actual in @('3.7.7','3.8.0',($oldVersion+'0'),($oldVersion+'.1'),($oldVersion+'-fake'),($oldVersion+' '))){
+        if(Test-LegacyHarnessProductVersion $actual $oldVersion){throw 'Incorrect ProductVersion accepted'};
+      };
+    };
+    $acceptedInvalid=$false;
+    try{. '${file}' -ExpectedOldVersion '3.7.7' -LibraryOnly;$acceptedInvalid=$true}catch{};
+    if($acceptedInvalid){throw 'Unsupported legacy parameter accepted'};
     $native='C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
     $stage='C:\\ProgramData\\EgoistShieldInstaller\\DeferredRuns\\'+('a'*32);
     $commandLine='powershell.exe -File "'+$stage+'\\invoke-final-silent-reinstall.ps1" -Watchdog -StageDirectory "'+$stage+'"';
@@ -86,11 +161,16 @@ test('legacy PowerShell library import performs no native query or mutation and 
 test('real legacy script and helper reject a non-hosted process before input or native mutation', { skip: process.platform !== 'win32' }, () => {
   const shell = process.env.LAGOM_TEST_POWERSHELL || path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
   const env = { ...process.env, GITHUB_ACTIONS: 'false', RUNNER_ENVIRONMENT: 'self-hosted' };
-  const native = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File',
-    path.resolve('tests/windows-production-legacy-upgrade.ps1'), '-Mode', 'GuardOnly'], { env, windowsHide: true, encoding: 'utf8', timeout: 15000 });
-  assert.notEqual(native.status, 0);
-  assert.match(native.stderr, /Native legacy upgrade host guard refused before mutation/);
-  assert.match(native.stderr, /GITHUB_ACTIONS/);
+  for (const oldVersion of ['3.7.8', '3.7.9']) {
+    for (const mode of ['GuardOnly', 'Run']) {
+      const native = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File',
+        path.resolve('tests/windows-production-legacy-upgrade.ps1'), '-Mode', mode, '-ExpectedOldVersion', oldVersion],
+      { env, windowsHide: true, encoding: 'utf8', timeout: 15000 });
+      assert.notEqual(native.status, 0);
+      assert.match(native.stderr, /Native legacy upgrade host guard refused before mutation/);
+      assert.match(native.stderr, /GITHUB_ACTIONS/);
+    }
+  }
   const helper = spawnSync(process.execPath, [path.resolve('tests/windows-production-legacy-upgrade.mjs'), 'verify-assets', 'nonexistent.json'],
     { env, windowsHide: true, encoding: 'utf8', timeout: 15000 });
   assert.notEqual(helper.status, 0);
