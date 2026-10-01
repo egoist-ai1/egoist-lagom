@@ -57,9 +57,21 @@ foreach ($file in (Get-ChildItem -LiteralPath $liveRoot -Recurse -File -Filter '
 }
 $harness = Join-Path $work 'core-owner-regression.cs'
 [IO.File]::WriteAllBytes($harness, [IO.File]::ReadAllBytes((Join-Path $PSScriptRoot 'core-owner-regression.cs')))
+$historicalFixture = Join-Path $PSScriptRoot 'fixtures/AtomicJsonFile.ead2.cs'
+$historicalSource = Join-Path $work 'AtomicJsonFile.ead2.cs'
+if ((Get-Item -LiteralPath $historicalFixture).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Historical source fixture must be an ordinary file.' }
+[IO.File]::WriteAllBytes($historicalSource, [IO.File]::ReadAllBytes($historicalFixture))
+$historicalSha256 = (Get-FileHash -LiteralPath $historicalSource -Algorithm SHA256).Hash
+if ($historicalSha256 -ne '1EE6256769F2D036DD93B114B6D89CD72BC1530CB3FDA9DEF7139873042FA231') { throw 'Historical AtomicJsonFile fixture bytes differ from the accepted snapshot.' }
 $escapedRoot = [Security.SecurityElement]::Escape($sourceRoot)
 $escapedHarness = [Security.SecurityElement]::Escape($harness)
 $project = Join-Path $work 'CoreOwnerRegression.csproj'
+$baselineProject = Join-Path $work 'baseline/OriginalAtomicFixture.csproj'
+[void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($baselineProject))
+$escapedHistorical = [Security.SecurityElement]::Escape($historicalSource)
+@"
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0-windows</TargetFramework><RuntimeFrameworkVersion>10.0.12</RuntimeFrameworkVersion><LangVersion>14.0</LangVersion><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup><ItemGroup><Compile Include="$escapedHistorical"/><Compile Include="$escapedRoot/EgoistShield.Service/AtomicJsonReadResult.cs"/><Compile Include="$escapedRoot/EgoistShield.Service/JsonDefaults.cs"/></ItemGroup></Project>
+"@ | Set-Content -LiteralPath $baselineProject -Encoding utf8
 @"
 <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0-windows</TargetFramework><RuntimeFrameworkVersion>10.0.12</RuntimeFrameworkVersion><LangVersion>14.0</LangVersion><PlatformTarget>x64</PlatformTarget><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><AllowUnsafeBlocks>true</AllowUnsafeBlocks><GenerateAssemblyInfo>false</GenerateAssemblyInfo><EnableDefaultCompileItems>false</EnableDefaultCompileItems><StartupObject>CoreOwnerRegression.TestProgram</StartupObject></PropertyGroup><ItemGroup><PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0"/><Compile Include="$escapedRoot/**/*.cs" Exclude="$escapedRoot/**/obj/**/*.cs;$escapedRoot/**/bin/**/*.cs"/><Compile Include="$escapedHarness"/></ItemGroup></Project>
 "@ | Set-Content -LiteralPath $project -Encoding utf8
@@ -70,15 +82,22 @@ try {
     $env:DOTNET_CLI_HOME = Join-Path $work 'dotnet-home'
     $env:NUGET_PACKAGES = Join-Path $work 'nuget'
     $env:TEMP = $work; $env:TMP = $work; $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+    & $sdk build $baselineProject -c Release --nologo *> (Join-Path $work 'baseline-build.log')
+    $baselineBuildExitCode = $LASTEXITCODE
+    if ($baselineBuildExitCode -ne 0) {
+        Write-FailureLogTail (Join-Path $work 'baseline-build.log')
+        throw "Historical baseline build failed; evidence preserved at $work/baseline-build.log"
+    }
+    $baselineAssembly = Join-Path $work 'baseline/bin/Release/net10.0-windows/OriginalAtomicFixture.dll'
     & $sdk build $project -c Release --nologo *> (Join-Path $work 'build.log')
     $buildExitCode = $LASTEXITCODE
     if ($buildExitCode -ne 0) {
         Write-FailureLogTail (Join-Path $work 'build.log')
         throw "Focused build failed; evidence preserved at $work/build.log"
     }
-    & (Join-Path $work 'bin/Release/net10.0-windows/CoreOwnerRegression.exe') $work *> (Join-Path $work 'run.log')
+    & (Join-Path $work 'bin/Release/net10.0-windows/CoreOwnerRegression.exe') $work $baselineAssembly *> (Join-Path $work 'run.log')
     $runExitCode = $LASTEXITCODE
-    $receipt = @{schemaVersion=1; sdkVersion=$actualSdk; buildExitCode=$buildExitCode; runExitCode=$runExitCode; sourceHashes=$hashes; harnessSha256=(Get-FileHash -LiteralPath $harness -Algorithm SHA256).Hash; runnerSha256=(Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash}
+    $receipt = @{schemaVersion=1; sdkVersion=$actualSdk; buildExitCode=$buildExitCode; runExitCode=$runExitCode; sourceHashes=$hashes; harnessSha256=(Get-FileHash -LiteralPath $harness -Algorithm SHA256).Hash; runnerSha256=(Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash; historicalFixtureSha256=$historicalSha256; historicalAssemblySha256=(Get-FileHash -LiteralPath $baselineAssembly -Algorithm SHA256).Hash; baselineBuildExitCode=$baselineBuildExitCode}
     if ([IO.File]::Exists((Join-Path $work 'results.json'))) {
         try {
             if ((Get-Item -LiteralPath (Join-Path $work 'results.json')).Length -gt 1048576) { throw 'Focused results exceed the 1 MiB diagnostic limit.' }

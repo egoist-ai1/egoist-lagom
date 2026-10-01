@@ -1,0 +1,522 @@
+{
+  "results": {
+    "schemaVersion": 1,
+    "actualSystem": false,
+    "actualAdministrator": true,
+    "productionFilesystemWrites": 0,
+    "results": [
+      {
+        "name": "owner-selection",
+        "passed": true,
+        "evidence": {
+          "systemOwner": "S-1-5-18",
+          "administratorOwner": "S-1-5-32-544",
+          "untrustedDenied": true,
+          "unknownDenied": true
+        }
+      },
+      {
+        "name": "descriptor-matrix",
+        "passed": true,
+        "evidence": [
+          {
+            "owner": "S-1-5-18",
+            "privateData": true,
+            "directory": true,
+            "sddl": "O:SYD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)"
+          },
+          {
+            "owner": "S-1-5-18",
+            "privateData": true,
+            "directory": false,
+            "sddl": "O:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)"
+          },
+          {
+            "owner": "S-1-5-18",
+            "privateData": false,
+            "directory": true,
+            "sddl": "O:SYD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)"
+          },
+          {
+            "owner": "S-1-5-18",
+            "privateData": false,
+            "directory": false,
+            "sddl": "O:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;BU)"
+          },
+          {
+            "owner": "S-1-5-32-544",
+            "privateData": true,
+            "directory": true,
+            "sddl": "O:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)"
+          },
+          {
+            "owner": "S-1-5-32-544",
+            "privateData": true,
+            "directory": false,
+            "sddl": "O:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)"
+          },
+          {
+            "owner": "S-1-5-32-544",
+            "privateData": false,
+            "directory": true,
+            "sddl": "O:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)"
+          },
+          {
+            "owner": "S-1-5-32-544",
+            "privateData": false,
+            "directory": false,
+            "sddl": "O:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;BU)"
+          }
+        ]
+      },
+      {
+        "name": "tampered-readback-denied",
+        "passed": true,
+        "evidence": {
+          "refusals": 6
+        }
+      },
+      {
+        "name": "actual-windows-token",
+        "passed": true,
+        "evidence": {
+          "actualSystem": false,
+          "actualAdministrator": true,
+          "selectedOwner": "S-1-5-32-544",
+          "productionFilesystemWrites": 0
+        }
+      },
+      {
+        "name": "own-ntfs-create-before-content",
+        "passed": true,
+        "evidence": {
+          "actualOwnedNtfs": true,
+          "emptyHandleAclReadbackBeforeContent": true,
+          "appendVerified": true,
+          "fixtureOwner": "actual token user",
+          "productionAclApply": false
+        }
+      },
+      {
+        "name": "live-log-reader-sharing",
+        "passed": true,
+        "evidence": {
+          "originalReaderFailure": "System.IO.IOException",
+          "actualOpenWriter": true,
+          "sharedReaderPass": true,
+          "writerShareUnchanged": "Read",
+          "cancellationPreserved": true,
+          "maxBytes": 8388608,
+          "oversizedRefused": true
+        }
+      },
+      {
+        "name": "nonproduction-atomic-files",
+        "passed": false,
+        "error": "System.Exception: Nonproduction file ACL changed.\r\n   at CoreOwnerRegression.TestProgram.Check(Boolean condition, String error) in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-18975928\\core-owner-regression.cs:line 181\r\n   at CoreOwnerRegression.TestProgram.<>c__DisplayClass5_0.<<Main>b__6>d.MoveNext() in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-18975928\\core-owner-regression.cs:line 132\r\n--- End of stack trace from previous location ---\r\n   at CoreOwnerRegression.TestProgram.Run(String name, Func`1 action, Func`1 captureFailure) in D:\\a\\_temp\\lagom-installer-diagnostics\\core-owner-18975928\\core-owner-regression.cs:line 185",
+        "diagnostics": {
+          "initial": {
+            "sddl": "O:BAD:(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)",
+            "owner": "S-1-5-32-544",
+            "controlFlags": "DiscretionaryAclPresent, SelfRelative",
+            "controlFlagsMask": 32772,
+            "protectedDacl": false,
+            "canonicalDacl": true,
+            "rules": [
+              {
+                "sid": "S-1-5-32-544",
+                "rights": "FullControl",
+                "rightsMask": 2032127,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-18",
+                "rights": "FullControl",
+                "rightsMask": 2032127,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-32-545",
+                "rights": "ReadAndExecute, Synchronize",
+                "rightsMask": 1179817,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              }
+            ]
+          },
+          "final": {
+            "sddl": "O:BAD:AI(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)",
+            "owner": "S-1-5-32-544",
+            "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+            "controlFlagsMask": 33796,
+            "protectedDacl": false,
+            "canonicalDacl": true,
+            "rules": [
+              {
+                "sid": "S-1-5-32-544",
+                "rights": "FullControl",
+                "rightsMask": 2032127,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-18",
+                "rights": "FullControl",
+                "rightsMask": 2032127,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-32-545",
+                "rights": "ReadAndExecute, Synchronize",
+                "rightsMask": 1179817,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              }
+            ]
+          },
+          "completedReplacementWrites": 256,
+          "completedReads": 256,
+          "validReads": 256,
+          "falseMissing": 0
+        }
+      },
+      {
+        "name": "nonproduction-log-and-hardening",
+        "passed": true,
+        "evidence": {
+          "appendPreserved": true,
+          "redactionPreserved": true,
+          "rotationPreserved": true,
+          "nonproductionAclUnchanged": true
+        }
+      }
+    ]
+  },
+  "sourceHashes": [
+    {
+      "file": "--z__ReadOnlyArray.cs",
+      "sha256": "8A14E3A66A55C9A72989287078C98E132232A951D18A3F5E01DF7D468423CEE7"
+    },
+    {
+      "file": "--z__ReadOnlySingleElementList.cs",
+      "sha256": "3FF97BC2C15559EBA83F70E3416588DCDFA4CB63EE059A489D3D3A80D520B42D"
+    },
+    {
+      "file": "EgoistShield.Service/ActiveTransaction.cs",
+      "sha256": "1BE4AAEB9464D3F7A50E11E8F2616C304610CE44E695F2862BAB9135B1505C90"
+    },
+    {
+      "file": "EgoistShield.Service/AdminStatusChecker.cs",
+      "sha256": "2BDB9220C5D5ADBA3C50B4E0FBDB94FC1904BC6428240CDB387E9B7BB6C779D0"
+    },
+    {
+      "file": "EgoistShield.Service/AtomicJsonFile.cs",
+      "sha256": "7DB49F7269C11DA5626895AEE152B0B2F13B768DCEC36B37BB7542763E12F149"
+    },
+    {
+      "file": "EgoistShield.Service/AtomicJsonReadResult.cs",
+      "sha256": "4488572BFE2CFE7575614EE8237FF5E00AE726D3E67C31F45F75672C6F6C6154"
+    },
+    {
+      "file": "EgoistShield.Service/BuildInfo.cs",
+      "sha256": "11404D3F064572376CAE60A04AD3992CD30909EFA5EF2C26690BA68422227F4E"
+    },
+    {
+      "file": "EgoistShield.Service/ClientAuthorizer.cs",
+      "sha256": "195363FA6982C40917925BC8650985630949FA3BCA61567D0943A9053B21AB83"
+    },
+    {
+      "file": "EgoistShield.Service/ClientIdentity.cs",
+      "sha256": "7D6450032A5D0AEF10AA90B97F8587B892FE28D023FC937CAC5821C651E85186"
+    },
+    {
+      "file": "EgoistShield.Service/ComponentWorker.cs",
+      "sha256": "F79228C44956BEA3660E7EE67E6B11D1D4AA01BEC8003452C80FF16217AF5E5E"
+    },
+    {
+      "file": "EgoistShield.Service/DnsAdapterSnapshot.cs",
+      "sha256": "166E1381E2137F06938FB387C21A886676FF26E49E01143CE71FF79E8704E4F1"
+    },
+    {
+      "file": "EgoistShield.Service/DnsApplyPayload.cs",
+      "sha256": "8E15284E785D2EFCA1BEF613C227ED0EEF8EFA94FDC6760E689C8E400A6613F4"
+    },
+    {
+      "file": "EgoistShield.Service/DnsBootstrapRefreshScheduler.cs",
+      "sha256": "FF17B82DE432F4C6E96BAF070575E8F1BBF7008CAE0DC6F2A43048952BFA74C2"
+    },
+    {
+      "file": "EgoistShield.Service/DnsMaintenancePolicy.cs",
+      "sha256": "95FF8F844EABD09731E0B17841A8BD71A497D32184FBA93CA5BFDEBC41BF466A"
+    },
+    {
+      "file": "EgoistShield.Service/DnsOwnedState.cs",
+      "sha256": "403AEF99EE3F981B6589577B29B870499C45234769650B6B6EA170857C319A2E"
+    },
+    {
+      "file": "EgoistShield.Service/EgoistShieldWindowsService.cs",
+      "sha256": "3A28D790D370C08F352AB18B7A8CA6DF1B3A597C9198A4F62E0680219EA3DF5B"
+    },
+    {
+      "file": "EgoistShield.Service/GuiLaunchPolicy.cs",
+      "sha256": "EE221679BDBD6A2CF533BAE47D32BF249D4FFB75AD2CE1214878627669B1F584"
+    },
+    {
+      "file": "EgoistShield.Service/IdentityJsonContext.cs",
+      "sha256": "0D79866F6F1A2EB05979789928B307D26CC764E9C0EEE5DD51829EA76A5485DA"
+    },
+    {
+      "file": "EgoistShield.Service/InstallerServiceMaintenance.cs",
+      "sha256": "946DB55E75F229FD56FD84A087573A4C34F3EA56FAF2730107F88818B648F080"
+    },
+    {
+      "file": "EgoistShield.Service/JsonDefaults.cs",
+      "sha256": "B071B84ED735AF69EFC01D51D65E9D32B77FBFE1E43E394C06CDD60A5408CEF9"
+    },
+    {
+      "file": "EgoistShield.Service/LocalServiceHealthProbe.cs",
+      "sha256": "042DD2A56A1A7BFDB6EB41BA964AAFF6A363DD8ED370C1557CD860E4B2FBBB40"
+    },
+    {
+      "file": "EgoistShield.Service/NativeDohApplyPayload.cs",
+      "sha256": "7657AD8961533FE66D7777E214834FDA7929E24FB4376A21E66D64ED5F863816"
+    },
+    {
+      "file": "EgoistShield.Service/NativeDohEntrySnapshot.cs",
+      "sha256": "3B2232670DB438FC95685D764CD399160EE7113131DAD660FC3AE11DDB5D717D"
+    },
+    {
+      "file": "EgoistShield.Service/NativeDohOwnedState.cs",
+      "sha256": "3ED99DE4FD3D739CF45676D2BDFA390E1A1A271C228CFC7612C3B023A46EAECA"
+    },
+    {
+      "file": "EgoistShield.Service/NativeDohTransactionSnapshot.cs",
+      "sha256": "E1B3BD7EE7103C621FB1E3B4E36247341592DFF196E9A835C7FD227D4B0DF2D0"
+    },
+    {
+      "file": "EgoistShield.Service/NativeRuntimeTrustCommand.cs",
+      "sha256": "CE8C723EF7D8DBBB50B71D7362E3090DAD6EEB3CF10DEF13DD819EE713F8E033"
+    },
+    {
+      "file": "EgoistShield.Service/OperationDispatcher.cs",
+      "sha256": "69FC1236533218F800FC93123B9BBC6C91D3FCAD8E4E75495CC76959CACD8DFD"
+    },
+    {
+      "file": "EgoistShield.Service/OwnedServiceController.cs",
+      "sha256": "690BFBDE0C21DBB40762E87231C08F792B669F40A875AC1119265191FB638E9D"
+    },
+    {
+      "file": "EgoistShield.Service/OwnedServiceIntentStore.cs",
+      "sha256": "E8A2CAC21805681FA86CB5A611500AF9A6A2E86DDA99B731236B343A8476296B"
+    },
+    {
+      "file": "EgoistShield.Service/OwnedServicePayload.cs",
+      "sha256": "1579005B187B011666749F694BE45C2838C5CB3F760460AEE1B2218E39854B05"
+    },
+    {
+      "file": "EgoistShield.Service/OwnedServiceStatus.cs",
+      "sha256": "19EFD59A60F78571D0A53E020131ED37875A0C6363C744FEF3292DB7928D8387"
+    },
+    {
+      "file": "EgoistShield.Service/OwnedServiceSupervisor.cs",
+      "sha256": "621C5B00DBD6B4F5CD218ECDCDC9449FDD39539AACB7ECDC31867FBBA1C21AD1"
+    },
+    {
+      "file": "EgoistShield.Service/OwnedServiceTransition.cs",
+      "sha256": "45DC82DB9A44DD0851F6F55FAFFBE8A6713C53A6BE6A214C803F5707685CDB88"
+    },
+    {
+      "file": "EgoistShield.Service/OwnedTcpListenerProbe.cs",
+      "sha256": "BFFE5C07E809077518FBE16277D7AB2F1388EECDB6391AE0E510393610BBDAB3"
+    },
+    {
+      "file": "EgoistShield.Service/OwnedWrapperLogMaintenance.cs",
+      "sha256": "16E875873869E391BFDC591E1DB158AE4BCD419FD45D8D80B0AB66FFD7A25B72"
+    },
+    {
+      "file": "EgoistShield.Service/PersistedOperationIntent.cs",
+      "sha256": "ABAA735ACEF54D47AEED436FD97DDA0BBFD9CEFFB2A4F85CD2464095B9402C74"
+    },
+    {
+      "file": "EgoistShield.Service/PersistedResponseEntry.cs",
+      "sha256": "2B198F29CCCADA33DC0F758479607EDFACCFF99F589FD63C3EFD16091B57FC63"
+    },
+    {
+      "file": "EgoistShield.Service/PersistedResponseStore.cs",
+      "sha256": "8EE1B6C2F30F60C02FB41EFE7E1347B3964400B417532E4960742BAC7E655F39"
+    },
+    {
+      "file": "EgoistShield.Service/PipeServer.cs",
+      "sha256": "3354FD8116F97B21FEB00AA24CE0080986650ECA39F700712F464D6FDDF17B0A"
+    },
+    {
+      "file": "EgoistShield.Service/PipeServerIdentityResult.cs",
+      "sha256": "B6BC04F20F28DDFE99191C753CFC87FD7D80B4C3C4AD2616C8515A9B99DB77C9"
+    },
+    {
+      "file": "EgoistShield.Service/PipeServerIdentityVerifier.cs",
+      "sha256": "62E4CB762462AA6434B935A1BDA29288FBF49B6A173F3781A7C827BDB72A48F0"
+    },
+    {
+      "file": "EgoistShield.Service/ProcessResult.cs",
+      "sha256": "A54A722A2408865ACBFEF2814C229B6432DDB5316212CC431F22DAA4BA9C33D1"
+    },
+    {
+      "file": "EgoistShield.Service/ProcessRunner.cs",
+      "sha256": "09BB6DB3F2F3DA045D757F5B79D9F41619EFFA3C5C688A0DB1E5115DA878CE84"
+    },
+    {
+      "file": "EgoistShield.Service/Program.cs",
+      "sha256": "C42CF7A2280B1C661CE3753A9D0CBA49031A878B7E1488DD82DC684248213349"
+    },
+    {
+      "file": "EgoistShield.Service/ProtectedExecutable.cs",
+      "sha256": "81495BFF5DF746E4CB7671A964A558561DFDF1D88877B67B113B1DEC9EA13034"
+    },
+    {
+      "file": "EgoistShield.Service/ProtectedProductRoot.cs",
+      "sha256": "B47A63B7C9407974EE11253777405CD372FEA3FC305CD1C229C6A21D08CBFB05"
+    },
+    {
+      "file": "EgoistShield.Service/SelfTest.cs",
+      "sha256": "45DB620EA08AE15BC4F714305F16F5469B1DE297BDEE2B26C0097D774D636C73"
+    },
+    {
+      "file": "EgoistShield.Service/ServiceConfig.cs",
+      "sha256": "782FD934EE0CAAC6D1CC0AC4A9D46E2E03FFBBE60FBF74F1A2ACECC7D06B81F0"
+    },
+    {
+      "file": "EgoistShield.Service/ServiceConfiguration.cs",
+      "sha256": "4D9656E6C9EF82AC4BCECE3834AB4BCB36D4EBA343984F41ED2886C0B88F6227"
+    },
+    {
+      "file": "EgoistShield.Service/ServiceContract.cs",
+      "sha256": "886950449B5D526249AEDAF356395869ABF142910EA4B48F455529335D11AA70"
+    },
+    {
+      "file": "EgoistShield.Service/ServiceEngine.cs",
+      "sha256": "32180D1A8CFEB8F57030AC87261AC2DEA0F34059D13CDA81EDC9BA0401A83CD7"
+    },
+    {
+      "file": "EgoistShield.Service/ServiceError.cs",
+      "sha256": "A0E23AC28D39343E30649656E416353736D690D5A95A617352F8BBCC933B1CC9"
+    },
+    {
+      "file": "EgoistShield.Service/ServiceLog.cs",
+      "sha256": "3650D4FF168569C88A5A8662CB8AE120E135C94DABEBAFDC716A40CBA4975FFD"
+    },
+    {
+      "file": "EgoistShield.Service/ServiceOperationException.cs",
+      "sha256": "7AE927C5E8C86AB7B14DA46A7F6CF7D8593C6D5D7BDF1878846E8774A76D3C3C"
+    },
+    {
+      "file": "EgoistShield.Service/ServiceOptions.cs",
+      "sha256": "87565B25954EB8BE58CE1754D6C2FDE310DF85443C35CBD60EEC3F7CCF658694"
+    },
+    {
+      "file": "EgoistShield.Service/ServiceRequest.cs",
+      "sha256": "B0A2F26661A84179F3F99271FCBEC8738AE254499243628CFD6E859C137E25C0"
+    },
+    {
+      "file": "EgoistShield.Service/ServiceResponse.cs",
+      "sha256": "3E95DC26CF1D9ABB7872699187EEA6BEF14F038F87B47A9DD3B4EB2CA8974FF3"
+    },
+    {
+      "file": "EgoistShield.Service/SystemProxyNotifier.cs",
+      "sha256": "A7B8F47A9CA9989E3EEF521AA78CBA9C333B84AE804F56536D0EF8DEF644C49F"
+    },
+    {
+      "file": "EgoistShield.Service/TelegramListenerSnapshotCommand.cs",
+      "sha256": "DE2C3EE778265C65508DF55ED34967B46E221BB1C4B5957EA6DDCF1E736E868C"
+    },
+    {
+      "file": "EgoistShield.Service/TransactionJournal.cs",
+      "sha256": "C702DB28961D9B451CE557CA17A3E92DDA55005BDFE76CCD5C1287C2CF09F22D"
+    },
+    {
+      "file": "EgoistShield.Service/TransactionPhase.cs",
+      "sha256": "7528413ABB5DF95AEA3E9D2D7CD8F0781AB5F4E73DB4184BC7708FDAE0699A58"
+    },
+    {
+      "file": "EgoistShield.Service/TrustedPath.cs",
+      "sha256": "923775BABB3639DE1A08B00E8851681671CE08CF8654CED4857A7ED41AFE3609"
+    },
+    {
+      "file": "EgoistShield.Service/VpnRuntimeHost.cs",
+      "sha256": "51CFA7A133D0075D719693C23B72FCD3302E3891AD347B1141C8D6586666B6DA"
+    },
+    {
+      "file": "EgoistShield.Service/VpnServiceConfiguration.cs",
+      "sha256": "15D1C8B4CE514CE1E05E5F94E318B06C9581F48A2026E4EA217045859035B5CC"
+    },
+    {
+      "file": "EgoistShield.Service/VpnServiceHealthProbe.cs",
+      "sha256": "0539A09CAA7EEEBE353026203EF78935FC96B0C176A62CB813C5D7E853DA45BE"
+    },
+    {
+      "file": "EgoistShield.Service/VpnServiceStatusCommand.cs",
+      "sha256": "D75FB2AA3126849E99D424F1CBDC02990E7613A1F42AAF27D962E3B4324F79FF"
+    },
+    {
+      "file": "EgoistShield.Service/WindowsDnsController.cs",
+      "sha256": "EF15448D5322B24FD80C2582D43CA81BB7E3582C34B757041DAEFCE0FEF66EC8"
+    },
+    {
+      "file": "EgoistShield.Service/WindowsNativeDohController.cs",
+      "sha256": "FF2AEEB8FA7397D268F4D2A36397E0FD3F48A9BDC61CD80F2F537020D936F4D6"
+    },
+    {
+      "file": "EgoistShield.Service/WindowsServiceListenerSnapshot.cs",
+      "sha256": "0E0CA7BA220829F6E0792F6266DEAF291E65EC70C30C8E7FF1F4C2A50836B63F"
+    },
+    {
+      "file": "EgoistShield.Service/ZapretProfilePayload.cs",
+      "sha256": "2F0503A7D85FD6C55D61D2A254E42DA3876FAC47AD30A46DC5D1CF3F6CE16289"
+    },
+    {
+      "file": "EgoistShield.Service/ZapretProfileSnapshot.cs",
+      "sha256": "C20A9A4C23850D0B578022EF496E1C1A3B45FEDBB9CB65B86710E969DEF4FA2D"
+    },
+    {
+      "file": "Properties/AssemblyInfo.cs",
+      "sha256": "65A153B53A3003C4780E65FEF16FAA76929409FCDEE81764D2FFA6BAD568DFF0"
+    },
+    {
+      "file": "System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__ProfileRegex_0.cs",
+      "sha256": "CAEF7420759362E5254ACF2B099200A13BEB7D76F09A55FA978CB1F9B9609CD8"
+    },
+    {
+      "file": "System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__ProxyCredentialRegex_2.cs",
+      "sha256": "6B686412CE5912FA2B7DAC7CA710F004CC88B42012DE1628C0E3FD01CDFE78BA"
+    },
+    {
+      "file": "System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__SecretAssignmentRegex_1.cs",
+      "sha256": "B09C1AB763FCA22F53F35838145B5065DAC11CEC7B89322D47827BC4F45B4379"
+    },
+    {
+      "file": "System.Text.RegularExpressions.Generated/-RegexGenerator_g-F6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__Utilities.cs",
+      "sha256": "300981686ADDB45E76DC2B0740C091A302AB4811FAB034291746858356BA97E2"
+    }
+  ],
+  "harnessSha256": "3645EAB8CEDC76CF0AE03B4877A74A7A75F16D940E48BEF650F61A198326A8C3",
+  "runExitCode": 1,
+  "schemaVersion": 1,
+  "sdkVersion": "10.0.401",
+  "runnerSha256": "8B45C02D5DD0AC88DA1428CADF970F3C94890F826300D1EFB918EB8E573E576A",
+  "buildExitCode": 0
+}

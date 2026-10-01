@@ -1,11 +1,12 @@
 using System.Security.AccessControl;
 using System.Security.Principal;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using EgoistShield.Service;
 
 namespace CoreOwnerRegression;
 
-internal static class TestProgram
+internal static partial class TestProgram
 {
     private static readonly List<object> Results = new();
     private static string Work = "";
@@ -15,7 +16,7 @@ internal static class TestProgram
 
     public static async Task<int> Main(string[] args)
     {
-        if (args.Length != 1 || !Path.IsPathFullyQualified(args[0])) throw new ArgumentException("Pass an absolute owned work path.");
+        if (args.Length != 2 || !Path.IsPathFullyQualified(args[0]) || !Path.IsPathFullyQualified(args[1])) throw new ArgumentException("Pass absolute owned work and historical fixture assembly paths.");
         Work = Path.GetFullPath(args[0]);
         Directory.CreateDirectory(Work);
         using var identity = WindowsIdentity.GetCurrent();
@@ -118,7 +119,6 @@ internal static class TestProgram
             string target = Path.Combine(root, "state.json");
             await AtomicJsonFile.WriteAsync(target, new State(0));
             FileSecurity initialSecurity = new FileInfo(target).GetAccessControl();
-            string initialAcl = initialSecurity.GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access);
             int valid = 0, missing = 0, writes = 0, reads = 0;
             var writer = Task.Run(async () => { for (int index = 1; index <= 256; index++) { await AtomicJsonFile.WriteAsync(target, new State(index)); Interlocked.Increment(ref writes); } });
             var readers = Enumerable.Range(0, 2).Select(_ => Task.Run(async () => {
@@ -129,15 +129,65 @@ internal static class TestProgram
             atomicAclDiagnostics = new { initial = CaptureAcl(initialSecurity), final = CaptureAcl(finalSecurity), completedReplacementWrites = writes, completedReads = reads, validReads = valid, falseMissing = missing };
             Check(missing == 0 && valid == 256, "Nonproduction atomic read generation regressed.");
             Check((await AtomicJsonFile.ReadAsync<State>(target))?.Generation == 256, "Last durable value missing.");
-            Check(finalSecurity.GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access) == initialAcl, "Nonproduction file ACL changed.");
+            AssertEquivalentNonproductionAcl(initialSecurity, finalSecurity);
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             try { await AtomicJsonFile.WriteAsync(target, new State(999), cancelled.Token); throw new Exception("Cancelled write executed."); } catch (OperationCanceledException) { }
             string once = Path.Combine(root, "once.json");
             Check(await AtomicJsonFile.TryCreateAsync(once, new State(1)), "Fresh create failed.");
             Check(!await AtomicJsonFile.TryCreateAsync(once, new State(2)) && (await AtomicJsonFile.ReadAsync<State>(once))?.Generation == 1, "Exclusive create overwrote state.");
             Check(!Directory.EnumerateFiles(root, "*.tmp").Any(), "Atomic temporary files remained.");
-            return new { replaces = 256, validReads = valid, falseMissing = missing, cancellationPreserved = true, exclusiveCreatePreserved = true, nonproductionAclUnchanged = true };
+            return new { replaces = 256, validReads = valid, falseMissing = missing, cancellationPreserved = true, exclusiveCreatePreserved = true, ownerAndOrderedDaclEquivalent = true, acl = atomicAclDiagnostics };
         }, () => atomicAclDiagnostics);
+        await Run("historical-and-native-atomic-acls", async () => {
+            var baseline = System.Reflection.Assembly.LoadFrom(args[1]);
+            var originalWrite = baseline.GetType("EgoistShield.Service.AtomicJsonFile", true)!.GetMethod("WriteAsync", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.MakeGenericMethod(typeof(State));
+            var cases = new List<object>();
+            FileSecurity? mismatchFixture = null;
+            foreach (string api in new[] { "original-ead2-AtomicJsonFile", "File.Replace", "ReplaceFileW" })
+            {
+                string root = Path.Combine(Work, "native-baseline", api); Directory.CreateDirectory(root);
+                string target = Path.Combine(root, "state.json");
+                async Task Write(int generation) {
+                    if (api == "original-ead2-AtomicJsonFile") {
+                        await (Task)originalWrite.Invoke(null, new object[] { target, new State(generation), CancellationToken.None })!;
+                        return;
+                    }
+                    string temporary = Path.Combine(root, $"state-{generation}.tmp");
+                    await File.WriteAllTextAsync(temporary, JsonSerializer.Serialize(new State(generation), JsonDefaults.StateOptions));
+                    if (generation == 0) File.Move(temporary, target);
+                    else if (api == "File.Replace") File.Replace(temporary, target, null);
+                    else if (!ReplaceFileW(target, temporary, null, 0, IntPtr.Zero, IntPtr.Zero)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError());
+                }
+                await Write(0);
+                FileSecurity initial = new FileInfo(target).GetAccessControl();
+                mismatchFixture ??= initial;
+                int writes = 0;
+                for (int generation = 1; generation <= 256; generation++) { await Write(generation); writes++; }
+                FileSecurity final = new FileInfo(target).GetAccessControl();
+                AssertEquivalentNonproductionAcl(initial, final);
+                Check(JsonSerializer.Deserialize<State>(await File.ReadAllTextAsync(target), JsonDefaults.StateOptions)?.Generation == 256, "Native baseline lost the last value.");
+                Check(!Directory.EnumerateFiles(root, "*.tmp").Any(), "Native baseline left temporary files.");
+                cases.Add(new { api, nativeFlags = 0, replacementWrites = writes, initial = CaptureAcl(initial), final = CaptureAcl(final), ownerAndOrderedDaclEquivalent = true });
+            }
+            var original = new RawSecurityDescriptor(mismatchFixture!.GetSecurityDescriptorBinaryForm(), 0);
+            RawSecurityDescriptor Alter(Action<RawSecurityDescriptor> change) {
+                var descriptor = new RawSecurityDescriptor(mismatchFixture.GetSecurityDescriptorBinaryForm(), 0);
+                change(descriptor);
+                return descriptor;
+            }
+            AssertEquivalentNonproductionDescriptor(original, Alter(d => d.SetFlags(d.ControlFlags ^ ControlFlags.DiscretionaryAclAutoInherited)));
+            RefuseAclDifference(original, Alter(d => d.Owner = UsersSid));
+            RefuseAclDifference(original, Alter(d => ((KnownAce)d.DiscretionaryAcl![0]).AccessMask ^= (int)FileSystemRights.ReadData));
+            RefuseAclDifference(original, Alter(d => d.SetFlags(d.ControlFlags ^ ControlFlags.DiscretionaryAclAutoInheritRequired)));
+            RefuseAclDifference(original, Alter(d => d.SetFlags(d.ControlFlags ^ ControlFlags.DiscretionaryAclProtected)));
+            Check(original.DiscretionaryAcl!.Count > 1, "Ordered ACE negative fixture requires distinct rules.");
+            RefuseAclDifference(original, Alter(d => {
+                var reordered = new RawAcl(d.DiscretionaryAcl!.Revision, d.DiscretionaryAcl.Count);
+                for (int index = d.DiscretionaryAcl.Count - 1; index >= 0; index--) reordered.InsertAce(reordered.Count, d.DiscretionaryAcl[index]);
+                d.DiscretionaryAcl = reordered;
+            }));
+            return new { actualOwnedNtfs = true, historicalSourceSha256 = "1EE6256769F2D036DD93B114B6D89CD72BC1530CB3FDA9DEF7139873042FA231", cases, onlyIgnoredControlFlag = "DiscretionaryAclAutoInherited (0x400)", inMemoryRealDifferenceRefusals = 5, productionFilesystemWrites = 0 };
+        });
         await Run("nonproduction-log-and-hardening", async () => {
             string root = Path.Combine(Work, "log"); Directory.CreateDirectory(root);
             var log = new ServiceLog(root);
@@ -161,6 +211,27 @@ internal static class TestProgram
     }
 
     private sealed record State(int Generation);
+    private static void AssertEquivalentNonproductionAcl(FileSecurity initial, FileSecurity final)
+    {
+        if (initial.AreAccessRulesProtected != final.AreAccessRulesProtected) throw new InvalidOperationException("Nonproduction file ACL changed: protection");
+        if (initial.AreAccessRulesCanonical != final.AreAccessRulesCanonical) throw new InvalidOperationException("Nonproduction file ACL changed: canonical order");
+        AssertEquivalentNonproductionDescriptor(new RawSecurityDescriptor(initial.GetSecurityDescriptorBinaryForm(), 0), new RawSecurityDescriptor(final.GetSecurityDescriptorBinaryForm(), 0));
+    }
+    private static void AssertEquivalentNonproductionDescriptor(RawSecurityDescriptor before, RawSecurityDescriptor after)
+    {
+        void Require(bool condition, string field) { if (!condition) throw new InvalidOperationException("Nonproduction file ACL changed: " + field); }
+        Require(Equals(before.Owner, after.Owner), "owner");
+        const ControlFlags observedMetadata = ControlFlags.DiscretionaryAclAutoInherited;
+        Require((before.ControlFlags & ~observedMetadata) == (after.ControlFlags & ~observedMetadata), "control flags other than observed 0x400");
+        Require(before.DiscretionaryAcl is not null && after.DiscretionaryAcl is not null, "DACL presence");
+        var beforeBytes = new byte[before.DiscretionaryAcl!.BinaryLength]; before.DiscretionaryAcl.GetBinaryForm(beforeBytes, 0);
+        var afterBytes = new byte[after.DiscretionaryAcl!.BinaryLength]; after.DiscretionaryAcl.GetBinaryForm(afterBytes, 0);
+        Require(beforeBytes.SequenceEqual(afterBytes), "ordered ACE bytes");
+    }
+    private static void RefuseAclDifference(RawSecurityDescriptor initial, RawSecurityDescriptor altered) {
+        try { AssertEquivalentNonproductionDescriptor(initial, altered); } catch (InvalidOperationException) { return; }
+        throw new Exception("A real owner, ordered rule, protection or other control-flag difference was accepted.");
+    }
     private static object CaptureAcl(FileSecurity security)
     {
         var descriptor = new RawSecurityDescriptor(security.GetSecurityDescriptorBinaryForm(), 0);
@@ -185,4 +256,7 @@ internal static class TestProgram
         try { Results.Add(new { name, passed = true, evidence = await action() }); }
         catch (Exception error) { Results.Add(new { name, passed = false, error = error.ToString(), diagnostics = captureFailure?.Invoke() }); }
     }
+    [LibraryImport("kernel32.dll", EntryPoint = "ReplaceFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool ReplaceFileW(string destination, string source, string? backup, uint flags, IntPtr excluded, IntPtr reserved);
 }

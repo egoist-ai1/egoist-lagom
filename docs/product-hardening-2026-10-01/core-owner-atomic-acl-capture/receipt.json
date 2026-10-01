@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "26f82c39e580139fabfa9ae22861cfa813c7e4f0",
+  "runId": 36823434766,
+  "jobId": 110243766727,
+  "artifactId": 11143139511,
+  "artifactZipSha256": "568dbf4da56ffbaaf414af27b823f83d8b83e8481e6e1efe42dee8d99c2a8186",
+  "actualAdministrator": true,
+  "groupsPassed": 7,
+  "groupsFailed": 1,
+  "atomicAclCapture": {
+    "initial": {
+      "sddl": "O:BAD:(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)",
+      "owner": "S-1-5-32-544",
+      "controlFlags": "DiscretionaryAclPresent, SelfRelative",
+      "controlFlagsMask": 32772,
+      "protectedDacl": false,
+      "canonicalDacl": true,
+      "rules": [
+        {
+          "sid": "S-1-5-32-544",
+          "rights": "FullControl",
+          "rightsMask": 2032127,
+          "accessType": "Allow",
+          "inheritance": "None",
+          "propagation": "None",
+          "inherited": true
+        },
+        {
+          "sid": "S-1-5-18",
+          "rights": "FullControl",
+          "rightsMask": 2032127,
+          "accessType": "Allow",
+          "inheritance": "None",
+          "propagation": "None",
+          "inherited": true
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": "ReadAndExecute, Synchronize",
+          "rightsMask": 1179817,
+          "accessType": "Allow",
+          "inheritance": "None",
+          "propagation": "None",
+          "inherited": true
+        }
+      ]
+    },
+    "final": {
+      "sddl": "O:BAD:AI(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)",
+      "owner": "S-1-5-32-544",
+      "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+      "controlFlagsMask": 33796,
+      "protectedDacl": false,
+      "canonicalDacl": true,
+      "rules": [
+        {
+          "sid": "S-1-5-32-544",
+          "rights": "FullControl",
+          "rightsMask": 2032127,
+          "accessType": "Allow",
+          "inheritance": "None",
+          "propagation": "None",
+          "inherited": true
+        },
+        {
+          "sid": "S-1-5-18",
+          "rights": "FullControl",
+          "rightsMask": 2032127,
+          "accessType": "Allow",
+          "inheritance": "None",
+          "propagation": "None",
+          "inherited": true
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "rights": "ReadAndExecute, Synchronize",
+          "rightsMask": 1179817,
+          "accessType": "Allow",
+          "inheritance": "None",
+          "propagation": "None",
+          "inherited": true
+        }
+      ]
+    },
+    "completedReplacementWrites": 256,
+    "completedReads": 256,
+    "validReads": 256,
+    "falseMissing": 0
+  },
+  "ownerAndOrderedRulesUnchanged": true,
+  "onlyChangedFlag": "DiscretionaryAclAutoInherited (0x400)",
+  "originalNativeBaselineComparisonPending": true,
+  "configureExitCode": 0,
+  "networkPreserved": true,
+  "nativeReleaseAcceptancePassed": false,
+  "files": [
+    {
+      "name": "installer-diagnostic.json",
+      "bytes": 45134,
+      "sha256": "c090c19f84ec458abe5c9c8d0d72f324c66f1ededa3180f3f49b5072b42980d5"
+    },
+    {
+      "name": "native-job.txt",
+      "bytes": 20496,
+      "sha256": "ed06c15063e3584783c93ef58b0dfc3623f3f0318774021c9003c2faf3098a71"
+    },
+    {
+      "name": "owner-build.log",
+      "bytes": 84562,
+      "sha256": "b3e85dcb860265ec636e1e40ed91b3e3d2fedcc22826f55e1e5049d9aac630ad"
+    },
+    {
+      "name": "owner-receipt.json",
+      "bytes": 20142,
+      "sha256": "e0cf4dd4a07bcac1ecd212982831a651cd7c81eec0d9ede2bc4f559b008384c3"
+    },
+    {
+      "name": "owner-results.json",
+      "bytes": 6864,
+      "sha256": "7d7dc7a4cd24f709dd79806bd131cd46e64828929350e1ea96614cc5ad1ac06c"
+    },
+    {
+      "name": "owner-run.log",
+      "bytes": 6866,
+      "sha256": "fca70de81e0d246756dd248ee1430e5e329c0c73a935b8e293f569df90b6f815"
+    },
+    {
+      "name": "owner-stderr.txt",
+      "bytes": 690,
+      "sha256": "3e4aa4a69930c74eddd0282e69a141841ee332f9af5e2f435752b036abbe7bed"
+    },
+    {
+      "name": "owner-stdout.txt",
+      "bytes": 10435,
+      "sha256": "54c54f95bae5f676e0765ba9ae15a93ada242f828ebf49bb84a38711dc939588"
+    }
+  ]
+}
