@@ -15,6 +15,7 @@ test('cleanup refuses a missing, damaged or incomplete required helper before co
   const prefix = source.slice(0, boundary).replace(/^\uFEFF/, '');
   const helper = await fs.readFile(path.resolve('src/installer/service-maintenance.ps1'), 'utf8');
   const boot = await fs.readFile(path.resolve('src/installer/maintenance-boot-recovery.ps1'), 'utf8');
+  const startup = await fs.readFile(path.resolve('src/installer/gui-login-startup.ps1'), 'utf8');
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'lagom-import-gate-'));
   try {
     const ps = path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
@@ -27,6 +28,7 @@ test('cleanup refuses a missing, damaged or incomplete required helper before co
       await fs.mkdir(fixture);
       const script = path.join(fixture, 'import.ps1');
       const marker = path.join(fixture, 'continued.txt');
+      await fs.writeFile(path.join(fixture, 'gui-login-startup.ps1'), '\uFEFF' + startup.replace(/^\uFEFF/,''));
       await fs.writeFile(script, '\uFEFF' + prefix + '\n[IO.File]::WriteAllText($env:LAGOM_IMPORT_MARKER, "continued")\n');
       if (content !== null) await fs.writeFile(path.join(fixture, 'service-maintenance.ps1'), '\uFEFF' + content);
       if (bootContent !== null) await fs.writeFile(path.join(fixture, 'maintenance-boot-recovery.ps1'), '\uFEFF' + bootContent.replace(/^\uFEFF/,''));

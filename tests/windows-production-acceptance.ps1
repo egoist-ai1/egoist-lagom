@@ -240,13 +240,30 @@ public static class LagomAcceptanceResources {
     return [Text.Encoding]::UTF8.GetString($bytes).Trim([char]0,[char]0xFEFF)
   }finally{[void][LagomAcceptanceResources]::FreeLibrary($module)}
 }
+function Assert-NativeGuiExecutionLevel {
+  param([ValidateSet('gui','worker')][string]$Role,[string]$Level)
+  $expected=if($Role -ceq 'gui'){'requireAdministrator'}else{'asInvoker'}
+  if($Level -cne $expected){throw ("Installed "+$Role+" PE requests an incorrect execution level; expected "+$expected+'.')}
+}
+function Assert-NativeElevatedGuiTokenProof {
+  param($Token,$RunnerToken)
+  foreach($proof in @($Token,$RunnerToken)){
+    if($null -eq $proof -or $proof.elevated -isnot [bool] -or -not $proof.elevated -or $proof.administratorsEnabled -isnot [bool] -or -not $proof.administratorsEnabled){throw 'Elevated GUI requires an actual elevated administrator token and runner.'}
+    if(($proof.integrityRid -isnot [int] -and $proof.integrityRid -isnot [long]) -or $proof.integrityRid -lt 12288 -or $proof.uiAccess -isnot [bool] -or $proof.uiAccess -or ($proof.tokenType -isnot [int] -and $proof.tokenType -isnot [long]) -or $proof.tokenType -ne 1){throw 'Elevated GUI requires high integrity, a primary token and no UIAccess.'}
+    if($proof.userSid -isnot [string] -or $proof.userSid -cnotmatch '^S-[0-9]+(?:-[0-9]+)+$' -or $proof.userSid -cin @('S-1-5-18','S-1-5-19','S-1-5-20') -or ($proof.sessionId -isnot [int] -and $proof.sessionId -isnot [long]) -or $proof.sessionId -lt 0){throw 'Elevated GUI requires a real interactive user SID and session.'}
+  }
+  if($Token.userSid -cne $RunnerToken.userSid -or $Token.sessionId -ne $RunnerToken.sessionId){throw 'Elevated GUI token user/session differs from the actual current runner token.'}
+}
+
 function Assert-NativeGuiElevation {
   param([switch]$MigrationExpected)
   $gui=Join-Path $script:InstallRoot 'EgoistShield.exe';$worker=Join-Path $script:InstallRoot 'EgoistShield.Worker.exe'
-  foreach($executable in @($gui,$worker)){
+  foreach($role in @('gui','worker')){
+    $executable=if($role -ceq 'gui'){$gui}else{$worker}
     [xml]$manifest=Get-NativePeResource -Executable $executable
     $level=$manifest.SelectSingleNode("//*[local-name()='requestedExecutionLevel']")
-    if(-not $level -or $level.GetAttribute('level') -cne 'asInvoker'){throw 'Installed GUI/Worker PE does not request asInvoker.'}
+    if(-not $level){throw 'Installed GUI/Worker PE execution level is missing.'}
+    Assert-NativeGuiExecutionLevel -Role $role -Level $level.GetAttribute('level')
     $integrity=Get-NativePeResource -Executable $executable -Integrity | ConvertFrom-Json
     $payload=Get-Content -LiteralPath (Join-Path $script:Work 'installed-payload.json') -Raw | ConvertFrom-Json
     if(@($integrity | Where-Object {$_.file -eq 'resources\\app.asar' -or $_.file -eq 'resources\app.asar'}).Count -eq 0){throw 'PE ASAR integrity does not identify the installed app.asar.'}
@@ -268,7 +285,7 @@ function Assert-NativeGuiElevation {
   Assert-NativeOrdinaryPath -Path $link -Leaf
   $bytes=[IO.File]::ReadAllBytes($link)
   if($bytes.Length -lt 76 -or [BitConverter]::ToUInt32($bytes,0) -ne 76 -or ([BitConverter]::ToUInt32($bytes,20) -band 0x2000) -ne 0){throw 'Installed Start Menu shortcut retains RunAsUser or has an invalid shell-link header.'}
-  return [ordered]@{guiManifest='asInvoker';workerManifest='asInvoker';layers=$values;shortcut=$link;shortcutRunAsUser=$false;embeddedAsarIntegrityVerified=$true}
+  return [ordered]@{guiManifest='requireAdministrator';workerManifest='asInvoker';layers=$values;shortcut=$link;shortcutRunAsUser=$false;embeddedAsarIntegrityVerified=$true}
 }
 function Set-NativeOwnedLegacyLayer {
   $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
@@ -410,79 +427,84 @@ function Invoke-NativeGui {
     $child.Dispose()
   }
 }
-function Invoke-NativeOrdinaryGui {
+function Invoke-NativeElevatedGui {
   Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
   . (Join-Path $PSScriptRoot 'windows-ordinary-gui.ps1') -OrdinaryGuiLibraryOnly
   $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
-  $ordinaryEvidence=Join-Path $script:Work 'ordinary-evidence'
-  [void][IO.Directory]::CreateDirectory($ordinaryEvidence)
-  Add-NativeMutation -Kind 'ordinary-medium-gui-native-uia' -Target $gui -Purpose 'Actual nonadministrator GUI stops and starts the installed Telegram service through the shipped Core broker.'
+  $elevatedEvidence=Join-Path $script:Work 'elevated-evidence'
+  [void][IO.Directory]::CreateDirectory($elevatedEvidence)
+  Add-NativeMutation -Kind 'elevated-gui-native-uia' -Target $gui -Purpose 'Actual Windows administrator GUI stops and starts the installed Telegram service through the shipped Core broker.'
   $lease=$null;$child=$null;$closed=$false;$operationError=$null;$cleanup=$null
+  $script:Receipt.elevatedGui=[ordered]@{ok=$false;result='running';launch=$null;actualProcess=$null;exitCode=$null;cleanup=$null;managementMode='administrator-required';normalUacPromptObserved=$false}
+  Save-NativeReceipt
   try{
-    $lease=Start-OrdinaryGuiLease -CanonicalInstalledGuiPath $gui -IntegrityManifestPath $script:ManifestPath -ExpectedSourceCommit $script:SourceCommit -WorkRoot $script:Work -EvidenceDirectory $ordinaryEvidence
+    $lease=Start-ElevatedGuiLease -CanonicalInstalledGuiPath $gui -IntegrityManifestPath $script:ManifestPath -ExpectedSourceCommit $script:SourceCommit -WorkRoot $script:Work -EvidenceDirectory $elevatedEvidence
     $proof=$lease.Receipt
-    if($proof.executable -ine $gui -or @($proof.arguments).Count -ne 0 -or $proof.source.commit -cne $script:SourceCommit){throw 'Ordinary GUI launch/source identity mismatch.'}
+    $script:Receipt.elevatedGui.launch=$proof
+    if($proof.launchPolicy -cne 'elevated' -or $proof.elevatedGui -ne $true -or $proof.guiRequestedExecutionLevel -cne 'requireAdministrator'){throw 'Elevated GUI lease did not prove the explicit current-token launch policy.'}
+    Assert-NativeElevatedGuiTokenProof -Token $proof.token -RunnerToken $proof.runnerToken
+    if($proof.executable -ine $gui -or @($proof.arguments).Count -ne 0 -or $proof.source.commit -cne $script:SourceCommit -or $proof.artifactSourceCommit -cne $script:SourceCommit -or $proof.harnessSourceCommit -cne $script:SourceCommit){throw 'Elevated GUI launch/source identity mismatch.'}
     $child=[Diagnostics.Process]::GetProcessById([int]$proof.processId)
     $identity=Get-NativeProcessIdentity $child.Id
-    if($identity.executable -ine $gui -or [Math]::Abs(([DateTimeOffset]::Parse($proof.startTimeUtc).UtcDateTime-$child.StartTime.ToUniversalTime()).TotalMilliseconds) -gt 20){throw 'Ordinary GUI creation identity changed.'}
+    if($identity.executable -ine $gui -or [Math]::Abs(([DateTimeOffset]::Parse($proof.startTimeUtc).UtcDateTime-$child.StartTime.ToUniversalTime()).TotalMilliseconds) -gt 20){throw 'Elevated GUI creation identity changed.'}
     $hwnd=[IntPtr]([long]$proof.mainWindowHandle)
     $root=[Windows.Automation.AutomationElement]::FromHandle($hwnd)
-    if(-not $root -or $root.Current.ProcessId -ne $child.Id){throw 'Native UIA root does not belong to the exact ordinary GUI.'}
+    if(-not $root -or $root.Current.ProcessId -ne $child.Id){throw 'Native UIA root does not belong to the exact elevated GUI.'}
     $buttonType=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Button)
     $findButton={param([string]$Name)
       $named=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty,$Name)
       $buttons=$root.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.AndCondition]::new($buttonType,$named))
       if($buttons.Count -eq 1 -and $buttons[0].Current.IsEnabled){return $buttons[0]}
     }
-    $navigation=Get-NativeTelegramNavigation -FindButton $findButton -Label 'Ordinary GUI'
+    $navigation=Get-NativeTelegramNavigation -FindButton $findButton -Label 'Elevated GUI'
     ([Windows.Automation.InvokePattern]$navigation.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
     $wrapper=Join-Path $script:DataRoot 'Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe'
     $before=Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running
-    $stop=Wait-NativeCondition -Condition {& $findButton 'Остановить'} -Label 'Ordinary GUI actual stop control' -TimeoutSeconds 60
+    $stop=Wait-NativeCondition -Condition {& $findButton 'Остановить'} -Label 'Elevated GUI actual stop control' -TimeoutSeconds 60
     ([Windows.Automation.InvokePattern]$stop.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
     $stopped=Wait-NativeCondition -Condition {
       $row=@(Get-NativeProductServices | Where-Object {$_.Name -eq 'EgoistShieldTelegramProxy'})
       if($row.Count -eq 1 -and $row[0].PathName.Trim().Trim('"') -ieq $wrapper -and $row[0].State -eq 'Stopped' -and [int]$row[0].ProcessId -eq 0){return $row[0]}
-    } -Label 'Real SCM Telegram stop through ordinary GUI/Core IPC' -TimeoutSeconds 90
-    $start=Wait-NativeCondition -Condition {& $findButton 'Запустить'} -Label 'Ordinary GUI actual start control' -TimeoutSeconds 60
+    } -Label 'Real SCM Telegram stop through elevated GUI/Core IPC' -TimeoutSeconds 90
+    $start=Wait-NativeCondition -Condition {& $findButton 'Запустить'} -Label 'Elevated GUI actual start control' -TimeoutSeconds 60
     ([Windows.Automation.InvokePattern]$start.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
-    $after=Wait-NativeCondition -Condition {Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running} -Label 'Real SCM Telegram start through ordinary GUI/Core IPC' -TimeoutSeconds 90
-    if($after.process.processId -eq $before.process.processId -and $after.process.createdUtc -ceq $before.process.createdUtc){throw 'Ordinary GUI restart did not produce a new verified service identity.'}
-    $completion=Wait-NativeTelegramGuiCompletion -FindButton $findButton -Process $child -Root $root -Label 'Ordinary GUI'
+    $after=Wait-NativeCondition -Condition {Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running} -Label 'Real SCM Telegram start through elevated GUI/Core IPC' -TimeoutSeconds 90
+    if($after.process.processId -eq $before.process.processId -and $after.process.createdUtc -ceq $before.process.createdUtc){throw 'Elevated GUI restart did not produce a new verified service identity.'}
+    $completion=Wait-NativeTelegramGuiCompletion -FindButton $findButton -Process $child -Root $root -Label 'Elevated GUI'
     $configuration=Get-Content -LiteralPath (Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json') -Raw | ConvertFrom-Json
     $endpoint=Assert-NativeTelegramEndpoint -Port ([int]$configuration.port)
     $core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
     $workers=@(Get-NativeCimSnapshot Win32_Process -Filter "Name = 'EgoistShield.Worker.exe'" | Where-Object {$_.ExecutablePath -ieq (Join-Path $script:InstallRoot 'EgoistShield.Worker.exe') -and [int]$_.ParentProcessId -eq [int]$core.scm.ProcessId})
-    if($workers.Count -ne 1){throw 'Ordinary GUI IPC did not use one exact protected Core worker.'}
+    if($workers.Count -ne 1){throw 'Elevated GUI IPC did not use one exact protected Core worker.'}
     $owner=Invoke-CimMethod -InputObject $workers[0] -MethodName GetOwnerSid
-    if($owner.ReturnValue -ne 0 -or $owner.Sid -ne 'S-1-5-18'){throw 'Ordinary GUI component operation was not executed by the LocalSystem worker.'}
+    if($owner.ReturnValue -ne 0 -or $owner.Sid -ne 'S-1-5-18'){throw 'Elevated GUI component operation was not executed by the LocalSystem worker.'}
     $pattern=$null
-    if(-not $root.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'Ordinary GUI lacks native close pattern.'}
+    if(-not $root.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'Elevated GUI lacks native close pattern.'}
     ([Windows.Automation.WindowPattern]$pattern).Close()
-    if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'Ordinary GUI did not exit normally.'};$closed=$true
-    $script:Receipt.ordinaryGui=[ordered]@{ok=$true;launch=$proof;actualProcess=$identity;automation='native UIAutomation InvokePattern and WindowPattern';operationCompletion=$completion;before=$before;stopped=$stopped;after=$after;endpoint=$endpoint;worker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;exitCode=$child.ExitCode;cleanup=$null}
+    if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'Elevated GUI did not exit normally.'};$closed=$true
+    $script:Receipt.elevatedGui=[ordered]@{ok=$true;result='passed-elevated-gui-ipc';managementMode='administrator-required';normalUacPromptObserved=$false;launch=$proof;actualProcess=$identity;automation='native UIAutomation InvokePattern and WindowPattern';operationCompletion=$completion;before=$before;stopped=$stopped;after=$after;endpoint=$endpoint;worker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;exitCode=$child.ExitCode;cleanup=$null}
     Save-NativeReceipt
-  }catch{$operationError=$_}
+  }catch{$operationError=$_;$script:Receipt.elevatedGui.ok=$false;$script:Receipt.elevatedGui.result='failed';$script:Receipt.elevatedGui.error=$_.Exception.Message;Save-NativeReceipt}
   finally{
     if($lease){
-      try{$cleanup=Stop-OrdinaryGuiLease -Lease $lease;if(-not $closed -or -not $cleanup.exitedNormally -or $cleanup.exitCode -ne 0){throw 'Ordinary GUI cleanup did not follow a normal successful GUI exit.'}}
-      catch{if(-not $operationError){$operationError=$_}}
+      try{$cleanup=Stop-ElevatedGuiLease -Lease $lease;if(-not $closed -or -not $cleanup.exitedNormally -or $cleanup.exitCode -ne 0){throw 'Elevated GUI cleanup did not follow a normal successful GUI exit.'}}
+      catch{if(-not $operationError){$operationError=$_};$script:Receipt.elevatedGui.ok=$false;$script:Receipt.elevatedGui.result='failed';$script:Receipt.elevatedGui.error=$operationError.Exception.Message}
     }
     if($child){$child.Dispose()}
-    $destination=Join-Path $script:Evidence 'ordinary-gui';[void][IO.Directory]::CreateDirectory($destination)
-    foreach($file in @(Get-ChildItem -LiteralPath $ordinaryEvidence -File)){Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $destination $file.Name)}
+    $destination=Join-Path $script:Evidence 'elevated-gui';[void][IO.Directory]::CreateDirectory($destination)
+    foreach($file in @(Get-ChildItem -LiteralPath $elevatedEvidence -File)){Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $destination $file.Name)}
     if($lease){foreach($name in @('source-hashes.json','build.txt','run.stdout.txt','run.stderr.txt')){$file=Join-Path $lease.Build.Directory $name;if(Test-Path -LiteralPath $file -PathType Leaf){Copy-Item -LiteralPath $file -Destination (Join-Path $destination $name)}}}
-    if($script:Receipt.Contains('ordinaryGui')){$script:Receipt.ordinaryGui.cleanup=$cleanup;Save-NativeReceipt}
+    if($script:Receipt.Contains('elevatedGui')){$script:Receipt.elevatedGui.cleanup=$cleanup;Save-NativeReceipt}
   }
   if($operationError){throw $operationError}
   Assert-NativeNoGui
   [void](Assert-NativeTelegramEndpoint -Port ([int]$configuration.port))
-  Assert-NativePrivateState 'after-ordinary-gui-operation'
-  Assert-NativeNetworkPreserved 'ordinary-gui-stop-start-and-close'
-  $gate=@($script:Receipt.releaseGates | Where-Object {$_.name -eq 'GUI IPC from an actual standard Windows user token'})
-  if($gate.Count -ne 1){throw 'Ordinary GUI release gate is missing or ambiguous.'}
-  $gate[0].status='passed';$gate[0].reason='Actual GUI token: not elevated, Administrators disabled, medium integrity, no privileged bypass. Genuine shipped UI controls stopped and restarted SCM Telegram through the protected LocalSystem Core worker; normal GUI exit and zero-orphan cleanup verified.'
-  $script:Receipt.checks+=[ordered]@{name='actual-nonadministrator-gui-core-broker-service-stop-start-and-normal-quit';ok=$true};Save-NativeReceipt
+  Assert-NativePrivateState 'after-elevated-gui-operation'
+  Assert-NativeNetworkPreserved 'elevated-gui-stop-start-and-close'
+  $gate=@($script:Receipt.releaseGates | Where-Object {$_.name -eq 'GUI IPC from an actual elevated Windows user token'})
+  if($gate.Count -ne 1){throw 'Elevated GUI release gate is missing or ambiguous.'}
+  $gate[0].status='passed';$gate[0].reason='Actual current Windows GUI token: elevated, Administrators enabled, high integrity, same user/session, primary and no UIAccess. GUI manifest requires administrator through normal Windows UAC; no filtered-token or sandbox bypass is used. Genuine shipped UI controls stopped and restarted SCM Telegram through the protected LocalSystem Core worker; normal GUI exit and zero-orphan cleanup verified.'
+  $script:Receipt.checks+=[ordered]@{name='actual-elevated-gui-core-broker-service-stop-start-and-normal-quit';ok=$true};Save-NativeReceipt
 }
 
 function Assert-NativePrivateState {
@@ -654,6 +676,80 @@ function Wait-NativeTelegramGuiCompletion {
     if($stop -and $stop.Current.Name -ceq 'Остановить' -and $stop.Current.IsEnabled -and -not $stop.Current.IsOffscreen){return [ordered]@{name='Остановить';enabled=$true;processId=$Process.Id;observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}}
   }
 }
+function Assert-NativeGuiStartupTaskXml {
+  param([string]$XmlText,$State,[bool]$ExpectedEnabled)
+  if($State.owner -cne 'EgoistShield' -or $State.purpose -cne 'gui-login-startup' -or [string]$State.userSid -cnotmatch '^S-1-5-21-[0-9]+-[0-9]+-[0-9]+-[0-9]+$' -or $State.taskName -cne ('EgoistLagom-GuiAutostart-'+$State.userSid) -or $State.taskPath -cne ('\'+$State.taskName)){throw 'Native GUI startup task namespace/user is not exact.'}
+  $xml=[Xml.XmlDocument]::new();$xml.XmlResolver=$null;$xml.LoadXml($XmlText)
+  $ns=[Xml.XmlNamespaceManager]::new($xml.NameTable);$ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task')
+  $principals=@($xml.SelectNodes('/t:Task/t:Principals/t:Principal',$ns));$actions=@($xml.SelectNodes('/t:Task/t:Actions/*',$ns));$triggers=@($xml.SelectNodes('/t:Task/t:Triggers/*',$ns))
+  if($principals.Count -ne 1 -or $actions.Count -ne 1 -or $actions[0].LocalName -cne 'Exec' -or $triggers.Count -ne 1 -or $triggers[0].LocalName -cne 'LogonTrigger'){throw 'Native GUI startup task must have one interactive principal, exact executable action and logon trigger.'}
+  $requirements=@{
+    '/t:Task/t:RegistrationInfo/t:Author'='EgoistShield'
+    '/t:Task/t:Principals/t:Principal/t:UserId'=[string]$State.userSid
+    '/t:Task/t:Principals/t:Principal/t:LogonType'='InteractiveToken'
+    '/t:Task/t:Principals/t:Principal/t:RunLevel'='HighestAvailable'
+    '/t:Task/t:Triggers/t:LogonTrigger/t:UserId'=[string]$State.userSid
+    '/t:Task/t:Actions/t:Exec/t:Command'=(Join-Path $script:InstallRoot 'EgoistShield.exe')
+    '/t:Task/t:Actions/t:Exec/t:Arguments'='--background --minimized'
+    '/t:Task/t:Actions/t:Exec/t:WorkingDirectory'=$script:InstallRoot
+    '/t:Task/t:Settings/t:ExecutionTimeLimit'='PT0S'
+    '/t:Task/t:Settings/t:MultipleInstancesPolicy'='IgnoreNew'
+    '/t:Task/t:Settings/t:AllowStartOnDemand'='false'
+    '/t:Task/t:Settings/t:Enabled'=if($ExpectedEnabled){'true'}else{'false'}
+  }
+  foreach($name in $requirements.Keys){$node=$xml.SelectSingleNode($name,$ns);if(-not $node -or $node.InnerText -cne $requirements[$name]){throw ('Actual GUI startup Scheduler XML differs: '+$name)}}
+  $uri=$xml.SelectSingleNode('/t:Task/t:RegistrationInfo/t:URI',$ns)
+  if(-not $uri -or $uri.InnerText -cnotmatch ('^egoistshield:gui-login-startup:v1:'+([Regex]::Escape($State.userSid))+':[a-f0-9]{32}$')){throw 'Actual GUI startup Scheduler registration identity is missing.'}
+  return [ordered]@{highestAvailable=$true;interactiveToken=$true;userSid=$State.userSid;executionTimeLimit='PT0S';arguments='--background --minimized';enabled=$ExpectedEnabled;uri=$uri.InnerText;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false}
+}
+function Invoke-NativeGuiStartupOperation {
+  param([ValidateSet('Sync','Verify')][string]$Operation,[ValidateSet('true','false')][string]$Enabled='false',[string]$Label,[bool]$ExpectedEnabled)
+  $helper=Join-Path $script:InstallRoot 'resources\installer\gui-login-startup.ps1'
+  [void](Assert-NativeAdministratorOwned $helper -InstallationPath)
+  $invoke=Invoke-NativeBounded -Executable $script:NativePowerShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$helper,'-Operation',$Operation,'-Enabled',$Enabled) -Label $Label -TimeoutSeconds 45
+  $state=$invoke.stdout | ConvertFrom-Json
+  if($state.verified -isnot [bool] -or -not $state.verified -or $state.enabled -isnot [bool] -or $state.enabled -ne $ExpectedEnabled -or $state.suspended -isnot [bool] -or $state.suspended -or $state.userSid -cne $script:Receipt.elevatedGui.launch.token.userSid){throw 'Actual GUI startup public helper state differs from the verified elevated interactive user/intent.'}
+  $record=[ordered]@{operation=$Operation;enabledArgument=$Enabled;state=$state;helperSha256=(Get-FileHash -LiteralPath $helper -Algorithm SHA256).Hash;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false}
+  if($ExpectedEnabled){
+    $task=Get-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction Stop
+    $xmlText=Export-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction Stop
+    $record.scheduler=Assert-NativeGuiStartupTaskXml -XmlText $xmlText -State $state -ExpectedEnabled $true
+    if($Operation -ceq 'Verify' -and $script:Receipt.guiStartup.operations.Count -gt 0 -and $record.scheduler.uri -cne $script:Receipt.guiStartup.operations[0].scheduler.uri){throw 'Restored GUI startup task registration differs from the originally authenticated enabled task.'}
+    $file=Join-Path $script:Work ($Label+'.task.xml')
+    [IO.File]::WriteAllText($file,$xmlText,[Text.UTF8Encoding]::new($false))
+    $record.schedulerXml=[ordered]@{file=([IO.Path]::GetFileName($file));sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash;bytes=(Get-Item -LiteralPath $file).Length}
+    $receipt=Join-Path $script:DataRoot ('GuiStartup\'+$state.userSid+'.json')
+    $record.protectedReceipt=Assert-NativeAdministratorOwned $receipt
+    $saved=Get-Content -LiteralPath $receipt -Raw | ConvertFrom-Json
+    if($saved.owner -cne 'EgoistShield' -or $saved.purpose -cne 'gui-login-startup' -or $saved.userSid -cne $state.userSid -or $saved.registrationId -cnotmatch '^[a-f0-9]{32}$' -or $record.scheduler.uri -cne ('egoistshield:gui-login-startup:v1:'+$state.userSid+':'+$saved.registrationId)){throw 'Actual GUI startup task registration is not bound to its protected owner receipt.'}
+    if([string]$task.Principal.LogonType -cne 'Interactive' -or [string]$task.Principal.RunLevel -cne 'Highest'){throw 'Actual Scheduler principal readback is not highest interactive.'}
+  }else{
+    if(Get-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction SilentlyContinue){throw 'GUI startup disable did not remove the exact owned task.'}
+    if(Test-Path -LiteralPath (Join-Path $script:DataRoot ('GuiStartup\'+$state.userSid+'.json'))){throw 'GUI startup disable retained the exact protected ownership receipt.'}
+  }
+  $script:Receipt.guiStartup.operations+=,$record;Save-NativeReceipt
+  Assert-NativeNoGui;Assert-NativeNetworkPreserved $Label
+  return $record
+}
+function Observe-NativeGuiStartupSuspension {
+  if(-not $script:Receipt.Contains('guiStartup') -or $script:Receipt.guiStartup.disabledDuringTransaction){return}
+  $state=$script:Receipt.guiStartup.operations[0].state
+  $task=Get-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction Stop
+  if($task.Settings.Enabled -ne $false){return}
+  $receiptPath=Join-Path $script:DataRoot ('GuiStartup\'+$state.userSid+'.json')
+  [void](Assert-NativeAdministratorOwned $receiptPath)
+  $saved=Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
+  if($saved.owner -cne 'EgoistShield' -or $saved.purpose -cne 'gui-login-startup' -or $saved.userSid -cne $state.userSid -or $saved.suspended -ne $true -or $saved.resumeEnabled -ne $true){throw 'Disabled GUI startup task lacks its owned suspended enabled-intent receipt.'}
+  $xmlText=Export-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction Stop
+  $proof=Assert-NativeGuiStartupTaskXml -XmlText $xmlText -State $state -ExpectedEnabled $false
+  if($proof.uri -cne $script:Receipt.guiStartup.operations[0].scheduler.uri -or $proof.uri -cne ('egoistshield:gui-login-startup:v1:'+$state.userSid+':'+$saved.registrationId)){throw 'Suspended GUI startup task registration no longer matches its original protected owner receipt.'}
+  $file=Join-Path $script:Work 'gui-startup-suspended.task.xml'
+  [IO.File]::WriteAllText($file,$xmlText,[Text.UTF8Encoding]::new($false))
+  $script:Receipt.guiStartup.disabledDuringTransaction=$true
+  $script:Receipt.guiStartup.suspension=[ordered]@{scheduler=$proof;receiptSha256=(Get-FileHash -LiteralPath $receiptPath -Algorithm SHA256).Hash;schedulerXmlSha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash;observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}
+  Save-NativeReceipt
+}
+
 function Assert-NativeBootTask {
   param([string]$Stage)
   $taskName='EgoistShield-InstallerBootRecovery-'+[IO.Path]::GetFileName($Stage)
@@ -677,10 +773,11 @@ function Invoke-NativeProtectedReinstall {
   $script:Receipt.reinstall=[ordered]@{stage=$stage;dispatched=$true;bootTask=$null;completed=$false};Save-NativeReceipt
   $taskName='EgoistShield-InstallerBootRecovery-'+[string]$result.runId;$watch=[Diagnostics.Stopwatch]::StartNew()
   do{
+    Observe-NativeGuiStartupSuspension
     $task=Get-ScheduledTask -TaskName $taskName -TaskPath '\' -ErrorAction SilentlyContinue
     if($task -and -not $script:Receipt.reinstall.bootTask){
       $script:Receipt.reinstall.bootTask=Assert-NativeBootTask -Stage $stage
-      foreach($name in @('state.json','boot-recovery.json','invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1')){[void](Assert-NativeAdministratorOwned (Join-Path $stage $name))};Save-NativeReceipt
+      foreach($name in @('state.json','boot-recovery.json','invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1','gui-login-startup.ps1')){[void](Assert-NativeAdministratorOwned (Join-Path $stage $name))};Save-NativeReceipt
     }
     if(Test-Path -LiteralPath (Join-Path $stage 'complete.flag') -PathType Leaf){break};Start-Sleep -Milliseconds 200
   }while($watch.Elapsed.TotalSeconds -lt 900)
@@ -719,6 +816,26 @@ function Assert-NativeCleanStart {
     if($key){$key.Dispose();throw "Existing product registration makes acceptance unsafe: $path"}
   }
 }
+function Assert-NativeNetworkGuiReceipts {
+  param($Receipt,[string]$SourceCommit,[string]$InstalledGuiPath,[string]$ExpectedIntegritySha256)
+  if($SourceCommit -cnotmatch '^[a-f0-9]{40}$' -or $ExpectedIntegritySha256 -cnotmatch '^[a-fA-F0-9]{64}$'){throw 'Network GUI source/integrity identity is invalid.'}
+  $launches=@($Receipt.gui | Where-Object {($_.PSObject.Properties.Name -contains 'launch') -and $null -ne $_.launch})
+  $cleanups=@($Receipt.gui | Where-Object {($_.PSObject.Properties.Name -contains 'cleanup') -and $null -ne $_.cleanup})
+  if($launches.Count -ne 2 -or $cleanups.Count -ne 2 -or @($launches.operation | Select-Object -Unique).Count -ne 2){throw 'Network GUI requires two distinct operations and exactly two paired normal-close receipts.'}
+  foreach($entry in $launches){
+    $proof=$entry.launch
+    if($proof.launchPolicy -cne 'elevated' -or $proof.elevatedGui -ne $true -or $proof.guiRequestedExecutionLevel -cne 'requireAdministrator'){throw 'Network GUI launch does not prove the administrator manifest and current-token policy.'}
+    Assert-NativeElevatedGuiTokenProof -Token $proof.token -RunnerToken $proof.runnerToken
+    if($proof.executable -ine $InstalledGuiPath -or @($proof.arguments).Count -ne 0 -or $proof.source.commit -cne $SourceCommit -or $proof.artifactSourceCommit -cne $SourceCommit -or $proof.harnessSourceCommit -cne $SourceCommit -or $proof.source.version -cne $Receipt.candidateVersion -or [string]$proof.source.integrityManifestSha256 -cnotmatch '^[a-fA-F0-9]{64}$' -or $proof.source.integrityManifestSha256 -ine $ExpectedIntegritySha256){throw 'Network GUI launch identity differs from the exact installed signed source/payload.'}
+    if(($proof.processId -isnot [int] -and $proof.processId -isnot [long]) -or $proof.processId -le 0 -or [string]::IsNullOrWhiteSpace([string]$proof.startTimeUtc)){throw 'Network GUI launched process birth identity is absent.'}
+    $paired=@($cleanups | Where-Object {$_.operation -ceq $entry.operation -and $_.cleanup.launch.processId -eq $proof.processId -and $_.cleanup.launch.startTimeUtc -ceq $proof.startTimeUtc})
+    if($paired.Count -ne 1){throw 'Network GUI normal close is not bound to the same operation/process birth.'}
+    $final=$paired[0].cleanup
+    if($final.stage -cne 'completed' -or $final.exitedNormally -isnot [bool] -or -not $final.exitedNormally -or ($final.exitCode -isnot [int] -and $final.exitCode -isnot [long]) -or $final.exitCode -ne 0 -or $final.cleanup.noOrphans -isnot [bool] -or -not $final.cleanup.noOrphans -or ($final.cleanup.activeProcesses -isnot [int] -and $final.cleanup.activeProcesses -isnot [long]) -or $final.cleanup.activeProcesses -ne 0){throw 'Network GUI lacks normal exit zero and zero-orphan job readback.'}
+    if($final.launch.launchPolicy -cne 'elevated' -or $final.launch.elevatedGui -ne $true -or $final.launch.source.commit -cne $SourceCommit -or $final.launch.executable -ine $InstalledGuiPath){throw 'Network GUI cleanup launch proof differs from the elevated source identity.'}
+  }
+}
+
 function Invoke-NativeNetworkGates {
   $nativeShell=[Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
   foreach($kind in @('dns','vpn')){
@@ -731,18 +848,20 @@ function Invoke-NativeNetworkGates {
       $file=if($kind -eq 'dns'){'windows-dns-native-acceptance.json'}else{'vpn-native-receipt.json'}
       $path=Join-Path $childEvidence $file
       Assert-NativeOrdinaryPath -Path $path -Leaf
-      $receipt=Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+      $rawReceipt=Get-Content -LiteralPath $path -Raw
+      $receipt=if((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')){ConvertFrom-Json -InputObject $rawReceipt -DateKind String}else{ConvertFrom-Json -InputObject $rawReceipt}
       if($receipt.sourceCommit -cne $script:SourceCommit -or $receipt.candidateVersion -cne $script:Version){throw 'Network gate receipt differs from the actual installed candidate.'}
       if($kind -eq 'dns'){
-        if($receipt.kind -cne 'actual-native-ordinary-gui-windows-doh' -or $receipt.result -cne 'passed' -or $receipt.guardian.stage -cne 'disarmed'){throw 'Actual DNS gate did not pass with normal restoration.'}
-        $name='System DNS from ordinary GUI, persistence and restoration'
+        if($receipt.kind -cne 'actual-native-elevated-gui-windows-doh' -or $receipt.result -cne 'passed' -or $receipt.guardian.stage -cne 'disarmed'){throw 'Actual DNS gate did not pass with normal restoration.'}
+        $name='System DNS from elevated GUI, persistence and restoration'
       }else{
         if($receipt.kind -cne 'actual-hosted-production-background-vpn-native-acceptance' -or $receipt.status -cne 'passed' -or $receipt.nativeAcceptancePassed -ne $true -or @($receipt.cleanup.errors).Count){throw 'Actual VPN gate did not pass with verified normal cleanup.'}
-        $name='Background VPN native TUN, recovery and ordinary GUI OFF'
+        $name='Background VPN native TUN, recovery and elevated GUI OFF'
       }
+      Assert-NativeNetworkGuiReceipts -Receipt $receipt -SourceCommit $script:SourceCommit -InstalledGuiPath (Join-Path $script:InstallRoot 'EgoistShield.exe') -ExpectedIntegritySha256 (Get-FileHash -LiteralPath $script:ManifestPath -Algorithm SHA256).Hash
       $gate=@($script:Receipt.releaseGates | Where-Object {$_.name -ceq $name})
       if($gate.Count -ne 1){throw 'Network release gate identity is ambiguous.'}
-      $gate[0].status='passed';$gate[0].reason='Actual installed candidate, ordinary medium GUI and independent native readback; detailed receipt retained.'
+      $gate[0].status='passed';$gate[0].reason='Actual installed candidate, elevated high/admin GUI with exact source/executable/process birth, paired normal close and zero-orphan cleanup, and independent native readback; detailed receipt retained.'
       $script:Receipt.checks+=[ordered]@{name=($kind+'-actual-native-network-gate');ok=$true;receipt=($kind+'-native/evidence/'+$file);sha256=(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash}
       Assert-NativeNoGui;Assert-NativeNetworkPreserved ($kind+'-native-restoration');Save-NativeReceipt
     }finally{
@@ -802,15 +921,15 @@ function Invoke-NativeAcceptance {
     schemaVersion=1;kind='actual-native-hosted-windows-acceptance';sourceCommit=$script:SourceCommit;candidateVersion=$script:Version
     installer=[ordered]@{path=$script:Installer;sha256=$script:InstallerHash;bytes=[long]$manifest.installer.bytes}
     host=[ordered]@{computerName=$env:COMPUTERNAME;os=[Environment]::OSVersion.VersionString;powershell=$PSVersionTable.PSVersion.ToString();administrator=$administrator;runnerEnvironment=$env:RUNNER_ENVIRONMENT;githubRunId=$env:GITHUB_RUN_ID;githubRunAttempt=$env:GITHUB_RUN_ATTEMPT}
-    startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');result='running';cleanStartVerified=$true;mutations=@();checks=@();gui=@();networkReadbacks=@();privateStateReadbacks=@();beforeNetwork=(Get-NativeNetworkFingerprint);releaseReady=$false
+    guiLaunchContract=[ordered]@{managementMode='administrator-required';guiManifest='requireAdministrator';workerManifest='asInvoker';authorization='normal Windows UAC; explicit administrator GUI product contract';restrictedTokenAcceptanceRequested=$false;normalUacPromptObserved=$false};startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');result='running';cleanStartVerified=$true;mutations=@();checks=@();gui=@();networkReadbacks=@();privateStateReadbacks=@();beforeNetwork=(Get-NativeNetworkFingerprint);releaseReady=$false
     releaseGates=@(
       [ordered]@{name='Reboot/interrupted installation SYSTEM recovery';status='not-tested';reason='A live hosted runner cannot reboot within this job. Actual Task registration/principal/action/removal are exercised.'},
-      [ordered]@{name='System DNS from ordinary GUI, persistence and restoration';status='not-tested';reason='Separate actual installed DNS gate must pass.'},
-      [ordered]@{name='Background VPN native TUN, recovery and ordinary GUI OFF';status='not-tested';reason='Separate actual installed VPN gate must pass.'},
+      [ordered]@{name='System DNS from elevated GUI, persistence and restoration';status='not-tested';reason='Separate actual installed DNS gate must pass.'},
+      [ordered]@{name='Background VPN native TUN, recovery and elevated GUI OFF';status='not-tested';reason='Separate actual installed VPN gate must pass.'},
       [ordered]@{name='Driver-backed Zapret end-to-end';status='not-tested';reason='No unrelated driver or default-route filtering on the hosted control connection.'},
       [ordered]@{name='3.7.9 legacy worker automatic update chain';status='not-tested';reason='Requires separately authenticated official old Setup and signed candidate release feed; new-helper same-version reinstall does not prove it.'},
       [ordered]@{name='3.7.7 and 3.7.8 update trust compatibility';status='not-tested';reason='No authenticated legacy update chain is asserted.'},
-      [ordered]@{name='GUI IPC from an actual standard Windows user token';status='not-tested';reason='The hosted runner token is administrator; asInvoker resource/shortcut readback does not prove standard-user authorization.'},
+      [ordered]@{name='GUI IPC from an actual elevated Windows user token';status='not-tested';reason='Requires actual administrator GUI token/source identity, genuine service Stop/Start IPC, LocalSystem worker and normal close.'},
       [ordered]@{name='72 hour/7 day soak/month-scale uptime';status='not-tested';reason='Bounded native acceptance is not a long-duration pilot.'}
     )
   };Save-NativeReceipt
@@ -824,19 +943,25 @@ function Invoke-NativeAcceptance {
     $optionsPath=Join-Path $script:Work 'installed-payload.options.json';$options | ConvertTo-Json | Set-Content -LiteralPath $optionsPath -Encoding utf8
     [void](Invoke-NativeBounded -Executable $script:Node -Arguments @($script:NodeHelper,'verify-payload',$optionsPath) -Label 'installed-payload' -TimeoutSeconds 180)
     $script:Receipt.elevation=Assert-NativeGuiElevation
-    $script:Receipt.checks+=[ordered]@{name='actual-installed-payload-fuses-asar-worker-inventory-acls-and-no-forced-elevation';ok=$true;receipt='installed-payload.json'}
+    $script:Receipt.checks+=[ordered]@{name='actual-installed-payload-fuses-asar-worker-inventory-acls-and-administrator-gui-manifest';ok=$true;receipt='installed-payload.json'}
     $script:Receipt.core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running;$script:Receipt.corePolicy=Get-NativeRecoveryPolicy 'EgoistShieldCore'
     Assert-NativeNoGui;Assert-NativeNetworkPreserved 'clean-install'
     $gui=Invoke-NativeGui -Action 'provision-telegram' -Label 'gui-provision';Assert-NativeNoGui
     $port=[int]$gui.installResult.portConflict.port
     $script:Receipt.telegramWithoutGui=Assert-NativeTelegramEndpoint -Port $port;$script:Receipt.telegramPolicy=Get-NativeRecoveryPolicy 'EgoistShieldTelegramProxy'
     $script:Receipt.checks+=[ordered]@{name='actual-production-gui-ipc-telegram-persists-after-gui-quit';ok=$true};Assert-NativeNetworkPreserved 'gui-close'
-    Invoke-NativeOrdinaryGui
+    Invoke-NativeElevatedGui
     Invoke-NativeNetworkGates
     Stop-NativeVerifiedCoreForRecovery;Assert-NativeNoGui
     $script:Receipt.telegramAfterCoreCrash=Assert-NativeTelegramEndpoint -Port $port;Assert-NativeNetworkPreserved 'core-crash-recovery'
     New-NativePrivateStateFixture;Assert-NativePrivateState 'before-private-backup'
+    $script:Receipt.guiStartup=[ordered]@{kind='actual-packaged-gui-startup-helper-task-lifecycle';operations=@();disabledDuringTransaction=$false;restoredAfterReinstall=$false;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false}
+    Add-NativeMutation -Kind 'actual-owned-gui-startup-opt-in-task' -Target 'current verified interactive user' -Purpose 'Actual packaged public Sync/Verify helper and Task Scheduler highest interactive readback; no logon is provoked.'
+    [void](Invoke-NativeGuiStartupOperation -Operation Sync -Enabled true -Label 'gui-startup-enable' -ExpectedEnabled $true)
     Set-NativeOwnedLegacyLayer;Invoke-NativeProtectedReinstall
+    if(-not $script:Receipt.guiStartup.disabledDuringTransaction){throw 'Enabled GUI startup task was not actually observed suspended during the reinstall transaction.'}
+    [void](Invoke-NativeGuiStartupOperation -Operation Verify -Label 'gui-startup-after-reinstall' -ExpectedEnabled $true)
+    $script:Receipt.guiStartup.restoredAfterReinstall=$true;Save-NativeReceipt
     [void](Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running);[void](Get-NativeRecoveryPolicy 'EgoistShieldCore');[void](Get-NativeRecoveryPolicy 'EgoistShieldTelegramProxy')
     $script:Receipt.telegramAfterReinstall=Assert-NativeTelegramEndpoint -Port $port
     if((Get-FileHash -LiteralPath $script:Receipt.inactiveVpnFixture.path -Algorithm SHA256).Hash -cne $script:Receipt.inactiveVpnFixture.sha256){throw 'Actual upgrade changed private inactive VPN filesystem fixture.'}
@@ -845,6 +970,8 @@ function Invoke-NativeAcceptance {
     Assert-NativeNoGui;Assert-NativeNetworkPreserved 'protected-reinstall'
     [void](Invoke-NativeGui -Action 'check-telegram' -Label 'gui-after-reinstall');Assert-NativeNoGui
     $script:Receipt.checks+=[ordered]@{name='actual-protected-reinstall-with-recovery-services-and-system-task-registration-roundtrip';ok=$true;actualReboot=$false}
+    [void](Invoke-NativeGuiStartupOperation -Operation Sync -Enabled false -Label 'gui-startup-disable' -ExpectedEnabled $false)
+    $script:Receipt.checks+=[ordered]@{name='actual-packaged-gui-startup-highest-interactive-enable-suspend-restore-disable';ok=$true;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false};Save-NativeReceipt
     $uninstaller=Join-Path $script:InstallRoot 'Uninstall Egoist Shield.exe'
     [void](Assert-NativeAdministratorOwned $uninstaller -InstallationPath)
     Add-NativeMutation -Kind 'owned-uninstall' -Target $script:InstallRoot -Purpose 'Actual candidate uninstall and owned cleanup.'

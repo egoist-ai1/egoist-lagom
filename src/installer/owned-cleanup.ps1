@@ -33,6 +33,13 @@ foreach ($requiredFunction in @("Register-InstallerMaintenanceBootRecovery", "As
   }
 }
 
+$guiStartupHelper = Join-Path $PSScriptRoot 'gui-login-startup.ps1'
+if (-not (Test-Path -LiteralPath $guiStartupHelper -PathType Leaf)) { throw 'Required installer GUI startup helper is missing. No cleanup was performed.' }
+. $guiStartupHelper
+foreach ($requiredFunction in @('Suspend-OwnedGuiLoginStartup','Resume-OwnedGuiLoginStartup','Remove-OwnedGuiLoginStartup','Remove-OwnedLegacyGuiLoginStartup')) {
+  if (-not (Get-Command -Name $requiredFunction -CommandType Function -ErrorAction SilentlyContinue)) { throw ('Required GUI startup helper function is missing: ' + $requiredFunction) }
+}
+
 # ============================================================================
 # Ownership-aware очистка Egoist Shield.
 #
@@ -727,6 +734,7 @@ function Enter-UninstallMaintenanceLease {
 }
 
 function Stop-AllOwnedRuntimes {
+  if (Test-CanonicalInstallerTarget $installRoot) { Suspend-OwnedGuiLoginStartup }
   if ($Phase -ne "Uninstall") {
     Backup-OwnedServiceRegistrations $Services
     $snapshot = @(ConvertFrom-JsonCollectionCompat (
@@ -1250,15 +1258,18 @@ function Remove-OwnedGuiElevationCompatibility {
 }
 
 function Remove-OwnedStartupArtifacts {
-  if (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue) {
-    foreach ($taskName in @("EgoistShieldStartup")) {
-      $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-      if ($task) {
-        Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
-        Write-Journal "startup-task-removed" @{ task = $taskName }
-      }
-    }
+  param([switch]$Uninstall)
+  if (Test-CanonicalInstallerTarget $installRoot) {
+    if ($Uninstall) { Remove-OwnedGuiLoginStartup }
+    # Session-zero recovery cannot authorize another user's legacy GUI task.
+    $leases=@()
+    try {
+      $context=Get-GuiStartupContext (Get-GuiStartupInteractiveIdentity)
+      $leases=@(Assert-GuiStartupInstallation $context)
+      $removed=@(Invoke-GuiStartupLease { Remove-OwnedLegacyGuiLoginStartup $context })
+      foreach($name in $removed) { Write-Journal 'startup-task-removed' @{task=$name} }
+    } catch { Write-Warning ('Legacy GUI startup cleanup skipped safely: ' + $_.Exception.Message) }
+    finally { foreach($lease in $leases) { $lease.Dispose() } }
   }
 
   $userRegistryRoot = if ($script:shieldUserRegistryRoot) { [string]$script:shieldUserRegistryRoot } else { "Registry::HKEY_CURRENT_USER" }
@@ -3126,6 +3137,7 @@ function Restore-InstallerExternalBaseline {
   Restore-PersistedNetworkActivation
   Restore-SystemNetworkBaseline
   Restore-OwnedServiceRegistrations
+  if (Test-CanonicalInstallerTarget $installRoot) { Resume-OwnedGuiLoginStartup }
 }
 
 function Complete-InstallerExternalBaseline {
@@ -3133,6 +3145,7 @@ function Complete-InstallerExternalBaseline {
   Complete-PersistedNetworkActivation
   Complete-SystemNetworkBaseline
   Complete-OwnedServiceRegistrations
+  if (Test-CanonicalInstallerTarget $installRoot) { Resume-OwnedGuiLoginStartup }
 }
 
 function Reconcile-OrphanedExternalBaseline {
@@ -3997,7 +4010,7 @@ switch ($Phase) {
     Reset-WindowsNetworkBaseline
     Remove-OwnedFirewallRules
     Discard-OwnedNetworkArtifacts
-    Remove-OwnedStartupArtifacts
+    Remove-OwnedStartupArtifacts -Uninstall
     Remove-OwnedShortcuts
     Remove-OwnedRuntimeDirectories
     } finally {

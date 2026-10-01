@@ -126,6 +126,7 @@ Function .onInit
   StrCpy $INSTDIR "$PROGRAMFILES64\EgoistShield"
   InitPluginsDir
   File /oname=$PLUGINSDIR\owned-cleanup.ps1 "${PAYLOAD}\resources\installer\owned-cleanup.ps1"
+  File /oname=$PLUGINSDIR\gui-login-startup.ps1 "${PAYLOAD}\resources\installer\gui-login-startup.ps1"
   File /oname=$PLUGINSDIR\service-maintenance.ps1 "${PAYLOAD}\resources\installer\service-maintenance.ps1"
   File /oname=$PLUGINSDIR\maintenance-boot-recovery.ps1 "${PAYLOAD}\resources\installer\maintenance-boot-recovery.ps1"
   File /oname=$PLUGINSDIR\invoke-final-silent-reinstall.ps1 "${PAYLOAD}\resources\installer\invoke-final-silent-reinstall.ps1"
@@ -392,6 +393,7 @@ Section "Uninstall"
   ${EndIf}
   InitPluginsDir
   CopyFiles /SILENT "$INSTDIR\resources\installer\owned-cleanup.ps1" "$PLUGINSDIR\owned-cleanup.ps1"
+  CopyFiles /SILENT "$INSTDIR\resources\installer\gui-login-startup.ps1" "$PLUGINSDIR\gui-login-startup.ps1"
   CopyFiles /SILENT "$INSTDIR\resources\installer\service-maintenance.ps1" "$PLUGINSDIR\service-maintenance.ps1"
   CopyFiles /SILENT "$INSTDIR\resources\installer\maintenance-boot-recovery.ps1" "$PLUGINSDIR\maintenance-boot-recovery.ps1"
   !insertmacro RunPhase Uninstall

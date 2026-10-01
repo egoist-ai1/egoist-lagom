@@ -5,6 +5,8 @@ using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
+using System.Xml;
+using System.Xml.Linq;
 using EgoistShield.Service;
 using Microsoft.Win32.SafeHandles;
 
@@ -12,7 +14,7 @@ namespace OrdinaryGuiHarness;
 
 internal sealed record Options(string Mode, string WorkRoot, string ReceiptPath,
     string CanonicalInstalledGuiPath = "", string IntegrityManifestPath = "", string ExpectedSourceCommit = "",
-    int LeaseSeconds = 420, int WindowTimeoutSeconds = 90, string ExpectedHarnessSourceCommit = "", bool CaptureStandardStreams = true);
+    int LeaseSeconds = 420, int WindowTimeoutSeconds = 90, string ExpectedHarnessSourceCommit = "", bool CaptureStandardStreams = true, string LaunchPolicy = "ordinary");
 internal sealed record TokenProof(string UserSid, bool Elevated, bool AdministratorsEnabled,
     int IntegrityRid, string IntegritySid, int SessionId, int ElevationType, bool Restricted,
     bool UiAccess, int TokenType, bool HasRestrictions, string[] EnabledPrivileges)
@@ -23,6 +25,8 @@ internal sealed record TokenProof(string UserSid, bool Elevated, bool Administra
             "SeAssignPrimaryTokenPrivilege" or "SeTcbPrivilege" or "SeCreateTokenPrivilege" or
             "SeBackupPrivilege" or "SeRestorePrivilege" or "SeLoadDriverPrivilege" or
             "SeTakeOwnershipPrivilege" or "SeIncreaseQuotaPrivilege" or "SeRelabelPrivilege" or "SeSecurityPrivilege");
+    internal bool ElevatedManagement => Elevated && AdministratorsEnabled && IntegrityRid >= 0x3000 && !UiAccess && TokenType == 1 && SessionId > 0 &&
+        UserSid is not ("S-1-5-18" or "S-1-5-19" or "S-1-5-20");
 }
 internal sealed record TokenCandidate(string Method, SafeAccessTokenHandle Handle) : IDisposable
 { public void Dispose() => Handle.Dispose(); }
@@ -60,7 +64,7 @@ internal static class Program
 
     private static void CheckOptions(Options options)
     {
-        if (options.Mode is not ("launch" or "self-test" or "fixture-guardian") || options.LeaseSeconds is < 10 or > 600 || options.WindowTimeoutSeconds is < 1 or > 120)
+        if (options.Mode is not ("launch" or "self-test" or "fixture-guardian") || options.LaunchPolicy is not ("ordinary" or "elevated") || options.LeaseSeconds is < 10 or > 600 || options.WindowTimeoutSeconds is < 1 or > 120)
             throw new InvalidDataException("Invalid harness mode or time limit.");
         if (!Path.IsPathFullyQualified(options.WorkRoot) || !Path.IsPathFullyQualified(options.ReceiptPath)) throw new InvalidDataException("Absolute owned paths required.");
         OrdinaryPath(options.WorkRoot, leaf: false);
@@ -114,12 +118,15 @@ internal static class Program
         }
         using ProtectedExecutable protectedFiles = ProtectedExecutable.OpenHost(root, "gui");
         object source = VerifySource(options, root);
+        string? guiRequestedExecutionLevel = options.LaunchPolicy == "elevated" ? RequireElevatedGuiManifest(gui) : null;
         using SafeAccessTokenHandle original = OpenOwnToken();
         TokenProof runner = ReadToken(original);
         using SafeKernelHandle parent = Native.OpenParent();
         using NativeJob job = NativeJob.Create();
         var attempts = new List<object>();
-        using LaunchedProcess child = LaunchWithOrdinaryToken(original, gui, "\"" + gui + "\"", root, options.WorkRoot, job, attempts, selfTest: false, captureStandardStreams: options.CaptureStandardStreams);
+        using LaunchedProcess child = options.LaunchPolicy == "elevated"
+            ? LaunchWithElevatedCurrentToken(original, gui, "\"" + gui + "\"", root, options.WorkRoot, job, selfTest: false, captureStandardStreams: options.CaptureStandardStreams)
+            : LaunchWithOrdinaryToken(original, gui, "\"" + gui + "\"", root, options.WorkRoot, job, attempts, selfTest: false, captureStandardStreams: options.CaptureStandardStreams);
         string stopNonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
         string stopPath = Path.Combine(Path.GetDirectoryName(options.ReceiptPath)!, "stop-" + stopNonce + ".txt");
         IntPtr window = IntPtr.Zero; var windowWatch = new Stopwatch();
@@ -140,6 +147,7 @@ internal static class Program
                 mainWindowHandle = window.ToInt64(), token = child.Proof, tokenMethod = child.TokenMethod, launchApi = child.LaunchApi,
                 source, artifactSourceCommit = options.ExpectedSourceCommit, harnessSourceCommit = ResolveHarnessSourceCommit(options),
                 diagnosticSourceMode = ResolveHarnessSourceCommit(options) != options.ExpectedSourceCommit, captureStandardStreams = options.CaptureStandardStreams,
+                launchPolicy = options.LaunchPolicy, elevatedGui = options.LaunchPolicy == "elevated", guiRequestedExecutionLevel,
                 launchEnvironment = child.LaunchEnvironment, desktop = Native.DesktopMetadata(child.ThreadId),
                 windowWaitElapsedMilliseconds = windowWatch.ElapsedMilliseconds, runnerToken = runner, attempts, stopPath, stopNonce, guardianProcessId = Environment.ProcessId,
                 leaseSeconds = options.LeaseSeconds, coreReady = (bool?)null, coreReadyEvidence = "UIA observation belongs to the caller; a visible window does not prove Core readiness." };
@@ -153,7 +161,7 @@ internal static class Program
             object streams = child.Output.Finish();
             Save(options.ReceiptPath, new { schemaVersion = 1, stage = "completed", ok = noOrphans, launch = ready,
                 exitedNormally, exitCode, originalChild, streams, profileMainLog = Program.ProfileLog(child.LaunchEnvironment, child.StartUtc), cleanup = new { scope = "only this launch's Job Object", noOrphans, activeProcesses = job.ActiveProcesses },
-                actualInstalledOrdinaryGui = true, coreAuthorityAcceptance = "Must be supported by caller UIA/SCM receipt, not inferred from token or window." });
+                actualInstalledOrdinaryGui = options.LaunchPolicy == "ordinary", actualInstalledElevatedGui = options.LaunchPolicy == "elevated", coreAuthorityAcceptance = "Must be supported by caller UIA/SCM receipt, not inferred from token or window." });
             return noOrphans ? 0 : 1;
         }
         catch (Exception error)
@@ -165,9 +173,10 @@ internal static class Program
             Save(options.ReceiptPath, new { schemaVersion = 1, stage = "failed", ok = false, productLaunched = true,
                 processId = child.Pid, startTimeUtc = child.StartUtc, token = child.Proof, error = error.Message,
                 originalChild, cleanupChild = child.Observe(), windowWaitElapsedMilliseconds = windowWatch.ElapsedMilliseconds,
-                tokenMethod = child.TokenMethod, launchApi = child.LaunchApi, attempts, source,
+                tokenMethod = child.TokenMethod, launchApi = child.LaunchApi, attempts, source, runnerToken = runner,
                 artifactSourceCommit = options.ExpectedSourceCommit, harnessSourceCommit = ResolveHarnessSourceCommit(options),
                 diagnosticSourceMode = ResolveHarnessSourceCommit(options) != options.ExpectedSourceCommit, captureStandardStreams = options.CaptureStandardStreams,
+                launchPolicy = options.LaunchPolicy, elevatedGui = options.LaunchPolicy == "elevated", guiRequestedExecutionLevel,
                 launchEnvironment = child.LaunchEnvironment, desktop, streams, profileMainLog = Program.ProfileLog(child.LaunchEnvironment, child.StartUtc),
                 cleanup = new { noOrphans, activeProcesses = job.ActiveProcesses, error = cleanupError } });
             Console.Error.WriteLine(error.Message); return 1;
@@ -211,9 +220,62 @@ internal static class Program
             throw new UnauthorizedAccessException("Installed input differs from source-bound inventory: " + relative);
     }
 
+    private static string RequireElevatedGuiManifest(string executable)
+    {
+        IntPtr module = Native.LoadLibraryEx(executable, IntPtr.Zero, 0x22); // data/image resource only; no code execution
+        if (module == IntPtr.Zero) throw Native.Error("Read authenticated GUI manifest");
+        try
+        {
+            IntPtr resource = Native.FindResource(module, (IntPtr)1, (IntPtr)24);
+            if (resource == IntPtr.Zero) throw Native.Error("Find authenticated GUI manifest");
+            uint size = Native.SizeofResource(module, resource);
+            if (size is < 1 or > 131072) throw new InvalidDataException("Invalid GUI manifest size.");
+            IntPtr loaded = Native.LoadResource(module, resource), data = Native.LockResource(loaded);
+            if (loaded == IntPtr.Zero || data == IntPtr.Zero) throw Native.Error("Load authenticated GUI manifest");
+            byte[] bytes = new byte[size]; Marshal.Copy(data, bytes, 0, bytes.Length);
+            using var stream = new MemoryStream(bytes);
+            using var xml = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = 131072 });
+            XElement[] levels = XDocument.Load(xml).Descendants().Where(node => node.Name.LocalName == "requestedExecutionLevel").ToArray();
+            if (levels.Length != 1 || (string?)levels[0].Attribute("level") != "requireAdministrator" || (string?)levels[0].Attribute("uiAccess") is not (null or "false"))
+                throw new UnauthorizedAccessException("Authenticated elevated GUI must embed requireAdministrator with uiAccess=false.");
+            return "requireAdministrator";
+        }
+        finally { Native.FreeLibrary(module); }
+    }
+
+    private static LaunchedProcess LaunchWithElevatedCurrentToken(SafeAccessTokenHandle original, string executable, string commandLine,
+        string directory, string work, NativeJob job, bool selfTest, bool captureStandardStreams = true)
+    {
+        if (!ReadToken(original).ElevatedManagement) throw new UnauthorizedAccessException("Actual current Windows token is not an elevated interactive administrator.");
+        return job.Start(original, executable, commandLine, directory, work, "current-elevated", true, selfTest, captureStandardStreams, requireElevated: true);
+    }
+
+    private static int ElevatedSelfTest(Options options, SafeAccessTokenHandle original, TokenProof current)
+    {
+        using NativeJob job = NativeJob.Create();
+        if (!current.ElevatedManagement)
+        {
+            uint active = job.ActiveProcesses;
+            var refusal = new { schemaVersion = 1, stage = "elevated-fixture-refused", ok = false, productLaunched = false, childCreated = false,
+                launchPolicy = "elevated", failureCode = "current-token-not-elevated", runnerToken = current, noOrphans = active == 0, activeProcesses = active,
+                error = "Actual current Windows token is not an elevated interactive administrator; no token filtering or elevation was attempted." };
+            Save(options.ReceiptPath, refusal); Console.WriteLine(JsonSerializer.Serialize(refusal, Json)); return 1;
+        }
+        object early = EarlyExitProof(options, original, out bool earlyPassed);
+        object baseline = EarlyExitProof(options, original, out bool baselinePassed, capture: false);
+        object crash = CrashProof(options, out bool crashPassed);
+        uint remaining = job.ActiveProcesses;
+        var receipt = new { schemaVersion = 1, stage = "self-test", ok = earlyPassed && baselinePassed && crashPassed && remaining == 0,
+            productLaunched = false, launchPolicy = "elevated", elevatedGui = false, runnerToken = current, earlyExit = early, originalEarlyExit = baseline,
+            guardianCrash = crash, noOrphans = remaining == 0, activeProcesses = remaining,
+            installedGuiAcceptance = "not executed; actual current elevated token and own fixed harmless child only" };
+        Save(options.ReceiptPath, receipt); Console.WriteLine(JsonSerializer.Serialize(receipt, Json)); return receipt.ok ? 0 : 1;
+    }
+
     private static int SelfTest(Options options)
     {
         using SafeAccessTokenHandle original = OpenOwnToken(); TokenProof current = ReadToken(original);
+        if (options.LaunchPolicy == "elevated") return ElevatedSelfTest(options, original, current);
         using NativeJob job = NativeJob.Create(); var attempts = new List<object>();
         string executable = Environment.ProcessPath!;
         using LaunchedProcess child = LaunchWithOrdinaryToken(original, executable, "\"" + executable + "\" --proof-child", Path.GetDirectoryName(executable)!, options.WorkRoot, job, attempts, selfTest: true);
@@ -247,12 +309,14 @@ internal static class Program
     private static object EarlyExitProof(Options options, SafeAccessTokenHandle original, out bool passed, bool capture = true)
     {
         using NativeJob job = NativeJob.Create(); var attempts = new List<object>(); string executable = Environment.ProcessPath!;
-        using LaunchedProcess child = LaunchWithOrdinaryToken(original, executable, "\"" + executable + "\" --proof-exit-child", Path.GetDirectoryName(executable)!, options.WorkRoot, job, attempts, selfTest: true, captureStandardStreams: capture);
+        using LaunchedProcess child = options.LaunchPolicy == "elevated"
+            ? LaunchWithElevatedCurrentToken(original, executable, "\"" + executable + "\" --proof-exit-child", Path.GetDirectoryName(executable)!, options.WorkRoot, job, selfTest: true, captureStandardStreams: capture)
+            : LaunchWithOrdinaryToken(original, executable, "\"" + executable + "\" --proof-exit-child", Path.GetDirectoryName(executable)!, options.WorkRoot, job, attempts, selfTest: true, captureStandardStreams: capture);
         child.Resume(); uint wait = Native.WaitForSingleObject(child.Process, 10000);
         ChildObservation before = child.Observe(); job.Terminate(); bool empty = job.WaitEmpty(10000); OutputProof streams = child.Output.Finish();
         bool streamsAccepted = streams.CaptureAvailable ? streams.Stdout.Text == "ordinary-diag-stdout\n" && streams.Stderr.Text == "ordinary-diag-stderr\n" && streams.Stdout.Completed && streams.Stderr.Completed : !string.IsNullOrEmpty(streams.UnavailableReason);
-        passed = wait == 0 && before.WaitResult == 0 && before.ExitCode == 37 && empty && child.Proof.Ordinary && streamsAccepted;
-        return new { passed, productLaunched = false, processId = child.Pid, startTimeUtc = child.StartUtc, token = child.Proof,
+        passed = wait == 0 && before.WaitResult == 0 && before.ExitCode == 37 && empty && (options.LaunchPolicy == "elevated" ? child.Proof.ElevatedManagement : child.Proof.Ordinary) && streamsAccepted;
+        return new { passed, productLaunched = false, processId = child.Pid, startTimeUtc = child.StartUtc, token = child.Proof, launchPolicy = options.LaunchPolicy,
             tokenMethod = child.TokenMethod, launchApi = child.LaunchApi, originalChild = before, cleanupChild = child.Observe(), streams,
             desktop = Native.DesktopMetadata(child.ThreadId), launchEnvironment = child.LaunchEnvironment, noOrphans = empty, activeProcesses = job.ActiveProcesses };
     }
@@ -278,21 +342,28 @@ internal static class Program
     private static int FixtureGuardian(Options options)
     {
         using SafeAccessTokenHandle original = OpenOwnToken();
-        using TokenCandidate candidate = MakeCandidate(original, "restricted-lua");
-        if (!ReadToken(candidate.Handle).Ordinary) throw new UnauthorizedAccessException("Fixture token failed ordinary proof.");
         using NativeJob job = NativeJob.Create(); string executable = Environment.ProcessPath!;
-        using LaunchedProcess child = job.Start(candidate.Handle, executable, "\"" + executable + "\" --proof-child", Path.GetDirectoryName(executable)!, options.WorkRoot, "restricted-lua", false, true);
+        using LaunchedProcess child = options.LaunchPolicy == "elevated"
+            ? LaunchWithElevatedCurrentToken(original, executable, "\"" + executable + "\" --proof-child", Path.GetDirectoryName(executable)!, options.WorkRoot, job, selfTest: true)
+            : LaunchOrdinaryFixtureGuardian(original, executable, options.WorkRoot, job);
         child.Resume();
         Save(options.ReceiptPath, new { stage = "fixture-launched", processId = child.Pid, startTimeUtc = child.StartUtc, token = child.Proof, activeProcesses = job.ActiveProcesses });
         // The outer self-test terminates only this exact guardian handle.
         Thread.Sleep(120000); return 0;
     }
 
+    private static LaunchedProcess LaunchOrdinaryFixtureGuardian(SafeAccessTokenHandle original, string executable, string work, NativeJob job)
+    {
+        using TokenCandidate candidate = MakeCandidate(original, "restricted-lua");
+        if (!ReadToken(candidate.Handle).Ordinary) throw new UnauthorizedAccessException("Fixture token failed ordinary proof.");
+        return job.Start(candidate.Handle, executable, "\"" + executable + "\" --proof-child", Path.GetDirectoryName(executable)!, work, "restricted-lua", false, true);
+    }
+
     private static object CrashProof(Options options, out bool passed)
     {
         string directory = Path.Combine(options.WorkRoot, "ordinary-crash-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
         string receiptPath = Path.Combine(directory, "child.json"), input = Path.Combine(directory, "options.json");
-        File.WriteAllText(input, JsonSerializer.Serialize(new Options("fixture-guardian", options.WorkRoot, receiptPath, LeaseSeconds: 10, WindowTimeoutSeconds: 1), Json), new UTF8Encoding(false));
+        File.WriteAllText(input, JsonSerializer.Serialize(new Options("fixture-guardian", options.WorkRoot, receiptPath, LeaseSeconds: 10, WindowTimeoutSeconds: 1, LaunchPolicy: options.LaunchPolicy), Json), new UTF8Encoding(false));
         var info = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (string key in info.Environment.Keys.ToArray()) if (key.StartsWith("DOTNET_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("COMPLUS_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("CORECLR_", StringComparison.OrdinalIgnoreCase)) info.Environment.Remove(key);
         string runtimeRoot = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "..", "..", ".."));
@@ -315,7 +386,7 @@ internal static class Program
             bool alive = Native.WaitForSingleObject(child, 0) == 0x102;
             guardian.Kill(); bool guardianExited = guardian.WaitForExit(5000);
             bool childExited = Native.WaitForSingleObject(child, 10000) == 0;
-            passed = alive && guardianExited && childExited && proof.Ordinary;
+            passed = alive && guardianExited && childExited && (options.LaunchPolicy == "elevated" ? proof.ElevatedManagement : proof.Ordinary);
             return new { passed, guardianProcessId = guardian.Id, childProcessId = pid, childStartTimeUtc = created, token = proof,
                 aliveBeforeGuardianCrash = alive, guardianExited, childExitedAfterGuardianCrash = childExited, noOrphans = childExited,
                 containment = "atomic JOB_LIST; kill-on-close; no finally or child PID termination in the tested path" };
@@ -598,13 +669,13 @@ internal sealed class LaunchedProcess : IDisposable
     internal readonly SafeKernelHandle Process, Thread;
     internal readonly int Pid; internal readonly uint ThreadId; internal readonly string StartUtc, TokenMethod, LaunchApi; internal readonly TokenProof Proof;
     internal readonly NativeChildOutput Output; internal readonly Dictionary<string, string> LaunchEnvironment;
-    internal LaunchedProcess(Native.ProcessInformation info, string method, string api, string executable, NativeChildOutput output, Dictionary<string, string> environment)
+    internal LaunchedProcess(Native.ProcessInformation info, string method, string api, string executable, NativeChildOutput output, Dictionary<string, string> environment, bool requireElevated)
     {
         Process = new(info.Process); Thread = new(info.Thread); Pid = checked((int)info.ProcessId); ThreadId = info.ThreadId; TokenMethod = method; LaunchApi = api; Output = output; LaunchEnvironment = environment;
         try
         {
             using SafeAccessTokenHandle token = Program.OpenChildToken(Process); Proof = Program.ReadToken(token);
-            if (!Proof.Ordinary) throw new UnauthorizedAccessException("Actual suspended child token is not ordinary medium.");
+            if (!(requireElevated ? Proof.ElevatedManagement : Proof.Ordinary)) throw new UnauthorizedAccessException(requireElevated ? "Actual suspended child token is not an elevated interactive administrator." : "Actual suspended child token is not ordinary medium.");
             var path = new StringBuilder(32768); uint length = (uint)path.Capacity;
             if (!Native.QueryFullProcessImageName(Process, 0, path, ref length) || !path.ToString().Equals(executable, StringComparison.OrdinalIgnoreCase)) throw new UnauthorizedAccessException("Actual suspended child executable mismatch.");
             if (!Native.GetProcessTimes(Process, out long created, out _, out _, out _)) throw Native.Error("Get actual process creation time");
@@ -635,7 +706,7 @@ internal sealed class NativeJob : IDisposable
         if (!Native.SetInformationJobObject(handle, 9, ref limits, (uint)Marshal.SizeOf<Native.JobExtendedLimits>())) { handle.Dispose(); throw Native.Error("Set kill-on-close job"); }
         return new NativeJob(handle);
     }
-    internal LaunchedProcess Start(SafeAccessTokenHandle token, string executable, string commandLine, string directory, string work, string method, bool fixtureInherited, bool managedFixture, bool captureStandardStreams = true)
+    internal LaunchedProcess Start(SafeAccessTokenHandle token, string executable, string commandLine, string directory, string work, string method, bool fixtureInherited, bool managedFixture, bool captureStandardStreams = true, bool requireElevated = false)
     {
         var output = new NativeChildOutput(captureStandardStreams); bool transferred = false;
         try
@@ -648,7 +719,7 @@ internal sealed class NativeJob : IDisposable
             {
                 const uint flags = 0x00080000 | 0x00000400 | 0x00000004; // EXTENDED | UNICODE | SUSPENDED
                 Native.ProcessInformation info; bool ok; string api; bool captured = captureStandardStreams;
-                if (fixtureInherited) { api = "CreateProcessW-fixture"; ok = Native.CreateProcess(executable, new StringBuilder(commandLine), IntPtr.Zero, IntPtr.Zero, captureStandardStreams, flags | 0x08000000, environmentPointer, directory, ref startup, out info); }
+                if (fixtureInherited) { api = managedFixture ? "CreateProcessW-fixture" : "CreateProcessW"; ok = Native.CreateProcess(executable, new StringBuilder(commandLine), IntPtr.Zero, IntPtr.Zero, captureStandardStreams, flags | (managedFixture ? 0x08000000u : 0u), environmentPointer, directory, ref startup, out info); }
                 else
                 {
                     api = "CreateProcessAsUserW";
@@ -664,7 +735,7 @@ internal sealed class NativeJob : IDisposable
                 }
                 if (!ok) throw Native.Error(api + " with atomic JOB_LIST");
                 output.Start(captured, captured ? null : captureStandardStreams ? "Original CreateProcessWithTokenW fallback retained; no documented bInheritHandles/HANDLE_LIST contract." : "Capture disabled: original JOB_LIST-only, zero standard handles and inherit=false retained.");
-                var child = new LaunchedProcess(info, method, api, executable, output, Program.EnvironmentMetadata(environment)); transferred = true;
+                var child = new LaunchedProcess(info, method, api, executable, output, Program.EnvironmentMetadata(environment), requireElevated); transferred = true;
                 if (!Native.IsProcessInJob(child.Process, _handle, out bool contained) || !contained)
                 { Native.TerminateProcess(child.Process, 1); child.Dispose(); throw new UnauthorizedAccessException("Actual suspended child was not atomically assigned to the owned job."); }
                 TokenProof expected = Program.ReadToken(token);
@@ -684,6 +755,18 @@ internal sealed class NativeJob : IDisposable
 }
 internal static class Native
 {
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", EntryPoint = "LoadLibraryExW", CharSet = CharSet.Unicode, SetLastError = true)] internal static extern IntPtr LoadLibraryEx(string path, IntPtr file, uint flags);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", EntryPoint = "FindResourceW", SetLastError = true)] internal static extern IntPtr FindResource(IntPtr module, IntPtr name, IntPtr type);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern uint SizeofResource(IntPtr module, IntPtr resource);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern IntPtr LoadResource(IntPtr module, IntPtr resource);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern IntPtr LockResource(IntPtr resource);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern bool FreeLibrary(IntPtr module);
     internal static Win32Exception Error(string operation) => new(Marshal.GetLastWin32Error(), operation + " failed (Win32 " + Marshal.GetLastWin32Error() + ").");
     [StructLayout(LayoutKind.Sequential)] internal struct SecurityAttributes { internal int Length; internal IntPtr Descriptor; internal int Inherit; }
     internal static object DesktopMetadata(uint thread)

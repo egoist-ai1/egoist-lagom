@@ -177,9 +177,9 @@ function Get-VpnUiRoot {
   $proof=$script:VpnGuiLease.Receipt
   $child=[Diagnostics.Process]::GetProcessById([int]$proof.processId)
   try{
-    if($child.HasExited -or $child.MainModule.FileName -ine $script:VpnGui -or [Math]::Abs(($child.StartTime.ToUniversalTime()-[DateTimeOffset]::Parse([string]$proof.startTimeUtc).UtcDateTime).TotalMilliseconds) -gt 1){throw 'The GUI identity no longer matches its ordinary-token lease.'}
+    if($child.HasExited -or $child.MainModule.FileName -ine $script:VpnGui -or [Math]::Abs(($child.StartTime.ToUniversalTime()-[DateTimeOffset]::Parse([string]$proof.startTimeUtc).UtcDateTime).TotalMilliseconds) -gt 1){throw 'The GUI identity no longer matches its elevated-token lease.'}
     $root=[Windows.Automation.AutomationElement]::FromHandle([IntPtr][long]$proof.mainWindowHandle)
-    if(-not $root -or $root.Current.ProcessId -ne [int]$proof.processId){throw 'UIA root does not belong to the exact ordinary GUI.'}
+    if(-not $root -or $root.Current.ProcessId -ne [int]$proof.processId){throw 'UIA root does not belong to the exact elevated GUI.'}
     return $root
   }finally{$child.Dispose()}
 }
@@ -207,7 +207,7 @@ function Invoke-VpnUiElement {
   elseif($Element.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern,[ref]$pattern)){$pattern.Expand()}
   else{throw "Genuine UIA element has no supported action pattern: $Label"}
   $observed.pattern=$pattern.GetType().Name
-  Add-VpnEvidence ('ordinary-gui-action:'+ $Label) $observed
+  Add-VpnEvidence ('elevated-gui-action:'+ $Label) $observed
 }
 function Invoke-VpnUiButton {
   param([string]$Name,$Scope=$null)
@@ -226,7 +226,7 @@ function Select-VpnUiOption {
   $selectionPattern=$combo.GetCurrentPattern([Windows.Automation.SelectionPattern]::Pattern)
   $selected=@($selectionPattern.GetCurrentSelection())
   if($selected.Count -ne 1 -or $selected[0].Current.Name -cne $Option){throw 'The genuine select did not retain the requested option.'}
-  Add-VpnEvidence ('ordinary-gui-selection:'+ $Name) ([ordered]@{selected=$Option;controlType=$combo.Current.ControlType.ProgrammaticName})
+  Add-VpnEvidence ('elevated-gui-selection:'+ $Name) ([ordered]@{selected=$Option;controlType=$combo.Current.ControlType.ProgrammaticName})
 }
 function Invoke-VpnNavigation {
   param([string]$Name)
@@ -235,23 +235,40 @@ function Invoke-VpnNavigation {
   if($navigation.Count -eq 1){Invoke-VpnUiButton -Name $Name -Scope $navigation[0]}
   else{Invoke-VpnUiButton -Name $Name}
 }
-function Start-VpnOrdinaryGui {
+function Assert-VpnElevatedGuiProof {
+  param($Proof)
+  $identity=[Security.Principal.WindowsIdentity]::GetCurrent();$current=[Diagnostics.Process]::GetCurrentProcess()
+  try{
+    if($Proof.launchPolicy -cne 'elevated' -or $Proof.elevatedGui -isnot [bool] -or -not $Proof.elevatedGui -or $Proof.guiRequestedExecutionLevel -cne 'requireAdministrator' -or @($Proof.arguments).Count -ne 0 -or $Proof.executable -ine $script:VpnGui -or $Proof.source.commit -cne $script:VpnSourceCommit){throw 'Vpn GUI launch is not the actual source-bound elevated empty-argv process.'}
+    foreach($token in @($Proof.token,$Proof.runnerToken)){
+      if($token.elevated -isnot [bool] -or -not $token.elevated -or $token.administratorsEnabled -isnot [bool] -or -not $token.administratorsEnabled -or ($token.integrityRid -isnot [int] -and $token.integrityRid -isnot [long]) -or $token.integrityRid -lt 12288 -or $token.uiAccess -isnot [bool] -or $token.uiAccess -or $token.tokenType -ne 1){throw 'Vpn GUI requires a measured elevated administrator primary high token.'}
+      if($token.userSid -in @('S-1-5-18','S-1-5-19','S-1-5-20') -or $token.userSid -cne $identity.User.Value -or $token.sessionId -ne $current.SessionId){throw 'Vpn GUI token does not belong to the actual current Windows user/session.'}
+    }
+    if($Proof.token.userSid -cne $Proof.runnerToken.userSid -or $Proof.token.sessionId -ne $Proof.runnerToken.sessionId){throw 'Vpn GUI token differs from its measured launcher user/session.'}
+  }finally{$current.Dispose();$identity.Dispose()}
+}
+function Start-VpnElevatedGui {
+  param([Parameter(Mandatory=$true)][ValidateSet('Install','OffAndRemove')][string]$Operation)
   Assert-NativeNoGui
-  $script:VpnGuiLease=Start-OrdinaryGuiLease -CanonicalInstalledGuiPath $script:VpnGui -IntegrityManifestPath $script:VpnManifestPath -ExpectedSourceCommit $script:VpnSourceCommit -WorkRoot $script:VpnWork -EvidenceDirectory $script:VpnEvidence -LeaseSeconds 540
+  $script:VpnGuiLease=Start-ElevatedGuiLease -CanonicalInstalledGuiPath $script:VpnGui -IntegrityManifestPath $script:VpnManifestPath -ExpectedSourceCommit $script:VpnSourceCommit -WorkRoot $script:VpnWork -EvidenceDirectory $script:VpnEvidence -LeaseSeconds 540
   $proof=$script:VpnGuiLease.Receipt
-  if(@($proof.arguments).Count -ne 0 -or $proof.token.elevated -or $proof.token.administratorsEnabled -or $proof.token.integrityRid -ne 8192){throw 'Actual GUI is not an empty-argv ordinary medium-token process.'}
-  Add-VpnEvidence 'ordinary-gui-empty-argv-medium-token-lease' $proof
+  Assert-VpnElevatedGuiProof $proof
+  Add-VpnEvidence 'elevated-gui-empty-argv-high-token-lease' $proof
+  $script:VpnGuiOperation=$Operation
+  $script:VpnReceipt.gui+=[ordered]@{operation=$Operation;phase='launch';launch=$proof}
   [void](Get-VpnUiRoot)
 }
-function Close-VpnOrdinaryGui {
+function Close-VpnElevatedGui {
   $child=[Diagnostics.Process]::GetProcessById([int]$script:VpnGuiLease.Receipt.processId)
   try{
     Invoke-VpnUiButton -Name 'Закрыть приложение'
     if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'The actual normal GUI close did not terminate successfully.'}
     Assert-NativeNoGui
-    $cleanup=Stop-OrdinaryGuiLease -Lease $script:VpnGuiLease;$script:VpnGuiLease=$null
-    if(-not $cleanup.exitedNormally -or $cleanup.exitCode -ne 0 -or -not $cleanup.cleanup.noOrphans){throw 'Ordinary GUI guardian has no normal zero-orphan close proof.'}
+    $cleanup=Stop-ElevatedGuiLease -Lease $script:VpnGuiLease;$script:VpnGuiLease=$null
+    if(-not $cleanup.exitedNormally -or $cleanup.exitCode -ne 0 -or -not $cleanup.cleanup.noOrphans){throw 'Elevated GUI guardian has no normal zero-orphan close proof.'}
     Add-VpnEvidence 'actual-normal-gui-close-and-zero-gui-processes' $cleanup
+    $script:VpnReceipt.gui+=[ordered]@{operation=$script:VpnGuiOperation;phase='close';normalExit=$true;cleanup=$cleanup}
+    $script:VpnGuiOperation=$null
   }finally{$child.Dispose()}
 }
 function Read-VpnUiProfile {
@@ -263,7 +280,7 @@ function Configure-VpnThroughUi {
   param([int]$FixturePort,[string]$NodeName)
   Invoke-VpnNavigation 'Настройки'
   $before=Read-VpnUiProfile
-  if(@($before.nodes).Count -ne 0 -or @($before.domainRules).Count -ne 0 -or @($before.processRules).Count -ne 0 -or $before.settings.autoConnect -or $before.settings.minimizeToTray -or $before.settings.killSwitch -or [string]$before.settings.runtimePath){throw 'Native VPN gate requires a clean ordinary GUI profile, without preexisting nodes/rules/autoconnect/custom runtime/kill switch/tray close.'}
+  if(@($before.nodes).Count -ne 0 -or @($before.domainRules).Count -ne 0 -or @($before.processRules).Count -ne 0 -or $before.settings.autoConnect -or $before.settings.minimizeToTray -or $before.settings.killSwitch -or [string]$before.settings.runtimePath){throw 'Native VPN gate requires a clean elevated GUI profile, without preexisting nodes/rules/autoconnect/custom runtime/kill switch/tray close.'}
   $summary=Find-VpnUiElement -Name 'Маршрутизация VPN Режим соединения, DNS и правила'
   Invoke-VpnUiElement $summary 'Маршрутизация VPN'
   Select-VpnUiOption -Name 'Режим маршрутизации VPN' -Option 'По правилам · остальное напрямую'
@@ -474,7 +491,7 @@ function Invoke-VpnNativeAcceptance {
   $frozenFiles=@('tests/windows-vpn-native-acceptance.ps1','tests/windows-vpn-native-probe.cs','tests/windows-vpn-production-acceptance.mjs','tests/windows-ordinary-gui.ps1','tests/windows-ordinary-gui.cs','tests/windows-production-acceptance.ps1','tests/windows-production-acceptance.mjs')
   foreach($relative in $frozenFiles){$tracked=& git -C $projectRoot ls-files --error-unmatch -- $relative;if($LASTEXITCODE -ne 0){throw "Uncommitted VPN gate source: $relative"}}
   & git -C $projectRoot diff --quiet HEAD -- $frozenFiles
-  if($LASTEXITCODE -ne 0){throw 'VPN acceptance/ordinary-token helpers must match the candidate source commit.'}
+  if($LASTEXITCODE -ne 0){throw 'VPN acceptance/elevated GUI helpers must match the candidate source commit.'}
   $manifest=[IO.File]::ReadAllText($script:VpnManifestPath)|ConvertFrom-Json
   if($manifest.product -cne 'Egoist Lagom' -or $manifest.source.commit -cne $script:VpnSourceCommit -or [string]$manifest.version -cnotmatch '^\d+\.\d+\.\d+$'){throw 'Candidate integrity manifest identity failed.'}
   $script:VpnInstallRoot=Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'EgoistShield'
@@ -503,8 +520,8 @@ function Invoke-VpnNativeAcceptance {
   Assert-NativeOrdinaryPath $script:VpnWork;Assert-NativeOrdinaryPath $script:VpnEvidence
   $script:VpnReceiptPath=Join-Path $script:VpnEvidence 'vpn-native-receipt.json'
   $sourceHashes=@($frozenFiles | ForEach-Object {[ordered]@{file=$_;sha256=(Get-FileHash -LiteralPath (Join-Path $projectRoot $_) -Algorithm SHA256).Hash}})
-  $script:VpnReceipt=[ordered]@{schemaVersion=1;kind='actual-hosted-production-background-vpn-native-acceptance';sourceCommit=$script:VpnSourceCommit;candidateVersion=$manifest.version;
-    startedAt=[DateTimeOffset]::UtcNow.ToString('o');status='running';nativeAcceptancePassed=$false;sourceHashes=$sourceHashes;checks=[Collections.Generic.List[object]]::new();
+  $script:VpnReceipt=[ordered]@{schemaVersion=1;kind='actual-hosted-production-background-vpn-native-acceptance';gate='Background VPN native TUN, recovery and elevated GUI OFF';sourceCommit=$script:VpnSourceCommit;candidateVersion=$manifest.version;
+    startedAt=[DateTimeOffset]::UtcNow.ToString('o');status='running';nativeAcceptancePassed=$false;sourceHashes=$sourceHashes;gui=@();checks=[Collections.Generic.List[object]]::new();
     limitations=@('Controlled loopback SOCKS protocol fixture proves TUN/SOCKS integration, not external VPN-provider availability.','No native reboot or months-long pilot is asserted.','Emergency SCM cleanup is never accepted as a genuine UI OFF result.');cleanup=[ordered]@{}}
   $script:VpnGuiLease=$null;$script:VpnFixtureChild=$null;$script:VpnWatchdog=$null;$script:VpnAlarmPath=$null;$script:VpnPreviousClipboard=$null;$script:VpnClipboardChanged=$false;$script:VpnArmed=$false
   $savedTemporary=@{TEMP=$env:TEMP;TMP=$env:TMP};$env:TEMP=$script:VpnWork;$env:TMP=$script:VpnWork
@@ -551,7 +568,7 @@ function Invoke-VpnNativeAcceptance {
     $negativeProof=$negative.stderr|ConvertFrom-Json
     if($negativeProof.ok -or $negativeProof.nonce -cne $negativeNonce -or $negativeProof.targetAddress -cne '198.18.0.254'){throw 'The before-TUN negative probe lacks its real target/nonce identity.'}
     Add-VpnEvidence 'actual-before-tun-negative-plain-tcp-probe' $negativeProof
-    Start-VpnOrdinaryGui
+    Start-VpnElevatedGui -Operation 'Install'
     $nodeName='native-vpn-'+$env:GITHUB_RUN_ID+'-'+$env:GITHUB_RUN_ATTEMPT
     Configure-VpnThroughUi -FixturePort ([int]$script:VpnFixtureProof.port) -NodeName $nodeName
     $preflightOptions=Join-Path $script:VpnWork 'genuine-ui-preflight.options.json'
@@ -564,7 +581,7 @@ function Invoke-VpnNativeAcceptance {
     Start-VpnControlWatchdog
     [void](Assert-VpnPhysicalNetwork -Baseline $script:VpnBaseline -Label 'pre-enable');[void](Invoke-VpnControlCanary 'pre-enable');Test-VpnWatchdog
     $switch=Find-VpnUiElement -Name 'VPN без приложения (TUN)'
-    Invoke-VpnUiElement $switch 'request ordinary background VPN install'
+    Invoke-VpnUiElement $switch 'request elevated GUI background VPN install'
     $confirmation=Find-VpnUiElement -Name 'Включить VPN без приложения' -DescendantName 'Установить и включить'
     # This arm grants only disposable emergency OFF for a previously absent,
     # fixed and pinned owned wrapper; it does not bypass the genuine GUI start.
@@ -578,7 +595,7 @@ function Invoke-VpnNativeAcceptance {
     Add-VpnEvidence 'actual-installed-automatic-localsystem-tun-generation' ([ordered]@{generation=$generation;recoveryPolicy=(Get-NativeRecoveryPolicy 'EgoistShieldVpn');activeRoutes=(Get-VpnAllRoutes)})
     Invoke-VpnNonceProbe -Generation $generation -Label 'gui-open-vpn-probe'
     [void](Assert-VpnPhysicalNetwork $script:VpnBaseline 'active TUN');Add-VpnEvidence 'actual-dns-https-control-with-active-tun' (Invoke-VpnControlCanary 'active-tun')
-    Close-VpnOrdinaryGui
+    Close-VpnElevatedGui
     $closedGeneration=Assert-VpnLiveGeneration
     if($closedGeneration.scm.process.processId -ne $generation.scm.process.processId -or $closedGeneration.runtime.processId -ne $generation.runtime.processId){throw 'The background service/runtime unexpectedly changed on normal GUI close.'}
     Invoke-VpnNonceProbe -Generation $closedGeneration -Label 'gui-closed-vpn-probe'
@@ -586,9 +603,9 @@ function Invoke-VpnNativeAcceptance {
     Assert-NativeNoGui
     Invoke-VpnNonceProbe -Generation $recovered -Label 'recovered-gui-closed-vpn-probe'
     Add-VpnEvidence 'actual-dns-https-control-after-native-recovery' (Invoke-VpnControlCanary 'after-recovery')
-    Start-VpnOrdinaryGui
+    Start-VpnElevatedGui -Operation 'OffAndRemove'
     Invoke-VpnNavigation 'VPN'
-    Invoke-VpnUiElement (Find-VpnUiElement -Name 'VPN без приложения (TUN)') 'normal ordinary GUI background VPN OFF'
+    Invoke-VpnUiElement (Find-VpnUiElement -Name 'VPN без приложения (TUN)') 'normal elevated GUI background VPN OFF'
     $stopped=Wait-VpnCondition -Label 'actual normal production OFF Stopped Disabled no endpoints/interfaces' -TimeoutSeconds 75 -Condition {Assert-VpnStopped}
     $tunStoppedAt=[DateTimeOffset]::UtcNow
     Add-VpnEvidence 'actual-normal-gui-off-disabled-intent-no-endpoint-tun-runtime' $stopped
@@ -603,7 +620,7 @@ function Invoke-VpnNativeAcceptance {
       $status=Get-VpnReadOnlyStatus;if($status.serviceInstalled -or $status.running -or $status.backgroundEnabled -or $status.serviceState -ne 'not-installed'){return $null};return $status
     })
     Add-VpnEvidence 'actual-normal-gui-remove-scm-snapshot-absent' ([ordered]@{serviceAbsent=$true;protectedSnapshotAbsent=$true;ownedTunRuntimeListenerAbsent=$true})
-    Close-VpnOrdinaryGui
+    Close-VpnElevatedGui
     $others=@(Get-NativeProductServices|Where-Object {$_.Name -cne 'EgoistShieldVpn'}|Select-Object Name,State,StartMode,StartName,PathName)
     if(($others|ConvertTo-Json -Depth 8 -Compress) -cne ($existingOthers|ConvertTo-Json -Depth 8 -Compress)){throw 'The native VPN gate changed another baseline product service state/start/path/account.'}
     Test-VpnWatchdog
@@ -621,7 +638,7 @@ function Invoke-VpnNativeAcceptance {
     throw
   }finally{
     $cleanupErrors=[Collections.Generic.List[string]]::new()
-    if($script:VpnGuiLease){try{$script:VpnReceipt.cleanup.guiGuardian=Stop-OrdinaryGuiLease $script:VpnGuiLease;$script:VpnGuiLease=$null}catch{$cleanupErrors.Add($_.Exception.Message)}}
+    if($script:VpnGuiLease){try{$script:VpnReceipt.cleanup.guiGuardian=Stop-ElevatedGuiLease $script:VpnGuiLease;$script:VpnGuiLease=$null}catch{$cleanupErrors.Add($_.Exception.Message)}}
     if($script:VpnArmed -and -not $script:VpnReceipt.nativeAcceptancePassed){try{$script:VpnReceipt.cleanup.emergency=Invoke-VpnEmergencyStop -SourceCommit $script:VpnSourceCommit -WrapperHash $script:VpnWrapperHash -CoreHash $script:VpnCoreHash -WorkRoot $script:VpnWork}catch{$cleanupErrors.Add($_.Exception.Message)}}
     if($script:VpnWatchdog){
       try{[IO.File]::WriteAllText($script:VpnWatchdogStop,'stop',[Text.UTF8Encoding]::new($false));[void](Wait-Job $script:VpnWatchdog -Timeout 30);if($script:VpnWatchdog.State -eq 'Running'){Stop-Job $script:VpnWatchdog;throw 'Independent control watchdog did not acknowledge its normal stop.'};$jobErrors=@();Receive-Job $script:VpnWatchdog -ErrorAction SilentlyContinue -ErrorVariable jobErrors | Out-Null;if($jobErrors.Count){$cleanupErrors.Add('Independent control watchdog reported failure.')};Remove-Job $script:VpnWatchdog}catch{$cleanupErrors.Add($_.Exception.Message)}

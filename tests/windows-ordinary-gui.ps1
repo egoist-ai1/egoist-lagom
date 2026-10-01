@@ -8,6 +8,7 @@ param(
   [Alias('ExpectedSourceCommit')][ValidatePattern('^$|^[a-f0-9]{40}$')][string]$OrdinaryGuiCommit='',
   [Alias('ExpectedHarnessSourceCommit')][ValidatePattern('^$|^[a-f0-9]{40}$')][string]$OrdinaryGuiHarnessCommit='',
   [Alias('CaptureStandardStreams')][bool]$OrdinaryGuiCaptureStandardStreams=$true,
+  [Alias('LaunchPolicy')][ValidateSet('ordinary','elevated')][string]$OrdinaryGuiLaunchPolicy='ordinary',
   [Alias('LeaseSeconds')][ValidateRange(10,600)][int]$OrdinaryGuiLeaseSeconds=420,
   [Alias('LibraryOnly')][switch]$OrdinaryGuiLibraryOnly
 )
@@ -124,13 +125,14 @@ function Start-OrdinaryGuiLease {
     [Parameter(Mandatory=$true)][string]$ExpectedSourceCommit,
     [string]$ExpectedHarnessSourceCommit='',
     [bool]$CaptureStandardStreams=$true,
+    [ValidateSet('ordinary','elevated')][string]$LaunchPolicy='ordinary',
     [Parameter(Mandatory=$true)][string]$WorkRoot,
     [Parameter(Mandatory=$true)][string]$EvidenceDirectory,
     [ValidateRange(10,600)][int]$LeaseSeconds=420)
   Assert-OrdinaryGuiHostedInputs -CanonicalInstalledGuiPath $CanonicalInstalledGuiPath -IntegrityManifestPath $IntegrityManifestPath -ExpectedSourceCommit $ExpectedSourceCommit -WorkRoot $WorkRoot -EvidenceDirectory $EvidenceDirectory -ExpectedHarnessSourceCommit $ExpectedHarnessSourceCommit -CaptureStandardStreams $CaptureStandardStreams
   $build=Build-OrdinaryGuiHarness -WorkRoot $WorkRoot
   $receipt=Join-Path $EvidenceDirectory ('ordinary-gui-'+[Guid]::NewGuid().ToString('N')+'.json')
-  $options=[ordered]@{mode='launch';workRoot=[IO.Path]::GetFullPath($WorkRoot);receiptPath=$receipt;canonicalInstalledGuiPath=[IO.Path]::GetFullPath($CanonicalInstalledGuiPath);integrityManifestPath=[IO.Path]::GetFullPath($IntegrityManifestPath);expectedSourceCommit=$ExpectedSourceCommit;expectedHarnessSourceCommit=$ExpectedHarnessSourceCommit;captureStandardStreams=$CaptureStandardStreams;leaseSeconds=$LeaseSeconds;windowTimeoutSeconds=90}
+  $options=[ordered]@{mode='launch';workRoot=[IO.Path]::GetFullPath($WorkRoot);receiptPath=$receipt;canonicalInstalledGuiPath=[IO.Path]::GetFullPath($CanonicalInstalledGuiPath);integrityManifestPath=[IO.Path]::GetFullPath($IntegrityManifestPath);expectedSourceCommit=$ExpectedSourceCommit;expectedHarnessSourceCommit=$ExpectedHarnessSourceCommit;captureStandardStreams=$CaptureStandardStreams;launchPolicy=$LaunchPolicy;leaseSeconds=$LeaseSeconds;windowTimeoutSeconds=90}
   $optionsPath=Join-Path $build.Directory 'options.json'
   [IO.File]::WriteAllText($optionsPath,($options | ConvertTo-Json -Depth 5),[Text.UTF8Encoding]::new($false))
   $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$build.Executable;$info.UseShellExecute=$false;$info.CreateNoWindow=$true
@@ -148,7 +150,10 @@ function Start-OrdinaryGuiLease {
       if($guardian.HasExited){throw ('Ordinary GUI guardian exited: '+$errors.GetAwaiter().GetResult())}
       Start-Sleep -Milliseconds 100
     }
-    if(-not $ready -or $ready.token.elevated -or $ready.token.administratorsEnabled -or $ready.token.integrityRid -ne 8192 -or $ready.token.uiAccess){throw 'Actual ordinary medium GUI token proof is missing.'}
+    if(-not $ready -or $ready.launchPolicy -cne $LaunchPolicy){throw 'Actual GUI launch policy proof is missing.'}
+    if($LaunchPolicy -eq 'elevated'){
+      if($ready.elevatedGui -ne $true -or $ready.guiRequestedExecutionLevel -cne 'requireAdministrator' -or $ready.token.elevated -ne $true -or $ready.token.administratorsEnabled -ne $true -or $ready.token.integrityRid -lt 12288 -or $ready.token.uiAccess -ne $false -or $ready.token.tokenType -ne 1 -or $ready.token.userSid -cne $ready.runnerToken.userSid -or $ready.token.sessionId -ne $ready.runnerToken.sessionId){throw 'Actual current elevated administrator GUI proof is missing.'}
+    }elseif($ready.token.elevated -or $ready.token.administratorsEnabled -or $ready.token.integrityRid -ne 8192 -or $ready.token.uiAccess){throw 'Actual ordinary medium GUI token proof is missing.'}
     return [pscustomobject]@{Guardian=$guardian;Receipt=$ready;ReceiptPath=$receipt;Output=$output;Errors=$errors;Build=$build}
   }catch{
     $primary=$_
@@ -161,6 +166,24 @@ function Start-OrdinaryGuiLease {
     }catch{Write-Warning ('Own guardian diagnostics unavailable: '+$_.Exception.Message)}
     $guardian.Dispose();throw $primary
   }
+}
+
+function Start-ElevatedGuiLease {
+  param([Parameter(Mandatory=$true)][string]$CanonicalInstalledGuiPath,
+    [Parameter(Mandatory=$true)][string]$IntegrityManifestPath,
+    [Parameter(Mandatory=$true)][string]$ExpectedSourceCommit,
+    [string]$ExpectedHarnessSourceCommit='',
+    [bool]$CaptureStandardStreams=$true,
+    [Parameter(Mandatory=$true)][string]$WorkRoot,
+    [Parameter(Mandatory=$true)][string]$EvidenceDirectory,
+    [ValidateRange(10,600)][int]$LeaseSeconds=420)
+  return Start-OrdinaryGuiLease @PSBoundParameters -LaunchPolicy elevated
+}
+function Stop-ElevatedGuiLease {
+  param([Parameter(Mandatory=$true)]$Lease)
+  $final=Stop-OrdinaryGuiLease -Lease $Lease
+  if($final.launch.launchPolicy -cne 'elevated' -or $final.launch.elevatedGui -ne $true){throw 'Elevated GUI lease cleanup lost its explicit launch policy proof.'}
+  return $final
 }
 
 function Stop-OrdinaryGuiLease {
@@ -184,7 +207,7 @@ if($OrdinaryGuiMode -eq 'SelfTest'){
   if($OrdinaryGuiInstalledPath -or $OrdinaryGuiIntegrityPath -or $OrdinaryGuiCommit -or $OrdinaryGuiHarnessCommit){throw 'SelfTest can launch only its own fixed harmless child.'}
   $build=Build-OrdinaryGuiHarness -WorkRoot $OrdinaryGuiWorkRoot
   $receipt=Join-Path $build.Directory 'self-test.json'
-  $options=[ordered]@{mode='self-test';workRoot=[IO.Path]::GetFullPath($OrdinaryGuiWorkRoot);receiptPath=$receipt;leaseSeconds=10;windowTimeoutSeconds=1}
+  $options=[ordered]@{mode='self-test';workRoot=[IO.Path]::GetFullPath($OrdinaryGuiWorkRoot);receiptPath=$receipt;launchPolicy=$OrdinaryGuiLaunchPolicy;leaseSeconds=10;windowTimeoutSeconds=1}
   $optionsPath=Join-Path $build.Directory 'options.json'
   [IO.File]::WriteAllText($optionsPath,($options | ConvertTo-Json),[Text.UTF8Encoding]::new($false))
   $savedDotnetRoot=$env:DOTNET_ROOT
@@ -193,5 +216,5 @@ if($OrdinaryGuiMode -eq 'SelfTest'){
   Write-Output ('ORDINARY_GUI_BUILD='+$build.Directory)
   if($result -ne 0){throw 'Ordinary GUI self-test failed; inspect the owned evidence.'};return
 }
-$lease=Start-OrdinaryGuiLease -CanonicalInstalledGuiPath $OrdinaryGuiInstalledPath -IntegrityManifestPath $OrdinaryGuiIntegrityPath -ExpectedSourceCommit $OrdinaryGuiCommit -ExpectedHarnessSourceCommit $OrdinaryGuiHarnessCommit -CaptureStandardStreams $OrdinaryGuiCaptureStandardStreams -WorkRoot $OrdinaryGuiWorkRoot -EvidenceDirectory $OrdinaryGuiEvidenceDirectory -LeaseSeconds $OrdinaryGuiLeaseSeconds
+$lease=Start-OrdinaryGuiLease -CanonicalInstalledGuiPath $OrdinaryGuiInstalledPath -IntegrityManifestPath $OrdinaryGuiIntegrityPath -ExpectedSourceCommit $OrdinaryGuiCommit -ExpectedHarnessSourceCommit $OrdinaryGuiHarnessCommit -CaptureStandardStreams $OrdinaryGuiCaptureStandardStreams -LaunchPolicy $OrdinaryGuiLaunchPolicy -WorkRoot $OrdinaryGuiWorkRoot -EvidenceDirectory $OrdinaryGuiEvidenceDirectory -LeaseSeconds $OrdinaryGuiLeaseSeconds
 try{$lease.Receipt | ConvertTo-Json -Depth 10;[void]$lease.Guardian.WaitForExit(($OrdinaryGuiLeaseSeconds+15)*1000)}finally{Stop-OrdinaryGuiLease -Lease $lease | ConvertTo-Json -Depth 12}

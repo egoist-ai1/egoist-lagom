@@ -15,6 +15,7 @@ export async function createWorkerHostInventory({ out, version, electronRuntime 
     add(file.path, file.path === 'EgoistShield.exe' || file.path.startsWith('locales/') ? ['gui'] : ['gui', 'worker'], file);
   add('EgoistShield.Worker.exe', ['worker']);
   add('resources/app.asar', ['gui']);
+  add('resources/installer/gui-login-startup.ps1', ['gui']);
   add('resources/component-worker.cjs', ['worker']);
   add('resources/core-service/win-x64/EgoistShield.Service.exe', ['worker', 'cli']);
   for (const name of await fs.readdir(path.join(out, 'resources/core-service/win-x64')))

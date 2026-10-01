@@ -1,4 +1,4 @@
-# Imported by the protected installer worker; importing performs no OS actions.
+﻿# Imported by the protected installer worker; importing performs no OS actions.
 
 function Get-InstallerBootRecoveryCommonDataRoot {
   return [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonApplicationData)
@@ -22,7 +22,7 @@ function ConvertTo-InstallerBootRecoveryArgument {
 }
 
 function Get-InstallerBootRecoveryContext {
-  param([Parameter(Mandatory=$true)][string]$StageDirectory)
+  param([Parameter(Mandatory=$true)][string]$StageDirectory,[switch]$AllowLegacyInventory)
   $common = [IO.Path]::GetFullPath((Get-InstallerBootRecoveryCommonDataRoot)).TrimEnd('\')
   $installer = Join-Path $common 'EgoistShieldInstaller'
   $deferred = Join-Path $installer 'DeferredRuns'
@@ -35,15 +35,34 @@ function Get-InstallerBootRecoveryContext {
   $worker = Join-Path $stage 'invoke-final-silent-reinstall.ps1'
   $powerShell = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::Windows)) 'System32\WindowsPowerShell\v1.0\powershell.exe'
   $argv = @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',$worker,'-Recover','-StageDirectory',$stage)
-  return [pscustomobject]@{
+  $context=[pscustomobject]@{
     commonRoot=$common; installerRoot=$installer; deferredRoot=$deferred; stage=$stage; stageId=$id
     taskName=('EgoistShield-InstallerBootRecovery-' + $id); taskPath=('\EgoistShield-InstallerBootRecovery-' + $id)
     powerShell=$powerShell; arguments=(($argv | ForEach-Object { ConvertTo-InstallerBootRecoveryArgument $_ }) -join ' ')
     worker=$worker; inventoryPath=(Join-Path $stage 'boot-recovery.json'); statePath=(Join-Path $stage 'state.json')
-    immutableNames=@('invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1')
+    immutableNames=@('invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1','gui-login-startup.ps1')
     maintenanceMarker=(Join-Path $common 'EgoistShield\installer\service-maintenance.json')
     securityDescriptor='O:BAG:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)'
   }
+  # Existing authenticated three-file stages keep their original capability.
+  # New registration never takes this route, even after a failed registration.
+  if($AllowLegacyInventory -and (Test-Path -LiteralPath $context.inventoryPath -PathType Leaf) -and -not (Test-Path -LiteralPath (Join-Path $stage 'gui-login-startup.ps1'))) {
+    foreach($directory in @($installer,$deferred,$stage)){Assert-InstallerBootRecoveryPlainPath $directory;Assert-InstallerBootRecoveryFileProtection -Path $directory -Directory}
+    Assert-InstallerBootRecoveryPlainPath -Path $context.inventoryPath -Leaf
+    Assert-InstallerBootRecoveryFileProtection -Path $context.inventoryPath
+    if((Get-Item -LiteralPath $context.inventoryPath -ErrorAction Stop).Length -gt 32768){throw 'Legacy boot inventory exceeds its limit.'}
+    $record=[IO.File]::ReadAllText($context.inventoryPath,[Text.Encoding]::UTF8) | ConvertFrom-Json -ErrorAction Stop
+    $legacy=@('invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1')
+    if(@($record.files).Count -eq 3 -and @($record.files | Where-Object {[string]$_.name -notin $legacy}).Count -eq 0) {
+      $module=Join-Path $stage 'maintenance-boot-recovery.ps1'
+      Assert-InstallerBootRecoveryPlainPath -Path $module -Leaf;Assert-InstallerBootRecoveryFileProtection -Path $module
+      if((Get-Item -LiteralPath $module -ErrorAction Stop).Length -gt 262144){throw 'Legacy boot module exceeds its limit.'}
+      $source=[IO.File]::ReadAllText($module,[Text.Encoding]::UTF8)
+      $legacyContract="immutableNames=@('invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1')"
+      if($source.Contains($legacyContract) -and -not $source.Contains('gui-login-startup.ps1')){$context.immutableNames=$legacy}
+    }
+  }
+  return $context
 }
 
 function Assert-InstallerBootRecoveryPlainPath {
@@ -149,7 +168,7 @@ function Get-InstallerBootRecoveryInventory {
   $record = [IO.File]::ReadAllText($Context.inventoryPath,[Text.Encoding]::UTF8) | ConvertFrom-Json -ErrorAction Stop
   if ($record.schemaVersion -ne 1 -or $record.owner -ne 'EgoistShield' -or $record.purpose -ne 'installer-boot-recovery' -or
       [string]$record.stage -ne $Context.stage -or [string]$record.taskName -ne $Context.taskName -or [string]$record.statePath -ne $Context.statePath -or
-      [string]$record.registrationId -cnotmatch '^[a-f0-9]{32}$' -or @($record.files).Count -ne 3) { throw 'Boot recovery inventory identity is invalid.' }
+      [string]$record.registrationId -cnotmatch '^[a-f0-9]{32}$' -or @($record.files).Count -ne $Context.immutableNames.Count) { throw 'Boot recovery inventory identity is invalid.' }
   foreach ($name in $Context.immutableNames) {
     $entries = @($record.files | Where-Object { [string]$_.name -ceq $name })
     if ($entries.Count -ne 1 -or [string]$entries[0].sha256 -cnotmatch '^[a-f0-9]{64}$' -or
@@ -307,7 +326,7 @@ function Register-InstallerMaintenanceBootRecovery {
 
 function Assert-InstallerMaintenanceBootRecovery {
   param([Parameter(Mandatory=$true)][string]$StageDirectory)
-  $context=Get-InstallerBootRecoveryContext $StageDirectory
+  $context=Get-InstallerBootRecoveryContext $StageDirectory -AllowLegacyInventory
   Assert-InstallerBootRecoveryStage $context
   $inventory=Get-InstallerBootRecoveryInventory $context
   $task=Invoke-InstallerBootRecoveryScheduler -Operation Read -TaskName $context.taskName
@@ -319,7 +338,7 @@ function Assert-InstallerMaintenanceBootRecovery {
 function Unregister-InstallerMaintenanceBootRecovery {
   param([Parameter(Mandatory=$true)][string]$StageDirectory,[bool]$RestorationVerified=$false)
   if (-not $RestorationVerified) { throw 'Boot recovery retirement requires verified service restoration.' }
-  $context=Get-InstallerBootRecoveryContext $StageDirectory
+  $context=Get-InstallerBootRecoveryContext $StageDirectory -AllowLegacyInventory
   $task=Invoke-InstallerBootRecoveryScheduler -Operation Read -TaskName $context.taskName
   if (-not $task) { return [pscustomobject]@{taskName=$context.taskName;removed=$false;absent=$true} }
   Assert-InstallerBootRecoveryStage $context

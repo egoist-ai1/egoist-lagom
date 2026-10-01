@@ -108,3 +108,232 @@ test('native child timeout retires its own process and retains bounded stdout, s
     await fs.rm(directory, { recursive: true, force: true });
   }
 });
+
+test('native GUI PE contract requires administrator for GUI and retains asInvoker for SYSTEM worker', { skip: process.platform !== 'win32' }, () => {
+  const shell = process.env.LAGOM_TEST_POWERSHELL || process.env.LAGOM_WINDOWS_POWERSHELL ||
+    path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const source = path.resolve('tests/windows-production-acceptance.ps1').replaceAll("'", "''");
+  const body = "$ErrorActionPreference='Stop';. '" + source + "' -LibraryOnly;" +
+    "Assert-NativeGuiExecutionLevel -Role 'gui' -Level 'requireAdministrator';" +
+    "Assert-NativeGuiExecutionLevel -Role 'worker' -Level 'asInvoker';" +
+    "$refused=0;foreach($case in @(@{role='gui';level='asInvoker'},@{role='worker';level='requireAdministrator'},@{role='gui';level='highestAvailable'},@{role='gui';level=''})){" +
+    "try{Assert-NativeGuiExecutionLevel -Role $case.role -Level $case.level;throw 'Bad manifest accepted'}catch{if($_.Exception.Message -eq 'Bad manifest accepted'){throw};$refused++}};" +
+    "@{refused=$refused;physicalMutations=0}|ConvertTo-Json -Compress";
+  const child = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', body],
+    { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+  assert.equal(child.status, 0, child.stdout + '\n' + child.stderr);
+  assert.deepEqual(JSON.parse(child.stdout), { refused: 4, physicalMutations: 0 });
+});
+
+test('native elevated token proof refuses medium, disabled administrator, wrong SID/session and malformed evidence', { skip: process.platform !== 'win32' }, () => {
+  const shell = process.env.LAGOM_TEST_POWERSHELL || process.env.LAGOM_WINDOWS_POWERSHELL ||
+    path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const source = path.resolve('tests/windows-production-acceptance.ps1').replaceAll("'", "''");
+  const body = "$ErrorActionPreference='Stop';. '" + source + "' -LibraryOnly;" +
+    "$valid=@{userSid='S-1-5-21-100-200-300-1001';elevated=$true;administratorsEnabled=$true;integrityRid=12288;sessionId=7;uiAccess=$false;tokenType=1};" +
+    "$runner=$valid.Clone();Assert-NativeElevatedGuiTokenProof -Token $valid -RunnerToken $runner;" +
+    "$cases=@(@{name='elevated';value=$false},@{name='elevated';value='true'},@{name='administratorsEnabled';value=$false}," +
+    "@{name='integrityRid';value=8192},@{name='integrityRid';value='12288'},@{name='sessionId';value=8}," +
+    "@{name='userSid';value='S-1-5-21-100-200-300-1002'},@{name='userSid';value='S-1-5-18'}," +
+    "@{name='uiAccess';value=$true},@{name='uiAccess';value='false'},@{name='tokenType';value=2},@{name='tokenType';value='1'});$refused=0;" +
+    "foreach($case in $cases){$bad=$valid.Clone();$bad[$case.name]=$case.value;" +
+    "try{Assert-NativeElevatedGuiTokenProof -Token $bad -RunnerToken $runner;throw 'Bad token accepted'}catch{if($_.Exception.Message -eq 'Bad token accepted'){throw};$refused++}};" +
+    "foreach($name in @($valid.Keys)){$bad=$valid.Clone();$bad.Remove($name);" +
+    "try{Assert-NativeElevatedGuiTokenProof -Token $bad -RunnerToken $runner;throw 'Missing token field accepted'}catch{if($_.Exception.Message -eq 'Missing token field accepted'){throw};$refused++}};" +
+    "$badRunner=$runner.Clone();$badRunner.elevated=$false;" +
+    "try{Assert-NativeElevatedGuiTokenProof -Token $valid -RunnerToken $badRunner;throw 'Unelevated runner accepted'}catch{if($_.Exception.Message -eq 'Unelevated runner accepted'){throw};$refused++};" +
+    "@{accepted=$true;refused=$refused;physicalMutations=0}|ConvertTo-Json -Compress";
+  const child = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', body],
+    { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+  assert.equal(child.status, 0, child.stdout + '\n' + child.stderr);
+  assert.deepEqual(JSON.parse(child.stdout), { accepted: true, refused: 20, physicalMutations: 0 });
+});
+
+test('native production launch uses explicit elevated lease, real SCM stop/start and SYSTEM worker evidence', async () => {
+  const source = await fs.readFile(path.resolve('tests/windows-production-acceptance.ps1'), 'utf8');
+  const start = source.indexOf('function Invoke-NativeElevatedGui {');
+  const end = source.indexOf('function Assert-NativePrivateState {', start);
+  assert.ok(start >= 0 && end > start);
+  const flow = source.slice(start, end);
+  assert.match(flow, /Start-ElevatedGuiLease -CanonicalInstalledGuiPath/);
+  assert.match(flow, /Stop-ElevatedGuiLease -Lease/);
+  assert.doesNotMatch(flow, /Start-OrdinaryGuiLease|CreateRestrictedToken|manualLUA|no-sandbox|disable-gpu/);
+  assert.match(flow, /Assert-NativeElevatedGuiTokenProof -Token \$proof.token -RunnerToken \$proof.runnerToken/);
+  assert.match(flow, /Get-NativeProcessIdentity \$child.Id/);
+  assert.match(flow, /Real SCM Telegram stop through elevated GUI\/Core IPC/);
+  assert.match(flow, /Real SCM Telegram start through elevated GUI\/Core IPC/);
+  assert.match(flow, /S-1-5-18/);
+  assert.match(flow, /WaitForExit\(30000\)/);
+  assert.match(flow, /WindowPattern/);
+  assert.match(flow, /\$script:Receipt.elevatedGui=/);
+  assert.match(flow, /GUI IPC from an actual elevated Windows user token/);
+  assert.doesNotMatch(source, /Invoke-NativeOrdinaryGui|actual-nonadministrator-gui-core-broker|Receipt\.ordinaryGui=/);
+  assert.match(source, /actual-native-elevated-gui-windows-doh/);
+  assert.doesNotMatch(source, /actual-native-ordinary-gui-windows-doh|GUI IPC from an actual standard Windows user token/);
+});
+
+test('native network gate binds each elevated launch to the same operation, process birth and zero-orphan cleanup', { skip: process.platform !== 'win32' }, () => {
+  const shell = process.env.LAGOM_TEST_POWERSHELL || process.env.LAGOM_WINDOWS_POWERSHELL ||
+    path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const source = path.resolve('tests/windows-production-acceptance.ps1').replaceAll("'", "''");
+  const token = { userSid: 'S-1-5-21-100-200-300-1001', elevated: true, administratorsEnabled: true,
+    integrityRid: 12288, sessionId: 7, uiAccess: false, tokenType: 1 };
+  const commit = 'a'.repeat(40), hash = 'b'.repeat(64);
+  const executable = 'C:\\Program Files\\EgoistShield\\EgoistShield.exe';
+  const entries = ['Apply', 'Reset'].flatMap((operation, index) => {
+    const proof = { launchPolicy: 'elevated', elevatedGui: true, guiRequestedExecutionLevel: 'requireAdministrator',
+      token, runnerToken: token, executable, arguments: [], source: { commit, version: '3.8.0', integrityManifestSha256: hash },
+      artifactSourceCommit: commit, harnessSourceCommit: commit, processId: 123 + index,
+      startTimeUtc: '2026-10-01T12:00:0' + index + '.0000000Z' };
+    return [{ operation, launch: proof }, { operation, cleanup: {
+      launch: proof, stage: 'completed', exitedNormally: true, exitCode: 0,
+      cleanup: { noOrphans: true, activeProcesses: 0 },
+    } }];
+  });
+  const fixture = JSON.stringify({ candidateVersion: '3.8.0', gui: entries }).replaceAll("'", "''");
+  const body = "$ErrorActionPreference='Stop';. '" + source + "' -LibraryOnly;" +
+    "$json='" + fixture + "';function Fresh {ConvertFrom-Json -InputObject $json -DateKind String};" +
+    "$valid=Fresh;Assert-NativeNetworkGuiReceipts -Receipt $valid -SourceCommit '" + commit +
+    "' -InstalledGuiPath '" + executable + "' -ExpectedIntegritySha256 '" + hash + "';" +
+    "$cases=@('medium','disabled-admin','wrong-source','wrong-exe','extra-arg','false-manifest','false-integrity','cleanup-operation'," +
+    "'cleanup-pid','cleanup-birth','cleanup-stage','cleanup-exit','cleanup-not-normal','cleanup-orphan','cleanup-active','missing-close','duplicate-operation');$refused=0;" +
+    "foreach($case in $cases){$bad=Fresh;switch($case){" +
+    "'medium'{$bad.gui[0].launch.token.integrityRid=8192}" +
+    "'disabled-admin'{$bad.gui[0].launch.token.administratorsEnabled=$false}" +
+    "'wrong-source'{$bad.gui[0].launch.source.commit=('c'*40)}" +
+    "'wrong-exe'{$bad.gui[0].launch.executable='C:\\foreign.exe'}" +
+    "'extra-arg'{$bad.gui[0].launch.arguments=@('--no-sandbox')}" +
+    "'false-manifest'{$bad.gui[0].launch.guiRequestedExecutionLevel='asInvoker'}" +
+    "'false-integrity'{$bad.gui[0].launch.source.integrityManifestSha256=('c'*64)}" +
+    "'cleanup-operation'{$bad.gui[1].operation='Other'}" +
+    "'cleanup-pid'{$bad.gui[1].cleanup.launch.processId=999}" +
+    "'cleanup-birth'{$bad.gui[1].cleanup.launch.startTimeUtc='2026-10-01T12:00:09Z'}" +
+    "'cleanup-stage'{$bad.gui[1].cleanup.stage='failed'}" +
+    "'cleanup-exit'{$bad.gui[1].cleanup.exitCode=49}" +
+    "'cleanup-not-normal'{$bad.gui[1].cleanup.exitedNormally=$false}" +
+    "'cleanup-orphan'{$bad.gui[1].cleanup.cleanup.noOrphans=$false}" +
+    "'cleanup-active'{$bad.gui[1].cleanup.cleanup.activeProcesses=1}" +
+    "'missing-close'{$bad.gui=@($bad.gui[0],$bad.gui[2],$bad.gui[3])}" +
+    "'duplicate-operation'{$bad.gui[2].operation='Apply';$bad.gui[3].operation='Apply'}};" +
+    "try{Assert-NativeNetworkGuiReceipts -Receipt $bad -SourceCommit '" + commit +
+    "' -InstalledGuiPath '" + executable + "' -ExpectedIntegritySha256 '" + hash +
+    "';throw ('Invalid pair accepted: '+$case)}catch{if($_.Exception.Message -like 'Invalid pair accepted:*'){throw};$refused++}};" +
+    "@{accepted=$true;refused=$refused;physicalMutations=0}|ConvertTo-Json -Compress";
+  const child = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', body],
+    { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+  assert.equal(child.status, 0, child.stdout + '\n' + child.stderr);
+  assert.deepEqual(JSON.parse(child.stdout), { accepted: true, refused: 17, physicalMutations: 0 });
+});
+
+test('native GUI startup XML rejects foreign identity, reduced rights, timeout, executable and extra actions', { skip: process.platform !== 'win32' }, () => {
+  const shell = process.env.LAGOM_TEST_POWERSHELL || process.env.LAGOM_WINDOWS_POWERSHELL ||
+    path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const quote = value => value.replaceAll("'", "''");
+  const source = quote(path.resolve('tests/windows-production-acceptance.ps1'));
+  const helper = quote(path.resolve('src/installer/gui-login-startup.ps1'));
+  const body = "$ErrorActionPreference='Stop';. '" + source + "' -LibraryOnly;. '" + helper + "';" +
+    "$script:InstallRoot='C:\\Program Files\\EgoistShield';$sid='S-1-5-21-100-200-300-1001';" +
+    "$context=@{sid=$sid;exe=(Join-Path $script:InstallRoot 'EgoistShield.exe');root=$script:InstallRoot};" +
+    "$state=@{owner='EgoistShield';purpose='gui-login-startup';userSid=$sid;taskName=('EgoistLagom-GuiAutostart-'+$sid);taskPath=('\\EgoistLagom-GuiAutostart-'+$sid)};" +
+    "$saved=@{registrationId=('a'*32)};$good=New-GuiStartupTaskXml -Context $context -Receipt $saved -TaskEnabled $true;" +
+    "$proof=Assert-NativeGuiStartupTaskXml -XmlText $good -State $state -ExpectedEnabled $true;" +
+    "$disabled=New-GuiStartupTaskXml -Context $context -Receipt $saved -TaskEnabled $false;" +
+    "[void](Assert-NativeGuiStartupTaskXml -XmlText $disabled -State $state -ExpectedEnabled $false);" +
+    "$cases=@(@{from='HighestAvailable';to='LeastPrivilege'},@{from='InteractiveToken';to='ServiceAccount'}," +
+    "@{from='PT0S';to='PT72H'},@{from='IgnoreNew';to='Parallel'},@{from='<AllowStartOnDemand>false</AllowStartOnDemand>';to='<AllowStartOnDemand>true</AllowStartOnDemand>'}," +
+    "@{from='--background --minimized';to='--no-sandbox'},@{from='EgoistShield.exe';to='foreign.exe'}," +
+    "@{from='<Author>EgoistShield</Author>';to='<Author>Foreign</Author>'},@{from=($sid+':'+('a'*32));to=($sid+':bad')}," +
+    "@{from='</Exec>';to='</Exec><Exec><Command>foreign.exe</Command></Exec>'},@{from='<UserId>'+ $sid +'</UserId>';to='<UserId>S-1-5-18</UserId>'});$refused=0;" +
+    "foreach($case in $cases){$bad=$good.Replace($case.from,$case.to);if($bad -ceq $good){throw 'Fixture transformation made no change'};" +
+    "try{[void](Assert-NativeGuiStartupTaskXml -XmlText $bad -State $state -ExpectedEnabled $true);throw 'Invalid task XML accepted'}catch{if($_.Exception.Message -eq 'Invalid task XML accepted'){throw};$refused++}};" +
+    "foreach($case in @(@{name='owner';value='Foreign'},@{name='purpose';value='Other'},@{name='userSid';value='S-1-5-18'},@{name='taskName';value='foreign'},@{name='taskPath';value='\\foreign'})){" +
+    "$bad=$state.Clone();$bad[$case.name]=$case.value;try{[void](Assert-NativeGuiStartupTaskXml -XmlText $good -State $bad -ExpectedEnabled $true);throw 'Invalid task identity accepted'}catch{if($_.Exception.Message -eq 'Invalid task identity accepted'){throw};$refused++}};" +
+    "@{acceptedEnabled=$proof.enabled;acceptedDisabled=$true;refused=$refused;physicalMutations=0}|ConvertTo-Json -Compress";
+  const child = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', body],
+    { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+  assert.equal(child.status, 0, child.stdout + '\n' + child.stderr);
+  assert.deepEqual(JSON.parse(child.stdout), { acceptedEnabled: true, acceptedDisabled: true, refused: 16, physicalMutations: 0 });
+});
+
+test('packaged startup task lifecycle uses the public helper and resumes only after verified service and DNS restoration', async () => {
+  const [native, reinstall, packager, inventory, nsi] = await Promise.all([
+    fs.readFile('tests/windows-production-acceptance.ps1', 'utf8'),
+    fs.readFile('scripts/invoke-final-silent-reinstall.ps1', 'utf8'),
+    fs.readFile('scripts/package-windows.mjs', 'utf8'),
+    fs.readFile('scripts/worker-host-integrity.mjs', 'utf8'),
+    fs.readFile('src/installer/setup.nsi', 'utf8'),
+  ]);
+  assert.match(packager, /resources\/installer\/gui-login-startup\.ps1/);
+  assert.match(inventory, /add\('resources\/installer\/gui-login-startup\.ps1', \['gui'\]\)/);
+  assert.match(nsi, /File \/oname=\$PLUGINSDIR\\gui-login-startup\.ps1 "\$\{PAYLOAD\}\\resources\\installer\\gui-login-startup\.ps1"/);
+  assert.match(nsi, /CopyFiles \/SILENT "\$INSTDIR\\resources\\installer\\gui-login-startup\.ps1" "\$PLUGINSDIR\\gui-login-startup\.ps1"/);
+  assert.match(reinstall, /Staged GUI login startup helper failed immutable SHA-256 readback/);
+  const enter = reinstall.slice(reinstall.indexOf('function Enter-InstallerServiceMaintenance {'), reinstall.indexOf('function Complete-InstallerServiceMaintenance {'));
+  assert.match(enter, /Write-JsonAtomic -Path \$marker[\s\S]*?Suspend-OwnedGuiLoginStartup/);
+  const complete = reinstall.slice(reinstall.indexOf('function Complete-InstallerServiceMaintenance {'), reinstall.indexOf('function Get-InstallerServiceMaintenanceStatus {'));
+  assert.match(complete, /Remove-Item -LiteralPath \$marker -Force -ErrorAction Stop[\s\S]*?Resume-OwnedGuiLoginStartup/);
+  assert.match(complete, /-not \(Test-Path -LiteralPath \$marker -PathType Leaf\)\) \{ Resume-OwnedGuiLoginStartup; return \}/);
+  const recovery = reinstall.slice(reinstall.indexOf('function Invoke-Recovery {'), reinstall.indexOf('function Stop-VerifiedInstallerTransactionProcess {'));
+  assert.match(recovery, /\$recoveryErrors\.Count -gt 0[\s\S]*?return \$false[\s\S]*?else[\s\S]*?Complete-InstallerServiceMaintenance/);
+  assert.match(recovery, /maintenanceStatus -eq 'absent'\) \{\s*Resume-OwnedGuiLoginStartup/g);
+  const worker = reinstall.slice(reinstall.indexOf('Write-Heartbeat -Stage $StageDirectory -Phase "restoring"'));
+  assert.ok(worker.indexOf('Start-PreservedServices -State $state') < worker.indexOf('Complete-InstallerServiceMaintenance'));
+  assert.ok(worker.indexOf('Restored adapter DNS did not pass readback.') < worker.indexOf('Complete-InstallerServiceMaintenance'));
+  assert.ok(worker.indexOf('Complete-InstallerServiceMaintenance') < worker.indexOf('Unregister-InstallerMaintenanceBootRecovery'));
+  assert.match(native, /Invoke-NativeGuiStartupOperation -Operation Sync -Enabled true/);
+  assert.match(native, /Observe-NativeGuiStartupSuspension/);
+  assert.match(native, /Invoke-NativeGuiStartupOperation -Operation Verify[\s\S]*?restoredAfterReinstall=\$true/);
+  assert.match(native, /Invoke-NativeGuiStartupOperation -Operation Sync -Enabled false[\s\S]*?actual-packaged-gui-startup-highest-interactive-enable-suspend-restore-disable/);
+  assert.match(native, /task registration differs from the originally authenticated enabled task/);
+  assert.match(native, /actualLogonExecuted=\$false;actualSettingsToggleInvoked=\$false/);
+});
+
+test('actual reinstall functions keep GUI startup suspended on failed restoration and resume after closing their own marker', {
+  skip: process.platform !== 'win32' || !process.env.LAGOM_TEST_TEMP,
+}, async () => {
+  const shell = process.env.LAGOM_TEST_POWERSHELL || process.env.LAGOM_WINDOWS_POWERSHELL ||
+    path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const directory = await fs.mkdtemp(path.join(process.env.LAGOM_TEST_TEMP, 'startup-hook-'));
+  const quote = value => value.replaceAll("'", "''");
+  const body = "$ErrorActionPreference='Stop';$script:OwnedDataRoot='" + quote(directory) + "';$StageDirectory=(Join-Path $script:OwnedDataRoot 'stage');" +
+    "$tokens=$null;$errors=$null;$ast=[Management.Automation.Language.Parser]::ParseFile('" + quote(path.resolve('scripts/invoke-final-silent-reinstall.ps1')) + "',[ref]$tokens,[ref]$errors);" +
+    "if($errors.Count){throw 'Production helper did not parse'};" +
+    "foreach($name in @('Enter-InstallerServiceMaintenance','Complete-InstallerServiceMaintenance','Invoke-Recovery')){" +
+    "$nodes=@($ast.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -ceq $name},$true));if($nodes.Count -ne 1){throw 'Actual function identity ambiguous'};Invoke-Expression $nodes[0].Extent.Text};" +
+    "$script:Events=[Collections.Generic.List[string]]::new();" +
+    "function Assert-PlainWrapperMigrationPath {param($Path,$Root)return $Path};function Protect-StageDirectory {};" +
+    "function Write-JsonAtomic {param($Path,$Value)[IO.File]::WriteAllText($Path,($Value|ConvertTo-Json));$script:Events.Add('marker-created')};" +
+    "function Suspend-OwnedGuiLoginStartup {if(-not(Test-Path -LiteralPath (Join-Path $script:OwnedDataRoot 'installer\\service-maintenance.json'))){throw 'Suspend before trusted marker'};$script:Events.Add('suspend')};" +
+    "function Resume-OwnedGuiLoginStartup {if(Test-Path -LiteralPath (Join-Path $script:OwnedDataRoot 'installer\\service-maintenance.json')){throw 'Resume before marker removal'};$script:Events.Add('resume')};" +
+    "$marker=Join-Path $script:OwnedDataRoot 'installer\\service-maintenance.json';Enter-InstallerServiceMaintenance;Enter-InstallerServiceMaintenance;" +
+    "if(($script:Events -join ',') -cne 'marker-created,suspend,suspend'){throw 'Maintenance entry hook order differs'};" +
+    "$good=[IO.File]::ReadAllText($marker);[IO.File]::WriteAllText($marker,('{\"schemaVersion\":1,\"owner\":\"Foreign\",\"stage\":\"foreign\"}'));$refused=0;" +
+    "foreach($name in @('Enter-InstallerServiceMaintenance','Complete-InstallerServiceMaintenance')){try{& $name;throw 'Foreign marker accepted'}catch{if($_.Exception.Message -eq 'Foreign marker accepted'){throw};$refused++}};" +
+    "if($script:Events.Count -ne 3){throw 'Foreign transaction invoked startup hook'};[IO.File]::WriteAllText($marker,$good);Complete-InstallerServiceMaintenance;Complete-InstallerServiceMaintenance;" +
+    "if(($script:Events -join ',') -cne 'marker-created,suspend,suspend,resume,resume'){throw 'Completion/retry hook order differs'};" +
+    "function Enter-DeferredReinstallRecoveryLease {$m=[pscustomobject]@{};$m|Add-Member -MemberType ScriptMethod -Name ReleaseMutex -Value {};$m|Add-Member -MemberType ScriptMethod -Name Dispose -Value {};return $m};" +
+    "function Get-InstallerServiceMaintenanceStatus {return 'own'};function Add-ReceiptEvent {};" +
+    "function Stop-OwnedServiceForInstall {};function Stop-PreservedWrappersForRecovery {};" +
+    "function Restore-PreservedState {if($script:Fault -ceq 'state'){throw 'Inert state restore failure'}};" +
+    "function Reconcile-PreservedZapretProfile {};function Restore-InstalledIdentity {};function Test-PayloadRollbackPending {return $false};" +
+    "function Restore-PreservedServiceStartModes {};function Start-PreservedServices {if($script:Fault -ceq 'services'){throw 'Inert service restore failure'}};" +
+    "function Test-LoopbackDnsReady {return $true};function Restore-CriticalAdapterDns {if($script:Fault -ceq 'dns'){throw 'Inert DNS restore failure'}};" +
+    "function Restore-CriticalOwnedDnsBaseline {};function Start-InstalledDesktop {throw 'GUI must not launch in fixture'};" +
+    "$state=[pscustomobject]@{runAfter=$false};$failureCases=0;" +
+    "foreach($fault in @('state','services','dns')){$script:Fault=$fault;[IO.File]::WriteAllText($marker,$good);$before=$script:Events.Count;" +
+    "$result=Invoke-Recovery -State $state -Reason 'inert owned boundary fixture';if($result -ne $false -or -not(Test-Path -LiteralPath $marker) -or $script:Events.Count -ne $before){throw 'Failed restoration reopened GUI startup or lost maintenance marker'};$failureCases++};" +
+    "$script:Fault='';$result=Invoke-Recovery -State $state -Reason 'inert owned boundary fixture';if($result -ne $true -or (Test-Path -LiteralPath $marker) -or $script:Events[$script:Events.Count-1] -cne 'resume'){throw 'Verified restoration did not close marker before resume'};" +
+    "@{foreignTransactionsRefused=$refused;failedRestoreCases=$failureCases;successfulRestore=$true;liveServiceMutations=0;liveDnsMutations=0;liveTaskMutations=0}|ConvertTo-Json -Compress";
+  try {
+    const child = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', body],
+      { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+    assert.equal(child.status, 0, child.stdout + '\n' + child.stderr);
+    assert.deepEqual(JSON.parse(child.stdout), {
+      foreignTransactionsRefused: 2, failedRestoreCases: 3, successfulRestore: true,
+      liveServiceMutations: 0, liveDnsMutations: 0, liveTaskMutations: 0,
+    });
+  } finally {
+    assert.equal(path.dirname(directory), path.resolve(process.env.LAGOM_TEST_TEMP));
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});

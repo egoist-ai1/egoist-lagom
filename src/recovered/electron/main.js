@@ -1071,11 +1071,11 @@ async function createMainWindow() {
 	const loadedState = stateStore.get();
 	logger.info("[boot] persisted state loaded");
 	try {
-		if (productionRuntime) syncWindowsLoginItemSettings({
+		if (productionRuntime) await syncWindowsLoginItemSettings({
 			app,
 			settings: loadedState.settings
 		});
-		const removedLegacyTasks = productionRuntime ? await cleanupOwnedLegacyWindowsStartupTasks() : [];
+		const removedLegacyTasks = productionRuntime ? await cleanupOwnedLegacyWindowsStartupTasks({ app }) : [];
 		if (removedLegacyTasks.length > 0) logger.info(`[boot] Removed legacy duplicate startup tasks: ${removedLegacyTasks.join(", ")}`);
 		applyLoggerSettings(loadedState.settings);
 	} catch (error) {

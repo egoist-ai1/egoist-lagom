@@ -87,14 +87,17 @@ test('privileged bootstrap rejects user-owned fake verifier before executing it'
 }));
 
 test('worker inventory authenticates actual files and refuses mutated upstream or linked native payload', isolated, async () => fixture(async directory => {
-  const bodies = { 'EgoistShield.exe': fuseBytes('000011011'), 'EgoistShield.Worker.exe': fuseBytes('100011011'), 'ffmpeg.dll': Buffer.from('own dll bytes'), 'resources/app.asar': Buffer.from('own asar bytes'), 'resources/component-worker.cjs': Buffer.from('own fixed worker'), 'resources/core-service/win-x64/EgoistShield.Service.exe': Buffer.from('own fixed Core'), 'resources/runtime/xray/xray.exe': Buffer.from('own fixed xray') };
+  const bodies = { 'EgoistShield.exe': fuseBytes('000011011'), 'EgoistShield.Worker.exe': fuseBytes('100011011'), 'ffmpeg.dll': Buffer.from('own dll bytes'), 'resources/app.asar': Buffer.from('own asar bytes'), 'resources/component-worker.cjs': Buffer.from('own fixed worker'), 'resources/installer/gui-login-startup.ps1': Buffer.from('own fixed GUI startup helper'), 'resources/core-service/win-x64/EgoistShield.Service.exe': Buffer.from('own fixed Core'), 'resources/runtime/xray/xray.exe': Buffer.from('own fixed xray') };
   for (const [relative, body] of Object.entries(bodies)) { const file = path.join(directory, ...relative.split('/')); await fs.mkdir(path.dirname(file), { recursive: true }); await fs.writeFile(file, body); }
   const digest = value => createHash('sha256').update(value).digest('hex');
   await fs.writeFile(path.join(directory, 'resources/runtime/manifest.json'), JSON.stringify({ schemaVersion: 1, components: [{ name: 'xray', files: [{ path: 'xray/xray.exe', size: bodies['resources/runtime/xray/xray.exe'].length, sha256: digest(bodies['resources/runtime/xray/xray.exe']) }] }] }));
   const runtime = { version: 'test-only', archive: { sha256: 'a'.repeat(64) }, runtimeFiles: ['EgoistShield.exe', 'ffmpeg.dll'].map(relative => ({ path: relative, bytes: bodies[relative].length, sha256: digest(bodies[relative]) })) };
   const inventory = await createWorkerHostInventory({ out: directory, version: '3.8.0', electronRuntime: runtime });
-  assert.equal(inventory.files.length, 8); assert.deepEqual(inventory.files.find(value => value.path === 'EgoistShield.exe').roles, ['gui']);
+  assert.equal(inventory.files.length, 9); assert.deepEqual(inventory.files.find(value => value.path === 'EgoistShield.exe').roles, ['gui']);
   assert.deepEqual(inventory.files.find(value => value.path === 'EgoistShield.Worker.exe').roles, ['worker']);
+  const startup = inventory.files.find(value => value.path === 'resources/installer/gui-login-startup.ps1');
+  assert.deepEqual(startup.roles, ['gui']);
+  assert.equal(startup.sha256, digest(bodies[startup.path]));
   assert.deepEqual(inventory.files.find(value => value.path.endsWith('EgoistShield.Service.exe')).roles, ['worker', 'cli']);
   await fs.appendFile(path.join(directory, 'ffmpeg.dll'), 'mutated');
   await assert.rejects(createWorkerHostInventory({ out: directory, version: '3.8.0', electronRuntime: runtime }), /changed before its inventory/);

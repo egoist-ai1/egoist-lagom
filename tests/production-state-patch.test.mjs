@@ -153,7 +153,8 @@ test('R02: failed disk write rolls back login item inside the serialized mutatio
   assert.equal(succeeded.ok, true);
   assert.equal(store.get().settings.autoStart, false);
   assert.equal(store.get().settings.notifications, false);
-  assert.deepEqual(loginStates, [true, false, false]);
+  assert.equal(succeeded.state.settings.notifications, false);
+  assert.deepEqual(loginStates, [true, false]);
   assert.equal(store.get().stateRevision, before.stateRevision + 1);
 });
 

@@ -672,9 +672,16 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 		requiredLocks: ["dns", "dns-verify"],
 		conflictsWith: ["traffic-route"]
 	}, operation) : operation();
+	let startupSideEffectAttempted = false;
 	const settingsCommitHooks = {
-		beforeCommit: next => syncWindowsLoginItemSettings({ app, settings: next.settings }),
-		rollback: previous => syncWindowsLoginItemSettings({ app, settings: previous.settings })
+		beforeCommit: async (next, previous) => {
+			startupSideEffectAttempted = next.settings.autoStart !== previous.settings.autoStart;
+			if (startupSideEffectAttempted) await syncWindowsLoginItemSettings({ app, settings: next.settings, previousSettings: previous.settings });
+		},
+		rollback: async previous => {
+			if (startupSideEffectAttempted) await syncWindowsLoginItemSettings({ app, settings: previous.settings });
+			startupSideEffectAttempted = false;
+		}
 	};
 	const patchSettingsWithLoginItemSync = async (settingsPatch) => {
 		const result = await stateStore.patchSettings(settingsPatch, void 0, settingsCommitHooks);

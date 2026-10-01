@@ -26,6 +26,7 @@ test('full production NSIS source links the maintenance dependency against a har
     await fs.writeFile(path.join(brand,'icon.ico'),icon);
     await fs.copyFile('src/installer/service-maintenance.ps1',path.join(installer,'service-maintenance.ps1'));
     await fs.copyFile('src/installer/maintenance-boot-recovery.ps1',path.join(installer,'maintenance-boot-recovery.ps1'));
+    await fs.copyFile('src/installer/gui-login-startup.ps1',path.join(installer,'gui-login-startup.ps1'));
     for(const name of ['owned-cleanup.ps1','invoke-final-silent-reinstall.ps1','ModernInstaller.exe','Unbounded.ttf'])
       await fs.writeFile(path.join(installer,name),'inert compile-only fixture');
     await fs.writeFile(path.join(payload,'EgoistShield.exe'),'inert compile-only fixture');
@@ -35,6 +36,9 @@ test('full production NSIS source links the maintenance dependency against a har
     const compiler=process.env.SHIELD_MAKENSIS || path.join(process.env.LOCALAPPDATA,'electron-builder/Cache/nsis-3.0.4.1/nsis-3.0.4.1-1mx3n/Bin/makensis.exe');
     await exec(compiler,['/V2','/INPUTCHARSET','UTF8','/DPRODUCT_VERSION=9.8.7','/DPAYLOAD='+payload,'/DOUTPUT='+exe,nsi],options);
     assert.ok((await fs.stat(exe)).size>0);
+    await fs.rm(path.join(installer,'gui-login-startup.ps1'));
+    await assert.rejects(exec(compiler,['/V2','/INPUTCHARSET','UTF8','/DPRODUCT_VERSION=9.8.7','/DPAYLOAD='+payload,'/DOUTPUT='+exe,nsi],options),/gui-login-startup\.ps1/);
+    await fs.copyFile('src/installer/gui-login-startup.ps1',path.join(installer,'gui-login-startup.ps1'));
     await fs.rm(path.join(installer,'maintenance-boot-recovery.ps1'));
     await assert.rejects(exec(compiler,['/V2','/INPUTCHARSET','UTF8','/DPRODUCT_VERSION=9.8.7','/DPAYLOAD='+payload,'/DOUTPUT='+exe,nsi],options),/maintenance-boot-recovery\.ps1/);
     await fs.copyFile('src/installer/maintenance-boot-recovery.ps1',path.join(installer,'maintenance-boot-recovery.ps1'));

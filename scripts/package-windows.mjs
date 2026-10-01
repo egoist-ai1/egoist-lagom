@@ -93,7 +93,7 @@ await fs.cp('resources/release', path.join(out,'resources/release'), { recursive
 const guiExecutable = path.join(out, 'EgoistShield.exe');
 const workerExecutable = path.join(out, 'EgoistShield.Worker.exe');
 await fs.copyFile(guiExecutable, workerExecutable);
-await rcedit(guiExecutable, { 'file-version': pkg.version, 'product-version': pkg.version, 'requested-execution-level': 'asInvoker', 'version-string': { ProductName: 'Egoist Lagom', FileDescription: 'Egoist Lagom', ProductVersion: pkg.version, FileVersion: pkg.version }, icon: path.join(out, 'resources/brand/icon.ico') });
+await rcedit(guiExecutable, { 'file-version': pkg.version, 'product-version': pkg.version, 'requested-execution-level': 'requireAdministrator', 'version-string': { ProductName: 'Egoist Lagom', FileDescription: 'Egoist Lagom', ProductVersion: pkg.version, FileVersion: pkg.version }, icon: path.join(out, 'resources/brand/icon.ico') });
 await rcedit(workerExecutable, { 'file-version': pkg.version, 'product-version': pkg.version, 'requested-execution-level': 'asInvoker', 'version-string': { ProductName: 'Egoist Lagom Background Host', FileDescription: 'Egoist Lagom protected component worker', ProductVersion: pkg.version, FileVersion: pkg.version } });
 await fs.mkdir(appRoot, { recursive: true });
 await fs.cp('.vite', path.join(appRoot, '.vite'), { recursive: true });
@@ -115,6 +115,11 @@ await fs.writeFile(path.join(evidence, 'electron-runtime-packaged.json'), JSON.s
 const cleanupScript=await fs.readFile('src/installer/owned-cleanup.ps1');
 if(!cleanupScript.subarray(0,3).equals(Buffer.from([0xef,0xbb,0xbf])))throw new Error('Installer PowerShell script requires its UTF-8 BOM for Windows PowerShell 5.1.');
 await fs.writeFile(path.join(out, 'resources/installer/owned-cleanup.ps1'),cleanupScript);
+const guiStartupScript = await fs.readFile('src/installer/gui-login-startup.ps1');
+await fs.writeFile(path.join(out, 'resources/installer/gui-login-startup.ps1'),
+  guiStartupScript.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))
+    ? guiStartupScript
+    : Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), guiStartupScript]));
 const serviceMaintenanceScript = await fs.readFile('src/installer/service-maintenance.ps1');
 await fs.writeFile(path.join(out, 'resources/installer/service-maintenance.ps1'),
   serviceMaintenanceScript.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))
@@ -253,6 +258,7 @@ const requiredPayloadFiles = [...new Set([
   'resources/gravityless-dns/dnscrypt-proxy.exe',
   'resources/gravityless-dns/dnscrypt-proxy.toml',
   'resources/installer/owned-cleanup.ps1',
+  'resources/installer/gui-login-startup.ps1',
   'resources/installer/service-maintenance.ps1',
   'resources/installer/maintenance-boot-recovery.ps1',
   'resources/installer/invoke-final-silent-reinstall.ps1',

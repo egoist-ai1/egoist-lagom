@@ -67,6 +67,15 @@ if (-not (Test-Path -LiteralPath $script:BootRecoveryScript -PathType Leaf)) {
 }
 . $script:BootRecoveryScript
 
+$script:GuiLoginStartupScript = Join-Path $PSScriptRoot "gui-login-startup.ps1"
+if (-not (Test-Path -LiteralPath $script:GuiLoginStartupScript -PathType Leaf)) {
+  $script:GuiLoginStartupScript = Join-Path $PSScriptRoot "..\src\installer\gui-login-startup.ps1"
+}
+. $script:GuiLoginStartupScript
+foreach ($name in @('Suspend-OwnedGuiLoginStartup','Resume-OwnedGuiLoginStartup','Remove-OwnedGuiLoginStartup')) {
+  if (-not (Get-Command -Name $name -CommandType Function -ErrorAction SilentlyContinue)) { throw "Required GUI login startup helper is incomplete: $name" }
+}
+
 function Get-InstallerCommonDataRoot { return [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonApplicationData) }
 $nativeProgramFiles = [Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)
 $script:OwnedInstallRoot = [IO.Path]::GetFullPath("$nativeProgramFiles\EgoistShield").TrimEnd('\')
@@ -859,19 +868,22 @@ function Enter-InstallerServiceMaintenance {
     if ($existing.schemaVersion -ne 1 -or $existing.owner -ne "EgoistShield" -or [string]$existing.stage -ne $StageDirectory) {
       throw "Another service maintenance transaction requires recovery."
     }
+    Suspend-OwnedGuiLoginStartup
     return
   }
   Write-JsonAtomic -Path $marker -Value @{schemaVersion=1;owner="EgoistShield";stage=$StageDirectory}
+  Suspend-OwnedGuiLoginStartup
 }
 
 function Complete-InstallerServiceMaintenance {
   $marker = Join-Path $script:OwnedDataRoot "installer\service-maintenance.json"
-  if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { return }
+  if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { Resume-OwnedGuiLoginStartup; return }
   $existing = Get-Content -LiteralPath $marker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if ($existing.owner -ne "EgoistShield" -or [string]$existing.stage -ne $StageDirectory) {
     throw "Refusing to remove another service maintenance transaction."
   }
   Remove-Item -LiteralPath $marker -Force -ErrorAction Stop
+  Resume-OwnedGuiLoginStartup
 }
 
 function Get-InstallerServiceMaintenanceStatus {
@@ -1505,11 +1517,13 @@ function Invoke-Recovery {
   if ($maintenanceStatus -eq 'foreign') { throw "Another service maintenance stage is active; preserved state was not replayed." }
   if ($State.PSObject.Properties['handoffStarted'] -and $State.handoffStarted -ne $true -and
       $maintenanceStatus -eq 'absent') {
+    Resume-OwnedGuiLoginStartup
     Add-ReceiptEvent -Stage 'recovery' -Status 'recovery-not-needed' -Message 'Update failed before service handoff; no services or DNS were stopped.'
     return $true
   }
   if ($State.PSObject.Properties['handoffStarted'] -and $State.handoffStarted -eq $true -and
       $maintenanceStatus -eq 'absent') {
+    Resume-OwnedGuiLoginStartup
     Add-ReceiptEvent -Stage 'recovery' -Status 'recovery-not-needed' -Message 'The service maintenance transaction is already closed; its preserved snapshot must not be replayed.'
     return $true
   }
@@ -2128,6 +2142,10 @@ if ($release.manifest) {
 Copy-Item -LiteralPath $PSCommandPath -Destination $stagedScript -Force -ErrorAction Stop
 Copy-Item -LiteralPath $script:ServiceMaintenanceScript -Destination (Join-Path $StageDirectory "service-maintenance.ps1") -Force -ErrorAction Stop
 Copy-Item -LiteralPath $script:BootRecoveryScript -Destination (Join-Path $StageDirectory "maintenance-boot-recovery.ps1") -Force -ErrorAction Stop
+$guiStartupHash = Get-FileSha256 $script:GuiLoginStartupScript
+$stagedGuiStartup = Join-Path $StageDirectory "gui-login-startup.ps1"
+Copy-Item -LiteralPath $script:GuiLoginStartupScript -Destination $stagedGuiStartup -Force -ErrorAction Stop
+if ((Get-FileSha256 $stagedGuiStartup) -cne $guiStartupHash -or (Get-FileSha256 $script:GuiLoginStartupScript) -cne $guiStartupHash) { throw "Staged GUI login startup helper failed immutable SHA-256 readback." }
 if ($brandedUi) {
   Copy-Item -LiteralPath $InstallerUiPath -Destination (Join-Path $StageDirectory "ModernInstaller.exe") -Force -ErrorAction Stop
   Copy-Item -LiteralPath $InstallerFontPath -Destination (Join-Path $StageDirectory "Unbounded.ttf") -Force -ErrorAction Stop
@@ -2154,6 +2172,7 @@ $state = [ordered]@{
   watchdogTimeoutSeconds = $WatchdogTimeoutSeconds
   previousReinstallWaitMilliseconds = $(if ($WaitForPreviousReinstall) { 1200000 } else { 0 })
   previousReinstallStage = $previousReinstallStage
+  guiLoginStartupHelperSha256 = $guiStartupHash
   services = @()
   userState = @()
   criticalDns = @()

@@ -198,19 +198,31 @@ function Assert-DnsBaselineRestored {
   [void](Assert-NativeService 'EgoistShieldCore' $script:Core -Running)
   return [ordered]@{originalDnsAndDohRestored=$true;originalStaticDhcpChoiceRestored=$true;unrelatedPreserved=$true;coreRunning=$true}
 }
-function Invoke-DnsOrdinaryGui {
+function Assert-DnsElevatedGuiProof {
+  param($Proof)
+  $identity=[Security.Principal.WindowsIdentity]::GetCurrent();$current=[Diagnostics.Process]::GetCurrentProcess()
+  try{
+    if($Proof.launchPolicy -cne 'elevated' -or $Proof.elevatedGui -isnot [bool] -or -not $Proof.elevatedGui -or $Proof.guiRequestedExecutionLevel -cne 'requireAdministrator' -or @($Proof.arguments).Count -ne 0 -or $Proof.executable -ine (Join-Path $script:InstallRoot 'EgoistShield.exe') -or $Proof.source.commit -cne $DnsExpectedSourceCommit){throw 'Dns GUI launch is not the actual source-bound elevated empty-argv process.'}
+    foreach($token in @($Proof.token,$Proof.runnerToken)){
+      if($token.elevated -isnot [bool] -or -not $token.elevated -or $token.administratorsEnabled -isnot [bool] -or -not $token.administratorsEnabled -or ($token.integrityRid -isnot [int] -and $token.integrityRid -isnot [long]) -or $token.integrityRid -lt 12288 -or $token.uiAccess -isnot [bool] -or $token.uiAccess -or $token.tokenType -ne 1){throw 'Dns GUI requires a measured elevated administrator primary high token.'}
+      if($token.userSid -in @('S-1-5-18','S-1-5-19','S-1-5-20') -or $token.userSid -cne $identity.User.Value -or $token.sessionId -ne $current.SessionId){throw 'Dns GUI token does not belong to the actual current Windows user/session.'}
+    }
+    if($Proof.token.userSid -cne $Proof.runnerToken.userSid -or $Proof.token.sessionId -ne $Proof.runnerToken.sessionId){throw 'Dns GUI token differs from its measured launcher user/session.'}
+  }finally{$current.Dispose();$identity.Dispose()}
+}
+function Invoke-DnsElevatedGui {
   param([ValidateSet('Apply','Reset')][string]$Operation)
   Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
   $lease=$null;$child=$null;$closed=$false;$operationError=$null;$cleanup=$null
   try{
     Invoke-DnsGuardianHeartbeat
-    $lease=Start-OrdinaryGuiLease -CanonicalInstalledGuiPath (Join-Path $script:InstallRoot 'EgoistShield.exe') -IntegrityManifestPath $script:ManifestPath -ExpectedSourceCommit $DnsExpectedSourceCommit -WorkRoot $script:DnsWork -EvidenceDirectory $script:Evidence -LeaseSeconds 420
+    $lease=Start-ElevatedGuiLease -CanonicalInstalledGuiPath (Join-Path $script:InstallRoot 'EgoistShield.exe') -IntegrityManifestPath $script:ManifestPath -ExpectedSourceCommit $DnsExpectedSourceCommit -WorkRoot $script:DnsWork -EvidenceDirectory $script:Evidence -LeaseSeconds 420
     $proof=$lease.Receipt
-    if(@($proof.arguments).Count -ne 0 -or $proof.executable -ine (Join-Path $script:InstallRoot 'EgoistShield.exe') -or $proof.source.commit -cne $DnsExpectedSourceCommit){throw 'DNS GUI launch is not the actual source-bound ordinary empty-argv process.'}
+    Assert-DnsElevatedGuiProof $proof
     $child=[Diagnostics.Process]::GetProcessById([int]$proof.processId);$identity=Get-NativeProcessIdentity $child.Id
-    if($identity.executable -ine $proof.executable -or [Math]::Abs(($child.StartTime.ToUniversalTime()-[DateTimeOffset]::Parse($proof.startTimeUtc).UtcDateTime).TotalMilliseconds) -gt 20){throw 'DNS ordinary GUI process birth identity changed.'}
+    if($identity.executable -ine $proof.executable -or [Math]::Abs(($child.StartTime.ToUniversalTime()-[DateTimeOffset]::Parse($proof.startTimeUtc).UtcDateTime).TotalMilliseconds) -gt 20){throw 'DNS elevated GUI process birth identity changed.'}
     $root=[Windows.Automation.AutomationElement]::FromHandle([IntPtr]([long]$proof.mainWindowHandle))
-    if(-not $root -or $root.Current.ProcessId -ne $child.Id){throw 'DNS UIA is not bound to the exact ordinary GUI HWND.'}
+    if(-not $root -or $root.Current.ProcessId -ne $child.Id){throw 'DNS UIA is not bound to the exact elevated GUI HWND.'}
     $find={param([string]$Name,[Windows.Automation.ControlType]$Type)
       Invoke-DnsGuardianHeartbeat
       $condition=[Windows.Automation.AndCondition]::new([Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty,$Name),[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,$Type))
@@ -229,23 +241,23 @@ function Invoke-DnsOrdinaryGui {
       $field=Wait-NativeCondition {& $find 'Одна DNS-строка' ([Windows.Automation.ControlType]::Edit)} 'Actual native DNS HTTPS field' 60
       ([Windows.Automation.ValuePattern]$field.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).SetValue([string]$script:DnsProfile.url)
       $button=Wait-NativeCondition {& $find 'Подключить ссылку' ([Windows.Automation.ControlType]::Button)} 'Actual native DNS apply control' 60
-      Add-NativeMutation 'ordinary-gui-native-doh-apply' $script:DnsProfile.url 'Actual ordinary UI forwards a whitelisted operation through protected Core; no privileged UI override.'
+      Add-NativeMutation 'elevated-gui-native-doh-apply' $script:DnsProfile.url 'Actual elevated UI forwards a whitelisted operation through protected Core; no production override.'
       ([Windows.Automation.InvokePattern]$button.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
       [void](Wait-NativeCondition {Invoke-DnsGuardianHeartbeat;Assert-DnsPrivateOwnedState 'after-real-gui-apply'} 'Actual Windows DNS/DoH policy and private Core intent' 90)
     }else{
       $button=Wait-NativeCondition {& $find 'Отключить DoH' ([Windows.Automation.ControlType]::Button)} 'Actual native DNS disable control' 60
       ([Windows.Automation.InvokePattern]$button.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
       $confirm=Wait-NativeCondition {& $find 'Отключить' ([Windows.Automation.ControlType]::Button)} 'Actual DNS disable confirmation' 30
-      Add-NativeMutation 'ordinary-gui-native-doh-reset' $script:DnsProfile.url 'Actual reopened ordinary GUI restores original owned DNS/DoH through Core.'
+      Add-NativeMutation 'elevated-gui-native-doh-reset' $script:DnsProfile.url 'Actual reopened elevated GUI restores original owned DNS/DoH through Core.'
       ([Windows.Automation.InvokePattern]$confirm.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
       [void](Wait-NativeCondition {Invoke-DnsGuardianHeartbeat;Assert-DnsBaselineRestored} 'Actual GUI restored independent original DNS/DoH inventory' 90)
     }
     $pattern=$null;if(-not $root.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'DNS GUI native close control is unavailable.'}
     ([Windows.Automation.WindowPattern]$pattern).Close()
-    if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'DNS ordinary GUI did not exit normally.'};$closed=$true
+    if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'DNS elevated GUI did not exit normally.'};$closed=$true
     $script:Receipt.gui+=[ordered]@{operation=$Operation;launch=$proof;process=$identity;normalExit=$true;exitCode=$child.ExitCode;automation='actual HWND native UIA ValuePattern/InvokePattern/WindowPattern';productionOverride=$false}
   }catch{$operationError=$_}finally{
-    if($lease){try{$cleanup=Stop-OrdinaryGuiLease $lease;if(-not $closed -or -not $cleanup.exitedNormally -or $cleanup.exitCode -ne 0){throw 'DNS ordinary GUI did not have a normal verified zero-orphan exit.'}}catch{if(-not $operationError){$operationError=$_}}}
+    if($lease){try{$cleanup=Stop-ElevatedGuiLease $lease;if(-not $closed -or -not $cleanup.exitedNormally -or $cleanup.exitCode -ne 0){throw 'DNS elevated GUI did not have a normal verified zero-orphan exit.'}}catch{if(-not $operationError){$operationError=$_}}}
     if($child){$child.Dispose()};if($cleanup){$script:Receipt.gui+=[ordered]@{operation=$Operation;cleanup=$cleanup}};Save-NativeReceipt
   }
   if($operationError){throw $operationError}
@@ -418,7 +430,7 @@ function Invoke-DnsNativeAcceptance {
   [void][IO.Directory]::CreateDirectory($script:DnsWork);[void][IO.Directory]::CreateDirectory($script:Evidence)
   $script:Work=$script:DnsWork;$script:SourceCommit=$DnsExpectedSourceCommit;$script:ReceiptPath=Join-Path $script:Evidence 'windows-dns-native-acceptance.json'
   $script:DnsHeartbeat=$null;$script:Node=Resolve-NativeApplication 'node';$script:DnsPowerShell=[Diagnostics.Process]::GetCurrentProcess().MainModule.FileName;$script:DnsPktmon=Join-Path ([Environment]::GetFolderPath('Windows')) 'System32\pktmon.exe'
-  $script:Receipt=[ordered]@{schemaVersion=1;kind='actual-native-ordinary-gui-windows-doh';sourceCommit=$DnsExpectedSourceCommit;candidateVersion=$manifest.version;integritySha256=(Get-FileHash -LiteralPath $script:ManifestPath -Algorithm SHA256).Hash;result='running';releaseReady=$false;startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');provider=$script:DnsProfile;before=$script:DnsBefore;controlProbes=@($beforeControl);mutations=@();gui=@();probes=@();privateStateReadbacks=@();checks=@();guardian=$null;sourceHashes=@();releaseGates=@('Actual reboot/network-adapter detach or DHCP renewal','Custom-hostname bootstrap rotation','Windows10 local SystemDoH service/driver mode','Long-duration 72-hour/7-day/month pilot')}
+  $script:Receipt=[ordered]@{schemaVersion=1;kind='actual-native-elevated-gui-windows-doh';gate='System DNS from elevated GUI, persistence and restoration';sourceCommit=$DnsExpectedSourceCommit;candidateVersion=$manifest.version;integritySha256=(Get-FileHash -LiteralPath $script:ManifestPath -Algorithm SHA256).Hash;result='running';releaseReady=$false;startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');provider=$script:DnsProfile;before=$script:DnsBefore;controlProbes=@($beforeControl);mutations=@();gui=@();probes=@();privateStateReadbacks=@();checks=@();guardian=$null;sourceHashes=@();releaseGates=@('Actual reboot/network-adapter detach or DHCP renewal','Custom-hostname bootstrap rotation','Windows10 local SystemDoH service/driver mode','Long-duration 72-hour/7-day/month pilot')}
   foreach($name in @('windows-dns-native-acceptance.ps1','windows-dns-native-acceptance.mjs','windows-production-acceptance.ps1','windows-production-acceptance.mjs','windows-ordinary-gui.ps1','windows-ordinary-gui.cs')){$script:Receipt.sourceHashes+=[ordered]@{file=('tests/'+$name);sha256=(Get-FileHash -LiteralPath (Join-Path $script:DnsTestsRoot $name) -Algorithm SHA256).Hash}}
   Save-NativeReceipt;$guardian=$null;$filters=@();$failure=$null;$restored=$false
   try{
@@ -439,23 +451,23 @@ function Invoke-DnsNativeAcceptance {
       Add-NativeMutation 'owned-provider-packet-filter' $name ($server+':'+$port+'; exact named filter only')
     }}
     $guardian=Invoke-DnsGuardianLaunch
-    Invoke-DnsOrdinaryGui 'Apply'
+    Invoke-DnsElevatedGui 'Apply'
     [void](Assert-DnsPrivateOwnedState 'actual-gui-closed');Invoke-DnsTransportProbe 'without-gui'
     $script:Receipt.controlProbes+=Assert-DnsControlProbe 'with-doh-without-gui';Invoke-DnsGuardianHeartbeat
     Stop-NativeVerifiedCoreForRecovery
     [void](Assert-DnsPrivateOwnedState 'after-exact-owned-core-crash-new-pid');Invoke-DnsTransportProbe 'after-core-recovery'
     $script:Receipt.controlProbes+=Assert-DnsControlProbe 'after-core-recovery-without-gui'
-    Invoke-DnsOrdinaryGui 'Reset';$script:Receipt.restoration=Assert-DnsBaselineRestored;$restored=$true
+    Invoke-DnsElevatedGui 'Reset';$script:Receipt.restoration=Assert-DnsBaselineRestored;$restored=$true
     $script:Receipt.controlProbes+=Assert-DnsControlProbe 'after-real-gui-baseline-restore'
-    $script:Receipt.checks+=@('source-bound-full-installed-payload','actual-ordinary-medium-gui-empty-argv','native-api-per-adapter-no-udp-fallback','private-core-intent-baseline','actual-forced-windows-dns-plus-provider-tls','dns-survives-normal-gui-close','new-core-pid-dns-policy-and-query-preserved','real-reopened-gui-restores-original-dns-doh-and-unrelated-state')
+    $script:Receipt.checks+=@('source-bound-full-installed-payload','actual-elevated-high-gui-empty-argv','native-api-per-adapter-no-udp-fallback','private-core-intent-baseline','actual-forced-windows-dns-plus-provider-tls','dns-survives-normal-gui-close','new-core-pid-dns-policy-and-query-preserved','real-reopened-gui-restores-original-dns-doh-and-unrelated-state')
     $script:Receipt.result='passed'
   }catch{$failure=$_;$script:Receipt.result='failed';$script:Receipt.failure=$_.Exception.Message}
   finally{
     if($guardian){
       if(-not $restored){try{[void](Assert-DnsBaselineRestored);$restored=$true;$script:Receipt.failureCleanup='independent baseline was already unchanged'}catch{
-        try{Invoke-DnsOrdinaryGui 'Reset';[void](Assert-DnsBaselineRestored);$restored=$true}catch{$script:Receipt.guiFailureCleanupError=$_.Exception.Message}
+        try{Invoke-DnsElevatedGui 'Reset';[void](Assert-DnsBaselineRestored);$restored=$true}catch{$script:Receipt.guiFailureCleanupError=$_.Exception.Message}
       }}
-      if($restored){[IO.File]::WriteAllText([string]$guardian.Plan.disarm,'restored through actual ordinary GUI and independent readback',[Text.UTF8Encoding]::new($false))}else{[IO.File]::WriteAllText([string]$guardian.Plan.force,'acceptance failed; compare-and-restore only',[Text.UTF8Encoding]::new($false))}
+      if($restored){[IO.File]::WriteAllText([string]$guardian.Plan.disarm,'restored through actual elevated GUI and independent readback',[Text.UTF8Encoding]::new($false))}else{[IO.File]::WriteAllText([string]$guardian.Plan.force,'acceptance failed; compare-and-restore only',[Text.UTF8Encoding]::new($false))}
       if(-not $guardian.Process.WaitForExit(45000)){$script:Receipt.guardianTimeout=$true;$script:Receipt.result='failed';if(-not $failure){$failure=[Exception]::new('Emergency guardian cleanup timed out; runner must be retired.')}}
       if($guardian.Process.HasExited){[IO.File]::WriteAllText((Join-Path $script:DnsWork 'guardian.stdout.txt'),$guardian.Output.GetAwaiter().GetResult(),[Text.UTF8Encoding]::new($false));[IO.File]::WriteAllText((Join-Path $script:DnsWork 'guardian.stderr.txt'),$guardian.Errors.GetAwaiter().GetResult(),[Text.UTF8Encoding]::new($false))}
       if(Test-Path -LiteralPath ([string]$guardian.Plan.receipt)){$script:Receipt.guardian=Get-Content -LiteralPath ([string]$guardian.Plan.receipt) -Raw | ConvertFrom-Json}

@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$TestDirectory)
+﻿param([Parameter(Mandatory=$true)][string]$TestDirectory)
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version 2.0
 $root=[IO.Path]::GetFullPath($TestDirectory)
@@ -108,6 +108,7 @@ function New-Stage {
   [IO.File]::WriteAllText((Join-Path $stage 'invoke-final-silent-reinstall.ps1'),'throw "Test task action must never execute."')
   [IO.File]::WriteAllText((Join-Path $stage 'service-maintenance.ps1'),'# Harmless hash inventory fixture.')
   [IO.File]::Copy($module,(Join-Path $stage 'maintenance-boot-recovery.ps1'))
+  [IO.File]::Copy((Join-Path $project 'src\installer\gui-login-startup.ps1'),(Join-Path $stage 'gui-login-startup.ps1'))
   [IO.File]::WriteAllText((Join-Path $stage 'state.json'),'{"schemaVersion":1,"owner":"EgoistShield","handoffStarted":false}')
   return Get-InstallerBootRecoveryContext $stage
 }
@@ -203,7 +204,7 @@ Reset-Scheduler; $context=New-Stage; $script:Scheduler.DropAfterCreate=$true
 Assert-Throws {Register-InstallerMaintenanceBootRecovery $context.stage} 'missing post-create readback blocks the caller before services are disabled'
 $script:Groups.Add('mandatory registration readback')
 
-foreach($name in @('invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1')){
+foreach($name in @('invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1','gui-login-startup.ps1')){
   $context=New-RegisteredStage
   [IO.File]::AppendAllText((Join-Path $context.stage $name),'# changed after registration')
   Assert-Throws {Assert-InstallerMaintenanceBootRecovery $context.stage} 'each immutable script is hash pinned'
@@ -330,6 +331,33 @@ $context=New-RegisteredStage; $script:Scheduler.DeleteFailure=$true
 Assert-Throws {Unregister-InstallerMaintenanceBootRecovery $context.stage -RestorationVerified:$true} 'scheduler deletion failure is reported'
 Assert-Test ($script:Scheduler.Tasks.ContainsKey($context.taskName)) 'failed retirement retains own registered task'
 $script:Groups.Add('retirement failure preserves task')
+
+Reset-Scheduler; $context=New-Stage
+[IO.File]::Delete((Join-Path $context.stage 'gui-login-startup.ps1'))
+Assert-Throws {Register-InstallerMaintenanceBootRecovery $context.stage} 'new registration refuses a missing fourth helper'
+Assert-Test ($script:Scheduler.Creates -eq 0) 'new incomplete stage cannot create a recovery task'
+$script:Groups.Add('new four-helper registration cannot silently fall back')
+
+Reset-Scheduler; $context=New-Stage
+[IO.File]::Delete((Join-Path $context.stage 'gui-login-startup.ps1'))
+$legacyContract="immutableNames=@('invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1')"
+[IO.File]::WriteAllText((Join-Path $context.stage 'maintenance-boot-recovery.ps1'),('# Harmless legacy capability fixture; no task action executes.'+[Environment]::NewLine+$legacyContract))
+$context.immutableNames=@('invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1')
+$inventory=Get-InstallerBootRecoveryInventory $context -Create
+Invoke-InstallerBootRecoveryScheduler -Operation Create -TaskName $context.taskName -Xml (New-InstallerBootRecoveryTaskXml $context $inventory) -SecurityDescriptor $context.securityDescriptor
+Assert-Test (Assert-InstallerMaintenanceBootRecovery $context.stage).verified 'existing protected three-helper stage verifies with original inventory and task identity'
+Assert-Throws {Register-InstallerMaintenanceBootRecovery $context.stage} 'legacy descriptor never permits new registration'
+Assert-Test (Unregister-InstallerMaintenanceBootRecovery $context.stage -RestorationVerified:$true).removed 'existing authenticated legacy task can retire after restoration'
+$script:Groups.Add('protected legacy three-helper read and retirement compatibility')
+
+Reset-Scheduler; $context=New-Stage
+[IO.File]::Delete((Join-Path $context.stage 'gui-login-startup.ps1'))
+$context.immutableNames=@('invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1')
+$inventory=Get-InstallerBootRecoveryInventory $context -Create
+Invoke-InstallerBootRecoveryScheduler -Operation Create -TaskName $context.taskName -Xml (New-InstallerBootRecoveryTaskXml $context $inventory) -SecurityDescriptor $context.securityDescriptor
+Assert-Throws {Assert-InstallerMaintenanceBootRecovery $context.stage} 'current GUI-capable module cannot masquerade as legacy three-helper capability'
+Assert-Test ($script:Scheduler.Deletes -eq 0) 'forged legacy descriptor cannot retire a task'
+$script:Groups.Add('legacy capability is bound to original module source')
 
 $result=[ordered]@{
   schemaVersion=1;passed=$true;groupCount=$script:Groups.Count;assertionCount=$script:Assertions;groups=@($script:Groups)
