@@ -24,8 +24,8 @@ internal sealed class WindowsServiceListenerSnapshot
     internal WindowsServiceListenerSnapshot(string serviceName,
         Func<int, CancellationToken, ServiceListenerSnapshot?>? collect = null)
     {
-        if (serviceName != "EgoistShieldTelegramProxy")
-            throw new ArgumentException("Native snapshot requires the owned Telegram service.");
+        if (serviceName is not ("EgoistShieldTelegramProxy" or "EgoistShieldVpn"))
+            throw new ArgumentException("Native snapshot requires an owned TCP service.");
         _serviceName = serviceName;
         _collect = collect ?? ((port, token) => Collect(_serviceName, port, token));
     }
@@ -147,6 +147,9 @@ internal sealed class WindowsServiceListenerSnapshot
         if (last != 18) throw new Win32Exception(last);
         return parents;
     }
+
+    internal static int ReadParentProcessId(int processId, CancellationToken cancellationToken) =>
+        ReadParents(cancellationToken).GetValueOrDefault(processId);
 
     internal static ListenerEndpoint[] ReadListeners(int port, CancellationToken token)
     {

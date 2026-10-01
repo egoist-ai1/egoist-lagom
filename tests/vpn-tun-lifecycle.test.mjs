@@ -35,6 +35,7 @@ function loadVpnRuntimeManager({ baseline = false, platform = process.platform, 
       XRAY_PLAN: { exeName: 'xray.exe' },
       readVersionFile: async () => null,
       compareLooseVersions: () => 0,
+      runtimeExecutionEnvironment: (_lease, inherited) => inherited,
       ...bindings
     }, ['VpnRuntimeManager']).VpnRuntimeManager;
   } finally {
@@ -231,6 +232,7 @@ test('recognizes only the recorded Windows Xray TUN route initialization failure
   const manager = new VpnRuntimeManager('.', '.');
   const events = [];
   manager.isAdmin = async () => true;
+  manager.verifyRuntimeCandidate = async () => ({ runtimePath: 'xray.exe', release() {}, watch() {} });
   manager.resolveRuntimePath = async () => ({ runtimeKind: 'xray', runtimePath: 'xray.exe' });
   manager.resolveXrayTunRuntime = async (_configuredPath, runtime) => ({ ok: true, runtime });
   manager.terminateSession = async (_session, cleanup) => events.push({ type: 'terminate', cleanup });

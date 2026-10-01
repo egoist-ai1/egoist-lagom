@@ -76,7 +76,7 @@ export async function stageElectronPayload({ runtime, out, recoveredResources })
   const { runtimePath, files, ...pin } = runtime;
   const provenance = {
     ...pin,
-    executable: { packagedName: 'EgoistShield.exe', upstreamSha256: files.find(entry => entry.path === 'electron.exe')?.sha256, modifiedFor: ['product icon/version', 'requireAdministrator manifest'] },
+    executable: { packagedName: 'EgoistShield.exe', upstreamSha256: files.find(entry => entry.path === 'electron.exe')?.sha256, modifiedFor: ['product icon/version', 'asInvoker manifest', 'production GUI fuses', 'embedded ASAR integrity'] },
     productResourceNames,
     excludedRecoveredResources: ['app.asar', 'core-service'],
     excludedUpstreamSample: templateAsar,

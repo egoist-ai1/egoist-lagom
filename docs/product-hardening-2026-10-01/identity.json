@@ -1,0 +1,206 @@
+{
+  "scope": "runtime identity production hardening; own harmless Windows processes/files and source-frozen test assembly",
+  "validation": {
+    "archive": {
+      "sha256": "9b382492dcfee91f8f9e92c91f7972550a1b95d2299cac72279dab33a600d7db",
+      "verified": true,
+      "extractedFiles": 73
+    },
+    "node": {
+      "failed": 0,
+      "skipped": 0,
+      "passed": 28
+    },
+    "csharpNative": {
+      "structuredWorkerChildren": 5,
+      "warnings": 5,
+      "nativeArgumentChildren": 14,
+      "errors": 0,
+      "failedGroups": 0,
+      "passedGroups": 8
+    },
+    "electronNative": {
+      "failedCases": 0,
+      "actualNodeVersion": "24.21.0",
+      "actualVersion": "44.5.1",
+      "asarHeaderMismatchExit": 4294930435,
+      "actualTokenAdmin": false,
+      "chromiumCdpExecutedOwnRenderer": true,
+      "nativeGuiPolicyRejectedCdp": true,
+      "baselineOutsideCodeExecuted": true,
+      "inspectorProbes": 28,
+      "passedCases": 11,
+      "inspectorConnections": 0,
+      "hardenedOutsideCodeExecuted": false
+    }
+  },
+  "baseCommit": "5d0d58b44076843e639723ef267e7b8d2605e481",
+  "checkedAt": "2026-10-01T02:34:56.5637966+03:00",
+  "schemaVersion": 1,
+  "limitations": [
+    "No installation/SCM/DNS/Tasks/registry modification",
+    "Ordinary-token installed GUI positive acceptance remains external native installer acceptance",
+    "CSharp byte fixtures use only compile-time ACL-root seam; actual NTFS/OS ACL checks separately exercised",
+    "Copied upstream Electron with own minimal ASAR does not verify every product screen",
+    "No months-long soak proof; no guarantee against same-user native memory injection"
+  ],
+  "sources": [
+    {
+      "file": "scripts/electron-runtime.json",
+      "bytes": 1563,
+      "sha256Lf": "7039F1CBE5BDC29558BAA8B053167465F0FD21E22FD48DE02389D0765B54FF07",
+      "sha256": "7039F1CBE5BDC29558BAA8B053167465F0FD21E22FD48DE02389D0765B54FF07"
+    },
+    {
+      "file": "scripts/electron-runtime.mjs",
+      "bytes": 9364,
+      "sha256Lf": "87E80E78FF061C0751FCCE292684CDD48149EC5CF1E765B575C8FAFA43F40D43",
+      "sha256": "87E80E78FF061C0751FCCE292684CDD48149EC5CF1E765B575C8FAFA43F40D43"
+    },
+    {
+      "file": "scripts/electron-fuses.mjs",
+      "bytes": 2018,
+      "sha256Lf": "06B667183C4FE30D22A1460C8CFA3A32D4AB1AB243F1854B658B50218E365BC5",
+      "sha256": "06B667183C4FE30D22A1460C8CFA3A32D4AB1AB243F1854B658B50218E365BC5"
+    },
+    {
+      "file": "scripts/embed-asar-integrity.py",
+      "bytes": 3831,
+      "sha256Lf": "6C9087CD7D5A2AE3B718C8DC1877D8A74764990AD5D920CD2E166B8E0FC4268C",
+      "sha256": "6C9087CD7D5A2AE3B718C8DC1877D8A74764990AD5D920CD2E166B8E0FC4268C"
+    },
+    {
+      "file": "scripts/worker-host-integrity.mjs",
+      "bytes": 3128,
+      "sha256Lf": "502ABD213E86374CE65062BA3C39255EA08B58F16195A38E701E5EFEF4E8B2E3",
+      "sha256": "502ABD213E86374CE65062BA3C39255EA08B58F16195A38E701E5EFEF4E8B2E3"
+    },
+    {
+      "file": "src/native-runtime-trust.js",
+      "bytes": 17714,
+      "sha256Lf": "1EEA805829755A49BFDF481B12DD5B8658C0101FEE7C59AD5C53673444F4EDFE",
+      "sha256": "1EEA805829755A49BFDF481B12DD5B8658C0101FEE7C59AD5C53673444F4EDFE"
+    },
+    {
+      "file": "src/component-worker-entry.js",
+      "bytes": 3359,
+      "sha256Lf": "BEC0EB0B410C7F33F652B0456F05FBB11069F043F6B254CDAE26E63F8FA71E94",
+      "sha256": "FB3597926702D802FA87A29BD10E5FD8D6A13DA532EB22A2DE3665930E527473"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/ClientAuthorizer.cs",
+      "bytes": 7792,
+      "sha256Lf": "21FAAAE25C505374277B241E3BEE7B9190315870826F6456DCF688AE540F1B18",
+      "sha256": "21FAAAE25C505374277B241E3BEE7B9190315870826F6456DCF688AE540F1B18"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/ComponentWorker.cs",
+      "bytes": 13619,
+      "sha256Lf": "F049C4C77992061C8752A5ABC2B5220D36A768418DC5C74C541D12471FB6642C",
+      "sha256": "F049C4C77992061C8752A5ABC2B5220D36A768418DC5C74C541D12471FB6642C"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/Program.cs",
+      "bytes": 8472,
+      "sha256Lf": "65F98E40976F669ECFFE92E7C8BD02EB4700ABD119C4B0A7084052940404244F",
+      "sha256": "65F98E40976F669ECFFE92E7C8BD02EB4700ABD119C4B0A7084052940404244F"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/NativeRuntimeTrustCommand.cs",
+      "bytes": 2748,
+      "sha256Lf": "7ACC346056A60BDAC4E717FA3AA19A00C197997CB5A8AD2EE99FBCAE1B9D5DC1",
+      "sha256": "7ACC346056A60BDAC4E717FA3AA19A00C197997CB5A8AD2EE99FBCAE1B9D5DC1"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/ProtectedExecutable.cs",
+      "bytes": 15686,
+      "sha256Lf": "815F4CC8D0E68DAA8FF9F7C192E8ED12AA8B0DE3E539BF2D4A14291AADACE21F",
+      "sha256": "815F4CC8D0E68DAA8FF9F7C192E8ED12AA8B0DE3E539BF2D4A14291AADACE21F"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/GuiLaunchPolicy.cs",
+      "bytes": 4854,
+      "sha256Lf": "402A7B6E1203F7ED27FC05DFDE526F8951E78D367036B974488277A9F0D84543",
+      "sha256": "402A7B6E1203F7ED27FC05DFDE526F8951E78D367036B974488277A9F0D84543"
+    },
+    {
+      "file": "tests/electron-runtime-packaging.test.mjs",
+      "bytes": 14463,
+      "sha256Lf": "F0F49D5DB917DDEE45B4A95F7B9F3D948F93B50A5241D4811A5A6B5B9B6F29B4",
+      "sha256": "F0F49D5DB917DDEE45B4A95F7B9F3D948F93B50A5241D4811A5A6B5B9B6F29B4"
+    },
+    {
+      "file": "tests/production-runtime-identity.test.mjs",
+      "bytes": 9802,
+      "sha256Lf": "93E23EAE7931E26DFEC17C9793942F6AAC7C601813E37B4B572F480F223583C4",
+      "sha256": "93E23EAE7931E26DFEC17C9793942F6AAC7C601813E37B4B572F480F223583C4"
+    },
+    {
+      "file": "tests/runtime-identity-native.mjs",
+      "bytes": 15615,
+      "sha256Lf": "F865BAC4C2D986946B12A099A13C4CE8FFEAE4FC7BA89AA771F251A706200944",
+      "sha256": "F865BAC4C2D986946B12A099A13C4CE8FFEAE4FC7BA89AA771F251A706200944"
+    },
+    {
+      "file": "tests/runtime-identity-production.cs",
+      "bytes": 17624,
+      "sha256Lf": "225093B7B25C5A8C80B1393A49E10E3DEB34E2066D5B2823C4D36CAF50EA951B",
+      "sha256": "225093B7B25C5A8C80B1393A49E10E3DEB34E2066D5B2823C4D36CAF50EA951B"
+    },
+    {
+      "file": "tests/runtime-identity-production.ps1",
+      "bytes": 3600,
+      "sha256Lf": "1C397A426152528D53BBD81170098799193087ADD9FABFB1DABF674ECDA959EF",
+      "sha256": "1C397A426152528D53BBD81170098799193087ADD9FABFB1DABF674ECDA959EF"
+    }
+  ],
+  "source": "working-tree source; proof taken before commit",
+  "artifacts": [
+    {
+      "file": "identity-csharp-build.txt",
+      "bytes": 6903,
+      "sha256": "12F9A3DC2FD4ED7F5BCFC9AD6D63994477AE935936A00EB750D9B1E77B39C69C"
+    },
+    {
+      "file": "identity-csharp-native.json",
+      "bytes": 2955,
+      "sha256": "FD968C17412B8B598E6500EF487C758BA40EE36DA615568195C697292D96150F"
+    },
+    {
+      "file": "identity-csharp-source-hashes.json",
+      "bytes": 1162,
+      "sha256": "02368AACBE24D8858EA919DFDD5344ED71D0581B86E0B65B5AA0A518FFEC692E"
+    },
+    {
+      "file": "identity-electron-cache-verified.json",
+      "bytes": 10488,
+      "sha256": "F4C0FFE6346DF8E580FC49A1C7BE0B0236659382C86D8685C5B4241F7B922C0D"
+    },
+    {
+      "file": "identity-electron-native.json",
+      "bytes": 5663,
+      "sha256": "AD5E5C5F09217BD9B51E152D2ACC968B6751A7F06BCCC8C6C211903928C87276"
+    },
+    {
+      "file": "identity-electron-native.txt",
+      "bytes": 2693,
+      "sha256": "DC4205DEBE35AD3E1CC1C04C26992F82859ED01AF1E624D06F0D62A3A190E94A"
+    },
+    {
+      "file": "identity-electron-official-release.json",
+      "bytes": 149290,
+      "sha256": "582714639DCB5B5369EFBBED587B7074102A28E25482E325CAE9B36E085C4A34"
+    },
+    {
+      "file": "identity-node-tests.txt",
+      "bytes": 2423,
+      "sha256": "F2E58C5AEF9A292704331ED6F1CE4A3D89182B612AF8BD8B8F2E1B5F253EC491"
+    },
+    {
+      "file": "identity.md",
+      "bytes": 9061,
+      "sha256": "B3B1A484FF15F9C5C7A442EF345399F84B49A852746FD357D3B20BC5D224ECF4"
+    }
+  ],
+  "releaseReady": false
+}

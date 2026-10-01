@@ -40,22 +40,27 @@ function buildNetworkModuleInspectors({ stateStore, runtimeManager, gravitylessD
 			const state = stateStore.get();
 			const status = await runtimeManager.status();
 			const active = Boolean(status.connected);
-			const locks = active ? [
+			const background = status.backgroundService;
+			const backgroundOccupied = Boolean(background?.serviceInstalled && (background.backgroundEnabled || background.serviceRunning || background.running || background.serviceState !== "stopped" || background.startType !== "disabled"));
+			const occupied = active || backgroundOccupied;
+			const temporary = status.executionMode !== "background-service" && !backgroundOccupied;
+			const locks = occupied ? [
 				"traffic-route",
-				"system-proxy",
 				"dns-verify",
-				...state.settings.killSwitch ? ["firewall-kill-switch"] : [],
+				...temporary ? ["system-proxy"] : [],
+				...temporary && state.settings.killSwitch ? ["firewall-kill-switch"] : [],
 				...state.settings.zapretSuspendDuringVpn ? ["zapret-suspend"] : []
 			] : [];
 			return {
 				id: "vpn",
-				status: active ? "active" : status.lifecycle === "failed" ? "degraded" : "idle",
-				health: status.lastError || status.diagnostic?.reason ? "warn" : "ok",
+				status: active ? "active" : occupied || status.lifecycle === "failed" ? "degraded" : "idle",
+				health: status.lastError || status.diagnostic?.reason || occupied && !active || active && status.egressVerified === false ? "warn" : "ok",
 				ownedLocks: locks,
-				activeMutations: active ? [
+				activeMutations: occupied ? [
 					`runtime:${status.runtimeKind ?? "unknown"}`,
 					`route:${state.settings.routeMode ?? "global"}`,
-					...status.proxyPort ? [`system-proxy:${status.proxyPort}`] : []
+					...backgroundOccupied ? ["service:EgoistShieldVpn"] : [],
+					...temporary && status.proxyPort ? [`system-proxy:${status.proxyPort}`] : []
 				] : [],
 				rollbackReady: active,
 				blockers: status.lastError ? [String(status.lastError)] : []
@@ -134,7 +139,7 @@ function buildNetworkModuleInspectors({ stateStore, runtimeManager, gravitylessD
 		}),
 		"system-proxy": async () => inspectModule("system-proxy", async () => {
 			const status = await runtimeManager.status();
-			const active = Boolean(status.connected && status.proxyPort);
+			const active = Boolean(status.executionMode !== "background-service" && status.connected && status.proxyPort);
 			return {
 				id: "system-proxy",
 				status: active ? "active" : "idle",
@@ -147,7 +152,7 @@ function buildNetworkModuleInspectors({ stateStore, runtimeManager, gravitylessD
 		firewall: async () => inspectModule("firewall", async () => {
 			const state = stateStore.get();
 			const status = await runtimeManager.status();
-			const active = Boolean(status.connected && state.settings.killSwitch);
+			const active = Boolean(status.executionMode !== "background-service" && status.connected && state.settings.killSwitch);
 			return {
 				id: "firewall",
 				status: active ? "active" : "idle",

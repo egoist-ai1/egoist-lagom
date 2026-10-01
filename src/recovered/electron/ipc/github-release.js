@@ -4,6 +4,15 @@ var DEFAULT_GITHUB_HEADERS = {
 	"User-Agent": "EgoistShield/Desktop",
 	Accept: "application/vnd.github+json"
 };
+var GITHUB_DOWNLOAD_REDIRECT_HOSTS = new Set(["github.com", "objects.githubusercontent.com", "objects-origin.githubusercontent.com", "github-releases.githubusercontent.com", "release-assets.githubusercontent.com"]);
+function assertGitHubAssetDownloadUrl(rawUrl, context = { initial: true }) {
+	const parsed = assertReleaseHttpsUrl(rawUrl, context.initial ? new Set(["github.com"]) : GITHUB_DOWNLOAD_REDIRECT_HOSTS);
+	if (context.initial && (!/^\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/releases\/(?:download\/[^/]+|latest\/download)\/[^/]+$/.test(parsed.pathname) || parsed.search || /%(?:2f|5c|00)/i.test(parsed.pathname))) throw new Error("Unsupported GitHub release asset URL.");
+	return parsed;
+}
+function assertGitHubReleasePageUrl(rawUrl) {
+	return assertReleaseHttpsUrl(rawUrl, new Set(["github.com", "api.github.com"]));
+}
 function parseGitHubReleaseApiUrl(releaseApiUrl) {
 	const match = releaseApiUrl.match(/^https:\/\/api\.github\.com\/repos\/([^/]+)\/([^/]+)\/releases(?:\/latest)?\/?$/i);
 	if (!match?.[1] || !match[2]) return null;
@@ -63,8 +72,10 @@ function compareLooseVersions(left, right) {
 	return 0;
 }
 async function fetchLatestGitHubRelease(releaseApiUrl, headers = DEFAULT_GITHUB_HEADERS) {
+	if (!parseGitHubReleaseApiUrl(releaseApiUrl)) throw new Error("Unsupported GitHub release API URL.");
 	return fetchJsonWithRetry(releaseApiUrl, {
 		headers,
+		validateUrl: assertGitHubReleasePageUrl,
 		timeoutMs: 15e3,
 		retries: 2,
 		retryBaseDelayMs: 500
@@ -75,6 +86,7 @@ async function fetchGitHubReleases(releaseApiUrl, headers = DEFAULT_GITHUB_HEADE
 	if (!releasesApiUrl) throw new Error("Unsupported GitHub release API URL.");
 	return fetchJsonWithRetry(`${releasesApiUrl}?per_page=${Math.max(1, Math.min(limit, 100))}`, {
 		headers,
+		validateUrl: assertGitHubReleasePageUrl,
 		timeoutMs: 15e3,
 		retries: 2,
 		retryBaseDelayMs: 500
@@ -85,6 +97,7 @@ async function fetchGitHubReleaseByTag(releaseApiUrl, tagName, headers = DEFAULT
 	if (!releaseTagApiUrl) throw new Error("Unsupported GitHub release API URL.");
 	return fetchJsonWithRetry(releaseTagApiUrl, {
 		headers,
+		validateUrl: assertGitHubReleasePageUrl,
 		timeoutMs: 15e3,
 		retries: 2,
 		retryBaseDelayMs: 500
@@ -112,7 +125,7 @@ async function fetchLatestGitHubReleasePageMeta(releaseApiUrl, headers = DEFAULT
 			...headers,
 			Accept: "text/html,application/xhtml+xml"
 		},
-		redirect: "follow",
+		validateUrl: assertGitHubReleasePageUrl,
 		timeoutMs: 15e3,
 		retries: 2,
 		retryBaseDelayMs: 500
@@ -162,47 +175,84 @@ function pickGitHubAsset(release, matchers, excludes = []) {
 	}
 	return null;
 }
-async function downloadFileWithProgress(url, destinationPath, onProgress, headers = DEFAULT_GITHUB_HEADERS) {
-	await promises.mkdir(path.dirname(destinationPath), { recursive: true });
-	const { response } = await fetchWithRetry(url, {
-		headers,
-		timeoutMs: 6e4,
-		retries: 2,
-		retryBaseDelayMs: 1e3
-	});
-	if (!response.ok || !response.body) throw new Error(`Ошибка загрузки (${response.status})`);
-	const total = Number.parseInt(response.headers.get("content-length") ?? "0", 10) || 0;
-	const fileHandle = await promises.open(destinationPath, "w");
-	let transferred = 0;
+async function downloadFileWithProgress(url, destinationPath, onProgress, headers = DEFAULT_GITHUB_HEADERS, options = {}) {
+	const { headerTimeoutMs = 6e4, bodyIdleTimeoutMs = 15e3, totalTimeoutMs = 10 * 60e3, maxBytes = 512 * 1024 * 1024, expectedBytes, signal, retries = 2, fetchImpl, validateUrl = assertGitHubAssetDownloadUrl } = options;
+	for (const [name, value] of Object.entries({ headerTimeoutMs, bodyIdleTimeoutMs, totalTimeoutMs, maxBytes })) if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`Invalid download ${name}.`);
+	if (expectedBytes !== void 0 && (!Number.isSafeInteger(expectedBytes) || expectedBytes <= 0 || expectedBytes > maxBytes)) throw new Error("Invalid expected download size.");
+	validateUrl(url, { initial: true });
+	const controller = new AbortController();
+	const abortFromCaller = () => controller.abort(signal?.reason);
+	if (signal?.aborted) throw signal.reason ?? createRequestAbortError();
+	signal?.addEventListener("abort", abortFromCaller, { once: true });
+	const deadline = setTimeout(() => controller.abort(createNetworkTimeoutError("Download total deadline exceeded.")), totalTimeoutMs);
+	let completed;
+	const progress = (value) => { try { onProgress?.(value); } catch {} };
 	try {
-		const reader = response.body.getReader();
-		while (true) {
-			const { done, value } = await reader.read();
-			if (done) break;
-			if (!value) continue;
-			await fileHandle.write(Buffer.from(value), 0, value.length, null);
-			transferred += value.length;
-			onProgress?.({
-				percent: total > 0 ? Math.min(100, Math.round(transferred / total * 100)) : 0,
-				transferred,
-				total
-			});
-		}
-	} catch (error) {
-		await promises.rm(destinationPath, { force: true }).catch(() => void 0);
-		throw error;
+		await promises.mkdir(path.dirname(destinationPath), { recursive: true });
+		const result = await fetchWithRetry(url, {
+			headers, headerTimeoutMs, timeoutMs: totalTimeoutMs, retries, retryBaseDelayMs: 1e3,
+			signal: controller.signal, fetchImpl, validateUrl, maxRedirects: 4
+		}, async (response, attempt) => {
+			const partialPath = path.join(path.dirname(destinationPath), `.${path.basename(destinationPath)}.${randomUUID()}.partial`);
+			let fileHandle, reader, transferred = 0, published = false, createdPartial = false;
+			try {
+				if (!response.body) throw new Error(`Ошибка загрузки: пустой ответ (${response.status}).`);
+				const lengthHeader = response.headers.get("content-length");
+				if (lengthHeader !== null && (!/^\d+$/.test(lengthHeader) || !Number.isSafeInteger(Number(lengthHeader)))) throw new Error("Invalid download Content-Length.");
+				const total = lengthHeader === null ? expectedBytes ?? 0 : Number(lengthHeader);
+				if (total > maxBytes) throw new ResponseTooLargeError(maxBytes);
+				if (expectedBytes !== void 0 && lengthHeader !== null && total !== expectedBytes) throw new Error("Download size does not match release metadata.");
+				reader = response.body.getReader();
+				fileHandle = await promises.open(partialPath, "wx", 384);
+				createdPartial = true;
+				while (true) {
+					if (attempt.signal.aborted) throw attempt.signal.reason;
+					const idleTimeout = setTimeout(() => controller.abort(createNetworkTimeoutError("Download body stalled.")), bodyIdleTimeoutMs);
+					let chunk;
+					try { chunk = await waitWithNetworkAbort(reader.read(), attempt.signal); }
+					finally { clearTimeout(idleTimeout); }
+					if (chunk.done) break;
+					if (!chunk.value?.byteLength) continue;
+					const bytes = Buffer.from(chunk.value);
+					if (transferred + bytes.length > maxBytes) throw new ResponseTooLargeError(maxBytes);
+					if ((lengthHeader !== null || expectedBytes !== void 0) && transferred + bytes.length > total) throw new Error("Download exceeds declared size.");
+					let offset = 0;
+					while (offset < bytes.length) {
+						if (attempt.signal.aborted) throw attempt.signal.reason;
+						const { bytesWritten } = await fileHandle.write(bytes, offset, bytes.length - offset, null);
+						if (!Number.isInteger(bytesWritten) || bytesWritten <= 0 || bytesWritten > bytes.length - offset) throw new Error("Download file write made no progress.");
+						offset += bytesWritten;
+					}
+					transferred += bytes.length;
+					progress({ percent: total > 0 ? Math.min(99, Math.round(transferred / total * 100)) : 0, transferred, total });
+				}
+				if ((lengthHeader !== null || expectedBytes !== void 0) && transferred !== total) throw new Error("Download ended before the declared size.");
+				await fileHandle.sync();
+				await fileHandle.close();
+				fileHandle = null;
+				if (attempt.signal.aborted) throw attempt.signal.reason;
+				await promises.rename(partialPath, destinationPath);
+				published = true;
+				return { transferred, total };
+			} finally {
+				if (reader) { await cancelNetworkBody(reader); try { reader.releaseLock(); } catch {} }
+				else await cancelNetworkBody(response.body);
+				await fileHandle?.close().catch(() => void 0);
+				if (createdPartial && !published) await promises.rm(partialPath, { force: true }).catch(() => void 0);
+			}
+		});
+		completed = { percent: 100, transferred: result.transferred, total: result.total };
 	} finally {
-		await fileHandle.close();
+		clearTimeout(deadline);
+		signal?.removeEventListener("abort", abortFromCaller);
 	}
-	onProgress?.({
-		percent: 100,
-		transferred,
-		total
-	});
+	progress(completed);
+	return completed;
 }
 async function downloadText(url, headers = DEFAULT_GITHUB_HEADERS) {
 	const { text } = await fetchTextWithRetry(url, {
 		headers,
+		validateUrl: assertGitHubAssetDownloadUrl,
 		timeoutMs: 2e4,
 		retries: 2,
 		retryBaseDelayMs: 500
@@ -288,7 +338,7 @@ async function fetchGitHubReleaseAssetSha256(options) {
 			...headers,
 			Accept: "text/html,application/xhtml+xml"
 		},
-		redirect: "follow",
+		validateUrl: assertGitHubReleasePageUrl,
 		timeoutMs: 15e3,
 		retries: 2,
 		retryBaseDelayMs: 500,

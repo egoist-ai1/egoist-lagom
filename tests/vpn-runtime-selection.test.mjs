@@ -6,6 +6,7 @@ import os from 'node:os';
 import { EventEmitter } from 'node:events';
 import { promisify } from 'node:util';
 import { loadRecovered } from './load-recovered.mjs';
+import { verifyNativeRuntimeForExecution, runtimeExecutionEnvironment } from '../src/native-runtime-trust.js';
 
 class RuntimeInstaller {
   constructor() {}
@@ -24,6 +25,8 @@ const { VpnRuntimeManager } = loadRecovered('electron/ipc/vpn-manager', {
   path,
   promises: fs,
   process,
+  verifyNativeRuntimeForExecution,
+  runtimeExecutionEnvironment,
   XRAY_NATIVE_TUN_MIN_VERSION: 'v26.5.3',
   XRAY_PLAN: { exeName: 'xray.exe' },
   readVersionFile: async file => fs.readFile(file, 'utf8').then(value => value.trim()).catch(() => null),
@@ -43,6 +46,7 @@ test('native TUN replaces an incomplete managed Xray selected ahead of the bundl
   await fs.writeFile(path.join(path.dirname(trustedRuntime), 'VERSION.txt'), 'v26.5.3');
   await fs.writeFile(path.join(path.dirname(trustedRuntime), 'wintun.dll'), 'trusted-wintun');
   const manager = new VpnRuntimeManager(root, root);
+  manager.cachedIsAdmin = false;
   manager.installer.findBundledRuntimeDir = async () => path.dirname(trustedRuntime);
   const initiallySelected = await manager.resolveRuntimePath('', 'xray', false);
   assert.equal(initiallySelected.runtimePath, legacyRuntime);
@@ -60,6 +64,7 @@ test('custom Xray without Wintun is rejected instead of being overwritten', asyn
   await fs.mkdir(path.dirname(customRuntime), { recursive: true });
   await fs.writeFile(customRuntime, 'custom');
   const manager = new VpnRuntimeManager(root, root);
+  manager.cachedIsAdmin = false;
   let bundledLookup = false;
   manager.installer.findBundledRuntimeDir = async () => { bundledLookup = true; return null; };
   const result = await manager.resolveXrayTunRuntime(customRuntime, { runtimeKind: 'xray', runtimePath: customRuntime });
@@ -81,6 +86,7 @@ test('an invalid configured Xray path falls back to a ready bundled TUN runtime'
   await fs.writeFile(path.join(path.dirname(bundledRuntime), 'VERSION.txt'), 'v26.5.3');
   await fs.writeFile(path.join(path.dirname(bundledRuntime), 'wintun.dll'), 'trusted-wintun');
   const manager = new VpnRuntimeManager(root, root);
+  manager.cachedIsAdmin = false;
   manager.installer.findBundledRuntimeDir = async () => path.dirname(bundledRuntime);
   const invalidCustomPath = path.join(root, 'missing/xray.exe');
   const initiallySelected = await manager.resolveRuntimePath(invalidCustomPath, 'xray', false);

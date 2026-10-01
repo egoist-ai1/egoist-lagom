@@ -95,7 +95,7 @@ test('isolated validation shutdown never invokes system cleanup while production
     const context = vm.createContext({ runtimeEnvironment: environment,
       logger: { info() {}, warn() {} },
       globalStateStore: { get: () => ({ settings: { zapretSuspendDuringVpn: true, zapretProfile: 'fixture' } }) },
-      globalRuntimeManager: { disconnect: async () => calls.push('vpn') },
+      globalRuntimeManager: { shutdownApplicationRuntime: async () => calls.push('vpn') },
       globalZapretManager: { restoreAfterVpnIfNeeded: async () => calls.push('zapret') },
       globalTelegramProxyManager: { shutdownApplicationRuntime: async () => calls.push('telegram') },
       runShutdownSteps: async steps => {
@@ -105,5 +105,24 @@ test('isolated validation shutdown never invokes system cleanup while production
     });
     await vm.runInContext(`${source.slice(start, end)}\nperformGracefulShutdown()`, context);
     assert.deepEqual(calls, environment === 'test' ? [] : ['vpn', 'zapret', 'telegram']);
+  }
+});
+
+test('GUI exit preserves Zapret suspension for active or unobserved background VPN', async () => {
+  const source = fs.readFileSync('src/recovered/electron/main.js', 'utf8');
+  const start = source.indexOf('async function performGracefulShutdown() {');
+  const end = source.indexOf('\napp.on("before-quit"', start);
+  for (const keep of [true, false, undefined]) {
+    const calls = [];
+    const context = vm.createContext({ runtimeEnvironment: 'production', logger: { info() {}, warn() {} },
+      globalStateStore: { get: () => ({ settings: { zapretSuspendDuringVpn: true, zapretProfile: 'fixture' } }) },
+      globalRuntimeManager: { backgroundService: {}, async shutdownApplicationRuntime() { calls.push('temporary-runtime'); return { keepZapretSuspended: keep }; },
+        disconnect() { throw new Error('GUI exit must never stop an installed background service.'); } },
+      globalZapretManager: { restoreAfterVpnIfNeeded: async () => calls.push('zapret') },
+      globalTelegramProxyManager: { shutdownApplicationRuntime: async () => calls.push('telegram') },
+      runShutdownSteps: async steps => { for (const step of steps) await step.run(); return { failedSteps: [], timedOut: false, completedSteps: calls }; },
+    });
+    await vm.runInContext(`${source.slice(start, end)}\nperformGracefulShutdown()`, context);
+    assert.deepEqual(calls, keep === false ? ['temporary-runtime', 'zapret', 'telegram'] : ['temporary-runtime', 'telegram']);
   }
 });

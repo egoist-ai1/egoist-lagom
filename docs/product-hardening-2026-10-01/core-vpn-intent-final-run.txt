@@ -1,0 +1,3 @@
+RUN: VPN-explicit-start-stop-intent-before-worker
+PASS: VPN-explicit-start-stop-intent-before-worker; 4735ms; {"explicitLifecycleMethods":4,"workerExecutions":4,"committedReplaysAfterRestart":4,"workerStatusQueries":1,"preEffectStartStopIntentVerified":true,"latestOffIntentPreserved":true,"confirmedFailureRestorations":6,"unknownFailureBlocksMutation":true,"changedOffIntentPreserved":true,"scope":"Actual Core dispatcher/journal/intent store with injected harmless executor. No SCM/native VPN launch; host/config acceptance is a separate R25 test."}
+PASS: 1 production groups; 4,74s

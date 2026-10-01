@@ -1,0 +1,35 @@
+✔ background status contract requires an actual observation and preserves unknown (2.9001ms)
+✔ packaged VPN manager and handlers ignore every environment mock switch (2.5926ms)
+✔ temporary connect fails before any teardown or preparation when background state cannot permit it (1.0918ms)
+✔ manual background disconnect confirms disabled and stopped before returning idle (207.4088ms)
+✔ an unconfirmed background stop cannot declare disconnected or mutate the service again (1.1474ms)
+✔ real GUI-owned harmless child and config stop on shutdown while background service and suspension remain (218.0993ms)
+✔ GUI exit preserves an unknown background service instead of attempting a stop or Zapret restore (202.2623ms)
+✔ background egress verification is bound to the observed instance and expires on monotonic time (1.6339ms)
+✔ five background IPC contracts reject raw config, extra args and missing node before mutation (4.8132ms)
+✔ background IPC snapshots selected node and rules, closes temporary mode and confirms fresh status (212.3219ms)
+✔ invalid background snapshot and unavailable service cannot interrupt a temporary connection (4.8354ms)
+✔ unknown service state blocks every mutation but is returned as unknown by the status IPC (2.3378ms)
+✔ background stop/remove confirms Core readback and restores suspension only when both modes are inactive (2.0775ms)
+✔ background TUN reapply refuses changing Windows system proxy (2.0383ms)
+✔ failed background start restores Zapret only after a fresh confirmed inactive service readback (410.8488ms)
+✔ GUI exit removes wake listeners and does not schedule another probe after shutdown (31.8402ms)
+✔ UI rejects running SCM wrappers when the actual runtime is unavailable (0.4383ms)
+✔ UI accepts confirmed runtime readiness and preserves older status compatibility (0.0832ms)
+✔ UI distinguishes a running DNS worker from failed DNS verification (0.0704ms)
+✔ stopping Telegram requires its background service to stop, even without a listener (0.8545ms)
+✔ preload preserves successful update result payload and removes the listener (3.033ms)
+✔ serializes a previous TUN session before preparing its replacement (baseline fails) (7.072ms)
+✔ keeps make-before-break handoff for proxy sessions, including proxy to TUN (0.8663ms)
+✔ failed serial TUN replacement releases dead proxy ownership (0.8118ms)
+✔ retries the recorded Windows Xray TUN route failure once after serial cleanup (baseline fails) (1010.6891ms)
+✔ stops after the second TUN route failure and releases network ownership (1002.9634ms)
+✔ recognizes only the recorded Windows Xray TUN route initialization failure and skips generic fallback (2.0525ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2082.1218

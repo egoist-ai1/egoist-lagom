@@ -25,7 +25,7 @@ const esmRequireBanner = "import { createRequire } from 'node:module';\nconst re
 await fs.rm('.vite/build', { recursive: true, force: true });
 await fs.rm('.vite/renderer', { recursive: true, force: true });
 await fs.mkdir('.vite/build', { recursive: true });
-const main = "import { ShieldConnectionController } from './src/shield-connection-controller.js';\nimport { RendererRecoveryController } from './src/renderer-recovery-controller.js';\n" + modules.slice(0, -1).join('\n') + '\n' + protocol + '\n' + facade + '\n' + modules.at(-1);
+const main = "import { ShieldConnectionController } from './src/shield-connection-controller.js';\nimport { RendererRecoveryController } from './src/renderer-recovery-controller.js';\nimport { isTrustedGuiLaunchArguments } from './src/gui-launch-policy.js';\nimport { prepareRuntimeInstallRoot, verifyNativeRuntimeForExecution, runtimeExecutionEnvironment, checkNativeExecutionPrivilege } from './src/native-runtime-trust.js';\n" + modules.slice(0, -1).join('\n') + '\n' + protocol + '\n' + facade + '\n' + modules.at(-1);
 await build({ stdin: { contents: main, resolveDir: root, sourcefile: 'recovered-main.js' }, outfile: '.vite/build/main.js', platform: 'node', format: 'esm', target: 'node22', bundle: true, external: ['electron', 'electron-log'], banner: { js: esmRequireBanner }, sourcemap: true });
 await fs.copyFile('src/recovered/preload.cjs', '.vite/build/preload.js');
 const rendererSeed = await fs.access('recovery/official-code/.vite/renderer').then(() => 'recovery/official-code/.vite/renderer').catch(() => 'public-ui');
@@ -106,5 +106,5 @@ const logStub = `const log = { hooks: [], transports: { file: {}, console: {} } 
 const workerModules = modules.slice(0, -1);
 workerModules[0] = workerModules[0].replace(/^import .* from "electron";$/m, electronStub).replace(/^import log from "electron-log";$/m, logStub);
 for (let i = 0; i < workerModules.length; i++) workerModules[i] = workerModules[i].replaceAll('path.dirname(fileURLToPath(import.meta.url))', '__dirname');
-await build({ stdin: { contents: workerModules.join('\n') + '\n' + protocol + '\n' + componentResponse + '\n' + await fs.readFile('src/component-worker-entry.js', 'utf8'), resolveDir: root, sourcefile: 'component-worker.js' }, outfile: '.vite/build/component-worker.cjs', platform: 'node', format: 'cjs', target: 'node22', bundle: true });
+await build({ stdin: { contents: "import { prepareRuntimeInstallRoot, verifyNativeRuntimeForExecution, runtimeExecutionEnvironment, checkNativeExecutionPrivilege } from './src/native-runtime-trust.js';\n" + workerModules.join('\n') + '\n' + protocol + '\n' + componentResponse + '\n' + await fs.readFile('src/component-worker-entry.js', 'utf8'), resolveDir: root, sourcefile: 'component-worker.js' }, outfile: '.vite/build/component-worker.cjs', platform: 'node', format: 'cjs', target: 'node22', bundle: true });
 console.log('Built desktop main, preload, recovered renderer and component worker.');

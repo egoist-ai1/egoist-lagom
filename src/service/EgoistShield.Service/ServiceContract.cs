@@ -10,6 +10,10 @@ internal static class ServiceContract
 
 	public const string PipeName = "EgoistShield.Service.v1";
 
+	public const string VpnServiceName = "EgoistShieldVpn";
+
+	public const int VpnProxyPort = 10838;
+
 	public const int MaxRequestBytes = 65536;
 
 	public const int MaxRequestIdLength = 128;

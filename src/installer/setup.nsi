@@ -95,6 +95,13 @@ FunctionEnd
   ${EnableX64FSRedirection}
 !macroend
 
+!macro RunLegacyReinstallBridge
+  ${DisableX64FSRedirection}
+  nsExec::Exec '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "$PLUGINSDIR\invoke-final-silent-reinstall.ps1" -InstallerPath "$EXEPATH" -ExpectedVersion "${PRODUCT_VERSION}" -EmbeddedRelease -WaitForPreviousReinstall -InstallerUiPath "$PLUGINSDIR\ModernInstaller.exe" -InstallerFontPath "$PLUGINSDIR\Unbounded.ttf" -HandoffSignalPath "$PLUGINSDIR\handoff-started.flag" -DelaySeconds 8'
+  Pop $HandoffResult
+  ${EnableX64FSRedirection}
+!macroend
+
 Function .onInit
   ${IfNot} ${RunningX64}
     MessageBox MB_ICONSTOP "Эта сборка требует Windows x64."
@@ -164,6 +171,22 @@ Function .onInit
   ; any service, network, registration, or install-root mutation.
   !insertmacro RunPhase CheckInstallSafety
   ${If} $PhaseResult != "0"
+    ${If} $PhaseResult == "54"
+    ${AndIf} ${Silent}
+      ReadEnvStr $0 "EGOIST_PROTECTED_REINSTALL_STAGE"
+      ${If} $0 != ""
+        ; The old worker owns the deferred lease. Returning a nonzero code
+        ; makes it restore its state before the new, embedded worker can acquire
+        ; that lease. No legacy snapshot or script is imported by the new worker.
+        !insertmacro RunLegacyReinstallBridge
+        ${If} $HandoffResult == "0"
+          SetErrorLevel 62
+          Quit
+        ${EndIf}
+        SetErrorLevel 55
+        Abort
+      ${EndIf}
+    ${EndIf}
     ; Code 54 identifies a verified existing canonical installation requiring
     ; the protected handoff, including installations without active local DNS.
     ; Unsafe identity/DNS checks use a different code and cannot dispatch.
@@ -286,14 +309,6 @@ Section "Egoist Lagom"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EgoistShield" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EgoistShield" "NoRepair" 1
 
-  ; Grant highest administrative privileges without restrictions by default (RUNASADMIN)
-  WriteRegStr HKLM "Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "$INSTDIR\EgoistShield.exe" "~ RUNASADMIN"
-  WriteRegStr HKCU "Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "$INSTDIR\EgoistShield.exe" "~ RUNASADMIN"
-  SetRegView 32
-  WriteRegStr HKLM "Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "$INSTDIR\EgoistShield.exe" "~ RUNASADMIN"
-  WriteRegStr HKCU "Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "$INSTDIR\EgoistShield.exe" "~ RUNASADMIN"
-  SetRegView 64
-
   ${IfNot} ${Silent}
     FileOpen $0 "$PLUGINSDIR\status.txt" w
     FileWriteUTF16LE /BOM $0 "75|Регистрация системной службы безопасности..."
@@ -344,12 +359,6 @@ Section "Egoist Lagom"
   ${EndIf}
 DoneDesktopShortcut:
   SetOutPath "$PLUGINSDIR"
-
-  ; Set RunAsAdmin flag (0x20 at byte 21) on shortcuts so they always launch elevated
-  ${DisableX64FSRedirection}
-  nsExec::Exec '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -Command "$$scs = @(\"$SMPROGRAMS\Egoist Lagom.lnk\", \"$DESKTOP\Egoist Lagom.lnk\"); foreach ($$p in $$scs) { if (Test-Path -LiteralPath $$p) { $$b = [IO.File]::ReadAllBytes($$p); if ($$b.Length -gt 21) { $$b[21] = $$b[21] -bor 0x20; [IO.File]::WriteAllBytes($$p, $$b) } } }"'
-  Pop $0
-  ${EnableX64FSRedirection}
 
   ; Purge Windows shell icon cache so Hermes icon renders everywhere immediately!
   nsExec::Exec '"ie4uinit.exe" -show'

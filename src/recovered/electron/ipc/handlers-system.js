@@ -657,70 +657,29 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 		requiredLocks: ["dns", "dns-verify"],
 		conflictsWith: ["traffic-route"]
 	}, operation) : operation();
+	const settingsCommitHooks = {
+		beforeCommit: next => syncWindowsLoginItemSettings({ app, settings: next.settings }),
+		rollback: previous => syncWindowsLoginItemSettings({ app, settings: previous.settings })
+	};
 	const patchSettingsWithLoginItemSync = async (settingsPatch) => {
-		const previous = stateStore.get();
-		const nextState = {
-			...previous,
-			settings: {
-				...previous.settings,
-				...settingsPatch
-			}
-		};
-		syncWindowsLoginItemSettings({
-			app,
-			settings: nextState.settings
-		});
-		try {
-			return await stateStore.set(nextState);
-		} catch (error) {
-			try {
-				syncWindowsLoginItemSettings({
-					app,
-					settings: previous.settings
-				});
-			} catch (rollbackError) {
-				logger.error("[system] Failed to restore Windows login item after DNS settings error:", rollbackError);
-			}
-			throw error;
-		}
+		const result = await stateStore.patchSettings(settingsPatch, void 0, settingsCommitHooks);
+		if (!result.ok) throw new Error(result.error || "STATE_WRITE_FAILED");
+		return result.state;
 	};
 	ipcMain.handle("state:get", async () => {
 		return stateStore.get();
 	});
 	ipcMain.handle("state:set", async (_event, rawState) => {
 		const state = PersistedStateSchema.parse(rawState);
-		const previous = stateStore.get();
-		const nextState = {
-			...state,
-			settings: {
-				...state.settings,
-				systemDnsServers: state.settings.systemDnsServers ?? "",
-				customDnsUrl: state.settings.customDnsUrl ?? "",
-				systemDohEnabled: state.settings.systemDohEnabled ?? false,
-				systemDohUrl: state.settings.systemDohUrl ?? "",
-				systemDohLocalAddress: state.settings.systemDohLocalAddress ?? ""
-			}
-		};
-		try {
-			syncWindowsLoginItemSettings({
-				app,
-				settings: nextState.settings
-			});
-			const persisted = await stateStore.set(nextState);
-			applyLoggerSettings(persisted.settings);
-			return persisted;
-		} catch (error) {
-			try {
-				syncWindowsLoginItemSettings({
-					app,
-					settings: previous.settings
-				});
-			} catch (rollbackError) {
-				logger.error("[system] Failed to restore Windows login item after settings error:", rollbackError);
-			}
-			logger.warn("[system] Failed to apply persisted settings:", error);
-			throw error;
-		}
+		const persisted = await stateStore.set(state, state.stateRevision, settingsCommitHooks);
+		applyLoggerSettings(persisted.settings);
+		return persisted;
+	});
+	ipcMain.handle("state:patch-settings", async (_event, rawInput) => {
+		const { patch, expectedRevision } = SettingsPatchInputSchema.parse(rawInput);
+		const result = await stateStore.patchSettings(patch, expectedRevision, settingsCommitHooks);
+		if (result.ok) applyLoggerSettings(result.state.settings);
+		return result;
 	});
 	ipcMain.handle("app:is-admin", async () => runtimeManager.isAdmin());
 	ipcMain.handle("app:get-version", async () => ({
@@ -1470,7 +1429,7 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			});
 			return { ok: true };
 		},
-		saveConnected: profile => patchSettingsWithLoginItemSync({ zapretProfile: profile, autoStart: true, startMinimized: true, minimizeToTray: true }),
+		saveConnected: profile => patchSettingsWithLoginItemSync({ zapretProfile: profile }),
 		coordinate: (action, operation) => coordinateShieldAction(action, operation, {
 			manager: networkCombinatorManager,
 			vpn: runtimeManager,

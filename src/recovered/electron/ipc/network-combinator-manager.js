@@ -2,63 +2,68 @@
 var DEFAULT_MODULES = [
 	{
 		id: "vpn",
-		status: "idle",
-		health: "ok",
+		status: "unknown",
+		health: "unknown",
 		ownedLocks: [],
 		activeMutations: []
 	},
 	{
 		id: "dns",
-		status: "idle",
-		health: "ok",
+		status: "unknown",
+		health: "unknown",
 		ownedLocks: [],
 		activeMutations: []
 	},
 	{
 		id: "zapret",
-		status: "idle",
-		health: "ok",
+		status: "unknown",
+		health: "unknown",
 		ownedLocks: [],
 		activeMutations: []
 	},
 	{
 		id: "telegram-proxy",
-		status: "idle",
-		health: "ok",
+		status: "unknown",
+		health: "unknown",
 		ownedLocks: [],
 		activeMutations: [],
 		sidecar: true
 	},
 	{
 		id: "system-proxy",
-		status: "idle",
-		health: "ok",
+		status: "unknown",
+		health: "unknown",
 		ownedLocks: [],
 		activeMutations: []
 	},
 	{
 		id: "firewall",
-		status: "idle",
-		health: "ok",
+		status: "unknown",
+		health: "unknown",
 		ownedLocks: [],
 		activeMutations: []
 	},
 	{
 		id: "updates",
-		status: "idle",
-		health: "ok",
+		status: "unknown",
+		health: "unknown",
 		ownedLocks: [],
 		activeMutations: []
 	}
 ];
 var INSPECTION_CACHE_TTL_MS = 3e3;
 var MUTATION_WAIT_TIMEOUT_MS = 3e4;
+var COORDINATOR_MAX_PENDING_MUTATIONS = 128;
+var COORDINATOR_MAX_PLANS = 64;
+var COORDINATOR_PLAN_TTL_MS = 3e5;
 var NetworkCombinatorManager = class {
 	isNetworkReady;
 	isElevated;
 	getProductVersion;
 	moduleInspectors;
 	plans = /* @__PURE__ */ new Map();
+	planExpirations = /* @__PURE__ */ new Map();
+	elapsedNow;
 	lastInspection = null;
 	inspectionCacheExpiresAt = 0;
 	inspectionInFlight = null;
@@ -72,10 +77,11 @@ var NetworkCombinatorManager = class {
 		this.isElevated = options.isElevated;
 		this.getProductVersion = options.getProductVersion ?? (() => void 0);
 		this.moduleInspectors = options.moduleInspectors ?? {};
+		this.elapsedNow = options.elapsedNow ?? (() => performance.now());
 	}
 	async inspect() {
 		const generation = this.inspectionGeneration;
-		const now = Date.now();
+		const now = this.elapsedNow();
 		if (this.lastInspection && this.inspectionCacheExpiresAt > now) return this.lastInspection;
 		if (this.inspectionInFlight) {
 			const value = await this.inspectionInFlight;
@@ -105,13 +111,22 @@ var NetworkCombinatorManager = class {
 		});
 		if (generation === this.inspectionGeneration) {
 			this.lastInspection = inspection;
-			this.inspectionCacheExpiresAt = Date.now() + INSPECTION_CACHE_TTL_MS;
+			this.inspectionCacheExpiresAt = this.elapsedNow() + INSPECTION_CACHE_TTL_MS;
 		}
 		return inspection;
 	}
 	async plan(intent) {
-		const plan = buildNetworkCombinatorPlan(this.lastInspection ?? await this.inspect(), intent);
+		this.prunePlans();
+		const plan = buildNetworkCombinatorPlan(await this.inspect(), intent);
+		this.plans.delete(plan.planId);
+		this.planExpirations.delete(plan.planId);
+		if (this.plans.size >= COORDINATOR_MAX_PLANS) {
+			const expiredId = this.plans.keys().next().value;
+			this.plans.delete(expiredId);
+			this.planExpirations.delete(expiredId);
+		}
 		this.plans.set(plan.planId, plan);
+		this.planExpirations.set(plan.planId, this.elapsedNow() + COORDINATOR_PLAN_TTL_MS);
 		return plan;
 	}
 	approve(planId) {
@@ -124,18 +139,20 @@ var NetworkCombinatorManager = class {
 		if (plan.approval.required && plan.approval.state !== "granted") throw new Error(`Network combinator plan is not approved: ${planId}`);
 		if (plan.status === "blocked") throw new Error(`Network combinator plan is blocked: ${planId}`);
 		return {
-			ok: true,
+			ok: !plan.operations.some((operation) => operation.risk !== "read-only"),
 			applied: false,
-			message: plan.operations.some((operation) => operation.risk !== "read-only") ? "Approved mutating plan is ready for the privileged executor; no direct mutation is performed by the combinator manager." : "Read-only plan requires no Windows mutation.",
+			code: plan.operations.some((operation) => operation.risk !== "read-only") ? "PLAN_EXECUTOR_UNAVAILABLE" : "READ_ONLY_PLAN",
+			message: plan.operations.some((operation) => operation.risk !== "read-only") ? "Diagnostic plans cannot change Windows settings. Use the supported component controls." : "Read-only plan requires no Windows mutation.",
 			planId
 		};
 	}
 	rollback(planId) {
 		this.requirePlan(planId);
 		return {
-			ok: true,
+			ok: false,
 			applied: false,
-			message: "Rollback is represented as a follow-up approved plan; no direct mutation is performed by the combinator manager.",
+			code: "PLAN_EXECUTOR_UNAVAILABLE",
+			message: "No diagnostic plan was executed. There is no applied transaction to restore.",
 			planId
 		};
 	}
@@ -144,14 +161,10 @@ var NetworkCombinatorManager = class {
 		return buildNetworkVerificationReport({
 			plan,
 			checks: [{
-				id: "plan-state",
-				label: "Plan state",
-				status: plan.status === "ready" ? "passed" : "failed"
-			}, {
-				id: "approval-state",
-				label: "Approval state",
-				status: plan.approval.required && plan.approval.state !== "granted" ? "skipped" : "passed",
-				reason: plan.approval.required && plan.approval.state !== "granted" ? "Plan is waiting for approval." : void 0
+				id: "execution",
+				label: "Applied network state",
+				status: "skipped",
+				reason: "This diagnostic plan has no executor or observed network result. Plan approval does not verify connectivity."
 			}]
 		});
 	}
@@ -170,6 +183,7 @@ var NetworkCombinatorManager = class {
 		return this.outstandingCoordinatedMutations === 0;
 	}
 	async runCoordinatedMutation(intent, operation) {
+		if (this.outstandingCoordinatedMutations >= COORDINATOR_MAX_PENDING_MUTATIONS) throw new Error("Too many pending network operations. Wait for the current operation to finish.");
 		this.outstandingCoordinatedMutations += 1;
 		try {
 			return await this.runCoordinatedMutationWithLocks(intent, operation);
@@ -185,7 +199,9 @@ var NetworkCombinatorManager = class {
 			requiredLocks: [...new Set(intent.requiredLocks)],
 			conflictsWith: [...new Set(intent.conflictsWith ?? [])]
 		};
-		const deadline = Date.now() + (intent.waitTimeoutMs ?? MUTATION_WAIT_TIMEOUT_MS);
+		const waitTimeoutMs = intent.waitTimeoutMs ?? MUTATION_WAIT_TIMEOUT_MS;
+		if (!Number.isFinite(waitTimeoutMs) || waitTimeoutMs <= 0 || waitTimeoutMs > MUTATION_WAIT_TIMEOUT_MS) throw new Error("Invalid network mutation wait budget.");
+		const deadline = this.elapsedNow() + waitTimeoutMs;
 		let active = null;
 		while (!active) {
 			// Module inspectors report steady ownership (for example an active VPN
@@ -198,7 +214,7 @@ var NetworkCombinatorManager = class {
 			if (!this.isNetworkReady()) throw new Error("Завершается восстановление сети после запуска. Повторите действие через несколько секунд.");
 			// VPN transitions own suspension/restoration of a steady Zapret runtime.
 			// Active Zapret mutations still conflict through tryAcquireMutation below.
-			const transitionsZapret = normalized.module === "vpn" && ["connect", "reconnect", "disconnect"].includes(normalized.action) && normalized.requiredLocks.includes("zapret-suspend");
+			const transitionsZapret = normalized.module === "vpn" && ["connect", "reconnect", "disconnect", "service-install", "service-start", "service-stop", "service-remove"].includes(normalized.action) && normalized.requiredLocks.includes("zapret-suspend");
 			const steadyLocks = inspection.modules.flatMap((module) => {
 				if (module.id === normalized.module || transitionsZapret && module.id === "zapret") return [];
 				return module.ownedLocks ?? [];
@@ -206,7 +222,7 @@ var NetworkCombinatorManager = class {
 			const steadyConflict = this.locksOverlap(normalized.conflictsWith, steadyLocks);
 			active = steadyConflict ? null : this.tryAcquireMutation(normalized);
 			if (active) break;
-			const remainingMs = deadline - Date.now();
+			const remainingMs = deadline - this.elapsedNow();
 			if (remainingMs <= 0) {
 				throw new Error(`Timed out waiting for a safe network mutation slot: ${intent.module}:${intent.action}`);
 			}
@@ -227,7 +243,7 @@ var NetworkCombinatorManager = class {
 		}
 	}
 	async inspectBeforeDeadline(deadline, action) {
-		const remainingMs = deadline - Date.now();
+		const remainingMs = deadline - this.elapsedNow();
 		if (remainingMs <= 0) throw new Error(`Timed out waiting for a safe network mutation slot: ${action}`);
 		let timer;
 		try {
@@ -276,9 +292,19 @@ var NetworkCombinatorManager = class {
 		this.inspectionGeneration += 1;
 	}
 	requirePlan(planId) {
+		this.prunePlans();
 		const plan = this.plans.get(planId);
 		if (!plan) throw new Error(`Unknown network combinator plan: ${planId}`);
 		return plan;
+	}
+	prunePlans() {
+		const now = this.elapsedNow();
+		for (const [id, expiresAt] of this.planExpirations) {
+			if (expiresAt <= now) {
+				this.planExpirations.delete(id);
+				this.plans.delete(id);
+			}
+		}
 	}
 };
 //#endregion

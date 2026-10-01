@@ -1,0 +1,39 @@
+{
+  "dnsCancellation": {
+    "requests": 64,
+    "cancelled": 64,
+    "clientUdpSocketsRemaining": 0,
+    "serverTcpSocketsRemaining": 0
+  },
+  "dnsUdpStress": {
+    "requests": 256,
+    "successes": 256,
+    "malformedOrForeignPackets": 1280,
+    "totalPeerPackets": 1536,
+    "elapsedMs": 527.125,
+    "clientSocketsRemaining": 0
+  },
+  "connectDrip": {
+    "deadlineMs": 70,
+    "elapsedMs": 80.396,
+    "serverSocketsRemaining": 0
+  },
+  "connectCancellation": {
+    "requests": 64,
+    "cancelled": 64,
+    "elapsedMs": 152.682,
+    "clientSocketsRemaining": 0,
+    "serverSocketsRemaining": 0
+  },
+  "tlsStress": {
+    "requests": 80,
+    "completed": 48,
+    "malformedRejected": 16,
+    "cancelled": 16,
+    "decodedPayloadBytes": 48000,
+    "usedBudgetBytes": 48800,
+    "reservedBytesRemaining": 0,
+    "serverSocketsRemaining": 0,
+    "elapsedMs": 264.653
+  }
+}

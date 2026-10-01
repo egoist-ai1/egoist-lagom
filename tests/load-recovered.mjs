@@ -24,7 +24,7 @@ export function sourceFor(name) {
 
 export function loadRecovered(name, bindings, exports) {
   const context = vm.createContext({ ...bindings, AbortController: bindings.AbortController ?? AbortController, structuredClone, TextDecoder, URL,
-    setTimeout, clearTimeout, setInterval, clearInterval, Buffer, console });
+    performance: bindings.performance ?? performance, setTimeout, clearTimeout, setInterval, clearInterval, Buffer, console });
   vm.runInContext(`${sourceFor(name)}\n;globalThis.__exports = { ${exports.join(',')} };`, context);
   return context.__exports;
 }

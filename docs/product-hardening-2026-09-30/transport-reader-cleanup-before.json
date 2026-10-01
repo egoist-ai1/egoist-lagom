@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-30T20:28:48.5619285Z",
+  "scope": "Additional actual production cleanup fault regression before fix; controlled reader release error, real owned file handle",
+  "sourceFiles": [
+    {
+      "path": "src/recovered/electron/ipc/safe-network.js",
+      "sha256": "e04b6ae21e5593fb218e6a29f00d6cb39071417ac04d3fa90734142db05fc780",
+      "owner": "transport agent"
+    },
+    {
+      "path": "src/recovered/electron/ipc/github-release.js",
+      "sha256": "81538218c11cf65df006fb9e57c17961dc461de21fb141f005032a40f787d8c9",
+      "owner": "transport agent"
+    }
+  ],
+  "testPath": "tests/production-download-security-url.test.mjs",
+  "testSourceSha256": "5cefa0b406ca34b72e7997b062de63cb2448e9dda50460a8af33755ff0169d0a",
+  "beforeLog": "transport-reader-cleanup-before.txt",
+  "expectedWriteFailure": "ENOSPC",
+  "observedReplacementFailure": "Fixture reader release error",
+  "originalWriteErrorRetained": false,
+  "privilegedOperation": false
+}

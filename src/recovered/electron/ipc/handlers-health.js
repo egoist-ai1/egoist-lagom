@@ -255,7 +255,7 @@ async function exportDiagnosticsBundle(ctx) {
 			const logContent = await promises.readFile(getLogFilePath$1(), "utf8");
 			await promises.writeFile(path.join(workDir, "main.log.redacted.txt"), redactDiagnosticText(logContent), "utf8");
 		} catch (error) {
-			await promises.writeFile(path.join(workDir, "main.log.redacted.txt"), `Файл лога недоступен: ${error instanceof Error ? error.message : String(error)}\n`, "utf8");
+			await promises.writeFile(path.join(workDir, "main.log.redacted.txt"), `Файл лога недоступен: ${redactDiagnosticText(error instanceof Error ? error.message : String(error))}\n`, "utf8");
 		}
 		const command = `Compress-Archive -Path '${workDir.replace(/'/g, "''")}\\*' -DestinationPath '${zipPath.replace(/'/g, "''")}' -Force`;
 		await execFileAsync$14(resolveWindowsExecutable("powershell.exe"), [
@@ -287,7 +287,7 @@ async function exportDiagnosticsBundle(ctx) {
 		return {
 			ok: false,
 			filePath: null,
-			message: error instanceof Error ? error.message : String(error)
+			message: redactDiagnosticText(error instanceof Error ? error.message : String(error))
 		};
 	}
 }

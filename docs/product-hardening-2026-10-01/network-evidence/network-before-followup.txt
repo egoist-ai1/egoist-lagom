@@ -1,0 +1,85 @@
+✔ DNS requires complete matching question and usable A records (3.1444ms)
+✔ actual UDP ignores foreign source and bad packets, then accepts only its resolver response (45.8651ms)
+✔ actual UDP malformed-only response times out and releases the socket (78.4991ms)
+✔ TUN route coverage is unknown without observed Windows interface/routes (2.2894ms)
+✔ a shared TUN exit is not evidence of a bypass (0.7161ms)
+✖ TUN route observations must include both distinct control destinations and matching prefixes (1.728ms)
+✖ a foreign working DNS endpoint cannot declare our stopped or unknown service running (1.098ms)
+✔ IPv6 aliases do not report a changed exit and retain original display addresses (0.721ms)
+✔ network ports containing 401/403 do not disable automatic reconnect (1.5458ms)
+✔ DNS resolver IPv6 aliases compare equally and expanded loopback stays a local forwarder (3.8151ms)
+✔ IPv4 and IPv6 observations do not by themselves prove a changed exit (0.6245ms)
+✔ monotonic DNS freshness survives rollback/forward and discards late generations (0.8068ms)
+✔ actual CONNECT drip cannot extend the absolute handshake budget (141.9734ms)
+ℹ CONNECT elapsed=87.14 ms, deadline=70 ms, caller safety cutoff=350 ms, own server sockets=0
+✔ actual chunked TLS download counts decoded payload only (345.0967ms)
+✔ actual TLS fragmented chunks/extensions/trailers decode without counting framing (313.9728ms)
+✖ actual TLS truncated/ambiguous/invalid framing does not produce a completed speed sample (148.3703ms)
+✔ actual TLS download obeys requested payload cap and rejects a spent shared budget before succeeding (179.9816ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 14
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1336.7217
+
+✖ failing tests:
+
+test at tests\production-network-protocols.test.mjs:81:1
+✖ TUN route observations must include both distinct control destinations and matching prefixes (1.728ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'partial'
+  - 'inconclusive'
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/production-network-protocols.test.mjs:91:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'partial',
+    expected: 'inconclusive',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\production-network-protocols.test.mjs:94:1
+✖ a foreign working DNS endpoint cannot declare our stopped or unknown service running (1.098ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/production-network-protocols.test.mjs:105:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\production-network-protocols.test.mjs:236:1
+✖ actual TLS truncated/ambiguous/invalid framing does not produce a completed speed sample (148.3703ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/production-network-protocols.test.mjs:248:43)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }

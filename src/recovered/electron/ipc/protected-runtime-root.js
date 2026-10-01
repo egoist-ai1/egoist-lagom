@@ -4,7 +4,8 @@ var RUNTIME_DIRECTORY = "Runtime";
 var PROTECTED_COMPONENTS = /* @__PURE__ */ new Set([
 	"SystemDoH",
 	"Zapret",
-	"TelegramProxy"
+	"TelegramProxy",
+	"Vpn"
 ]);
 /**
 * Resolve the machine-wide root consumed by LocalSystem services.

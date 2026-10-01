@@ -1,0 +1,37 @@
+✖ reader-cleanup failure cannot suppress the write error or leave the actual file handle open (13.2843ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 159.844
+
+✖ failing tests:
+
+test at tests\production-download-security-url.test.mjs:156:1
+✖ reader-cleanup failure cannot suppress the write error or leave the actual file handle open (13.2843ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: Fixture reader release error
+      at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/production-download-security-url.test.mjs:173:3)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: Fixture reader release error
+        at reader.releaseLock (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/production-download-security-url.test.mjs:163:51)
+        at evalmachine.<anonymous>:238:59
+        at async fetchWithRetry (evalmachine.<anonymous>:109:39)
+        at async Object.downloadFileWithProgress (evalmachine.<anonymous>:192:18)
+        at async waitForActual (node:assert:646:5)
+        at async strict.rejects (node:assert:769:25)
+        at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/production-download-security-url.test.mjs:173:3)
+        at async Test.run (node:internal/test_runner/test:1389:7)
+        at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3),
+    operator: 'rejects',
+    diff: 'simple'
+  }

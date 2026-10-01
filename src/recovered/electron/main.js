@@ -7,6 +7,11 @@ var runtimeEnvironment = detectRuntimeEnvironment({
 	isPackaged: app.isPackaged,
 	nodeEnv: process.env.NODE_ENV
 });
+if (runtimeEnvironment === "production" && !isTrustedGuiLaunchArguments(process.argv.slice(1))) {
+	console.error("Egoist Lagom cannot start with debugging, alternate application or child-process arguments.");
+	app.exit(64);
+	throw new Error("Unsupported production GUI launch arguments.");
+}
 var appPathConfig = buildAppPathConfig({
 	defaultUserDataDir: path.join(app.getPath("appData"), "Egoist Shield"),
 	environment: runtimeEnvironment,
@@ -78,7 +83,11 @@ async function canInstallDesktopUpdate() {
 	const idle = () => Boolean(globalNetworkCombinatorManager?.isMutationIdle()) && pendingBootRecovery.size === 0 && !componentUpdateInFlight;
 	if (!globalRuntimeManager || !idle()) return false;
 	const status = await globalRuntimeManager.status();
-	return status?.connected === false && idle();
+	if (status?.temporaryRuntimeActive === true) return false;
+	const background = status?.backgroundService;
+	if (background && (background.observation?.state !== "observed" || typeof background.serviceInstalled !== "boolean" || typeof background.running !== "boolean" || !["running", "stopped", "not-installed"].includes(background.serviceState))) return false;
+	const preservedBackground = status?.executionMode === "background-service" && status.temporaryRuntimeActive === false && background?.serviceInstalled === true && background.running === true && background.serviceState === "running" && background.observation?.state === "observed";
+	return (status?.connected === false || preservedBackground) && idle();
 }
 function scheduleNextUpdateCheck(delayMs) {
 	if (updateCheckInterval) clearTimeout(updateCheckInterval);
@@ -289,6 +298,7 @@ function setupManagedComponentUpdateChecks() {
 var mainWindow = null;
 var tray = null;
 var globalRuntimeManager = null;
+var globalVpnServiceManager = null;
 var globalGravitylessDnsManager = null;
 var globalSystemDohManager = null;
 var globalZapretManager = null;
@@ -394,14 +404,18 @@ async function performGracefulShutdown() {
 		return;
 	}
 	const persistedState = globalStateStore?.get();
+	let keepZapretSuspended = Boolean(globalRuntimeManager?.backgroundService);
 	const result = await runShutdownSteps([
 		...globalRuntimeManager ? [{
 			name: "vpn-runtime",
-			run: () => globalRuntimeManager.disconnect()
+			run: async () => {
+				const outcome = await globalRuntimeManager.shutdownApplicationRuntime();
+				if (typeof outcome?.keepZapretSuspended === "boolean") keepZapretSuspended = outcome.keepZapretSuspended;
+			}
 		}] : [],
 		...globalZapretManager && persistedState?.settings.zapretSuspendDuringVpn ? [{
-			name: "zapret-restore",
-			run: () => globalZapretManager.restoreAfterVpnIfNeeded(persistedState.settings.zapretSuspendDuringVpn, persistedState.settings.zapretProfile, { skipIdleStatus: true })
+			name: "zapret-policy",
+			run: () => keepZapretSuspended ? void 0 : globalZapretManager.restoreAfterVpnIfNeeded(persistedState.settings.zapretSuspendDuringVpn, persistedState.settings.zapretProfile, { skipIdleStatus: true })
 		}] : [],
 		...globalTelegramProxyManager ? [{
 			name: "telegram-proxy",
@@ -1031,6 +1045,8 @@ async function createMainWindow() {
 	if (!globalSystemDohManager) globalSystemDohManager = useComponentService(new SystemDohManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "SystemDoH"), coreService), "SystemDoH", coreService);
 	if (!globalZapretManager) globalZapretManager = useComponentService(new ZapretManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "Zapret"), coreService), "Zapret", coreService);
 	if (!globalTelegramProxyManager) globalTelegramProxyManager = useComponentService(new TelegramProxyManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "TelegramProxy"), coreService), "TelegramProxy", coreService);
+	if (!globalVpnServiceManager) globalVpnServiceManager = useComponentService(new VpnServiceManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "Vpn")), "Vpn", coreService);
+	globalRuntimeManager.attachBackgroundService(globalVpnServiceManager);
 	if (productionRuntime) await reconcileOwnedSystemStateBeforeUi();
 	logger.info("[boot] registering IPC handlers");
 	globalNetworkCombinatorManager = await registerIpcHandlers(mainWindow, stateStore, globalRuntimeManager, globalGravitylessDnsManager, globalSystemDohManager, globalZapretManager, globalTelegramProxyManager, () => pendingBootRecovery.size === 0);

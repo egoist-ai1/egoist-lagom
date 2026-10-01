@@ -57,14 +57,15 @@ var RuntimeInstaller = class {
 		return next;
 	}
 	async installRuntimeTransaction(plan) {
-		const targetDir = path.join(this.userDataDir, "runtime", plan.runtimeDirName);
+		const { runtimeRoot } = await prepareRuntimeInstallRoot({ appRoot: this.appRoot, userDataDir: this.userDataDir, runtimeKind: plan.runtimeKind });
+		const targetDir = path.join(runtimeRoot, plan.runtimeDirName);
 		await this.recoverRuntimeDirectory(targetDir);
 		const runtimePath = path.join(targetDir, plan.exeName);
 		const versionPath = path.join(targetDir, "VERSION.txt");
 		await promises.mkdir(targetDir, { recursive: true });
 		const hadRuntimeBefore = await this.pathExists(runtimePath);
 		const installedVersion = await readVersionFile(versionPath);
-		const tempRoot = path.join(this.userDataDir, "runtime", "_download", `${plan.runtimeDirName}-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+		const tempRoot = path.join(runtimeRoot, "_download", `${plan.runtimeDirName}-${randomUUID()}`);
 		try {
 			if (!hadRuntimeBefore) {
 				const bundledResult = await this.tryUseBundledRuntime(plan, targetDir, runtimePath, versionPath);
@@ -97,10 +98,12 @@ var RuntimeInstaller = class {
 				version: installedVersion,
 				updated: false
 			};
-			const zipPath = path.join(tempRoot, asset?.name || fallbackAssetName || `${plan.runtimeDirName}.zip`);
+			const assetName = asset?.name || fallbackAssetName || `${plan.runtimeDirName}.zip`;
+			if (!/^[A-Za-z0-9_.-]{1,255}\.zip$/i.test(assetName) || assetDownloadUrl !== buildGitHubAssetDownloadUrl(plan.releaseApiUrl, releaseTag, assetName)) throw new Error("Runtime-архив не принадлежит ожидаемому GitHub release.");
+			const zipPath = path.join(tempRoot, assetName);
 			const extractDir = path.join(tempRoot, "extract");
 			await promises.mkdir(tempRoot, { recursive: true });
-			await downloadFileWithProgress(assetDownloadUrl, zipPath);
+			await downloadFileWithProgress(assetDownloadUrl, zipPath, void 0, void 0, { expectedBytes: Number.isSafeInteger(asset?.size) && asset.size > 0 ? asset.size : void 0 });
 			const verification = await verifyGitHubReleaseAssetChecksum({
 				filePath: zipPath,
 				assetName: path.basename(zipPath),

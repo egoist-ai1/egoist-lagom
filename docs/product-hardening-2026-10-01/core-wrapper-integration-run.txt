@@ -1,0 +1,14 @@
+PASS: three exact paths rotate at 5 MiB and resume native appends
+RETENTION: rotations=144; deferredNativeAttempts=0; scheduledChecks=48
+PASS: one previous backup is replaced across 48 rotation cycles
+PASS: missing and small files are untouched; lookalikes are excluded
+PASS: five-minute monotonic deadline and cancellation
+PASS: busy source is deferred without truncation or blocking another wrapper
+PASS: busy previous backup is preserved and retried
+PASS: native ACL denial preserves the log and resumes after permission repair
+PASS: foreign product root and production state root are rejected
+JUNCTION: linkCharacters=172; targetCharacters=161; nativeReparsePoint=true
+JUNCTION: linkCharacters=238; targetCharacters=168; nativeReparsePoint=true
+PASS: native junction ancestors and backup leaves are rejected
+PASS: actual Core warning is hourly and maintenance failures permit continuation
+Wrapper log regression passed: 10 groups; elapsed=2,95s; work=C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f425-9e46-7cd0-bc68-d12af2678068\work\t\wrapper-log-bb048ae2a79b482d89664e9e490649c2

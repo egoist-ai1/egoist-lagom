@@ -362,14 +362,14 @@
 .screen-stage[data-screen="vpn"] .vpn-layout {
   grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.85fr);
   gap: 14px;
-  align-items: stretch;
-  flex: 1;
-  height: 100%;
+  align-items: start;
+  flex: none;
+  height: auto;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
-.screen-stage[data-screen="vpn"] :is(.vpn-servers-panel, .vpn-subscription-panel, .vpn-provider-panel) {
+.screen-stage[data-screen="vpn"] :is(.vpn-servers-panel, .vpn-subscription-panel, .vpn-provider-panel, .vpn-background-panel) {
   min-height: 0;
   padding: 16px 18px;
 }
@@ -377,8 +377,8 @@
 .screen-stage[data-screen="vpn"] .vpn-servers-panel {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  height: auto;
+  min-height: min(520px, 60vh);
   gap: 12px;
 }
 
@@ -596,6 +596,8 @@
 }
 
 .screen-stage[data-screen="vpn"] .vpn-side-stack {
+  display: flex;
+  flex-direction: column;
   grid-template-rows: none;
   gap: 12px;
   height: auto;
@@ -603,9 +605,19 @@
 }
 
 .screen-stage[data-screen="vpn"] .vpn-side-stack > .panel {
+  flex: none;
+  height: auto;
+  min-height: min-content;
   align-content: start;
   gap: 10px;
   overflow: visible;
+}
+.screen-stage[data-screen="vpn"] .vpn-server-list {
+  max-height: clamp(240px, 55vh, 640px);
+  overflow-y: auto;
+}
+.screen-stage[data-screen="vpn"] {
+  overflow-y: auto;
 }
 
 .screen-stage[data-screen="vpn"] .vpn-side-stack .kv-list > div {
@@ -837,8 +849,8 @@
 }
 
 .screen-stage[data-screen="dns"] .dns-preview-endpoint {
-  font-size: 10.5px;
-  color: #71717a;
+  font-size: var(--type-caption);
+  color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -875,21 +887,21 @@
   align-items: center;
   min-height: 22px;
   padding-block: 2px;
-  font-size: 10.5px;
-  line-height: 1.25;
+  font-size: var(--type-caption);
+  line-height: 1.5;
 }
 
 .screen-stage[data-screen="dns"] .side-stack .kv-list span {
-  font-size: 10.5px;
+  font-size: var(--type-caption);
   font-weight: 400;
-  color: #71717a;
+  color: var(--muted);
 }
 
 .screen-stage[data-screen="dns"] .side-stack .kv-list strong {
   max-width: none;
-  font-size: 10.5px;
+  font-size: var(--type-caption);
   font-weight: 500;
-  line-height: 1.25;
+  line-height: 1.5;
   white-space: normal;
   text-overflow: clip;
   overflow-wrap: anywhere;

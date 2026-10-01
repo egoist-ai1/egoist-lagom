@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-30T20:22:42.387386+00:00",
+  "sourceBase": "5d0d58b44076843e639723ef267e7b8d2605e481",
+  "candidateVersion": "3.8.0",
+  "scope": "R02/R06/R09 and backend part of R20; working source, not installed/public artifact",
+  "changes": {
+    "R02": "Persisted stateRevision + full-set CAS, strict narrow settings/node IPC; serialization covers login side effects, rollback and disk publication.",
+    "R06": "Confirmed subscription ID removal and node changes atomically apply to latest state; pending refresh cannot resurrect removed or same-URL-replaced ID.",
+    "R09": "DNS path/query/credentials/hash, URI, secret object fields, quoted assignments and incomplete/long private key blocks concealed in diagnostic export and central logs.",
+    "R20": "shield saveConnected persists only selected zapretProfile and preserves explicit GUI startup preferences."
+  },
+  "tests": {
+    "command": "node --test tests/production-state-patch.test.mjs tests/production-redaction.test.mjs tests/state-store.test.mjs",
+    "nodeVersion": "24.19.0",
+    "before": {
+      "tests": 16,
+      "passed": 0,
+      "failed": 16,
+      "note": "Includes new-API absence assertions; not sixteen independently observed production defects."
+    },
+    "after": {
+      "tests": 25,
+      "passed": 25,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "newCases": 19,
+      "existingStateStoreCases": 6
+    },
+    "interleavingStress": {
+      "acknowledgedCommands": 120,
+      "batches": 30,
+      "retainedNodes": 30,
+      "retainedSubscriptions": 30,
+      "retainedHistoryRecords": 30,
+      "exactRevisionAdvance": 120,
+      "memoryEqualsActualDisk": true
+    },
+    "archive": {
+      "actualProductionExportFunction": true,
+      "nativeWindowsCompressArchive": true,
+      "entriesReadByNativeZipReader": 5,
+      "sentinelsInAnyEntry": 0,
+      "operationalSourceConfigAndLogUnchanged": true
+    },
+    "failureInjection": [
+      "own StateStore disk write failure",
+      "login item function failure (no live login writes)",
+      "pending subscription fetch with controlled result",
+      "unavailable source log and compression exception"
+    ],
+    "syntaxChecks": {
+      "sourceFiles": 8,
+      "errors": 0
+    },
+    "gitDiffCheck": {
+      "errors": 0
+    }
+  },
+  "osBoundaries": {
+    "nativeIO": "own NTFS state files and own diagnostic ZIP",
+    "liveScmMutations": 0,
+    "liveDnsMutations": 0,
+    "liveScheduledTaskMutations": 0,
+    "liveLoginItemMutations": 0,
+    "installedUserProfileMutations": 0,
+    "networkRequests": 0,
+    "userProcessKills": 0,
+    "installedVersionChanged": false
+  },
+  "limits": [
+    "R06 selected panel/confirmation renderer is owned by UI agent and requires integrated validation.",
+    "R20 main login coercion/startup implementation is owned by root; this receipt proves the backend saveConnected callback only.",
+    "SCM, boot without GUI, installed updater migration, signed release and months-long uptime are not proved by these tests.",
+    "Managers/health status and Electron login/transport dependencies were controlled fixture leaves; native state store/export ZIP functions ran on own files.",
+    "Revision/CAS covers the one application process mutation queue; it is not a multi-process state-file lock.",
+    "Login rollback is attempted in the serialized mutation; native login readback/rollback failures remain a Windows integration check.",
+    "Central JS logs and the current five-entry diagnostics archive are covered; external runtime/Core logs and all possible secret encodings are not claimed clean."
+  ],
+  "sourceHashes": {
+    "src/recovered/electron/ipc/state-store.js": {
+      "sha256": "d89048412470e296c9af11581fc80f937328feb50c8a27cae868453149a64c4c",
+      "sha256Lf": "220e707dc9d0b2d1ae370bd0ea42e79aeb2b135e58397e8dcea5568702a18acf",
+      "bytes": 19411
+    },
+    "src/recovered/electron/ipc/handlers-system.js": {
+      "sha256": "0780d60e733e0bac661b5473d02b5f8d644b4bdcd261982e352ba981cee5bed6",
+      "sha256Lf": "093d6f628dd001b77997b33b39be0cdc347d73856e353e69f98efd7921049148",
+      "bytes": 69827
+    },
+    "src/recovered/electron/ipc/handlers-import.js": {
+      "sha256": "50aea9e4f1793df9a197221b77f5140ab2b65c0ed6aef40ceeffef63c4feaea0",
+      "sha256Lf": "50aea9e4f1793df9a197221b77f5140ab2b65c0ed6aef40ceeffef63c4feaea0",
+      "bytes": 14364
+    },
+    "src/recovered/electron/ipc/ipc-schemas.js": {
+      "sha256": "230fdf7876e626833c4d8e35808e1fca149081c733f4faa646b4d94daab13ff2",
+      "sha256Lf": "230fdf7876e626833c4d8e35808e1fca149081c733f4faa646b4d94daab13ff2",
+      "bytes": 8753
+    },
+    "src/recovered/electron/ipc/diagnostics-redaction.js": {
+      "sha256": "19f5cf1c2f85ae0b88b1cfeb5a96e3d5117e92f343a958dbd68710dda02bc06d",
+      "sha256Lf": "19f5cf1c2f85ae0b88b1cfeb5a96e3d5117e92f343a958dbd68710dda02bc06d",
+      "bytes": 3835
+    },
+    "src/recovered/electron/ipc/logger.js": {
+      "sha256": "d809ad1f3b6cd16f820ce5cbe8dbce89f98fe2aeaf0974fb6f625fdeede39716",
+      "sha256Lf": "d809ad1f3b6cd16f820ce5cbe8dbce89f98fe2aeaf0974fb6f625fdeede39716",
+      "bytes": 5122
+    },
+    "src/recovered/electron/ipc/handlers-health.js": {
+      "sha256": "f8c28445b078f8bed5be4d9dc7a3972ee3fd14bf681b9d19eb73e6b5edc796ed",
+      "sha256Lf": "f8c28445b078f8bed5be4d9dc7a3972ee3fd14bf681b9d19eb73e6b5edc796ed",
+      "bytes": 16199
+    },
+    "src/recovered/preload.cjs": {
+      "sha256": "78a9926d43fd78b826215b27fe88d1c409a3e67143d2e271b33cc4c9314bab69",
+      "sha256Lf": "3e45b665b3825f095840881ab8c444d3b776fd8c65612c3cd2a35d0f7dc0f6e0",
+      "bytes": 12799
+    },
+    "tests/production-state-patch.test.mjs": {
+      "sha256": "0c6fadc5a95eceda48e7183e7447448dc691fdbb688f77f84a64bee72da25153",
+      "sha256Lf": "0c6fadc5a95eceda48e7183e7447448dc691fdbb688f77f84a64bee72da25153",
+      "bytes": 14865
+    },
+    "tests/production-redaction.test.mjs": {
+      "sha256": "ea385eadb157201f00f3f1d47d16dcd309efa8100f96b11ee93eee381ede677f",
+      "sha256Lf": "ea385eadb157201f00f3f1d47d16dcd309efa8100f96b11ee93eee381ede677f",
+      "bytes": 9832
+    }
+  },
+  "evidence": [
+    "state-before.txt",
+    "state-after.txt",
+    "state-logger-before-after.json"
+  ],
+  "releaseInstalledOrPublished": false
+}

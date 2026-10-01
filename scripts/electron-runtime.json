@@ -1,32 +1,32 @@
 {
   "schemaVersion": 1,
-  "version": "44.4.5",
+  "version": "44.5.1",
   "platform": "win32",
   "arch": "x64",
-  "releaseId": 394303164,
-  "publishedAt": "2026-09-23T06:45:03Z",
-  "releaseUrl": "https://github.com/electron/electron/releases/tag/v44.4.5",
-  "releaseApiUrl": "https://api.github.com/repos/electron/electron/releases/tags/v44.4.5",
+  "releaseId": 399599493,
+  "publishedAt": "2026-09-30T02:12:03Z",
+  "releaseUrl": "https://github.com/electron/electron/releases/tag/v44.5.1",
+  "releaseApiUrl": "https://api.github.com/repos/electron/electron/releases/tags/v44.5.1",
   "asset": {
-    "id": 583070895,
-    "name": "electron-v44.4.5-win32-x64.zip",
-    "bytes": 158184819,
-    "sha256": "11c395820a5aaa8ebcc0686b476d0ac98a730274ebfbdc8cf5538a7c2815cb5d",
-    "url": "https://github.com/electron/electron/releases/download/v44.4.5/electron-v44.4.5-win32-x64.zip"
+    "id": 599622944,
+    "name": "electron-v44.5.1-win32-x64.zip",
+    "bytes": 157998329,
+    "sha256": "9b382492dcfee91f8f9e92c91f7972550a1b95d2299cac72279dab33a600d7db",
+    "url": "https://github.com/electron/electron/releases/download/v44.5.1/electron-v44.5.1-win32-x64.zip"
   },
   "shasums": {
-    "id": 583167509,
+    "id": 599799997,
     "name": "SHASUMS256.txt",
     "bytes": 6740,
-    "sha256": "a0379166a35f9d3e2e1b63a72b90ddfe54a9558c56a3bde82e98f63823591d72",
-    "url": "https://github.com/electron/electron/releases/download/v44.4.5/SHASUMS256.txt"
+    "sha256": "8cfa7460b2aaac1812bfeed3c6957d14ad384b9f31ae0407ba5e64bb6b43ec3e",
+    "url": "https://github.com/electron/electron/releases/download/v44.5.1/SHASUMS256.txt"
   },
   "requiredFiles": ["electron.exe", "LICENSE", "LICENSES.chromium.html", "version", "icudtl.dat", "resources.pak", "chrome_100_percent.pak", "chrome_200_percent.pak", "ffmpeg.dll", "dxcompiler.dll", "dxil.dll", "vulkan-1.dll", "locales/en-US.pak", "locales/ru.pak"],
   "support": {
     "minimumWindows": "Windows 10",
     "policyUrl": "https://www.electronjs.org/docs/latest/tutorial/electron-timelines",
-    "platformUrl": "https://github.com/electron/electron/blob/v44.4.5/README.md",
-    "checkedAt": "2026-09-29",
+    "platformUrl": "https://github.com/electron/electron/blob/v44.5.1/README.md",
+    "checkedAt": "2026-10-01",
     "note": "Electron supports its latest three stable major lines; revisit this pin for each product release. Windows x64 is the selected product target."
   }
 }

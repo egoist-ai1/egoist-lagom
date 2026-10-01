@@ -1,0 +1,102 @@
+{
+  "recordedAtUtc": "2026-09-30T23:42:00.103169+00:00",
+  "taskId": "01a0f42c-32b2-79a2-beba-be99c620a2c8",
+  "scope": "Only VM fixture bindings in tests/zapret-history.test.mjs; no runtime source changes",
+  "change": "Provide readGeneration and updateRevision refs initialized current:0, matching the real useRef(0) component bindings.",
+  "command": "node --test tests/zapret-history.test.mjs",
+  "node": "C:\\Users\\Egoist\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+  "before": {
+    "exitCode": 1,
+    "tests": 9,
+    "passed": 8,
+    "failed": 1,
+    "durationMs": 167.1328,
+    "failure": "readGeneration ReferenceError before operation callback; finish was not initialized"
+  },
+  "after": {
+    "exitCode": 0,
+    "tests": 9,
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 177.4317
+  },
+  "preservedAssertions": [
+    "Pending operation retains previous history",
+    "Cancelled operation retains previous history",
+    "Throwing operation retains previous history and clears progress",
+    "Durable IPC history, bounded data, malformed data and disk failure behavior"
+  ],
+  "testHash": {
+    "file": "tests/zapret-history.test.mjs",
+    "sha256Raw": "91bf816af79ec98f35e895d53dfdbb2b07f00b15fbb1e63d2124ea5ef8f2f43c",
+    "sha256Lf": "91bf816af79ec98f35e895d53dfdbb2b07f00b15fbb1e63d2124ea5ef8f2f43c",
+    "bytes": 10527
+  },
+  "uiReceiptSha256": "580ea664b792fe43c96ad2218a4e5a5391ed60f5064ac73d0015db0047c43216",
+  "frozenUiSourceHashes": {
+    "DESIGN.md": {
+      "sha256Raw": "ea2c2a9d38c1b7b3592d1e7fd740283d2406d69bca248d629926ee323352e1ee",
+      "sha256Lf": "ea2c2a9d38c1b7b3592d1e7fd740283d2406d69bca248d629926ee323352e1ee",
+      "bytes": 12791
+    },
+    "src/recovered/renderer.js": {
+      "sha256Raw": "239422fec61ff64a8724e20c5e1c2898efd6d824b77177967bbd8bab62d95f4c",
+      "sha256Lf": "63155227e2a1fc0b3cc3fc1be82bcb8b077bebd98e44dec28975b7b5f492dca2",
+      "bytes": 671242
+    },
+    "src/brand/CompactRuby.jsx": {
+      "sha256Raw": "3aa915daa28ee8472f437b92f83bbfec593f36e846f3328e519b08233da69c63",
+      "sha256Lf": "67e4dd5765316b78645d08180b13fe42d14993907b53620d9d1c2ee898921a6b",
+      "bytes": 37143
+    },
+    "src/brand/ShieldWidget.jsx": {
+      "sha256Raw": "b504b5b73ca63db296b456f6c3c56c3f37bfd1c006053add63b0cbbfce8dc46a",
+      "sha256Lf": "a397ba972c158680e2754418f8a23234e71a8cc751b63b89ba10761256b61fa3",
+      "bytes": 19302
+    },
+    "src/brand/tokens.css": {
+      "sha256Raw": "8adfb221368502c6b7ff140f2a95b93019c22fbdcf37aa9a261ef3daaaacc452",
+      "sha256Lf": "8adfb221368502c6b7ff140f2a95b93019c22fbdcf37aa9a261ef3daaaacc452",
+      "bytes": 4068
+    },
+    "src/brand/compact-ruby.css": {
+      "sha256Raw": "0869d3bb33bbac2c4de4751484f106192cd9d81f1284d79bcd018fb850b87a11",
+      "sha256Lf": "0869d3bb33bbac2c4de4751484f106192cd9d81f1284d79bcd018fb850b87a11",
+      "bytes": 21450
+    },
+    "src/brand/compact-surfaces.css": {
+      "sha256Raw": "31db3ebbc3ce2f2b4b6515a91e5b194ccb776a77a0b16057d384a8235b65ffa5",
+      "sha256Lf": "31db3ebbc3ce2f2b4b6515a91e5b194ccb776a77a0b16057d384a8235b65ffa5",
+      "bytes": 60847
+    },
+    "src/brand/shield-widget.css": {
+      "sha256Raw": "b947066263d7fd8d312d3d009fc1cb920b253f23f653c1f0ad3b32ef00e766b5",
+      "sha256Lf": "b947066263d7fd8d312d3d009fc1cb920b253f23f653c1f0ad3b32ef00e766b5",
+      "bytes": 14133
+    },
+    "tests/production-ui-hardening.test.mjs": {
+      "sha256Raw": "acae7d00e86368571a058a461b870521051117133dbc84e2becfd316e90a6d68",
+      "sha256Lf": "a59dee7e8f7b2a8be27f03923f894a5dc775728da2e0f9af01db0ca39a2b61ab",
+      "bytes": 12599
+    },
+    "tests/ui-service-readiness.test.mjs": {
+      "sha256Raw": "ac589a7285433f6514175782734da89616e9325b70e6e35b8405c7a7ff998b50",
+      "sha256Lf": "ac589a7285433f6514175782734da89616e9325b70e6e35b8405c7a7ff998b50",
+      "bytes": 4121
+    },
+    "docs/product-hardening-2026-10-01/ui-verify.mjs": {
+      "sha256Raw": "f5c502242dafbbfdb692ed8a7c3a66ecf141838d5d0d0e86f24a2d82aad006c6",
+      "sha256Lf": "da86ee5d5af194b9c33ac9f2be742254efa5ad8ee7a72585dfc3f956bbc694d2",
+      "bytes": 30249
+    }
+  },
+  "artifacts": {
+    "ui-zapret-history-before.txt": "f34bd5e843971e9b69245071b708c7046637b8629ba3f665c038bd884aa9e6bc",
+    "ui-zapret-history-after.txt": "e0cc7a991f04ccc993cb47ad6c31c1c0e5b84e8cf7fd57b395cc9aa9626e4afd"
+  },
+  "limits": [
+    "Extracted actual renderer callback with isolated VM dependencies and filesystem fixtures, not native installed service validation.",
+    "All original assertions retained. No repeat of unchanged UI rendering matrix."
+  ]
+}

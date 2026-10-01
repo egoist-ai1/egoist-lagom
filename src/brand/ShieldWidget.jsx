@@ -1,15 +1,42 @@
+function rubyStatusKnown(status) {
+  return !!status && !status.statusError && status.uiObservation?.known !== false && status.uiObservation?.stale !== true;
+}
+
+function rubyShieldObservedState(connection, component) {
+  if (!connection || connection.statusError) return null;
+  const value = connection[component];
+  return typeof value === 'boolean' ? value : null;
+}
+
+function rubyObserveStatus(result, previous, generation, attemptedAt) {
+  const value = result?.status === 'fulfilled' && result.value && typeof result.value === 'object' ? result.value : null;
+  if (value) return { ...value, uiObservation: { known:true, stale:false, error:null, generation, attemptedAt, lastConfirmedAt:result.completedAt ?? attemptedAt } };
+  const error = result?.reason?.message || (result?.status === 'rejected' ? String(result.reason) : 'Служба не вернула состояние');
+  return { ...previous, uiObservation: { known:false, stale:!!previous?.uiObservation?.lastConfirmedAt, error, generation, attemptedAt, lastConfirmedAt:previous?.uiObservation?.lastConfirmedAt ?? null } };
+}
+
+function rubyReadStatuses(reads) {
+  return Promise.all(reads.map(read => Promise.resolve(read).then(
+    value => ({status:'fulfilled',value,completedAt:Date.now()}),
+    reason => ({status:'rejected',reason,completedAt:Date.now()})
+  )));
+}
+
 function rubyTelegramReady(status) {
+  if (!rubyStatusKnown(status)) return false;
   if (status?.runtimeReady === false || status?.listenerReady === false) return false;
   return status?.runtimeReady === true || status?.running === true || status?.serviceRunning === true;
 }
 
 function rubyZapretReady(status) {
+  if (!rubyStatusKnown(status)) return false;
   if (status?.runtimeReady === false) return false;
   return status?.runtimeReady === true || status?.serviceReady === true || status?.serviceRunning === true || status?.standaloneRunning === true;
 }
 
 function rubyDnsReady(status) {
-  return status?.running === true && status?.verified !== false;
+  if (!rubyStatusKnown(status)) return false;
+  return status?.running === true && (status?.resolutionVerified === true || status?.verified === true);
 }
 
 function ShieldWidget({ snapshot, onOpenSettings }) {
@@ -84,15 +111,15 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
     return () => { mounted.current = false; clearTimeout(timer); unsubscribe?.(); document.removeEventListener('visibilitychange', visible); };
   }, []);
 
-  const busy = connection?.busy === true || localAction === 'connect' || localAction === 'disconnect';
+  const busy = (!(statusError || connection?.statusError) && connection?.busy === true) || localAction === 'connect' || localAction === 'disconnect';
   const dnsBusy = localAction === 'dns';
   const tgBusy = localAction === 'telegram';
-  const statusKnown = connection !== null;
+  const statusKnown = connection !== null && typeof connection.running === 'boolean';
   const stateError = statusError || connection?.statusError;
   const unavailable = !statusKnown || !!stateError;
-  const running = connection?.running ?? rubyZapretReady(snapshot?.zapret);
-  const dnsRunning = connection?.dnsRunning ?? rubyDnsReady(snapshot?.systemDoh);
-  const telegramRunning = connection?.telegramRunning ?? rubyTelegramReady(snapshot?.telegram);
+  const running = statusKnown && !stateError ? connection.running : null;
+  const dnsRunning = !stateError ? rubyShieldObservedState(connection, 'dnsRunning') : null;
+  const telegramRunning = !stateError ? rubyShieldObservedState(connection, 'telegramRunning') : null;
   const failure = actionError || stateError || connection?.error;
   const liveFailure = stateError || connection?.error || (!running && actionError);
   const phase = busy ? (localAction === 'disconnect' ? 'disconnecting' : connection?.phase || 'preparing') : liveFailure ? 'error' : !statusKnown ? 'loading' : running ? 'connected' : 'idle';
@@ -159,18 +186,20 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
 
   async function toggleDns() {
     if (!begin('dns')) return;
-    const next = !(dnsRunning || (!running && dnsEnabled));
+    const next = !dnsRunning;
     try {
-      if (running || dnsRunning) {
-        const result = next
-          ? await Z('system.applySystemDoh', api?.system?.applySystemDoh, snapshot?.state?.settings?.systemDohUrl)
-          : await Z('system.resetSystemDoh', api?.system?.resetSystemDoh);
-        if (!result || result.ok === false || (next ? result.running === false || result.verified === false : result.running === true)) throw new Error(result?.message || result?.lastError || 'Не удалось изменить DNS');
-        const status = await refreshNow(true);
-        if (status.dnsRunning !== next) throw new Error('Служба не подтвердила изменение DNS. Повторите проверку состояния.');
+      let url;
+      if (next) {
+        const state = await Z('state.get', api?.state?.get);
+        url = state?.settings?.systemDohUrl;
+        if (!url) throw new Error('Добавьте HTTPS-адрес DoH в разделе DNS.');
       }
-      if (mounted.current) setDnsEnabled(next);
-      try { localStorage.setItem('shield_dns_on_connect', String(next)); } catch {}
+      const result = next
+        ? await Z('system.applySystemDoh', api?.system?.applySystemDoh, url)
+        : await Z('system.resetSystemDoh', api?.system?.resetSystemDoh);
+      if (!result || result.ok === false || (next ? result.running === false || result.verified === false : result.running === true)) throw new Error(result?.message || result?.lastError || 'Не удалось изменить DNS');
+      const status = await refreshNow(true);
+      if (status.statusError || status.dnsRunning !== next) throw new Error('Служба не подтвердила изменение DNS. Повторите проверку состояния.');
     } catch (failure) {
       if (mounted.current) setActionError(failure.message);
     } finally { finish(); }
@@ -178,19 +207,15 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
 
   async function toggleTelegram() {
     if (!begin('telegram')) return;
-    const next = !(telegramRunning || (!running && telegramEnabled));
+    const next = !telegramRunning;
     try {
-      if (running || telegramRunning) {
-        const result = next
-          ? await Z('telegramProxy.start', api?.telegramProxy?.start)
-          : await Z('telegramProxy.stop', api?.telegramProxy?.stop);
-        const activeAfter = rubyTelegramReady(result);
-        if (!result || result.ok === false || (next ? !activeAfter : activeAfter || result.serviceRunning === true)) throw new Error(result?.message || result?.lastError || 'Не удалось изменить Telegram Proxy');
-        const status = await refreshNow(true);
-        if (status.telegramRunning !== next) throw new Error('Служба не подтвердила изменение Telegram Proxy. Повторите проверку состояния.');
-      }
-      if (mounted.current) setTelegramEnabled(next);
-      try { localStorage.setItem('shield_telegram_on_connect', String(next)); } catch {}
+      const result = next
+        ? await Z('telegramProxy.start', api?.telegramProxy?.start)
+        : await Z('telegramProxy.stop', api?.telegramProxy?.stop);
+      const activeAfter = rubyTelegramReady(result);
+      if (!result || result.ok === false || (next ? !activeAfter : activeAfter || result.serviceRunning === true)) throw new Error(result?.message || result?.lastError || 'Не удалось изменить Telegram Proxy');
+      const status = await refreshNow(true);
+      if (status.statusError || status.telegramRunning !== next) throw new Error('Служба не подтвердила изменение Telegram Proxy. Повторите проверку состояния.');
     } catch (failure) {
       if (mounted.current) setActionError(failure.message);
     } finally { finish(); }
@@ -206,6 +231,12 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
     } catch (failure) {
       if (mounted.current) setActionError(failure.message);
     } finally { cancellation.current = false; if (mounted.current) setCancelBusy(false); }
+  }
+
+  function setOnConnectPreference(component, enabled) {
+    if (component === 'dns') setDnsEnabled(enabled);
+    else setTelegramEnabled(enabled);
+    try { localStorage.setItem(component === 'dns' ? 'shield_dns_on_connect' : 'shield_telegram_on_connect', String(enabled)); } catch {}
   }
 
   return (
@@ -230,7 +261,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
           onClick={toggleConnection}
           disabled={busy || dnsBusy || tgBusy || unavailable}
           aria-busy={busy || dnsBusy || tgBusy || !statusKnown}
-          aria-label={!statusKnown ? 'Проверяем состояние службы' : busy ? 'Выполняется операция' : running ? 'Отключить защиту' : 'Подключить защиту'}
+          aria-label={!statusKnown ? 'Проверяем состояние службы' : busy ? 'Выполняется операция' : running ? 'Отключить профиль DPI и компоненты' : 'Подключить профиль DPI и выбранные компоненты'}
           title={busy ? 'Операция выполняется...' : running ? 'Нажмите для отключения' : 'Нажмите для подключения'}
         >
           <div className="shield-widget-emblem" aria-hidden="true">
@@ -248,12 +279,14 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
         <div className="shield-widget-status-group" role="status" aria-live="polite" aria-atomic="true">
           <h1>
             <i className="shield-live-dot"/>
-            {busy ? (phase === 'disconnecting' ? 'Отключение…' : 'Подключение…') : liveFailure ? 'Нужна проверка' : !statusKnown ? 'Проверяем состояние…' : running ? 'Подключено' : 'Готов к подключению'}
+            {busy ? (phase === 'disconnecting' ? 'Отключение…' : 'Подключение…') : liveFailure ? 'Нужна проверка' : !statusKnown ? 'Проверяем состояние…' : running ? 'Профиль подключён' : 'Готов к подключению'}
           </h1>
           {(busy || failure || dnsBusy || tgBusy) && (
             <p>{busy ? (connection?.message || 'Проверяем подключение…') : dnsBusy ? 'Переключаем DNS…' : tgBusy ? 'Переключаем Telegram…' : 'Подробности ниже'}</p>
           )}
         </div>
+
+        <p className="shield-operation-scope">Профиль DPI · VPN подключается отдельно</p>
 
         <div className="shield-progress-area">
           <div
@@ -283,15 +316,21 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
         </details>
       )}
 
+      <fieldset className="shield-on-connect-preferences" disabled={busy || dnsBusy || tgBusy}>
+        <legend>При подключении профиля</legend>
+        <label><input type="checkbox" checked={dnsEnabled} onChange={event => setOnConnectPreference('dns', event.target.checked)}/><span>Включить DNS</span></label>
+        <label><input type="checkbox" checked={telegramEnabled} onChange={event => setOnConnectPreference('telegram', event.target.checked)}/><span>Включить TG</span></label>
+      </fieldset>
+
       <footer className="shield-widget-footer">
         <div className="shield-footer-switches">
-          <div className="shield-switch-group" title={dnsBusy ? 'Проверяем DNS' : dnsRunning ? 'DNS зашифрован' : dnsEnabled ? 'DNS включится при подключении' : 'DNS выключен'}>
-            <span>DNS</span>
+          <div className="shield-switch-group" title={dnsBusy ? 'Проверяем DNS' : dnsRunning === null ? 'Состояние DNS не проверено' : dnsRunning ? 'DNS зашифрован' : 'DNS выключен'}>
+            <span>DNS<small>{dnsBusy ? 'Проверка…' : dnsRunning === null ? 'Не проверен' : dnsRunning ? 'Работает' : 'Выключен'}</small></span>
             <button
               role="switch"
               aria-label="Зашифрованный DNS"
-              aria-checked={dnsRunning || (!running && dnsEnabled)}
-              disabled={busy || dnsBusy || tgBusy || unavailable}
+              aria-checked={dnsRunning === true}
+              disabled={busy || dnsBusy || tgBusy || unavailable || dnsRunning === null}
               aria-busy={dnsBusy}
               className="shield-switch-toggle"
               onClick={toggleDns}
@@ -300,13 +339,13 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
             </button>
           </div>
 
-          <div className="shield-switch-group" title={tgBusy ? 'Переключаем Telegram' : telegramRunning ? 'Telegram Proxy активен' : telegramEnabled ? 'Telegram включится при подключении' : 'Telegram выключен'}>
-            <span>TG</span>
+          <div className="shield-switch-group" title={tgBusy ? 'Переключаем Telegram' : telegramRunning === null ? 'Состояние Telegram не проверено' : telegramRunning ? 'Telegram Proxy активен' : 'Telegram выключен'}>
+            <span>TG<small>{tgBusy ? 'Проверка…' : telegramRunning === null ? 'Не проверен' : telegramRunning ? 'Работает' : 'Выключен'}</small></span>
             <button
               role="switch"
               aria-label="Telegram Proxy"
-              aria-checked={telegramRunning || (!running && telegramEnabled)}
-              disabled={busy || dnsBusy || tgBusy || unavailable}
+              aria-checked={telegramRunning === true}
+              disabled={busy || dnsBusy || tgBusy || unavailable || telegramRunning === null}
               aria-busy={tgBusy}
               className="shield-switch-toggle"
               onClick={toggleTelegram}

@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "scope": "Production renderer and CSS, inert local IPC fixtures; no SCM/DNS mutations; headless Chromium, not native DPI/FPS/service readiness.",
+  "browser": "151.0.7922.34",
+  "cases": [],
+  "errors": [],
+  "contrast": [],
+  "interactions": [],
+  "nativeSystemMutations": 0,
+  "performanceProfiles": [
+    {
+      "count": 0,
+      "repetition": 1,
+      "readyAfterMs": 91.62,
+      "taskMs": 48.61,
+      "scriptMs": 16.58,
+      "layoutMs": 10.58,
+      "jsHeapMiB": 5.045,
+      "documents": 8,
+      "nodes": 639,
+      "jsEventListeners": 273,
+      "renderedServerRows": 0,
+      "renderedElements": 164,
+      "longTasks": []
+    },
+    {
+      "count": 0,
+      "repetition": 2,
+      "readyAfterMs": 83.89,
+      "taskMs": 21.27,
+      "scriptMs": 3.18,
+      "layoutMs": 5.9,
+      "jsHeapMiB": 5.049,
+      "documents": 8,
+      "nodes": 639,
+      "jsEventListeners": 273,
+      "renderedServerRows": 0,
+      "renderedElements": 164,
+      "longTasks": []
+    },
+    {
+      "count": 0,
+      "repetition": 3,
+      "readyAfterMs": 78.63,
+      "taskMs": 24.15,
+      "scriptMs": 3.84,
+      "layoutMs": 5.99,
+      "jsHeapMiB": 5.051,
+      "documents": 8,
+      "nodes": 639,
+      "jsEventListeners": 273,
+      "renderedServerRows": 0,
+      "renderedElements": 164,
+      "longTasks": []
+    },
+    {
+      "count": 60,
+      "repetition": 1,
+      "readyAfterMs": 122.58,
+      "taskMs": 77.23,
+      "scriptMs": 30.93,
+      "layoutMs": 13.59,
+      "jsHeapMiB": 6.224,
+      "documents": 10,
+      "nodes": 2081,
+      "jsEventListeners": 762,
+      "renderedServerRows": 60,
+      "renderedElements": 999,
+      "lastNode": "n59",
+      "longTasks": [
+        {
+          "start": 377.1000000014901,
+          "duration": 55
+        }
+      ]
+    },
+    {
+      "count": 60,
+      "repetition": 2,
+      "readyAfterMs": 97,
+      "taskMs": 50.39,
+      "scriptMs": 15.33,
+      "layoutMs": 10.23,
+      "jsHeapMiB": 6.257,
+      "documents": 10,
+      "nodes": 2081,
+      "jsEventListeners": 762,
+      "renderedServerRows": 60,
+      "renderedElements": 999,
+      "lastNode": "n59",
+      "longTasks": []
+    },
+    {
+      "count": 60,
+      "repetition": 3,
+      "readyAfterMs": 87.01,
+      "taskMs": 48.66,
+      "scriptMs": 15.08,
+      "layoutMs": 10.23,
+      "jsHeapMiB": 6.207,
+      "documents": 10,
+      "nodes": 2081,
+      "jsEventListeners": 762,
+      "renderedServerRows": 60,
+      "renderedElements": 999,
+      "lastNode": "n59",
+      "longTasks": []
+    },
+    {
+      "count": 500,
+      "repetition": 1,
+      "readyAfterMs": 226.63,
+      "taskMs": 178.12,
+      "scriptMs": 51.47,
+      "layoutMs": 36.6,
+      "jsHeapMiB": 10.306,
+      "documents": 4,
+      "nodes": 12581,
+      "jsEventListeners": 2718,
+      "renderedServerRows": 500,
+      "renderedElements": 7159,
+      "lastNode": "n499",
+      "longTasks": [
+        {
+          "start": 368.1000000014901,
+          "duration": 122
+        }
+      ]
+    },
+    {
+      "count": 500,
+      "repetition": 2,
+      "readyAfterMs": 189.84,
+      "taskMs": 152.73,
+      "scriptMs": 47.69,
+      "layoutMs": 35.9,
+      "jsHeapMiB": 10.334,
+      "documents": 4,
+      "nodes": 12581,
+      "jsEventListeners": 2718,
+      "renderedServerRows": 500,
+      "renderedElements": 7159,
+      "lastNode": "n499",
+      "longTasks": [
+        {
+          "start": 366.5999999977648,
+          "duration": 117
+        }
+      ]
+    },
+    {
+      "count": 500,
+      "repetition": 3,
+      "readyAfterMs": 208.35,
+      "taskMs": 167.6,
+      "scriptMs": 53.34,
+      "layoutMs": 37.87,
+      "jsHeapMiB": 10.337,
+      "documents": 4,
+      "nodes": 12581,
+      "jsEventListeners": 2718,
+      "renderedServerRows": 500,
+      "renderedElements": 7159,
+      "lastNode": "n499",
+      "longTasks": [
+        {
+          "start": 368.1000000014901,
+          "duration": 127
+        }
+      ]
+    },
+    {
+      "count": 2000,
+      "repetition": 1,
+      "readyAfterMs": 571.31,
+      "taskMs": 572.97,
+      "scriptMs": 186.86,
+      "layoutMs": 135.87,
+      "jsHeapMiB": 26.49,
+      "documents": 4,
+      "nodes": 48581,
+      "jsEventListeners": 10218,
+      "renderedServerRows": 2000,
+      "renderedElements": 28159,
+      "lastNode": "n1999",
+      "longTasks": [
+        {
+          "start": 381.1000000014901,
+          "duration": 471
+        }
+      ]
+    },
+    {
+      "count": 2000,
+      "repetition": 2,
+      "readyAfterMs": 608.55,
+      "taskMs": 599.22,
+      "scriptMs": 195.7,
+      "layoutMs": 135.63,
+      "jsHeapMiB": 26.503,
+      "documents": 4,
+      "nodes": 48579,
+      "jsEventListeners": 10218,
+      "renderedServerRows": 2000,
+      "renderedElements": 28159,
+      "lastNode": "n1999",
+      "longTasks": [
+        {
+          "start": 365,
+          "duration": 483
+        }
+      ]
+    },
+    {
+      "count": 2000,
+      "repetition": 3,
+      "readyAfterMs": 576.77,
+      "taskMs": 581.7,
+      "scriptMs": 189.85,
+      "layoutMs": 138.78,
+      "jsHeapMiB": 26.508,
+      "documents": 4,
+      "nodes": 48579,
+      "jsEventListeners": 10218,
+      "renderedServerRows": 2000,
+      "renderedElements": 28159,
+      "lastNode": "n1999",
+      "longTasks": [
+        {
+          "start": 367.69999999925494,
+          "duration": 474
+        }
+      ]
+    }
+  ],
+  "sourceHashes": {
+    "src/recovered/renderer.js": "9e103f340cd6a61c7a367ab435317a0bb08a5682b45e7c1d59cedb49465384dc",
+    "src/brand/CompactRuby.jsx": "c0e3e9e4bee3d7dc75ee0401548d76bf7680870578317331d6a42dbc93997ec6",
+    "src/brand/ShieldWidget.jsx": "d5ace4194703f8a81f81965f0260f2a674a5f861372bc555c42761468d100416",
+    "src/brand/tokens.css": "8adfb221368502c6b7ff140f2a95b93019c22fbdcf37aa9a261ef3daaaacc452",
+    "src/brand/compact-ruby.css": "89649a4502938da9f07ca93a41020b40c03f1a22465993b188d9c0cf44f1972a",
+    "src/brand/compact-surfaces.css": "8edfdc79c2c9ad69a2df64cace3f9b08d869ee371d4b71540db41621bf9b8686",
+    "src/brand/shield-widget.css": "14808d43790c7d2e123b52fbd34744f7debbe448477dc9f0b6e172e7b2beb082"
+  },
+  "summary": {
+    "cases": 0,
+    "horizontalOverflowCases": [],
+    "blockedControls": [],
+    "failedInteractions": [],
+    "lowContrast": [],
+    "pageErrors": 0
+  }
+}

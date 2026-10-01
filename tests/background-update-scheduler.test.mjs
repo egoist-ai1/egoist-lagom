@@ -73,6 +73,35 @@ test('update readiness rechecks queued mutations and boot recovery after async V
   assert.equal(await context.canInstallDesktopUpdate(),false);
 });
 
+test('updates preserve a verified background VPN and refuse unknown or transitioning service state',async()=>{
+  const proof={serviceInstalled:true,serviceState:'running',running:true,observation:{state:'observed'}};
+  const stable={connected:true,executionMode:'background-service',temporaryRuntimeActive:false,backgroundService:proof};
+  for(const [status,expected] of [
+    [stable,true],
+    [{...stable,temporaryRuntimeActive:true},false],
+    [{...stable,executionMode:'temporary'},false],
+    [{...stable,backgroundService:{...proof,running:null}},false],
+    [{...stable,backgroundService:{...proof,observation:{state:'unknown'}}},false],
+    [{...stable,backgroundService:{...proof,serviceInstalled:false}},false],
+    [{...stable,connected:false,backgroundService:{...proof,serviceState:'stop_pending'}},false],
+    [{...stable,connected:false,backgroundService:{...proof,serviceInstalled:null,running:null}},false],
+    [{...stable,connected:false,backgroundService:{...proof,serviceState:'stopped',running:false}},true],
+  ]){
+    const {context}=scheduler({globalRuntimeManager:{async status(){return status;}}});
+    assert.equal(await context.canInstallDesktopUpdate(),expected,JSON.stringify(status));
+  }
+});
+
+test('background VPN update readiness rechecks the mutation queue after its observation',async()=>{
+  let resolveStatus,idle=true;
+  const {context}=scheduler({globalNetworkCombinatorManager:{isMutationIdle:()=>idle},
+    globalRuntimeManager:{status:()=>new Promise(resolve=>{resolveStatus=resolve;})}});
+  const readiness=context.canInstallDesktopUpdate();idle=false;
+  resolveStatus({connected:true,executionMode:'background-service',temporaryRuntimeActive:false,
+    backgroundService:{serviceInstalled:true,serviceState:'running',running:true,observation:{state:'observed'}}});
+  assert.equal(await readiness,false);
+});
+
 test('background exceptions are caught and invalid signatures are not immediately retried',async()=>{
   const {context,timers,warnings}=scheduler({desktopUpdater:{async check(){throw new Error('network unavailable');}}});
   await context.runBackgroundUpdateCheck();

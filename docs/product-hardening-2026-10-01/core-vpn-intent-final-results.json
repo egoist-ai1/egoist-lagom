@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "finishedAt": "2026-09-30T23:24:47.158305+00:00",
+  "runtime": ".NET 10.0.12",
+  "elapsedSeconds": 4.739676,
+  "realSystemMutations": false,
+  "scope": "Actual production C# classes, own NTFS file locks/replaces, own named pipes and harmless crash children. No live SCM, DNS, registry or tasks. Finite stress; not a long-term availability proof.",
+  "results": [
+    {
+      "name": "VPN-explicit-start-stop-intent-before-worker",
+      "outcome": "passed",
+      "elapsedMs": 4735.1673,
+      "details": {
+        "explicitLifecycleMethods": 4,
+        "workerExecutions": 4,
+        "committedReplaysAfterRestart": 4,
+        "workerStatusQueries": 1,
+        "preEffectStartStopIntentVerified": true,
+        "latestOffIntentPreserved": true,
+        "confirmedFailureRestorations": 6,
+        "unknownFailureBlocksMutation": true,
+        "changedOffIntentPreserved": true,
+        "scope": "Actual Core dispatcher/journal/intent store with injected harmless executor. No SCM/native VPN launch; host/config acceptance is a separate R25 test."
+      }
+    }
+  ]
+}

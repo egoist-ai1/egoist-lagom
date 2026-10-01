@@ -96,7 +96,7 @@ async function computeFileDigest(filePath, algorithm) {
 function assertCanonicalCandidateUrl(candidate) {
 	const url = new URL(candidate.assetUrl);
 	const expectedPath = `/${APP_RELEASE_OWNER}/${APP_RELEASE_REPOSITORY}/releases/download/${candidate.tag}/${candidate.assetName}`;
-	if (url.protocol !== "https:" || url.hostname !== "github.com" || url.pathname !== expectedPath || url.search || url.hash) throw new UpdaterError("candidate-mismatch", "Адрес Setup не совпадает с доверенным release channel.");
+	if (url.protocol !== "https:" || url.hostname !== "github.com" || url.username || url.password || url.port || url.pathname !== expectedPath || url.search || url.hash) throw new UpdaterError("candidate-mismatch", "Адрес Setup не совпадает с доверенным release channel.");
 }
 function buildProtectedUpdaterLaunch(candidate, options, finalPath) {
 	const updatesDir = path.dirname(finalPath);
@@ -448,7 +448,13 @@ var DesktopUpdater = class {
 		}
 		const { response } = await fetchWithRetry(candidate.assetUrl, {
 			headers,
-			redirect: "follow",
+			validateUrl: rawUrl => {
+				const url = new URL(rawUrl);
+				if (url.protocol !== "https:" || url.username || url.password || url.port || url.hash || !ALLOWED_REDIRECT_HOSTS.has(url.hostname.toLowerCase())) {
+					throw new UpdaterError("redirect-blocked", "GitHub перенаправил загрузку на недоверенный адрес.");
+				}
+			},
+			maxRedirects: 4,
 			timeoutMs: 6e4,
 			retries: 2,
 			retryBaseDelayMs: 1e3
@@ -459,7 +465,7 @@ var DesktopUpdater = class {
 		let idleTimeout;
 		try {
 			const finalUrl = new URL(response.url || candidate.assetUrl);
-			if (finalUrl.protocol !== "https:" || !ALLOWED_REDIRECT_HOSTS.has(finalUrl.hostname.toLowerCase())) throw new UpdaterError("redirect-blocked", "GitHub перенаправил загрузку на недоверенный адрес.");
+			if (finalUrl.protocol !== "https:" || finalUrl.username || finalUrl.password || finalUrl.port || finalUrl.hash || !ALLOWED_REDIRECT_HOSTS.has(finalUrl.hostname.toLowerCase())) throw new UpdaterError("redirect-blocked", "GitHub перенаправил загрузку на недоверенный адрес.");
 			const append = existingSize > 0 && response.status === 206;
 			if (append) {
 				const range = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(response.headers.get("content-range") ?? "");

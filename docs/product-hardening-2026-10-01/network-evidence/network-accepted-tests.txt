@@ -1,0 +1,69 @@
+✔ a validated process token check does not depend on net.exe session availability (3.8807ms)
+✔ a validated ordinary-user result is cached (0.9764ms)
+✔ a transient native checker failure fails closed without poisoning the admin cache (1.5115ms)
+✔ an unavailable native checker remains unknown rather than declaring an ordinary user (1.6126ms)
+✔ malformed token result never poisons the privilege cache (1.0149ms)
+✔ native admin CLI checks the current Windows token before service initialization (0.4801ms)
+✔ DNS requires complete matching question and usable A records (3.4498ms)
+✔ DNS compressed CNAME answers resolve the question chain and reject cycles (1.6446ms)
+✔ actual UDP ignores foreign source and bad packets, then accepts only its resolver response (52.3959ms)
+✔ actual UDP malformed-only response times out and releases the socket (78.7171ms)
+✔ actual fragmented DNS TCP accepts only a complete matching compressed answer and closes its connection (63.9428ms)
+✔ actual DNS TCP rejects mismatched/truncated/excess frames and stops drip at an absolute deadline (109.195ms)
+✔ actual UDP and DNS TCP cancellation release every owned socket (159.2347ms)
+ℹ 64 actual DNS UDP/TCP cancellations; owned client UDP/server TCP sockets=0
+✔ actual UDP stress rejects foreign, mismatched and compressed-cycle packets before valid answers (530.174ms)
+ℹ {"requests":256,"successes":256,"malformedOrForeignPackets":1280,"totalPeerPackets":1536,"elapsedMs":527.125,"clientSocketsRemaining":0}
+✔ TUN route coverage is unknown without observed Windows interface/routes (1.7849ms)
+✔ a shared TUN exit is not evidence of a bypass (0.6662ms)
+✔ TUN route observations must include both distinct control destinations and matching prefixes (2.3045ms)
+✔ a foreign working DNS endpoint cannot declare our stopped or unknown service running (1.1849ms)
+✔ IPv6 aliases do not report a changed exit and retain original display addresses (0.6815ms)
+✔ network ports containing 401/403 do not disable automatic reconnect (1.0642ms)
+✔ DNS resolver IPv6 aliases compare equally and expanded loopback stays a local forwarder (0.8837ms)
+✔ an external recursor address is an observation, not evidence of a managed DNS bypass or complete protection (0.5684ms)
+✔ IPv4 and IPv6 observations do not by themselves prove a changed exit (0.5616ms)
+✔ monotonic DNS freshness survives rollback/forward and discards late generations (0.7653ms)
+✔ actual CONNECT drip cannot extend the absolute handshake budget (129.0233ms)
+ℹ CONNECT elapsed=80.40 ms, deadline=70 ms, caller safety cutoff=350 ms, own server sockets=0
+✔ actual stalled CONNECT cancellation stops every owned connection (155.2115ms)
+ℹ {"requests":64,"cancelled":64,"elapsedMs":152.682,"clientSocketsRemaining":0,"serverSocketsRemaining":0}
+✔ actual chunked TLS download counts decoded payload only (187.5056ms)
+✔ actual TLS fragmented chunks/extensions/trailers decode without counting framing (328.9904ms)
+✔ actual TLS truncated/ambiguous/invalid framing does not produce a completed speed sample (231.0169ms)
+✔ actual TLS download obeys requested payload cap and rejects a spent shared budget before succeeding (237.9821ms)
+✔ actual TLS repeated framed downloads and cancellations leave no connection or budget reservations (418.5108ms)
+ℹ {"requests":80,"completed":48,"malformedRejected":16,"cancelled":16,"decodedPayloadBytes":48000,"usedBudgetBytes":48800,"reservedBytesRemaining":0,"serverSocketsRemaining":0,"elapsedMs":264.653}
+✔ background status contract requires an actual observation and preserves unknown (4.3449ms)
+✔ packaged VPN manager and handlers ignore every environment mock switch (3.7588ms)
+✔ temporary connect fails before any teardown or preparation when background state cannot permit it (1.9691ms)
+✔ manual background disconnect confirms disabled and stopped before returning idle (204.7193ms)
+✔ an unconfirmed background stop cannot declare disconnected or mutate the service again (1.4785ms)
+✔ real GUI-owned harmless child and config stop on shutdown while background service and suspension remain (219.0494ms)
+✔ GUI exit preserves an unknown background service instead of attempting a stop or Zapret restore (203.1952ms)
+✔ background egress verification is bound to the observed instance and expires on monotonic time (1.9317ms)
+✔ five background IPC contracts reject raw config, extra args and missing node before mutation (5.0752ms)
+✔ background IPC snapshots selected node and rules, closes temporary mode and confirms fresh status (210.7956ms)
+✔ invalid background snapshot and unavailable service cannot interrupt a temporary connection (6.1708ms)
+✔ unknown service state blocks every mutation but is returned as unknown by the status IPC (2.0473ms)
+✔ background stop/remove confirms Core readback and restores suspension only when both modes are inactive (2.01ms)
+✔ background TUN reapply refuses changing Windows system proxy (2.0386ms)
+✔ failed background start restores Zapret only after a fresh confirmed inactive service readback (408.2266ms)
+✔ GUI exit removes wake listeners and does not schedule another probe after shutdown (30.5591ms)
+✔ native TUN replaces an incomplete managed Xray selected ahead of the bundle (21.7542ms)
+✔ custom Xray without Wintun is rejected instead of being overwritten (3.6746ms)
+✔ an invalid configured Xray path falls back to a ready bundled TUN runtime (7.831ms)
+✔ serializes a previous TUN session before preparing its replacement (baseline fails) (10.3827ms)
+✔ keeps make-before-break handoff for proxy sessions, including proxy to TUN (1.3042ms)
+✔ failed serial TUN replacement releases dead proxy ownership (1.1762ms)
+✔ retries the recorded Windows Xray TUN route failure once after serial cleanup (baseline fails) (1018.3538ms)
+✔ stops after the second TUN route failure and releases network ownership (1014.3396ms)
+✔ recognizes only the recorded Windows Xray TUN route initialization failure and skips generic fallback (2.2061ms)
+ℹ tests 56
+ℹ suites 0
+ℹ pass 56
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2786.1225

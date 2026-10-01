@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "finishedAt": "2026-09-30T21:27:02.3821857+00:00",
+  "runtime": ".NET 10.0.12",
+  "elapsedSeconds": 357.9327467,
+  "realSystemMutations": false,
+  "scope": "Actual production C# classes, own NTFS file locks/replaces, own named pipes and harmless crash children. No live SCM, DNS, registry or tasks. Finite stress; not a long-term availability proof.",
+  "results": [
+    {
+      "name": "typed-atomic-read-and-replace",
+      "outcome": "passed",
+      "elapsedMs": 287564.367,
+      "details": {
+        "writes": 10000,
+        "reads": 50000,
+        "falseMissing": 0,
+        "typedUnavailable": 0,
+        "malformedReads": 0,
+        "finalGeneration": 10000,
+        "sharingDenialKind": "Unavailable",
+        "sharingDenialMs": 867.4926,
+        "cancellationVerified": true,
+        "corruptionBytesPreserved": true,
+        "recoveryMarkerWrites": 240,
+        "recoveryQueries": 1600,
+        "falseRecoveryReady": 0
+      }
+    },
+    {
+      "name": "corrupt-and-foreign-journal-diagnostics",
+      "outcome": "passed",
+      "elapsedMs": 6102.414,
+      "details": {
+        "authenticTruncatedPhases": 7,
+        "diagnosticReplies": 21,
+        "rejectedMutations": 7,
+        "maxHelloMs": 236.5673,
+        "corruptionPreserved": true,
+        "foreignBytesPreserved": true,
+        "foreignExecutorCalls": 0,
+        "offlineRecoveryRefused": true,
+        "actualNamedPipes": true,
+        "aclScope": "Own test root, current SID owner; no claim of ProgramData LocalSystem integration."
+      }
+    },
+    {
+      "name": "untrusted-configuration-read-only-startup",
+      "outcome": "passed",
+      "elapsedMs": 2970.4784,
+      "details": {
+        "startupCases": 7,
+        "realDiagnosticReplies": 14,
+        "refusedMutations": 7,
+        "refusedWorkerQueries": 7,
+        "callerInstallRootIgnoredWhenConfigInvalid": true,
+        "untrustedConfigNeverAuthorizesGui": true,
+        "configBytesPreserved": true,
+        "testAuthorization": "Explicit console dev-client override on own pipe; production GUI verification is unchanged and not bypassed.",
+        "productionAcceptancePending": "Native installed Core/GUI authorization in a LocalSystem ProgramData environment."
+      }
+    },
+    {
+      "name": "durable-intent-write-denial-and-crash",
+      "outcome": "passed",
+      "elapsedMs": 26021.0343,
+      "details": {
+        "responseDeniedExecutions": 1,
+        "knownResultReplays": 100,
+        "unknownDeniedExecutions": 1,
+        "refusedUnknownReplays": 100,
+        "payloadMismatchRefused": true,
+        "newRequestIdBlocked": true,
+        "readOnlyObservations": 1,
+        "unknownIntentNotClearedByCurrentState": true,
+        "liveCompletedIntentRetiredWithoutExecution": true,
+        "realCrashChildren": 32,
+        "crashEffects": 24,
+        "replayExecutionsAfterCrash": 0,
+        "crashScope": "Own harmless children exit at 4 boundaries; terminal/response boundaries use actual journal APIs. This is bounded intent/replay verification, not a permanent exactly-once guarantee."
+      }
+    },
+    {
+      "name": "response-and-memory-byte-budgets",
+      "outcome": "passed",
+      "elapsedMs": 17066.0332,
+      "details": {
+        "durableWrites": 90,
+        "durableBytes": 4139236,
+        "durableEntries": 42,
+        "durableLimitBytes": 4194304,
+        "giantFirstResponseBytes": 3145728,
+        "giantExecutions": 1,
+        "oversizedReplayReceipt": "OPERATION_RESULT_NOT_RETAINED",
+        "readOnlyQueries": 90,
+        "cachedEntries": 40,
+        "cachedResponseBytes": 8197200,
+        "cacheLimitBytes": 8388608,
+        "unresolvedIntentsRetainedAtCapacity": 128,
+        "capacityOverflowRefused": true,
+        "unresolvedIntentsEvicted": false,
+        "retentionScope": "Old completed responses may be evicted; no indefinite historical replay guarantee."
+      }
+    },
+    {
+      "name": "native-route-monotonic-cache",
+      "outcome": "passed",
+      "elapsedMs": 1.7061,
+      "details": {
+        "calls": 3,
+        "cachedWithin30Seconds": true,
+        "expiredAt30Seconds": true,
+        "reverseElapsedInvalidates": true,
+        "systemWallClockModified": false,
+        "actualProductionMethod": true,
+        "nativeNetworkWrites": 0,
+        "seam": "Injected monotonic elapsed clock and read-only PowerShell adapter; actual controller cache/lock code."
+      }
+    },
+    {
+      "name": "integrated-Core-self-test",
+      "outcome": "passed",
+      "elapsedMs": 18195.0993,
+      "details": {
+        "passed": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "RuleName": "PSUseShouldProcessForStateChangingFunctions",
+    "Severity": 1,
+    "Line": 196,
+    "Message": "Function 'Set-NativeOwnedLegacyLayer' has verb that could change system state. Therefore, the function has to support 'ShouldProcess'."
+  },
+  {
+    "RuleName": "PSUseShouldProcessForStateChangingFunctions",
+    "Severity": 1,
+    "Line": 279,
+    "Message": "Function 'New-NativePrivateStateFixture' has verb that could change system state. Therefore, the function has to support 'ShouldProcess'."
+  },
+  {
+    "RuleName": "PSUseShouldProcessForStateChangingFunctions",
+    "Severity": 1,
+    "Line": 358,
+    "Message": "Function 'Stop-NativeVerifiedCoreForRecovery' has verb that could change system state. Therefore, the function has to support 'ShouldProcess'."
+  },
+  {
+    "RuleName": "PSReviewUnusedParameter",
+    "Severity": 1,
+    "Line": 3,
+    "Message": "The parameter 'Mode' has been declared but not used."
+  },
+  {
+    "RuleName": "PSReviewUnusedParameter",
+    "Severity": 1,
+    "Line": 4,
+    "Message": "The parameter 'IntegrityManifestPath' has been declared but not used."
+  },
+  {
+    "RuleName": "PSReviewUnusedParameter",
+    "Severity": 1,
+    "Line": 5,
+    "Message": "The parameter 'EvidenceDirectory' has been declared but not used."
+  },
+  {
+    "RuleName": "PSReviewUnusedParameter",
+    "Severity": 1,
+    "Line": 6,
+    "Message": "The parameter 'ExpectedSourceCommit' has been declared but not used."
+  },
+  {
+    "RuleName": "PSUseSingularNouns",
+    "Severity": 1,
+    "Line": 12,
+    "Message": "The cmdlet 'Get-NativeAcceptanceEnvironmentErrors' uses a plural noun. A singular noun should be used instead."
+  },
+  {
+    "RuleName": "PSUseSingularNouns",
+    "Severity": 1,
+    "Line": 62,
+    "Message": "The cmdlet 'Get-NativeProductServices' uses a plural noun. A singular noun should be used instead."
+  },
+  {
+    "RuleName": "PSUseSingularNouns",
+    "Severity": 1,
+    "Line": 65,
+    "Message": "The cmdlet 'Get-NativeProductTasks' uses a plural noun. A singular noun should be used instead."
+  }
+]

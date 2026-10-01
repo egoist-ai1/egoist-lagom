@@ -1,0 +1,37 @@
+
+Вас приветствует .NET 10.0!
+---------------------
+Версия пакета SDK: 10.0.401
+
+----------------
+Установлен сертификат разработки ASP.NET Core HTTPS.
+Чтобы доверять сертификату, выполните команду "dotnet dev-certs https --trust"
+Дополнительные сведения об HTTPS: https://aka.ms/dotnet-https
+
+----------------
+Как написать свое первое приложение: https://aka.ms/dotnet-hello-world
+Узнать о новых возможностях: https://aka.ms/dotnet-whats-new
+Просмотреть документацию: https://aka.ms/dotnet-docs
+Сообщить о проблемах и найти исходный код на GitHub: https://github.com/dotnet/core
+Для просмотра доступных команд введите команду "dotnet --help" или посетите следующую страницу: https://aka.ms/dotnet-cli.
+--------------------------------------------------------------------------------------
+  Определение проектов для восстановления...
+  Восстановлен C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\IdentityRuntimeProduction.csproj (за 42 мс).
+C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\src\TrustedPath.cs(13,17): warning CS8600: Преобразование литерала, допускающего значение NULL или возможного значения NULL в тип, не допускающий значение NULL. [C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\IdentityRuntimeProduction.csproj]
+C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\src\ClientAuthorizer.cs(98,16): warning CS8600: Преобразование литерала, допускающего значение NULL или возможного значения NULL в тип, не допускающий значение NULL. [C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\IdentityRuntimeProduction.csproj]
+C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\src\TrustedPath.cs(41,39): warning CS8604: Возможно, аргумент-ссылка, допускающий значение NULL, для параметра "root" в "void TrustedPath.AssertNoReparseComponents(string candidate, string root, bool requireLeaf)". [C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\IdentityRuntimeProduction.csproj]
+C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\src\TrustedPath.cs(52,31): warning CS8600: Преобразование литерала, допускающего значение NULL или возможного значения NULL в тип, не допускающий значение NULL. [C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\IdentityRuntimeProduction.csproj]
+C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\src\TrustedPath.cs(111,21): warning CS8600: Преобразование литерала, допускающего значение NULL или возможного значения NULL в тип, не допускающий значение NULL. [C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\IdentityRuntimeProduction.csproj]
+  IdentityRuntimeProduction -> C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\bin\Release\net10.0-windows\IdentityRuntimeProduction.dll
+
+Сборка успешно завершена.
+
+C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\src\TrustedPath.cs(13,17): warning CS8600: Преобразование литерала, допускающего значение NULL или возможного значения NULL в тип, не допускающий значение NULL. [C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\IdentityRuntimeProduction.csproj]
+C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\src\ClientAuthorizer.cs(98,16): warning CS8600: Преобразование литерала, допускающего значение NULL или возможного значения NULL в тип, не допускающий значение NULL. [C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\IdentityRuntimeProduction.csproj]
+C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\src\TrustedPath.cs(41,39): warning CS8604: Возможно, аргумент-ссылка, допускающий значение NULL, для параметра "root" в "void TrustedPath.AssertNoReparseComponents(string candidate, string root, bool requireLeaf)". [C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\IdentityRuntimeProduction.csproj]
+C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\src\TrustedPath.cs(52,31): warning CS8600: Преобразование литерала, допускающего значение NULL или возможного значения NULL в тип, не допускающий значение NULL. [C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\IdentityRuntimeProduction.csproj]
+C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\src\TrustedPath.cs(111,21): warning CS8600: Преобразование литерала, допускающего значение NULL или возможного значения NULL в тип, не допускающий значение NULL. [C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f42b-2910-7fe3-90ed-233033c751cb\work\t\ib-c0bddbba\IdentityRuntimeProduction.csproj]
+    Предупреждений: 5
+    Ошибок: 0
+
+Прошло времени 00:00:00.79

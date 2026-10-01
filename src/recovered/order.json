@@ -58,6 +58,7 @@
   "shared/protocol-matrix.js",
   "electron/ipc/runtime-installer.js",
   "electron/ipc/vpn-manager.js",
+  "electron/ipc/vpn-service-manager.js",
   "shared/zapret-control.js",
   "electron/ipc/zapret-manager.js",
   "electron/shutdown-coordinator.js",

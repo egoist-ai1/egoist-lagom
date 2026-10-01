@@ -1,5 +1,6 @@
 //#region src/electron/ipc/state-store.ts
 var DEFAULT_STATE = {
+	stateRevision: 0,
 	nodes: [],
 	activeNodeId: null,
 	subscriptions: [],
@@ -92,8 +93,6 @@ var StateStore = class {
 	installationPath;
 	activationMarkerPath;
 	state = structuredClone(DEFAULT_STATE);
-	/** Очередь сериализации записи на диск. */
-	saveQueue = Promise.resolve();
 	/** Очередь атомарных read-modify-write мутаций. */
 	mutationQueue = Promise.resolve();
 	/**
@@ -113,13 +112,16 @@ var StateStore = class {
 	async load() {
 		try {
 			this.state = await this.readStateFile(this.filePath);
+			this.revision = this.state.stateRevision;
 		} catch (primaryError) {
 			try {
 				this.state = await this.readStateFile(this.backupPath);
+				this.revision = this.state.stateRevision;
 				logger.warn("[state-store] Primary state is unreadable; recovered from backup.", primaryError);
 				await this.save();
 			} catch (backupError) {
 				this.state = structuredClone(DEFAULT_STATE);
+				this.revision = 0;
 				const primaryMissing = primaryError?.code === "ENOENT";
 				const backupMissing = backupError?.code === "ENOENT";
 				if (primaryMissing && backupMissing) {
@@ -156,12 +158,14 @@ var StateStore = class {
 		let previous;
 		try { previous = JSON.parse(await promises.readFile(this.activationMarkerPath, "utf8")); } catch { previous = null; }
 		if (previous?.id === installation.id) return;
-		this.state.settings = { ...this.state.settings, autoStart: false, autoConnect: false, systemDohEnabled: false, systemDnsServers: "", systemDohUrl: "https://cloudflare-dns.com/dns-query", systemDohLocalAddress: "", customDnsUrl: "", useTunMode: false, killSwitch: false };
-		await this.save();
+		await this.update((current) => ({
+			...current,
+			settings: { ...current.settings, autoStart: false, autoConnect: false, systemDohEnabled: false, systemDnsServers: "", systemDohUrl: "https://cloudflare-dns.com/dns-query", systemDohLocalAddress: "", customDnsUrl: "", useTunMode: false, killSwitch: false }
+		}));
 		await promises.writeFile(this.activationMarkerPath, JSON.stringify({ id: installation.id }), "utf8");
 	}
 	get() {
-		return structuredClone(this.state);
+		return structuredClone({ ...this.state, stateRevision: this.revision });
 	}
 	/** Текущая ревизия состояния. Растёт только при подтверждённой записи. */
 	getRevision() {
@@ -181,12 +185,16 @@ var StateStore = class {
 	* только после подтверждённого commit публикуется в памяти. При ошибке
 	* память остаётся ТОЧНО такой, какой была.
 	*
-	* Дополнительно все мутации проходят через единую очередь: параллельный
-	* полный `set` больше не может затереть изменение, сделанное между чтением
-	* и записью (lost update).
+	* Полная замена требует ревизию исходного снимка. Очередь сама по себе
+	* не защищает от устаревшего get()+set(): конфликт проверяется внутри неё.
 	*/
-	async set(next) {
-		return this.runMutation(() => sanitizeState(structuredClone(next)));
+	async set(next, expectedRevision = next?.stateRevision, options = {}) {
+		if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
+			const error = new Error("STATE_REVISION_REQUIRED");
+			error.code = "STATE_REVISION_REQUIRED";
+			throw error;
+		}
+		return this.runMutation(() => sanitizeState(structuredClone(next)), { ...options, expectedRevision });
 	}
 	/**
 	* Атомарное read-modify-write поверх актуального состояния.
@@ -216,11 +224,9 @@ var StateStore = class {
 	* ревизию он видел; если состояние успело измениться, возвращается конфликт,
 	* а не молчаливая перезапись.
 	*/
-	async patchSettings(settings, expectedRevision) {
-		const conflict = new Error("Settings revision conflict");
+	async patchSettings(settings, expectedRevision, options = {}) {
 		try {
 			const state = await this.runMutation((current) => {
-				if (expectedRevision !== void 0 && expectedRevision !== this.revision) throw conflict;
 				return sanitizeState({
 				...current,
 				settings: {
@@ -228,26 +234,28 @@ var StateStore = class {
 					...settings
 				}
 				});
-			});
+			}, { ...options, expectedRevision });
 			return {
 				ok: true,
 				conflict: false,
-				revision: this.revision,
+				revision: state.stateRevision,
 				state
 			};
 		} catch (error) {
-			if (error === conflict) return {
+			if (error?.code === "STATE_REVISION_CONFLICT") return {
 				ok: false,
 				conflict: true,
 				revision: this.revision,
-				state: this.get()
+				state: this.get(),
+				error: "STATE_REVISION_CONFLICT"
 			};
 			logger.error("[state-store] settings patch failed; in-memory state kept unchanged:", error);
 			return {
 				ok: false,
 				conflict: false,
 				revision: this.revision,
-				state: this.get()
+				state: this.get(),
+				error: "STATE_WRITE_FAILED"
 			};
 		}
 	}
@@ -258,19 +266,29 @@ var StateStore = class {
 	* «сериализовать -> записать -> опубликовать» гарантирует, что память и диск
 	* не разъезжаются при ошибке записи.
 	*/
-	async runMutation(mutate) {
-		const run = this.mutationQueue.then(() => this.commitMutation(mutate), () => this.commitMutation(mutate));
+	async runMutation(mutate, options = {}) {
+		const run = this.mutationQueue.then(() => this.commitMutation(mutate, options), () => this.commitMutation(mutate, options));
 		this.mutationQueue = run.then(() => void 0, () => void 0);
 		await run;
 		return this.get();
 	}
-	async commitMutation(mutate) {
+	async commitMutation(mutate, { expectedRevision, beforeCommit, rollback } = {}) {
+		if (expectedRevision !== void 0 && expectedRevision !== this.revision) {
+			const error = new Error("STATE_REVISION_CONFLICT");
+			error.code = "STATE_REVISION_CONFLICT";
+			throw error;
+		}
+		if (this.revision >= Number.MAX_SAFE_INTEGER) throw new Error("State revision limit reached");
 		const previous = this.state;
-		const next = mutate(structuredClone(this.state));
+		const next = { ...mutate(structuredClone(this.state)), stateRevision: this.revision + 1 };
 		const serialized = JSON.stringify(next, null, 2);
 		try {
+			if (beforeCommit) await beforeCommit(structuredClone(next), structuredClone(previous));
 			await this.writeStateFile(serialized);
 		} catch (error) {
+			if (rollback) try { await rollback(structuredClone(previous)); } catch (rollbackError) {
+				logger.error("[state-store] Failed to restore settings side effects:", rollbackError);
+			}
 			this.state = previous;
 			throw error;
 		}
@@ -300,16 +318,9 @@ var StateStore = class {
 			}))
 		};
 	}
-	/**
-	* Сериализация записи: конкурирующие save() выстраиваются в очередь.
-	* Без неё два вызова в одну миллисекунду получали одинаковый временный путь
-	* (pid + Date.now()), и второй rename падал с ENOENT — запись терялась.
-	*/
+	/** save() uses the same mutation queue as all other acknowledged writes. */
 	async save() {
-		const serialized = JSON.stringify(this.state, null, 2);
-		const run = this.saveQueue.then(() => this.writeStateFile(serialized), () => this.writeStateFile(serialized));
-		this.saveQueue = run.catch(() => void 0);
-		await run;
+		return this.runMutation((current) => current);
 	}
 	/**
 	* Атомарная запись КОНКРЕТНОГО снимка.
@@ -354,6 +365,7 @@ var StateStore = class {
 		const raw = (await promises.readFile(filePath, "utf8")).replace(/^\uFEFF/, "");
 		const parsed = JSON.parse(raw);
 		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new TypeError("Invalid saved state object");
+		if (parsed.stateRevision !== void 0 && (!Number.isSafeInteger(parsed.stateRevision) || parsed.stateRevision < 0)) throw new TypeError("Invalid saved state revision");
 		if (parsed.settings !== void 0 && (!parsed.settings || typeof parsed.settings !== "object" || Array.isArray(parsed.settings))) throw new TypeError("Invalid saved settings");
 		const state = {
 			...DEFAULT_STATE,

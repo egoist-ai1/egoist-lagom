@@ -117,7 +117,7 @@ internal sealed class OwnedServiceSupervisor
                         _observations[name] = observation;
                     }
                 }
-                bool ownsTcpEndpoint = name == "EgoistShieldTelegramProxy";
+                bool ownsTcpEndpoint = name is "EgoistShieldTelegramProxy" or "EgoistShieldVpn";
                 var health = status.State == "stopped" && !ownsTcpEndpoint ? LocalServiceHealth.Unresponsive : await _probe(name, cancellationToken);
                 if (health is LocalServiceHealth.Responsive or LocalServiceHealth.ScmOnly)
                 {

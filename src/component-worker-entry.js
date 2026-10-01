@@ -5,6 +5,7 @@ const workerManagers = {
   SystemDoH: new SystemDohManager(workerResources, path.join(workerResources, 'app.asar'), workerUserData, path.join(workerProductRoot, 'Runtime', 'SystemDoH')),
   Zapret: new ZapretManager(workerResources, path.join(workerResources, 'app.asar'), workerUserData, path.join(workerProductRoot, 'Runtime', 'Zapret')),
   TelegramProxy: new TelegramProxyManager(workerResources, path.join(workerResources, 'app.asar'), workerUserData, path.join(workerProductRoot, 'Runtime', 'TelegramProxy')),
+  Vpn: new VpnServiceManager(workerResources, path.join(workerResources, 'app.asar'), workerUserData, path.join(workerProductRoot, 'Runtime', 'Vpn')),
 };
 let workerProgress = null;
 let workerQueue = Promise.resolve();
@@ -21,11 +22,15 @@ async function executeWorkerRequest(request) {
 function replyWorker(request) {
   return executeWorkerRequest(request).then(result => ({
     id: request.id,
+    requestId: request.requestId ?? null,
     ok: true,
     result: request.component === 'Zapret' && request.method === 'autoSelectBestProfile'
       ? compactAutoSelectResult(result)
       : result ?? null
-  }), error => ({ id: request?.id ?? '', ok: false, error: redactDiagnosticText(error.message) })).then(result => {
+  }), error => {
+    const errorCode = request?.component === 'Vpn' && ['VPN_SERVICE_VALIDATION_FAILED', 'VPN_SERVICE_ROLLBACK_VERIFIED', 'VPN_SERVICE_ROLLBACK_UNKNOWN'].includes(error?.code) ? error.code : undefined;
+    return { id: request?.id ?? '', requestId: request?.requestId ?? null, ok: false, error: redactDiagnosticText(error.message), ...(errorCode ? { errorCode } : {}) };
+  }).then(result => {
     const line = JSON.stringify(result);
     if (Buffer.byteLength(line) > 3.5 * 1024 * 1024) process.stdout.write(JSON.stringify({ id: request.id, ok: false, error: 'Component response exceeds 3.5 MiB' }) + '\n');
     else process.stdout.write(line + '\n');

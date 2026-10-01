@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -22,17 +23,24 @@ internal sealed class WindowsNativeDohController
 	private readonly string _statePath;
 	private readonly Func<string, CancellationToken, Task<ProcessResult>> _powerShellRunner;
 	private readonly SemaphoreSlim _routeLock = new(1, 1);
-	private DateTimeOffset _routeCacheUntil;
+	private readonly Func<TimeSpan> _routeElapsed;
+	private TimeSpan? _routeCheckedAt;
 	private bool _hasIpv6DefaultRoute;
 
 	public WindowsNativeDohController(string stateRoot)
 	{
 		_statePath = Path.Combine(stateRoot, "native-doh-state.json");
 		_powerShellRunner = RunWindowsPowerShellAsync;
+		var clock = Stopwatch.StartNew();
+		_routeElapsed = () => clock.Elapsed;
 	}
 
-	internal WindowsNativeDohController(string stateRoot, Func<string, CancellationToken, Task<ProcessResult>> powerShellRunner)
-		: this(stateRoot) => _powerShellRunner = powerShellRunner ?? throw new ArgumentNullException(nameof(powerShellRunner));
+	internal WindowsNativeDohController(string stateRoot, Func<string, CancellationToken, Task<ProcessResult>> powerShellRunner,
+		Func<TimeSpan>? routeElapsed = null) : this(stateRoot)
+	{
+		_powerShellRunner = powerShellRunner ?? throw new ArgumentNullException(nameof(powerShellRunner));
+		if (routeElapsed != null) _routeElapsed = routeElapsed;
+	}
 
 	public Task<NativeDohOwnedState?> ReadOwnedStateAsync(CancellationToken cancellationToken = default(CancellationToken))
 	{
@@ -44,11 +52,13 @@ internal sealed class WindowsNativeDohController
 		await _routeLock.WaitAsync(cancellationToken);
 		try
 		{
-			if (DateTimeOffset.UtcNow < _routeCacheUntil) return _hasIpv6DefaultRoute;
+			TimeSpan now = _routeElapsed();
+			if (_routeCheckedAt.HasValue && now >= _routeCheckedAt.Value && now - _routeCheckedAt.Value < TimeSpan.FromSeconds(30))
+				return _hasIpv6DefaultRoute;
 			string script = "$ErrorActionPreference = 'Stop'\n$connected = @(Get-NetAdapter -Physical -ErrorAction Stop | Where-Object { $_.Status -eq 'Up' } | ForEach-Object { [int]$_.ifIndex })\n$routes = @(Get-NetRoute -AddressFamily IPv6 -DestinationPrefix '::/0' -PolicyStore ActiveStore -ErrorAction SilentlyContinue | Where-Object { [int]$_.InterfaceIndex -in $connected })\n[bool]($routes.Count -gt 0) | ConvertTo-Json -Compress";
 			var result = await RunPowerShellAsync(script, cancellationToken);
 			_hasIpv6DefaultRoute = result.ExitCode == 0 && bool.TryParse(result.StandardOutput.Trim(), out bool available) && available;
-			_routeCacheUntil = DateTimeOffset.UtcNow.AddSeconds(30);
+			_routeCheckedAt = _routeElapsed();
 			return _hasIpv6DefaultRoute;
 		}
 		finally { _routeLock.Release(); }

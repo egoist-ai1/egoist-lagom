@@ -1,0 +1,13 @@
+✔ legacy gate verifies original real signed metadata with the project pinned public root (6.2139ms)
+✔ legacy gate refuses registry rollback, key replacement and revoked-key revival (1.9788ms)
+✔ pure source-binding boundary requires both signed fields and exact integrity bytes (0.4878ms)
+✔ legacy PowerShell library import performs no native query or mutation and observer matches exact scope (874.1724ms)
+✔ real legacy script and helper reject a non-hosted process before input or native mutation (801.0025ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1816.0908

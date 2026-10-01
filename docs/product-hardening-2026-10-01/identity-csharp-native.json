@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "scope": "Actual own NTFS/pipe/process/ACL APIs; inventory byte fixtures bypass only installed-root ACL via compile-time seam. No installed GUI acceptance/SCM/DNS/Tasks/registry.",
+  "cases": [
+    {
+      "name": "Native GUI argument policy accepts normal startup and rejects Chrome/child/injection modes",
+      "passed": true,
+      "elapsedMs": 714,
+      "observed": {
+        "nativeChildren": 14,
+        "allowed": 4,
+        "rejected": 10,
+        "osQuotedParser": true
+      }
+    },
+    {
+      "name": "Named-pipe PID/token identity is actual; foreign client rejected outside explicit development override",
+      "passed": true,
+      "elapsedMs": 9,
+      "observed": {
+        "foreignProductionDenied": true,
+        "actualPidConfirmed": true,
+        "actualSidConfirmed": true,
+        "standardInstalledGuiAcceptance": "requires installed candidate and ordinary-user acceptance"
+      }
+    },
+    {
+      "name": "Actual host hashes and NTFS read leases block writes/replacement until disposal",
+      "passed": true,
+      "elapsedMs": 26,
+      "observed": {
+        "preventedWrites": 4,
+        "preventedMoves": 1,
+        "writerAllowedAfterDisposal": true
+      }
+    },
+    {
+      "name": "Host rejects missing/duplicate/escaped inventory and altered executable bytes",
+      "passed": true,
+      "elapsedMs": 48,
+      "observed": {
+        "refused": 6,
+        "failureHandlesReleased": true
+      }
+    },
+    {
+      "name": "Host rejects hardlinked inputs and unpinned side-loaded DLL",
+      "passed": true,
+      "elapsedMs": 10,
+      "observed": {
+        "actualHardlinkDenied": true,
+        "actualUnpinnedDllDenied": true
+      }
+    },
+    {
+      "name": "Bundled runtime manifest pins exact component executable and DLL set",
+      "passed": true,
+      "elapsedMs": 22,
+      "observed": {
+        "runtimeImmutableLease": true,
+        "customPathDenied": true,
+        "unknownComponentDenied": true,
+        "unpinnedDllDenied": true,
+        "changedBytesDenied": true
+      }
+    },
+    {
+      "name": "ACL validator accepts native OS descriptor and rejects writable/untrusted descriptors",
+      "passed": true,
+      "elapsedMs": 3,
+      "observed": {
+        "actualNativeOsDescriptorAccepted": true,
+        "actualUserOwnedFileDenied": true,
+        "inheritOnlyCreatorRuleAccepted": true,
+        "foreignDeleteChildRuleDenied": true,
+        "installedAclPositiveAcceptance": "requires installed candidate"
+      }
+    },
+    {
+      "name": "VPN worker known and unknown rollback outcomes preserve fixed structured errors",
+      "passed": true,
+      "elapsedMs": 386,
+      "observed": {
+        "actualProtocolChildren": 5,
+        "knownErrorsPreserved": 2,
+        "unknownBarrierPreserved": 1,
+        "foreignCodeFailClosed": 2
+      }
+    }
+  ]
+}

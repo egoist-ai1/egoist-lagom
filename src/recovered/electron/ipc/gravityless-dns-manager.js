@@ -5,20 +5,92 @@ var LOCAL_DNS_PORT = 53;
 var SERVICE_START_TIMEOUT_MS$1 = 2e4;
 var GRAVITYLESS_STATUS_CACHE_TTL_MS = 3e3;
 var PORT_PROBE_TIMEOUT_MS = 1500;
-/**
-* A DNS reply only proves that *our* resolver answered when the transaction id
-* matches, the response bit is set, rcode is NOERROR **and** at least one answer
-* record came back. The previous check accepted any 12-byte datagram with
-* rcode 0, so a stray packet or an unrelated resolver returning NOERROR/0
-* answers was reported as "Gravityless verified".
-*/
-function isValidGravitylessDnsAnswer(message, expectedId) {
-	if (message.length < 12) return false;
-	if (message.readUInt16BE(0) !== expectedId) return false;
-	const flags = message.readUInt16BE(2);
-	if ((flags & 32768) !== 32768) return false;
-	if ((flags & 15) !== 0) return false;
-	return message.readUInt16BE(6) > 0;
+function gravitylessMonotonicNow() {
+	return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+function readGravitylessDnsName(message, start) {
+	let offset = start;
+	let nextOffset = null;
+	let expandedBytes = 1;
+	const labels = [];
+	const visited = new Set();
+	for (let step = 0; step < 128; step += 1) {
+		if (offset >= message.length || visited.has(offset)) throw new Error("Invalid DNS name.");
+		visited.add(offset);
+		const length = message[offset];
+		if ((length & 192) === 192) {
+			if (offset + 1 >= message.length) throw new Error("Truncated DNS pointer.");
+			const target = ((length & 63) << 8) | message[offset + 1];
+			if (target < 12 || target >= offset) throw new Error("Invalid DNS compression pointer.");
+			if (nextOffset === null) nextOffset = offset + 2;
+			offset = target;
+			continue;
+		}
+		if ((length & 192) !== 0 || length > 63) throw new Error("Invalid DNS label.");
+		offset += 1;
+		if (length === 0) return { name: labels.join(".").toLowerCase(), nextOffset: nextOffset ?? offset };
+		if (offset + length > message.length || (expandedBytes += length + 1) > 255) throw new Error("Truncated or oversized DNS name.");
+		const label = message.subarray(offset, offset + length);
+		if (label.some((byte) => byte < 33 || byte > 126 || byte === 46)) throw new Error("Invalid DNS label bytes.");
+		labels.push(label.toString("ascii"));
+		offset += length;
+	}
+	throw new Error("DNS compression limit exceeded.");
+}
+/** A matching complete answer proves resolution at the queried endpoint, not process ownership. */
+function isValidGravitylessDnsAnswer(message, expectedId, expectedDomain) {
+	try {
+		if (!Buffer.isBuffer(message) || message.length < 12 || message.length > 65535) return false;
+		if (message.readUInt16BE(0) !== expectedId) return false;
+		const flags = message.readUInt16BE(2);
+		if ((flags & 32768) === 0 || (flags & 0x780f) !== 0 || (flags & 0x0240) !== 0) return false;
+		const questionCount = message.readUInt16BE(4), answerCount = message.readUInt16BE(6);
+		const recordCount = answerCount + message.readUInt16BE(8) + message.readUInt16BE(10);
+		if (questionCount !== 1 || answerCount === 0 || recordCount > 1024) return false;
+		const question = readGravitylessDnsName(message, 12);
+		let offset = question.nextOffset;
+		if (offset + 4 > message.length || message.readUInt16BE(offset) !== 1 || message.readUInt16BE(offset + 2) !== 1) return false;
+		if (expectedDomain && question.name !== expectedDomain.replace(/\.$/, "").toLowerCase()) return false;
+		offset += 4;
+		const addresses = new Set(), aliases = new Map();
+		for (let index = 0; index < recordCount; index += 1) {
+			const owner = readGravitylessDnsName(message, offset);
+			offset = owner.nextOffset;
+			if (offset + 10 > message.length) return false;
+			const type = message.readUInt16BE(offset), recordClass = message.readUInt16BE(offset + 2);
+			const dataLength = message.readUInt16BE(offset + 8);
+			offset += 10;
+			if (offset + dataLength > message.length) return false;
+			if (type === 1 && dataLength !== 4) return false;
+			if (type === 28 && dataLength !== 16) return false;
+			if (type === 5) {
+				const target = readGravitylessDnsName(message, offset);
+				if (target.nextOffset !== offset + dataLength) return false;
+				if (index < answerCount && recordClass === 1) {
+					if (aliases.has(owner.name) && aliases.get(owner.name) !== target.name) return false;
+					aliases.set(owner.name, target.name);
+				}
+			}
+			if (index < answerCount && type === 1 && recordClass === 1) {
+				const first = message[offset];
+				if (first > 0 && first < 224 && first !== 127) addresses.add(owner.name);
+			}
+			offset += dataLength;
+		}
+		if (offset !== message.length) return false;
+		if ([...aliases.keys()].some((owner) => addresses.has(owner))) return false;
+		let candidate = question.name;
+		const seen = new Set();
+		for (let hop = 0; hop < 32 && !seen.has(candidate); hop += 1) {
+			if (addresses.has(candidate)) return true;
+			seen.add(candidate);
+			candidate = aliases.get(candidate);
+			if (!candidate) return false;
+		}
+		return false;
+	} catch {
+		return false;
+	}
 }
 function describeLocalDnsPortConflict(host, port, errorCode) {
 	return `Gravityless DNS не может занять ${host}:${port} — ${errorCode === "EADDRINUSE" ? "порт уже занят другой локальной DNS-службой" : errorCode === "EACCES" ? "нет прав на прослушивание порта" : `порт недоступен (${errorCode ?? "unknown"})`}. Остановите другой локальный DNS (AdGuard Home, Pi-hole, второй dnscrypt-proxy, Windows Internet Connection Sharing) и повторите включение. Gravityless DNS и System DoH используют один системно совместимый адрес 127.0.0.1:53, поэтому одновременно может работать только один локальный DNS.`;
@@ -43,15 +115,17 @@ var GravitylessDnsManager = class {
 		this.sourceDir = path.join(this.resourcesPath, "gravityless-dns");
 	}
 	async status(options = {}) {
-		const now = Date.now();
+		const now = gravitylessMonotonicNow();
 		const generation = this.statusGeneration;
-		if (!options.force && this.statusCache && this.statusCache.expiresAt > now) return this.statusCache.value;
+		if (!options.force && this.statusCache && now >= this.statusCache.observedAt && this.statusCache.expiresAt > now) return this.statusCache.value;
 		if (!options.force && this.statusInFlight?.generation === generation) return this.statusInFlight.promise;
 		const inFlight = { generation, promise: null };
 		inFlight.promise = this.readStatus().then((value) => {
+			if (generation !== this.statusGeneration) return this.status();
 			if (generation === this.statusGeneration && this.statusInFlight === inFlight) this.statusCache = {
 				value,
-				expiresAt: Date.now() + GRAVITYLESS_STATUS_CACHE_TTL_MS
+				observedAt: gravitylessMonotonicNow(),
+				expiresAt: gravitylessMonotonicNow() + GRAVITYLESS_STATUS_CACHE_TTL_MS
 			};
 			return value;
 		}).finally(() => {
@@ -67,11 +141,14 @@ var GravitylessDnsManager = class {
 	async readStatus() {
 		const service = await this.queryService();
 		const verified = service.state !== "not-installed" ? await this.verifyLocalDns().catch(() => false) : false;
-		const running = service.state === "running" || verified;
+		const running = service.state === "running" && verified;
 		return {
 			available: await this.pathExists(path.join(this.sourceDir, GRAVITYLESS_DNS_EXE_NAME)),
 			running,
 			verified,
+			resolutionVerified: verified,
+			resolverIdentityVerified: null,
+			serviceRunning: service.state === "running",
 			service,
 			installDir: this.paths.installDir,
 			exePath: this.paths.exePath,
@@ -402,20 +479,19 @@ var GravitylessDnsManager = class {
 		}
 	}
 	async waitForRunningDns(timeoutMs) {
-		const startedAt = Date.now();
+		const startedAt = gravitylessMonotonicNow();
 		let lastState = "unknown";
-		while (Date.now() - startedAt < timeoutMs) {
+		while (gravitylessMonotonicNow() - startedAt < timeoutMs) {
 			const status = await this.queryService();
 			lastState = status.state;
-			if (status.state === "running") return;
-			if (await this.verifyLocalDns().catch(() => false)) return;
+			if (status.state === "running" && await this.verifyLocalDns().catch(() => false)) return;
 			await sleep$1(500);
 		}
 		throw new Error(`Gravityless DNS service ${GRAVITYLESS_DNS_SERVICE_NAME} не перешла в состояние running и не ответила на 127.0.0.1:53. Текущее состояние: ${lastState}.`);
 	}
 	async waitForServiceState(expectedState, timeoutMs) {
-		const startedAt = Date.now();
-		while (Date.now() - startedAt < timeoutMs) {
+		const startedAt = gravitylessMonotonicNow();
+		while (gravitylessMonotonicNow() - startedAt < timeoutMs) {
 			if ((await this.queryService()).state === expectedState) return;
 			await sleep$1(500);
 		}
@@ -423,8 +499,15 @@ var GravitylessDnsManager = class {
 		throw new Error(`Gravityless DNS service ${GRAVITYLESS_DNS_SERVICE_NAME} не перешла в состояние ${expectedState}. Текущее состояние: ${status.state}.`);
 	}
 	async verifyLocalDns() {
-		if (!await queryDnsARecord("gravityless.space", LOCAL_DNS_HOST, LOCAL_DNS_PORT, 5e3)) throw new Error(`Gravityless DNS не вернул ответ для ${GRAVITYLESS_DNS_TEST_DOMAIN} через 127.0.0.1:53 (нет корректной A-записи).`);
-		return true;
+		const controller = new AbortController();
+		try {
+			const answers = await Promise.all([
+				queryDnsARecord(GRAVITYLESS_DNS_TEST_DOMAIN, LOCAL_DNS_HOST, LOCAL_DNS_PORT, 5e3, controller.signal),
+				queryDnsARecordTcp(GRAVITYLESS_DNS_TEST_DOMAIN, LOCAL_DNS_HOST, LOCAL_DNS_PORT, 5e3, controller.signal)
+			]);
+			if (!answers.every((value) => value === true)) throw new Error(`Gravityless DNS не вернул корректную A-запись для ${GRAVITYLESS_DNS_TEST_DOMAIN} через UDP и TCP 127.0.0.1:53.`);
+			return true;
+		} finally { controller.abort(); }
 	}
 	async runNativeServiceCommand(command, ignoreFailure, paths = this.paths) {
 		try {
@@ -480,30 +563,78 @@ var GravitylessDnsManager = class {
 		return "";
 	}
 };
-function queryDnsARecord(domain, server, port, timeoutMs) {
+function queryDnsARecord(domain, server, port, timeoutMs, signal) {
 	return new Promise((resolve, reject) => {
+		if (signal?.aborted) { reject(signal.reason ?? new Error("DNS query cancelled.")); return; }
 		const socket = dgram.createSocket("udp4");
-		const queryId = Math.floor(Math.random() * 65535);
-		const query = buildDnsAQuery(domain, queryId);
-		const timer = setTimeout(() => {
-			socket.close();
-			reject(/* @__PURE__ */ new Error(`DNS query timeout for ${domain} via ${server}:${port}.`));
-		}, timeoutMs);
-		socket.once("message", (message) => {
+		let settled = false, timer;
+		const onAbort = () => finish(signal.reason ?? new Error("DNS query cancelled."));
+		const finish = (error, value) => {
+			if (settled) return;
+			settled = true;
 			clearTimeout(timer);
-			socket.close();
-			resolve(isValidGravitylessDnsAnswer(message, queryId));
-		});
-		socket.once("error", (error) => {
+			signal?.removeEventListener("abort", onAbort);
+			try { socket.close(); } catch {}
+			if (error) reject(error); else resolve(value);
+		};
+		socket.once("error", (error) => finish(error));
+		signal?.addEventListener("abort", onAbort, { once: true });
+		try {
+			const queryId = Math.floor(Math.random() * 65536);
+			const query = buildDnsAQuery(domain, queryId);
+			timer = setTimeout(() => finish(new Error(`DNS query timeout for ${domain} via ${server}:${port}.`)), timeoutMs);
+			socket.on("message", (message, remote) => {
+				if (remote.address !== server || remote.port !== port || !isValidGravitylessDnsAnswer(message, queryId, domain)) return;
+				finish(null, true);
+			});
+			socket.send(query, port, server, (error) => { if (error) finish(error); });
+		} catch (error) { finish(error); }
+	});
+}
+function queryDnsARecordTcp(domain, server, port, timeoutMs, signal) {
+	return new Promise((resolve, reject) => {
+		if (signal?.aborted) { reject(signal.reason ?? new Error("DNS query cancelled.")); return; }
+		let socket, timer, settled = false, buffer = Buffer.alloc(0), expectedLength = null;
+		const onAbort = () => finish(signal.reason ?? new Error("DNS query cancelled."));
+		const finish = (error, value) => {
+			if (settled) return;
+			settled = true;
 			clearTimeout(timer);
-			socket.close();
-			reject(error);
-		});
-		socket.send(query, port, server);
+			signal?.removeEventListener("abort", onAbort);
+			socket?.destroy();
+			if (error) reject(error); else resolve(value);
+		};
+		try {
+			const queryId = Math.floor(Math.random() * 65536);
+			const query = buildDnsAQuery(domain, queryId);
+			const frame = Buffer.alloc(query.length + 2);
+			frame.writeUInt16BE(query.length, 0); query.copy(frame, 2);
+			timer = setTimeout(() => finish(new Error(`DNS TCP query timeout for ${domain} via ${server}:${port}.`)), timeoutMs);
+			signal?.addEventListener("abort", onAbort, { once: true });
+			socket = createConnection({ host: server, port }, () => { if (!settled) socket.write(frame); });
+			socket.once("error", (error) => finish(error));
+			socket.once("end", () => finish(new Error("DNS TCP response was truncated.")));
+			socket.once("close", () => { if (!settled) finish(new Error("DNS TCP connection closed before a matching answer.")); });
+			socket.on("data", (chunk) => {
+				if (settled) return;
+				if (buffer.length + chunk.length > 65537) { finish(new Error("Oversized DNS TCP response.")); return; }
+				buffer = buffer.length ? Buffer.concat([buffer, chunk]) : chunk;
+				if (expectedLength === null && buffer.length >= 2) {
+					expectedLength = buffer.readUInt16BE(0);
+					if (expectedLength < 12) { finish(new Error("Invalid DNS TCP frame length.")); return; }
+				}
+				if (expectedLength === null || buffer.length < expectedLength + 2) return;
+				if (buffer.length !== expectedLength + 2 || !isValidGravitylessDnsAnswer(buffer.subarray(2), queryId, domain)) {
+					finish(new Error("DNS TCP endpoint did not return a complete matching A answer.")); return;
+				}
+				finish(null, true);
+			});
+		} catch (error) { finish(error); }
 	});
 }
 function buildDnsAQuery(domain, queryId) {
-	const labels = domain.split(".").filter(Boolean);
+	const labels = domain.replace(/\.$/, "").split(".");
+	if (!labels.length || labels.some((label) => !/^[A-Za-z0-9_-]{1,63}$/.test(label)) || Buffer.byteLength(labels.join(".")) > 253) throw new Error("Invalid DNS query name.");
 	const length = 12 + labels.reduce((total, label) => total + 1 + Buffer.byteLength(label), 0) + 1 + 4;
 	const buffer = Buffer.alloc(length);
 	let offset = 0;

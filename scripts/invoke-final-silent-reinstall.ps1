@@ -13,6 +13,8 @@ param(
   [Parameter(ParameterSetName = "Dispatch")]
   [switch]$EmbeddedRelease,
   [Parameter(ParameterSetName = "Dispatch")]
+  [switch]$WaitForPreviousReinstall,
+  [Parameter(ParameterSetName = "Dispatch")]
   [string]$InstallerUiDirectory = "",
   [Parameter(ParameterSetName = "Dispatch")]
   [string]$InstallerUiPath = "",
@@ -74,7 +76,8 @@ $script:OptionalServiceNames = @(
   "EgoistShieldSystemDoH",
   "EgoistShieldGravitylessDNS",
   "EgoistShieldZapret",
-  "EgoistShieldTelegramProxy"
+  "EgoistShieldTelegramProxy",
+  "EgoistShieldVpn"
 )
 $script:AllServiceNames = @("EgoistShieldCore") + $script:OptionalServiceNames
 
@@ -294,6 +297,7 @@ function Get-PreservedWrapperDefinitions {
     EgoistShieldSystemDoH = @('SystemDoH', 'egoistshield-system-doh-service')
     EgoistShieldTelegramProxy = @('TelegramProxy', 'egoistshield-telegram-proxy-service')
     EgoistShieldZapret = @('Zapret', 'egoistshield-zapret-service')
+    EgoistShieldVpn = @('Vpn', 'egoistshield-vpn-service')
   }
 }
 
@@ -532,6 +536,29 @@ function Write-Heartbeat {
   })
 }
 
+function Resolve-ManifestInstallerPath {
+  param([string]$Manifest, [string]$RelativePath, [string]$ExpectedName)
+  if ([string]::IsNullOrWhiteSpace($RelativePath) -or $RelativePath.Length -gt 512 -or [IO.Path]::IsPathRooted($RelativePath)) {
+    throw 'Integrity manifest installer path must be a bounded relative release path.'
+  }
+  $parts = @($RelativePath -split '[\\/]')
+  if ($parts.Count -lt 2 -or $parts.Count -gt 10 -or $parts[0] -cnotin @('dist', 'updates') -or
+      ($parts[0] -ceq 'updates' -and $parts.Count -ne 2) -or $parts[-1] -cne $ExpectedName) {
+    throw 'Integrity manifest installer path has an unexpected distribution or filename.'
+  }
+  foreach ($part in $parts) {
+    if ($part -in @('.', '..') -or $part -notmatch '^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$') {
+      throw 'Integrity manifest installer path contains an unsafe segment.'
+    }
+  }
+  $projectRoot = Split-Path -Parent $Manifest
+  for ($index = 1; $index -lt $parts.Count; $index++) {
+    $projectRoot = Split-Path -Parent $projectRoot
+    if (-not $projectRoot) { throw 'Integrity manifest distribution path has no project root.' }
+  }
+  return Resolve-FullPath -Path (Join-Path $projectRoot ($parts -join [IO.Path]::DirectorySeparatorChar))
+}
+
 function Get-ValidatedRelease {
   param([string]$Installer, [string]$Manifest, [string]$Version, [string]$Sha256, [switch]$AllowStagedPair)
   $installerFull = Resolve-FullPath -Path $Installer -MustExist -Leaf
@@ -544,8 +571,7 @@ function Get-ValidatedRelease {
   if ((Get-FileSha256 $installerFull) -ne $Sha256.ToUpperInvariant()) { throw "Installer SHA-256 validation failed." }
   $expectedName = "EgoistShield-Setup-$Version.exe"
   if ([IO.Path]::GetFileName($installerFull) -ne $expectedName) { throw "Installer filename must be $expectedName." }
-  $projectRoot = Split-Path -Parent (Split-Path -Parent $manifestFull)
-  $manifestInstaller = Resolve-FullPath -Path (Join-Path $projectRoot ([string]$manifestObject.installer.path))
+  $manifestInstaller = Resolve-ManifestInstallerPath -Manifest $manifestFull -RelativePath ([string]$manifestObject.installer.path) -ExpectedName $expectedName
   $isStagedPair = $AllowStagedPair -and
     (Split-Path -Parent $manifestFull).Equals((Split-Path -Parent $installerFull), [StringComparison]::OrdinalIgnoreCase) -and
     [IO.Path]::GetFileName($installerFull) -eq $expectedName
@@ -926,6 +952,15 @@ function Restore-PreservedState {
   }
   $runtimeBackup = Join-Path $StageDirectory "runtime-backup"
   if (Test-Path -LiteralPath $runtimeBackup -PathType Container) {
+    foreach ($privateComponent in @('Vpn', 'TelegramProxy')) {
+      $privateBackup = Join-Path $runtimeBackup $privateComponent
+      if (Test-Path -LiteralPath $privateBackup -PathType Container) {
+        [void](Assert-PlainWrapperMigrationPath -Path $privateBackup -Root $StageDirectory)
+        $privateDestination = Assert-PlainWrapperMigrationPath -Path (Join-Path $script:RuntimeRoot $privateComponent) -Root $script:RuntimeRoot
+        New-Item -ItemType Directory -Path $privateDestination -Force -ErrorAction Stop | Out-Null
+        Protect-InstallerStageTree -Stage $privateDestination
+      }
+    }
     Invoke-RobocopyDirectory -Source $runtimeBackup -Destination $script:RuntimeRoot
   }
   foreach ($record in @($State.userState)) {
@@ -1257,8 +1292,8 @@ function Test-OwnedTelegramProxyListener {
 
 function Wait-OwnedTelegramProxyReady {
   param([string]$ExpectedWrapper, [int]$Port, [string]$HostAddress = '127.0.0.1', [int]$TimeoutSeconds = 45)
-  $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
-  while ([DateTime]::UtcNow -lt $deadline) {
+  $elapsed = [Diagnostics.Stopwatch]::StartNew()
+  while ($elapsed.Elapsed.TotalSeconds -lt $TimeoutSeconds) {
     $client = $null
     try {
       if (Test-OwnedTelegramProxyListener -ExpectedWrapper $ExpectedWrapper -Port $Port -HostAddress $HostAddress) {
@@ -1274,12 +1309,32 @@ function Wait-OwnedTelegramProxyReady {
   return $false
 }
 
+function Wait-OwnedVpnReady {
+  param([ValidateRange(1, 60)][int]$TimeoutSeconds = 45)
+  $helper = Assert-PlainWrapperMigrationPath -Path (Join-Path $script:OwnedInstallRoot 'resources\core-service\win-x64\EgoistShield.Service.exe') -Root $script:OwnedInstallRoot
+  $elapsed = [Diagnostics.Stopwatch]::StartNew()
+  while ($elapsed.Elapsed.TotalSeconds -lt $TimeoutSeconds) {
+    try {
+      $result = Invoke-InstallerNativeProcess -Executable $helper -Arguments @('--vpn-service-status') -TimeoutSeconds 15
+      if ($result.exitCode -eq 0 -and [Text.Encoding]::UTF8.GetByteCount([string]$result.output) -le 32768) {
+        $status = $result.output | ConvertFrom-Json -ErrorAction Stop
+        if ([string]$status.serviceName -eq 'EgoistShieldVpn' -and $status.serviceInstalled -eq $true -and
+            [string]$status.serviceState -eq 'running' -and $status.running -eq $true -and
+            [string]$status.localHealth -eq 'responsive' -and [string]$status.observation.state -eq 'observed' -and
+            [int]$status.socksPort -eq 10838 -and [int]$status.pid -gt 0) { return $true }
+      }
+    } catch { Write-Verbose 'VPN service readiness could not be confirmed.' }
+    Start-Sleep -Milliseconds 250
+  }
+  return $false
+}
+
 function Start-PreservedServices {
   param([object]$State)
   $runningNames = @($State.services | Where-Object { $_.wasRunning -eq $true -and $_.startMode -ne "Disabled" } | ForEach-Object { [string]$_.name })
   $core = @($State.services | Where-Object { $_.name -eq "EgoistShieldCore" })
   $startCore = $core.Count -eq 0 -or ($core[0].wasRunning -eq $true -and $core[0].startMode -ne "Disabled")
-  $startOrder = @("EgoistShieldSystemDoH", "EgoistShieldGravitylessDNS", "EgoistShieldZapret", "EgoistShieldTelegramProxy")
+  $startOrder = @("EgoistShieldSystemDoH", "EgoistShieldGravitylessDNS", "EgoistShieldZapret", "EgoistShieldTelegramProxy", "EgoistShieldVpn")
   $startOrder += @($runningNames | Where-Object { $_ -ne "EgoistShieldCore" -and $startOrder -notcontains $_ })
   $startOrder += @("EgoistShieldCore")
   foreach ($name in $startOrder) {
@@ -1322,6 +1377,9 @@ function Start-PreservedServices {
       if (-not (Wait-OwnedTelegramProxyReady -ExpectedWrapper $wrapper -Port ([int]$config.port) -HostAddress ([string]$config.host))) {
         throw 'Telegram Proxy did not confirm an owned listener after reinstall; a foreign listener is not readiness.'
       }
+    }
+    if ($name -eq 'EgoistShieldVpn' -and -not (Wait-OwnedVpnReady)) {
+      throw 'VPN did not confirm its owned local SOCKS listener after reinstall; SCM Running alone is not readiness.'
     }
   }
 }
@@ -1543,12 +1601,23 @@ function Invoke-InstallerRecoveryAttempts {
   return $false
 }
 
+function Get-InstallerWatchdogWaitMilliseconds {
+  param([DateTime]$Deadline, [ValidateRange(120, 3600)][int]$MaximumSeconds = 1200)
+  $remaining = ($Deadline.ToUniversalTime() - [DateTime]::UtcNow).TotalMilliseconds
+  return [int64][Math]::Max(0, [Math]::Min($remaining, [int64]$MaximumSeconds * 1000))
+}
+
 function Invoke-WatchdogMode {
   if (Test-InstallerTransactionComplete) { return $true }
   [void](Assert-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory)
   $deadlinePath = Join-Path $StageDirectory "watchdog-deadline.txt"
   $deadline = [DateTime]::Parse((Get-Content -LiteralPath $deadlinePath -Raw), [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind)
-  while ([DateTime]::UtcNow -lt $deadline) {
+  $waitingState = Get-ValidatedMaintenanceRecoveryState -Stage $StageDirectory
+  $maximumSeconds = 1200
+  if ($waitingState.PSObject.Properties['watchdogTimeoutSeconds']) { $maximumSeconds = [int]$waitingState.watchdogTimeoutSeconds }
+  $waitMilliseconds = Get-InstallerWatchdogWaitMilliseconds -Deadline $deadline -MaximumSeconds $maximumSeconds
+  $waitingElapsed = [Diagnostics.Stopwatch]::StartNew()
+  while ($waitingElapsed.ElapsedMilliseconds -lt $waitMilliseconds) {
     if (Test-InstallerTransactionComplete) { return $true }
     $heartbeatPath = Join-Path $StageDirectory "heartbeat.json"
     if (Test-Path -LiteralPath $heartbeatPath -PathType Leaf) {
@@ -1621,6 +1690,72 @@ function Invoke-WatchdogMode {
   }
 }
 
+function Enter-InstallerWorkerLease {
+  param([Threading.Mutex]$Mutex, [ValidateRange(0, 1200000)][int]$WaitMilliseconds = 0)
+  $elapsed = [Diagnostics.Stopwatch]::StartNew()
+  do {
+    Assert-InstallerNotCancelled
+    $remaining = [Math]::Max(0, $WaitMilliseconds - [int]$elapsed.ElapsedMilliseconds)
+    try {
+      if ($Mutex.WaitOne([Math]::Min(250, $remaining))) { return $true }
+    } catch [Threading.AbandonedMutexException] { return $true }
+  } while ($elapsed.ElapsedMilliseconds -lt $WaitMilliseconds)
+  return $false
+}
+
+function Resolve-PreviousReinstallStage {
+  param([string]$Path)
+  if ([string]::IsNullOrWhiteSpace($Path)) { throw 'The inherited installer stage is missing.' }
+  $stage = [IO.Path]::GetFullPath($Path).TrimEnd('\')
+  $base = [IO.Path]::GetFullPath((Join-Path (Get-InstallerCommonDataRoot) 'EgoistShieldInstaller\DeferredRuns')).TrimEnd('\')
+  if (-not [string]::Equals([IO.Path]::GetDirectoryName($stage), $base, [StringComparison]::OrdinalIgnoreCase) -or
+      [IO.Path]::GetFileName($stage) -notmatch '^[a-fA-F0-9]{32}$') {
+    throw 'The previous installer stage is outside the canonical observer scope.'
+  }
+  [void](Assert-PlainWrapperMigrationPath -Path $stage -Root (Get-InstallerCommonDataRoot))
+  return $stage
+}
+
+function Test-PreviousReinstallProcess {
+  param([object]$Process, [string]$Stage, [string]$PowerShellPath)
+  if (-not [string]::Equals([string]$Process.ExecutablePath, $PowerShellPath, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+  $scriptPath = Join-Path $Stage 'invoke-final-silent-reinstall.ps1'
+  $scriptArgument = [regex]::Escape($scriptPath)
+  $stageArgument = [regex]::Escape($Stage)
+  $command = [string]$Process.CommandLine
+  return $command -match ('(?i)(?:^|\s)-File\s+(?:"' + $scriptArgument + '"|' + $scriptArgument + ')(?=\s|$)') -and
+    $command -match '(?i)(?:^|\s)-(?:Worker|Watchdog)(?=\s|$)' -and
+    $command -match ('(?i)(?:^|\s)-StageDirectory\s+(?:"' + $stageArgument + '"|' + $stageArgument + ')(?=\s|$)')
+}
+
+function Wait-PreviousReinstallProcesses {
+  param([string]$Stage, [ValidateRange(1, 60000)][int]$WaitMilliseconds = 60000)
+  $stage = Resolve-PreviousReinstallStage $Stage
+  $powerShell = Get-NativePowerShellPath
+  $elapsed = [Diagnostics.Stopwatch]::StartNew()
+  do {
+    Assert-InstallerNotCancelled
+    $processes = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -Property ProcessId,ExecutablePath,CommandLine -OperationTimeoutSec 3 -ErrorAction Stop |
+      Where-Object { Test-PreviousReinstallProcess -Process $_ -Stage $stage -PowerShellPath $powerShell })
+    if ($processes.Count -eq 0) { return }
+    if ($processes.Count -gt 8) { throw 'Too many previous installer observers; the new handoff has not started.' }
+    Start-Sleep -Milliseconds 250
+  } while ($elapsed.ElapsedMilliseconds -lt $WaitMilliseconds)
+  throw 'Previous installer worker or watchdog is still active; the new handoff has not started.'
+}
+
+function Assert-PreviousReinstallRestored {
+  param([object]$State)
+  foreach ($record in @($State.services)) {
+    if ([string]$record.startMode -eq 'Auto' -and $record.wasRunning -ne $true) {
+      throw "Previous installer did not restore automatic service $($record.name); the new handoff has not started."
+    }
+  }
+  if (-not (Test-LoopbackDnsReady -State $State)) {
+    throw 'Previous installer did not restore the local DNS path; the new handoff has not started.'
+  }
+}
+
 function Invoke-WorkerMode {
   if (-not (Test-IsAdministrator)) { throw "Deferred reinstall worker requires an elevated administrator token." }
   Assert-SupportedServiceFramework
@@ -1628,8 +1763,12 @@ function Invoke-WorkerMode {
   $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   $release = Get-ValidatedRelease -Installer ([string]$state.installer) -Manifest ([string]$state.manifest) -Version ([string]$state.version) -Sha256 ([string]$state.sha256) -AllowStagedPair
   $mutex = New-Object Threading.Mutex($false, "Global\EgoistShield.DeferredReinstall")
-  try { $acquired = $mutex.WaitOne(0) }
-  catch [Threading.AbandonedMutexException] { $acquired = $true }
+  $previousWait = 0
+  if ($state.PSObject.Properties['previousReinstallWaitMilliseconds']) {
+    $previousWait = [int]$state.previousReinstallWaitMilliseconds
+  }
+  try { $acquired = Enter-InstallerWorkerLease -Mutex $mutex -WaitMilliseconds $previousWait }
+  catch { $mutex.Dispose(); throw }
   if (-not $acquired) {
     Add-ReceiptEvent -Stage "worker" -Status "failed" -Message "Another protected Egoist Shield reinstall is already running."
     Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "dispatch-failed" -Encoding ASCII -Force
@@ -1638,6 +1777,7 @@ function Invoke-WorkerMode {
   }
   try {
     Add-ReceiptEvent -Stage "worker" -Status "waiting" -Message "Validated elevated worker is waiting before the final handoff."
+    if ($previousWait -gt 0) { Wait-PreviousReinstallProcesses -Stage ([string]$state.previousReinstallStage) }
     Start-Sleep -Seconds ([int]$state.delaySeconds)
     Assert-InstallerNotCancelled
     Resume-InterruptedServiceMaintenance
@@ -1645,6 +1785,7 @@ function Invoke-WorkerMode {
     $state.services = @(Get-OwnedServiceSnapshot -Stage $StageDirectory)
     $state.userState = @(Backup-UserActivationState -Stage $StageDirectory)
     $state.criticalDns = @(Backup-CriticalDnsState -Stage $StageDirectory)
+    if ($previousWait -gt 0) { Assert-PreviousReinstallRestored -State $state }
     $state.installationId = Get-InstalledIdentity
     $state.zapretProfile = [string](Get-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\EgoistShieldZapret" -Name EgoistShieldProfile -ErrorAction SilentlyContinue).EgoistShieldProfile
     Invoke-RobocopyDirectory -Source $script:RuntimeRoot -Destination (Join-Path $StageDirectory "runtime-backup")
@@ -1816,10 +1957,21 @@ if ($PlanOnly) {
   exit 0
 }
 
+if ($WaitForPreviousReinstall -and (-not $EmbeddedRelease -or -not (Test-IsAdministrator))) {
+  throw 'Waiting for a legacy installer is restricted to the embedded elevated Setup entrypoint.'
+}
+$previousReinstallStage = ''
+if ($WaitForPreviousReinstall) { $previousReinstallStage = Resolve-PreviousReinstallStage $env:EGOIST_PROTECTED_REINSTALL_STAGE }
 $runningMutex = New-Object Threading.Mutex($false, "Global\EgoistShield.DeferredReinstall")
 try {
-  if (-not $runningMutex.WaitOne(0)) { throw "Защищённая переустановка Egoist Shield уже выполняется." }
-  $runningMutex.ReleaseMutex()
+  try { $previousAvailable = $runningMutex.WaitOne(0) }
+  catch [Threading.AbandonedMutexException] { $previousAvailable = $true }
+  if ($previousAvailable) {
+    $runningMutex.ReleaseMutex()
+    if ($WaitForPreviousReinstall) { throw 'There is no active installer to hand off from.' }
+  } elseif (-not $WaitForPreviousReinstall) {
+    throw "Защищённая переустановка Egoist Shield уже выполняется."
+  }
 } finally {
   $runningMutex.Dispose()
 }
@@ -1934,6 +2086,8 @@ $state = [ordered]@{
   minimizedAfter = [bool]$MinimizedAfter
   fromVersion = $FromVersion
   watchdogTimeoutSeconds = $WatchdogTimeoutSeconds
+  previousReinstallWaitMilliseconds = $(if ($WaitForPreviousReinstall) { 1200000 } else { 0 })
+  previousReinstallStage = $previousReinstallStage
   services = @()
   userState = @()
   criticalDns = @()
@@ -1952,10 +2106,10 @@ try {
     $uiCommandLine = (@($StageDirectory, '--monitor') | ForEach-Object { ConvertTo-InstallerWindowsArgument ([string]$_) }) -join ' '
     $uiProcess = Start-Process -FilePath (Join-Path $StageDirectory "ModernInstaller.exe") -ArgumentList $uiCommandLine -PassThru
     $readyFlag = Join-Path $StageDirectory "ui-ready.flag"
-    $readyDeadline = [DateTime]::UtcNow.AddSeconds(15)
+    $readyElapsed = [Diagnostics.Stopwatch]::StartNew()
     while (-not (Test-Path -LiteralPath $readyFlag -PathType Leaf)) {
       if ($uiProcess.HasExited) { throw "Branded installer window exited before it became ready." }
-      if ([DateTime]::UtcNow -ge $readyDeadline) { throw "Branded installer window did not become ready." }
+      if ($readyElapsed.Elapsed.TotalSeconds -ge 15) { throw "Branded installer window did not become ready." }
       Start-Sleep -Milliseconds 100
       $uiProcess.Refresh()
     }

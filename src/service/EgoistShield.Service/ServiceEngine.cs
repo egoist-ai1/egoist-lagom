@@ -52,8 +52,15 @@ internal sealed class ServiceEngine
 				await log.WarnAsync("Deferred installer backup cleanup will be retried: " + ex2.Message, cancellationToken);
 			}
 		}
-		ServiceConfig config = await ServiceConfiguration.ReadAsync(options.StateRoot, cancellationToken);
-		string text = config?.InstallRoot ?? options.InstallRoot;
+		ServiceConfig? config = null;
+		StateReadException? configurationError = null;
+		try { config = (await ServiceConfiguration.ReadResultAsync(options.StateRoot, cancellationToken)).ValueOrThrow("service-config.json"); }
+		catch (StateReadException error)
+		{
+			configurationError = error;
+			await log.ErrorAsync("Core configuration is unavailable for execution; read-only diagnostics will preserve it: " + error.Message, cancellationToken);
+		}
+		string? text = configurationError == null ? config?.InstallRoot ?? options.InstallRoot : null;
 		if (!string.IsNullOrWhiteSpace(text) && !options.ConsoleMode)
 		{
 			try
@@ -71,10 +78,41 @@ internal sealed class ServiceEngine
 		WindowsDnsController dns = new WindowsDnsController();
 		WindowsNativeDohController nativeDoh = new WindowsNativeDohController(options.StateRoot);
 		ServiceOptions executionOptions = options with { InstallRoot = protectedRootVerified ? text : null };
-		OperationDispatcher dispatcher = new OperationDispatcher(executionOptions, dns, nativeDoh, services, journal, log);
-		ClientAuthorizer authorizer = new ClientAuthorizer(options, config);
+		OperationDispatcher dispatcher = new OperationDispatcher(executionOptions, dns, nativeDoh, services, journal, log,
+			startupStateError: configurationError);
+		// A damaged config cannot supply GUI authority. Only the actual installed Core
+		// executable may establish its diagnostic root; normal GUI verification still applies.
+		ServiceOptions authorizationOptions = configurationError == null ? options : options with
+		{
+			InstallRoot = ResolveDiagnosticInstallRoot(Environment.ProcessPath)
+		};
+		ClientAuthorizer authorizer = new ClientAuthorizer(authorizationOptions, config);
 		PipeServer pipeServer = new PipeServer(options, authorizer, dispatcher, log);
 		return new ServiceEngine(options, log, dispatcher, pipeServer);
+	}
+
+	internal static string? ResolveDiagnosticInstallRoot(string? executable)
+	{
+		if (string.IsNullOrWhiteSpace(executable)) return null;
+		try
+		{
+			string path = Path.GetFullPath(executable);
+			if (!Path.GetFileName(path).Equals("EgoistShield.Service.exe", StringComparison.OrdinalIgnoreCase)) return null;
+			DirectoryInfo? cursor = Directory.GetParent(path);
+			foreach (string expected in new[] { "win-x64", "core-service", "resources" })
+			{
+				if (cursor == null || !cursor.Name.Equals(expected, StringComparison.OrdinalIgnoreCase)) return null;
+				cursor = cursor.Parent;
+			}
+			if (cursor == null) return null;
+			ClientAuthorizer.EnsureProgramFilesRoot(cursor.FullName);
+			TrustedPath.AssertPathUnderRoot(path, Path.GetPathRoot(path)!, requireLeaf: true);
+			return cursor.FullName;
+		}
+		catch (Exception error) when (error is ArgumentException or NotSupportedException or InvalidOperationException or IOException or UnauthorizedAccessException)
+		{
+			return null;
+		}
 	}
 
 	public async Task RunAsync(CancellationToken cancellationToken)
@@ -102,9 +140,12 @@ internal sealed class ServiceEngine
 		}
 	}
 
-	public Task RecoverOnlyAsync(CancellationToken cancellationToken = default(CancellationToken))
+	public async Task RecoverOnlyAsync(CancellationToken cancellationToken = default(CancellationToken))
 	{
-		return _dispatcher.RecoverOnStartupAsync(cancellationToken);
+		await _dispatcher.RecoverOnStartupAsync(cancellationToken);
+		var persistence = JsonDefaults.ToElement(await _dispatcher.DescribePersistenceAsync(cancellationToken));
+		if (!persistence.GetProperty("mutationReady").GetBoolean())
+			throw new InvalidOperationException("Core recovery remains unresolved; diagnostic startup does not authorize installer recovery completion.");
 	}
 
 	public async Task RestoreOwnedDnsForUninstallAsync(CancellationToken cancellationToken = default)

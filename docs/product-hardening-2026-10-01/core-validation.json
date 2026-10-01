@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "clientDate": "2026-10-01",
+  "sourceReadyForParentIntegration": true,
+  "releaseReady": false,
+  "installedOrPublishedByThisWorker": false,
+  "sdkVersion": "10.0.401",
+  "runtime": ".NET 10.0.12",
+  "before": {
+    "scope": "Inherited uncommitted proposal; not an installed 3.7.9 replay",
+    "actualWrites": 10000,
+    "actualReads": 50000,
+    "falseMissing": 3,
+    "malformedReads": 0
+  },
+  "after": {
+    "fullStressGroups": 7,
+    "fullStressSeconds": 357.9327467,
+    "finalTargetedGroups": 7,
+    "finalTargetedSeconds": 72.5168419,
+    "latestVpnGroup": 1,
+    "latestVpnSeconds": 4.739676
+  },
+  "coreProductBuild": {
+    "wrapperIntegrationExit": 0,
+    "dllSelftestExit": 0,
+    "exeSelftestExit": 0,
+    "schemaVersion": 1,
+    "coreBuildExit": 0
+  },
+  "coreProductWarnings": 137,
+  "additionalRegressionGroups": {
+    "CoreServiceReliability": 27,
+    "NativeDohConfiguration": 17,
+    "AtomicJsonLock": "passed",
+    "OwnedWrapperIntegration": "passed"
+  },
+  "persistencePrivacy": {
+    "componentIntentBeforeEffectContainsArgsOrConfig": false,
+    "fields": [
+      "requestId",
+      "fingerprint",
+      "component",
+      "method",
+      "startedAt",
+      "terminalResponse"
+    ],
+    "terminalAndDnsStateMayContainSecrets": true,
+    "remediation": "ProtectedProductRoot Service subtree SY/BA-only; owned and tested by VPN hardening worker, not a Core-console ACL proof"
+  },
+  "sourceHashes": [
+    {
+      "file": "src/service/EgoistShield.Service/AtomicJsonFile.cs",
+      "sha256": "1EE6256769F2D036DD93B114B6D89CD72BC1530CB3FDA9DEF7139873042FA231"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/AtomicJsonReadResult.cs",
+      "sha256": "DCC20D4FCDAE783B362570E71A1ED4D146AC456E88226C4C806E7D7B013207B7"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/PersistedOperationIntent.cs",
+      "sha256": "0F232FBFE7E02D1E767DF9AD359D2C12F50F83CEDF72F949FDA9504500DBF22F"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/TransactionJournal.cs",
+      "sha256": "C702DB28961D9B451CE557CA17A3E92DDA55005BDFE76CCD5C1287C2CF09F22D"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/OperationDispatcher.cs",
+      "sha256": "37E4538C2AC091A30D52EDFF131AFA616877D39DDF1636CEA141361063EDB199"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/ServiceEngine.cs",
+      "sha256": "A70DEF06621A02EDBA4A72192B5709F98221ED9E5E45A9E7AF7659F398EE4E13"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/ServiceConfiguration.cs",
+      "sha256": "4D9656E6C9EF82AC4BCECE3834AB4BCB36D4EBA343984F41ED2886C0B88F6227"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/SelfTest.cs",
+      "sha256": "C61F758CCEF86D413F66D4F5716C6692307BF602832F6E8FF34B6CBA691B0122"
+    },
+    {
+      "file": "src/service/EgoistShield.Service/WindowsNativeDohController.cs",
+      "sha256": "DFC5A96E8645F55ED0D803C01BE51C72F6CE6198E10BBA2F9352EF92D0F2170B"
+    },
+    {
+      "file": "tests/CoreServiceReliabilityRegression/CoreServiceReliabilityRegression.csproj",
+      "sha256": "3D125A954E4C934C6A41CAA69F0456215C131E15CF14630F96895783646AE6D0"
+    },
+    {
+      "file": "tests/AtomicJsonFileLockRegression/AtomicJsonFileLockRegression.csproj",
+      "sha256": "CC6BD0D540DB893D91F37B94717414937A664CBA435819302025FFC1D4E71FF8"
+    },
+    {
+      "file": "tests/core-persistence-production.cs",
+      "sha256": "38AACB0DBBFA509BC885199A662B8E7315D494D0285677D1BE32705A66F01344"
+    },
+    {
+      "file": "tests/core-persistence-production.ps1",
+      "sha256": "7031F6361FE4C2CEAD6992281D3FD7E8416FFE08B8922A9384B2FDFE72BC2687"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "core-atomic-before-run.txt",
+      "sha256": "25DAB69C20269E31A78108920A1AD106C37552E0AD0847C35728753C42E88440",
+      "bytes": 1043
+    },
+    {
+      "file": "core-atomic-before.cs",
+      "sha256": "5883EE2ABD2EC3036AFA1ECE11C89E5E5751F588D40BA04DCBF53AE5308767E0",
+      "bytes": 6020
+    },
+    {
+      "file": "core-before-source-hashes.json",
+      "sha256": "371DAADF0C52496559EE32A86D5D01F17EE918C2C14993FCCD41E811A028C3B2",
+      "bytes": 11217
+    },
+    {
+      "file": "core-full-stress-run.txt",
+      "sha256": "638E72A84151E206A93DA392CDFD21267BBD074B473AC5004DCF3DD814670FEC",
+      "bytes": 4041
+    },
+    {
+      "file": "core-full-stress-results.json",
+      "sha256": "D52041E8973247AAB563D9D34AE760FF1848778D672F6AA4E37A31AB771AA5A8",
+      "bytes": 4697
+    },
+    {
+      "file": "core-full-stress-source-hashes.json",
+      "sha256": "F28650F9BCB52DD7986ED5A556ADDF419F1042A73F43617D89EAA96C2BFA2AAD",
+      "bytes": 11217
+    },
+    {
+      "file": "core-final-verification-run.txt",
+      "sha256": "F30025FF54DE84C0679A65957FA45817F820D8BF78D1AC1CA2A13353804600D3",
+      "bytes": 4153
+    },
+    {
+      "file": "core-final-verification-results.json",
+      "sha256": "51D5F32128F19B057A14E3645D9A7A5D649807491ACF5A4BB86F806BCCFAB486",
+      "bytes": 4849
+    },
+    {
+      "file": "core-final-verification-source-hashes.json",
+      "sha256": "4A99C96B8000FF39B3B8864BFE74CBBCE9A2C8CA934567A3F0FF7EF833093D33",
+      "bytes": 11834
+    },
+    {
+      "file": "core-final-verification-runner.json",
+      "sha256": "723F145294C5A1D17674F3182DD330E9B81E78C173965646CC43808C4B84BCCC",
+      "bytes": 455
+    },
+    {
+      "file": "core-vpn-intent-final-run.txt",
+      "sha256": "86179927ED2B9DE48CC530AEF099A0A40F915A9C08BC9733D30D908D6388E97B",
+      "bytes": 589
+    },
+    {
+      "file": "core-vpn-intent-final-results.json",
+      "sha256": "E0483D6375949F3BB8FC6F756E5285CA585828584F9183DB85CB35764160905E",
+      "bytes": 1118
+    },
+    {
+      "file": "core-vpn-intent-final-source-hashes.json",
+      "sha256": "79E5136CA0EA8FC8DBADFB3E47B9BC1197B2EC262C506242834AA9FB81E12AE5",
+      "bytes": 11983
+    },
+    {
+      "file": "core-vpn-intent-final-runner.json",
+      "sha256": "22BA118BA66108478518EBAE1032E79898C094D05B785C03DEC87132F2F7301E",
+      "bytes": 446
+    },
+    {
+      "file": "core-existing-regression-before-build.txt",
+      "sha256": "B81FC973FF1F95552B38069E5146CFC8385BF3E0164B52A352459D64A3D34A68",
+      "bytes": 35429
+    },
+    {
+      "file": "core-atomic-lock-regression-run.txt",
+      "sha256": "DF66DE479D04A53E358F9DA935C271F62EEEF5C7A7016D8D763F4E63BC3B0087",
+      "bytes": 40
+    },
+    {
+      "file": "core-native-doh-regression-run.txt",
+      "sha256": "B807F92CBBE484C4911298B2F286032B824418BB9D4C6B8E4EA09480CEAAE289",
+      "bytes": 1494
+    },
+    {
+      "file": "core-existing-regressions-source-hashes.json",
+      "sha256": "59225A666FE60729C38CECB2A1BD1F763948741F143C00FA069395F1F638A70F",
+      "bytes": 14572
+    },
+    {
+      "file": "core-reliability-final-build.txt",
+      "sha256": "74C20EF767B0D8ED059BDC527DB65630AFA98E18C7896DBAD3A45FFBF13D71D4",
+      "bytes": 33655
+    },
+    {
+      "file": "core-reliability-final-run.txt",
+      "sha256": "700B2A28962C30DA58FCE24F19E47A02FC5ED051ABCBEA6A799AB69457B071C0",
+      "bytes": 2132
+    },
+    {
+      "file": "core-product-final-build.txt",
+      "sha256": "AFD4A7702F14DCEDC59EB79E02FC58B5761633E3C2AEDA49AC1E717FC16F8437",
+      "bytes": 147886
+    },
+    {
+      "file": "core-product-selftest-exe.txt",
+      "sha256": "52B8B876E421696C4C0FDCC0F5E56F161C211A2F5DC99198115153F793D095AA",
+      "bytes": 817
+    },
+    {
+      "file": "core-product-selftest-dll.txt",
+      "sha256": "52B8B876E421696C4C0FDCC0F5E56F161C211A2F5DC99198115153F793D095AA",
+      "bytes": 817
+    },
+    {
+      "file": "core-wrapper-integration-run.txt",
+      "sha256": "BD3BD179E4A3BED4B966A50D33668B1EA60F6C300B744D96DE269148AD018BDB",
+      "bytes": 1115
+    },
+    {
+      "file": "core-product-build-results.json",
+      "sha256": "10B6A4D649B88108A996C65C81F265B9552C86E395B16F1F6931C6E0A9ED07BC",
+      "bytes": 133
+    },
+    {
+      "file": "core-product-final-source-hashes.json",
+      "sha256": "B1E09EE355F30CDBA99C7D8465E163C07E1F8FE247E3A53380C4B21A97115018",
+      "bytes": 13531
+    }
+  ],
+  "limitations": [
+    "Cooperative Core file readers/writers use 64 fixed lock stripes; no claim of cross-process filesystem transactions",
+    "Unknown component outcome is preserved and not inferred from current observed status",
+    "Old completed response eviction ends replay retention; no permanent exactly-once guarantee",
+    "Console development override is limited to isolated own-pipe tests; native installed GUI/SYSTEM acceptance remains separate",
+    "No live SCM control, DNS change, registry change, Task Scheduler registration or UAC by this worker",
+    "Finite test runs do not prove months of uptime"
+  ]
+}

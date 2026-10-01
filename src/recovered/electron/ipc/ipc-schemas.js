@@ -165,6 +165,7 @@ var UsageRecordSchema = z.object({
 	durationSec: z.number()
 });
 var PersistedStateSchema = z.object({
+	stateRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 	nodes: z.array(VpnNodeSchema),
 	activeNodeId: z.string().nullable(),
 	subscriptions: z.array(SubscriptionItemSchema),
@@ -173,6 +174,17 @@ var PersistedStateSchema = z.object({
 	settings: AppSettingsSchema,
 	usageHistory: z.array(UsageRecordSchema)
 });
+var SettingsPatchInputSchema = z.object({
+	patch: AppSettingsSchema.partial().strict(),
+	expectedRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
+}).strict();
+var NodeIdInputSchema = z.object({ id: z.string().min(1).max(256) }).strict();
+var SelectNodeInputSchema = z.object({ id: z.string().min(1).max(256).nullable() }).strict();
+var NodeFavoriteInputSchema = z.object({
+	id: z.string().min(1).max(256),
+	favorite: z.boolean()
+}).strict();
+var SubscriptionIdInputSchema = z.object({ id: z.string().min(1).max(256) }).strict();
 /** import:text — текстовый payload (URI, base64, YAML) */
 var ImportTextInputSchema = z.string().min(1, "Payload не может быть пустым");
 /** import:file — путь к файлу */

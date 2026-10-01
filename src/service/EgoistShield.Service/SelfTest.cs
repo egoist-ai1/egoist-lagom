@@ -88,6 +88,7 @@ internal static class SelfTest
 			await VerifyComponentWorkerResponsesAsync(root);
 			await VerifyInstallerMaintenanceAsync(root);
 			await VerifyRecoveryStartupPolicyAsync(root);
+			await VerifyTypedPersistenceAsync(root);
 			TransactionJournal journal = new TransactionJournal(root);
 			DateTimeOffset utcNow = DateTimeOffset.UtcNow;
 			ActiveTransaction transaction = new ActiveTransaction(1, "EgoistShield", "self-test-transaction", "self-test:2", "dns", "dns.apply", TransactionPhase.Prepared, JsonDefaults.ToElement(Array.Empty<DnsAdapterSnapshot>()), JsonDefaults.ToElement(new
@@ -208,6 +209,76 @@ internal static class SelfTest
 			else
 				Directory.Delete(root, recursive: true);
 		}
+	}
+
+	private static async Task VerifyTypedPersistenceAsync(string root)
+	{
+		string stateRoot = Path.Combine(root, "typed-persistence");
+		Directory.CreateDirectory(stateRoot);
+		string path = Path.Combine(stateRoot, "probe.json");
+		Assert((await AtomicJsonFile.ReadResultAsync<JsonElement>(path)).Kind == AtomicJsonReadKind.Missing, "stable absent file is typed missing");
+		await File.WriteAllTextAsync(path, "{\"unfinished\":");
+		var corrupt = await AtomicJsonFile.ReadResultAsync<JsonElement>(path);
+		Assert(corrupt.Kind == AtomicJsonReadKind.Corrupt && corrupt.Sha256 != null, "corrupt file is preserved with a diagnostic hash");
+		using (var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+			Assert((await AtomicJsonFile.ReadResultAsync<JsonElement>(path)).Kind == AtomicJsonReadKind.Unavailable, "sharing denial cannot become missing");
+		await AtomicJsonFile.WriteAsync(path, new { verified = true });
+		Assert((await AtomicJsonFile.ReadResultAsync<JsonElement>(path)).Kind == AtomicJsonReadKind.Valid, "valid file is typed valid");
+		var journal = new TransactionJournal(stateRoot);
+		await journal.RecordResponseAsync("self-test:seed", "seed", ServiceResponse.Success("self-test:seed", 1, new { }));
+		var options = new ServiceOptions("unused-persistence-self-test", stateRoot, true, true, null);
+		var identity = new ClientIdentity(Environment.ProcessId, Environment.ProcessPath ?? "self-test", true, "self-test");
+		int executions = 0;
+		FileStream? denyResponse = null;
+		Task<JsonElement> Execute(JsonElement payload, bool query, CancellationToken token)
+		{
+			if (!query)
+			{
+				executions++;
+				Assert(File.Exists(Path.Combine(stateRoot, "operation-intents.json")), "durable intent exists before component execution");
+				Assert(payload.GetProperty("requestId").GetString() == "self-test:component-persistence", "Core request identity reaches the executor");
+				denyResponse = new FileStream(Path.Combine(stateRoot, "idempotency-responses.json"), FileMode.Open, FileAccess.Read, FileShare.None);
+			}
+			return Task.FromResult(JsonDefaults.ToElement(new { running = true }));
+		}
+		using var dispatcher = new OperationDispatcher(options, new WindowsDnsController(), new WindowsNativeDohController(stateRoot), null,
+			journal, new ServiceLog(stateRoot), Execute);
+		var request = new ServiceRequest(1, "self-test:component-persistence", "component.execute",
+			JsonDefaults.ToElement(new { component = "Zapret", method = "startService", args = Array.Empty<object>() }));
+		try
+		{
+			var first = await dispatcher.DispatchAsync(request, identity);
+			Assert(first.Error?.Code == "OPERATION_OUTCOME_UNKNOWN" && executions == 1, "response persistence failure retains intent instead of replay permission");
+		}
+		finally { denyResponse?.Dispose(); }
+		using var restarted = new OperationDispatcher(options, new WindowsDnsController(), new WindowsNativeDohController(stateRoot), null,
+			new TransactionJournal(stateRoot), new ServiceLog(stateRoot), Execute);
+		var second = await restarted.DispatchAsync(request, identity);
+		Assert(second.Ok && executions == 1, "recorded terminal intent commits after restart without re-execution");
+		var mismatch = await restarted.DispatchAsync(request with { Payload = JsonDefaults.ToElement(new { component = "Zapret", method = "stopService", args = Array.Empty<object>() }) }, identity);
+		Assert(mismatch.Error?.Code == "REQUEST_ID_REUSED" && executions == 1, "durable request fingerprint refuses changed payload");
+		await File.WriteAllTextAsync(Path.Combine(stateRoot, "active-transaction.json"), "{\"schemaVersion\":1,\"owner\":\"EgoistShield\",\"truncated\":");
+		await restarted.RecoverOnStartupAsync();
+		var health = await restarted.DispatchAsync(new ServiceRequest(1, "self-test:corrupt-health", "service.status", JsonDefaults.ToElement(new { })), identity);
+		Assert(health.Ok && !JsonDefaults.ToElement(health.Result).GetProperty("persistence").GetProperty("mutationReady").GetBoolean(), "degraded diagnostic health stays available");
+		var mutation = await restarted.DispatchAsync(request with { RequestId = "self-test:corrupt-block" }, identity);
+		Assert(mutation.Error?.Code == "STATE_CORRUPT" && executions == 1, "corrupt journal blocks component mutation");
+		TimeSpan elapsed = TimeSpan.Zero;
+		int routeReads = 0;
+		bool routeAvailable = true;
+		var routes = new WindowsNativeDohController(stateRoot, (script, token) =>
+		{
+			routeReads++;
+			return Task.FromResult(new ProcessResult(0, routeAvailable ? "true" : "false", ""));
+		}, () => elapsed);
+		Assert(await routes.HasIpv6DefaultRouteAsync(default), "initial monotonic route observation");
+		routeAvailable = false;
+		elapsed = TimeSpan.FromSeconds(30);
+		Assert(!await routes.HasIpv6DefaultRouteAsync(default) && routeReads == 2, "native route evidence expires by elapsed time");
+		routeAvailable = true;
+		elapsed = TimeSpan.FromSeconds(5);
+		Assert(await routes.HasIpv6DefaultRouteAsync(default) && routeReads == 3, "future elapsed cache timestamp is invalidated");
+		Console.WriteLine("Core typed persistence and durable component-intent self-test passed.");
 	}
 
 	private static void Assert(bool condition, string name)

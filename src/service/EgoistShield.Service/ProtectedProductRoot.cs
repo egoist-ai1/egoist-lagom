@@ -17,7 +17,7 @@ internal static class ProtectedProductRoot
 
 	private const string HardeningMarkerFileName = "acl-hardening.marker";
 
-	private const string HardeningMarkerVersion = "2";
+	private const string HardeningMarkerVersion = "3";
 
 	public static string Resolve(string stateRoot)
 	{
@@ -49,40 +49,78 @@ internal static class ProtectedProductRoot
 		}
 		if (OperatingSystem.IsWindows() && flag)
 		{
-			string icaclsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "icacls.exe");
 			string markerPath = Path.Combine(productRoot, "Service", "acl-hardening.marker");
 			bool needsDeepPass = !HardeningMarkerIsCurrent(markerPath);
-			string[] collection = ((!needsDeepPass) ? new string[3] { "/l", "/c", "/q" } : new string[4] { "/t", "/l", "/c", "/q" });
-			if (needsDeepPass)
+			TrustedPath.AssertTreeContainsNoReparsePoints(productRoot);
+			// Protect secret roots before touching public ancestor inheritance. No
+			// recursive ACL reset may briefly expose existing connection credentials.
+			foreach (string relative in PrivateDirectories)
 			{
-				TrustedPath.AssertTreeContainsNoReparsePoints(productRoot);
+				string directory = Path.Combine(productRoot, relative);
+				if (!Directory.Exists(directory)) continue;
+				ApplyDirectoryAcl(directory, privateData: true);
 			}
-			List<string> list = new List<string>();
-			list.Add(productRoot);
-			list.Add("/setowner");
-			list.Add("*S-1-5-18");
-			list.AddRange(collection);
-			await RunIcaclsAsync(icaclsPath, list.ToArray(), "take ownership of the ProgramData runtime root", cancellationToken);
+			ApplyDirectoryAcl(productRoot, privateData: false);
+			foreach (string directory in ManagedSubdirectories.Select(name => Path.Combine(productRoot, name)))
+				ApplyDirectoryAcl(directory, IsPrivatePath(directory, productRoot));
 			if (needsDeepPass)
 			{
-				await RunIcaclsAsync(icaclsPath, new string[6] { productRoot, "/reset", "/t", "/l", "/c", "/q" }, "reset pre-existing explicit ProgramData ACL entries", cancellationToken);
-			}
-			await RunIcaclsAsync(icaclsPath, new string[9] { productRoot, "/inheritance:r", "/grant:r", "*S-1-5-18:(OI)(CI)F", "*S-1-5-32-544:(OI)(CI)F", "*S-1-5-32-545:(OI)(CI)RX", "/l", "/c", "/q" }, "protect the ProgramData runtime ACL", cancellationToken);
-			if (needsDeepPass)
-			{
-				await RunIcaclsAsync(icaclsPath, new string[6]
+				foreach (string candidate in Directory.EnumerateFileSystemEntries(productRoot, "*", SearchOption.AllDirectories).OrderBy(value => value.Length))
 				{
-					Path.Combine(productRoot, "*"),
-					"/reset",
-					"/t",
-					"/l",
-					"/c",
-					"/q"
-				}, "inherit the protected ProgramData ACL on existing descendants", cancellationToken);
-				TrustedPath.AssertTreeContainsNoReparsePoints(productRoot);
-				WriteHardeningMarker(markerPath);
+					cancellationToken.ThrowIfCancellationRequested();
+					TrustedPath.AssertPathUnderRoot(candidate, productRoot, requireLeaf: true);
+					bool privateData = IsPrivatePath(candidate, productRoot);
+					if (Directory.Exists(candidate)) ApplyDirectoryAcl(candidate, privateData);
+					else new FileInfo(candidate).SetAccessControl(CreateFileAcl(privateData));
+				}
 			}
+			foreach (string relative in PrivateDirectories)
+			{
+				string directory = Path.Combine(productRoot, relative);
+				if (!Directory.Exists(directory)) continue;
+				AssertPrivateAcl(directory);
+				foreach (string candidate in Directory.EnumerateFileSystemEntries(directory, "*", SearchOption.AllDirectories)) AssertPrivateAcl(candidate);
+			}
+			TrustedPath.AssertTreeContainsNoReparsePoints(productRoot);
+			if (needsDeepPass) WriteHardeningMarker(markerPath);
 		}
+		await Task.CompletedTask;
+	}
+
+	private static readonly string[] PrivateDirectories = { "Service", "installer", Path.Combine("Runtime", "Vpn"), Path.Combine("Runtime", "TelegramProxy"), Path.Combine("Runtime", "SystemDoH") };
+	internal static bool IsPrivatePath(string candidate, string productRoot)
+	{
+		string normalized = Path.GetFullPath(candidate);
+		return PrivateDirectories.Any(relative => { string root = Path.GetFullPath(Path.Combine(productRoot, relative)); return normalized.Equals(root, StringComparison.OrdinalIgnoreCase) || normalized.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase); });
+	}
+	internal static DirectorySecurity CreateDirectoryAcl(bool privateData)
+	{
+		var security = new DirectorySecurity();
+		security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+		security.SetOwner(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null));
+		foreach (WellKnownSidType type in new[] { WellKnownSidType.LocalSystemSid, WellKnownSidType.BuiltinAdministratorsSid })
+			security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(type, null), FileSystemRights.FullControl, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+		if (!privateData) security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null), FileSystemRights.ReadAndExecute, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+		return security;
+	}
+	internal static FileSecurity CreateFileAcl(bool privateData)
+	{
+		var security = new FileSecurity();
+		security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+		security.SetOwner(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null));
+		foreach (WellKnownSidType type in new[] { WellKnownSidType.LocalSystemSid, WellKnownSidType.BuiltinAdministratorsSid })
+			security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(type, null), FileSystemRights.FullControl, AccessControlType.Allow));
+		if (!privateData) security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null), FileSystemRights.ReadAndExecute, AccessControlType.Allow));
+		return security;
+	}
+	private static void ApplyDirectoryAcl(string directory, bool privateData) => new DirectoryInfo(directory).SetAccessControl(CreateDirectoryAcl(privateData));
+	private static void AssertPrivateAcl(string candidate)
+	{
+		FileSystemSecurity security = Directory.Exists(candidate) ? new DirectoryInfo(candidate).GetAccessControl() : new FileInfo(candidate).GetAccessControl();
+		bool Trusted(SecurityIdentifier sid) => sid.IsWellKnown(WellKnownSidType.LocalSystemSid) || sid.IsWellKnown(WellKnownSidType.BuiltinAdministratorsSid);
+		if (security.GetOwner(typeof(SecurityIdentifier)) is not SecurityIdentifier owner || !Trusted(owner)) throw new UnauthorizedAccessException("Private service state has an untrusted owner.");
+		foreach (FileSystemAccessRule rule in security.GetAccessRules(true, true, typeof(SecurityIdentifier)))
+			if (rule.AccessControlType == AccessControlType.Allow && !Trusted((SecurityIdentifier)rule.IdentityReference)) throw new UnauthorizedAccessException("Private service state exposes access outside SYSTEM and Administrators.");
 	}
 
 	public static int CleanupDeferredInstallerBackups(string stateRoot)
@@ -116,7 +154,7 @@ internal static class ProtectedProductRoot
 	{
 		try
 		{
-			if (!File.Exists(markerPath) || (File.GetAttributes(markerPath) & FileAttributes.ReparsePoint) != FileAttributes.None || File.ReadAllText(markerPath).Trim() != "2")
+			if (!File.Exists(markerPath) || (File.GetAttributes(markerPath) & FileAttributes.ReparsePoint) != FileAttributes.None || File.ReadAllText(markerPath).Trim() != HardeningMarkerVersion)
 			{
 				return false;
 			}
@@ -133,7 +171,7 @@ internal static class ProtectedProductRoot
 		try
 		{
 			Directory.CreateDirectory(Path.GetDirectoryName(markerPath));
-			File.WriteAllText(markerPath, "2" + Environment.NewLine);
+			File.WriteAllText(markerPath, HardeningMarkerVersion + Environment.NewLine);
 		}
 		catch
 		{

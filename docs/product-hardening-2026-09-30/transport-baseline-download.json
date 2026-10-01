@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-30T19:40:41.661Z",
+  "expectedBaselineCommit": "199236e3b227f9885c2beef64faffbe9e9a35583",
+  "sourceFiles": [
+    {
+      "path": "src/recovered/electron/ipc/safe-network.js",
+      "sha256": "a0a1b3635488f760e7a67c3d12be44deab4c67839eebfc6b299229dfd2308b02"
+    },
+    {
+      "path": "src/recovered/electron/ipc/github-release.js",
+      "sha256": "8704996d41dba02cb9b13ff05025352a761c53cb89e7ec6e15528a5a392bff29"
+    }
+  ],
+  "bodyStall": {
+    "configuredTransportTimeoutMs": 60,
+    "waitedMs": 320,
+    "stateAfterTimeout": "pending",
+    "partialBytes": 22,
+    "bodyStalled": true,
+    "nativeFetch": true,
+    "scope": "Actual shared helper + actual safe-network transport, only the header budget shortened for this fixture. Native loopback headers and partial chunk never complete. External fixture shutdown cleans only its sockets."
+  },
+  "fileOpenFailure": {
+    "kind": "file-open-failure-before-cleanup",
+    "actualFilesystemError": "EISDIR",
+    "responseBodyCancelCalls": 0,
+    "bodyLocked": false,
+    "scope": "Controlled response stream plus actual own-directory open failure. No real URL contacted."
+  },
+  "limitations": [
+    "No download to a public endpoint, native engine or Windows service launched.",
+    "320 ms with a controlled 60 ms header budget is a transport-phase invariant test, not a 60-second production outage.",
+    "Maximum disk exhaustion and archive expansion were not exercised."
+  ]
+}

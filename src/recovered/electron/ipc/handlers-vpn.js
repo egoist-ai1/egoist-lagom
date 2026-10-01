@@ -11,22 +11,23 @@ var ROUTE_PROBE_ENDPOINTS = [
 	"https://1.1.1.1/cdn-cgi/trace",
 	"https://ipwho.is/?fields=ip,success"
 ];
-var ROUTE_SPEED_WARMUP_BYTES = 8e6;
+var ROUTE_SPEED_WARMUP_BYTES = 2e6;
 var ROUTE_SPEED_DOWNLOAD_BYTES = 25e6;
-var ROUTE_SPEED_UPLOAD_BYTES = 8e6;
-var ROUTE_SPEED_FAST_UPLOAD_BYTES = 25e6;
+var ROUTE_SPEED_UPLOAD_BYTES = 2e6;
+var ROUTE_SPEED_FAST_UPLOAD_BYTES = 2e6;
 var SPEEDTEST_LATENCY_ATTEMPTS = 10;
 var SPEEDTEST_BANDWIDTH_SAMPLES = 3;
 var EGRESS_WATCHDOG_INTERVAL_MS = 45e3;
 /**
 * Интервал после первого промаха (MED-07).
 *
-* 45 с × порог 2 давали до ~90 с, в течение которых статус показывал «защищено»
-* при уже потерянном маршруте. 12 с сокращают это окно до ~24 с.
+* После первого отказа следующая проверка запланирована через 12 с.
+* Полный срок обнаружения зависит от фазы обычного 45-секундного цикла
+* и длительности сетевых проб; это не гарантия обнаружения за 24 с.
 */
 var EGRESS_WATCHDOG_DEGRADED_INTERVAL_MS = 12e3;
 var EGRESS_WATCHDOG_FAILURE_THRESHOLD = 2;
-var IS_TEST_MOCK_RUNTIME = process.env.EGOISTSHIELD_MOCK_RUNTIME === "1" && (process.env.NODE_ENV === "test" || process.env.VITEST === "true");
+var IS_TEST_MOCK_RUNTIME = !(typeof app !== "undefined" && app.isPackaged === true) && process.env.EGOISTSHIELD_MOCK_RUNTIME === "1" && (process.env.NODE_ENV === "test" || process.env.VITEST === "true");
 var activeProxyPingInFlight = /* @__PURE__ */ new Map();
 var activeProxyPingCache = /* @__PURE__ */ new Map();
 var speedtestInFlight = null;
@@ -39,6 +40,26 @@ var speedtestInFlight = null;
 */
 var speedtestCancelled = false;
 var speedtestAbortController = null;
+var speedtestBudgets = new WeakMap();
+var SPEEDTEST_MAX_PAYLOAD_BYTES = 64 * 1024 * 1024;
+var SPEEDTEST_TOTAL_TIMEOUT_MS = 90e3;
+var SpeedtestBudgetExceededError = class extends Error {
+	constructor(message) { super(message); this.name = "SpeedtestBudgetExceededError"; }
+};
+function createSpeedtestBudget(maxBytes = SPEEDTEST_MAX_PAYLOAD_BYTES) {
+	return { maxBytes, usedBytes: 0, reservedBytes: 0, reserve(bytes) {
+		if (!Number.isSafeInteger(bytes) || bytes < 0 || this.usedBytes + this.reservedBytes + bytes > this.maxBytes) throw new SpeedtestBudgetExceededError("Достигнут лимит данных быстрого замера скорости.");
+		const budget = this; let remaining = bytes, released = false;
+		budget.reservedBytes += bytes;
+		return {
+			consume(amount) {
+				if (released || !Number.isSafeInteger(amount) || amount < 0 || amount > remaining) throw new SpeedtestBudgetExceededError("Недопустимый объём данных замера скорости.");
+				remaining -= amount; budget.reservedBytes -= amount; budget.usedBytes += amount;
+			},
+			release() { if (!released) { released = true; budget.reservedBytes -= remaining; } }
+		};
+	} };
+}
 function speedtestUserAgentHeader() {
 	return `User-Agent: EgoistShield/${app.getVersion().replace(/[^0-9A-Za-z.+-]/g, "") || "unknown"} speed-test\r\n`;
 }
@@ -53,7 +74,7 @@ function throwIfSpeedtestCancelled(signal) {
 }
 function listenForSpeedtestCancellation(signal, cancel) {
 	if (!signal) return () => {};
-	const onAbort = () => cancel(new SpeedtestCancelledError());
+	const onAbort = () => cancel(signal.reason instanceof SpeedtestBudgetExceededError ? signal.reason : new SpeedtestCancelledError());
 	signal.addEventListener("abort", onAbort, { once: true });
 	return () => signal.removeEventListener("abort", onAbort);
 }
@@ -186,17 +207,78 @@ function parseHttpStatusFromHeader(header) {
 function parseHttpHeaders(header) {
 	const lines = header.split(/\r?\n/);
 	const statusCode = parseHttpStatusFromHeader(lines[0] ?? "");
-	const headers = {};
+	const headers = Object.create(null);
 	for (const line of lines.slice(1)) {
 		const idx = line.indexOf(":");
 		if (idx <= 0) continue;
 		const key = line.slice(0, idx).trim().toLowerCase();
 		const value = line.slice(idx + 1).trim();
-		if (key && value) headers[key] = value;
+		if (key && value) {
+			if (Object.hasOwn(headers, key) && (key === "content-length" || key === "transfer-encoding")) throw new Error("Неоднозначные HTTP-заголовки замера скорости.");
+			headers[key] = value;
+		}
 	}
 	return {
 		statusCode,
 		headers
+	};
+}
+function createSpeedtestBodyDecoder(headers, consumePayload) {
+	const transfer = headers["transfer-encoding"]?.toLowerCase();
+	if (transfer && transfer !== "chunked" || transfer && headers["content-length"] !== void 0) throw new Error("Неподдерживаемое HTTP-обрамление замера скорости.");
+	if (headers["content-encoding"] && headers["content-encoding"].toLowerCase() !== "identity") throw new Error("Ответ замера скорости сжат вопреки Accept-Encoding: identity.");
+	let remaining = null;
+	if (headers["content-length"] !== void 0) {
+		if (!/^[0-9]{1,15}$/.test(headers["content-length"])) throw new Error("Некорректная длина HTTP-ответа.");
+		remaining = Number(headers["content-length"]);
+		if (!Number.isSafeInteger(remaining)) throw new Error("Слишком большая длина HTTP-ответа.");
+	}
+	let state = transfer ? "size" : "identity", buffer = Buffer.alloc(0), trailerBytes = 0;
+	let done = !transfer && remaining === 0;
+	return {
+		push(chunk) {
+			if (done) return true;
+			if (!transfer) {
+				if (remaining !== null && chunk.length > remaining) throw new Error("Лишние данные после HTTP Content-Length.");
+				const bytes = remaining === null ? chunk.length : Math.min(chunk.length, remaining);
+				if (bytes) consumePayload(bytes);
+				if (remaining !== null) { remaining -= bytes; done = remaining === 0; }
+				return done;
+			}
+			buffer = buffer.length ? Buffer.concat([buffer, chunk]) : chunk;
+			while (!done) {
+				if (state === "size" || state === "trailers") {
+					const end = buffer.indexOf("\r\n");
+					if (end < 0) { if (buffer.length > 1024) throw new Error("Слишком длинная HTTP chunk/trailer строка."); return false; }
+					if (end > 1024) throw new Error("Слишком длинная HTTP chunk/trailer строка.");
+					const line = buffer.subarray(0, end).toString("ascii");
+					buffer = buffer.subarray(end + 2);
+					if (state === "trailers") {
+						trailerBytes += end + 2;
+						if (trailerBytes > 16 * 1024 || line && !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+:[\x09\x20-\x7e]*$/.test(line) || /^(content-length|transfer-encoding):/i.test(line)) throw new Error("Некорректные HTTP trailers.");
+						if (!line) done = true;
+						continue;
+					}
+					if (!/^[0-9A-Fa-f]{1,15}(?:;[\x20-\x7e]*)?$/.test(line)) throw new Error("Некорректный размер HTTP chunk.");
+					remaining = Number.parseInt(line.split(";")[0], 16);
+					if (!Number.isSafeInteger(remaining)) throw new Error("Слишком большой HTTP chunk.");
+					state = remaining === 0 ? "trailers" : "data";
+				} else if (state === "data") {
+					const bytes = Math.min(buffer.length, remaining);
+					if (!bytes) return false;
+					consumePayload(bytes);
+					buffer = buffer.subarray(bytes); remaining -= bytes;
+					if (!remaining) state = "data-crlf";
+				} else {
+					if (buffer.length < 2) return false;
+					if (buffer[0] !== 13 || buffer[1] !== 10) throw new Error("Некорректный HTTP chunk delimiter.");
+					buffer = buffer.subarray(2); state = "size";
+				}
+			}
+			if (buffer.length) throw new Error("Лишние данные после HTTP body.");
+			return true;
+		},
+		end() { if (transfer && !done || !transfer && remaining !== null && remaining > 0) throw new Error("HTTP body замера скорости оборвался."); }
 	};
 }
 function isOkHttpStatus(status) {
@@ -220,10 +302,13 @@ function openRouteProbeTls(endpoint, proxyPort, timeoutMs, signal) {
 	const port = endpoint.port ?? 443;
 	if (!proxyPort) return new Promise((resolve, reject) => {
 		let settled = false;
+		let removeCancellation = () => {};
+		let totalTimer;
 		const finish = (error) => {
 			if (settled) return;
 			settled = true;
 			removeCancellation();
+			clearTimeout(totalTimer);
 			tlsSocket.setTimeout(0);
 			if (error) { tlsSocket.destroy(); reject(error); }
 			else resolve(tlsSocket);
@@ -236,7 +321,8 @@ function openRouteProbeTls(endpoint, proxyPort, timeoutMs, signal) {
 		}, () => {
 			finish();
 		});
-		const removeCancellation = listenForSpeedtestCancellation(signal, finish);
+		removeCancellation = listenForSpeedtestCancellation(signal, finish);
+		totalTimer = setTimeout(() => finish(new Error(`Маршрут: истёк общий срок TLS для ${endpoint.name}`)), timeoutMs);
 		tlsSocket.setTimeout(timeoutMs, () => {
 			finish(/* @__PURE__ */ new Error(`Маршрут: ${endpoint.name} не ответил напрямую`));
 		});
@@ -246,12 +332,13 @@ function openRouteProbeTls(endpoint, proxyPort, timeoutMs, signal) {
 		let settled = false;
 		let tlsSocket = null;
 		let tunnelSocket = null;
-		let handshakeTimer = null;
+		let totalTimer = null;
+		let removeCancellation = () => {};
 		const finish = (error, socket) => {
 			if (settled) return;
 			settled = true;
 			removeCancellation();
-			if (handshakeTimer) clearTimeout(handshakeTimer);
+			if (totalTimer) clearTimeout(totalTimer);
 			if (error) {
 				proxyReq.destroy();
 				tlsSocket?.destroy();
@@ -266,28 +353,23 @@ function openRouteProbeTls(endpoint, proxyPort, timeoutMs, signal) {
 			port: proxyPort,
 			method: "CONNECT",
 			path: `${endpoint.host}:${port}`,
-			timeout: timeoutMs
+			timeout: timeoutMs,
+			maxHeaderSize: 64 * 1024
 		});
-		const removeCancellation = listenForSpeedtestCancellation(signal, finish);
-		proxyReq.on("connect", (response, socket) => {
+		removeCancellation = listenForSpeedtestCancellation(signal, finish);
+		totalTimer = setTimeout(() => finish(new Error(`Маршрут: истёк общий срок CONNECT/TLS для ${endpoint.name}`)), timeoutMs);
+		proxyReq.on("connect", (response, socket, head) => {
 			if (settled) { socket.destroy(); return; }
 			tunnelSocket = socket;
 			if (response.statusCode !== 200) { finish(new Error(`Маршрут: CONNECT к ${endpoint.name} вернул HTTP ${response.statusCode}`)); return; }
-			tlsSocket = tls.connect({
-				socket,
-				servername: endpoint.host,
-				rejectUnauthorized: true
-			}, () => {
-				tlsSocket.setTimeout(0);
-				finish(null, tlsSocket);
-			});
-			tlsSocket.on("error", () => {
-				finish(/* @__PURE__ */ new Error(`Маршрут: TLS к ${endpoint.name} не согласован`));
-			});
-			handshakeTimer = setTimeout(() => {
-				if (!tlsSocket.destroyed) tlsSocket.destroy();
-				finish(/* @__PURE__ */ new Error(`Маршрут: TLS к ${endpoint.name} не ответил`));
-			}, timeoutMs);
+			try {
+				if (head?.length) socket.unshift(head);
+				tlsSocket = tls.connect({ socket, servername: endpoint.host, rejectUnauthorized: true }, () => {
+					tlsSocket.setTimeout(0);
+					finish(null, tlsSocket);
+				});
+				tlsSocket.on("error", () => finish(new Error(`Маршрут: TLS к ${endpoint.name} не согласован`)));
+			} catch (error) { finish(error); }
 		});
 		proxyReq.on("error", (error) => finish(error instanceof Error ? error : /* @__PURE__ */ new Error(`Маршрут: прокси не открыл ${endpoint.name}`)));
 		proxyReq.on("timeout", () => {
@@ -353,8 +435,11 @@ async function measureLatencySeries(endpoint, proxyPort, attempts, pauseMs = 90,
 	}
 	return summarizeLatency(samples, attempts);
 }
-async function measureDownloadEndpoint(endpoint, proxyPort, redirectDepth = 0, signal) {
-	const tlsSocket = await openRouteProbeTls(endpoint, proxyPort, 8e3, signal);
+async function measureDownloadEndpoint(endpoint, proxyPort, redirectDepth = 0, signal, budget = signal ? speedtestBudgets.get(signal) : null) {
+	if (!Number.isSafeInteger(endpoint.bytes) || endpoint.bytes <= 0 || endpoint.bytes > 128e6) throw new Error("Недопустимый объём скачивания для замера скорости.");
+	const byteLease = budget?.reserve(endpoint.bytes);
+	let tlsSocket;
+	try { tlsSocket = await openRouteProbeTls(endpoint, proxyPort, 8e3, signal); } catch (error) { byteLease?.release(); throw error; }
 	return new Promise((resolve, reject) => {
 		const start = performance.now();
 		let dataStartedAt = null;
@@ -363,6 +448,8 @@ async function measureDownloadEndpoint(endpoint, proxyPort, redirectDepth = 0, s
 		let statusCode = null;
 		let responseHeaders = {};
 		let buf = Buffer.alloc(0);
+		let decoder = null;
+		let terminationReason = "body-complete";
 		let settled = false;
 		let timer = null;
 		const finish = async (error = null) => {
@@ -370,6 +457,7 @@ async function measureDownloadEndpoint(endpoint, proxyPort, redirectDepth = 0, s
 			settled = true;
 			if (timer) clearTimeout(timer);
 			removeCancellation();
+			byteLease?.release();
 			if (!tlsSocket.destroyed) tlsSocket.destroy();
 			if (error) {
 				reject(error);
@@ -383,7 +471,7 @@ async function measureDownloadEndpoint(endpoint, proxyPort, redirectDepth = 0, s
 						reject(/* @__PURE__ */ new Error(`Маршрут: ${endpoint.name} вернул неподдерживаемый redirect`));
 						return;
 					}
-					resolve(await measureDownloadEndpoint(redirectedEndpoint, proxyPort, redirectDepth + 1, signal));
+					resolve(await measureDownloadEndpoint(redirectedEndpoint, proxyPort, redirectDepth + 1, signal, budget));
 				} catch (redirectError) {
 					reject(redirectError instanceof Error ? redirectError : new Error(String(redirectError)));
 				}
@@ -399,44 +487,51 @@ async function measureDownloadEndpoint(endpoint, proxyPort, redirectDepth = 0, s
 			}
 			const elapsedMs = Math.max(1, (dataStartedAt ? performance.now() - dataStartedAt : performance.now() - start));
 			resolve({
-				downloadMbps: Number.parseFloat((totalBytes * 8 / (elapsedMs / 1e3 * 1e6)).toFixed(2)),
+			downloadMbps: Number.parseFloat((totalBytes * 8 / (elapsedMs / 1e3 * 1e6)).toFixed(2)),
 				bytes: totalBytes,
 				timeMs: elapsedMs,
+				terminationReason,
 				endpoint
 			});
 		};
 		const removeCancellation = listenForSpeedtestCancellation(signal, finish);
 		if (signal?.aborted) { finish(new SpeedtestCancelledError()); return; }
-		tlsSocket.write(`GET ${endpoint.path} HTTP/1.1\r\nHost: ${endpoint.host}\r\nRange: bytes=0-${Math.max(0, endpoint.bytes - 1)}\r\nCache-Control: no-cache\r
+		try { tlsSocket.write(`GET ${endpoint.path} HTTP/1.1\r\nHost: ${endpoint.host}\r\nRange: bytes=0-${Math.max(0, endpoint.bytes - 1)}\r\nAccept-Encoding: identity\r\nCache-Control: no-cache\r
 Pragma: no-cache\r
-` + speedtestUserAgentHeader() + "Connection: close\r\n\r\n");
+` + speedtestUserAgentHeader() + "Connection: close\r\n\r\n"); } catch (error) { finish(error); return; }
 		tlsSocket.on("data", (chunk) => {
 			if (settled) return;
-			if (!headersParsed) {
-				buf = Buffer.concat([buf, chunk]);
-				const idx = buf.indexOf("\r\n\r\n");
-				if (idx < 0 && buf.length > 64 * 1024 || idx > 64 * 1024) { finish(new Error("Ответ замера содержит слишком большие HTTP-заголовки.")); return; }
-				if (idx >= 0) {
+			try {
+				let body = chunk;
+				if (!headersParsed) {
+					buf = Buffer.concat([buf, chunk]);
+					const idx = buf.indexOf("\r\n\r\n");
+					if (idx < 0 && buf.length > 64 * 1024 || idx > 64 * 1024) { finish(new Error("Ответ замера содержит слишком большие HTTP-заголовки.")); return; }
+					if (idx < 0) return;
 					headersParsed = true;
-					dataStartedAt = performance.now();
 					const parsed = parseHttpHeaders(buf.slice(0, idx).toString("utf8"));
 					statusCode = parsed.statusCode;
 					responseHeaders = parsed.headers;
-					if (isRedirectHttpStatus(statusCode) && responseHeaders.location) {
-						finish();
-						return;
-					}
-					totalBytes += buf.slice(idx + 4).length;
+					if (isRedirectHttpStatus(statusCode) && responseHeaders.location) { finish(); return; }
+					if (!isOkHttpStatus(statusCode)) { finish(); return; }
+					decoder = createSpeedtestBodyDecoder(responseHeaders, (bytes) => {
+						const accepted = Math.min(bytes, endpoint.bytes - totalBytes);
+						byteLease?.consume(accepted);
+						if (accepted && dataStartedAt === null) dataStartedAt = performance.now();
+						totalBytes += accepted;
+					});
+					body = buf.subarray(idx + 4); buf = Buffer.alloc(0);
 				}
-			} else totalBytes += chunk.length;
-			if (totalBytes >= endpoint.bytes) {
-				totalBytes = endpoint.bytes;
-				finish();
-			}
+				const complete = decoder.push(body);
+				if (totalBytes >= endpoint.bytes) { terminationReason = "byte-budget"; finish(); }
+				else if (complete) finish();
+			} catch (error) { finish(error); }
 		});
-		tlsSocket.on("end", () => void finish());
+		tlsSocket.on("end", () => {
+			try { decoder?.end(); finish(); } catch (error) { finish(error); }
+		});
 		tlsSocket.on("error", (error) => void finish(error));
-		timer = setTimeout(() => void finish(totalBytes > 0 ? null : /* @__PURE__ */ new Error(`Маршрут: ${endpoint.name} не завершил скачивание`)), 25e3);
+		timer = setTimeout(() => { terminationReason = "time-budget"; finish(totalBytes > 0 ? null : new Error(`Маршрут: ${endpoint.name} не завершил скачивание`)); }, 25e3);
 	});
 }
 async function measureDownload(proxyPort, bytes = ROUTE_SPEED_DOWNLOAD_BYTES, preferredEndpoint, signal) {
@@ -445,15 +540,17 @@ async function measureDownload(proxyPort, bytes = ROUTE_SPEED_DOWNLOAD_BYTES, pr
 	for (const endpoint of endpoints) try {
 		return await measureDownloadEndpoint(materializeDownloadEndpoint(endpoint, bytes), proxyPort, 0, signal);
 	} catch (error) {
-		if (signal?.aborted) throw error;
+		if (signal?.aborted || error instanceof SpeedtestBudgetExceededError) throw error;
 		errors.push(`${endpoint.name}: ${truncateProbeError(error instanceof Error ? error.message : String(error))}`);
 	}
 	throw new Error(`Скачивание недоступно: ${errors.slice(0, 3).join("; ")}`);
 }
-async function measureUploadEndpoint(endpoint, proxyPort, signal) {
+async function measureUploadEndpoint(endpoint, proxyPort, signal, budget = signal ? speedtestBudgets.get(signal) : null) {
 	if (signal?.aborted) throw new SpeedtestCancelledError();
-	const payload = Buffer.alloc(endpoint.bytes, 97);
-	const tlsSocket = await openRouteProbeTls(endpoint, proxyPort, 8e3, signal);
+	if (!Number.isSafeInteger(endpoint.bytes) || endpoint.bytes <= 0 || endpoint.bytes > 128e6) throw new Error("Недопустимый объём отдачи для замера скорости.");
+	const byteLease = budget?.reserve(endpoint.bytes);
+	let tlsSocket, payload;
+	try { payload = Buffer.alloc(endpoint.bytes, 97); tlsSocket = await openRouteProbeTls(endpoint, proxyPort, 8e3, signal); } catch (error) { byteLease?.release(); throw error; }
 	return await new Promise((resolve, reject) => {
 		const start = performance.now();
 		let settled = false;
@@ -465,6 +562,7 @@ async function measureUploadEndpoint(endpoint, proxyPort, signal) {
 			settled = true;
 			if (timer) clearTimeout(timer);
 			removeCancellation();
+			byteLease?.release();
 			if (!tlsSocket.destroyed) tlsSocket.destroy();
 			if (error) {
 				reject(error);
@@ -484,10 +582,9 @@ async function measureUploadEndpoint(endpoint, proxyPort, signal) {
 		};
 		const removeCancellation = listenForSpeedtestCancellation(signal, finish);
 		if (signal?.aborted) { finish(new SpeedtestCancelledError()); return; }
-		tlsSocket.write(`POST ${endpoint.path} HTTP/1.1\r\nHost: ${endpoint.host}\r\nContent-Type: application/octet-stream\r
+		try { tlsSocket.write(`POST ${endpoint.path} HTTP/1.1\r\nHost: ${endpoint.host}\r\nContent-Type: application/octet-stream\r
 Content-Length: ${payload.length}\r\n` + speedtestUserAgentHeader() + "Connection: close\r\n\r\n");
-		tlsSocket.write(payload);
-		tlsSocket.end();
+		byteLease?.consume(payload.length); tlsSocket.write(payload); tlsSocket.end(); } catch (error) { finish(error); return; }
 		tlsSocket.on("data", (chunk) => {
 			if (statusCode !== null) return;
 			responseBuffer += chunk.toString("utf8");
@@ -506,7 +603,7 @@ async function measureUpload(proxyPort, bytes = ROUTE_SPEED_UPLOAD_BYTES, prefer
 	for (const endpoint of endpoints) try {
 		return await measureUploadEndpoint(materializeUploadEndpoint(endpoint, bytes), proxyPort, signal);
 	} catch (error) {
-		if (signal?.aborted) throw error;
+		if (signal?.aborted || error instanceof SpeedtestBudgetExceededError) throw error;
 		errors.push(`${endpoint.name}: ${truncateProbeError(error instanceof Error ? error.message : String(error))}`);
 	}
 	throw new Error(`Отдача недоступна: ${errors.slice(0, 3).join("; ")}`);
@@ -578,6 +675,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		if (IS_TEST_MOCK_RUNTIME) return {
 			reachable: true,
 			ip: "203.0.113.1",
+			processGeneration: status.processGeneration,
 			error: null
 		};
 		const proxyPort = status.proxyPort;
@@ -589,9 +687,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		const { ProxyAgent, fetch: proxyFetch } = await import("undici");
 		const dispatcher = new ProxyAgent(`http://127.0.0.1:${proxyPort}`);
 		try {
-			return {
-				reachable: true,
-				ip: await firstSuccessful(ROUTE_PROBE_ENDPOINTS.map((endpoint) => async (signal) => {
+			const ip = await firstSuccessful(ROUTE_PROBE_ENDPOINTS.map((endpoint) => async (signal) => {
 					const probedIp = await fetchRouteProbeIp("proxy", (consume) => fetchWithRetry(endpoint, {
 						fetchImpl: proxyFetch,
 						dispatcher,
@@ -602,9 +698,10 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 					}, consume));
 					if (typeof probedIp !== "string" || probedIp.length === 0) throw new Error(`Route probe ${endpoint} did not return an egress IP.`);
 					return probedIp;
-				})),
-				error: null
-			};
+				}));
+			const current = await runtimeManager.status();
+			if (!current.connected || current.processGeneration !== status.processGeneration || current.pid !== status.pid || current.proxyPort !== proxyPort) throw new Error("Соединение изменилось во время внешней пробы.");
+			return { reachable: true, ip, processGeneration: status.processGeneration, error: null };
 		} catch {
 			return {
 				reachable: false,
@@ -658,7 +755,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		if (result.connected && result.activeNodeId === activeNode.id) {
 			const egress = await probeProxyEgress();
 			if (egress.reachable) {
-				result = await runtimeManager.markEgressVerified(egress.ip);
+				result = await runtimeManager.markEgressVerified(egress.ip, egress.processGeneration);
 			} else {
 				const details = egress.error ?? `Локальный runtime для ${activeNode.name} запущен, но внешний маршрут не подтвердился.`;
 				const fallbackCandidates = (state.nodes || []).filter((node) => node.id !== activeNode.id);
@@ -679,7 +776,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 						if (fbResult.connected && fbResult.activeNodeId === fallbackNode.id) {
 							const fbEgress = await probeProxyEgress();
 							if (fbEgress.reachable) {
-								result = await runtimeManager.markEgressVerified(fbEgress.ip);
+								result = await runtimeManager.markEgressVerified(fbEgress.ip, fbEgress.processGeneration);
 								activeNode = fallbackNode;
 								await stateStore.patch({ activeNodeId: fallbackNode.id });
 								fallbackConnected = true;
@@ -696,7 +793,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 					result = await runtimeManager.rejectActiveConnection("server_unreachable", details);
 					if (result.connected && result.activeNodeId !== activeNode.id) {
 						const restoredEgress = await probeProxyEgress();
-						result = restoredEgress.reachable ? await runtimeManager.markEgressVerified(restoredEgress.ip) : await runtimeManager.rejectActiveConnection("server_unreachable", restoredEgress.error ?? "Предыдущее соединение также не прошло проверку внешнего маршрута.");
+						result = restoredEgress.reachable ? await runtimeManager.markEgressVerified(restoredEgress.ip, restoredEgress.processGeneration) : await runtimeManager.rejectActiveConnection("server_unreachable", restoredEgress.error ?? "Предыдущее соединение также не прошло проверку внешнего маршрута.");
 					}
 				}
 			}
@@ -745,7 +842,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		}, operation) : operation();
 	};
 	const reconnectSupervisor = new VpnReconnectSupervisor({
-		readEnabled: () => stateStore.get().settings.reconnectOnDrop !== false,
+		readEnabled: () => stateStore.get().settings.reconnectOnDrop !== false && runtimeManager.backgroundModeActive !== true,
 		getStatus: () => runtimeManager.status(),
 		reconnect: () => connectVpn(void 0, "watchdog"),
 		log: (level, message) => logger[level](message)
@@ -797,6 +894,93 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			]
 		}, operation) : operation();
 	});
+	const backgroundService = () => {
+		if (!runtimeManager.backgroundService) throw new Error("Фоновая служба VPN недоступна в этой установке. Переустановите актуальную версию приложения.");
+		return runtimeManager.backgroundService;
+	};
+	const readKnownBackground = async () => {
+		const value = await backgroundService().status({ force: true });
+		if (!isObservedBackgroundVpnStatus(value)) throw new Error("Состояние фоновой службы VPN не подтверждено. Изменение остановлено; действующее подключение сохранено.");
+		return value;
+	};
+	const restoreZapretAfterBackground = async () => {
+		const status = await readKnownBackground();
+		if (status.backgroundEnabled || status.serviceState === "running" || status.running || status.serviceRunning || status.serviceInstalled && status.localHealth !== "unresponsive") return;
+		if ((await runtimeManager.status()).temporaryRuntimeActive) return;
+		const state = stateStore.get();
+		if (!IS_TEST_MOCK_RUNTIME && state.settings.zapretSuspendDuringVpn) await zapretManager.restoreAfterVpnIfNeeded(true, state.settings.zapretProfile);
+	};
+	const restoreFailedBackgroundTransition = async (previousNode, action) => {
+		const failed = await readKnownBackground().catch(() => null);
+		if (!failed || failed.backgroundEnabled || failed.serviceRunning || failed.running || failed.serviceInstalled && (failed.serviceState !== "stopped" || failed.startType !== "disabled" || failed.localHealth !== "unresponsive")) return;
+		try {
+			if (previousNode) await connectVpnUncoordinated(previousNode.id, "restore");
+			else await restoreZapretAfterBackground();
+		} catch (restoreError) {
+			logger.warn(`[vpn:service-${action}] Previous network state could not be restored:`, restoreError);
+		}
+	};
+	const coordinatedBackground = (action, operation) => networkCombinatorManager ? networkCombinatorManager.runCoordinatedMutation({
+		module: "vpn", action, requiredLocks: ["traffic-route", "zapret-suspend", "dns-verify"], conflictsWith: ["packet-interception", "windivert"]
+	}, operation) : operation();
+	ipcMain.handle("vpn:service-status", async (_event, ...args) => {
+		if (args.length) throw new Error("Проверка фоновой службы VPN не принимает параметры.");
+		return backgroundService().status({ force: true });
+	});
+	ipcMain.handle("vpn:service-install", async (_event, nodeId, ...extra) => {
+		if (extra.length || typeof nodeId !== "string" || !nodeId.trim() || nodeId.length > 128) throw new Error("Установка фоновой службы требует точный ID выбранного сервера.");
+		return coordinatedBackground("service-install", async () => {
+			const state = stateStore.get();
+			const node = state.nodes.find((value) => value.id === nodeId);
+			if (!node) throw new Error("Выбранный сервер отсутствует. Выберите сервер заново перед установкой службы.");
+			const snapshot = { node, settings: { ...state.settings, useTunMode: true }, domainRules: state.domainRules, processRules: state.processRules };
+			validateBackgroundVpnSnapshot(snapshot);
+			await readKnownBackground();
+			const previous = await runtimeManager.status();
+			const previousNode = previous.temporaryRuntimeActive ? state.nodes.find((value) => value.id === previous.activeNodeId) : null;
+			reconnectSupervisor.cancel("Установка фоновой службы VPN");
+			await runtimeManager.shutdownApplicationRuntime();
+			try {
+				if (!IS_TEST_MOCK_RUNTIME) await zapretManager.prepareForVpn(state.settings.zapretSuspendDuringVpn);
+				await backgroundService().installService(snapshot);
+				const observed = await readKnownBackground();
+				if (!observed.serviceInstalled || observed.serviceState !== "running" || observed.running !== true || observed.backgroundEnabled !== true) throw new Error("Фоновая служба VPN не подтвердила установку и готовность. Проверьте состояние служб.");
+				if (observed.activeNodeId !== nodeId) throw new Error("Фоновая служба VPN не подтвердила выбранный сервер. Действующую конфигурацию нужно проверить.");
+				updateTrayMenu(true); return observed;
+			} catch (error) {
+				await restoreFailedBackgroundTransition(previousNode, "install");
+				throw error;
+			}
+		});
+	});
+	for (const action of ["start", "stop", "remove"]) ipcMain.handle(`vpn:service-${action}`, async (_event, ...args) => {
+		if (args.length) throw new Error("Управление фоновой службой VPN не принимает параметры.");
+		return coordinatedBackground(`service-${action}`, async () => {
+			const before = await readKnownBackground();
+			if (action === "start" && !before.serviceInstalled) throw new Error("Фоновая служба VPN не установлена. Установите её для выбранного сервера.");
+			reconnectSupervisor.cancel(`Фоновая служба VPN: ${action}`);
+			let previousNode = null;
+			if (action === "start") {
+				const state = stateStore.get();
+				const previous = await runtimeManager.status();
+				previousNode = previous.temporaryRuntimeActive ? state.nodes.find((value) => value.id === previous.activeNodeId) : null;
+				await runtimeManager.shutdownApplicationRuntime();
+			}
+			try {
+				if (action === "start" && !IS_TEST_MOCK_RUNTIME) await zapretManager.prepareForVpn(stateStore.get().settings.zapretSuspendDuringVpn);
+				await backgroundService()[`${action}Service`]();
+				const observed = await readKnownBackground();
+				if (action === "start" && (observed.serviceState !== "running" || observed.running !== true || observed.backgroundEnabled !== true)) throw new Error("Запуск фоновой службы VPN не подтверждён.");
+				if (action === "stop" && observed.serviceInstalled && (observed.serviceState !== "stopped" || observed.startType !== "disabled" || observed.backgroundEnabled || observed.running || observed.localHealth !== "unresponsive")) throw new Error("Остановка фоновой службы VPN не подтверждена.");
+				if (action === "remove" && observed.serviceInstalled) throw new Error("Удаление фоновой службы VPN не подтверждено.");
+				if (action !== "start") await restoreZapretAfterBackground();
+				updateTrayMenu(observed.running === true); return observed;
+			} catch (error) {
+				if (action === "start") await restoreFailedBackgroundTransition(previousNode, "start");
+				throw error;
+			}
+		});
+	});
 	/**
 	* Периодическая перепроверка внешнего маршрута.
 	*
@@ -821,14 +1005,14 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			const egress = await probeProxyEgress();
 			if (egress.reachable) {
 				egressConsecutiveFailures = 0;
-				if (!status.egressVerified || egress.ip !== status.egressIp) await runtimeManager.markEgressVerified(egress.ip);
+				if (!status.egressVerified || egress.ip !== status.egressIp) await runtimeManager.markEgressVerified(egress.ip, egress.processGeneration);
 				return;
 			}
 			egressConsecutiveFailures += 1;
 			if (egressConsecutiveFailures >= EGRESS_WATCHDOG_FAILURE_THRESHOLD && status.egressVerified) {
 				const details = egress.error ?? "Внешний маршрут перестал отвечать: соединение больше не подтверждено.";
 				logger.warn("[vpn:egress-watchdog] Dropping egress verification:", details);
-				await runtimeManager.markEgressUnverified(details);
+				await runtimeManager.markEgressUnverified(details, status.processGeneration);
 			}
 		} catch (error) {
 			logger.debug("[vpn:egress-watchdog] probe failed:", error);
@@ -841,12 +1025,14 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 	*
 	* Фиксированные 45 с при пороге в две неудачи означали до ~90 с ложнозелёного
 	* статуса. Теперь после первого промаха интервал сокращается до 12 с, поэтому
-	* отказ подтверждается за ~24 с; в здоровом состоянии частота остаётся
+	* второй отказ проверяется раньше; в здоровом состоянии частота остаётся
 	* спокойной и не создаёт лишней нагрузки.
 	*/
 	if (!IS_TEST_MOCK_RUNTIME) {
 		let watchdogTimer = null;
+		let watchdogStopped = false;
 		const scheduleWatchdog = (delayMs) => {
+			if (watchdogStopped) return;
 			if (watchdogTimer) clearTimeout(watchdogTimer);
 			watchdogTimer = setTimeout(async () => {
 				await runEgressWatchdog();
@@ -856,11 +1042,17 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		};
 		scheduleWatchdog(EGRESS_WATCHDOG_INTERVAL_MS);
 		const runImmediately = (reason) => {
+			if (watchdogStopped) return;
 			logger.info(`[vpn:egress-watchdog] immediate check: ${reason}`);
 			scheduleWatchdog(0);
 		};
-		powerMonitor.on("resume", () => runImmediately("system resume"));
-		powerMonitor.on("unlock-screen", () => runImmediately("session unlock"));
+		const onResume = () => runImmediately("system resume"), onUnlock = () => runImmediately("session unlock");
+		powerMonitor.on("resume", onResume);
+		powerMonitor.on("unlock-screen", onUnlock);
+		app.once("before-quit", () => {
+			watchdogStopped = true; clearTimeout(watchdogTimer);
+			powerMonitor.removeListener("resume", onResume); powerMonitor.removeListener("unlock-screen", onUnlock);
+		});
 	}
 	ipcMain.handle("vpn:status", async () => {
 		return {
@@ -923,11 +1115,12 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			if (!status.connected) return buildNotApplicableProtectionReport("Проверка защиты доступна после подключения.");
 			const proxyPort = status.proxyPort;
 			if (!proxyPort) return buildInconclusiveProtectionReport("Порт локального прокси неизвестен.");
-			const mode = stateStore.get().settings.useTunMode ? "tun" : "system_proxy";
+			const mode = (status.useTunMode ?? stateStore.get().settings.useTunMode) ? "tun" : "system_proxy";
+			const tunInterfaceName = status.executionMode === "background-service" ? "egoist-vpn" : "egoist-tun";
 			const { ProxyAgent, fetch: proxyFetch } = await import("undici");
 			const dispatcher = new ProxyAgent(`http://127.0.0.1:${proxyPort}`);
 			try {
-				const [directIp, vpnIp, systemProxy] = await Promise.all([
+				const [directIp, vpnIp, systemProxy, tunEvidence] = await Promise.all([
 					fetchRouteProbeIp("direct", (consume) => fetchWithRetry(ROUTE_PROBE_ENDPOINT, {
 						timeoutMs: 5e3,
 						retries: 1,
@@ -943,12 +1136,20 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 					IS_TEST_MOCK_RUNTIME ? Promise.resolve(null) : readSystemProxyState().catch((error) => {
 						logger.debug("[vpn:route-probe] system proxy read failed:", error);
 						return null;
-					})
+					}),
+					mode === "tun" && !IS_TEST_MOCK_RUNTIME ? readWindowsTunRouteEvidence(tunInterfaceName).catch((error) => {
+						logger.debug("[vpn:route-probe] TUN route read failed:", error);
+						return null;
+					}) : Promise.resolve(null)
 				]);
+				const currentStatus = await runtimeManager.status();
+				if (!currentStatus.connected || currentStatus.processGeneration !== status.processGeneration || currentStatus.pid !== status.pid || currentStatus.startedAt !== status.startedAt || currentStatus.proxyPort !== proxyPort) return buildInconclusiveProtectionReport("Соединение изменилось во время проверки маршрута. Повторите проверку.", mode);
 				return buildRouteProbeResult({
 					directIp,
 					vpnIp,
 					mode,
+					tunInterfaceName,
+					tunEvidence: tunEvidence ? { ...tunEvidence, runtimeInstanceUnchanged: Number.isInteger(status.processGeneration) || typeof status.processGeneration === "string" && Boolean(status.processGeneration) } : null,
 					expectedEndpoint: `127.0.0.1:${proxyPort}`,
 					systemProxy: systemProxy ? {
 						enabled: systemProxy.enabled,
@@ -975,6 +1176,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 	*/
 	ipcMain.handle("vpn:reapply-route", async () => {
 		const status = await runtimeManager.status();
+		if (status.executionMode === "background-service") return { ok: false, message: "Маршруты фонового TUN управляются службой. Для повторного применения остановите и запустите фоновую службу VPN." };
 		if (!status.connected || !status.proxyPort) return {
 			ok: false,
 			message: "Маршрут можно применить только при активном VPN-подключении."
@@ -1057,7 +1259,8 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			activeNode.port
 		].join("|");
 		const cached = activeProxyPingCache.get(cacheKey);
-		if (cached && Date.now() - cached.measuredAt < ACTIVE_PROXY_PING_CACHE_TTL_MS) return cached.value;
+		const cacheAge = performance.now() - (cached?.measuredAt ?? 0);
+		if (cached && cacheAge >= 0 && cacheAge < ACTIVE_PROXY_PING_CACHE_TTL_MS) return cached.value;
 		const existing = activeProxyPingInFlight.get(cacheKey);
 		if (existing) return existing;
 		const measurement = (async () => {
@@ -1072,9 +1275,11 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 				}
 				samples.sort((a, b) => a - b);
 				const result = samples[Math.floor(samples.length / 2)] ?? -1;
+				const latestStatus = await runtimeManager.status();
+				if (!latestStatus.connected || latestStatus.processGeneration !== status.processGeneration || latestStatus.proxyPort !== status.proxyPort) return -1;
 				activeProxyPingCache.set(cacheKey, {
 					value: result,
-					measuredAt: Date.now()
+					measuredAt: performance.now()
 				});
 				if (activeProxyPingCache.size > 8) {
 					const oldestKey = activeProxyPingCache.keys().next().value;
@@ -1085,7 +1290,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 				logger.debug("[vpn:ping-active-proxy] Ping failed:", error);
 				activeProxyPingCache.set(cacheKey, {
 					value: -1,
-					measuredAt: Date.now()
+					measuredAt: performance.now()
 				});
 				return -1;
 			} finally {
@@ -1230,21 +1435,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		logger.debug(`[vpn:speedtest] measurement endpoint: ${reachable[0].endpoint.name} (${Math.round(reachable[0].latencyMs)} ms, measurement-grade)`);
 		return reachable[0].endpoint;
 	};
-	/**
-	* Многопоточное измерение скачивания с окном по ВРЕМЕНИ (MED-20).
-	*
-	* ПОЧЕМУ ОДНОГО ПОТОКА НЕДОСТАТОЧНО
-	*
-	* Один TLS-поток ограничен произведением пропускной способности на задержку и
-	* поведением конкретного CDN. На быстром канале он физически не выходит на
-	* скорость линии, и фиксированный объём 10–25 МБ заканчивается ещё до выхода
-	* TCP на устойчивый режим. Именно поэтому замер показывал 14 Мбит/с там, где
-	* канал даёт около 500.
-	*
-	* Здесь потоки открываются параллельно, их скорости суммируются, а объём
-	* запрашивается с запасом, чтобы окно измерения определялось временем, а не
-	* тем, что файл кончился.
-	*/
+	/** Shared payload reservations bound concurrent streams and failed attempts. */
 	const measureDownloadParallel = async (proxyPort, endpoint, streams, bytesPerStream, signal) => {
 		const started = performance.now();
 		const results = await Promise.allSettled(Array.from({ length: streams }, () => measureDownloadEndpoint(materializeDownloadEndpoint(endpoint, bytesPerStream), proxyPort, 0, signal)));
@@ -1279,7 +1470,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			...extra
 		});
 		try {
-			emit("preparing", 2, "Определяю активный маршрут и выбираю measurement endpoint по фактической задержке.");
+			emit("preparing", 2, "Быстрый замер: до 64 МиБ полезных данных и 90 с. Определяю активный маршрут.", { maxPayloadBytes: SPEEDTEST_MAX_PAYLOAD_BYTES, maxDurationMs: SPEEDTEST_TOTAL_TIMEOUT_MS });
 			const status = await runtimeManager.status();
 			const proxyPort = status.connected && status.proxyPort ? status.proxyPort : null;
 			const state = stateStore.get();
@@ -1291,19 +1482,11 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			throwIfSpeedtestCancelled(signal);
 			warmup.timeMs;
 			const uploadBytes = warmup.downloadMbps >= 80 ? ROUTE_SPEED_FAST_UPLOAD_BYTES : ROUTE_SPEED_UPLOAD_BYTES;
-			/**
-			* Число потоков и объём на поток по результату разогрева (MED-20).
-			*
-			* Чем быстрее канал, тем больше нужно и потоков, и данных: иначе окно
-			* измерения закончится до выхода TCP на устойчивую скорость, и результат
-			* будет занижен. Объём считается из наблюдаемой скорости так, чтобы каждый
-			* поток качал ориентировочно 4 секунды, но не меньше 8 МБ и не больше
-			* 96 МБ — верхняя граница ограничивает расход трафика.
-			*/
+			// A quick sample caps two streams at 8 MB each; it does not claim sustained line capacity.
 			const warmupMbps = Math.max(1, warmup.downloadMbps);
-			const downloadStreams = warmupMbps >= 100 ? 8 : warmupMbps >= 30 ? 6 : 4;
+			const downloadStreams = warmupMbps >= 30 ? 2 : 1;
 			const targetPerStreamBytes = Math.round(Math.max(warmupMbps, 200) * 1e6 / 8 / downloadStreams * 4);
-			const bytesPerStream = Math.min(128e6, Math.max(20e6, targetPerStreamBytes));
+			const bytesPerStream = Math.min(8e6, Math.max(2e6, targetPerStreamBytes));
 			logger.info(`[vpn:speedtest] warmup ${warmup.downloadMbps} Mbit/s via ${warmup.endpoint.name}; plan ${downloadStreams} stream(s) x ${Math.round(bytesPerStream / 1e6)} MB`);
 			emit("latency", 8, "Измеряю HTTPS latency, jitter и потери контрольных проб.");
 			const measurementStartedAt = performance.now();
@@ -1440,6 +1623,8 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 				mode: proxyPort ? "vpn-proxy" : "system-route",
 				routeLabel: proxyPort ? "VPN proxy" : "Системный маршрут",
 				methodology: "adaptive-median-multi-sample",
+				measurementProfile: "quick",
+				budget: { maxPayloadBytes: SPEEDTEST_MAX_PAYLOAD_BYTES, maxDurationMs: SPEEDTEST_TOTAL_TIMEOUT_MS, usedPayloadBytes: speedtestBudgets.get(signal)?.usedBytes ?? totalBytes, includesTlsAndHeaders: false },
 				latencyMethod: "HTTPS connect + TTFB через активный маршрут",
 				sampleCount: {
 					latency: idleLatency.samples.length,
@@ -1458,6 +1643,11 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			});
 			return result;
 		} catch (e) {
+			if (e instanceof SpeedtestBudgetExceededError || signal?.reason instanceof SpeedtestBudgetExceededError) {
+				const error = (signal?.reason instanceof SpeedtestBudgetExceededError ? signal.reason : e).message;
+				emit("error", 100, error);
+				return { speed: 0, error, budgetExceeded: true, budget: { maxPayloadBytes: SPEEDTEST_MAX_PAYLOAD_BYTES, maxDurationMs: SPEEDTEST_TOTAL_TIMEOUT_MS, usedPayloadBytes: speedtestBudgets.get(signal)?.usedBytes ?? 0 } };
+			}
 			if (e instanceof SpeedtestCancelledError || signal?.aborted) {
 				emit("error", 100, "Замер отменён.");
 				return {
@@ -1478,7 +1668,10 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		if (!speedtestInFlight) {
 			speedtestCancelled = false;
 			speedtestAbortController = new AbortController();
+			speedtestBudgets.set(speedtestAbortController.signal, createSpeedtestBudget());
+			const totalDeadline = setTimeout(() => speedtestAbortController?.abort(new SpeedtestBudgetExceededError("Истёк общий срок быстрого замера скорости (90 с).")), SPEEDTEST_TOTAL_TIMEOUT_MS);
 			speedtestInFlight = runSpeedtest(speedtestAbortController.signal).finally(() => {
+				clearTimeout(totalDeadline);
 				speedtestAbortController?.abort();
 				speedtestInFlight = null;
 				speedtestCancelled = false;

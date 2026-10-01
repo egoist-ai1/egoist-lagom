@@ -8,7 +8,7 @@ $tokens=$null;$errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($source,[ref]$tokens,[ref]$errors)
 if ($errors.Count) { throw 'Production source does not parse in WinPS5.1.' }
 $mutexName='Local\LagomRecoveryTimeoutFixture.'+[Guid]::NewGuid().ToString('N')
-foreach ($name in @('Invoke-Recovery','Invoke-WatchdogMode','Invoke-InstallerRecoveryAttempts','Write-PendingInstallerRecovery','Stop-VerifiedInstallerTransactionProcess','Assert-InstallerNotCancelled','Test-InstallerTransactionComplete','New-InstallerProtectedFileSecurity','Write-JsonAtomic','ConvertTo-InstallerWindowsArgument','Enter-DeferredReinstallRecoveryLease')) {
+foreach ($name in @('Invoke-Recovery','Invoke-WatchdogMode','Get-InstallerWatchdogWaitMilliseconds','Invoke-InstallerRecoveryAttempts','Write-PendingInstallerRecovery','Stop-VerifiedInstallerTransactionProcess','Assert-InstallerNotCancelled','Test-InstallerTransactionComplete','New-InstallerProtectedFileSecurity','Write-JsonAtomic','ConvertTo-InstallerWindowsArgument','Enter-DeferredReinstallRecoveryLease')) {
   $fn=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true)
   if (-not $fn) { throw "Missing production function $name." }
   . ([scriptblock]::Create($fn.Extent.Text.Replace('Global\EgoistShield.DeferredReinstall',$mutexName)))

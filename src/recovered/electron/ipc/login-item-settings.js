@@ -3,10 +3,10 @@ var execFileAsync$11 = promisify(execFile);
 var WINDOWS_AUTOSTART_ARGS = ["--background", "--minimized"];
 var LEGACY_OWNED_STARTUP_TASKS = ["EgoistShieldStartup"];
 function requiresWindowsBackgroundStartup(settings) {
-	return settings.autoConnect;
+	return false;
 }
 function isWindowsLoginStartupEnabled(settings) {
-	return settings.autoStart || requiresWindowsBackgroundStartup(settings);
+	return settings.autoStart === true;
 }
 function buildWindowsLoginItemSettings(settings, executablePath) {
 	return {

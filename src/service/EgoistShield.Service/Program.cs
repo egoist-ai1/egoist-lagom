@@ -120,6 +120,12 @@ internal static class Program
 	{
 		try
 		{
+			if (args.Length == 1 && args[0] == "--verify-native-runtime")
+				return NativeRuntimeTrustCommand.RunAsync();
+			if (args.Length == 1 && args[0] == "--run-vpn-runtime")
+				return VpnRuntimeHost.RunAsync();
+			if (args.Length == 1 && args[0] == "--vpn-service-status")
+				return VpnServiceStatusCommand.RunAsync();
 			ParsedArguments parsed = ParsedArguments.Parse(args);
 			if (parsed.TelegramListenerSnapshot)
 				return TelegramListenerSnapshotCommand.RunAsync(parsed.SnapshotPort!.Value);

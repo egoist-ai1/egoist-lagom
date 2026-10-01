@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../src/service/EgoistShield.Service/AtomicJsonFile.cs" Link="AtomicJsonFile.cs" />
+    <Compile Include="../../src/service/EgoistShield.Service/AtomicJsonReadResult.cs" Link="AtomicJsonReadResult.cs" />
     <Compile Include="../../src/service/EgoistShield.Service/JsonDefaults.cs" Link="JsonDefaults.cs" />
   </ItemGroup>
 </Project>

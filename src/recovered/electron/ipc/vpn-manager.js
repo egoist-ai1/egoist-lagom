@@ -1,5 +1,8 @@
 //#region src/electron/ipc/vpn-manager.ts
 var execFileAsync$2 = promisify(execFile);
+function vpnMonotonicNow() {
+	return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
 var DEFAULT_RUNTIME_CANDIDATES = {
 	xray: ["runtime\\xray\\xray.exe", "xray.exe"],
 	"sing-box": ["runtime\\sing-box\\sing-box.exe", "sing-box.exe"]
@@ -60,6 +63,12 @@ var XRAY_TUN_ROUTE_RETRY_BACKOFF_MS = 1e3;
 var XRAY_TUN_ROUTE_INITIALIZATION_FAILURE = /proxy\/tun:\s*unable to set routes\s*>\s*element not found/i;
 /** Окно, в течение которого проверка готовности порта считается ещё актуальной. */
 var READINESS_PROBE_REUSE_WINDOW_MS = 1500;
+var BACKGROUND_EGRESS_FRESHNESS_MS = 60e3;
+function isObservedBackgroundVpnStatus(value) {
+	return value?.observation?.state === "observed" && typeof value.serviceInstalled === "boolean" &&
+		["running", "stopped", "start_pending", "stop_pending", "not-installed"].includes(value.serviceState) &&
+		typeof value.running === "boolean" && (!value.serviceInstalled || typeof value.backgroundEnabled === "boolean");
+}
 /** Верхняя граница размера expectedExits: генерации монотонны, старое не «выстрелит». */
 var EXPECTED_EXITS_RETENTION = 16;
 function delay(ms) {
@@ -111,14 +120,37 @@ var VpnRuntimeManager = class extends EventEmitter {
 	/** Деградация вызвана именно потерей внешнего маршрута (снимается при его восстановлении). */
 	egressDegraded = false;
 	currentAttempt = null;
+	backgroundService = null;
+	backgroundModeActive = false;
+	backgroundEgress = null;
 	constructor(appRoot, userDataDir) {
 		super();
 		this.appRoot = appRoot;
 		this.userDataDir = userDataDir;
 		const isTestEnv = process.env.NODE_ENV === "test" || process.env.VITEST === "true";
-		this.mockMode = process.env.EGOISTSHIELD_MOCK_RUNTIME === "1" && isTestEnv;
+		this.mockMode = !(typeof app !== "undefined" && app.isPackaged === true) && process.env.EGOISTSHIELD_MOCK_RUNTIME === "1" && isTestEnv;
 		this.installer = new RuntimeInstaller(appRoot, userDataDir);
 		this.killSwitch = new KillSwitch();
+	}
+	attachBackgroundService(manager) {
+		if (!manager || ["status", "installService", "startService", "stopService", "removeService"].some((method) => typeof manager[method] !== "function")) throw new Error("Неполный контракт фоновой службы VPN.");
+		this.backgroundService = manager;
+	}
+	async readBackgroundServiceStatus(options = {}) {
+		if (!this.backgroundService) return null;
+		let status;
+		try { status = await this.backgroundService.status(options); }
+		catch (error) { this.backgroundModeActive = true; throw error; }
+		if (!isObservedBackgroundVpnStatus(status)) {
+			this.backgroundModeActive = true;
+			throw new Error("Состояние фоновой службы VPN не подтверждено. Действующее подключение сохранено.");
+		}
+		this.backgroundModeActive = status.serviceInstalled && (status.backgroundEnabled || status.serviceState !== "stopped" || status.localHealth !== "unresponsive");
+		return status;
+	}
+	async assertTemporaryRuntimeAllowed() {
+		const background = await this.readBackgroundServiceStatus({ force: true });
+		if (background?.serviceInstalled && (background.backgroundEnabled || background.serviceState !== "stopped" || background.startType !== "disabled" || background.localHealth !== "unresponsive")) throw new Error("Сначала остановите фоновую службу VPN и подтвердите её остановку. Два TUN-подключения одновременно не запускаются.");
 	}
 	/**
 	* Удаляет осиротевшие временные конфиги рантайма (config_*.json содержат
@@ -141,34 +173,17 @@ var VpnRuntimeManager = class extends EventEmitter {
 	async isAdmin() {
 		if (this.cachedIsAdmin !== null) return this.cachedIsAdmin;
 		if (process.platform !== "win32") {
-			this.cachedIsAdmin = true;
-			return true;
-		}
-		const adminCheckerPath = path.join(this.appRoot, "core-service", "win-x64", "EgoistShield.Service.exe");
-		if (fs.existsSync(adminCheckerPath)) try {
-			const { stdout } = await execFileAsync$2(adminCheckerPath, ["--check-admin"], {
-				timeout: 6e4,
-				windowsHide: true,
-				maxBuffer: 128 * 1024,
-				encoding: "utf8"
-			});
-			const result = JSON.parse(String(stdout).trim());
-			if (result?.ok !== true || typeof result.isAdmin !== "boolean") throw new Error("Native admin checker returned an invalid result.");
-			this.cachedIsAdmin = result.isAdmin;
+			this.cachedIsAdmin = process.getuid?.() === 0;
 			return this.cachedIsAdmin;
-		} catch {
-			return false;
 		}
 		try {
-			await execFileAsync$2(resolveWindowsExecutable("net.exe"), ["session"], {
-				timeout: 2e3,
-				windowsHide: true
-			});
-			this.cachedIsAdmin = true;
-		} catch {
-			return false;
+			const result = await checkNativeExecutionPrivilege();
+			if (typeof result !== "boolean") throw new Error("Token checker returned an invalid result.");
+			this.cachedIsAdmin = result;
+			return this.cachedIsAdmin;
+		} catch (error) {
+			throw new Error("Не удалось подтвердить привилегии процесса. Запуск runtime отложен.", { cause: error });
 		}
-		return this.cachedIsAdmin;
 	}
 	/**
 	* Ставит операцию в общую очередь VPN-ядра. Всё, что меняет активную сессию,
@@ -207,10 +222,16 @@ var VpnRuntimeManager = class extends EventEmitter {
 	async status() {
 		const connected = this.isRuntimeProcessAlive();
 		const lifecycle = !connected && (this.snapshot.lifecycle === "active" || this.snapshot.lifecycle === "degraded") ? "failed" : this.snapshot.lifecycle;
-		return {
+		const background = await this.readBackgroundServiceStatus();
+		const result = {
 			connected,
+			executionMode: connected ? "temporary" : "none",
+			temporaryRuntimeActive: connected,
+			backgroundService: background,
+			useTunMode: this.lastSettings?.useTunMode === true,
 			isMock: this.mockMode,
 			pid: connected ? this.snapshot.process?.pid ?? null : null,
+			processGeneration: this.snapshot.processGeneration,
 			startedAt: this.snapshot.startedAt,
 			activeNodeId: this.snapshot.nodeId,
 			lastError: this.snapshot.lastError,
@@ -228,6 +249,22 @@ var VpnRuntimeManager = class extends EventEmitter {
 			egressIp: connected ? this.snapshot.egressIp : null,
 			egressCheckedAt: this.snapshot.egressCheckedAt,
 			nodeHealthHistory: [...this.nodeHealthHistory.values()].sort((left, right) => right.lastUpdatedAt.localeCompare(left.lastUpdatedAt)).slice(0, 24)
+		};
+		if (!background?.serviceInstalled || !this.backgroundModeActive) return result;
+		if (connected) throw new Error("Обнаружены одновременно временный runtime и фоновая служба VPN. Проверьте состояние служб перед изменением маршрута.");
+		const sample = this.backgroundEgress;
+		const age = sample ? vpnMonotonicNow() - sample.observedAt : Infinity;
+		const verified = background.running && typeof background.instanceId === "string" && sample?.instanceId === background.instanceId && sample.verified && age >= 0 && age < BACKGROUND_EGRESS_FRESHNESS_MS;
+		return {
+			...result, executionMode: "background-service", connected: background.running,
+			pid: background.pid ?? null, processGeneration: background.instanceId ?? null, startedAt: background.startedAt ?? null,
+			activeNodeId: background.activeNodeId ?? null, runtimeKind: background.runtimeKind ?? "sing-box",
+			proxyPort: background.proxyPort, socksPort: background.socksPort, useTunMode: true,
+			lifecycle: background.running ? verified ? "active" : "probing" : background.serviceRunning ? "degraded" : "failed",
+			egressVerified: Boolean(verified), egressIp: verified ? sample.ip : null, egressCheckedAt: sample?.checkedAt ?? null,
+			lastError: background.message ?? (!verified && sample?.instanceId === background.instanceId ? sample.error ?? null : null),
+			diagnostic: { reason: background.running ? null : "background_service_not_ready", details: background.message ?? null, updatedAt: background.observation.at, fallbackAttempted: false, fallbackTarget: null },
+			routeProtection: "inconclusive"
 		};
 	}
 	setLifecycle(nextLifecycle) {
@@ -770,7 +807,8 @@ var VpnRuntimeManager = class extends EventEmitter {
 	}
 	async activatePreparedConnection(prepared, previousSession) {
 		const { effectiveSettings, resolvedRuntime, session } = prepared;
-		const preparedProbe = prepared.readinessProbe.ok && Date.now() - prepared.readinessProbeAt <= READINESS_PROBE_REUSE_WINDOW_MS && session.process.exitCode === null && !session.process.killed ? prepared.readinessProbe : await this.probeRuntimePort(session, {
+		const preparedAge = vpnMonotonicNow() - prepared.readinessProbeAt;
+		const preparedProbe = prepared.readinessProbe.ok && preparedAge >= 0 && preparedAge <= READINESS_PROBE_REUSE_WINDOW_MS && session.process.exitCode === null && !session.process.killed ? prepared.readinessProbe : await this.probeRuntimePort(session, {
 			probes: PREPARED_SESSION_PROBES,
 			timeoutMs: PREPARED_SESSION_TIMEOUT_MS,
 			minimumSuccesses: PREPARED_SESSION_MIN_SUCCESS
@@ -886,6 +924,7 @@ var VpnRuntimeManager = class extends EventEmitter {
 		return this.enqueueOperation(() => this._connect(node, domainRules, processRules, settings));
 	}
 	async _connect(node, domainRules, processRules, settings) {
+		await this.assertTemporaryRuntimeAllowed();
 		this.clearPendingHandoff();
 		this.setLifecycle(this.getActiveSession() ? "reconnecting" : "probing");
 		this.clearDiagnostic();
@@ -986,7 +1025,7 @@ var VpnRuntimeManager = class extends EventEmitter {
 					timeoutMs: PREPARED_SESSION_TIMEOUT_MS,
 					minimumSuccesses: PREPARED_SESSION_MIN_SUCCESS
 				}),
-				readinessProbeAt: Date.now()
+				readinessProbeAt: vpnMonotonicNow()
 			};
 		}
 		const allowRuntimeFallback = activeProtocolPlan.fallbackRuntime !== null;
@@ -1027,7 +1066,7 @@ var VpnRuntimeManager = class extends EventEmitter {
 			this.setLifecycle("connecting");
 			const configContent = resolvedRuntime.runtimeKind === "xray" ? ConfigBuilder.buildXray(node, domainRules, effectiveSettings, proxyPort, socksPort, apiPort, sanitizedProcessRules) : ConfigBuilder.buildSingBox(node, domainRules, sanitizedProcessRules, effectiveSettings, proxyPort);
 			await promises.writeFile(configPath, configContent, "utf8");
-			if (process.env.NODE_ENV === "development" || !!process.env.VITE_DEV_SERVER_URL) {
+			if (!(typeof app !== "undefined" && app.isPackaged === true) && (process.env.NODE_ENV === "development" || !!process.env.VITE_DEV_SERVER_URL)) {
 				const debugDir = path.join(this.userDataDir, "debug");
 				await promises.mkdir(debugDir, { recursive: true }).catch(() => {});
 				const debugPrefix = `${resolvedRuntime.runtimeKind}_${node.protocol}`;
@@ -1060,16 +1099,24 @@ var VpnRuntimeManager = class extends EventEmitter {
 		const appendRuntimeOutput = (chunk) => {
 			runtimeOutput = `${runtimeOutput}${chunk.toString("utf8")}`.slice(-4e3);
 		};
-		const child = spawn(resolvedRuntime.runtimePath, runtimeArgs, {
-			windowsHide: true,
-			stdio: [
-				"ignore",
-				"pipe",
-				"pipe"
-			],
-			detached: false,
-			cwd: path.dirname(resolvedRuntime.runtimePath)
-		});
+		let runtimeLease;
+		let child;
+		try {
+			runtimeLease = await this.verifyRuntimeCandidate(resolvedRuntime.runtimePath, resolvedRuntime.runtimeKind, await this.isAdmin());
+			child = spawn(runtimeLease.runtimePath, runtimeArgs, {
+				windowsHide: true,
+				stdio: ["ignore", "pipe", "pipe"],
+				detached: false,
+				cwd: path.dirname(runtimeLease.runtimePath),
+				env: runtimeExecutionEnvironment(runtimeLease, process.env)
+			});
+			runtimeLease.watch(child);
+		} catch (error) {
+			runtimeLease?.release();
+			await promises.rm(configPath, { force: true }).catch(() => {});
+			this.setFailure("runtime_start_failed", `Runtime trust/start verification failed: ${error instanceof Error ? error.message : String(error)}`);
+			return null;
+		}
 		const processGeneration = ++this.generationCounter;
 		const session = {
 			process: child,
@@ -1086,7 +1133,7 @@ var VpnRuntimeManager = class extends EventEmitter {
 		};
 		child.stdout?.on("data", appendRuntimeOutput);
 		child.stderr?.on("data", appendRuntimeOutput);
-		if (process.env.NODE_ENV === "development" || !!process.env.VITE_DEV_SERVER_URL) {
+		if (!(typeof app !== "undefined" && app.isPackaged === true) && (process.env.NODE_ENV === "development" || !!process.env.VITE_DEV_SERVER_URL)) {
 			const debugLogPath = path.join(this.userDataDir, "debug", `${resolvedRuntime.runtimeKind}_runtime.log`);
 			const writeDebugLog = (chunk) => {
 				promises.appendFile(debugLogPath, chunk.toString("utf8")).catch(() => {});
@@ -1173,14 +1220,17 @@ var VpnRuntimeManager = class extends EventEmitter {
 			fallbackTarget,
 			protocolPlan: activeProtocolPlan,
 			readinessProbe: warmProbe,
-			readinessProbeAt: Date.now()
+			readinessProbeAt: vpnMonotonicNow()
 		};
 	}
 	disconnect() {
 		return this.enqueueOperation(() => this._disconnect());
 	}
-	markEgressVerified(ip) {
-		return this.enqueueOperation(() => this._markEgressVerified(ip));
+	shutdownApplicationRuntime() {
+		return this.enqueueOperation(() => this._disconnect({ applicationShutdown: true }));
+	}
+	markEgressVerified(ip, expectedGeneration) {
+		return this.enqueueOperation(() => this._markEgressVerified(ip, expectedGeneration));
 	}
 	/**
 	* Снимает подтверждение внешнего маршрута, не разрывая сессию. Нужен для
@@ -1188,11 +1238,17 @@ var VpnRuntimeManager = class extends EventEmitter {
 	* при этом процесс рантайма продолжает работать и локальный порт слушает —
 	* тогда статус «защищено» становится ложью до самого disconnect.
 	*/
-	markEgressUnverified(details) {
-		return this.enqueueOperation(() => this._markEgressUnverified(details));
+	markEgressUnverified(details, expectedGeneration) {
+		return this.enqueueOperation(() => this._markEgressUnverified(details, expectedGeneration));
 	}
-	async _markEgressUnverified(details) {
+	async _markEgressUnverified(details, expectedGeneration) {
 		const activeSession = this.getActiveSession();
+		if (!activeSession && this.backgroundService) {
+			const background = await this.readBackgroundServiceStatus({ force: true });
+			if (background?.running && background.instanceId && (expectedGeneration === void 0 || expectedGeneration === background.instanceId)) this.backgroundEgress = { instanceId: background.instanceId, verified: false, ip: null, error: details, observedAt: vpnMonotonicNow(), checkedAt: new Date().toISOString() };
+			return this.status();
+		}
+		if (expectedGeneration !== void 0 && activeSession?.processGeneration !== expectedGeneration) return this.status();
 		if (!activeSession || !this.snapshot.egressVerified) return this.status();
 		this.egressDegraded = true;
 		this.snapshot.egressVerified = false;
@@ -1217,8 +1273,14 @@ var VpnRuntimeManager = class extends EventEmitter {
 		});
 		return this.status();
 	}
-	async _markEgressVerified(ip) {
+	async _markEgressVerified(ip, expectedGeneration) {
 		const activeSession = this.getActiveSession();
+		if (!activeSession && this.backgroundService) {
+			const background = await this.readBackgroundServiceStatus({ force: true });
+			if (background?.running && background.instanceId && (expectedGeneration === void 0 || expectedGeneration === background.instanceId)) this.backgroundEgress = { instanceId: background.instanceId, verified: true, ip, error: null, observedAt: vpnMonotonicNow(), checkedAt: new Date().toISOString() };
+			return this.status();
+		}
+		if (expectedGeneration !== void 0 && activeSession?.processGeneration !== expectedGeneration) return this.status();
 		if (!activeSession) return this.status();
 		const pending = this.pendingHealthVerification;
 		if (pending?.processGeneration === activeSession.processGeneration) {
@@ -1253,7 +1315,16 @@ var VpnRuntimeManager = class extends EventEmitter {
 		this.setFailure(reason, details);
 		return this.status();
 	}
-	async _disconnect() {
+	async _disconnect({ applicationShutdown = false } = {}) {
+		if (!applicationShutdown && this.backgroundService) {
+			const background = await this.readBackgroundServiceStatus({ force: true });
+			if (background?.serviceInstalled && (background.backgroundEnabled || background.serviceState !== "stopped" || background.startType !== "disabled" || background.localHealth !== "unresponsive")) {
+				await this.backgroundService.stopService();
+				const stopped = await this.readBackgroundServiceStatus({ force: true });
+				if (stopped.serviceState !== "stopped" || stopped.startType !== "disabled" || stopped.backgroundEnabled || stopped.running || stopped.localHealth !== "unresponsive") throw new Error("Остановка фоновой службы VPN не подтверждена. Подключение сохранено.");
+				this.backgroundEgress = null;
+			}
+		}
 		this.clearPendingHandoff();
 		const activeSession = this.getActiveSession();
 		try {
@@ -1281,11 +1352,16 @@ var VpnRuntimeManager = class extends EventEmitter {
 			lifecycle: "idle",
 			reason: null
 		});
+		if (applicationShutdown) {
+			const background = await this.readBackgroundServiceStatus({ force: true }).catch(() => null);
+			return { temporaryRuntimeStopped: true, backgroundServicePreserved: Boolean(this.backgroundService),
+				keepZapretSuspended: Boolean(this.backgroundService) && (!background || background.backgroundEnabled || background.serviceState === "running" || background.serviceRunning || background.running || background.serviceInstalled && background.localHealth !== "unresponsive") };
+		}
 		return this.status();
 	}
 	async diagnose() {
 		const baseline = await this.status();
-		if (!baseline.connected || !this.snapshot.proxyPort) return {
+		if (!baseline.connected || !baseline.proxyPort) return {
 			ok: false,
 			latencyMs: 0,
 			jitterMs: 0,
@@ -1295,7 +1371,7 @@ var VpnRuntimeManager = class extends EventEmitter {
 			lifecycle: baseline.lifecycle,
 			failureReason: baseline.diagnostic.reason
 		};
-		const port = this.snapshot.proxyPort;
+		const port = baseline.proxyPort;
 		const PROBES = 5;
 		const TIMEOUT = 2e3;
 		const samples = [];
@@ -1436,16 +1512,17 @@ var VpnRuntimeManager = class extends EventEmitter {
 		return process.platform === "win32" ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase() : normalizedLeft === normalizedRight;
 	}
 	async resolveRuntimePath(configuredPath, preferredKind = "xray", allowFallback = true) {
+		const privileged = await this.isAdmin();
 		const normalizedConfiguredPath = this.normalizeBinaryPath(configuredPath);
 		if (normalizedConfiguredPath) try {
 			await promises.access(normalizedConfiguredPath);
 			const detectedKind = this.detectRuntimeKindByFilename(normalizedConfiguredPath);
 			if (detectedKind) {
 				if (path.extname(normalizedConfiguredPath).toLowerCase() !== ".exe") logger.warn(`[runtime] Ignoring custom runtime path without .exe extension: ${normalizedConfiguredPath}`);
-				else if (allowFallback || detectedKind === preferredKind) return {
-					runtimePath: normalizedConfiguredPath,
-					runtimeKind: detectedKind
-				};
+				else if (allowFallback || detectedKind === preferredKind) {
+					const lease = await this.verifyRuntimeCandidate(normalizedConfiguredPath, detectedKind, privileged);
+					try { return { runtimePath: lease.runtimePath, runtimeKind: detectedKind }; } finally { lease.release(); }
+				}
 			} else logger.warn(`[runtime] Ignoring custom runtime path with unknown binary name: ${normalizedConfiguredPath}`);
 		} catch {}
 		const exeDir = path.dirname(process.execPath);
@@ -1460,14 +1537,15 @@ var VpnRuntimeManager = class extends EventEmitter {
 				];
 				for (const resolved of resolvedCandidates) try {
 					await promises.access(resolved);
-					return {
-						runtimePath: resolved,
-						runtimeKind: kind
-					};
+					const lease = await this.verifyRuntimeCandidate(resolved, kind, privileged);
+					try { return { runtimePath: lease.runtimePath, runtimeKind: kind }; } finally { lease.release(); }
 				} catch {}
 			}
 		}
 		return null;
+	}
+	verifyRuntimeCandidate(runtimePath, runtimeKind, privileged) {
+		return verifyNativeRuntimeForExecution({ runtimePath, runtimeKind, privileged, resourcesPath: process.resourcesPath ?? this.appRoot, appRoot: this.appRoot, userDataDir: this.userDataDir });
 	}
 	normalizeBinaryPath(p) {
 		const value = p.trim();

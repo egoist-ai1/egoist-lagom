@@ -1,0 +1,17 @@
+✔ history shows actual early-exit winner, retaining normalized catalogue status and aggregate probe counts (3.2576ms)
+✔ explicit failed result cannot become successful from an all-good target preview; startup failures stay visible (1.6854ms)
+✔ completed history round-trips localStorage and survives cancelled/empty attempts and stale refreshes (1.7466ms)
+✔ actual renderer action preserves previous history while pending, cancelled, or throwing (2.9438ms)
+✔ direct IPC selection persists on disk with renderer destroyed and is restored after handler reload (5.5548ms)
+✔ widget saves failed selection evidence and successful probes before later connection failure (7.6239ms)
+✔ bounded history retains all 64 result aggregates, omits previews honestly, caches reads and ignores malformed files (72.605ms)
+✔ cancel keeps last completed run; first partial cancellation retains completed error rows (3.3138ms)
+✔ history disk failure logs a warning without failing widget connection or changing prior durable file (6.1647ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 177.4317

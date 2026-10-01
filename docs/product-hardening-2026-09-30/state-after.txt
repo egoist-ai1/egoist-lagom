@@ -1,0 +1,33 @@
+✔ R09: secret DNS path is hidden in diagnostic text and nested objects; operational data stays unchanged (1.3339ms)
+✔ R09: URL path, query, hash, percent-encoded and non-HTTP DNS credentials are concealed (0.2199ms)
+✔ R09: quoted assignments, nested secret objects and incomplete or long PEM blocks do not reveal material (0.1709ms)
+✔ R09: actual electron-log hook sanitizes object keys, errors, deep and circular input without changing it (1.0726ms)
+✔ R09: every entry of the actual locally exported ZIP omits the synthetic corpus (716.6178ms)
+✔ R09: archive failure and unavailable-log catch messages redact URL credentials and paths (12.305ms)
+✔ R02: stale complete snapshot is rejected and the acknowledged node stays on disk (18.1903ms)
+✔ R02: complete replacement without a revision is refused (4.6099ms)
+✔ R02: disk revision survives reopen and stale IPC settings conflict explicitly (17.2037ms)
+✔ R02: atomic settings, node and subscription operations preserve independent queued writes (22.5696ms)
+✔ R02: node select, favorite, rename and deletion use fresh state while unrelated writes queue (49.2539ms)
+✔ R02: failed disk write rolls back login item inside the serialized mutation (9.7553ms)
+✔ R02: login item failure cannot publish settings or advance the disk revision (6.6728ms)
+✔ R02: IPC rejects missing revisions, foreign setting fields and stale full state before login writes (8.7567ms)
+✔ R06: confirmed second subscription ID deletes only that subscription and its nodes (25.5775ms)
+✔ R06: pending refresh cannot redirect or resurrect a confirmed deletion, including a same-URL replacement (28.0882ms)
+✔ R02/R06: actual preload forwards only narrow payloads and captured subscription ID (1.2726ms)
+✔ R20: shield connection persists only its profile and respects the explicit GUI startup preferences (18.5802ms)
+✔ R02: 120 interleaved acknowledged commands preserve every independent node and subscription (901.2471ms)
+✔ fresh state has no automatic connection or DNS override (8.1427ms)
+✔ a new installation disables old automatic connections in each user profile only once (23.5898ms)
+✔ two concurrent settings changes with one revision cannot both commit (7.276ms)
+✔ valid backup survives recovery from a truncated primary (9.0771ms)
+✔ syntactically valid but malformed state recovers from backup (9.2604ms)
+✔ failed disk write leaves settings and revision unchanged (4.903ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1187.1783

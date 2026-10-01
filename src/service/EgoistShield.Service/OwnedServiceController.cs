@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Xml;
+using System.Xml.Linq;
 using System.ServiceProcess;
 using System.Text.RegularExpressions;
 using System.Text.RegularExpressions.Generated;
@@ -41,7 +45,8 @@ internal sealed class OwnedServiceController
 			"install"
 		}, new string[2] { "-service", "uninstall" }, "Локальный Gravityless DNS resolver Egoist Lagom"),
 		["EgoistShieldZapret"] = new OwnedServiceDefinition(new string[1] { "egoistshield-zapret-service.exe" }, Path.Combine("Runtime", "Zapret", "service-wrapper", "egoistshield-zapret-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Профильная служба Discord и YouTube, управляемая Egoist Lagom"),
-		["EgoistShieldTelegramProxy"] = new OwnedServiceDefinition(new string[1] { "egoistshield-telegram-proxy-service.exe" }, Path.Combine("Runtime", "TelegramProxy", "service-wrapper", "egoistshield-telegram-proxy-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Локальный Telegram Proxy, управляемый Egoist Lagom")
+		["EgoistShieldTelegramProxy"] = new OwnedServiceDefinition(new string[1] { "egoistshield-telegram-proxy-service.exe" }, Path.Combine("Runtime", "TelegramProxy", "service-wrapper", "egoistshield-telegram-proxy-service.exe"), new string[1] { "install" }, new string[1] { "uninstall" }, "Локальный Telegram Proxy, управляемый Egoist Lagom"),
+		[ServiceContract.VpnServiceName] = new OwnedServiceDefinition(new string[] { "egoistshield-vpn-service.exe" }, Path.Combine("Runtime", "Vpn", "service-wrapper", "egoistshield-vpn-service.exe"), new string[] { "install" }, new string[] { "uninstall" }, "Фоновое TUN-подключение Egoist Lagom")
 	};
 
 	private readonly string _installRoot;
@@ -100,6 +105,7 @@ internal sealed class OwnedServiceController
 			throw new ArgumentException("Service " + serviceName + " cannot be installed under this name; it is kept for status and removal only.");
 		}
 		string executablePath = ResolveCanonicalExecutable(definition);
+		if (serviceName == ServiceContract.VpnServiceName) VerifyVpnWrapper(executablePath);
 		if (!File.Exists(executablePath))
 		{
 			throw new FileNotFoundException("Owned service executable is missing for " + serviceName + ".", executablePath);
@@ -291,11 +297,46 @@ internal sealed class OwnedServiceController
 			throw new InvalidOperationException("Cannot read ImagePath for owned service " + serviceName + ".");
 		}
 		string text = ExtractExecutablePath(Environment.ExpandEnvironmentVariables(obj.Trim()));
+		if (serviceName == ServiceContract.VpnServiceName)
+		{
+			string expected = Path.Combine(_productDataRoot, "Runtime", "Vpn", "service-wrapper", "egoistshield-vpn-service.exe");
+			if (!Path.GetFullPath(text).Equals(Path.GetFullPath(expected), StringComparison.OrdinalIgnoreCase)) throw new UnauthorizedAccessException("VPN service ImagePath is not its fixed owned wrapper.");
+			string image = Environment.ExpandEnvironmentVariables(obj.Trim());
+			if (!image.Equals(expected, StringComparison.OrdinalIgnoreCase) && !image.Equals("\"" + expected + "\"", StringComparison.OrdinalIgnoreCase)) throw new UnauthorizedAccessException("VPN service ImagePath includes unexpected arguments.");
+			VerifyVpnWrapper(expected);
+		}
 		if (!MemoryExtensions.Contains<string>(value: Path.GetFileName(text), span: OwnedServices[serviceName].ExecutableNames, comparer: StringComparer.OrdinalIgnoreCase))
 		{
 			throw new UnauthorizedAccessException("ImagePath executable is not allowlisted for " + serviceName + ".");
 		}
 		return TrustedPath.AssertExistingFileUnderRoots(text, _installRoot, _productDataRoot);
+	}
+
+	private void VerifyVpnWrapper(string executable)
+	{
+		VpnServiceConfiguration.AssertPrivatePath(executable, _productDataRoot);
+		using var installation = ProtectedExecutable.OpenHost(_installRoot, "cli");
+		using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(_installRoot, "resources", "runtime", "manifest.json")));
+		var pins = manifest.RootElement.GetProperty("components").EnumerateArray().Where(value => value.GetProperty("name").GetString() == "zapret")
+			.SelectMany(value => value.GetProperty("files").EnumerateArray()).Where(value => value.GetProperty("path").GetString() == "zapret/service-wrapper/egoistshield-zapret-service.exe").ToArray();
+		if (pins.Length != 1) throw new InvalidDataException("VPN wrapper source pin is ambiguous.");
+		using var file = new FileStream(executable, FileMode.Open, FileAccess.Read, FileShare.Read);
+		if (file.Length != pins[0].GetProperty("size").GetInt64() || !Convert.ToHexString(SHA256.HashData(file)).Equals(pins[0].GetProperty("sha256").GetString(), StringComparison.OrdinalIgnoreCase)) throw new UnauthorizedAccessException("VPN wrapper does not match its installation pin.");
+		string xml = Path.ChangeExtension(executable, ".xml");
+		VpnServiceConfiguration.AssertPrivatePath(xml, _productDataRoot);
+		if (new FileInfo(xml).Length > 16384) throw new InvalidDataException("VPN wrapper config exceeds its bound.");
+		using var reader = XmlReader.Create(xml, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null });
+		var document = XDocument.Load(reader);
+		var service = document.Root;
+		string[] allowed = { "id", "name", "description", "startmode", "delayedAutoStart", "hidewindow", "executable", "arguments", "workingdirectory", "stoptimeout", "stopparentprocessfirst", "logpath", "log", "onfailure", "resetfailure" };
+		if (service?.Name != "service" || service.HasAttributes || service.Elements().Any(value => !allowed.Contains(value.Name.LocalName, StringComparer.Ordinal) || value.Name.NamespaceName.Length != 0) ||
+			service.Elements().Where(value => value.Name != "onfailure").GroupBy(value => value.Name).Any(group => group.Count() != 1)) throw new InvalidDataException("VPN wrapper includes an unsupported extension.");
+		string helper = Path.Combine(_installRoot, "resources", "core-service", "win-x64", "EgoistShield.Service.exe");
+		if (service.Element("id")?.Value != ServiceContract.VpnServiceName || service.Element("arguments")?.Value != "--run-vpn-runtime" ||
+			!string.Equals(service.Element("executable")?.Value, helper, StringComparison.OrdinalIgnoreCase) ||
+			!string.Equals(service.Element("workingdirectory")?.Value, Path.GetDirectoryName(helper), StringComparison.OrdinalIgnoreCase) ||
+			service.Element("startmode")?.Value != "Automatic" || service.Element("hidewindow")?.Value != "true" || service.Element("stopparentprocessfirst")?.Value != "false")
+			throw new InvalidDataException("VPN wrapper host contract is invalid.");
 	}
 
 	private async Task<OwnedServiceStatus> WaitForStateAsync(string serviceName, string expectedState, CancellationToken cancellationToken)

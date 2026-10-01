@@ -172,7 +172,8 @@ $ownedServices = @(
   "EgoistShieldTelegramProxy",
   "EgoistShieldZapret",
   "EgoistShieldGravitylessDNS",
-  "EgoistShieldSystemDoH"
+  "EgoistShieldSystemDoH",
+  "EgoistShieldVpn"
 )
 
 $legacyOwnedServices = @(
@@ -769,6 +770,7 @@ function Remove-IncompatibleOwnedServices {
     "EgoistShieldTelegramProxy" = Join-Path $programDataRoot "EgoistShield\Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe"
     "EgoistShieldZapret" = Join-Path $programDataRoot "EgoistShield\Runtime\Zapret\service-wrapper\egoistshield-zapret-service.exe"
     "EgoistShieldSystemDoH" = Join-Path $programDataRoot "EgoistShield\Runtime\SystemDoH\service-wrapper\egoistshield-system-doh-service.exe"
+    "EgoistShieldVpn" = Join-Path $programDataRoot "EgoistShield\Runtime\Vpn\service-wrapper\egoistshield-vpn-service.exe"
     "EgoistShieldGravitylessDNS" = Join-Path $programDataRoot "EgoistShield\GravitylessDNS\dnscrypt-proxy.exe"
     "dnscrypt-proxy" = Join-Path $programDataRoot "EgoistShield\GravitylessDNS\dnscrypt-proxy.exe"
   }
@@ -1210,6 +1212,40 @@ function Restore-PersistedTelegramProxyService {
     service = $telegramProxyServiceName
     startMode = "Automatic"
     wasRunning = [bool]$intent.wasRunning
+  }
+}
+
+function Remove-GuiElevationLayerToken {
+  param([string]$Layer)
+  if ($Layer -notmatch '(?i)(?:^|\s)RUNASADMIN(?=\s|$)') { return $Layer }
+  $remaining = (($Layer -split '\s+' | Where-Object { $_ -and $_ -ine 'RUNASADMIN' }) -join ' ').Trim()
+  if ($remaining -eq '~' -or $remaining -eq '') { return $null }
+  return $remaining
+}
+
+function Remove-OwnedGuiElevationCompatibility {
+  $executable = Join-Path $installRoot 'EgoistShield.exe'
+  if (-not (Test-VerifiedCanonicalInstalledApplication $installRoot)) { throw 'GUI privilege migration requires the verified canonical application.' }
+  foreach ($view in @([Microsoft.Win32.RegistryView]::Registry64, [Microsoft.Win32.RegistryView]::Registry32)) {
+    foreach ($hive in @([Microsoft.Win32.RegistryHive]::LocalMachine, [Microsoft.Win32.RegistryHive]::CurrentUser)) {
+      $base = [Microsoft.Win32.RegistryKey]::OpenBaseKey($hive, $view)
+      $key = $null
+      try {
+        $key = $base.OpenSubKey('Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers', $true)
+        if (-not $key) { continue }
+        $value = $key.GetValue($executable, $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+        if ($null -eq $value -or $value -isnot [string] -or $key.GetValueKind($executable) -ne [Microsoft.Win32.RegistryValueKind]::String) { continue }
+        $updated = Remove-GuiElevationLayerToken ([string]$value)
+        if ($updated -ceq $value) { continue }
+        if ($null -eq $updated) { $key.DeleteValue($executable, $false) }
+        else { $key.SetValue($executable, $updated, [Microsoft.Win32.RegistryValueKind]::String) }
+        $actual = $key.GetValue($executable, $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+        if ($actual -cne $updated) { throw 'GUI compatibility privilege migration failed its readback.' }
+      } finally {
+        if ($key) { $key.Dispose() }
+        $base.Dispose()
+      }
+    }
   }
 }
 
@@ -2073,6 +2109,9 @@ function Get-OwnedRuntimeDirectories {
     (Join-IfSet $roamingAppDataRoot "EgoistShield\telegram-proxy"),
     (Join-IfSet $roamingAppDataRoot "EgoistShield\zapret")
   ) | Where-Object { $_ } | Select-Object -Unique
+  if ($Phase -eq 'Uninstall') {
+    $directories += @(Join-IfSet $programDataRoot 'EgoistShield\Service\Vpn') | Where-Object { $_ }
+  }
   return @($directories | Where-Object { $_ } | Select-Object -Unique)
 }
 
@@ -2391,6 +2430,10 @@ function Remove-OwnedRuntimeDirectories {
   foreach ($directory in @(Get-OwnedRuntimeDirectories)) {
     if (-not (Test-Path -LiteralPath $directory)) { continue }
     $ownedDirectory = Assert-OwnedPath $directory "owned runtime removal"
+    if ($Phase -eq 'Uninstall' -and [string]::Equals($ownedDirectory, (Join-Path $programDataRoot 'EgoistShield\Service\Vpn'), [StringComparison]::OrdinalIgnoreCase)) {
+      if (Get-InstallerServiceState 'EgoistShieldVpn') { throw 'VPN service registration remains; private connection state was preserved.' }
+      Assert-PlainOwnedDirectoryTree $ownedDirectory 'Private VPN state removal'
+    }
     Remove-Item -LiteralPath $ownedDirectory -Recurse -Force -ErrorAction Stop
   }
 }
@@ -3751,6 +3794,7 @@ switch ($Phase) {
         Write-ValidatedInstallationIdentity -Root $installRoot
         Write-Journal "optional-components-left-off" @{}
         Assert-InstalledCandidateRuntime -BeforeCommit
+        Remove-OwnedGuiElevationCompatibility
         Discard-OwnedNetworkArtifacts
       } catch {
         Write-Warning "The new payload is healthy, but the clean network baseline could not be finalized; rolling back: $_"

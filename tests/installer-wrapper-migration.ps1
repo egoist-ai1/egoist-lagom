@@ -13,9 +13,10 @@ $null = New-Item -ItemType Directory -Path $script:RuntimeRoot,$script:OwnedInst
 $tokens = $null; $errors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile([IO.Path]::GetFullPath($SourceScript), [ref]$tokens, [ref]$errors)
 if ($errors.Count) { throw ($errors | Out-String) }
-foreach ($name in @('Get-FileSha256','Write-JsonAtomic','Get-PreservedWrapperDefinitions','Assert-PlainWrapperMigrationPath','Get-VerifiedPackagedServiceWrapper','Assert-PreservedWrapperStopped','Update-PreservedServiceWrappers','Stop-PreservedWrappersForRecovery','Assert-SupportedServiceFramework','Invoke-WorkerMode','Assert-InstallerNotCancelled')) {
+$fixtureLease='Local\LagomWrapperMigration-'+[Guid]::NewGuid().ToString('N')
+foreach ($name in @('Get-FileSha256','Write-JsonAtomic','Get-PreservedWrapperDefinitions','Assert-PlainWrapperMigrationPath','Get-VerifiedPackagedServiceWrapper','Assert-PreservedWrapperStopped','Update-PreservedServiceWrappers','Stop-PreservedWrappersForRecovery','Assert-SupportedServiceFramework','Invoke-WorkerMode','Assert-InstallerNotCancelled','Enter-InstallerWorkerLease')) {
   $fn = $ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name}, $true)
-  if ($fn) { . ([scriptblock]::Create($fn.Extent.Text)) }
+  if ($fn) { . ([scriptblock]::Create($fn.Extent.Text.Replace('Global\EgoistShield.DeferredReinstall',$fixtureLease))) }
 }
 function New-InstallerProtectedFileSecurity {
   $security=New-Object Security.AccessControl.FileSecurity

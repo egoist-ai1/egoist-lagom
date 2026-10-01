@@ -1,8 +1,8 @@
 //#region src/electron/app-paths.ts
 function detectRuntimeEnvironment({ isPackaged, nodeEnv }) {
+	if (isPackaged) return "production";
 	if (nodeEnv === "test") return "test";
-	if (!isPackaged) return "development";
-	return "production";
+	return "development";
 }
 function buildAppPathConfig({ defaultUserDataDir, environment, pid, testUserDataDir }) {
 	if (environment === "test" && testUserDataDir && !path.isAbsolute(testUserDataDir)) throw new Error("Test user data path must be absolute.");

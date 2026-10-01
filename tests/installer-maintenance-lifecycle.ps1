@@ -15,7 +15,7 @@ function Load-Functions([string]$File,[string[]]$Names) {
     . ([scriptblock]::Create(($fn.Extent.Text -replace '^function ', 'function script:')))
   }
 }
-Load-Functions 'scripts\invoke-final-silent-reinstall.ps1' @('Restore-PreservedServiceStartModes','Start-PreservedServices','Assert-CurrentPreservedServiceOwnership','Enter-InstallerServiceMaintenance','Complete-InstallerServiceMaintenance','Get-InstallerServiceMaintenanceStatus','Test-InstallerServiceMaintenanceOwner','Test-InstallerTransactionComplete','Get-ValidatedMaintenanceRecoveryState','Resume-InterruptedServiceMaintenance','Write-JsonAtomic','Assert-InstallerNotCancelled','Invoke-InstallerRecoveryAttempts','Write-PendingInstallerRecovery','ConvertTo-InstallerWindowsArgument')
+Load-Functions 'scripts\invoke-final-silent-reinstall.ps1' @('Restore-PreservedServiceStartModes','Start-PreservedServices','Assert-CurrentPreservedServiceOwnership','Enter-InstallerServiceMaintenance','Complete-InstallerServiceMaintenance','Get-InstallerServiceMaintenanceStatus','Test-InstallerServiceMaintenanceOwner','Test-InstallerTransactionComplete','Get-ValidatedMaintenanceRecoveryState','Resume-InterruptedServiceMaintenance','Write-JsonAtomic','Assert-InstallerNotCancelled','Enter-InstallerWorkerLease','Invoke-InstallerRecoveryAttempts','Write-PendingInstallerRecovery','ConvertTo-InstallerWindowsArgument')
 Load-Functions 'src\installer\owned-cleanup.ps1' @('Get-VerifiedOwnedServiceRecords')
 Load-Functions 'src\installer\service-maintenance.ps1' @('Get-InstallerServiceState')
 $script:OwnedDataRoot=Join-Path $root 'Product'

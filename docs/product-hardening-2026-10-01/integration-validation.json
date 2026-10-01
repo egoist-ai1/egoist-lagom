@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "clientDate": "2026-10-01",
+  "baseCommit": "5d0d58b44076843e639723ef267e7b8d2605e481",
+  "sourceUncommitted": true,
+  "sourceReadyForCandidate": true,
+  "releaseReady": false,
+  "node": {
+    "tests": 797,
+    "pass": 797,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 24010.9643,
+    "loopbackAndExplicitFixtures": true,
+    "installedServiceTests": 0
+  },
+  "build": {
+    "main": true,
+    "preload": true,
+    "renderer": true,
+    "worker": true,
+    "exitCode": 0
+  },
+  "workflowLint": {
+    "version": "1.7.12",
+    "exitCode": 0,
+    "shellcheck": false,
+    "pyflakes": false
+  },
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 553,
+      "sha256": "bcf7329936125b76fa10a826931ddfb4a89153f0b69654472d6cff8eee563565",
+      "lfSha256": "bcf7329936125b76fa10a826931ddfb4a89153f0b69654472d6cff8eee563565"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "bytes": 22042,
+      "sha256": "2908cc4b9beccf150d9a261f52bafa4bf710d4d505a928aacbdd5a8b3a0a61f3",
+      "lfSha256": "2908cc4b9beccf150d9a261f52bafa4bf710d4d505a928aacbdd5a8b3a0a61f3"
+    },
+    {
+      "path": "scripts/build.mjs",
+      "bytes": 12427,
+      "sha256": "c1a77e5e501be3fd0e890e50e820f9da2991202a1435ce5ec4f5b843062c5024",
+      "lfSha256": "9f03e85c88e82be2c9cce4d0f633d6b52168f67bf221d2feb9cb13ce878028b5"
+    },
+    {
+      "path": "scripts/package-windows.mjs",
+      "bytes": 20913,
+      "sha256": "ca8fa0351837e1d48c8eb7ca757c1841fe9c168b22c1724c4175f86c5fb21030",
+      "lfSha256": "633153882a6a347be3fa9a75471aec81b66729a00a00384f5b80f111a4abb64c"
+    },
+    {
+      "path": "scripts/prepare-release-assets.mjs",
+      "bytes": 11829,
+      "sha256": "34f2c156e3cba6a975257b1aae6760fad926ca0bfc648d9ad27befcf5b70b174",
+      "lfSha256": "f481014f0bfbef02c1ee31da67e9b230bc97f3c082946f564a025de91999fce5"
+    },
+    {
+      "path": "tests/release-channel-assets.test.mjs",
+      "bytes": 11866,
+      "sha256": "ab4753bd544e24b54b2b9d5a882bf1ec147ce721c66d2fcd99a6ca0bc33a0b23",
+      "lfSha256": "ab4753bd544e24b54b2b9d5a882bf1ec147ce721c66d2fcd99a6ca0bc33a0b23"
+    },
+    {
+      "path": "scripts/invoke-final-silent-reinstall.ps1",
+      "bytes": 123039,
+      "sha256": "a552d42f5ab52b26dd209173b3c3c7458004ccaa1840df20f3145dec6a5653b3",
+      "lfSha256": "4f7e182f063445164dc4f8d22271424341cee7867d592be6e9fd18d132a17a69"
+    },
+    {
+      "path": "src/installer/owned-cleanup.ps1",
+      "bytes": 201892,
+      "sha256": "ef7c559a2b7163d599285f20cc53782779ba4677a5a977cb403ef89e0eed450e",
+      "lfSha256": "7f0d88fbaa7119184e5cf97033bb31cad8022f4797e531a5c825ea218c9f1e0c"
+    },
+    {
+      "path": "src/installer/setup.nsi",
+      "bytes": 16786,
+      "sha256": "c92a47b0c863c4fb3c0ed2ec98306ba451918dee0f3e97842e8f1e2e67554c86",
+      "lfSha256": "8600c64361292e25b8dde489d64570a8e6ddfabb538b0986eab6585ec0896780"
+    },
+    {
+      "path": "src/recovered/electron/main.js",
+      "bytes": 55300,
+      "sha256": "ab540a132a2603896106681813c60c3c0cbd303310612b6fef4eb3052e758ed1",
+      "lfSha256": "d3d539be3298f104b77377510e0751a4a709ba887248362cfeaeb9edaacc51d6"
+    },
+    {
+      "path": "src/recovered/preload.cjs",
+      "bytes": 13182,
+      "sha256": "9fc49fa9db93c3b91af1089534bae75ab88cbcd0611517163a4b6bc1c241a2bd",
+      "lfSha256": "5aa257aa9b2c8fe139446f594091e153005acfa62306a1c07c52f20ffdebd0da"
+    },
+    {
+      "path": "src/recovered/electron/app-paths.js",
+      "bytes": 809,
+      "sha256": "de4906c7979a21c28ebff1f7d69e23707d6c899217771356ceb2076d8af7868c",
+      "lfSha256": "de4906c7979a21c28ebff1f7d69e23707d6c899217771356ceb2076d8af7868c"
+    },
+    {
+      "path": "src/gui-launch-policy.js",
+      "bytes": 302,
+      "sha256": "d003222dd0871d9d1b26f35690be5aac50ef07e14975b7f6f926db7cd8d1d213",
+      "lfSha256": "d003222dd0871d9d1b26f35690be5aac50ef07e14975b7f6f926db7cd8d1d213"
+    },
+    {
+      "path": "src/recovered/electron/ipc/desktop-updater.js",
+      "bytes": 26978,
+      "sha256": "7adf510cf7f0da0c74e1e563810817651f6861fdcffa6fc315bb6dbdfb53eb06",
+      "lfSha256": "0953a27f0f3ea57471c27ccf2a134c4c52c1e98a6ed013f56841188141e018bb"
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers.js",
+      "bytes": 9630,
+      "sha256": "e089926a2c1ff7dec2691ce0f7f2a54b21e89ed55937756e49e1251882516d21",
+      "lfSha256": "e089926a2c1ff7dec2691ce0f7f2a54b21e89ed55937756e49e1251882516d21"
+    },
+    {
+      "path": "src/recovered/electron/ipc/network-combinator-manager.js",
+      "bytes": 11887,
+      "sha256": "35fe0ba9d2bb7ab3f0baf64af205e5da292ad1282a2f308d442443ad5a89ff3a",
+      "lfSha256": "816d48d6fa2a1b378943c0436b84d9e19c67f1d81b922b03cb5fe17b02fb96d0"
+    },
+    {
+      "path": "src/recovered/electron/ipc/handlers-network-combinator.js",
+      "bytes": 3209,
+      "sha256": "02bec6c427da46c671d27ba40a5760200948c65a3a0dbee024c792f7c77b3955",
+      "lfSha256": "02bec6c427da46c671d27ba40a5760200948c65a3a0dbee024c792f7c77b3955"
+    },
+    {
+      "path": "tests/module-readiness-reliability.test.mjs",
+      "bytes": 5596,
+      "sha256": "bf3f72f0d409836da494eca373ab7083bfda3e3ddc0ef4c9af68e669329322d3",
+      "lfSha256": "bf3f72f0d409836da494eca373ab7083bfda3e3ddc0ef4c9af68e669329322d3"
+    },
+    {
+      "path": "tests/production-coordinator-hardening.test.mjs",
+      "bytes": 7398,
+      "sha256": "fef33f77c5dacfdb9cd2fecdc687d38e7194021c6b6a86223d4887390fdb7e0d",
+      "lfSha256": "fef33f77c5dacfdb9cd2fecdc687d38e7194021c6b6a86223d4887390fdb7e0d"
+    },
+    {
+      "path": "tests/production-gui-launch-policy.test.mjs",
+      "bytes": 2303,
+      "sha256": "63854797e09c09b1fbce40cfd2773fc8cfd32afdbdd3825f0821d90f6c429cf8",
+      "lfSha256": "63854797e09c09b1fbce40cfd2773fc8cfd32afdbdd3825f0821d90f6c429cf8"
+    },
+    {
+      "path": "tests/installer-legacy-bootstrap.ps1",
+      "bytes": 9600,
+      "sha256": "a01bfb11a757462e494fc7ef0aa08361330246582a08c93683875dd3e0855bf6",
+      "lfSha256": "a01bfb11a757462e494fc7ef0aa08361330246582a08c93683875dd3e0855bf6"
+    },
+    {
+      "path": "tests/installer-legacy-bootstrap.test.mjs",
+      "bytes": 1216,
+      "sha256": "358a959dabad092d66a0d943e0b906a9158e721a622900e8b8596dd913663695",
+      "lfSha256": "358a959dabad092d66a0d943e0b906a9158e721a622900e8b8596dd913663695"
+    },
+    {
+      "path": "tests/production-installer-layout.ps1",
+      "bytes": 5322,
+      "sha256": "da5ae41d906881a17896a81f8a3393cb972583c0d1ae9a08897cc9224f44913d",
+      "lfSha256": "da5ae41d906881a17896a81f8a3393cb972583c0d1ae9a08897cc9224f44913d"
+    },
+    {
+      "path": "tests/production-installer-layout.test.mjs",
+      "bytes": 1326,
+      "sha256": "05d106015c2a9d76f29eada4e26b1634c413b1975d58398e76b724813570a36b",
+      "lfSha256": "05d106015c2a9d76f29eada4e26b1634c413b1975d58398e76b724813570a36b"
+    },
+    {
+      "path": "tests/installer-vpn-preservation.ps1",
+      "bytes": 7652,
+      "sha256": "8b57d5a7e0954c59caeee86741ba12c94320a116b92e4f0c5388ac4f5a95c3e0",
+      "lfSha256": "8b57d5a7e0954c59caeee86741ba12c94320a116b92e4f0c5388ac4f5a95c3e0"
+    },
+    {
+      "path": "tests/installer-vpn-preservation.test.mjs",
+      "bytes": 1239,
+      "sha256": "fab9a1f68d18a7f8c5549d27f7d1ceb7b80b2ad556b3c4a517714e498c2633f7",
+      "lfSha256": "fab9a1f68d18a7f8c5549d27f7d1ceb7b80b2ad556b3c4a517714e498c2633f7"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "docs/product-hardening-2026-10-01/full-node-before-fixture.txt",
+      "bytes": 76817,
+      "sha256": "57ae9dd352129775731d7b94b7690c386737f4b3fd923aeccf6c7bb04b889f7b",
+      "lfSha256": "99e90d2c36af613f8f7b07eeb806ea0d296a2c0b280b3c9e01ff630f50d68fc4"
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/full-node-frozen.txt",
+      "bytes": 76385,
+      "sha256": "0ea516d3745ad3bf707c152db9525bfff25e2a6758085d572f8b410f00503ffa",
+      "lfSha256": "0ae4b7d8d32aeb81c08ec8c0c80cf413c4a60692f66360b6d0c97a9565ef2914"
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/integration-build.txt",
+      "bytes": 71,
+      "sha256": "630234adccb98f1c42c50639075abb7b121abb266986f10d41d9b75b57cc2f25",
+      "lfSha256": "4212dfbfdc6030bd947e35e38d2ce621cbffb9dbb38f198cf921c6a8d8bbfc04"
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/coordinator-module-lifecycle.txt",
+      "bytes": 4696,
+      "sha256": "0e450d500ac2be3cf8ccb95170792e37273161d90bbc8ec543cad231fbe8ece3",
+      "lfSha256": "3623591d3f95d547d0a898055b1cb974334976a1c2d90f1c5d9e04d76d4c9b2b"
+    },
+    {
+      "path": "docs/product-hardening-2026-10-01/installer-vpn-private-uninstall.txt",
+      "bytes": 245,
+      "sha256": "ebea94d385b509962aea07094129c521938d3ce90428bdca1cf77e46e576637d",
+      "lfSha256": "93fb8a56bdc1b79f533c1a020d798d0e558a138b756b7bac7d038b4a5463582c"
+    }
+  ],
+  "physicalHostMutations": {
+    "scm": 0,
+    "dns": 0,
+    "scheduledTasks": 0,
+    "registry": 0
+  },
+  "pendingNativeGates": [
+    "fresh installed GUI/Core/Telegram",
+    "ordinary-token GUI",
+    "3.7.9 signed updater handoff",
+    "native DNS/TUN",
+    "reboot",
+    "prolonged pilot"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "physicalHostDnsMutations": 0,
+  "physicalHostScmMutations": 0,
+  "physicalHostTaskMutations": 0,
+  "parserErrors": 0,
+  "encoding": "UTF-8 with BOM; semantic source unchanged after guard run",
+  "guardTestsPassed": 4,
+  "analyzerErrors": 0,
+  "actualNativeRuns": 0,
+  "physicalHostRegistryMutations": 0,
+  "nodeSyntaxExit": 0,
+  "uiAutomationAssemblyLoad": "passed; no automation invoked",
+  "guardTestsSkipped": 0,
+  "analyzerWarnings": 10
+}
