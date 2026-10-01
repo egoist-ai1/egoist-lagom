@@ -94,3 +94,33 @@ test('signed installer diagnostic refuses a physical host before reading candida
   assert.match(result.stderr, /Native acceptance host guard refused before mutation/);
   assert.doesNotMatch(result.stderr, /nonexistent-diagnostic-fixture/);
 });
+
+test('native runtime resolution selects the first real PATH result when two applications share a name', {
+  skip: process.platform !== 'win32' || !process.env.LAGOM_TEST_TEMP,
+}, async () => {
+  assert.ok(path.isAbsolute(process.env.LAGOM_TEST_TEMP));
+  const directory = await fs.mkdtemp(path.join(process.env.LAGOM_TEST_TEMP, 'native-resolver-'));
+  const candidates = [path.join(directory, 'first'), path.join(directory, 'second')];
+  const name = 'lagom-native-resolution-fixture.exe';
+  for (const candidate of candidates) {
+    await fs.mkdir(candidate);
+    await fs.writeFile(path.join(candidate, name), 'inert file; never launched');
+  }
+  try {
+    const result = run(`
+      $ErrorActionPreference='Stop';
+      . '${library}' -LibraryOnly;
+      $env:PATH='${quote(candidates.join(';'))};'+$env:PATH;
+      $all=@(Get-Command -Name '${name}' -CommandType Application -ErrorAction Stop);
+      if($all.Count -ne 2){throw 'Actual duplicate PATH results were not reproduced'};
+      $resolved=Resolve-NativeApplication '${name}';
+      if($resolved -cne $all[0].Source){throw 'Preferred native executable changed'};
+      @{candidates=$all.Count;resolved=$resolved}|ConvertTo-Json -Compress;
+    `);
+    assert.equal(result.candidates, 2);
+    assert.equal(result.resolved, path.join(candidates[0], name));
+  } finally {
+    assert.equal(path.dirname(directory), path.resolve(process.env.LAGOM_TEST_TEMP));
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});

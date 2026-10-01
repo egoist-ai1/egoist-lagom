@@ -33,7 +33,7 @@ try{
     if($manifest.source.commit -cnotmatch '^[a-f0-9]{40}$'){throw 'Signed diagnostic candidate requires an exact separate artifact source commit.'}
     $version=(Get-Content -LiteralPath (Join-Path $project 'package.json') -Raw | ConvertFrom-Json).version
     if($manifest.version -cne $version){throw 'Signed diagnostic candidate version differs from the source verifier contract.'}
-    $node=(Get-Command node -CommandType Application -ErrorAction Stop).Source
+    $node=Resolve-NativeApplication 'node'
     [void](Invoke-NativeBounded -Executable $node -Arguments @((Join-Path $project 'scripts\prepare-release-assets.mjs'),'--dist',$assets,'--verify-only','true') -Label 'signed-diagnostic-authentication' -TimeoutSeconds 120)
     $receipt.kind='real-signed-setup-failure-diagnostic';$receipt.artifactSourceCommit=$manifest.source.commit
     $installer=Join-Path $assets ('EgoistShield-Setup-'+$version+'.exe')

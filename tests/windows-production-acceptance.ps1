@@ -37,6 +37,14 @@ function Assert-NativePathWithin {
   if(-not $full.StartsWith($container+'\',[StringComparison]::OrdinalIgnoreCase)){throw "Native acceptance path escaped its scope: $full"}
   return $full
 }
+function Resolve-NativeApplication {
+  param([string]$Name)
+  $command=Get-Command -Name $Name -CommandType Application -ErrorAction Stop | Select-Object -First 1
+  $executable=[string]$command.Source
+  if(-not [IO.Path]::IsPathRooted($executable)){throw "Native application did not resolve to one absolute path: $Name"}
+  Assert-NativeOrdinaryPath -Path $executable -Leaf
+  return $executable
+}
 function Assert-NativeAdministratorOwned {
   param([string]$Path)
   Assert-NativeOrdinaryPath -Path $Path -Leaf:([IO.File]::Exists($Path))
@@ -587,7 +595,7 @@ function Invoke-NativeAcceptance {
   $entries=@($manifest.payload | Where-Object {$_.path -ceq 'resources/core-service/win-x64/EgoistShield.Service.exe'})
   if($entries.Count -ne 1){throw 'Source-bound payload does not identify the candidate Core.'};$script:CoreHash=[string]$entries[0].sha256
   $script:NativePowerShell=Join-Path ([Environment]::GetFolderPath('Windows')) 'System32\WindowsPowerShell\v1.0\powershell.exe'
-  $script:Node=(Get-Command node -CommandType Application -ErrorAction Stop).Source
+  $script:Node=Resolve-NativeApplication 'node'
   $script:NodeHelper=Join-Path $PSScriptRoot 'windows-production-acceptance.mjs'
   Assert-NativeCleanStart
   if(Test-Path -LiteralPath $script:Work){throw 'Acceptance work already exists; inspect the prior attempt.'}
