@@ -174,7 +174,7 @@ function New-GuiStartupTaskXml {
   $sid=[Security.SecurityElement]::Escape($Context.sid);$exe=[Security.SecurityElement]::Escape($Context.exe);$root=[Security.SecurityElement]::Escape($Context.root)
   $enabledText=if($TaskEnabled){'true'}else{'false'}
   return @"
-<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"><RegistrationInfo><Author>EgoistShield</Author><URI>egoistshield:gui-login-startup:v1:$sid`:$($Receipt.registrationId)</URI><Description>Verified per-user Egoist Lagom GUI startup</Description></RegistrationInfo><Triggers><LogonTrigger><Enabled>true</Enabled><UserId>$sid</UserId></LogonTrigger></Triggers><Principals><Principal id="Gui"><UserId>$sid</UserId><LogonType>InteractiveToken</LogonType><RunLevel>HighestAvailable</RunLevel></Principal></Principals><Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries><StopIfGoingOnBatteries>false</StopIfGoingOnBatteries><AllowHardTerminate>false</AllowHardTerminate><StartWhenAvailable>true</StartWhenAvailable><RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable><AllowStartOnDemand>false</AllowStartOnDemand><Enabled>$enabledText</Enabled><Hidden>false</Hidden><RunOnlyIfIdle>false</RunOnlyIfIdle><WakeToRun>false</WakeToRun><ExecutionTimeLimit>PT0S</ExecutionTimeLimit><Priority>7</Priority></Settings><Actions Context="Gui"><Exec><Command>$exe</Command><Arguments>--background --minimized</Arguments><WorkingDirectory>$root</WorkingDirectory></Exec></Actions></Task>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"><RegistrationInfo><Author>EgoistShield</Author><URI>egoistshield:gui-login-startup:v1:$sid`:$($Receipt.registrationId)</URI><Description>Verified per-user Egoist Lagom GUI startup; RegistrationId=$($Receipt.registrationId)</Description></RegistrationInfo><Triggers><LogonTrigger><Enabled>true</Enabled><UserId>$sid</UserId></LogonTrigger></Triggers><Principals><Principal id="Gui"><UserId>$sid</UserId><LogonType>InteractiveToken</LogonType><RunLevel>HighestAvailable</RunLevel></Principal></Principals><Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries><StopIfGoingOnBatteries>false</StopIfGoingOnBatteries><AllowHardTerminate>false</AllowHardTerminate><StartWhenAvailable>true</StartWhenAvailable><RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable><AllowStartOnDemand>false</AllowStartOnDemand><Enabled>$enabledText</Enabled><Hidden>false</Hidden><RunOnlyIfIdle>false</RunOnlyIfIdle><WakeToRun>false</WakeToRun><ExecutionTimeLimit>PT0S</ExecutionTimeLimit><Priority>7</Priority></Settings><Actions Context="Gui"><Exec><Command>$exe</Command><Arguments>--background --minimized</Arguments><WorkingDirectory>$root</WorkingDirectory></Exec></Actions></Task>
 "@
 }
 function ConvertFrom-GuiStartupXml {
@@ -195,9 +195,21 @@ function Assert-GuiStartupTaskProtection {
   }
   if (-not $full.ContainsKey('S-1-5-18') -or -not $full.ContainsKey('S-1-5-32-544')) {throw 'GUI startup task lacks administrator/SYSTEM control.'}
 }
+function Resolve-GuiStartupAccountSid {
+  param([string]$Account)
+  if([string]::IsNullOrWhiteSpace($Account) -or $Account.Length -gt 512){throw 'GUI startup account identity is missing or exceeds its limit.'}
+  try {
+    if($Account.StartsWith('S-',[StringComparison]::Ordinal)){
+      $sid=[Security.Principal.SecurityIdentifier]::new($Account)
+      if($sid.Value -cne $Account){throw 'Noncanonical SID.'}
+      return $sid.Value
+    }
+    return ([Security.Principal.NTAccount]::new($Account)).Translate([Security.Principal.SecurityIdentifier]).Value
+  }catch{throw 'GUI startup account cannot be resolved to an exact Windows SID.'}
+}
 function Assert-GuiStartupTaskOwned {
   param([object]$Context,[object]$Receipt,[object]$Task,[Nullable[bool]]$ExpectedEnabled)
-  if (-not $Receipt -or -not $Task -or $Task.Name -cne $Context.taskName -or $Task.Path -cne $Context.taskPath -or $Task.PrincipalUserId -cne $Context.sid -or $Task.PrincipalLogonType -ne 3) {throw 'GUI startup task ownership is unverified.'}
+  if (-not $Receipt -or -not $Task -or [string]$Receipt.registrationId -cnotmatch '^[a-f0-9]{32}$' -or $Task.Name -cne $Context.taskName -or $Task.Path -cne $Context.taskPath -or (Resolve-GuiStartupAccountSid ([string]$Task.PrincipalUserId)) -cne $Context.sid -or $Task.PrincipalLogonType -ne 3) {throw 'GUI startup task ownership is unverified.'}
   if ($null -ne $ExpectedEnabled -and $Task.Enabled -ne $ExpectedEnabled) {throw 'GUI startup enabled readback mismatch.'}
   Assert-GuiStartupTaskProtection ([string]$Task.SecurityDescriptor)
   $actual=ConvertFrom-GuiStartupXml $Task.Xml;$expected=ConvertFrom-GuiStartupXml (New-GuiStartupTaskXml $Context $Receipt ([bool]$Task.Enabled))
@@ -205,17 +217,30 @@ function Assert-GuiStartupTaskOwned {
   $en=[Xml.XmlNamespaceManager]::new($expected.NameTable);$en.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task')
   foreach($selection in @('/t:Task/t:RegistrationInfo','/t:Task/t:Principals','/t:Task/t:Principals/t:Principal','/t:Task/t:Triggers','/t:Task/t:Triggers/t:LogonTrigger','/t:Task/t:Actions','/t:Task/t:Actions/t:Exec','/t:Task/t:Settings')) {if($actual.SelectNodes($selection,$ns).Count -ne 1){throw 'GUI startup XML contains ambiguous sections.'}}
   if($actual.SelectSingleNode('/t:Task/t:Triggers',$ns).ChildNodes.Count -ne 1 -or $actual.SelectSingleNode('/t:Task/t:Actions',$ns).ChildNodes.Count -ne 1 -or $actual.SelectSingleNode('/t:Task/t:Principals',$ns).ChildNodes.Count -ne 1) {throw 'GUI startup XML contains extra actions, triggers or principals.'}
-  foreach($selection in @('/t:Task/t:RegistrationInfo/t:Author','/t:Task/t:RegistrationInfo/t:URI','/t:Task/t:RegistrationInfo/t:Description','/t:Task/t:Principals/t:Principal/@id','/t:Task/t:Principals/t:Principal/t:UserId','/t:Task/t:Principals/t:Principal/t:LogonType','/t:Task/t:Principals/t:Principal/t:RunLevel','/t:Task/t:Triggers/t:LogonTrigger/t:Enabled','/t:Task/t:Triggers/t:LogonTrigger/t:UserId','/t:Task/t:Actions/@Context','/t:Task/t:Actions/t:Exec/t:Command','/t:Task/t:Actions/t:Exec/t:Arguments','/t:Task/t:Actions/t:Exec/t:WorkingDirectory')) {
+  foreach($selection in @('/t:Task/t:RegistrationInfo/t:Author','/t:Task/t:RegistrationInfo/t:Description','/t:Task/t:Principals/t:Principal/@id','/t:Task/t:Principals/t:Principal/t:UserId','/t:Task/t:Principals/t:Principal/t:LogonType','/t:Task/t:Principals/t:Principal/t:RunLevel','/t:Task/t:Triggers/t:LogonTrigger/t:UserId','/t:Task/t:Actions/@Context','/t:Task/t:Actions/t:Exec/t:Command','/t:Task/t:Actions/t:Exec/t:Arguments','/t:Task/t:Actions/t:Exec/t:WorkingDirectory')) {
     $nodes=$actual.SelectNodes($selection,$ns);$wanted=$expected.SelectSingleNode($selection,$en)
-    if($nodes.Count -ne 1 -or $nodes[0].InnerText -cne $wanted.InnerText) {throw 'GUI startup XML does not match its protected receipt/action.'}
+    if($nodes.Count -ne 1){throw 'GUI startup XML does not match its protected receipt/action.'}
+    if($selection -in @('/t:Task/t:Principals/t:Principal/t:UserId','/t:Task/t:Triggers/t:LogonTrigger/t:UserId')){
+      if((Resolve-GuiStartupAccountSid $nodes[0].InnerText) -cne $Context.sid){throw 'GUI startup XML user does not resolve to its protected interactive SID.'}
+    }elseif($nodes[0].InnerText -cne $wanted.InnerText){throw 'GUI startup XML does not match its protected receipt/action.'}
   }
+  $uri=$actual.SelectNodes('/t:Task/t:RegistrationInfo/t:URI',$ns)
+  if($uri.Count -ne 1 -or ($uri[0].InnerText -cne $expected.SelectSingleNode('/t:Task/t:RegistrationInfo/t:URI',$en).InnerText -and $uri[0].InnerText -cne $Context.taskPath)){throw 'GUI startup task URI differs from its protected registration or exact canonical task path.'}
+  $triggerEnabled=$actual.SelectNodes('/t:Task/t:Triggers/t:LogonTrigger/t:Enabled',$ns)
+  if($triggerEnabled.Count -gt 1 -or ($triggerEnabled.Count -eq 1 -and $triggerEnabled[0].InnerText -cne 'true')){throw 'GUI startup logon trigger must be enabled.'}
   foreach($parent in @('/t:Task/t:Principals/t:Principal','/t:Task/t:Triggers/t:LogonTrigger','/t:Task/t:Actions/t:Exec')) {
     $allowed=@($expected.SelectSingleNode($parent,$en).ChildNodes | ForEach-Object {$_.LocalName})
     foreach($node in $actual.SelectSingleNode($parent,$ns).ChildNodes) {if($node.LocalName -notin $allowed){throw 'GUI startup XML contains an unsupported principal, trigger or action field.'}}
   }
+  # Missing fields use only Microsoft Task Scheduler schema defaults, never
+  # the application's preference. PT0S/battery/start-demand overrides stay required.
+  # https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-schema
+  $defaults=@{MultipleInstancesPolicy='IgnoreNew';DisallowStartIfOnBatteries='true';StopIfGoingOnBatteries='true';AllowHardTerminate='true';StartWhenAvailable='false';RunOnlyIfNetworkAvailable='false';AllowStartOnDemand='true';Enabled='true';Hidden='false';RunOnlyIfIdle='false';WakeToRun='false';ExecutionTimeLimit='PT72H';Priority='7'}
   foreach($node in $expected.SelectSingleNode('/t:Task/t:Settings',$en).ChildNodes) {
     $nodes=$actual.SelectNodes('/t:Task/t:Settings/t:'+$node.LocalName,$ns)
-    if($nodes.Count -ne 1 -or $nodes[0].InnerText -cne $node.InnerText){throw 'GUI startup settings readback mismatch.'}
+    if($nodes.Count -gt 1){throw 'GUI startup settings contain duplicate fields.'}
+    $value=if($nodes.Count -eq 1){$nodes[0].InnerText}else{$defaults[$node.LocalName]}
+    if($value -cne $node.InnerText){throw 'GUI startup settings readback mismatch.'}
   }
   if($actual.SelectNodes('/t:Task/t:Settings/t:RestartOnFailure',$ns).Count -gt 0 -or $actual.SelectNodes('/t:Task/t:Settings/t:DeleteExpiredTaskAfter',$ns).Count -gt 0) {throw 'GUI startup refuses restart loops and expiry.'}
 }
@@ -318,7 +343,8 @@ function Remove-OwnedLegacyGuiLoginStartup {
   if(-not $task){return @()}
   $xml=ConvertFrom-GuiStartupXml $task.Xml;$ns=[Xml.XmlNamespaceManager]::new($xml.NameTable);$ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task')
   $exec=$xml.SelectNodes('/t:Task/t:Actions/t:Exec',$ns);$principal=$xml.SelectNodes('/t:Task/t:Principals/t:Principal',$ns)
-  if($task.Name -cne $legacy.taskName -or $task.Path -cne $legacy.taskPath -or $task.PrincipalUserId -cne $Context.sid -or $task.PrincipalLogonType -ne 3 -or $exec.Count -ne 1 -or $principal.Count -ne 1 -or $xml.SelectSingleNode('/t:Task/t:Actions',$ns).ChildNodes.Count -ne 1 -or $exec[0].SelectSingleNode('t:Command',$ns).InnerText -cne $Context.exe -or $exec[0].SelectSingleNode('t:Arguments',$ns).InnerText -cne '--background --minimized' -or $xml.SelectSingleNode('/t:Task/t:RegistrationInfo/t:Author',$ns).InnerText -cne 'EgoistShield'){return @()}
+  try{$legacySid=Resolve-GuiStartupAccountSid ([string]$task.PrincipalUserId)}catch{return @()}
+  if($task.Name -cne $legacy.taskName -or $task.Path -cne $legacy.taskPath -or $legacySid -cne $Context.sid -or $task.PrincipalLogonType -ne 3 -or $exec.Count -ne 1 -or $principal.Count -ne 1 -or $xml.SelectSingleNode('/t:Task/t:Actions',$ns).ChildNodes.Count -ne 1 -or $exec[0].SelectSingleNode('t:Command',$ns).InnerText -cne $Context.exe -or $exec[0].SelectSingleNode('t:Arguments',$ns).InnerText -cne '--background --minimized' -or $xml.SelectSingleNode('/t:Task/t:RegistrationInfo/t:Author',$ns).InnerText -cne 'EgoistShield'){return @()}
   # Legacy registrations have no ownership receipt: never retire a mutable/foreign ACL.
   Assert-GuiStartupTaskProtection ([string]$task.SecurityDescriptor)
   Invoke-GuiStartupScheduler -Action Remove -Context $legacy -ExpectedXml $task.Xml -ExpectedDescriptor $task.SecurityDescriptor

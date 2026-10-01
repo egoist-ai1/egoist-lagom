@@ -247,10 +247,26 @@ function ConvertFrom-InstallerBootRecoveryXml {
   finally { $reader.Dispose() }
 }
 
+function Get-InstallerBootRecoveryPrincipalSid {
+  param([Parameter(Mandatory=$true)][string]$Identity)
+  try {
+    if ($Identity -match '^S-[0-9]+-[0-9]+(?:-[0-9]+)+$') { return [Security.Principal.SecurityIdentifier]::new($Identity).Value }
+    return [Security.Principal.NTAccount]::new($Identity).Translate([Security.Principal.SecurityIdentifier]).Value
+  } catch { throw 'Boot recovery principal cannot be resolved to a Windows SID.' }
+}
+
+function Get-InstallerBootRecoveryXmlValue {
+  param([Xml.XmlDocument]$Document,[Xml.XmlNamespaceManager]$Namespace,[string]$XPath,[AllowNull()][string]$DefaultValue=$null)
+  $nodes=$Document.SelectNodes($XPath,$Namespace)
+  if ($nodes.Count -gt 1) { throw 'Boot recovery XML contains duplicate identity or settings fields.' }
+  if ($nodes.Count -eq 1) { return $nodes[0].InnerText }
+  return $DefaultValue
+}
+
 function Assert-InstallerBootRecoveryTaskIdentity {
   param([Parameter(Mandatory=$true)][object]$Context,[Parameter(Mandatory=$true)][object]$Inventory,[Parameter(Mandatory=$true)][object]$Task)
   if ([string]$Task.Name -ne $Context.taskName -or [string]$Task.Path -ne $Context.taskPath -or -not $Task.Enabled -or
-      [int]$Task.PrincipalLogonType -ne 5 -or [string]$Task.PrincipalUserId -notin @('S-1-5-18','SYSTEM','NT AUTHORITY\SYSTEM')) { throw 'Boot recovery task principal or name is foreign.' }
+      [int]$Task.PrincipalLogonType -ne 5 -or (Get-InstallerBootRecoveryPrincipalSid ([string]$Task.PrincipalUserId)) -cne 'S-1-5-18') { throw 'Boot recovery task principal or name is foreign.' }
   Assert-InstallerBootRecoveryTaskProtection -SecurityDescriptor ([string]$Task.SecurityDescriptor)
   $actual = ConvertFrom-InstallerBootRecoveryXml ([string]$Task.Xml)
   $expected = ConvertFrom-InstallerBootRecoveryXml (New-InstallerBootRecoveryTaskXml $Context $Inventory)
@@ -261,19 +277,25 @@ function Assert-InstallerBootRecoveryTaskIdentity {
   foreach ($xpath in @('/t:Task/t:Principals/t:Principal','/t:Task/t:Triggers/t:BootTrigger','/t:Task/t:Actions/t:Exec')) {
     if ($actual.SelectNodes($xpath,$ns).Count -ne 1 -or $actual.SelectSingleNode($xpath,$ns).ParentNode.ChildNodes.Count -ne 1) { throw 'Boot recovery task has extra principals, triggers or actions.' }
   }
-  foreach ($xpath in @('/t:Task/t:Principals/t:Principal/@id','/t:Task/t:Actions/@Context','/t:Task/t:RegistrationInfo/t:Author','/t:Task/t:RegistrationInfo/t:URI','/t:Task/t:RegistrationInfo/t:Description','/t:Task/t:Principals/t:Principal/t:RunLevel','/t:Task/t:Triggers/t:BootTrigger/t:Enabled','/t:Task/t:Actions/t:Exec/t:Arguments','/t:Task/t:Actions/t:Exec/t:Command','/t:Task/t:Actions/t:Exec/t:WorkingDirectory')) {
+  foreach ($xpath in @('/t:Task/t:Principals/t:Principal/@id','/t:Task/t:Actions/@Context','/t:Task/t:RegistrationInfo/t:Author','/t:Task/t:RegistrationInfo/t:Description','/t:Task/t:Principals/t:Principal/t:RunLevel','/t:Task/t:Actions/t:Exec/t:Arguments','/t:Task/t:Actions/t:Exec/t:Command','/t:Task/t:Actions/t:Exec/t:WorkingDirectory')) {
     $left=$actual.SelectSingleNode($xpath,$ns); $right=$expected.SelectSingleNode($xpath,$expectedNs)
     if (-not $left -or -not $right -or $left.InnerText -cne $right.InnerText) { throw 'Boot recovery task identity/action differs from its protected inventory.' }
   }
-  if ($actual.SelectSingleNode('/t:Task/t:Principals/t:Principal/t:UserId',$ns).InnerText -notin @('S-1-5-18','SYSTEM','NT AUTHORITY\SYSTEM')) { throw 'Boot recovery XML principal is not SYSTEM.' }
+  $uri=Get-InstallerBootRecoveryXmlValue $actual $ns '/t:Task/t:RegistrationInfo/t:URI'
+  if ($uri -cne $Context.taskPath -and $uri -cne $expected.SelectSingleNode('/t:Task/t:RegistrationInfo/t:URI',$expectedNs).InnerText) { throw 'Boot recovery task URI differs from its protected identity.' }
+  if ((Get-InstallerBootRecoveryPrincipalSid (Get-InstallerBootRecoveryXmlValue $actual $ns '/t:Task/t:Principals/t:Principal/t:UserId')) -cne 'S-1-5-18') { throw 'Boot recovery XML principal is not SYSTEM.' }
+  if ((Get-InstallerBootRecoveryXmlValue $actual $ns '/t:Task/t:Triggers/t:BootTrigger/t:Enabled' 'true') -cne 'true') { throw 'Boot recovery trigger is disabled.' }
   foreach ($element in $actual.SelectSingleNode('/t:Task/t:Triggers/t:BootTrigger',$ns).ChildNodes) {
     if ($element.LocalName -notin @('Enabled','Delay')) { throw 'Boot recovery trigger has unexpected boundaries or repetition.' }
   }
+  # Registered XML omits defaults from the Task Scheduler schema:
+  # https://learn.microsoft.com/windows/win32/taskschd/task-scheduler-schema
+  $defaults=@{MultipleInstancesPolicy='IgnoreNew';DisallowStartIfOnBatteries='true';StopIfGoingOnBatteries='true';AllowHardTerminate='true';StartWhenAvailable='false';RunOnlyIfNetworkAvailable='false';AllowStartOnDemand='true';Enabled='true';Hidden='false';RunOnlyIfIdle='false';WakeToRun='false';Priority='7'}
   foreach ($element in $expected.SelectSingleNode('/t:Task/t:Settings',$expectedNs).ChildNodes) {
     if ($element.LocalName -in @('RestartOnFailure','ExecutionTimeLimit')) { continue }
     $xpath='/t:Task/t:Settings/t:'+$element.LocalName
-    $left=$actual.SelectSingleNode($xpath,$ns)
-    if (-not $left -or $left.InnerText -cne $element.InnerText) { throw 'Boot recovery task execution settings differ.' }
+    $value=Get-InstallerBootRecoveryXmlValue $actual $ns $xpath $defaults[$element.LocalName]
+    if ($value -cne $element.InnerText) { throw 'Boot recovery task execution settings differ.' }
   }
   foreach ($duration in @(@('/t:Task/t:Triggers/t:BootTrigger/t:Delay',30),@('/t:Task/t:Settings/t:ExecutionTimeLimit',1200),@('/t:Task/t:Settings/t:RestartOnFailure/t:Interval',120))) {
     $node=$actual.SelectSingleNode($duration[0],$ns)

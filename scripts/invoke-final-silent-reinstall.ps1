@@ -667,8 +667,63 @@ function Test-OwnedServicePath {
     $full.StartsWith($script:OwnedDataRoot + '\', [StringComparison]::OrdinalIgnoreCase)
 }
 
+function Get-InstallerSystemServiceSid {
+  param([string]$Account)
+  if ($Account -in @('LocalSystem', 'NT AUTHORITY\SYSTEM', 'S-1-5-18')) { return 'S-1-5-18' }
+  try { return ([Security.Principal.NTAccount]::new($Account).Translate([Security.Principal.SecurityIdentifier])).Value }
+  catch { return '' }
+}
+
+function Repair-LegacyCoreServiceRegistration {
+  $name = 'EgoistShieldCore'
+  $expected = Join-Path $script:OwnedInstallRoot 'resources\core-service\win-x64\EgoistShield.Service.exe'
+  $quoted = '"' + $expected + '"'
+  $services = @(Get-CimInstance Win32_Service -Filter "Name='EgoistShieldCore'" -ErrorAction Stop -OperationTimeoutSec 3 | Where-Object { $_.Name -ceq $name })
+  if ($services.Count -eq 0) { return }
+  if ($services.Count -ne 1) { throw 'Legacy Core registration is ambiguous.' }
+  if (-not [string]::Equals([string]$services[0].PathName, $expected, [StringComparison]::OrdinalIgnoreCase)) { return }
+  if ((Get-InstallerSystemServiceSid ([string]$services[0].StartName)) -cne 'S-1-5-18') { throw 'Legacy Core service account is not LocalSystem.' }
+  $registration = Get-PreservedServiceRegistrationMetadata $name
+  $policy = Get-InstallerServicePolicy $name
+  if ([int]$registration.type -ne 16 -or (Get-InstallerSystemServiceSid ([string]$registration.account)) -cne 'S-1-5-18' -or
+      -not [string]::Equals([string]$registration.binPath, $expected, [StringComparison]::OrdinalIgnoreCase) -or
+      -not $policy -or -not [string]::Equals([string]$policy.pathName, $expected, [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'Legacy Core registration proof does not match the exact own-process System binary.'
+  }
+  if (-not (Test-Path -LiteralPath $expected -PathType Leaf)) { throw 'Legacy Core registration binary is missing.' }
+  Assert-GuiStartupProtectedPath -Path $expected -Root $script:OwnedInstallRoot
+  $binaryLease = [IO.File]::Open($expected, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+  try {
+    $fresh = @(Get-CimInstance Win32_Service -Filter "Name='EgoistShieldCore'" -ErrorAction Stop -OperationTimeoutSec 3 | Where-Object { $_.Name -ceq $name })
+    $freshRegistration = Get-PreservedServiceRegistrationMetadata $name
+    $freshPolicy = Get-InstallerServicePolicy $name
+    if ($fresh.Count -ne 1 -or (Get-InstallerSystemServiceSid ([string]$fresh[0].StartName)) -cne 'S-1-5-18' -or
+        [int]$freshRegistration.type -ne 16 -or (Get-InstallerSystemServiceSid ([string]$freshRegistration.account)) -cne 'S-1-5-18' -or
+        -not [string]::Equals([string]$fresh[0].PathName, $expected, [StringComparison]::OrdinalIgnoreCase) -or
+        -not [string]::Equals([string]$freshRegistration.binPath, $expected, [StringComparison]::OrdinalIgnoreCase) -or
+        -not $freshPolicy -or -not [string]::Equals([string]$freshPolicy.pathName, $expected, [StringComparison]::OrdinalIgnoreCase) -or
+        $freshPolicy.startMode -cne $policy.startMode -or $freshPolicy.delayedAutoStart -ne $policy.delayedAutoStart) {
+      throw 'Legacy Core registration changed immediately before normalization.'
+    }
+    Invoke-PreservedRegistrationSc -Arguments @('config', $name, 'binPath=', $quoted)
+    $readback = @(Get-CimInstance Win32_Service -Filter "Name='EgoistShieldCore'" -ErrorAction Stop -OperationTimeoutSec 3 | Where-Object { $_.Name -ceq $name })
+    $checkedRegistration = Get-PreservedServiceRegistrationMetadata $name
+    $checkedPolicy = Get-InstallerServicePolicy $name
+    if ($readback.Count -ne 1 -or (Get-InstallerSystemServiceSid ([string]$readback[0].StartName)) -cne 'S-1-5-18' -or
+        [int]$checkedRegistration.type -ne 16 -or (Get-InstallerSystemServiceSid ([string]$checkedRegistration.account)) -cne 'S-1-5-18' -or
+        -not [string]::Equals([string]$readback[0].PathName, $quoted, [StringComparison]::Ordinal) -or
+        -not [string]::Equals([string]$checkedRegistration.binPath, $quoted, [StringComparison]::Ordinal) -or
+        -not $checkedPolicy -or -not [string]::Equals([string]$checkedPolicy.pathName, $quoted, [StringComparison]::Ordinal) -or
+        $checkedPolicy.startMode -cne $policy.startMode -or $checkedPolicy.delayedAutoStart -ne $policy.delayedAutoStart) {
+      throw 'Legacy Core registration quoted command readback failed; no services have been stopped.'
+    }
+    Add-ReceiptEvent -Stage 'preflight' -Status 'core-imagepath-normalized' -Message 'Exact legacy Core ImagePath was quoted without changing account, startup mode or running state.'
+  } finally { $binaryLease.Dispose() }
+}
+
 function Get-OwnedServiceSnapshot {
   param([string]$Stage)
+  Repair-LegacyCoreServiceRegistration
   $records = @()
   $registryDirectory = Join-Path $Stage "service-registry"
   New-Item -ItemType Directory -Path $registryDirectory -Force -ErrorAction Stop | Out-Null
@@ -1924,6 +1979,11 @@ function Invoke-WorkerMode {
     Write-DesktopUpdateResult -State $state -Ok $true -Message "Обновление до $installedVersion установлено; службы и DNS проверены."
     Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "success" -Encoding ASCII -Force
   } catch {
+    $primaryWorkerError = $_
+    $primaryWorkerReason = [string]$primaryWorkerError.Exception.Message
+    try {
+      Add-ReceiptEvent -Stage 'worker' -Status 'failed' -Message $primaryWorkerReason -Data @{ errorId = [string]$primaryWorkerError.FullyQualifiedErrorId }
+    } catch { Write-Warning ("Original worker failure could not be persisted: " + $primaryWorkerReason + " | receipt: " + $_.Exception.Message) }
     $recoveryComplete = $false
     try {
       if (Get-Variable -Name installerProcess -Scope Local -ErrorAction SilentlyContinue) {
@@ -1935,21 +1995,29 @@ function Invoke-WorkerMode {
       }
       $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
       if ($state.handoffStarted -eq $true -or (Test-InstallerServiceMaintenanceOwner)) {
-        $recoveryComplete = Invoke-InstallerRecoveryAttempts -State $state -Reason $_.Exception.Message -Attempts 2 -RetrySeconds 2
+        $recoveryComplete = Invoke-InstallerRecoveryAttempts -State $state -Reason $primaryWorkerReason -Attempts 2 -RetrySeconds 2
       } else {
         $recoveryComplete = $true
       }
       Write-DesktopUpdateResult -State $state -Ok $false -Message "Обновление не завершилось. Результат восстановления служб и DNS сохранён в журнале установки."
     } catch {
-      Add-ReceiptEvent -Stage "fatal" -Status "failed" -Message $_.Exception.Message
+      $secondaryReason = [string]$_.Exception.Message
+      try { Add-ReceiptEvent -Stage 'fatal' -Status 'failed' -Message $secondaryReason -Data @{ primaryFailure = $primaryWorkerReason } }
+      catch { Write-Warning ("Worker recovery failure could not be persisted: " + $secondaryReason + " | primary: " + $primaryWorkerReason) }
     }
-    if ($recoveryComplete -eq $true -and -not (Test-InstallerServiceMaintenanceOwner)) {
-      [void](Unregister-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory -RestorationVerified:$true)
-      Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "failed-recovered" -Encoding ASCII -Force
-    } else {
-      Write-PendingInstallerRecovery -Reason "Worker stopped before verified recovery; watchdog/boot recovery must retry." -Attempts 2
+    try {
+      if ($recoveryComplete -eq $true -and -not (Test-InstallerServiceMaintenanceOwner)) {
+        [void](Unregister-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory -RestorationVerified:$true)
+        Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "failed-recovered" -Encoding ASCII -Force
+      } else {
+        Write-PendingInstallerRecovery -Reason ("Worker stopped before verified recovery; watchdog/boot recovery must retry. Primary failure: " + $primaryWorkerReason) -Attempts 2
+      }
+    } catch {
+      $secondaryReason = [string]$_.Exception.Message
+      try { Add-ReceiptEvent -Stage 'worker-finalization' -Status 'failed' -Message $secondaryReason -Data @{ primaryFailure = $primaryWorkerReason } }
+      catch { Write-Warning ("Worker finalization failure could not be persisted: " + $secondaryReason + " | primary: " + $primaryWorkerReason) }
     }
-    throw
+    throw $primaryWorkerError
   } finally {
     try { $mutex.ReleaseMutex() } catch { Write-Verbose "Deferred reinstall mutex was not owned: $($_.Exception.Message)" }
     $mutex.Dispose()
@@ -1974,18 +2042,19 @@ if ($Worker) {
   try {
     Invoke-WorkerMode
   } catch {
+    $outerWorkerError = $_
     if (-not (Test-Path -LiteralPath (Join-Path $StageDirectory "complete.flag")) -and -not (Test-InstallerServiceMaintenanceOwner)) {
       try {
-        Add-ReceiptEvent -Stage "worker" -Status "failed" -Message "Protected reinstall worker stopped before completion."
+        Add-ReceiptEvent -Stage "worker" -Status "failed" -Message ([string]$outerWorkerError.Exception.Message)
       } catch {
         Write-Warning "Worker receipt could not be recorded: $($_.Exception.Message)"
-        Write-BrandedInstallerStatus -Stage "worker" -Status "failed" -Message "Protected reinstall worker stopped before completion."
+        Write-BrandedInstallerStatus -Stage "worker" -Status "failed" -Message ([string]$outerWorkerError.Exception.Message)
       }
       try {
         Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "worker-failed" -Encoding ASCII -Force
       } catch { Write-Warning "Worker failure could not be recorded: $($_.Exception.Message)" }
     }
-    throw
+    throw $outerWorkerError
   }
   exit 0
 }

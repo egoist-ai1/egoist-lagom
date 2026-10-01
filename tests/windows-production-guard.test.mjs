@@ -237,6 +237,8 @@ test('native GUI startup XML rejects foreign identity, reduced rights, timeout, 
     "$state=@{owner='EgoistShield';purpose='gui-login-startup';userSid=$sid;taskName=('EgoistLagom-GuiAutostart-'+$sid);taskPath=('\\EgoistLagom-GuiAutostart-'+$sid)};" +
     "$saved=@{registrationId=('a'*32)};$good=New-GuiStartupTaskXml -Context $context -Receipt $saved -TaskEnabled $true;" +
     "$proof=Assert-NativeGuiStartupTaskXml -XmlText $good -State $state -ExpectedEnabled $true;" +
+    "$norm=$good.Replace(('egoistshield:gui-login-startup:v1:'+$sid+':'+('a'*32)),$state.taskPath).Replace('<Enabled>true</Enabled>','').Replace('<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>','');" +
+    "$normalized=Assert-NativeGuiStartupTaskXml -XmlText $norm -State $state -ExpectedEnabled $true;if($normalized.registrationId -cne ('a'*32) -or $normalized.uri -cne $state.taskPath){throw 'Normalized proof lost protected nonce/path'};" +
     "$disabled=New-GuiStartupTaskXml -Context $context -Receipt $saved -TaskEnabled $false;" +
     "[void](Assert-NativeGuiStartupTaskXml -XmlText $disabled -State $state -ExpectedEnabled $false);" +
     "$cases=@(@{from='HighestAvailable';to='LeastPrivilege'},@{from='InteractiveToken';to='ServiceAccount'}," +
@@ -246,13 +248,15 @@ test('native GUI startup XML rejects foreign identity, reduced rights, timeout, 
     "@{from='</Exec>';to='</Exec><Exec><Command>foreign.exe</Command></Exec>'},@{from='<UserId>'+ $sid +'</UserId>';to='<UserId>S-1-5-18</UserId>'});$refused=0;" +
     "foreach($case in $cases){$bad=$good.Replace($case.from,$case.to);if($bad -ceq $good){throw 'Fixture transformation made no change'};" +
     "try{[void](Assert-NativeGuiStartupTaskXml -XmlText $bad -State $state -ExpectedEnabled $true);throw 'Invalid task XML accepted'}catch{if($_.Exception.Message -eq 'Invalid task XML accepted'){throw};$refused++}};" +
+    "foreach($bad in @($good.Replace('<Enabled>true</Enabled>','<Enabled>false</Enabled>'),$good.Replace('RegistrationId='+('a'*32),'RegistrationId=foreign'),$good.Replace('<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>',''),$good.Replace('<AllowStartOnDemand>false</AllowStartOnDemand>',''))){" +
+    "try{[void](Assert-NativeGuiStartupTaskXml -XmlText $bad -State $state -ExpectedEnabled $true);throw 'Bad normalized XML accepted'}catch{if($_.Exception.Message -eq 'Bad normalized XML accepted'){throw};$refused++}};" +
     "foreach($case in @(@{name='owner';value='Foreign'},@{name='purpose';value='Other'},@{name='userSid';value='S-1-5-18'},@{name='taskName';value='foreign'},@{name='taskPath';value='\\foreign'})){" +
     "$bad=$state.Clone();$bad[$case.name]=$case.value;try{[void](Assert-NativeGuiStartupTaskXml -XmlText $good -State $bad -ExpectedEnabled $true);throw 'Invalid task identity accepted'}catch{if($_.Exception.Message -eq 'Invalid task identity accepted'){throw};$refused++}};" +
     "@{acceptedEnabled=$proof.enabled;acceptedDisabled=$true;refused=$refused;physicalMutations=0}|ConvertTo-Json -Compress";
   const child = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', body],
     { encoding: 'utf8', windowsHide: true, timeout: 15000 });
   assert.equal(child.status, 0, child.stdout + '\n' + child.stderr);
-  assert.deepEqual(JSON.parse(child.stdout), { acceptedEnabled: true, acceptedDisabled: true, refused: 16, physicalMutations: 0 });
+  assert.deepEqual(JSON.parse(child.stdout), { acceptedEnabled: true, acceptedDisabled: true, refused: 20, physicalMutations: 0 });
 });
 
 test('packaged startup task lifecycle uses the public helper and resumes only after verified service and DNS restoration', async () => {

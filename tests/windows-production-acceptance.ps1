@@ -689,6 +689,7 @@ function Assert-NativeGuiStartupTaskXml {
     '/t:Task/t:Principals/t:Principal/t:LogonType'='InteractiveToken'
     '/t:Task/t:Principals/t:Principal/t:RunLevel'='HighestAvailable'
     '/t:Task/t:Triggers/t:LogonTrigger/t:UserId'=[string]$State.userSid
+    '/t:Task/t:Triggers/t:LogonTrigger/t:Enabled'='true'
     '/t:Task/t:Actions/t:Exec/t:Command'=(Join-Path $script:InstallRoot 'EgoistShield.exe')
     '/t:Task/t:Actions/t:Exec/t:Arguments'='--background --minimized'
     '/t:Task/t:Actions/t:Exec/t:WorkingDirectory'=$script:InstallRoot
@@ -697,10 +698,22 @@ function Assert-NativeGuiStartupTaskXml {
     '/t:Task/t:Settings/t:AllowStartOnDemand'='false'
     '/t:Task/t:Settings/t:Enabled'=if($ExpectedEnabled){'true'}else{'false'}
   }
-  foreach($name in $requirements.Keys){$node=$xml.SelectSingleNode($name,$ns);if(-not $node -or $node.InnerText -cne $requirements[$name]){throw ('Actual GUI startup Scheduler XML differs: '+$name)}}
-  $uri=$xml.SelectSingleNode('/t:Task/t:RegistrationInfo/t:URI',$ns)
-  if(-not $uri -or $uri.InnerText -cnotmatch ('^egoistshield:gui-login-startup:v1:'+([Regex]::Escape($State.userSid))+':[a-f0-9]{32}$')){throw 'Actual GUI startup Scheduler registration identity is missing.'}
-  return [ordered]@{highestAvailable=$true;interactiveToken=$true;userSid=$State.userSid;executionTimeLimit='PT0S';arguments='--background --minimized';enabled=$ExpectedEnabled;uri=$uri.InnerText;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false}
+  $defaults=@{'/t:Task/t:Settings/t:MultipleInstancesPolicy'='IgnoreNew';'/t:Task/t:Settings/t:Enabled'='true';'/t:Task/t:Triggers/t:LogonTrigger/t:Enabled'='true'}
+  foreach($name in $requirements.Keys){
+    $nodes=$xml.SelectNodes($name,$ns);if($nodes.Count -gt 1){throw ('Actual GUI startup Scheduler XML duplicates: '+$name)}
+    $value=if($nodes.Count -eq 1){$nodes[0].InnerText}elseif($defaults.ContainsKey($name)){$defaults[$name]}else{$null}
+    if($name -in @('/t:Task/t:Principals/t:Principal/t:UserId','/t:Task/t:Triggers/t:LogonTrigger/t:UserId')){
+      if([string]::IsNullOrWhiteSpace($value)){throw 'Actual GUI startup user identity is missing.'}
+      $value=if($value.StartsWith('S-',[StringComparison]::Ordinal)){[Security.Principal.SecurityIdentifier]::new($value).Value}else{([Security.Principal.NTAccount]::new($value)).Translate([Security.Principal.SecurityIdentifier]).Value}
+    }
+    if($value -cne $requirements[$name]){throw ('Actual GUI startup Scheduler XML differs: '+$name)}
+  }
+  $description=$xml.SelectNodes('/t:Task/t:RegistrationInfo/t:Description',$ns)
+  if($description.Count -ne 1 -or $description[0].InnerText -cnotmatch '^Verified per-user Egoist Lagom GUI startup; RegistrationId=([a-f0-9]{32})$'){throw 'Actual GUI startup Scheduler protected registration nonce is missing.'}
+  $registrationId=$Matches[1]
+  $uri=$xml.SelectNodes('/t:Task/t:RegistrationInfo/t:URI',$ns)
+  if($uri.Count -ne 1 -or ($uri[0].InnerText -cne ('egoistshield:gui-login-startup:v1:'+$State.userSid+':'+$registrationId) -and $uri[0].InnerText -cne $State.taskPath)){throw 'Actual GUI startup Scheduler registration URI differs from its exact protected identity/task path.'}
+  return [ordered]@{highestAvailable=$true;interactiveToken=$true;userSid=$State.userSid;executionTimeLimit='PT0S';arguments='--background --minimized';enabled=$ExpectedEnabled;registrationId=$registrationId;description=$description[0].InnerText;uri=$uri[0].InnerText;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false}
 }
 function Invoke-NativeGuiStartupOperation {
   param([ValidateSet('Sync','Verify')][string]$Operation,[ValidateSet('true','false')][string]$Enabled='false',[string]$Label,[bool]$ExpectedEnabled)
@@ -714,14 +727,14 @@ function Invoke-NativeGuiStartupOperation {
     $task=Get-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction Stop
     $xmlText=Export-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction Stop
     $record.scheduler=Assert-NativeGuiStartupTaskXml -XmlText $xmlText -State $state -ExpectedEnabled $true
-    if($Operation -ceq 'Verify' -and $script:Receipt.guiStartup.operations.Count -gt 0 -and $record.scheduler.uri -cne $script:Receipt.guiStartup.operations[0].scheduler.uri){throw 'Restored GUI startup task registration differs from the originally authenticated enabled task.'}
+    if($Operation -ceq 'Verify' -and $script:Receipt.guiStartup.operations.Count -gt 0 -and $record.scheduler.registrationId -cne $script:Receipt.guiStartup.operations[0].scheduler.registrationId){throw 'Restored GUI startup task registration differs from the originally authenticated enabled task.'}
     $file=Join-Path $script:Work ($Label+'.task.xml')
     [IO.File]::WriteAllText($file,$xmlText,[Text.UTF8Encoding]::new($false))
     $record.schedulerXml=[ordered]@{file=([IO.Path]::GetFileName($file));sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash;bytes=(Get-Item -LiteralPath $file).Length}
     $receipt=Join-Path $script:DataRoot ('GuiStartup\'+$state.userSid+'.json')
     $record.protectedReceipt=Assert-NativeAdministratorOwned $receipt
     $saved=Get-Content -LiteralPath $receipt -Raw | ConvertFrom-Json
-    if($saved.owner -cne 'EgoistShield' -or $saved.purpose -cne 'gui-login-startup' -or $saved.userSid -cne $state.userSid -or $saved.registrationId -cnotmatch '^[a-f0-9]{32}$' -or $record.scheduler.uri -cne ('egoistshield:gui-login-startup:v1:'+$state.userSid+':'+$saved.registrationId)){throw 'Actual GUI startup task registration is not bound to its protected owner receipt.'}
+    if($saved.owner -cne 'EgoistShield' -or $saved.purpose -cne 'gui-login-startup' -or $saved.userSid -cne $state.userSid -or $saved.registrationId -cnotmatch '^[a-f0-9]{32}$' -or $record.scheduler.registrationId -cne $saved.registrationId){throw 'Actual GUI startup task registration is not bound to its protected owner receipt.'}
     if([string]$task.Principal.LogonType -cne 'Interactive' -or [string]$task.Principal.RunLevel -cne 'Highest'){throw 'Actual Scheduler principal readback is not highest interactive.'}
   }else{
     if(Get-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction SilentlyContinue){throw 'GUI startup disable did not remove the exact owned task.'}
@@ -742,7 +755,7 @@ function Observe-NativeGuiStartupSuspension {
   if($saved.owner -cne 'EgoistShield' -or $saved.purpose -cne 'gui-login-startup' -or $saved.userSid -cne $state.userSid -or $saved.suspended -ne $true -or $saved.resumeEnabled -ne $true){throw 'Disabled GUI startup task lacks its owned suspended enabled-intent receipt.'}
   $xmlText=Export-ScheduledTask -TaskName $state.taskName -TaskPath '\' -ErrorAction Stop
   $proof=Assert-NativeGuiStartupTaskXml -XmlText $xmlText -State $state -ExpectedEnabled $false
-  if($proof.uri -cne $script:Receipt.guiStartup.operations[0].scheduler.uri -or $proof.uri -cne ('egoistshield:gui-login-startup:v1:'+$state.userSid+':'+$saved.registrationId)){throw 'Suspended GUI startup task registration no longer matches its original protected owner receipt.'}
+  if($proof.registrationId -cne $script:Receipt.guiStartup.operations[0].scheduler.registrationId -or $proof.registrationId -cne $saved.registrationId){throw 'Suspended GUI startup task registration no longer matches its original protected owner receipt.'}
   $file=Join-Path $script:Work 'gui-startup-suspended.task.xml'
   [IO.File]::WriteAllText($file,$xmlText,[Text.UTF8Encoding]::new($false))
   $script:Receipt.guiStartup.disabledDuringTransaction=$true

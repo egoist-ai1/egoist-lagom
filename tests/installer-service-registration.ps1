@@ -23,8 +23,9 @@ Load-Functions $source @('ConvertTo-InstallerWindowsArgument','Invoke-InstallerN
   'Assert-CurrentPreservedServiceOwnership','Test-OwnedServicePath','Get-FileSha256','Get-OwnedServiceSnapshot',
   'Get-PreservedWrapperDefinitions','Assert-PlainWrapperMigrationPath','Get-PreservedRegistryBackup',
   'New-DisabledServiceRegistryImport','Restore-PreservedServiceRegistration','Restore-PreservedState','Start-PreservedServices')
+if ([IO.File]::ReadAllText($source).Contains('function Repair-LegacyCoreServiceRegistration')) { Load-Functions $source @('Repair-LegacyCoreServiceRegistration','Get-InstallerSystemServiceSid') }
 Load-Functions (Join-Path $project 'src\installer\service-maintenance.ps1') @('Get-InstallerServiceState')
-$script:OwnedInstallRoot=Join-Path $root 'Install'
+$script:OwnedInstallRoot=Join-Path $root 'Install with spaces'
 $script:OwnedDataRoot=Join-Path $root 'Product'
 $script:RuntimeRoot=Join-Path $script:OwnedDataRoot 'Runtime'
 $script:StageDirectory=Join-Path $root 'Stage'
@@ -123,7 +124,7 @@ function Get-InstallerServicePolicy {
   if($script:foreignAtRead -gt 0 -and $script:policyReads -ge $script:foreignAtRead) { return [pscustomobject]@{pathName='C:\Foreign\service.exe';startMode='Auto'} }
   if($script:policies.ContainsKey($Name)){return $script:policies[$Name]}; return $null
 }
-function Get-CimInstance {param($ClassName,$OperationTimeoutSec,$ErrorAction) if($ClassName -ne 'Win32_Service'){$script:hostCalls++;throw 'Forbidden CIM query.'};return $script:cimRecords}
+function Get-CimInstance {param($ClassName,$Filter,$OperationTimeoutSec,$ErrorAction) if($ClassName -ne 'Win32_Service'){$script:hostCalls++;throw 'Forbidden CIM query.'};return $script:cimRecords}
 function Get-Service {
   param($Name,$ErrorAction)
   $found=@($script:services.Values | Where-Object { $_.ServiceName -like [string]$Name })
@@ -154,8 +155,18 @@ function Invoke-InstallerNativeProcess {
   if([IO.Path]::GetFileName($Executable) -eq 'sc.exe' -and $script:scExit -ne 0) { return [pscustomobject]@{exitCode=$script:scExit;output='';errors=''} }
   $script:hostCalls++;throw 'Forbidden native executable boundary.'
 }
+function Assert-GuiStartupProtectedPath { param($Path,$Root) if($script:coreAclFailure){throw 'Controlled untrusted Core ACL.'} }
+function Add-ReceiptEvent {param($Stage,$Status,$Message,$Data)}
 function Invoke-PreservedRegistrationSc {
   param($Arguments)
+  if($Arguments[1] -ceq 'EgoistShieldCore') {
+    Require ($Arguments.Count -eq 4 -and $Arguments[0] -eq 'config' -and $Arguments[2] -eq 'binPath=') 'Core migration changed more than binPath.'
+    $script:scCalls.Add([string[]]$Arguments)
+    $script:keys['EgoistShieldCore'].Values['ImagePath']=[string]$Arguments[3]
+    $script:policies['EgoistShieldCore'].pathName=[string]$Arguments[3]
+    $script:cimRecords[0].PathName=$(if($script:coreBadReadback){'C:\Foreign\service.exe'}else{[string]$Arguments[3]})
+    return
+  }
   $script:scCalls.Add([string[]]$Arguments)
   $name=[string]$Arguments[1]
   $bin=[string]$Arguments[[Array]::IndexOf($Arguments,'binPath=')+1]
@@ -178,7 +189,7 @@ function New-Record {
 }
 function Reset-Fixture {
   $script:policies=@{};$script:keys=@{};$script:services=@{};$script:scCalls.Clear();$script:imports=0;$script:starts=@();$script:badScReadback=$false
-  $script:policyReads=0;$script:foreignAtRead=0
+  $script:policyReads=0;$script:foreignAtRead=0;$script:cimRecords=@();$script:coreAclFailure=$false;$script:coreBadReadback=$false
 }
 Case 'missing legacy registration is created by SCM with exact command and dependency groups' {
   Reset-Fixture;$record=New-Record
@@ -341,6 +352,77 @@ Case 'snapshot preserves raw environment path while checking expanded live comma
   $script:policies['LegacySnapshot'].pathName=[Environment]::ExpandEnvironmentVariables($raw)
   $snapshot=@(Get-OwnedServiceSnapshot $script:StageDirectory)
   Require ($snapshot[0].pathName -ceq $raw -and $snapshot[0].registration.binPath -ceq $raw) 'Raw ImagePath environment tokens were changed.'
+}
+function New-CoreSnapshotFixture {
+  Reset-Fixture
+  $binary=Join-Path $script:OwnedInstallRoot 'resources\core-service\win-x64\EgoistShield.Service.exe'
+  [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($binary));[IO.File]::WriteAllText($binary,'Harmless fixture; never executed.')
+  $key=[LagomRegistrationFixtureKey]::new()
+  foreach($entry in @{ImagePath=$binary;ObjectName='LocalSystem';Type=16;ErrorControl=1;DisplayName='EgoistShieldCore'}.GetEnumerator()){$key.Values[$entry.Key]=$entry.Value}
+  $key.Kinds['Type']=[Microsoft.Win32.RegistryValueKind]::DWord;$key.Kinds['ErrorControl']=[Microsoft.Win32.RegistryValueKind]::DWord
+  $script:keys['EgoistShieldCore']=$key
+  $script:policies['EgoistShieldCore']=[pscustomobject]@{pathName=$binary;startMode='Auto';delayedAutoStart=$true}
+  $script:cimRecords=@([pscustomobject]@{Name='EgoistShieldCore';PathName=$binary;StartName='LocalSystem';State='Running'})
+  return $binary
+}
+Case 'exact legacy Core is quoted before snapshot without restart or startup change' {
+  $binary=New-CoreSnapshotFixture
+  $snapshot=@(Get-OwnedServiceSnapshot $script:StageDirectory)
+  Require ($snapshot.Count -eq 1 -and $snapshot[0].pathName -ceq ('"'+$binary+'"')) 'Legacy Core snapshot was not normalized.'
+  Require ($script:scCalls.Count -eq 1 -and $script:starts.Count -eq 0 -and $script:imports -eq 0 -and $snapshot[0].wasRunning -and $snapshot[0].startMode -eq 'Auto' -and $snapshot[0].delayedAutoStart) 'Core migration changed runtime/start policy.'
+}
+Case 'quoted Core remains idempotent' {
+  $binary=New-CoreSnapshotFixture;$quoted='"'+$binary+'"'
+  $script:keys['EgoistShieldCore'].Values['ImagePath']=$quoted;$script:policies['EgoistShieldCore'].pathName=$quoted;$script:cimRecords[0].PathName=$quoted
+  $snapshot=@(Get-OwnedServiceSnapshot $script:StageDirectory)
+  Require ($snapshot.Count -eq 1 -and $script:scCalls.Count -eq 0) 'Quoted Core was rewritten.'
+}
+Case 'legacy Core foreign account is refused before configuration' {
+  [void](New-CoreSnapshotFixture);$script:cimRecords[0].StartName='NT AUTHORITY\NETWORK SERVICE'
+  Refused {Get-OwnedServiceSnapshot $script:StageDirectory} '*Core*account*'
+  Require ($script:scCalls.Count -eq 0) 'Foreign account was changed.'
+}
+Case 'legacy Core Type32 is refused before configuration' {
+  [void](New-CoreSnapshotFixture);$script:keys['EgoistShieldCore'].Values['Type']=32
+  Refused {Get-OwnedServiceSnapshot $script:StageDirectory} '*Core*registration*'
+  Require ($script:scCalls.Count -eq 0) 'Shared-process Core was changed.'
+}
+Case 'legacy Core argument-bearing raw command remains rejected' {
+  $binary=New-CoreSnapshotFixture;$raw=$binary+' --foreign-option'
+  $script:keys['EgoistShieldCore'].Values['ImagePath']=$raw;$script:policies['EgoistShieldCore'].pathName=$raw;$script:cimRecords[0].PathName=$raw
+  Refused {Get-OwnedServiceSnapshot $script:StageDirectory} '*ambiguous*'
+  Require ($script:scCalls.Count -eq 0) 'Argument-bearing legacy command was migrated.'
+}
+Case 'legacy Core mismatched registry proof prevents configuration' {
+  $binary=New-CoreSnapshotFixture;$script:keys['EgoistShieldCore'].Values['ImagePath']='"'+$binary+'"'
+  Refused {Get-OwnedServiceSnapshot $script:StageDirectory} '*Core*registration*'
+  Require ($script:scCalls.Count -eq 0) 'Mismatched registry command was overwritten.'
+}
+Case 'legacy Core immediate precommand ownership race is refused' {
+  [void](New-CoreSnapshotFixture);$script:foreignAtRead=2
+  Refused {Get-OwnedServiceSnapshot $script:StageDirectory} '*Core*registration*'
+  Require ($script:scCalls.Count -eq 0) 'Late ownership race was changed.'
+}
+Case 'legacy Core failed immediate readback aborts before service handoff' {
+  [void](New-CoreSnapshotFixture);$script:coreBadReadback=$true
+  Refused {Get-OwnedServiceSnapshot $script:StageDirectory} '*Core*readback*'
+  Require ($script:scCalls.Count -eq 1 -and $script:starts.Count -eq 0 -and $script:imports -eq 0) 'Readback failure reached service handoff.'
+}
+Case 'legacy Core untrusted ACL is refused before configuration' {
+  [void](New-CoreSnapshotFixture);$script:coreAclFailure=$true
+  Refused {Get-OwnedServiceSnapshot $script:StageDirectory} '*untrusted Core ACL*'
+  Require ($script:scCalls.Count -eq 0) 'Untrusted Core deployment was changed.'
+}
+Case 'non-Core name never receives canonical Core normalization' {
+  [void](New-CoreSnapshotFixture);$script:cimRecords[0].Name='EgoistShieldRelay'
+  $script:keys['EgoistShieldRelay']=$script:keys['EgoistShieldCore'];$script:policies['EgoistShieldRelay']=$script:policies['EgoistShieldCore']
+  Refused {Get-OwnedServiceSnapshot $script:StageDirectory} '*ambiguous*'
+  Require ($script:scCalls.Count -eq 0) 'Relay or another name was normalized.'
+}
+Case 'legacy Core missing binary prevents configuration' {
+  $binary=New-CoreSnapshotFixture;[IO.File]::Delete($binary)
+  Refused {Get-OwnedServiceSnapshot $script:StageDirectory} '*Core*binary is missing*'
+  Require ($script:scCalls.Count -eq 0) 'Missing Core binary was normalized.'
 }
 Case 'snapshot provider failure is not treated as empty services' {
   function Get-CimInstance {throw 'controlled CIM unavailable'}

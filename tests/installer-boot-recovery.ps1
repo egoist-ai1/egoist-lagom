@@ -139,6 +139,49 @@ $second=Register-InstallerMaintenanceBootRecovery $context.stage
 Assert-Test ($script:Scheduler.Creates -eq 1 -and $second.inventorySha256 -eq $hash) 'same owned registration is idempotent'
 $script:Groups.Add('owned registration idempotency')
 
+$context=New-RegisteredStage
+$localizedSystem=[Security.Principal.SecurityIdentifier]::new('S-1-5-18').Translate([Security.Principal.NTAccount]).Value
+$script:Scheduler.Tasks[$context.taskName].Definition.Principal.UserId=$localizedSystem
+Set-TaskXmlValue $context '/t:Task/t:Principals/t:Principal/t:UserId' $localizedSystem
+Assert-Test (Assert-InstallerMaintenanceBootRecovery $context.stage).verified 'actual localized SYSTEM account resolves to the trusted SID in COM and XML'
+foreach($identity in @('S-1-5-19',('Lagom-Unknown-'+[Guid]::NewGuid().ToString('N')))){
+  $script:Scheduler.Tasks[$context.taskName].Definition.Principal.UserId=$identity
+  Assert-Throws {Assert-InstallerMaintenanceBootRecovery $context.stage} 'foreign SID or unresolved account cannot pass COM principal verification'
+}
+$script:Scheduler.Tasks[$context.taskName].Definition.Principal.UserId=$localizedSystem
+Set-TaskXmlValue $context '/t:Task/t:Principals/t:Principal/t:UserId' ('S-1-5-19')
+Assert-Throws {Assert-InstallerMaintenanceBootRecovery $context.stage} 'foreign XML SID is rejected even with trusted COM principal'
+$script:Groups.Add('localized account verification requires exact Windows SID')
+
+$context=New-RegisteredStage
+$task=$script:Scheduler.Tasks[$context.taskName]
+$xml=ConvertFrom-InstallerBootRecoveryXml $task.Xml
+$ns=[Xml.XmlNamespaceManager]::new($xml.NameTable);$ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task')
+$xml.SelectSingleNode('/t:Task/t:RegistrationInfo/t:URI',$ns).InnerText=$context.taskPath
+foreach($xpath in @('/t:Task/t:Triggers/t:BootTrigger/t:Enabled','/t:Task/t:Settings/t:AllowHardTerminate','/t:Task/t:Settings/t:AllowStartOnDemand','/t:Task/t:Settings/t:Enabled','/t:Task/t:Settings/t:RunOnlyIfNetworkAvailable','/t:Task/t:Settings/t:RunOnlyIfIdle','/t:Task/t:Settings/t:WakeToRun','/t:Task/t:Settings/t:Priority')){
+  $node=$xml.SelectSingleNode($xpath,$ns);[void]$node.ParentNode.RemoveChild($node)
+}
+$task.Xml=$xml.OuterXml
+Assert-Test (Assert-InstallerMaintenanceBootRecovery $context.stage).verified 'registered path URI and omitted schema defaults preserve effective behavior'
+$normalized=$task.Xml
+foreach($entry in @(@('Settings','AllowHardTerminate','false'),@('Settings','Enabled','false'),@('Settings','RunOnlyIfNetworkAvailable','true'),@('Triggers/t:BootTrigger','Enabled','false'))){
+  $xml=ConvertFrom-InstallerBootRecoveryXml $normalized
+  $ns=[Xml.XmlNamespaceManager]::new($xml.NameTable);$ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task')
+  [void](Add-InstallerBootRecoveryXmlElement $xml ($xml.SelectSingleNode('/t:Task/t:'+$entry[0],$ns)) $entry[1] $entry[2])
+  $task.Xml=$xml.OuterXml
+  Assert-Throws {Assert-InstallerMaintenanceBootRecovery $context.stage} 'explicit setting opposite to required behavior is rejected'
+}
+$task.Xml=$normalized
+Set-TaskXmlValue $context '/t:Task/t:RegistrationInfo/t:URI' '\foreign'
+Assert-Throws {Assert-InstallerMaintenanceBootRecovery $context.stage} 'normalized URI cannot refer to a foreign task path'
+$task.Xml=$normalized
+Assert-Test (Unregister-InstallerMaintenanceBootRecovery $context.stage -RestorationVerified:$true).removed 'verified normalized task can retire with all ownership guards'
+$script:Groups.Add('native scheduler serialization preserves only exact semantic defaults')
+
+$context=New-RegisteredStage
+$hash=Get-InstallerBootRecoveryFileHash $context.inventoryPath
+
+
 [IO.File]::WriteAllText($context.statePath,'{"schemaVersion":1,"owner":"EgoistShield","handoffStarted":true,"progress":"restoring"}')
 Assert-Test (Assert-InstallerMaintenanceBootRecovery $context.stage).verified 'mutable protected state is not content-hash pinned'
 Assert-Test ((Get-InstallerBootRecoveryFileHash $context.inventoryPath) -eq $hash) 'mutable state leaves immutable inventory identity unchanged'

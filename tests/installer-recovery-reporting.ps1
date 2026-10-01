@@ -108,3 +108,28 @@ foreach($fault in @('state','services','dns')){
 $script:restoreFault=''
 Write-Output 'PASS: state, service and DNS failures retain suspension and owned marker; verified restoration resumes only after closure'
 Write-Output 'Recovery startup adapters: native Task Scheduler/SCM/DNS mutations 0; boundaries are inert fixtures.'
+
+# Execute the actual worker catch body with inert boundaries; no worker lifecycle
+# or native service/process/task operations are invoked by this focused fixture.
+$worker=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Invoke-WorkerMode'},$true)
+$workerTry=@($worker.Body.EndBlock.Statements | Where-Object {$_ -is [Management.Automation.Language.TryStatementAst] -and $_.Body.Extent.Text.Contains('Get-OwnedServiceSnapshot')})[0]
+$catchText=$workerTry.CatchClauses[0].Body.Extent.Text
+$workerHarness=[scriptblock]::Create("try { throw 'PRIMARY exact boot-registration refusal' } catch "+$catchText)
+$statePath=Join-Path $testRoot 'worker-catch-state.json';$StageDirectory=$testRoot
+[IO.File]::WriteAllText($statePath,'{"handoffStarted":true}')
+$release=[pscustomobject]@{installer='inert.exe'}
+function Add-ReceiptEvent {param($Stage,$Status,$Message,$Data) if($script:workerFault -eq 'receipt'){throw 'SECONDARY receipt unavailable'};$script:workerEvents.Add([pscustomobject]@{stage=$Stage;status=$Status;message=$Message;data=$Data})}
+function Invoke-InstallerRecoveryAttempts {param($State,$Reason,$Attempts,$RetrySeconds) $script:recoveryReason=$Reason;$script:eventCountAtRecovery=$script:workerEvents.Count;if($script:workerFault -eq 'recovery'){throw 'SECONDARY recovery failure'};return ($script:workerFault -ne 'pending')}
+function Write-DesktopUpdateResult {param($State,$Ok,$Message)}
+function Unregister-InstallerMaintenanceBootRecovery {param($StageDirectory,$RestorationVerified) if($script:workerFault -eq 'retirement'){throw 'SECONDARY retirement failure'}}
+function Write-PendingInstallerRecovery {param($Reason,$Attempts) throw 'SECONDARY pending receipt failure'}
+function Test-InstallerServiceMaintenanceOwner {return $false}
+$script:workerEvents=New-Object 'Collections.Generic.List[object]'
+foreach($fault in @('none','recovery','retirement','receipt','pending')){
+  $script:workerFault=$fault;$script:workerEvents.Clear();$script:recoveryReason='';$script:eventCountAtRecovery=0;$primary='PRIMARY exact boot-registration refusal'
+  $caught='';try {& $workerHarness}catch{$caught=$_.Exception.Message}
+  if($caught -cne $primary){throw ('Worker lost original failure after '+$fault+': '+$caught)}
+  if($script:recoveryReason -cne $primary){throw 'Worker recovery did not receive saved original reason.'}
+  if($fault -ne 'receipt' -and ($script:eventCountAtRecovery -lt 1 -or $script:workerEvents[0].message -cne $primary -or $script:workerEvents[0].stage -cne 'worker')){throw 'Original failure was not recorded before recovery.'}
+}
+Write-Output 'PASS: actual worker catch preserves primary failure before recovery, receipt failure, recovery failure and task retirement failure; native mutations0'

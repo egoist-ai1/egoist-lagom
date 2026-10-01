@@ -154,6 +154,57 @@ Assert-Throws {Sync-GuiLoginStartup $script:Context $false} 'an extra native Exe
 Assert-Test ($script:Deletes -eq 0) 'ambiguous action preserved'
 $script:Names.Add('extra action is rejected')
 
+
+# Representative Windows normalization; descriptors and tasks are still fixtures.
+Reset-Fixture;$script:Receipt=New-Receipt;$script:Task=New-Task $true $script:Receipt
+Set-XmlValue '/t:Task/t:RegistrationInfo/t:URI' $script:Context.taskPath
+$xml=ConvertFrom-GuiStartupXml $script:Task.Xml;$ns=[Xml.XmlNamespaceManager]::new($xml.NameTable);$ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task')
+$defaultPaths=@('/t:Task/t:Triggers/t:LogonTrigger/t:Enabled')+@('MultipleInstancesPolicy','RunOnlyIfNetworkAvailable','Enabled','Hidden','RunOnlyIfIdle','WakeToRun','Priority'|ForEach-Object{'/t:Task/t:Settings/t:'+$_})
+foreach($path in $defaultPaths){$node=$xml.SelectSingleNode($path,$ns);[void]$node.ParentNode.RemoveChild($node)}
+$script:Task.Xml=$xml.OuterXml
+Assert-GuiStartupTaskOwned $script:Context $script:Receipt $script:Task -ExpectedEnabled $true
+Assert-Test (Get-GuiStartupVerifiedState $script:Context).verified 'canonical task-path URI and absent documented defaults verify'
+Assert-Test ([string]$script:Task.Xml -match $script:Receipt.registrationId) 'normalized registration retains protected nonce in Description'
+$script:Names.Add('Windows task path URI and omitted schema defaults')
+foreach($path in @('/t:Task/t:RegistrationInfo/t:URI','/t:Task/t:RegistrationInfo/t:Description')){
+ Reset-Fixture;$script:Receipt=New-Receipt;$script:Task=New-Task $true $script:Receipt;Set-XmlValue $path 'foreign-registration'
+ Assert-Throws {Sync-GuiLoginStartup $script:Context $false} 'foreign URI or nonce Description refuses deletion';Assert-Test ($script:Deletes -eq 0) 'foreign registration remains untouched'
+}
+$script:Names.Add('task path never replaces protected registration nonce')
+foreach($setting in @('DisallowStartIfOnBatteries','StopIfGoingOnBatteries','AllowHardTerminate','StartWhenAvailable','AllowStartOnDemand','ExecutionTimeLimit')){
+ Reset-Fixture;$script:Receipt=New-Receipt;$script:Task=New-Task $true $script:Receipt
+ $xml=ConvertFrom-GuiStartupXml $script:Task.Xml;$ns=[Xml.XmlNamespaceManager]::new($xml.NameTable);$ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task');$node=$xml.SelectSingleNode('/t:Task/t:Settings/t:'+$setting,$ns);[void]$node.ParentNode.RemoveChild($node);$script:Task.Xml=$xml.OuterXml
+ Assert-Throws {Assert-GuiStartupTaskOwned $script:Context $script:Receipt $script:Task} 'missing nondefault must not use application preference'
+}
+foreach($change in @(@('/t:Task/t:Triggers/t:LogonTrigger/t:Enabled','false'),@('RunOnlyIfNetworkAvailable','true'),@('Hidden','true'),@('RunOnlyIfIdle','true'),@('WakeToRun','true'),@('Priority','8'),@('AllowStartOnDemand','true'),@('StartWhenAvailable','false'),@('DisallowStartIfOnBatteries','true'),@('AllowHardTerminate','true'))){
+ Reset-Fixture;$script:Receipt=New-Receipt;$script:Task=New-Task $true $script:Receipt;$path=if($change[0].StartsWith('/')){$change[0]}else{'/t:Task/t:Settings/t:'+$change[0]};Set-XmlValue $path $change[1]
+ Assert-Throws {Assert-GuiStartupTaskOwned $script:Context $script:Receipt $script:Task} 'explicit opposite remains rejected'
+}
+Reset-Fixture;$script:Receipt=New-Receipt;$script:Task=New-Task $false $script:Receipt
+$xml=ConvertFrom-GuiStartupXml $script:Task.Xml;$ns=[Xml.XmlNamespaceManager]::new($xml.NameTable);$ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task');$node=$xml.SelectSingleNode('/t:Task/t:Settings/t:Enabled',$ns);[void]$node.ParentNode.RemoveChild($node);$script:Task.Xml=$xml.OuterXml
+Assert-Throws {Assert-GuiStartupTaskOwned $script:Context $script:Receipt $script:Task -ExpectedEnabled $false} 'missing enabled means true, never suspended false'
+foreach($field in @('RestartOnFailure','DeleteExpiredTaskAfter')){
+ Reset-Fixture;$script:Receipt=New-Receipt;$script:Task=New-Task $true $script:Receipt
+ $xml=ConvertFrom-GuiStartupXml $script:Task.Xml;$ns=[Xml.XmlNamespaceManager]::new($xml.NameTable);$ns.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task');$node=$xml.CreateElement($field,$ns.LookupNamespace('t'));$node.InnerText='PT1M';[void]$xml.SelectSingleNode('/t:Task/t:Settings',$ns).AppendChild($node);$script:Task.Xml=$xml.OuterXml
+ Assert-Throws {Assert-GuiStartupTaskOwned $script:Context $script:Receipt $script:Task} 'normalization never authorizes restart loops or expiry'
+}
+$script:Names.Add('missing nondefaults explicit opposites suspended intent restart and expiry refusals')
+$oldContext=$script:Context;$identity=[Security.Principal.WindowsIdentity]::GetCurrent()
+try{
+ $script:Context=Get-GuiStartupContext $identity.User.Value
+ Reset-Fixture;$script:Receipt=New-Receipt;$script:Task=New-Task $true $script:Receipt;$script:Task.PrincipalUserId=$identity.Name
+ Set-XmlValue '/t:Task/t:Principals/t:Principal/t:UserId' $identity.Name;Set-XmlValue '/t:Task/t:Triggers/t:LogonTrigger/t:UserId' $identity.Name
+ Assert-GuiStartupTaskOwned $script:Context $script:Receipt $script:Task
+ Assert-Test (Get-GuiStartupVerifiedState $script:Context).verified 'actual Windows account translates to exact interactive SID'
+ $systemName=([Security.Principal.SecurityIdentifier]::new('S-1-5-18')).Translate([Security.Principal.NTAccount]).Value;$script:Task.PrincipalUserId=$systemName
+ Assert-Throws {Assert-GuiStartupTaskOwned $script:Context $script:Receipt $script:Task} 'localized SYSTEM is not interactive SID'
+ $script:Task.PrincipalUserId='Unresolvable-'+[Guid]::NewGuid().ToString('N')
+ Assert-Throws {Assert-GuiStartupTaskOwned $script:Context $script:Receipt $script:Task} 'unresolvable account is not trusted by name'
+ $script:Task.PrincipalUserId=$identity.Name;Set-XmlValue '/t:Task/t:Principals/t:Principal/t:UserId' $systemName
+ Assert-Throws {Assert-GuiStartupTaskOwned $script:Context $script:Receipt $script:Task} 'XML SID must match COM SID'
+}finally{$identity.Dispose();$script:Context=$oldContext}
+$script:Names.Add('real Windows account resolution and localized foreign-account refusal')
+
 Reset-Fixture;[void](Sync-GuiLoginStartup $script:Context $true);Remove-OwnedGuiLoginStartup
 Assert-Test ($script:Deletes -eq 1 -and -not $script:Task -and -not (Test-Path -LiteralPath $script:Context.receipt)) 'uninstall retires only proven owned task'
 $script:Names.Add('owned uninstall retirement')
