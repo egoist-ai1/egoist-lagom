@@ -1,0 +1,14 @@
+  Determining projects to restore...
+  Restored D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53\baseline\OriginalAtomicFixture.csproj (in 94 ms).
+D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53\AtomicJsonFile.ead2.cs(36,29): warning CS8604: Possible null reference argument for parameter 'path' in 'DirectoryInfo Directory.CreateDirectory(string path)'. [D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53\baseline\OriginalAtomicFixture.csproj]
+D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53\AtomicJsonFile.ead2.cs(136,29): warning CS8604: Possible null reference argument for parameter 'path' in 'DirectoryInfo Directory.CreateDirectory(string path)'. [D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53\baseline\OriginalAtomicFixture.csproj]
+  OriginalAtomicFixture -> D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53\baseline\bin\Release\net10.0-windows\OriginalAtomicFixture.dll
+
+Build succeeded.
+
+D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53\AtomicJsonFile.ead2.cs(36,29): warning CS8604: Possible null reference argument for parameter 'path' in 'DirectoryInfo Directory.CreateDirectory(string path)'. [D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53\baseline\OriginalAtomicFixture.csproj]
+D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53\AtomicJsonFile.ead2.cs(136,29): warning CS8604: Possible null reference argument for parameter 'path' in 'DirectoryInfo Directory.CreateDirectory(string path)'. [D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53\baseline\OriginalAtomicFixture.csproj]
+    2 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.58

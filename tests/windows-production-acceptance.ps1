@@ -51,16 +51,28 @@ function Get-NativePathAclSnapshot {
   $acl=Get-Acl -LiteralPath $Path
   return [ordered]@{path=$Path;owner=$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value;sddl=$acl.Sddl;protected=$acl.AreAccessRulesProtected;canonical=$acl.AreAccessRulesCanonical;rules=@(foreach($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){[ordered]@{sid=$rule.IdentityReference.Value;rights=[int]$rule.FileSystemRights;type=[string]$rule.AccessControlType;inherited=$rule.IsInherited;inheritance=[int]$rule.InheritanceFlags;propagation=[int]$rule.PropagationFlags}})}
 }
-function Assert-NativeAdministratorOwned {
-  param([string]$Path)
-  Assert-NativeOrdinaryPath -Path $Path -Leaf:([IO.File]::Exists($Path))
-  $acl=Get-Acl -LiteralPath $Path;$trusted=@('S-1-5-18','S-1-5-32-544')
-  if($acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $trusted){throw "Untrusted installation owner: $Path"}
-  $write=[Security.AccessControl.FileSystemRights]::Write -bor [Security.AccessControl.FileSystemRights]::Delete -bor [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor [Security.AccessControl.FileSystemRights]::TakeOwnership
-  foreach($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){
-    if(($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0){continue}
-    if($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and $rule.IdentityReference.Value -notin $trusted -and ($rule.FileSystemRights -band $write) -ne 0){throw "Untrusted write/delete ACE: $Path; SID=$($rule.IdentityReference.Value); rights=$([int]$rule.FileSystemRights); inherited=$($rule.IsInherited); SDDL=$($acl.Sddl)"}
+function Assert-NativeAdministratorAcl {
+  param([Security.AccessControl.FileSystemSecurity]$Security,[string]$Path,[switch]$InstallationPath)
+  $trusted=@('S-1-5-18','S-1-5-32-544')
+  if($InstallationPath){
+    if(-not [IO.Path]::IsPathRooted($Path)){throw 'Installation ACL scope requires an absolute path.'}
+    $canonicalRoot=[IO.Path]::GetFullPath((Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'EgoistShield')).TrimEnd('\')
+    $full=[IO.Path]::GetFullPath($Path).TrimEnd('\')
+    if($full -ine $canonicalRoot -and -not $full.StartsWith($canonicalRoot+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Installation ACL scope escaped canonical Program Files.'}
+    $trusted+='S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464'
   }
+  if($Security.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $trusted){throw "Untrusted installation owner: $Path"}
+  $write=[Security.AccessControl.FileSystemRights]::Write -bor [Security.AccessControl.FileSystemRights]::Delete -bor [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor [Security.AccessControl.FileSystemRights]::TakeOwnership
+  foreach($rule in $Security.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){
+    if(($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0){continue}
+    if($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and $rule.IdentityReference.Value -notin $trusted -and ($rule.FileSystemRights -band $write) -ne 0){throw "Untrusted write/delete ACE: $Path; SID=$($rule.IdentityReference.Value); rights=$([int]$rule.FileSystemRights); inherited=$($rule.IsInherited); SDDL=$($Security.Sddl)"}
+  }
+}
+function Assert-NativeAdministratorOwned {
+  param([string]$Path,[switch]$InstallationPath)
+  Assert-NativeOrdinaryPath -Path $Path -Leaf:([IO.File]::Exists($Path))
+  $acl=Get-Acl -LiteralPath $Path
+  Assert-NativeAdministratorAcl -Security $acl -Path $Path -InstallationPath:$InstallationPath
   return [ordered]@{path=$Path;owner=$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value;sddl=$acl.Sddl}
 }
 function Get-NativeNetworkFingerprint {
@@ -260,7 +272,7 @@ function Assert-NativeGuiElevation {
 }
 function Set-NativeOwnedLegacyLayer {
   $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
-  [void](Assert-NativeAdministratorOwned $gui)
+  [void](Assert-NativeAdministratorOwned $gui -InstallationPath)
   Add-NativeMutation -Kind 'owned-hkcu-compatibility-fixture' -Target $gui -Purpose 'Preserve HIGHDPIAWARE while migrating the old forced RUNASADMIN token.'
   $base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::CurrentUser,[Microsoft.Win32.RegistryView]::Registry64)
   $key=$base.CreateSubKey('Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers')
@@ -283,7 +295,7 @@ function Invoke-NativeGui {
   param([ValidateSet('provision-telegram','check-telegram')][string]$Action,[string]$Label)
   Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
   $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
-  [void](Assert-NativeAdministratorOwned $gui)
+  [void](Assert-NativeAdministratorOwned $gui -InstallationPath)
   Add-NativeMutation -Kind 'canonical-gui-native-uia' -Target $gui -Purpose $Action
   $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$gui;$info.WorkingDirectory=$script:InstallRoot;$info.UseShellExecute=$false;$info.CreateNoWindow=$true
   foreach($name in @($info.Environment.Keys)){if($name -match '^(ELECTRON_RUN_AS_NODE|NODE_OPTIONS|NODE_PATH|LAGOM_TEST_USER_DATA_DIR|SHIELD_.*|EGOIST_.*)$'){[void]$info.Environment.Remove($name)}}
@@ -633,7 +645,7 @@ function Invoke-NativeAcceptance {
     Add-NativeMutation -Kind 'setup-clean-install' -Target $script:InstallRoot -Purpose 'Actual generated candidate silent installation.'
     $install=Invoke-NativeBounded -Executable $script:Installer -Arguments @('/S') -Label 'clean-install' -TimeoutSeconds 600
     $script:Receipt.checks+=[ordered]@{name='actual-generated-setup-clean-install';ok=$true;milliseconds=$install.elapsedMilliseconds}
-    $acls=@();foreach($relative in @('','EgoistShield.exe','EgoistShield.Worker.exe','resources','resources\app.asar','resources\component-worker.cjs','resources\worker-host-integrity.json','resources\core-service\win-x64\EgoistShield.Service.exe')){$acls+=Assert-NativeAdministratorOwned (Join-Path $script:InstallRoot $relative)};$script:Receipt.acls=$acls
+    $acls=@();foreach($relative in @('','EgoistShield.exe','EgoistShield.Worker.exe','resources','resources\app.asar','resources\component-worker.cjs','resources\worker-host-integrity.json','resources\core-service\win-x64\EgoistShield.Service.exe')){$acls+=Assert-NativeAdministratorOwned (Join-Path $script:InstallRoot $relative) -InstallationPath};$script:Receipt.acls=$acls
     $options=[ordered]@{installRoot=$script:InstallRoot;integrity=$script:ManifestPath;sourceCommit=$script:SourceCommit;version=$script:Version;output=(Join-Path $script:Work 'installed-payload.json')}
     $optionsPath=Join-Path $script:Work 'installed-payload.options.json';$options | ConvertTo-Json | Set-Content -LiteralPath $optionsPath -Encoding utf8
     [void](Invoke-NativeBounded -Executable $script:Node -Arguments @($script:NodeHelper,'verify-payload',$optionsPath) -Label 'installed-payload' -TimeoutSeconds 180)
@@ -660,7 +672,7 @@ function Invoke-NativeAcceptance {
     [void](Invoke-NativeGui -Action 'check-telegram' -Label 'gui-after-reinstall');Assert-NativeNoGui
     $script:Receipt.checks+=[ordered]@{name='actual-protected-reinstall-with-recovery-services-and-system-task-registration-roundtrip';ok=$true;actualReboot=$false}
     $uninstaller=Join-Path $script:InstallRoot 'Uninstall Egoist Shield.exe'
-    [void](Assert-NativeAdministratorOwned $uninstaller)
+    [void](Assert-NativeAdministratorOwned $uninstaller -InstallationPath)
     Add-NativeMutation -Kind 'owned-uninstall' -Target $script:InstallRoot -Purpose 'Actual candidate uninstall and owned cleanup.'
     [void](Invoke-NativeBounded -Executable $uninstaller -Arguments @('/S') -Label 'uninstall' -TimeoutSeconds 300)
     [void](Wait-NativeCondition -Condition {if(-not (Test-Path -LiteralPath $script:InstallRoot)){return $true}} -Label 'Actual uninstaller completion' -TimeoutSeconds 90)

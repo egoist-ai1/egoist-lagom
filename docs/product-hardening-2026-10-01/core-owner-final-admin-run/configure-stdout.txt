@@ -1,0 +1,1 @@
+Configured install root: C:\Program Files\EgoistShield

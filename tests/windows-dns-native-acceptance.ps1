@@ -375,7 +375,7 @@ function Invoke-DnsGuardian {
   }
   $canonical=Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'EgoistShield\resources\core-service\win-x64\EgoistShield.Service.exe'
   if($plan.core -ine $canonical -or [string]$plan.coreSha256 -notmatch '^[a-fA-F0-9]{64}$'){throw 'DNS guardian requires exact candidate Core.'}
-  [void](Assert-NativeAdministratorOwned $canonical)
+  [void](Assert-NativeAdministratorOwned $canonical -InstallationPath)
   $record=[ordered]@{schemaVersion=1;kind='ci-emergency-dns-guardian';stage='armed';nativeGatePassed=$false;startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');mutations=@()}
   [IO.File]::WriteAllText([string]$plan.receipt,($record | ConvertTo-Json -Depth 12),[Text.UTF8Encoding]::new($false))
   $watch=[Diagnostics.Stopwatch]::StartNew()
@@ -404,7 +404,7 @@ function Invoke-DnsNativeAcceptance {
   $script:Core=Join-Path $script:InstallRoot 'resources\core-service\win-x64\EgoistShield.Service.exe'
   $coreEntries=@($manifest.payload | Where-Object {$_.path -ceq 'resources/core-service/win-x64/EgoistShield.Service.exe'})
   if($coreEntries.Count -ne 1){throw 'Candidate manifest does not identify exactly one Core.'};$script:CoreHash=[string]$coreEntries[0].sha256
-  foreach($target in @($script:InstallRoot,$script:Core,(Join-Path $script:InstallRoot 'EgoistShield.exe'),(Join-Path $script:InstallRoot 'EgoistShield.Worker.exe'))){[void](Assert-NativeAdministratorOwned $target)}
+  foreach($target in @($script:InstallRoot,$script:Core,(Join-Path $script:InstallRoot 'EgoistShield.exe'),(Join-Path $script:InstallRoot 'EgoistShield.Worker.exe'))){[void](Assert-NativeAdministratorOwned $target -InstallationPath)}
   Assert-DnsNoForeignState
   if(Test-Path -LiteralPath $script:DnsWork){throw 'DNS acceptance work already exists; prior evidence must be inspected.'}
   if(Test-Path -LiteralPath $script:DnsBaseWork){Assert-NativeOrdinaryPath $script:DnsBaseWork}

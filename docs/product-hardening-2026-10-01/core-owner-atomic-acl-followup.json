@@ -1,0 +1,1125 @@
+{
+  "schemaVersion": 1,
+  "scope": "test-only observed NTFS automatic-inheritance metadata comparison; no production changes",
+  "frozenSourceCommit": "d1ea1cf54b6b6b33508f1b0edb448be169441fca",
+  "sourceHashesAreRawWorkingBytes": true,
+  "sourceHashes": {
+    "tests/core-owner-regression.cs": "7EBD1DBEDCB2315AEA382BA95E700DA3E013CA19541CA7622053B5FC9298E15E",
+    "tests/core-owner-regression.ps1": "D5D368D0CA4D390D8E156F3B655B465C54F13986D9CD463690CBACBF4D092D05",
+    "tests/fixtures/AtomicJsonFile.ead2.cs": "1EE6256769F2D036DD93B114B6D89CD72BC1530CB3FDA9DEF7139873042FA231"
+  },
+  "productionServiceDiffSince900d84": [],
+  "actualHostedCapture": {
+    "url": "https://github.com/egoist-ai1/egoist-lagom/actions/runs/36823434766/job/110243766727",
+    "sourceCommit": "26f82c39e580139fabfa9ae22861cfa813c7e4f0",
+    "acceptedReceipt": "docs/product-hardening-2026-10-01/core-owner-atomic-acl-capture/receipt.json",
+    "acceptedReceiptSha256": "6841F523B3E0E34428C1744DB797BC153CF7E93A9B029F2823FC6FE91BF53020",
+    "artifactZipSha256": "568dbf4da56ffbaaf414af27b823f83d8b83e8481e6e1efe42dee8d99c2a8186",
+    "actualAdministrator": true,
+    "atomicAclCapture": {
+      "initial": {
+        "sddl": "O:BAD:(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)",
+        "owner": "S-1-5-32-544",
+        "controlFlags": "DiscretionaryAclPresent, SelfRelative",
+        "controlFlagsMask": 32772,
+        "protectedDacl": false,
+        "canonicalDacl": true,
+        "rules": [
+          {
+            "sid": "S-1-5-32-544",
+            "rights": "FullControl",
+            "rightsMask": 2032127,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          },
+          {
+            "sid": "S-1-5-18",
+            "rights": "FullControl",
+            "rightsMask": 2032127,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": "ReadAndExecute, Synchronize",
+            "rightsMask": 1179817,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          }
+        ]
+      },
+      "final": {
+        "sddl": "O:BAD:AI(A;ID;FA;;;BA)(A;ID;FA;;;SY)(A;ID;0x1200a9;;;BU)",
+        "owner": "S-1-5-32-544",
+        "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+        "controlFlagsMask": 33796,
+        "protectedDacl": false,
+        "canonicalDacl": true,
+        "rules": [
+          {
+            "sid": "S-1-5-32-544",
+            "rights": "FullControl",
+            "rightsMask": 2032127,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          },
+          {
+            "sid": "S-1-5-18",
+            "rights": "FullControl",
+            "rightsMask": 2032127,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          },
+          {
+            "sid": "S-1-5-32-545",
+            "rights": "ReadAndExecute, Synchronize",
+            "rightsMask": 1179817,
+            "accessType": "Allow",
+            "inheritance": "None",
+            "propagation": "None",
+            "inherited": true
+          }
+        ]
+      },
+      "completedReplacementWrites": 256,
+      "completedReads": 256,
+      "validReads": 256,
+      "falseMissing": 0
+    },
+    "configureExitCode": 0,
+    "networkPreserved": true,
+    "filesIndependentlyVerified": 8
+  },
+  "comparisonContract": {
+    "ignoredControlFlag": {
+      "name": "DiscretionaryAclAutoInherited",
+      "mask": 1024
+    },
+    "ownerMustMatch": true,
+    "orderedDaclBinaryBytesMustMatch": true,
+    "protectedAndCanonicalStateMustMatch": true,
+    "allOtherControlFlagsMustMatch": true,
+    "productionProtectedProductRootUnchanged": true
+  },
+  "historicalFixture": {
+    "rawSourceSha256": "1EE6256769F2D036DD93B114B6D89CD72BC1530CB3FDA9DEF7139873042FA231",
+    "normalizedEquivalentToCommit": "ead2bebea1d5866c4c162bbff9b514db533721ab",
+    "gitBlobLfSha256": "34A6EC193581DB16C6B3F2E2D6F91681E71EB7D703D2AA37B75889D35C21F524",
+    "fixtureGitBlobExactRawShaVerified": true,
+    "separateAssemblySha256": "7BE94C14C0C268AE504A29B09E41CAB3E8DD1D832FB117F77EFE5D3E8D8F822D",
+    "productionCompilationIncludesHistoricalFixture": false
+  },
+  "localFocusedVerification": {
+    "sdk": "10.0.401",
+    "buildExitCode": 0,
+    "baselineBuildExitCode": 0,
+    "runExitCode": 0,
+    "groupsPassed": 9,
+    "actualSystem": false,
+    "actualAdministrator": false,
+    "sourceReceiptSha256": "0A967C43976180E5B3C6B4A719D96930A5BB90D4C37134B3383E021D8ED720E4",
+    "selectedRealEvidence": {
+      "nonproduction-atomic-files": {
+        "replaces": 256,
+        "validReads": 256,
+        "falseMissing": 0,
+        "cancellationPreserved": true,
+        "exclusiveCreatePreserved": true,
+        "ownerAndOrderedDaclEquivalent": true,
+        "acl": {
+          "initial": {
+            "sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+            "owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+            "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+            "controlFlagsMask": 33796,
+            "protectedDacl": false,
+            "canonicalDacl": true,
+            "rules": [
+              {
+                "sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                "rights": "Modify, Synchronize",
+                "rightsMask": 1245631,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                "rights": "Modify, Synchronize",
+                "rightsMask": 1245631,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-18",
+                "rights": "FullControl",
+                "rightsMask": 2032127,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-32-544",
+                "rights": "FullControl",
+                "rightsMask": 2032127,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                "rights": "FullControl",
+                "rightsMask": 2032127,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              }
+            ]
+          },
+          "final": {
+            "sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+            "owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+            "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+            "controlFlagsMask": 33796,
+            "protectedDacl": false,
+            "canonicalDacl": true,
+            "rules": [
+              {
+                "sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                "rights": "Modify, Synchronize",
+                "rightsMask": 1245631,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                "rights": "Modify, Synchronize",
+                "rightsMask": 1245631,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-18",
+                "rights": "FullControl",
+                "rightsMask": 2032127,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-32-544",
+                "rights": "FullControl",
+                "rightsMask": 2032127,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              },
+              {
+                "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                "rights": "FullControl",
+                "rightsMask": 2032127,
+                "accessType": "Allow",
+                "inheritance": "None",
+                "propagation": "None",
+                "inherited": true
+              }
+            ]
+          },
+          "completedReplacementWrites": 256,
+          "completedReads": 256,
+          "validReads": 256,
+          "falseMissing": 0
+        }
+      },
+      "historical-and-native-atomic-acls": {
+        "actualOwnedNtfs": true,
+        "historicalSourceSha256": "1EE6256769F2D036DD93B114B6D89CD72BC1530CB3FDA9DEF7139873042FA231",
+        "cases": [
+          {
+            "api": "original-ead2-AtomicJsonFile",
+            "nativeFlags": 0,
+            "replacementWrites": 256,
+            "initial": {
+              "sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+              "controlFlagsMask": 33796,
+              "protectedDacl": false,
+              "canonicalDacl": true,
+              "rules": [
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-18",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-32-544",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                }
+              ]
+            },
+            "final": {
+              "sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+              "controlFlagsMask": 33796,
+              "protectedDacl": false,
+              "canonicalDacl": true,
+              "rules": [
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-18",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-32-544",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                }
+              ]
+            },
+            "ownerAndOrderedDaclEquivalent": true
+          },
+          {
+            "api": "File.Replace",
+            "nativeFlags": 0,
+            "replacementWrites": 256,
+            "initial": {
+              "sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+              "controlFlagsMask": 33796,
+              "protectedDacl": false,
+              "canonicalDacl": true,
+              "rules": [
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-18",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-32-544",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                }
+              ]
+            },
+            "final": {
+              "sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+              "controlFlagsMask": 33796,
+              "protectedDacl": false,
+              "canonicalDacl": true,
+              "rules": [
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-18",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-32-544",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                }
+              ]
+            },
+            "ownerAndOrderedDaclEquivalent": true
+          },
+          {
+            "api": "ReplaceFileW",
+            "nativeFlags": 0,
+            "replacementWrites": 256,
+            "initial": {
+              "sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+              "controlFlagsMask": 33796,
+              "protectedDacl": false,
+              "canonicalDacl": true,
+              "rules": [
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-18",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-32-544",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                }
+              ]
+            },
+            "final": {
+              "sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "controlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+              "controlFlagsMask": 33796,
+              "protectedDacl": false,
+              "canonicalDacl": true,
+              "rules": [
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                  "rights": "Modify, Synchronize",
+                  "rightsMask": 1245631,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-18",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-32-544",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                },
+                {
+                  "sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "rights": "FullControl",
+                  "rightsMask": 2032127,
+                  "accessType": "Allow",
+                  "inheritance": "None",
+                  "propagation": "None",
+                  "inherited": true
+                }
+              ]
+            },
+            "ownerAndOrderedDaclEquivalent": true
+          }
+        ],
+        "onlyIgnoredControlFlag": "DiscretionaryAclAutoInherited (0x400)",
+        "inMemoryRealDifferenceRefusals": 5,
+        "productionFilesystemWrites": 0
+      }
+    },
+    "ownBeforeChangeComparisons": {
+      "original": {
+        "sha256": "4F883BAB57DBEC9ECED92FB7F9DD54D9AD1CBDEA1DDDD1EDB52954E2BF4B14A0",
+        "atomic": {
+          "initial": {
+            "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+            "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+            "ControlFlagsMask": 33796,
+            "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+            "Protected": false,
+            "Canonical": true,
+            "Rules": [
+              {
+                "Sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                "Rights": 1245631,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                "Rights": 1245631,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-18",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-32-544",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              }
+            ]
+          },
+          "final": {
+            "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+            "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+            "ControlFlagsMask": 33796,
+            "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+            "Protected": false,
+            "Canonical": true,
+            "Rules": [
+              {
+                "Sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                "Rights": 1245631,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                "Rights": 1245631,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-18",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-32-544",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              }
+            ]
+          },
+          "writes": 256,
+          "reads": 256,
+          "validReads": 256,
+          "falseMissing": 0,
+          "literalSddlEqual": true
+        },
+        "replacements": [
+          {
+            "api": "File.Replace(three-arguments)",
+            "nativeFlags": 0,
+            "before": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "sourceBefore": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FR;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-32-545",
+                  "Rights": 1179785,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                },
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "after": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "literalSddlEqual": true
+          },
+          {
+            "api": "ReplaceFileW",
+            "nativeFlags": 0,
+            "before": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "sourceBefore": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FR;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-32-545",
+                  "Rights": 1179785,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                },
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "after": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "literalSddlEqual": true
+          }
+        ]
+      },
+      "current": {
+        "sha256": "EB008EA87CB156B6696B45E64FD6E3CEC60B767B868FB4FEF4648A0DA77F54EF",
+        "atomic": {
+          "initial": {
+            "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+            "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+            "ControlFlagsMask": 33796,
+            "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+            "Protected": false,
+            "Canonical": true,
+            "Rules": [
+              {
+                "Sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                "Rights": 1245631,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                "Rights": 1245631,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-18",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-32-544",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              }
+            ]
+          },
+          "final": {
+            "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:AI(A;ID;0x1301bf;;;S-1-5-21-3279901756-838163169-2704092079-1002)(A;ID;0x1301bf;;;S-1-5-21-2537520344-1532543705-4252359527-611110840)(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+            "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+            "ControlFlagsMask": 33796,
+            "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, SelfRelative",
+            "Protected": false,
+            "Canonical": true,
+            "Rules": [
+              {
+                "Sid": "S-1-5-21-3279901756-838163169-2704092079-1002",
+                "Rights": 1245631,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-21-2537520344-1532543705-4252359527-611110840",
+                "Rights": 1245631,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-18",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-32-544",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              },
+              {
+                "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                "Rights": 2032127,
+                "Access": "Allow",
+                "Inheritance": "None",
+                "Propagation": "None",
+                "Inherited": true
+              }
+            ]
+          },
+          "writes": 256,
+          "reads": 256,
+          "validReads": 256,
+          "falseMissing": 0,
+          "literalSddlEqual": true
+        },
+        "replacements": [
+          {
+            "api": "File.Replace(three-arguments)",
+            "nativeFlags": 0,
+            "before": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "sourceBefore": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FR;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-32-545",
+                  "Rights": 1179785,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                },
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "after": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "literalSddlEqual": true
+          },
+          {
+            "api": "ReplaceFileW",
+            "nativeFlags": 0,
+            "before": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "sourceBefore": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FR;;;BU)(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-32-545",
+                  "Rights": 1179785,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                },
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "after": {
+              "Sddl": "O:S-1-5-21-3279901756-838163169-2704092079-1000D:PAI(A;;FA;;;S-1-5-21-3279901756-838163169-2704092079-1000)",
+              "Owner": "S-1-5-21-3279901756-838163169-2704092079-1000",
+              "ControlFlagsMask": 37892,
+              "ControlFlags": "DiscretionaryAclPresent, DiscretionaryAclAutoInherited, DiscretionaryAclProtected, SelfRelative",
+              "Protected": true,
+              "Canonical": true,
+              "Rules": [
+                {
+                  "Sid": "S-1-5-21-3279901756-838163169-2704092079-1000",
+                  "Rights": 2032127,
+                  "Access": "Allow",
+                  "Inheritance": "None",
+                  "Propagation": "None",
+                  "Inherited": false
+                }
+              ]
+            },
+            "literalSddlEqual": true
+          }
+        ]
+      }
+    }
+  },
+  "verificationNotes": [
+    "The first long own cache build failed copying the NuGet runtime DLL; the shorter isolated own path compiled and ran. No source or production failure was inferred.",
+    "An initial negative descriptor fixture lost 0x100 when converted into FileSecurity; the retained failure led to direct raw-descriptor negative inputs to the same comparison core, which now refuses five real descriptor differences.",
+    "Local actual token is neither SYSTEM nor administrator. The historical/native group must still be accepted on the real hosted administrator."
+  ],
+  "primarySources": [
+    "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-replacefilew",
+    "https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-control",
+    "https://github.com/dotnet/runtime/blob/v10.0.12/src/libraries/System.Private.CoreLib/src/System/IO/File.cs",
+    "https://github.com/dotnet/runtime/blob/v10.0.12/src/libraries/System.Private.CoreLib/src/System/IO/FileSystem.Windows.cs"
+  ],
+  "hostedRerunsPendingAtAcceptance": [
+    36824899477,
+    36824901562
+  ],
+  "releaseReady": false
+}

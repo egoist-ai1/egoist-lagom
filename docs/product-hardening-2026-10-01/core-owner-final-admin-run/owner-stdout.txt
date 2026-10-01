@@ -1,0 +1,2 @@
+OWNER_EVIDENCE_DIR=D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53
+EVIDENCE=D:\a\_temp\lagom-installer-diagnostics\core-owner-7eae8c53\receipt.json

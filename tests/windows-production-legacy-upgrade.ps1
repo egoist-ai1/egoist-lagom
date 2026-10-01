@@ -82,7 +82,7 @@ function Test-LegacyHarnessProductVersion {
 function Invoke-LegacyGui {
   Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
   $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
-  [void](Assert-NativeAdministratorOwned $gui)
+  [void](Assert-NativeAdministratorOwned $gui -InstallationPath)
   if(-not (Test-LegacyHarnessProductVersion ([string](Get-Item -LiteralPath $gui).VersionInfo.ProductVersion) $ExpectedOldVersion)){throw "Actual GUI is not the authenticated old $ExpectedOldVersion."}
   $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$gui;$info.WorkingDirectory=$script:InstallRoot;$info.UseShellExecute=$false;$info.CreateNoWindow=$true
   foreach($name in @($info.Environment.Keys)){if($name -match '^(ELECTRON_RUN_AS_NODE|NODE_OPTIONS|NODE_PATH|LAGOM_TEST_USER_DATA_DIR|SHIELD_.*|EGOIST_.*)$'){[void]$info.Environment.Remove($name)}}
@@ -284,7 +284,7 @@ function Invoke-NativeLegacyUpgrade {
     $optionsPath=Join-Path $script:Work 'installed-payload.options.json';$options | ConvertTo-Json | Set-Content -LiteralPath $optionsPath -Encoding utf8
     [void](Invoke-NativeBounded -Executable $script:Node -Arguments @($script:LegacyNodeHelper,'verify-payload',$optionsPath) -Label 'candidate-actual-payload' -TimeoutSeconds 300)
     $script:Receipt.candidateElevation=Assert-NativeGuiElevation
-    $script:Receipt.candidateAcls=@(foreach($relative in @('','EgoistShield.exe','EgoistShield.Worker.exe','resources','resources\app.asar','resources\component-worker.cjs','resources\worker-host-integrity.json','resources\core-service\win-x64\EgoistShield.Service.exe')){Assert-NativeAdministratorOwned (Join-Path $script:InstallRoot $relative)})
+    $script:Receipt.candidateAcls=@(foreach($relative in @('','EgoistShield.exe','EgoistShield.Worker.exe','resources','resources\app.asar','resources\component-worker.cjs','resources\worker-host-integrity.json','resources\core-service\win-x64\EgoistShield.Service.exe')){Assert-NativeAdministratorOwned (Join-Path $script:InstallRoot $relative) -InstallationPath})
     if((Get-FileHash -LiteralPath $configPath -Algorithm SHA256).Hash -cne $configHash){throw 'Actual Telegram private configuration changed across the genuine legacy upgrade.'}
     Assert-NativePrivateState 'actual-old-to-new-preserved-private-state'
     Assert-LegacyRunAfterSuppression
@@ -293,7 +293,7 @@ function Invoke-NativeLegacyUpgrade {
     Assert-NativeNoGui;Assert-NativeNetworkPreserved 'old-helper-new-bridge-upgrade';Assert-LegacyForeignRegistrationsPreserved 'upgrade'
     [void](Invoke-NativeGui -Action 'check-telegram' -Label 'actual-new-gui-after-legacy-upgrade');Assert-NativeNoGui
     $script:Receipt.checks+=[ordered]@{name=('real-official-'+$ExpectedOldVersion+'-helper-to-signed-3.8.0-bridge');oldVersion=$ExpectedOldVersion;ok=$true;publicLatestFeedDiscovery=$false;actualBoot=$false};Save-NativeReceipt
-    $uninstaller=Join-Path $script:InstallRoot 'Uninstall Egoist Shield.exe';[void](Assert-NativeAdministratorOwned $uninstaller)
+    $uninstaller=Join-Path $script:InstallRoot 'Uninstall Egoist Shield.exe';[void](Assert-NativeAdministratorOwned $uninstaller -InstallationPath)
     Add-NativeMutation -Kind 'actual-owned-candidate-uninstall' -Target $uninstaller -Purpose 'Remove the successfully upgraded product with its actual uninstaller; preserve unrelated services/tasks/network.'
     [void](Invoke-NativeBounded -Executable $uninstaller -Arguments @('/S') -Label 'actual-candidate-uninstall' -TimeoutSeconds 300)
     [void](Wait-NativeCondition -Condition {if(-not (Test-Path -LiteralPath $script:InstallRoot)){return $true}} -Label 'Actual upgraded candidate uninstall completion' -TimeoutSeconds 90)

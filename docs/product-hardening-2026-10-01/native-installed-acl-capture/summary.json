@@ -1,0 +1,18 @@
+{
+  "artifactId": 11147035500,
+  "artifactSha256": "f8edeaf682427cf5a843b754eefea2a8f9869118ab66e95f2645c89b5d0d003d",
+  "runId": 36829137408,
+  "jobId": 110261490512,
+  "artifactSourceCommit": "d1ea1cf54b6b6b33508f1b0edb448be169441fca",
+  "harnessSourceCommit": "7bad9f42aa734c2b113e841b4152ba6c671540d5",
+  "result": "diagnostic-only-actual-signed-Setup0-CoreRunningAuto-networkPreserved",
+  "aclPaths": 8,
+  "allOwners": "Administrators",
+  "confirmedRejectedPrincipal": "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464",
+  "confirmedEffectiveFullControlInheritedDirectories": [
+    "C:\\Program Files\\EgoistShield\\",
+    "C:\\Program Files\\EgoistShield\\resources"
+  ],
+  "ordinaryUsersReadExecuteOnly": true,
+  "releaseReady": false
+}

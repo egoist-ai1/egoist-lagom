@@ -1,0 +1,43 @@
+{
+  "sourceCommit": "d1ea1cf54b6b6b33508f1b0edb448be169441fca",
+  "runId": 36827157218,
+  "releaseId": 400708616,
+  "result": "failed-not-release-ready",
+  "rawJobs": [
+    {
+      "jobId": 110257232843,
+      "kind": "fresh",
+      "bytes": 30978,
+      "sha256": "d4011855495eee122bad1051bfea7f3820321047882d91045a7e162874e0bad0"
+    },
+    {
+      "jobId": 110257232809,
+      "kind": "old379",
+      "bytes": 30892,
+      "sha256": "50a231b962c0dfed6d51be1f5f727ad33139865cc2d102ab6146f93fde008723"
+    },
+    {
+      "jobId": 110257232902,
+      "kind": "old378",
+      "bytes": 35231,
+      "sha256": "f36568b209250eb48d8f46f3a9d89cef39f4280c8fbc7542ee7cfb80546ee34d"
+    }
+  ],
+  "artifact": {
+    "id": 11145414534,
+    "bytes": 5664,
+    "sha256": "6b1c214e63d54f7ec441e298040ed3eb2695353c423113d9a5d334a14de048b5"
+  },
+  "observed": {
+    "setupExitCode": 0,
+    "coreRunningAuto": true,
+    "freshAclFailure": "Untrusted write/delete ACE: C:\\Program Files\\EgoistShield\\",
+    "hostedActualAclCaptured": false,
+    "legacy378And379": "both-refused-evidence-directory-before-Setup"
+  },
+  "limits": [
+    "No new local installation or publication",
+    "No legacy helper handoff or DNS/TUN verification in this run",
+    "TrustedInstaller mismatch reproduced only on read-only actual local3.7.9; hosted ACL diagnosis pending"
+  ]
+}

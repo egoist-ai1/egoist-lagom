@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "d1ea1cf54b6b6b33508f1b0edb448be169441fca",
+  "runId": 36824899477,
+  "jobId": 110248294660,
+  "artifactId": 11144937369,
+  "artifactZipSha256": "18c14effacc5429e6cc589e8d39de5fb6bc57f6ec5191519fc3aa11bc5278ee8",
+  "actualAdministrator": true,
+  "groupsPassed": 9,
+  "groupsFailed": 0,
+  "historicalAndNativeSameTransitionVerified": true,
+  "configureExitCode": 0,
+  "configureMilliseconds": 288.55,
+  "coreBinary": {
+    "bytes": 37968841,
+    "sha256": "4A98809CAB66E50788BAB1D5478093402D7F7EEB93ED1C2A5ED7B757E22261D7",
+    "sdk": "10.0.401"
+  },
+  "networkPreserved": true,
+  "localNode": {
+    "tests": 878,
+    "pass": 878,
+    "fail": 0,
+    "skipped": 0
+  },
+  "installerExecuted": false,
+  "nativeReleaseAcceptancePassed": false,
+  "files": [
+    {
+      "name": "configure-stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "configure-stdout.txt",
+      "bytes": 56,
+      "sha256": "768af6fa77e054e58bb8e1724f7e785b5527b8357a2f320fb450ee4b68df490d"
+    },
+    {
+      "name": "historical-baseline-build.log",
+      "bytes": 1671,
+      "sha256": "0b4d535c00b489dcc90d38cba1e3f7383b58c991d9c7dbabca1e7e8c72896958"
+    },
+    {
+      "name": "installer-diagnostic.json",
+      "bytes": 45364,
+      "sha256": "7ea392ecf33c3366b834afe1f3416991b1e105c47cb774a0992e305d0512c0e6"
+    },
+    {
+      "name": "local-node-tests.txt",
+      "bytes": 85051,
+      "sha256": "2dd8139fa0d63ada554de8ea6bc53c247cda7cb102c275bf4033e6377fbc26aa"
+    },
+    {
+      "name": "native-job.txt",
+      "bytes": 19852,
+      "sha256": "4edf0c330b48fcf4608d9d2953851b34aa36af853494486478be534d0bf0a15a"
+    },
+    {
+      "name": "owner-build.log",
+      "bytes": 84562,
+      "sha256": "f6688578b4bae409027de9fe309df89b08e6e2fc34aa646901e57962abbd621f"
+    },
+    {
+      "name": "owner-receipt.json",
+      "bytes": 30096,
+      "sha256": "636c4ebed1608c9d44f1502332e23b7100a7036c1a63e3a3d95f73c74a9c54e4"
+    },
+    {
+      "name": "owner-results.json",
+      "bytes": 16030,
+      "sha256": "f9ad6a1ef6b2cf2c01e7e0b627e6d0ce671ca0ca352d42865d5d02f75a645524"
+    },
+    {
+      "name": "owner-run.log",
+      "bytes": 16032,
+      "sha256": "3463592590e878f301d428762c63b6af9fa976d32ace80445a3376929a594c5b"
+    },
+    {
+      "name": "owner-stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "owner-stdout.txt",
+      "bytes": 161,
+      "sha256": "587531835fb9e729f78eebfdf1f85d1f9cab372d223b36995f234dbdc59d6a8f"
+    }
+  ]
+}

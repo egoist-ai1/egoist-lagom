@@ -12,7 +12,7 @@ $script:VpnTestsRoot=$PSScriptRoot
 $script:VpnMainHelpers=& {
   . (Join-Path $PSScriptRoot 'windows-production-acceptance.ps1') -LibraryOnly
   $result=@{}
-  foreach($name in @('Get-NativeAcceptanceEnvironmentErrors','Assert-NativeOrdinaryPath','Assert-NativePathWithin','Assert-NativeAdministratorOwned','Get-NativeNetworkFingerprint','Get-NativeProductServices','Get-NativeProcessIdentity','Assert-NativeService','Get-NativeRecoveryPolicy','Assert-NativeNoGui')){
+  foreach($name in @('Get-NativeAcceptanceEnvironmentErrors','Assert-NativeOrdinaryPath','Assert-NativePathWithin','Resolve-NativeApplication','Assert-NativeAdministratorAcl','Assert-NativeAdministratorOwned','Get-NativeCimSnapshot','Get-NativeNetworkFingerprint','Get-NativeProductServices','Get-NativeProcessIdentity','Assert-NativeService','Get-NativeRecoveryPolicy','Assert-NativeNoGui')){
     $result[$name]=(Get-Command $name -CommandType Function).ScriptBlock
   }
   return $result
@@ -487,7 +487,7 @@ function Invoke-VpnNativeAcceptance {
   $script:VpnConnection=Join-Path $script:VpnProductRoot 'Service\Vpn\connection.json'
   $script:VpnStateFile=Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Egoist Shield\egoistshield-state.json'
   $script:VpnNode=Resolve-NativeApplication 'node'
-  foreach($file in @($script:VpnGui,$script:VpnCore,$script:VpnRuntime)){Assert-NativeOrdinaryPath -Path $file -Leaf;[void](Assert-NativeAdministratorOwned $file)}
+  foreach($file in @($script:VpnGui,$script:VpnCore,$script:VpnRuntime)){Assert-NativeOrdinaryPath -Path $file -Leaf;[void](Assert-NativeAdministratorOwned $file -InstallationPath)}
   [void](Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:VpnCore -Running)
   Assert-NativeNoGui
   if(@(Get-NativeProductServices | Where-Object {$_.Name -ceq 'EgoistShieldVpn'}).Count -or (Test-Path -LiteralPath $script:VpnConnection)){throw 'The clean candidate already has a VPN service or snapshot; this gate does not replace existing sessions.'}

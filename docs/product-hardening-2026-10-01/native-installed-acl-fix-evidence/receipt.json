@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "scoped-native-harness-acl-correction",
+  "productionFilesChanged": false,
+  "actualHostedDiagnosis": "native-installed-acl-capture/installer-diagnostic.json",
+  "observedCandidateSourceCommit": "d1ea1cf54b6b6b33508f1b0edb448be169441fca",
+  "scope": "Exact TrustedInstaller SID only with explicit InstallationPath and canonical actual ProgramFiles/EgoistShield boundary; private defaults remain SYSTEM/Administrators",
+  "pureDescriptorCases": {
+    "positive": 5,
+    "negative": 21,
+    "filesystemAclQueries": 0,
+    "filesystemAclWrites": 0
+  },
+  "vpnDependencies": "Isolated helper import retains Resolve-NativeApplication, Assert-NativeAdministratorAcl, Get-NativeCimSnapshot; 3 inert complete observations, no physical SCM query",
+  "sourceFiles": [
+    {
+      "path": "tests/windows-production-acceptance.ps1",
+      "sha256": "5bb62b9aea28c5bdf38efa7a4e12128bd75db90da19d392721543d19cb64b8d2"
+    },
+    {
+      "path": "tests/windows-production-legacy-upgrade.ps1",
+      "sha256": "018c047199f8ba4533f8595b1383d2340f5885d7e749609b1131ac96cb1bab7a"
+    },
+    {
+      "path": "tests/windows-dns-native-acceptance.ps1",
+      "sha256": "8d1295fb7a2e569db516098b1fd9c009cec44ad253a62952f88486cac484a24e"
+    },
+    {
+      "path": "tests/windows-vpn-native-acceptance.ps1",
+      "sha256": "1dec421db96bc57f5aada23bb2f2f7c67b9ccc7335ed673db827b106d1d20415"
+    },
+    {
+      "path": "tests/windows-installation-acl.test.mjs",
+      "sha256": "5bfc9caed62ed2aa0a67a3d3c26c1b801a222aa43f7bcffbea9b012b30f1a0ae"
+    },
+    {
+      "path": "tests/windows-vpn-native-helper.test.mjs",
+      "sha256": "0e812ee58a8f5b71f9e084af7c757b19a7503b680237a2e7c26baf2f710dfadf"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "ea919af43008cedcd8dce97612084edd096b199f809835d68aa1fdacf4a0728d"
+    }
+  ],
+  "testEvidence": [
+    {
+      "file": "full-node-native-acl-final.txt",
+      "tests": 881,
+      "pass": 881,
+      "fail": 0,
+      "skipped": 0,
+      "sha256": "79104d5c152b140f6d568fd2d1eef325a162c2643994d68ec156ef8aa0b998b4"
+    },
+    {
+      "file": "native-acl-diagnostics-scoped-node.txt",
+      "tests": 22,
+      "pass": 22,
+      "fail": 0,
+      "skipped": 0,
+      "sha256": "3daabfddff9fa227b00ae726cff4a1da6e52f8a7b2cd9cbb3b0e429d8dc9d6a1"
+    },
+    {
+      "file": "native-installation-acl-ps51-node.txt",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0,
+      "sha256": "01186c9b9fde92afdd6f72adee15c1d81a7b8001c35465d377e7b32342be9b10"
+    }
+  ],
+  "fullNodeMilliseconds": 23883.2193,
+  "nativeSignedAcceptance": "pending for rebuilt final candidate; diagnostic-only install0 is not complete acceptance",
+  "physicalRootMutations": 0
+}

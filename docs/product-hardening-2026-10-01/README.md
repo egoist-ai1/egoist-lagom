@@ -1,6 +1,6 @@
 # Egoist Lagom 3.8.0: результаты доработок
 
-Дата: 1 октября 2026 года. Исходная точка — `5d0d58b44076843e639723ef267e7b8d2605e481`. Последний полный локальный набор — **878/878 PASS, без пропусков**, с [журналами и привязкой к исходникам](owner-transport-source-verification/README.md). [Настоящая настройка Core под администратором Windows](core-owner-native-run/README.md) прошла; подписанный Setup и переход со старых установленных версий остаются отдельными обязательными проверками. Ранее полученные [858](candidate-rebuild-source.md) и [855](final-source.md) проверок сохранены как исторические снимки. Первоначальный аудит, исследование рынка и приоритеты — в [аудите 30 сентября](../product-review-2026-09-30/README.md).
+Дата: 1 октября 2026 года. Исходная точка — `5d0d58b44076843e639723ef267e7b8d2605e481`. Последний полный локальный набор — **881/881 PASS, без пропусков**, с [журналами и хешами](native-installed-acl-fix-evidence/receipt.json). [Настоящая настройка Core под администратором Windows](core-owner-native-run/README.md) прошла; новый подписанный Setup устанавливается и запускает Core, но полная приёмка и переход со старых версий ещё должны пройти. [Выявленные ошибки тестового стенда](native-installed-acl-fix.md) исправлены после настоящей диагностики Windows. Ранее полученные [878](owner-transport-source-verification/README.md), [858](candidate-rebuild-source.md) и [855](final-source.md) проверок сохранены как исторические снимки. Первоначальный аудит, исследование рынка и приоритеты — в [аудите 30 сентября](../product-review-2026-09-30/README.md).
 
 ## Что изменено
 
@@ -23,7 +23,7 @@
 | Проверка | Фактический результат | Граница |
 | --- | --- | --- |
 | Общая сборка main/preload/renderer/worker | PASS | Исходники; установочный запуск отдельно |
-| Последний полный локальный Node-набор | 878/878, 0 skips, 25.46 с | Production функции, явные fixtures и loopback; число тестов не равно числу установок |
+| Последний полный локальный Node-набор | 881/881, 0 skips, 23.883 с | Production функции, явные fixtures и loopback; число тестов не равно числу установок |
 | Настройка Core на hosted Windows | Настоящий configure: 0, 307.94 мс; четыре проверенных ACL, marker 4 | Production ProgramData, настоящий administrator token; без Setup, SCM и GUI |
 | Core persistence | 10 000 замен / 50 000 чтений; ложные Missing 3 → 0 | Реальный NTFS в собственном временном каталоге |
 | Core crash/recovery | Полный стресс 357.93 с и дополнительные targeted проверки PASS | Собственные процессы/файлы, без изменения живых служб |
@@ -34,6 +34,7 @@
 | UI | 23 состояния, 25 снимков; 19 focused и 9 history checks PASS | Production renderer с явными IPC fixtures; native Windows DPI отдельно |
 | Installer/coordinator | Layout, private preservation, legacy quiescence и ownership regression PASS | Файлы/процессы настоящие, SCM/ACL boundaries в части fixtures контролируемые |
 | CI workflow | actionlint 1.7.12 PASS | Исполнение CI и native installer ещё нужно подтвердить |
+| Подписанный Setup и ACL на настоящей Windows | Setup 0, Core Running/Auto, сеть сохранена; восемь ACL считаны | Диагностический запуск; полная свежая/legacy приёмка остаётся обязательной |
 
 В браузерном стенде для 2000 серверов медиана появления снизилась с 576.77 до 128.14 мс, JS heap с 26.503 до 5.703 MiB. Для 60 строк стало 97 → 119.22 мс: универсальное ускорение не заявляется.
 
@@ -60,5 +61,6 @@
 - [Настоящая Windows приёмка: сценарий и границы](windows-acceptance.md).
 - [Обычный GUI и Core](ordinary-core-operations.md), [настройки и состояния интерфейса](ui-network-settings.md), [маршрутизация и правила](routing-rule-contract.md).
 - [Исправление владельца и sharing](core-owner-fix.md), [реальная настройка Windows](core-owner-native-run/README.md), [сырые исходные отказы](core-install-owner-failure/README.md).
+- [Права установки и исправление native-стенда](native-installed-acl-fix.md), [настоящие ACL восьми объектов](native-installed-acl-capture/installer-diagnostic.json), [исходные отказы](native-signed-d1ea-failure/summary.json).
 
 Установленная и опубликованная 3.7.9 сохранена на этапе этих проверок. Старые локальные 3.8.0 artifacts сохраняются; новый пакет строится в отдельном поколении.
