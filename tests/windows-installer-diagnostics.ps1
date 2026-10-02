@@ -199,7 +199,7 @@ try{
     $publish=Join-Path $script:Work 'core-publish'
     $coreProject=Join-Path $project 'src\service\EgoistShield.Service.csproj'
     $coreObj=(Join-Path $build 'core-obj')+'\'
-    $coreProps=@('-p:PublishSingleFile=true','-p:SelfContained=true',('-p:BaseIntermediateOutputPath='+$coreObj),('-p:MSBuildProjectExtensionsPath='+$coreObj),'-p:DefaultItemExcludes=obj\**\*.cs')
+    $coreProps=@('-p:PublishSingleFile=true','-p:SelfContained=true',('-p:NuGetLockFilePath='+(Join-Path $project 'src\service\packages.publish.lock.json')),('-p:BaseIntermediateOutputPath='+$coreObj),('-p:MSBuildProjectExtensionsPath='+$coreObj),'-p:DefaultItemExcludes=obj\**\*.cs')
     $receipt.restore=Invoke-NativeBounded -Executable $dotnet -Arguments (@('restore',$coreProject,'--locked-mode','-r','win-x64')+$coreProps+@('-v','quiet')) -Label 'core-diagnostic-restore' -TimeoutSeconds 180
     $receipt.build=Invoke-NativeBounded -Executable $dotnet -Arguments (@('publish',$coreProject,'--no-restore','-c','Release','-r','win-x64')+$coreProps+@('-p:EnableCompressionInSingleFile=true','-o',$publish,'-v','quiet')) -Label 'core-diagnostic-publish' -TimeoutSeconds 360
     $core=Join-Path $publish 'EgoistShield.Service.exe'

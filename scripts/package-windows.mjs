@@ -164,7 +164,10 @@ if (cscResult.status !== 0) throw new Error('Failed to compile ModernInstaller.e
 console.log('Publishing Core service...');
 const dotnetEnvironment = { ...process.env, DOTNET_ROOT: path.dirname(dotnet), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' };
 const coreIntermediate = path.join(evidence, 'core-obj') + path.sep;
-const coreBuildProperties = ['-p:PublishSingleFile=true', '-p:SelfContained=true', `-p:BaseIntermediateOutputPath=${coreIntermediate}`, `-p:MSBuildProjectExtensionsPath=${coreIntermediate}`, '-p:DefaultItemExcludes=obj\\**\\*.cs'];
+// Single-file publishing adds SDK build tasks that are absent from the normal
+// development restore. Pin that exact graph without rewriting its normal lock.
+const corePublishLock = path.join(root, 'src/service/packages.publish.lock.json');
+const coreBuildProperties = ['-p:PublishSingleFile=true', '-p:SelfContained=true', `-p:NuGetLockFilePath=${corePublishLock}`, `-p:BaseIntermediateOutputPath=${coreIntermediate}`, `-p:MSBuildProjectExtensionsPath=${coreIntermediate}`, '-p:DefaultItemExcludes=obj\\**\\*.cs'];
 const restore = spawnSync(dotnet, ['restore', 'src/service/EgoistShield.Service.csproj', '--locked-mode', '-r', 'win-x64', ...coreBuildProperties, '-v', 'quiet'], { windowsHide: true, env: dotnetEnvironment, encoding: 'utf8' });
 await fs.writeFile(path.join(evidence, 'core-locked-restore.txt'), [restore.stdout ?? '', restore.stderr ?? '', restore.error?.message ?? ''].join(''));
 if (restore.status !== 0) throw new Error('Core locked restore failed; see ' + path.join(evidence, 'core-locked-restore.txt'));
