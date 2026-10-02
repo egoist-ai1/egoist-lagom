@@ -313,7 +313,7 @@ not ok 52 - actual Windows runtime cleanup terminates only exact-path held harml
   location: 'C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\telegram-runtime-cleanup.test.mjs:50:1'
   failureType: 'testCodeFailure'
   error: |-
-    Command failed: C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f75d-1042-7df1-9e68-86e8c4a49415\work\native-runtime-cleanup-rsAQlz\bin\NativeRuntimeCleanupRegression.exe
+    Command failed: <task-runtime>
     Unhandled exception. System.IO.IOException: Runtime process identity is unavailable.
        at EgoistShield.Service.WindowsServiceListenerSnapshot.ReadRuntimeIdentity(SafeProcessHandle handle) in C:\Users\Egoist\Desktop\�஥���\�ਫ������\Egoist Lagom\src\service\EgoistShield.Service\WindowsServiceListenerSnapshot.cs:line 286
        at EgoistShield.Service.WindowsServiceListenerSnapshot.CaptureRuntimeProcesses(String expected, CancellationToken token) in C:\Users\Egoist\Desktop\�஥���\�ਫ������\Egoist Lagom\src\service\EgoistShield.Service\WindowsServiceListenerSnapshot.cs:line 325

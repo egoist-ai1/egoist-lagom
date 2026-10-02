@@ -19,7 +19,7 @@ not ok 1 - fresh runtime cleanup uses fixed native query/stop rather than CIM or
   actual: 'powershell.exe'
   operator: 'strictEqual'
   stack: |-
-    TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/tg-cleanup-red.mjs:18:9)
+    TestContext.<anonymous> (file:///<task-runtime>
     async Test.run (node:internal/test_runner/test:1389:7)
     async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
   ...
@@ -35,7 +35,7 @@ not ok 2 - arbitrary runtime paths are refused before any child launch
   name: 'AssertionError'
   operator: 'rejects'
   stack: |-
-    async TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/tg-cleanup-red.mjs:22:34)
+    async TestContext.<anonymous> (file:///<task-runtime>
     async Test.run (node:internal/test_runner/test:1389:7)
     async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
   ...
@@ -51,7 +51,7 @@ not ok 3 - unknown cleanup cannot clear saved state or permit copy
   name: 'AssertionError'
   operator: 'rejects'
   stack: |-
-    async TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/tg-cleanup-red.mjs:26:2)
+    async TestContext.<anonymous> (file:///<task-runtime>
     async Test.run (node:internal/test_runner/test:1389:7)
     async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
   ...

@@ -85,8 +85,8 @@ not ok 14 - actual Windows runtime cleanup terminates only exact-path held harml
   location: 'C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\telegram-runtime-cleanup.test.mjs:50:1'
   failureType: 'testCodeFailure'
   error: |-
-    Command failed: C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f75d-1042-7df1-9e68-86e8c4a49415\work\native-runtime-cleanup-vIfaG0\bin\NativeRuntimeCleanupRegression.exe
-    Unhandled exception. System.IO.IOException: The file 'C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f75d-1042-7df1-9e68-86e8c4a49415\work\native-runtime-cleanup-vIfaG0\fixture\foreign\egoist-cleanup-fixture-87e5f43b4a374378b713aaf3e0ab7cdd.exe' already exists.
+    Command failed: <task-runtime>
+    Unhandled exception. System.IO.IOException: The file '<task-runtime>' already exists.
        at System.IO.FileSystem.CopyFile(String sourceFullPath, String destFullPath, Boolean overwrite)
        at NativeRuntimeCleanupRegression.Program.Main(String[] args) in C:\Users\Egoist\Desktop\�஥���\�ਫ������\Egoist Lagom\tests\NativeRuntimeCleanupRegression\Program.cs:line 26
        at NativeRuntimeCleanupRegression.Program.<Main>(String[] args)

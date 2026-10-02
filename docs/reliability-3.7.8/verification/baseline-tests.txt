@@ -401,7 +401,7 @@ test at tests\desktop-updater-retry.test.mjs:33:1
 
 test at tests\release-channel-assets.test.mjs:42:1
 ✖ prepares and verifies the v3.7.1 public alias without recovery or docs inputs (10.7059ms)
-  Error: ENOENT: no such file or directory, mkdtemp 'C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0ecbd-13aa-7e31-b730-4c521c792097\work\release-test\release-channel-XXXXXX'
+  Error: ENOENT: no such file or directory, mkdtemp '<task-runtime>'
       at async Object.mkdtemp (node:internal/fs/promises:1254:10)
       at async fixture (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:14:16)
       at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:43:13)
@@ -415,7 +415,7 @@ test at tests\release-channel-assets.test.mjs:42:1
 
 test at tests\release-channel-assets.test.mjs:55:1
 ✖ wrong signing key fails before any metadata is changed (2.9339ms)
-  Error: ENOENT: no such file or directory, mkdtemp 'C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0ecbd-13aa-7e31-b730-4c521c792097\work\release-test\release-channel-XXXXXX'
+  Error: ENOENT: no such file or directory, mkdtemp '<task-runtime>'
       at async Object.mkdtemp (node:internal/fs/promises:1254:10)
       at async fixture (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:14:16)
       at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:56:13)
@@ -429,7 +429,7 @@ test at tests\release-channel-assets.test.mjs:55:1
 
 test at tests\release-channel-assets.test.mjs:63:1
 ✖ release preparation rejects source trust that differs from the packaged trust receipt (2.7707ms)
-  Error: ENOENT: no such file or directory, mkdtemp 'C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0ecbd-13aa-7e31-b730-4c521c792097\work\release-test\release-channel-XXXXXX'
+  Error: ENOENT: no such file or directory, mkdtemp '<task-runtime>'
       at async Object.mkdtemp (node:internal/fs/promises:1254:10)
       at async fixture (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:14:16)
       at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:64:13)
@@ -443,7 +443,7 @@ test at tests\release-channel-assets.test.mjs:63:1
 
 test at tests\release-channel-assets.test.mjs:73:1
 ✖ missing late input leaves no partial signed manifest (0.7965ms)
-  Error: ENOENT: no such file or directory, mkdtemp 'C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0ecbd-13aa-7e31-b730-4c521c792097\work\release-test\release-channel-XXXXXX'
+  Error: ENOENT: no such file or directory, mkdtemp '<task-runtime>'
       at async Object.mkdtemp (node:internal/fs/promises:1254:10)
       at async fixture (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:14:16)
       at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:74:13)
@@ -457,7 +457,7 @@ test at tests\release-channel-assets.test.mjs:73:1
 
 test at tests\release-channel-assets.test.mjs:79:1
 ✖ tampered registry, installer and signed channel fail validation (0.8208ms)
-  Error: ENOENT: no such file or directory, mkdtemp 'C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0ecbd-13aa-7e31-b730-4c521c792097\work\release-test\release-channel-XXXXXX'
+  Error: ENOENT: no such file or directory, mkdtemp '<task-runtime>'
       at async Object.mkdtemp (node:internal/fs/promises:1254:10)
       at async fixture (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:14:16)
       at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:80:13)
@@ -471,7 +471,7 @@ test at tests\release-channel-assets.test.mjs:79:1
 
 test at tests\release-channel-assets.test.mjs:91:1
 ✖ bootstrap preserves pinned trust and refuses a replacement root (0.6338ms)
-  Error: ENOENT: no such file or directory, mkdtemp 'C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0ecbd-13aa-7e31-b730-4c521c792097\work\release-test\release-channel-XXXXXX'
+  Error: ENOENT: no such file or directory, mkdtemp '<task-runtime>'
       at async Object.mkdtemp (node:internal/fs/promises:1254:10)
       at async fixture (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:14:16)
       at async TestContext.<anonymous> (file:///C:/Users/Egoist/Desktop/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/%D0%9F%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/Egoist%20Lagom/tests/release-channel-assets.test.mjs:92:13)

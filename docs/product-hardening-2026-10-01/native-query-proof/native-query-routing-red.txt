@@ -18,7 +18,7 @@ not ok 1 - native read-only listener path must also serve not-installed service 
   actual: 0
   operator: 'strictEqual'
   stack: |-
-    TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/native-query-routing-red.mjs:22:12)
+    TestContext.<anonymous> (file:///<task-runtime>
     async Test.run (node:internal/test_runner/test:1389:7)
     async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
   ...
@@ -40,7 +40,7 @@ not ok 2 - native read-only listener path must also serve stopped service prefli
   actual: 0
   operator: 'strictEqual'
   stack: |-
-    TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/native-query-routing-red.mjs:22:12)
+    TestContext.<anonymous> (file:///<task-runtime>
     async Test.run (node:internal/test_runner/test:1389:7)
     async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
   ...
@@ -68,7 +68,7 @@ not ok 4 - unknown WinWS executable identity must never become owned solely beca
   actual: true
   operator: 'strictEqual'
   stack: |-
-    TestContext.<anonymous> (file:///C:/Users/Egoist/Projects/.agent-brain/chat-runtime/tasks/01a0f75d-1042-7df1-9e68-86e8c4a49415/work/native-query-routing-red.mjs:41:10)
+    TestContext.<anonymous> (file:///<task-runtime>
     Test.runInAsyncScope (node:async_hooks:227:14)
     Test.run (node:internal/test_runner/test:1382:25)
     Test.processPendingSubtests (node:internal/test_runner/test:960:18)

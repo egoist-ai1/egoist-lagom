@@ -55,7 +55,7 @@ not ok 9 - actual Windows native CLI/API probe uses only own harmless child and 
   location: 'C:\\Users\\Egoist\\Desktop\\Проекты\\Приложения\\Egoist Lagom\\tests\\native-process-query.test.mjs:156:1'
   failureType: 'testCodeFailure'
   error: |-
-    Command failed: C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\.tools\dotnet-10.0.401\dotnet.exe build C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeQueryRegression\NativeQueryRegression.csproj -c Release --nologo -p:BaseIntermediateOutputPath=C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f75d-1042-7df1-9e68-86e8c4a49415\work\temp\native-query-QUhKKI\obj\ -p:OutputPath=C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f75d-1042-7df1-9e68-86e8c4a49415\work\temp\native-query-QUhKKI\bin\
+    Command failed: C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\.tools\dotnet-10.0.401\dotnet.exe build C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeQueryRegression\NativeQueryRegression.csproj -c Release --nologo -p:BaseIntermediateOutputPath=<task-runtime> -p:OutputPath=<task-runtime>
     
     Вас приветствует .NET 10.0!
     ---------------------

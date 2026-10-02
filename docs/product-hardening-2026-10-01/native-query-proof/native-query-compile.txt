@@ -153,7 +153,7 @@ C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\src\ser
 C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\src\service\EgoistShield.Service\PipeServerIdentityVerifier.cs(62,15): warning CS0649: Полю "PipeServerIdentityVerifier.ServiceConfigNative.DisplayName" нигде не присваивается значение, поэтому оно всегда будет иметь значение по умолчанию . [C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeQueryRegression\NativeQueryRegression.csproj]
 C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\src\service\EgoistShield.Service\PipeServerIdentityVerifier.cs(41,15): warning CS0649: Полю "PipeServerIdentityVerifier.ServiceStatusProcess.ServiceFlags" нигде не присваивается значение, поэтому оно всегда будет иметь значение по умолчанию 0. [C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeQueryRegression\NativeQueryRegression.csproj]
 C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\src\service\EgoistShield.Service\PipeServerIdentityVerifier.cs(31,15): warning CS0649: Полю "PipeServerIdentityVerifier.ServiceStatusProcess.Win32ExitCode" нигде не присваивается значение, поэтому оно всегда будет иметь значение по умолчанию 0. [C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeQueryRegression\NativeQueryRegression.csproj]
-  NativeQueryRegression -> C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f75d-1042-7df1-9e68-86e8c4a49415\work\native-query-bin\NativeQueryRegression.dll
+  NativeQueryRegression -> <task-runtime>
 
 Сборка успешно завершена.
 

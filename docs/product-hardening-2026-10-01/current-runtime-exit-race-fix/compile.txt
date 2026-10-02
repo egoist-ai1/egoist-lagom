@@ -135,7 +135,7 @@ C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\src\ser
 C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\src\service\EgoistShield.Service\PipeServerIdentityVerifier.cs(60,15): warning CS0649: Полю "PipeServerIdentityVerifier.ServiceConfigNative.ServiceStartName" нигде не присваивается значение, поэтому оно всегда будет иметь значение по умолчанию . [C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeRuntimeCleanupRegression\NativeRuntimeCleanupRegression.csproj]
 C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\src\service\EgoistShield.Service\PipeServerIdentityVerifier.cs(41,15): warning CS0649: Полю "PipeServerIdentityVerifier.ServiceStatusProcess.ServiceFlags" нигде не присваивается значение, поэтому оно всегда будет иметь значение по умолчанию 0. [C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeRuntimeCleanupRegression\NativeRuntimeCleanupRegression.csproj]
 C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\src\service\EgoistShield.Service\PipeServerIdentityVerifier.cs(62,15): warning CS0649: Полю "PipeServerIdentityVerifier.ServiceConfigNative.DisplayName" нигде не присваивается значение, поэтому оно всегда будет иметь значение по умолчанию . [C:\Users\Egoist\Desktop\Проекты\Приложения\Egoist Lagom\tests\NativeRuntimeCleanupRegression\NativeRuntimeCleanupRegression.csproj]
-  NativeRuntimeCleanupRegression -> C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f75d-1042-7df1-9e68-86e8c4a49415\work\native-runtime-cleanup-6pWMLB\bin\NativeRuntimeCleanupRegression.dll
+  NativeRuntimeCleanupRegression -> <task-runtime>
 
 Сборка успешно завершена.
 

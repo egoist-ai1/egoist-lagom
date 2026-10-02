@@ -3,4 +3,4 @@ PASS: corrupt or unavailable native ownership fails before network inspection
 PASS: read-only native DoH budget cancels its actual held child before the coordinator deadline
 PASS: failed or malformed IPv6 route queries remain unknown and are not cached
 PASS: ownership created during a Missing route query cannot be reported disabled
-Native DoH read-only query regression passed: 5 groups; work=C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f6ed-9826-7ef0-ba34-167179cb5463\work\native-doh-query-20261001\native-doh-4ca6c5c410eb4bd5a344792ed14994b2
+Native DoH read-only query regression passed: 5 groups; work=<task-runtime>

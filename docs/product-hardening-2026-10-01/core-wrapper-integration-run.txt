@@ -11,4 +11,4 @@ JUNCTION: linkCharacters=172; targetCharacters=161; nativeReparsePoint=true
 JUNCTION: linkCharacters=238; targetCharacters=168; nativeReparsePoint=true
 PASS: native junction ancestors and backup leaves are rejected
 PASS: actual Core warning is hourly and maintenance failures permit continuation
-Wrapper log regression passed: 10 groups; elapsed=2,95s; work=C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f425-9e46-7cd0-bc68-d12af2678068\work\t\wrapper-log-bb048ae2a79b482d89664e9e490649c2
+Wrapper log regression passed: 10 groups; elapsed=2,95s; work=<task-runtime>

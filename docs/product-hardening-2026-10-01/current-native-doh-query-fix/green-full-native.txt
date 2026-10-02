@@ -20,4 +20,4 @@ PASS: generated listener ownership snapshot is bounded and stable in PowerShell5
 PASS: read-only CLI reports the actual foreign owner across mixed endpoint families
 PASS: read-only CLI rejects invalid or mixed service arguments before startup
 PASS: read-only CLI emits a bounded native snapshot from the actual Windows host
-Native DoH/Core regression passed: 22 groups; runtime=.NET 10.0.12; elapsed=9,17s; work=C:\Users\Egoist\Projects\.agent-brain\chat-runtime\tasks\01a0f6ed-9826-7ef0-ba34-167179cb5463\work\native-doh-query-20261001\native-doh-5c75cde059b44bd5a2b24c2a27569651
+Native DoH/Core regression passed: 22 groups; runtime=.NET 10.0.12; elapsed=9,17s; work=<task-runtime>
