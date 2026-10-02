@@ -10,6 +10,24 @@ if ($errors.Count) { throw 'Production cleanup did not parse.' }
 $name='Local\LagomUninstallMaintenanceFixture.'+[Guid]::NewGuid().ToString('N')
 $fn=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Enter-UninstallMaintenanceLease'},$true)
 . ([scriptblock]::Create($fn.Extent.Text.Replace('Global\EgoistShield.DeferredReinstall',$name)))
+# Load the real diagnostic dependency and journal into this fixture's files.
+$diagnosticSource=Join-Path (Split-Path -Parent $PSScriptRoot) 'src\installer\service-maintenance.ps1'
+$diagnosticAst=[Management.Automation.Language.Parser]::ParseFile($diagnosticSource,[ref]$tokens,[ref]$errors)
+if ($errors.Count) { throw 'Production diagnostic helper did not parse.' }
+foreach ($functionName in @('ConvertTo-InstallerDiagnosticMessage','New-InstallerFailureDiagnostic','Read-InstallerFailureDiagnostic')) {
+  $definition=$diagnosticAst.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $functionName},$true)
+  if (-not $definition) { throw ('Missing production diagnostic function: '+$functionName) }
+  . ([scriptblock]::Create($definition.Extent.Text))
+}
+foreach ($functionName in @('Write-Journal','Write-InstallerPhaseFailure')) {
+  $definition=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $functionName},$true)
+  if (-not $definition) { throw ('Missing production journal function: '+$functionName) }
+  . ([scriptblock]::Create($definition.Extent.Text))
+}
+$Phase='Uninstall'
+$installRoot=Join-Path $root 'installed'
+$upgradeStateDirectory=Join-Path $root 'journal'
+$upgradeJournalPath=Join-Path $upgradeStateDirectory 'upgrade-journal.json'
 $switch=$ast.Find({param($n)$n -is [Management.Automation.Language.SwitchStatementAst] -and $n.Condition.Extent.Text -eq '$Phase'},$true)
 $clause=@($switch.Clauses | Where-Object {$_.Item1.Value -eq 'Uninstall'})[0].Item2.Extent.Text
 $clause=$clause.Substring(1,$clause.Length-2)
@@ -58,6 +76,13 @@ public sealed class UninstallMutexHolder : IDisposable {
 $holder=New-Object UninstallMutexHolder($name)
 try { Refused-Uninstall } finally { $holder.Dispose() }
 Write-Output 'PASS: actual isolated mutex contention blocks uninstall without service or task changes'
+$failureRecords=@(Get-Content -LiteralPath $upgradeJournalPath | ForEach-Object {$_ | ConvertFrom-Json} | Where-Object {$_.stage -eq 'phase-failed'})
+Require ($failureRecords.Count -eq 3) 'Refusal did not persist exactly three actual phase-failed records.'
+foreach ($record in $failureRecords) {
+  Require ($record.phase -eq 'Uninstall' -and $record.exitCode -eq 59 -and $record.substage -eq 'phase-dispatch') 'Uninstall journal lost its original phase, refusal code or diagnostic stage.'
+  Require (-not [string]::IsNullOrWhiteSpace([string]$record.errorId) -and $record.exceptionType -eq 'System.Management.Automation.RuntimeException' -and $record.line -gt 0) 'Caught uninstall guard lost its real error identity or source line.'
+  Require (-not [string]::IsNullOrWhiteSpace([string]$record.errorMessage)) 'Uninstall refusal journal lost its bounded reason.'
+}
 $script:leaves.Clear(); & $body
 Require ($script:leaves.Count -eq 13 -and $script:leaves[0] -eq 'Stop-AllOwnedRuntimes' -and $script:leaves[-1] -eq 'Remove-OwnedRuntimeDirectories') 'Ordinary uninstall lost its established cleanup ordering.'
 $lease=Enter-UninstallMaintenanceLease;$lease.ReleaseMutex();$lease.Dispose()
