@@ -895,8 +895,16 @@ function Test-ProtectedSystemDohPayloadProcess {
   $index = if ([int]$Process.ProcessId -eq [int]$proof.wrapperPid) { 0 } else { 1 }
   $expected = if ($index -eq 0) { $proof.wrapper } else { $proof.engine }
   $ticks = if ($index -eq 0) { $proof.wrapperStartTicks } else { $proof.engineStartTicks }
-  if (-not [string]::Equals([string]$Process.ExecutablePath,[string]$expected,[StringComparison]::OrdinalIgnoreCase) -or
-      -not $Process.CreationDate -or [string]([DateTime]$Process.CreationDate).ToUniversalTime().Ticks -cne [string]$ticks) { throw 'Private DNS continuity process identity changed.' }
+  $held = $Lease.processes[$index]
+  if (-not $held -or $held.HasExited -or [int]$held.Id -ne [int]$Process.ProcessId -or $held.Handle -eq [IntPtr]::Zero -or
+      -not [string]::Equals([string]$held.MainModule.FileName,[string]$expected,[StringComparison]::OrdinalIgnoreCase)) { throw 'Private DNS continuity process identity changed.' }
+  $nativeTicks = [long]$held.StartTime.ToUniversalTime().Ticks
+  if ([string]$nativeTicks -cne [string]$ticks -or
+      -not [string]::Equals([string]$Process.ExecutablePath,[string]$expected,[StringComparison]::OrdinalIgnoreCase) -or
+      -not $Process.CreationDate) { throw 'Private DNS continuity process identity changed.' }
+  # CIM timestamps retain microseconds; the held native process birth remains exact at 100 ns.
+  $cimTicks = [long]([DateTime]$Process.CreationDate).ToUniversalTime().Ticks
+  if ($cimTicks -ne ($nativeTicks - ($nativeTicks % [long]10))) { throw 'Private DNS continuity process identity changed.' }
   return $true
 }
 

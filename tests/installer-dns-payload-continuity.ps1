@@ -115,7 +115,7 @@ function Get-Process {
   [CmdletBinding()]param([int]$Id)
   $item=@($script:Processes | Where-Object { [int]$_.ProcessId -eq $Id })
   if ($item.Count -ne 1) { throw 'Fixture process absent or ambiguous.' }
-  $held=[pscustomobject]@{Handle=1;HasExited=$script:HeldExited;StartTime=([DateTime]$item[0].CreationDate).AddSeconds($script:HeldBirthOffset);MainModule=[pscustomobject]@{FileName=if($script:HeldWrongImage){'C:\foreign.exe'}else{$item[0].ExecutablePath}}}
+  $held=[pscustomobject]@{Id=$Id;Handle=1;HasExited=$script:HeldExited;StartTime=([DateTime]$item[0].CreationDate).AddSeconds($script:HeldBirthOffset);MainModule=[pscustomobject]@{FileName=if($script:HeldWrongImage){'C:\foreign.exe'}else{$item[0].ExecutablePath}}}
   $held | Add-Member ScriptMethod Dispose { $script:DisposedHandles++ }
   return $held
 }
