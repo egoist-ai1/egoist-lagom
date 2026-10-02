@@ -2993,6 +2993,12 @@ function Repair-UpgradeStateAccess {
   if (-not $identity.User) {
     throw "Could not resolve the elevated installer identity SID."
   }
+  # Resolve the SID in this function before any state ACL mutation.
+  $installerIdentitySid = [string]$identity.User.Value
+  if ([string]::IsNullOrWhiteSpace($installerIdentitySid)) {
+    throw "Could not resolve the elevated installer identity SID."
+  }
+  $installerSid = New-Object Security.Principal.SecurityIdentifier($installerIdentitySid)
   $expected = Resolve-NormalizedPath (Join-Path $programDataRoot "EgoistShield\installer")
   $actual = Resolve-NormalizedPath $upgradeStateDirectory
   if (-not $expected -or -not $actual -or
@@ -3017,7 +3023,6 @@ function Repair-UpgradeStateAccess {
 
   $systemSid = New-Object Security.Principal.SecurityIdentifier("S-1-5-18")
   $administratorsSid = New-Object Security.Principal.SecurityIdentifier("S-1-5-32-544")
-  $installerSid = New-Object Security.Principal.SecurityIdentifier($installerIdentitySid)
   $allowedSids = @($systemSid, $administratorsSid, $installerSid) |
     Group-Object Value | ForEach-Object { $_.Group[0] }
   $setDirectoryAcl = {
