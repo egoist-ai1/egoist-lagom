@@ -101,6 +101,88 @@ internal static class WindowsServiceRecoverySnapshot
         token.ThrowIfCancellationRequested();
     }
 
+    // Suppression is limited to the canonical SystemDoH wrapper during a forced
+    // intentional stop. Holding the SCM object prevents service-name reuse.
+    internal static IDisposable SuppressSystemDohRecovery(string expectedPath, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        using var scm = OpenSCManagerW(null, null, 1);
+        if (scm.IsInvalid) throw NativeFailure("stop-open-scm");
+        var service = OpenServiceW(scm, "EgoistShieldSystemDoH", 1 | 2);
+        if (service.IsInvalid) { service.Dispose(); throw NativeFailure("stop-open-service"); }
+        var lease = new StopRecoveryLease(service, Path.GetFullPath(expectedPath));
+        try { lease.Suppress(token); return lease; } catch { lease.Dispose(); throw; }
+    }
+    // SC_ACTION_NONE keeps dwResetPeriod intact. Deleting a zero-count action
+    // array would also delete that period (Win32 SERVICE_FAILURE_ACTIONS).
+    internal static Observation SystemDohSuppressedPolicy(Observation original) =>
+        original with { Actions = new[] { new Action(0, 0) }, FailureActionsOnNonCrashFailures = false };
+    private sealed class StopRecoveryLease : IDisposable
+    {
+        private readonly ServiceHandle _service;
+        private readonly string _path;
+        private Observation? _original, _suppressed;
+        internal StopRecoveryLease(ServiceHandle service, string path) { _service = service; _path = path; }
+        internal void Suppress(CancellationToken token)
+        {
+            var first = ReadOnce(_service, "EgoistShieldSystemDoH", token);
+            var original = ReadOnce(_service, "EgoistShieldSystemDoH", token);
+            if (!Equivalent(first, original)) throw new ServiceRecoveryReadException("stop-unstable-policy");
+            string command = original.BinaryCommand.Trim();
+            if (original.ServiceType != 16 ||
+                !(original.Account.Equals("LocalSystem", StringComparison.OrdinalIgnoreCase) || original.Account.Equals(@"NT AUTHORITY\SYSTEM", StringComparison.OrdinalIgnoreCase)) ||
+                !(command.Equals(_path, StringComparison.OrdinalIgnoreCase) || command.Equals("\"" + _path + "\"", StringComparison.OrdinalIgnoreCase)) ||
+                original.Actions.Any(action => action.Type is not (0 or 1)))
+                throw new ServiceRecoveryReadException("stop-service-identity");
+            _original = original;
+            // Publish the expected restoration contract before the first write,
+            // so partial native failure still restores what this lease changed.
+            _suppressed = SystemDohSuppressedPolicy(original);
+            WriteActions(_service, _suppressed.ResetPeriodSeconds, _suppressed.Actions);
+            WriteFailureFlag(_service, false);
+            var current = ReadOnce(_service, "EgoistShieldSystemDoH", token);
+            if (!Equivalent(current, _suppressed)) throw new ServiceRecoveryReadException("stop-suppression-readback");
+        }
+        public void Dispose()
+        {
+            try
+            {
+                if (_original == null || _suppressed == null) return;
+                var current = ReadOnce(_service, "EgoistShieldSystemDoH", CancellationToken.None);
+                // A partial write may leave the old flag set; both forms are ours.
+                bool actionsMatch = current.Actions.SequenceEqual(_suppressed.Actions) || current.Actions.SequenceEqual(_original.Actions);
+                bool sameIdentity = Equivalent(current with { Actions = _original.Actions, FailureActionsOnNonCrashFailures = _original.FailureActionsOnNonCrashFailures }, _original);
+                if (!actionsMatch || !sameIdentity) throw new ServiceRecoveryReadException("stop-recovery-policy-changed");
+                WriteActions(_service, _original.ResetPeriodSeconds, _original.Actions);
+                WriteFailureFlag(_service, _original.FailureActionsOnNonCrashFailures);
+                if (!Equivalent(ReadOnce(_service, "EgoistShieldSystemDoH", CancellationToken.None), _original))
+                    throw new ServiceRecoveryReadException("stop-recovery-restore-readback");
+            }
+            finally { _service.Dispose(); }
+        }
+    }
+    private static void WriteActions(ServiceHandle service, uint reset, Action[] actions)
+    {
+        int rowSize = Marshal.SizeOf<NativeAction>();
+        // A non-null zero-count array explicitly deletes the old failure actions.
+        IntPtr rows = Marshal.AllocHGlobal(Math.Max(rowSize, checked(actions.Length * rowSize)));
+        IntPtr buffer = Marshal.AllocHGlobal(Marshal.SizeOf<FailureConfig>());
+        try
+        {
+            for (int index = 0; index < actions.Length; index++)
+                Marshal.StructureToPtr(new NativeAction { Type = actions[index].Type, Delay = actions[index].DelayMs }, IntPtr.Add(rows, index * rowSize), false);
+            Marshal.StructureToPtr(new FailureConfig { ResetPeriod = reset, Count = (uint)actions.Length, Actions = rows }, buffer, false);
+            if (!ChangeServiceConfig2W(service, 2, buffer)) throw NativeFailure("stop-write-actions");
+        }
+        finally { Marshal.FreeHGlobal(buffer); Marshal.FreeHGlobal(rows); }
+    }
+    private static void WriteFailureFlag(ServiceHandle service, bool enabled)
+    {
+        IntPtr buffer = Marshal.AllocHGlobal(4);
+        try { Marshal.WriteInt32(buffer, enabled ? 1 : 0); if (!ChangeServiceConfig2W(service, 4, buffer)) throw NativeFailure("stop-write-failure-flag"); }
+        finally { Marshal.FreeHGlobal(buffer); }
+    }
+
     private static Observation ReadOnce(ServiceHandle service, string serviceName, CancellationToken token)
     {
         var basic = ReadBuffer(service, 0, "basic-config", token, (buffer, size) =>
@@ -204,4 +286,7 @@ internal static class WindowsServiceRecoverySnapshot
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [DllImport("advapi32.dll", SetLastError = true, ExactSpelling = true)]
     [return: MarshalAs(UnmanagedType.Bool)] private static extern bool QueryServiceConfig2W(ServiceHandle service, uint level, IntPtr buffer, uint size, out uint needed);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("advapi32.dll", SetLastError = true, ExactSpelling = true)]
+    [return: MarshalAs(UnmanagedType.Bool)] private static extern bool ChangeServiceConfig2W(ServiceHandle service, uint level, IntPtr buffer);
 }

@@ -15,5 +15,7 @@
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
     <Compile Include="../../src/service/**/*.cs" Exclude="../../src/service/obj/**/*.cs;../../src/service/bin/**/*.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="DisabledIpv6DnsRecovery.cs" />
+    <Compile Include="DisabledIpv6DnsApply.cs" />
   </ItemGroup>
 </Project>

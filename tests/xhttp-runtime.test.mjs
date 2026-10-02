@@ -102,7 +102,9 @@ test('Xray TUN config applies process rules before domain rules', () => {
     routeOnly: true
   });
   const processRules = config.routing.rules.filter(rule => rule.process);
-  assert.deepEqual(processRules, [
+  assert.equal(processRules[0].outboundTag, 'direct', 'managed runtimes must bypass TUN before user process rules');
+  assert.ok(processRules[0].process.includes('EgoistShield.Service.exe'), 'Core must remain reachable during TUN startup and recovery');
+  assert.deepEqual(processRules.slice(1), [
     { type: 'field', process: ['vpn.exe'], outboundTag: 'proxy' },
     { type: 'field', process: ['blocked.exe'], outboundTag: 'block' },
     { type: 'field', process: ['direct.exe'], outboundTag: 'direct' }

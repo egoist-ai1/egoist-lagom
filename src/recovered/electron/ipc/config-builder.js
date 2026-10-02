@@ -2,6 +2,8 @@
 var ConfigBuilder;
 (function(_ConfigBuilder) {
 	function buildXray(node, domainRules, settings, httpPort, socksPort, apiPort, processRules = []) {
+		const managedDns = selectManagedVpnDns(settings);
+		if (managedDns?.mode === "system" && settings.useTunMode) throw new Error("Этот VPN-движок не поддерживает безопасный режим системного DoH с TUN. Отключите TUN или выберите совместимый профиль.");
 		const outbound = buildOutbound(node);
 		const outboundStreamSettings = typeof outbound.streamSettings === "object" && outbound.streamSettings !== null ? outbound.streamSettings : null;
 		const rules = buildRules(domainRules);
@@ -87,13 +89,15 @@ var ConfigBuilder;
 				}
 			],
 			routing: {
-				domainStrategy: settings.dnsMode === "secure" || settings.dnsMode === "custom" ? "IPOnDemand" : "AsIs",
+				domainStrategy: managedDns || settings.dnsMode === "secure" || settings.dnsMode === "custom" ? "IPOnDemand" : "AsIs",
 				rules: [
 					{
 						inboundTag: ["api"],
 						outboundTag: "api",
 						type: "field"
 					},
+					...settings.useTunMode ? [{ type: "field", process: managedVpnRuntimeProcesses(managedDns), outboundTag: "direct" }] : [],
+					...managedDns?.mode === "loopback" ? [{ type: "field", inboundTag: [managedDns.tag], outboundTag: "direct" }, { type: "field", ip: ["127.0.0.0/8", "::1/128"], outboundTag: "direct" }] : [],
 					...xrayProcessRules,
 					...rules,
 					{
@@ -109,7 +113,7 @@ var ConfigBuilder;
 					buildDefaultXrayRule(settings.routeMode)
 				]
 			},
-			dns: buildDns(settings.dnsMode, settings.customDnsUrl)
+			dns: buildDns(settings.dnsMode, settings.customDnsUrl, managedDns)
 		};
 		if (settings.useTunMode) config.inbounds.push({
 			tag: "tun-in",
@@ -118,7 +122,7 @@ var ConfigBuilder;
 				name: "egoist-tun",
 				mtu: 1500,
 				gateway: ["172.19.0.1/30", "fd00:198:18::1/126"],
-				dns: ["1.1.1.1"],
+				dns: [managedDns?.mode === "loopback" ? managedDns.address : "1.1.1.1"],
 				autoSystemRoutingTable: ["0.0.0.0/0", "::/0"],
 				autoOutboundsInterface: "auto"
 			},
@@ -132,6 +136,9 @@ var ConfigBuilder;
 	}
 	_ConfigBuilder.buildXray = buildXray;
 	function buildSingBox(node, domainRules, processRules, settings, mixedPort) {
+		const managedDns = selectManagedVpnDns(settings);
+		const resolverTag = managedDns?.tag ?? "bootstrap-dns";
+		const nativeDnsRoutes = managedDns?.mode === "system" && settings.useTunMode ? managedDns.servers.map(server => `${server}/${server.includes(":") ? 128 : 32}`) : [];
 		const proxyTag = node.protocol === "wireguard" ? "wg-ep" : "proxy";
 		const outbound = node.protocol === "wireguard" ? null : buildSingBoxOutbound(node);
 		const userRules = buildSingBoxRules(domainRules, processRules, settings.useTunMode, proxyTag);
@@ -140,7 +147,7 @@ var ConfigBuilder;
 				level: "info",
 				timestamp: true
 			},
-			dns: buildSingBoxDns(settings.dnsMode, settings.customDnsUrl, proxyTag),
+			dns: buildSingBoxDns(settings.dnsMode, settings.customDnsUrl, proxyTag, managedDns),
 			inbounds: [{
 				type: "mixed",
 				tag: "mixed-in",
@@ -151,7 +158,7 @@ var ConfigBuilder;
 				...outbound,
 				tag: "proxy",
 				domain_resolver: {
-					server: "bootstrap-dns",
+					server: resolverTag,
 					strategy: "prefer_ipv4"
 				}
 			}] : [], {
@@ -160,6 +167,9 @@ var ConfigBuilder;
 			}],
 			route: {
 				rules: [
+					...settings.useTunMode ? [{ process_name: managedVpnRuntimeProcesses(managedDns), outbound: "direct" }] : [],
+					...nativeDnsRoutes.length ? [{ ip_cidr: nativeDnsRoutes, outbound: "direct" }] : [],
+					...managedDns?.mode === "loopback" && settings.useTunMode ? [{ ip_cidr: ["127.0.0.0/8", "::1/128"], outbound: "direct" }] : [],
 					{ action: "sniff" },
 					{
 						protocol: "dns",
@@ -174,12 +184,16 @@ var ConfigBuilder;
 				final: settings.routeMode === "global" ? proxyTag : "direct",
 				auto_detect_interface: true,
 				default_domain_resolver: {
-					server: "bootstrap-dns",
+					server: resolverTag,
 					strategy: "prefer_ipv4"
 				}
 			}
 		};
-		if (node.protocol === "wireguard") config.endpoints = [buildSingBoxWireguardEndpoint(node)];
+		if (managedDns?.mode === "loopback") config.outbounds.push({ type: "direct", tag: managedDns.directTag, inet4_bind_address: "127.0.0.1" });
+		if (node.protocol === "wireguard") {
+			config.endpoints = [buildSingBoxWireguardEndpoint(node)];
+			if (managedDns) config.endpoints[0].domain_resolver = { server: resolverTag, strategy: "prefer_ipv4" };
+		}
 		if (settings.useTunMode) config.inbounds.push({
 			type: "tun",
 			tag: "tun-in",
@@ -187,6 +201,7 @@ var ConfigBuilder;
 			address: ["172.19.0.1/30"],
 			auto_route: true,
 			strict_route: true,
+			...managedDns ? { route_exclude_address: managedDns.mode === "loopback" ? ["127.0.0.0/8", "::1/128"] : nativeDnsRoutes } : {},
 			stack: "system"
 		});
 		return JSON.stringify(config, null, 2);
@@ -674,11 +689,48 @@ var ConfigBuilder;
 			outboundTag: mode === "global" ? "proxy" : "direct"
 		};
 	}
-	function buildDns(mode, customDnsUrl) {
+	function selectManagedVpnDns(settings) {
+		if (settings.systemDohEnabled !== true) return null;
+		if (settings.systemDohLocalAddress != null && typeof settings.systemDohLocalAddress !== "string") throw new Error("Некорректный адрес управляемого DNS.");
+		const address = (settings.systemDohLocalAddress ?? "").trim();
+		if (!address) return { mode: "system", tag: "__lagom_managed_dns", servers: settings.useTunMode ? managedVpnNativeDnsServers(settings.systemDnsServers) : [] };
+		const parts = address.split(".");
+		if (parts.length !== 4 || parts[0] !== "127" || !parts.every(part => /^(?:0|[1-9]\d{0,2})$/.test(part) && Number(part) <= 255)) throw new Error("Адрес управляемого DNS должен быть loopback. Повторите проверку System DoH.");
+		return { mode: "loopback", address, tag: "__lagom_managed_dns", directTag: "__lagom_managed_dns_direct" };
+	}
+	function managedVpnNativeDnsServers(value) {
+		if (typeof value !== "string") throw new Error("Для TUN нужны сохранённые IP-адреса системного DoH. Повторите проверку DNS.");
+		const raw = value.split(/[\s,;]+/).filter(Boolean);
+		if (raw.length < 1 || raw.length > 6) throw new Error("Для TUN нужны сохранённые IP-адреса системного DoH. Повторите проверку DNS.");
+		const servers = raw.map(server => {
+			if (/^(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/.test(server)) {
+				const first = Number(server.split(".")[0]);
+				if (first === 0 || first === 127 || first >= 224) throw new Error("Некорректный IP-адрес системного DoH для TUN.");
+				return server;
+			}
+			if (!/^[0-9a-f:]+$/i.test(server) || !server.includes(":")) throw new Error("Для TUN адрес системного DoH должен быть IP-литералом.");
+			let normalized;
+			try { normalized = new URL(`http://[${server}]/`).hostname.slice(1, -1).toLowerCase(); }
+			catch { throw new Error("Некорректный IPv6-адрес системного DoH для TUN."); }
+			if (["::", "::1"].includes(normalized) || normalized.startsWith("ff") || /^::ffff:7f[0-9a-f]{2}:/.test(normalized)) throw new Error("Некорректный IP-адрес системного DoH для TUN.");
+			return normalized;
+		});
+		return [...new Set(servers)];
+	}
+	function managedVpnRuntimeProcesses(managedDns) {
+		return ["EgoistShield.Service.exe", ...managedDns?.mode === "loopback" ? ["xray-system-doh.exe"] : [], "egoistshield-tg-ws-proxy.exe", "TgWsProxy_windows_7_64bit.exe"];
+	}
+	function buildDns(mode, customDnsUrl, managedDns = null) {
+		if (managedDns?.mode === "system") return { servers: ["localhost"], disableFallback: true, queryStrategy: "UseIP" };
+		if (managedDns?.mode === "loopback") return { servers: [{ address: managedDns.address, port: 53, skipFallback: true }], disableFallback: true, queryStrategy: "UseIP", tag: managedDns.tag };
 		if (mode === "custom") return { servers: [parseCustomDnsUrl(customDnsUrl ?? "").url] };
 		if (mode === "secure") return { servers: ["8.8.8.8", "1.1.1.1"] };
 	}
-	function buildSingBoxDns(mode, customDnsUrl, proxyTag = "proxy") {
+	function buildSingBoxDns(mode, customDnsUrl, proxyTag = "proxy", managedDns = null) {
+		if (managedDns) return {
+			servers: [managedDns.mode === "system" ? { tag: managedDns.tag, type: "local" } : { tag: managedDns.tag, type: "udp", server: managedDns.address, server_port: 53, detour: managedDns.directTag }],
+			final: managedDns.tag, strategy: "prefer_ipv4"
+		};
 		if (mode === "system") return { servers: [{
 			tag: "system-dns",
 			type: "local"

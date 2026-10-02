@@ -323,7 +323,7 @@ test('actual reinstall functions keep GUI startup suspended on failed restoratio
     "function Restore-PreservedServiceStartModes {};function Start-PreservedServices {if($script:Fault -ceq 'services'){throw 'Inert service restore failure'}};" +
     "function Test-LoopbackDnsReady {return $true};function Restore-CriticalAdapterDns {if($script:Fault -ceq 'dns'){throw 'Inert DNS restore failure'}};" +
     "function Restore-CriticalOwnedDnsBaseline {};function Start-InstalledDesktop {throw 'GUI must not launch in fixture'};" +
-    "$state=[pscustomobject]@{runAfter=$false};$failureCases=0;" +
+    "$state=[pscustomobject]@{runAfter=$false;services=@();criticalDns=@([pscustomobject]@{interfaceIndex=17;servers=@('127.0.0.1')})};$failureCases=0;" +
     "foreach($fault in @('state','services','dns')){$script:Fault=$fault;[IO.File]::WriteAllText($marker,$good);$before=$script:Events.Count;" +
     "$result=Invoke-Recovery -State $state -Reason 'inert owned boundary fixture';if($result -ne $false -or -not(Test-Path -LiteralPath $marker) -or $script:Events.Count -ne $before){throw 'Failed restoration reopened GUI startup or lost maintenance marker'};$failureCases++};" +
     "$script:Fault='';$result=Invoke-Recovery -State $state -Reason 'inert owned boundary fixture';if($result -ne $true -or (Test-Path -LiteralPath $marker) -or $script:Events[$script:Events.Count-1] -cne 'resume'){throw 'Verified restoration did not close marker before resume'};" +

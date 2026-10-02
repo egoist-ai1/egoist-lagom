@@ -177,6 +177,7 @@ test('Zapret start waits for pending SCM startup before stale-process cleanup or
   let state = 'START_PENDING';
   const events = [];
   manager.ensureProvisioned = async () => {};
+  manager.refreshSystemDohTransportProtection = async () => { assert.equal(state, 'RUNNING'); };
   manager.assertNoExternalConflict = async () => {};
   manager.queryService = async () => ({ installed: true, running: state === 'RUNNING', state });
   manager.configureServiceAutostartRecovery = async () => {};

@@ -8,6 +8,10 @@ var PRIVATE_KEY_MARKER_RE = /-----BEGIN [A-Z ]*PRIVATE KEY-----|-----END [A-Z ]*
 var HWID_RE = /\b(X-HWID\s*[:=]\s*)([^\s,"']+)/gi;
 var URL_WITH_QUERY_RE = /\b[a-z][a-z0-9+.-]{0,31}:\/\/[^\s"'<>]+/gi;
 var CONNECTION_URI_RE = /\b(?:vless|vmess|trojan|ss|ssr|tuic|hysteria2?|hy2|wireguard):\/\/[^\s"'<>]+/gi;
+function diagnosticCorrelationId(value) {
+	if (typeof value !== "string" || !value) return "none";
+	return typeof createHash === "function" ? "id-" + createHash("sha256").update(value).digest("hex").slice(0, 24) : "<id-unavailable>";
+}
 function redactUrl(rawUrl) {
 	try {
 		const parsed = new URL(rawUrl);
@@ -30,7 +34,12 @@ function redactPrivateKeyBlocks(value) {
 			if (begin === null) begin = marker.index;
 			continue;
 		}
-		if (begin === null) continue;
+		if (begin === null) {
+			// A bounded tail can start inside an older PEM block. Conceal its prefix.
+			output += "<private-key>";
+			copiedUntil = PRIVATE_KEY_MARKER_RE.lastIndex;
+			continue;
+		}
 		output += `${value.slice(copiedUntil, begin)}<private-key>`;
 		copiedUntil = PRIVATE_KEY_MARKER_RE.lastIndex;
 		begin = null;
@@ -43,25 +52,32 @@ function redactDiagnosticText(value) {
 	return redactPrivateKeyBlocks(String(value)).replace(/\\+\//g, "/").replace(CONNECTION_URI_RE, "<connection-uri>").replace(URL_WITH_QUERY_RE, redactUrl).replace(AUTH_HEADER_RE, "$1$2$3<redacted>").replace(COOKIE_HEADER_RE, "$1$2<redacted>").replace(SECRET_ASSIGNMENT_RE, (_match, key, separator, secret) => {
 		const quote = secret[0] === '"' || secret[0] === "'" ? secret[0] : "";
 		return `${key}${separator}${quote}<redacted>${quote}`;
-	}).replace(HWID_RE, "$1<redacted>").replace(UUID_RE, "<uuid>").replace(WINDOWS_USER_PATH_RE, "$1<user>");
+	}).replace(HWID_RE, "$1<redacted>").replace(UUID_RE, diagnosticCorrelationId).replace(WINDOWS_USER_PATH_RE, "$1<user>");
 }
 function isDiagnosticSecretKey(key) {
-	return /authorization|cookie|secret|token|password|passwd|hwid|api[_-]?key|private[_-]?key|pre[_-]?shared[_-]?key/i.test(key);
+	return /authorization|cookie|secret|token|password|passwd|hwid|api[_-]?key|private[_-]?key|pre[_-]?shared[_-]?key|commandline|rawpayload/i.test(key);
 }
 function isDiagnosticUrlKey(key) {
 	return /(?:url|uri)s?$/i.test(key) || /^(?:url|uri)[_-]/i.test(key);
 }
-function redactDiagnosticObject(value) {
-	if (typeof value === "string") return redactDiagnosticText(value);
-	if (Array.isArray(value)) return value.map((item) => redactDiagnosticObject(item));
+function redactDiagnosticObject(value, depth = 0, ancestors = new WeakSet()) {
+	if (typeof value === "string") return redactDiagnosticText(value).slice(0, 16384);
 	if (value && typeof value === "object") {
+		if (depth >= 8) return "<depth-limit>";
+		if (ancestors.has(value)) return "<circular>";
+		ancestors.add(value);
+		try {
+		if (Array.isArray(value)) return value.slice(0, 128).map((item) => redactDiagnosticObject(item, depth + 1, ancestors));
+		if (value instanceof Error) return { name: redactDiagnosticText(value.name), message: redactDiagnosticText(value.message).slice(0, 16384), code: redactDiagnosticObject(value.code ?? null, depth + 1, ancestors),
+			stack: redactDiagnosticText(value.stack ?? "").slice(0, 16384), cause: redactDiagnosticObject(value.cause, depth + 1, ancestors) };
 		const result = {};
-		for (const [key, entry] of Object.entries(value)) {
+		for (const [key, entry] of Object.entries(value).slice(0, 128)) {
 			if (isDiagnosticSecretKey(key)) result[key] = "<redacted>";
 			else if (isDiagnosticUrlKey(key)) result[key] = typeof entry === "string" && /^[a-z][a-z0-9+.-]*:\/\//i.test(entry) ? redactDiagnosticText(entry) : "<redacted>";
-			else result[key] = redactDiagnosticObject(entry);
+			else result[key] = redactDiagnosticObject(entry, depth + 1, ancestors);
 		}
 		return result;
+		} finally { ancestors.delete(value); }
 	}
 	return value;
 }

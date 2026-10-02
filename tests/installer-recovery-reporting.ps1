@@ -69,7 +69,7 @@ foreach($case in @('none','pending','empty','committed')){
   else{[IO.File]::WriteAllText($marker, $(if($case -eq 'pending'){'C:\fixture\old'}elseif($case -eq 'empty'){''}else{'COMMITTED|C:\fixture\old'}))}
   $script:ownsMaintenance=$true;$script:launchCount=0;$script:lastStatus=$null;$script:stopCount=0
   $script:guiStartupSuspended=$true;$script:startupEvents.Clear()
-  $outcome=Invoke-Recovery -State ([pscustomobject]@{runAfter=$true;handoffStarted=$true;wrapperMigrationPending=$false}) -Reason 'controlled fixture'
+  $outcome=Invoke-Recovery -State ([pscustomobject]@{runAfter=$true;handoffStarted=$true;wrapperMigrationPending=$false;services=@();criticalDns=@([pscustomobject]@{interfaceIndex=17;servers=@('127.0.0.1')})}) -Reason 'controlled fixture'
   $pending=$case -in @('pending','empty')
   if($script:lastStatus -ne $(if($pending){'recovery-warning'}else{'recovered'})){throw 'An uncommitted rollback was reported as fully recovered.'}
   if($script:launchCount -ne $(if($pending){0}else{1})){throw 'Unverified application payload was launched after recovery.'}
@@ -89,20 +89,20 @@ Write-Output 'PASS: a pre-handoff failure does not stop services or launch the d
 $script:stopCount=0;$script:launchCount=0;$script:lastStatus=$null
 [IO.File]::WriteAllText($marker,'COMMITTED|C:\fixture\old')
 $script:startupEvents.Clear();$script:guiStartupSuspended=$true
-Invoke-Recovery -State ([pscustomobject]@{runAfter=$true}) -Reason 'legacy state without handoff marker'
+Invoke-Recovery -State ([pscustomobject]@{runAfter=$true;services=@();criticalDns=@([pscustomobject]@{interfaceIndex=17;servers=@('127.0.0.1')})}) -Reason 'legacy state without handoff marker'
 if($script:stopCount -ne 1 -or $script:launchCount -ne 1 -or $script:lastStatus -ne 'recovered'){throw 'Legacy recovery state without the new handoff marker was blocked.'}
 if(($script:startupEvents -join ',') -ne 'services-restored,dns-restored,marker-closed,resume' -or $script:guiStartupSuspended){throw 'Legacy restoration bypassed startup closure ordering.'}
 Write-Output 'PASS: legacy state without the handoff marker still runs recovery'
 $script:ownsMaintenance=$true;$script:stopCount=0;$script:launchCount=0;$script:lastStatus=$null
 $script:startupEvents.Clear();$script:guiStartupSuspended=$true
-Invoke-Recovery -State ([pscustomobject]@{runAfter=$false;handoffStarted=$false}) -Reason 'owned marker persisted before handoff flag'
+Invoke-Recovery -State ([pscustomobject]@{runAfter=$false;handoffStarted=$false;services=@();criticalDns=@([pscustomobject]@{interfaceIndex=17;servers=@('127.0.0.1')})}) -Reason 'owned marker persisted before handoff flag'
 if($script:stopCount -ne 1 -or $script:launchCount -ne 0 -or $script:lastStatus -ne 'recovered'){throw 'An acquired marker could not recover a crash before the handoff state write.'}
 Write-Output 'PASS: owned marker recovers a crash before handoff flag without launching GUI'
 Write-Output 'PASS: recovery does not claim payload rollback or start the desktop while its marker remains pending'
 foreach($fault in @('state','services','dns')){
   $script:restoreFault=$fault;$script:ownsMaintenance=$true;$script:guiStartupSuspended=$true
   $script:startupEvents.Clear();$script:launchCount=0;$script:lastStatus=$null;$script:stopCount=0
-  $outcome=Invoke-Recovery -State ([pscustomobject]@{runAfter=$false;handoffStarted=$true;wrapperMigrationPending=$false}) -Reason 'explicit inert restoration fault'
+  $outcome=Invoke-Recovery -State ([pscustomobject]@{runAfter=$false;handoffStarted=$true;wrapperMigrationPending=$false;services=@();criticalDns=@([pscustomobject]@{interfaceIndex=17;servers=@('127.0.0.1')})}) -Reason 'explicit inert restoration fault'
   if($outcome -ne $false -or $script:lastStatus -ne 'recovery-warning' -or -not $script:ownsMaintenance -or -not $script:guiStartupSuspended -or $script:launchCount -ne 0 -or $script:startupEvents.Contains('resume') -or $script:startupEvents.Contains('marker-closed')){throw ('Failed '+$fault+' restoration resumed GUI startup or claimed full recovery.')}
 }
 $script:restoreFault=''

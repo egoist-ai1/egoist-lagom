@@ -131,7 +131,8 @@ async function fixture(t, options = {}) {
   await context.store.load();
   context.manager = control.unwrapped ? context.rawManager : context.useComponentService(context.rawManager, 'SystemDoH', context.client);
   context.runtime = { on() {}, isAdmin: async () => control.admin };
-  vm.runInContext('registerSystemHandlers({window:{},stateStore:store,runtimeManager:runtime,systemDohManager:manager});', context);
+  context.coordinator = options.coordinator;
+  vm.runInContext('registerSystemHandlers({window:{},stateStore:store,runtimeManager:runtime,systemDohManager:manager,networkCombinatorManager:coordinator});', context);
   return { control, context, requests, effects, store: context.store,
     invoke: (channel, input) => handlers.get(channel)({}, input),
   };
@@ -250,4 +251,12 @@ test('only the existing administrative development path may use direct DNS fallb
     assert.equal(f.effects.filter(effect => effect.startsWith('direct:')).length, 1);
     assert.equal(f.requests.length, 0, 'the absent identity verifier prevents any pipe exchange');
   }
+});
+
+for (const channel of ['system-doh:apply','system-doh:reset','system-doh:restart']) test(`${channel} returns a retryable busy result without network effects`,async t=>{
+ const f=await fixture(t,{coordinator:{runCoordinatedMutation:async()=>{throw new Error('Timed out waiting for the active network mutation to finish.');}}});
+ const before=JSON.stringify(f.store.get().settings);
+ const result=await f.invoke(channel,channels[0][1]);
+ assert.equal(result.ok,false);assert.equal(result.code,'NETWORK_BUSY');assert.equal(result.retryable,true);
+ assert.deepEqual(f.effects,[]);assert.equal(JSON.stringify(f.store.get().settings),before);
 });

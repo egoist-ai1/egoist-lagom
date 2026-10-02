@@ -96,6 +96,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
   const readSequence = O.useRef(0);
   const operation = O.useRef(null);
   const cancellation = O.useRef(false);
+  const actionRecovery = O.useRef(null);
 
   async function refreshNow(duringAction = false) {
     const revision = stateRevision.current;
@@ -104,7 +105,15 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
     try {
       const status = await Z('shield.status', api?.shield?.status);
       if (!status || typeof status !== 'object') throw new Error('Служба не вернула состояние подключения');
-      if (current()) { setConnection(status); setStatusError(''); }
+      if (current()) {
+        setConnection(status);
+        setStatusError('');
+        const recovery = actionRecovery.current;
+        const confirmed = recovery && !status.statusError && (recovery.component === 'dns'
+          ? recovery.target === true ? status.dnsRunning === true : status.dnsRunning === false && status.dnsHealthState === 'stopped'
+          : recovery.component === 'telegram' ? status.telegramRunning === recovery.target : false);
+        if (confirmed) { actionRecovery.current = null; setActionError(''); }
+      }
       return status;
     } catch (failure) {
       if (current()) setStatusError(failure.message || 'Не удалось прочитать состояние службы');
@@ -156,8 +165,11 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
   const running = statusKnown && !stateError ? connection.running : null;
   const dnsRunning = !stateError ? rubyShieldObservedState(connection, 'dnsRunning') : null;
   const telegramRunning = !stateError ? rubyShieldObservedState(connection, 'telegramRunning') : null;
-  const failure = actionError || stateError || connection?.error;
-  const liveFailure = stateError || connection?.error || (!running && actionError);
+  const dnsHealthState = !stateError ? connection?.dnsHealthState : 'unknown';
+  const dnsFailure = dnsHealthState === 'degraded' ? connection?.dnsError || 'DNS запущен, но проверка запросов не прошла.' : null;
+  const dnsPending = !stateError && dnsRunning === false && (dnsHealthState === 'degraded' || connection?.dnsConfigured === true || connection?.dnsConfigured == null && snapshot?.state?.settings?.systemDohEnabled === true);
+  const failure = stateError || connection?.error || dnsFailure || actionError;
+  const liveFailure = stateError || connection?.error || dnsFailure || (!running && actionError);
   const phase = busy ? (localAction === 'disconnect' ? 'disconnecting' : connection?.phase || 'preparing') : liveFailure ? 'error' : !statusKnown ? 'loading' : running ? 'connected' : 'idle';
   const progress = Math.max(0, Math.min(100, Number(connection?.progress) || 0));
 
@@ -184,6 +196,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
     operation.current = kind;
     stateRevision.current += 1;
     setLocalAction(kind);
+    actionRecovery.current = null;
     setActionError('');
     return true;
   }
@@ -237,7 +250,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
       const status = await refreshNow(true);
       if (status.statusError || status.dnsRunning !== next) throw new Error('Служба не подтвердила изменение DNS. Повторите проверку состояния.');
     } catch (failure) {
-      if (mounted.current) setActionError(failure.message);
+      if (mounted.current) { actionRecovery.current = { component:'dns', target:next }; setActionError(failure.message); }
     } finally { finish(); }
   }
 
@@ -253,7 +266,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
       const status = await refreshNow(true);
       if (status.statusError || status.telegramRunning !== next) throw new Error('Служба не подтвердила изменение Telegram Proxy. Повторите проверку состояния.');
     } catch (failure) {
-      if (mounted.current) setActionError(failure.message);
+      if (mounted.current) { actionRecovery.current = { component:'telegram', target:next }; setActionError(failure.message); }
     } finally { finish(); }
   }
 
@@ -360,8 +373,8 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
 
       <footer className="shield-widget-footer">
         <div className="shield-footer-switches">
-          <div className="shield-switch-group" title={dnsBusy ? 'Проверяем DNS' : dnsRunning === null ? 'Состояние DNS не проверено' : dnsRunning ? 'DNS зашифрован' : 'DNS выключен'}>
-            <span>DNS<small>{dnsBusy ? 'Проверка…' : dnsRunning === null ? 'Не проверен' : dnsRunning ? 'Работает' : 'Выключен'}</small></span>
+          <div className="shield-switch-group" title={dnsBusy ? 'Проверяем DNS' : dnsRunning === null ? 'Состояние DNS не проверено' : dnsRunning ? 'DNS зашифрован' : dnsPending ? dnsFailure ? `DNS не прошёл проверку: ${dnsFailure}` : 'DNS настроен, но работоспособность ещё не подтверждена. Повторите проверку.' : 'DNS выключен'}>
+            <span>DNS<small>{dnsBusy ? 'Проверка…' : dnsRunning === null ? 'Не проверен' : dnsRunning ? 'Работает' : dnsPending ? 'Не готов' : 'Выключен'}</small></span>
             <button
               role="switch"
               aria-label="Зашифрованный DNS"

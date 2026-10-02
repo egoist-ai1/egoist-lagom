@@ -8,6 +8,8 @@ import { loadRecovered } from './load-recovered.mjs';
 import { ShieldConnectionController } from '../src/shield-connection-controller.js';
 
 const source = fs.readFileSync('src/recovered/renderer.js', 'utf8');
+// These history scenarios assume a verified resolver; unknown DNS is covered by boundary tests.
+const healthyDns = () => ({status: async () => ({running: true, verified: true, enabled: true, serviceRunning: true, serviceState: 'running', healthState: 'ready'})});
 const selection = (name = 'ALT11') => ({ completed: true, cancelled: false, bestProfile: name, testedAt: '2026-09-12T10:00:00.000Z', results: [{ configName: name, result: 'success', pingMs: 10, passedTargets: 17, totalTargets: 17, targets: [{ key: 'DiscordMain', ok: true }] }] });
 function renderer() {
   const memory = new Map();
@@ -86,7 +88,7 @@ test('actual renderer action preserves previous history while pending, cancelled
 
 test('direct IPC selection persists on disk with renderer destroyed and is restored after handler reload', async t => {
   const directory = temporary(t), api = backend(directory);
-  api.registerZapretHandlers({ zapretManager: { status: async () => ({ serviceRunning: false }), autoSelectBestProfile: async () => selection() }, runtimeManager: { status: async () => ({ connected: false }) } });
+  api.registerZapretHandlers({ systemDohManager: healthyDns(), zapretManager: { status: async () => ({ serviceRunning: false }), autoSelectBestProfile: async () => selection() }, runtimeManager: { status: async () => ({ connected: false }) } });
   await api.handlers.get('zapret:auto-select')({ sender: { isDestroyed: () => true } });
   const reloaded = backend(directory);
   reloaded.registerZapretHandlers({ zapretManager: { status: async () => ({ serviceRunning: false }) } });
@@ -102,7 +104,7 @@ test('widget saves failed selection evidence and successful probes before later 
   for (const success of [false, true]) {
     const result = selection(success ? 'Winner' : 'Failed');
     if (!success) { result.bestProfile = null; result.results[0].result = 'error'; }
-    const controller = new ShieldConnectionController({ coordinate: async (_action, operation) => operation(), zapret: { status: async () => ({}), autoSelectBestProfile: async () => result, installService: async () => { throw new Error('service denied'); }, stopService: async () => ({ ok: true }) }, dns: { status: async () => ({}) }, onSelection: api.recordZapretSelectionHistory });
+    const controller = new ShieldConnectionController({ coordinate: async (_action, operation) => operation(), zapret: { status: async () => ({}), autoSelectBestProfile: async () => result, installService: async () => { throw new Error('service denied'); }, stopService: async () => ({ ok: true }) }, dns: healthyDns(), onSelection: api.recordZapretSelectionHistory });
     assert.equal((await controller.connect({ dnsEnabled: false, telegramEnabled: false })).ok, false);
     assert.equal(api.createZapretSelectionHistoryStore(directory).read().results[0].configName, success ? 'Winner' : 'Failed');
   }
@@ -141,7 +143,7 @@ test('history disk failure logs a warning without failing widget connection or c
   first.recordZapretSelectionHistory(selection('Old'));
   const api = backend(directory, { fs: { ...fs, renameSync() { throw new Error('disk denied'); } } });
   let running = false;
-  const controller = new ShieldConnectionController({ coordinate: async (_action, operation) => operation(), onSelection: api.recordZapretSelectionHistory, zapret: { status: async () => ({ serviceRunning: running }), autoSelectBestProfile: async () => selection('New'), installService: async () => {}, startService: async () => { running = true; } }, dns: { status: async () => ({}) }, saveConnected: async () => {} });
+  const controller = new ShieldConnectionController({ coordinate: async (_action, operation) => operation(), onSelection: api.recordZapretSelectionHistory, zapret: { status: async () => ({ serviceRunning: running }), autoSelectBestProfile: async () => selection('New'), installService: async () => {}, startService: async () => { running = true; } }, dns: healthyDns(), saveConnected: async () => {} });
   assert.equal((await controller.connect({ dnsEnabled: false, telegramEnabled: false })).ok, true);
   assert.equal(api.warnings.length, 1);
   assert.equal(first.createZapretSelectionHistoryStore(directory).read().bestProfile, 'Old');

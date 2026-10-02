@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$XrayTestBinary)
+﻿param([Parameter(Mandatory=$true)][string]$XrayTestBinary)
 $ErrorActionPreference = 'Stop'
 if (-not $env:LAGOM_TEST_TEMP -or -not [IO.Path]::IsPathRooted($env:LAGOM_TEST_TEMP)) { throw 'Set task-scoped LAGOM_TEST_TEMP.' }
 $fixtureRoot = Join-Path $env:LAGOM_TEST_TEMP ('m [x]-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
@@ -8,7 +8,7 @@ $source = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\scripts\invoke-fin
 $tokens=$null; $errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($source,[ref]$tokens,[ref]$errors)
 if ($errors.Count) { throw ($errors | Out-String) }
-foreach ($name in @('Assert-OwnedRuntimeMigrationPath','Write-OwnedRuntimeMigrationFile','Update-PreservedRuntimeReliability')) {
+foreach ($name in @('Assert-OwnedRuntimeMigrationPath','Write-OwnedRuntimeMigrationFile','Update-PreservedRuntimeReliability','Get-PatchedSystemDohMigrationConfiguration')) {
   $fn=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true)
   if (-not $fn) { throw "Missing function $name" }
   . ([scriptblock]::Create($fn.Extent.Text))
@@ -35,15 +35,42 @@ $after=Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
 Require ($after.dns.hosts.'health.egoist.invalid' -eq '127.0.0.1') 'Static health marker missing.'
 Require ($after.dns.hosts.'preserved.example' -eq '192.0.2.9') 'Preserved host was modified.'
 Require ($after.dns.servers[0] -eq 'https+local://cloudflare-dns.com/dns-query') 'Preserved upstream was modified.'
+Require ($after.dns.serveStale -eq $true -and $after.dns.serveExpiredTTL -eq 120) 'Retained DNS did not receive the bounded cache policy.'
 Require ($after.log.error -eq '') 'DNS logging did not move to wrapper stderr.'
 [xml]$afterXml=Get-Content -LiteralPath $xmlPath -Raw
 Require ($afterXml.service.arguments -eq '--preserved-argument') 'Wrapper arguments were modified.'
 Require ($afterXml.service.log.sizeThreshold -eq '10240') 'Wrapper log threshold not corrected.'
-Require (@($afterXml.service.onfailure).Count -eq 3 -and $afterXml.service.onfailure[2].delay -eq '60 sec') 'Wrapper retry schedule not corrected.'
+Require ((@($afterXml.service.onfailure | ForEach-Object { $_.delay }) -join ',') -ceq '0 sec,1 sec,60 sec') 'Private DNS wrapper retry schedule not corrected.'
 Require ($afterXml.service.resetfailure -eq '1 hour') 'Wrapper failure reset not corrected.'
 Write-Output 'PASS: stopped-runtime migration preserves upstream/hosts/arguments and real Xray accepts result'
+foreach ($component in @(@('EgoistShieldTelegramProxy','TelegramProxy','egoistshield-telegram-proxy-service'),@('EgoistShieldZapret','Zapret','egoistshield-zapret-service'))) {
+  $componentRoot=Join-Path $script:RuntimeRoot $component[1]
+  $addonWrapper=Join-Path $componentRoot ('service-wrapper\'+$component[2]+'.exe')
+  $addonEngine=Join-Path $componentRoot 'runtime\fixture.exe'
+  New-Item -ItemType Directory -Path (Split-Path -Parent $addonWrapper),(Split-Path -Parent $addonEngine) -Force | Out-Null
+  [IO.File]::WriteAllText($addonWrapper,'Own addon wrapper sentinel; not executed.')
+  [IO.File]::WriteAllText($addonEngine,'Own addon engine sentinel; not executed.')
+  $addonXml=[IO.Path]::ChangeExtension($addonWrapper,'.xml')
+  [IO.File]::WriteAllText($addonXml,('<service><id>'+ $component[0]+'</id><executable>'+[Security.SecurityElement]::Escape($addonEngine)+'</executable><arguments>--fixture</arguments><log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>5</keepFiles></log></service>'))
+  Update-PreservedRuntimeReliability ([pscustomobject]@{services=@([pscustomobject]@{name=$component[0];pathName=$addonWrapper})})
+  [xml]$addon=Get-Content -LiteralPath $addonXml -Raw
+  Require ((@($addon.service.onfailure | ForEach-Object {$_.delay}) -join ',') -ceq '5 sec,10 sec,60 sec') 'DNS-specific fast retry changed an addon policy.'
+}
+$migratedHash=(Get-FileHash -LiteralPath $configPath).Hash
 Update-PreservedRuntimeReliability $state
+Require ((Get-FileHash -LiteralPath $configPath).Hash -eq $migratedHash) 'Idempotent cache migration changed config bytes.'
 Write-Output 'PASS: migration is idempotent with an existing health marker'
+foreach ($oldCache in @(@{enabled=$false;ttl=0},@{enabled=$true;ttl=900})) {
+  $beforePolicy=Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+  $beforePolicy.dns.serveStale=$oldCache.enabled
+  $beforePolicy.dns.serveExpiredTTL=$oldCache.ttl
+  $beforePolicy | ConvertTo-Json -Depth 32 | Set-Content -LiteralPath $configPath -Encoding utf8
+  Update-PreservedRuntimeReliability $state
+  $afterPolicy=Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+  Require ($afterPolicy.dns.serveStale -eq $true -and $afterPolicy.dns.serveExpiredTTL -eq 120) 'Older cache policy was not bounded to120seconds.'
+  Require ($afterPolicy.dns.servers[0] -eq $beforePolicy.dns.servers[0] -and $afterPolicy.dns.hosts.'preserved.example' -eq '192.0.2.9') 'Cache migration changed provider or preserved host.'
+  Write-Output ('PASS: older cache policy '+$oldCache.enabled+'/'+$oldCache.ttl+' receives bounded120seconds and real Xray validation')
+}
 $script:serviceStatus='Running'
 $hash=(Get-FileHash -LiteralPath $xmlPath).Hash
 $refused=$false
@@ -63,4 +90,4 @@ $refused=$false
 try { Update-PreservedRuntimeReliability $state } catch { $refused=$_.Exception.Message -like '*marker conflicts*' }
 Require $refused 'Conflicting health marker was not refused.'
 Write-Output 'PASS: conflicting health marker is preserved and migration fails for recovery'
-Write-Output 'Runtime migration checks: 5 passed; no service, registry or adapter mutations'
+Write-Output 'Runtime migration checks: 7 passed; no service, registry or adapter mutations'

@@ -8,13 +8,13 @@ using System.Text.RegularExpressions;
 
 namespace NativeDohRegression;
 
-internal static class Program
+internal static partial class Program
 {
     private static string _work = "";
     private static int _passed;
     private const string OldUrl = "https://old.example/dns-query";
     private const string NewUrl = "https://new.example/dns-query";
-    private static readonly DnsAdapterSnapshot Baseline = new(4, "Ethernet", "{11111111-1111-1111-1111-111111111111}", new[] { "192.0.2.53" }, Array.Empty<string>(), true, false);
+    private static readonly DnsAdapterSnapshot Baseline = new(4, "Ethernet", "{11111111-1111-1111-1111-111111111111}", new[] { "192.0.2.53" }, Array.Empty<string>(), true, false, Ipv4BindingEnabled: true, Ipv6BindingEnabled: true);
 
     private static async Task<int> Main(string[] args)
     {
@@ -26,6 +26,10 @@ internal static class Program
         var elapsed = Stopwatch.StartNew();
         try
         {
+            await Check("disabled IPv6 DNS apply respects actual binding and preserves skipped family", DisabledIpv6ApplyAsync);
+            if (args.Contains("--disabled-ipv6-apply-only")) return 0;
+            await Check("disabled IPv6 configured DNS recovery preserves ownership and unblocks routes", DisabledIpv6RecoveryAsync);
+            if (args.Contains("--disabled-ipv6-only")) return 0;
             await Check("missing native ownership skips an unnecessary DNS snapshot", NativeDohMissingOwnershipAsync);
             await Check("corrupt or unavailable native ownership fails before network inspection", NativeDohUnreadableOwnershipAsync);
             await Check("read-only native DoH budget cancels its actual held child before the coordinator deadline", NativeDohQueryCancellationAsync);

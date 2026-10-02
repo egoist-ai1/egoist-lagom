@@ -75,10 +75,10 @@ test('process names apply only to TUN and unsupported process paths cannot masqu
   const rules = [{ id: 'process', process: 'browser.exe', mode: 'block' }];
   assert.equal(xray([], rules).routing.rules.some(rule => rule.process), false);
   assert.equal(sing([], rules).route.rules.some(rule => rule.process_name), false);
-  assert.deepEqual(xray([], rules, true).routing.rules.find(rule => rule.process).process, ['browser.exe']);
-  assert.deepEqual(sing([], rules, true).route.rules.find(rule => rule.process_name).process_name, ['browser.exe']);
+  assert.deepEqual(xray([], rules, true).routing.rules.find(rule => rule.process?.includes("browser.exe")).process, ['browser.exe']);
+  assert.deepEqual(sing([], rules, true).route.rules.find(rule => rule.process_name?.includes("browser.exe")).process_name, ['browser.exe']);
   const absolute = [{ id: 'path', process: 'C:/Program Files/App/app.exe', mode: 'vpn' }];
-  assert.deepEqual(xray([], absolute, true).routing.rules.find(rule => rule.process).process, ['C:/Program Files/App/app.exe']);
+  assert.deepEqual(xray([], absolute, true).routing.rules.find(rule => rule.process?.includes(absolute[0].process)).process, ['C:/Program Files/App/app.exe']);
   assert.throws(() => ConfigBuilder.validateRoutingRules('sing-box', [], absolute, true), /путь|имя.*\.exe/i);
   assert.throws(() => sing([], absolute, true), /путь|имя.*\.exe/i);
   assert.throws(() => sing([], [{ id: 'name', process: 'browser', mode: 'vpn' }], true), /\.exe/);

@@ -180,8 +180,8 @@ async function buildHealthReport(ctx) {
 		{
 			id: "system-doh",
 			title: "Системный DoH",
-			state: systemDohStatus.lastError ? "warn" : "ok",
-			details: systemDohStatus.running ? systemDohStatus.nativeManaged === true ? `Windows DNS Client шифрует запросы к ${systemDohStatus.currentUrl}; UDP fallback отключён.` : `Работает на ${systemDohStatus.localAddress}:${systemDohStatus.localPort}.` : "Остановлен или выключен.",
+			state: systemDohStatus.lastError || systemDohStatus.enabled && !systemDohStatus.verified ? "warn" : "ok",
+			details: systemDohStatus.running ? systemDohStatus.nativeManaged === true ? `Windows DNS Client шифрует запросы к ${systemDohStatus.currentUrl}; UDP fallback отключён.` : `Работает на ${systemDohStatus.localAddress}:${systemDohStatus.localPort}.` : systemDohStatus.serviceRunning ? "Служба запущена; выбранный DoH не прошёл проверку. Фоновое восстановление контролирует Core." : "Остановлен или выключен.",
 			path: systemDohStatus.runtimePath,
 			lastError: systemDohStatus.lastError
 		},
@@ -219,6 +219,90 @@ function getLogFilePath$1() {
 async function writeJson(filePath, value) {
 	await promises.writeFile(filePath, `${JSON.stringify(redactDiagnosticObject(value), null, 2)}\n`, "utf8");
 }
+async function readBoundedDnsDiagnosticTail(target) {
+ let handle;
+ try {
+  handle = await promises.open(target, "r");
+  const { size } = await handle.stat();
+  const length = Math.min(size, 96 * 1024);
+  const bytes = Buffer.alloc(length);
+  await handle.read(bytes, 0, length, Math.max(0, size - length));
+  const text = bytes.toString("utf8");
+  return redactDiagnosticText(size > length ? text.slice(text.indexOf("\n") + 1) : text);
+ } catch { return "Журнал службы недоступен.\n"; }
+ finally { await handle?.close().catch(() => {}); }
+}
+function diagnosticLogInventory(ctx) {
+	const main = getLogFilePath$1();
+	const parsed = path.parse(main);
+	const guiOld = path.join(parsed.dir, parsed.name + ".old" + parsed.ext);
+	const rows = [
+		{ source: "gui", target: main, entry: "main.log.redacted.txt", maxBytes: 512 * 1024 },
+		... [guiOld, guiOld + ".1", guiOld + ".2"].map((target, index) => ({ source: "gui", target, entry: `main-previous-${index + 1}.log.redacted.txt`, maxBytes: 256 * 1024 }))
+	];
+	const add = (source, target, entry, maxBytes = 96 * 1024) => rows.push({ source, target, entry, maxBytes });
+	const wrappers = (source, root, basename) => {
+		if (typeof root !== "string" || !path.isAbsolute(root)) return;
+		add(source, path.join(root, basename + ".wrapper.log"), source + "-wrapper.log.redacted.txt");
+		for (const stream of ["out", "err"]) {
+			add(source, path.join(root, `${basename}.${stream}.log`), source + (stream === "out" ? "-current" : "-error") + ".log.redacted.txt");
+			for (let index = 0; index < 5; index++) add(source, path.join(root, `${basename}.${index}.${stream}.log`), source + (index === 0 && stream === "out" ? "-previous" : `-previous-${index}-${stream}`) + ".log.redacted.txt");
+		}
+	};
+	if (ctx.systemDohManager.workDir && path.isAbsolute(ctx.systemDohManager.workDir)) {
+		add("system-doh", path.join(ctx.systemDohManager.workDir, "runtime.log"), "system-doh-runtime.log.redacted.txt", 512 * 1024);
+		wrappers("system-doh", path.join(ctx.systemDohManager.workDir, "service-logs"), "egoistshield-system-doh-service");
+	}
+	if (ctx.zapretManager.workDir) wrappers("zapret", path.join(ctx.zapretManager.workDir, "logs", "zapret-service"), "egoistshield-zapret-service");
+	if (ctx.telegramProxyManager.appDataDir) wrappers("telegram", path.join(ctx.telegramProxyManager.appDataDir, "service-logs"), "egoistshield-telegram-proxy-service");
+	const programData = typeof process === "object" ? process.env?.ProgramData : null;
+	if (app.isPackaged === true && typeof programData === "string" && path.isAbsolute(programData)) {
+		const core = path.join(programData, "EgoistShield", "Service", "service.log");
+		add("core", core, "core-current.log.redacted.txt", 512 * 1024);
+		for (let index = 1; index <= 3; index++) add("core", core + "." + index, `core-previous-${index}.log.redacted.txt`, 256 * 1024);
+		wrappers("vpn", path.join(programData, "EgoistShield", "Runtime", "Vpn", "service-logs"), "egoistshield-vpn-service");
+	}
+	return rows;
+}
+async function captureDiagnosticLogTail(item) {
+	let handle;
+	try {
+		const absolute = path.resolve(item.target);
+		const link = await promises.lstat(absolute);
+		if (!link.isFile() || link.isSymbolicLink() || path.resolve(await promises.realpath(absolute)).toLowerCase() !== absolute.toLowerCase()) throw Object.assign(new Error("Untrusted log path refused."), { code: "LOG_PATH_UNTRUSTED" });
+		handle = await promises.open(absolute, "r");
+		const before = await handle.stat();
+		const header = Buffer.alloc(Math.min(before.size, 256));
+		const headerRead = await handle.read(header, 0, header.length, 0);
+		if (header.subarray(0, headerRead.bytesRead).includes(0)) throw Object.assign(new Error("Binary or unsupported log encoding refused."), { code: "LOG_ENCODING_UNSUPPORTED" });
+		const length = Math.min(before.size, item.maxBytes);
+		const bytes = Buffer.alloc(length);
+		const { bytesRead } = await handle.read(bytes, 0, length, Math.max(0, before.size - length));
+		let text = bytes.subarray(0, bytesRead).toString("utf8");
+		if (before.size > length) text = text.includes("\n") ? text.slice(text.indexOf("\n") + 1) : "[Oversized partial log line omitted.]\n";
+		text = redactDiagnosticText(text);
+		const after = await handle.stat();
+		return { text, metadata: { source: item.source, entry: item.entry, sourcePath: redactDiagnosticText(absolute), state: "captured", totalBytes: before.size,
+			capturedBytes: bytesRead, maxBytes: item.maxBytes, truncated: before.size > length, modifiedDuringRead: after.size !== before.size || after.mtimeMs !== before.mtimeMs,
+			lastWriteUtc: before.mtime.toISOString(), redactedSha256: typeof createHash === "function" ? createHash("sha256").update(text).digest("hex") : null } };
+	} catch (error) {
+		const state = error?.code === "ENOENT" ? "missing" : "read-error";
+		return { text: `Журнал недоступен (${state}): ${redactDiagnosticText(error instanceof Error ? error.message : String(error))}\n`,
+			metadata: { source: item.source, entry: item.entry, sourcePath: redactDiagnosticText(item.target), state, maxBytes: item.maxBytes,
+				errorCode: typeof error?.code === "string" ? redactDiagnosticText(error.code) : "UNKNOWN", error: redactDiagnosticText(error instanceof Error ? error.message : String(error)) } };
+	} finally { await handle?.close().catch(() => {}); }
+}
+async function exportDiagnosticLogInventory(ctx, workDir) {
+	const logs = [];
+	// Fixed product inventory only: no recursive *.log discovery or binary upload.
+	for (const item of diagnosticLogInventory(ctx)) {
+		const capture = await captureDiagnosticLogTail(item);
+		logs.push(capture.metadata);
+		if (capture.metadata.state !== "missing" || item.entry === "main.log.redacted.txt") await promises.writeFile(path.join(workDir, item.entry), capture.text, "utf8");
+	}
+	await writeJson(path.join(workDir, "diagnostic-capture-manifest.json"), { schemaVersion: 1, capturedAtUtc: new Date().toISOString(),
+		policy: "Fixed product log paths; bounded tails; URL credentials, private paths and keys redacted. Missing sources are recorded, not silently treated as healthy.", logs });
+}
 async function exportDiagnosticsBundle(ctx) {
 	const stamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
 	const diagnosticsRoot = path.join(app.getPath("userData"), "diagnostics");
@@ -251,12 +335,7 @@ async function exportDiagnosticsBundle(ctx) {
 			usageHistory: state.usageHistory.length,
 			settings: state.settings
 		});
-		try {
-			const logContent = await promises.readFile(getLogFilePath$1(), "utf8");
-			await promises.writeFile(path.join(workDir, "main.log.redacted.txt"), redactDiagnosticText(logContent), "utf8");
-		} catch (error) {
-			await promises.writeFile(path.join(workDir, "main.log.redacted.txt"), `Файл лога недоступен: ${redactDiagnosticText(error instanceof Error ? error.message : String(error))}\n`, "utf8");
-		}
+		await exportDiagnosticLogInventory(ctx, workDir);
 		const command = `Compress-Archive -Path '${workDir.replace(/'/g, "''")}\\*' -DestinationPath '${zipPath.replace(/'/g, "''")}' -Force`;
 		await execFileAsync$14(resolveWindowsExecutable("powershell.exe"), [
 			"-NoProfile",

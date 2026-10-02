@@ -1,9 +1,9 @@
 using System;
-using System.CodeDom.Compiler;
 using System.Diagnostics;
 using System.IO;
-using System.Text.RegularExpressions;
-using System.Text.RegularExpressions.Generated;
+using System.Security.Cryptography;
+using System.Security.Principal;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,6 +15,14 @@ internal sealed class ServiceLog
 
 	private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
 	private DateTimeOffset? _lastWriteFailure;
+	private readonly string _sessionId = "core-" + Guid.NewGuid().ToString("N");
+	private readonly DateTimeOffset _processBirthUtc = GetProcessBirthUtc();
+	private readonly string? _imageSha256 = GetOwnImageSha256();
+	private readonly string? _actorSid = GetActorSid();
+	private long _sequence;
+	private static readonly AsyncLocal<object?> DiagnosticScope = new();
+	internal const long RotationBytes = 5 * 1024 * 1024;
+	internal const int RotationCount = 3;
 
 	public ServiceLog(string stateRoot)
 	{
@@ -38,10 +46,56 @@ internal sealed class ServiceLog
 		return WriteAsync("ERROR", message, cancellationToken);
 	}
 
+	// Scope must be entered in the caller, after authentication, never from raw payload.
+	public IDisposable BeginScope(object fields)
+	{
+		object? previous = DiagnosticScope.Value;
+		DiagnosticScope.Value = ServiceDiagnosticRedaction.Value(fields);
+		return new ScopeExit(previous);
+	}
+
+	public Task EventAsync(string level, string stage, object? fields = null, Exception? error = null, CancellationToken cancellationToken = default)
+	{
+		string safeStage = ServiceDiagnosticRedaction.Text(stage, 128);
+		string payload;
+		try
+		{
+			payload = JsonSerializer.Serialize(new { schemaVersion = 1, stage = safeStage, fields = ServiceDiagnosticRedaction.Value(fields), error = ServiceDiagnosticRedaction.Value(error) });
+			if (payload.Length > 7000) payload = JsonSerializer.Serialize(new { schemaVersion = 1, stage = safeStage, truncated = true, preview = ServiceDiagnosticRedaction.Text(payload, 2048) });
+		}
+		catch { payload = JsonSerializer.Serialize(new { schemaVersion = 1, stage = safeStage, diagnosticError = "UNSERIALIZABLE_EVENT" }); }
+		return WriteAsync(level is "ERROR" or "WARN" or "DEBUG" ? level : "INFO", "[diagnostic-event] " + payload, cancellationToken);
+	}
+
+	private sealed class ScopeExit(object? previous) : IDisposable
+	{
+		private bool _disposed;
+		public void Dispose() { if (_disposed) return; _disposed = true; DiagnosticScope.Value = previous; }
+	}
+
+	private static DateTimeOffset GetProcessBirthUtc()
+	{
+		try { using var process = Process.GetCurrentProcess(); return process.StartTime.ToUniversalTime(); }
+		catch { return DateTimeOffset.UtcNow; }
+	}
+	private static string? GetOwnImageSha256()
+	{
+		try { using var stream = File.OpenRead(Environment.ProcessPath!); return Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant(); }
+		catch { return null; }
+	}
+	private static string? GetActorSid()
+	{
+		try { if (!OperatingSystem.IsWindows()) return null; using var identity = WindowsIdentity.GetCurrent(); return identity.User?.Value; }
+		catch { return null; }
+	}
+
 	private async Task WriteAsync(string level, string message, CancellationToken cancellationToken)
 	{
-		string value = Redact(message);
-		string line = $"{DateTimeOffset.UtcNow:O}\t{level}\t{value}{Environment.NewLine}";
+		string value = ServiceDiagnosticRedaction.Text(message).Replace("\r", "\\r").Replace("\n", "\\n");
+		string context = JsonSerializer.Serialize(new { schemaVersion = 1, source = "core", sessionId = _sessionId,
+			pid = Environment.ProcessId, processBirthUtc = _processBirthUtc, imageSha256 = _imageSha256, actorSid = _actorSid,
+			sequence = Interlocked.Increment(ref _sequence), localTimestamp = DateTimeOffset.Now, scope = DiagnosticScope.Value });
+		string line = $"{DateTimeOffset.UtcNow:O}\t{level}\t{value}\t[context] {context}{Environment.NewLine}";
 		await _writeLock.WaitAsync(cancellationToken);
 		try
 		{
@@ -57,7 +111,7 @@ internal sealed class ServiceLog
 			// or stop Core when antivirus/file viewers temporarily lock the log.
 			if (_lastWriteFailure == null || DateTimeOffset.UtcNow - _lastWriteFailure >= TimeSpan.FromMinutes(1))
 			{
-				Trace.TraceError("Core service log is temporarily unavailable: " + error.Message);
+				Trace.TraceError("Core service log is temporarily unavailable: " + ServiceDiagnosticRedaction.Text(error.Message));
 				_lastWriteFailure = DateTimeOffset.UtcNow;
 			}
 		}
@@ -69,35 +123,18 @@ internal sealed class ServiceLog
 
 	private void RotateIfNeeded()
 	{
-		if (File.Exists(_logPath) && new FileInfo(_logPath).Length > 5242880)
+		if (File.Exists(_logPath) && new FileInfo(_logPath).Length >= RotationBytes)
 		{
-			string text = _logPath + ".1";
-			if (File.Exists(text))
+			for (int index = RotationCount; index >= 1; index--)
 			{
-				File.Delete(text);
+				string target = _logPath + "." + index;
+				string source = index == 1 ? _logPath : _logPath + "." + (index - 1);
+				ProtectedProductRoot.AssertFileWriteAllowed(target);
+				ProtectedProductRoot.AssertFileWriteAllowed(source);
+				if (index == RotationCount && File.Exists(target)) File.Delete(target);
+				if (File.Exists(source)) File.Move(source, target, overwrite: true);
 			}
-			File.Move(_logPath, text);
 		}
 	}
 
-	private static string Redact(string value)
-	{
-		string input = SecretAssignmentRegex().Replace(value, "$1=[redacted]");
-		input = ProxyCredentialRegex().Replace(input, "$1://[redacted]@");
-		if (input.Length > 4096)
-		{
-			return input.Substring(0, 4096);
-		}
-		return input;
-	}
-	[GeneratedCode("System.Text.RegularExpressions.Generator", "10.0.14.27113")]
-	private static Regex SecretAssignmentRegex()
-	{
-		return _003CRegexGenerator_g_003EF6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__SecretAssignmentRegex_1.Instance;
-	}
-	[GeneratedCode("System.Text.RegularExpressions.Generator", "10.0.14.27113")]
-	private static Regex ProxyCredentialRegex()
-	{
-		return _003CRegexGenerator_g_003EF6D74187046B00D172B4F885B621DE58A29247487BEEF7874C300C5ED3831944D__ProxyCredentialRegex_2.Instance;
-	}
 }

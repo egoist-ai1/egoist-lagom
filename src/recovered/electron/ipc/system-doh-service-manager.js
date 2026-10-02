@@ -8,7 +8,7 @@ var XRAY_SOURCE_EXE_NAME = "xray.exe";
 var VERSION_FILE_NAME = "VERSION.txt";
 var READY_TIMEOUT_MS = 2e4;
 var READY_POLL_INTERVAL_MS = 300;
-var QUERY_TIMEOUT_MS = 2e3;
+var QUERY_TIMEOUT_MS = 3e3;
 var STATUS_CACHE_TTL_MS = 3e3;
 var SYSTEM_DOH_BOOTSTRAP_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 function systemDohOwnerInspectionError(provider, stage, error, code) {
@@ -113,7 +113,7 @@ function hasSuccessfulDnsAnswer(buffer, query) {
 	}
 	return hasAddress;
 }
-function queryDnsServer(address, port, domain) {
+function queryDnsServer(address, port, domain, signal) {
 	return new Promise((resolve, reject) => {
 		const socket = createSocket(address.includes(":") ? "udp6" : "udp4");
 		const query = createDnsQuery(domain, Math.floor(Math.random() * 65536));
@@ -127,11 +127,15 @@ function queryDnsServer(address, port, domain) {
 			if (settled) return;
 			settled = true;
 			clearTimeout(timer);
+			signal?.removeEventListener("abort", onAbort);
 			cleanup();
 			if (error) reject(error);
 			else resolve(true);
 		};
+		const onAbort = () => finish(new Error("DNS readiness probe cancelled."));
 		const timer = setTimeout(() => finish(new Error("DNS readiness probe timed out.")), QUERY_TIMEOUT_MS);
+		signal?.addEventListener("abort", onAbort, { once: true });
+		if (signal?.aborted) return onAbort();
 		socket.once("error", finish);
 		socket.once("message", (message) => {
 			finish(hasSuccessfulDnsAnswer(message, query) ? null : new Error(`Local DNS service did not resolve ${domain}.`));
@@ -164,8 +168,8 @@ function buildSystemDohServiceXml(options) {
 		"    <sizeThreshold>10240</sizeThreshold>",
 		"    <keepFiles>5</keepFiles>",
 		"  </log>",
-		"  <onfailure action=\"restart\" delay=\"5 sec\"/>",
-		"  <onfailure action=\"restart\" delay=\"10 sec\"/>",
+		"  <onfailure action=\"restart\" delay=\"0 sec\"/>",
+		"  <onfailure action=\"restart\" delay=\"1 sec\"/>",
 		"  <onfailure action=\"restart\" delay=\"60 sec\"/>",
 		"  <resetfailure>1 hour</resetfailure>",
 		"</service>",
@@ -430,6 +434,24 @@ var SystemDohManager = class {
 		const current = await this.status({ force: true });
 		if (["unknown", "unavailable"].includes(current.serviceState)) throw new Error("Не удалось проверить текущее состояние DNS. Настройки сохранены; повторите проверку после восстановления службы.");
 		if ((current.serviceRunning || current.nativeManaged && current.enabled) && current.currentUrl === normalizedUrl) return current;
+		if (current.serviceInstalled && current.currentUrl === normalizedUrl) {
+			// Retry the same saved provider without deleting the resolver/config
+			// that existing owned loopback adapters may still depend on.
+			if (!await this.isManagedServiceOwned()) throw new Error("Принадлежность службы System DoH не подтверждена; повторное подключение не выполнено.");
+			const saved = await this.readManagedState();
+			if (!saved || saved.url !== normalizedUrl) throw new Error("Сохранённая конфигурация System DoH изменилась; повторное подключение не выполнено.");
+			await this.startServiceInternal();
+			if (!await this.waitUntilReady(saved)) {
+				const retained = await this.retainRunningServiceAfterReadinessFailure(saved);
+				if (retained) return retained;
+				throw new Error("Служба System DoH не запустилась; сохранённая конфигурация оставлена для восстановления.");
+			}
+			const service = await this.queryServiceStatus();
+			await this.writeManagedState({ ...saved, pid: service.pid });
+			this.lastError = null;
+			this.invalidateStatusCache();
+			return this.status({ force: true });
+		}
 		const hasCustomPort = parsed.serverPort && parsed.serverPort !== 443;
 		if (current.serviceRunning || current.nativeManaged && current.enabled && hasCustomPort) {
 			throw new Error("Текущий DNS работает. Переключение DoH требует отдельного безопасного переноса; действующее подключение сохранено.");
@@ -455,6 +477,7 @@ var SystemDohManager = class {
 				localPort: 53,
 				url: normalizedUrl
 			};
+			let readinessFailed = false;
 			try {
 				await this.prepareConfig(normalizedUrl, candidate);
 				await this.writeServiceWrapperConfig(runtime);
@@ -462,7 +485,10 @@ var SystemDohManager = class {
 				await this.installService();
 				if (!this.coreService) await this.configureServiceAutostartRecovery();
 				await this.startServiceInternal();
-				if (!await this.waitUntilReady(state)) throw new Error(`System DoH не отвечает через ${candidate}:53.`);
+				if (!await this.waitUntilReady(state)) {
+					readinessFailed = true;
+					throw new Error(`System DoH не отвечает через ${candidate}:53.`);
+				}
 				const service = await this.queryServiceStatus();
 				await this.writeManagedState({
 					...state,
@@ -475,9 +501,22 @@ var SystemDohManager = class {
 				const reason = error instanceof Error ? error.message : String(error);
 				const logTail = await this.readLogTail();
 				const diagnostic = logTail ? `${reason} Xray: ${logTail}` : reason;
-				await this.removeServiceInternal().catch(() => void 0);
-				await this.stopLegacyStandaloneRuntime();
-				await this.clearManagedState();
+				if (readinessFailed && !/bind:|forbidden by its access permissions|Only one usage of each socket address/i.test(diagnostic)) {
+					// Remote readiness can fail while the owned runtime is healthy.
+					// Return its honest degraded status so Core keeps enabled intent;
+					// the GUI still refuses to enroll new adapters until verified.
+					const retained = await this.retainRunningServiceAfterReadinessFailure(state);
+					if (retained) return retained;
+				}
+				try {
+					await this.removeServiceInternal();
+					await this.stopLegacyStandaloneRuntime();
+					await this.clearManagedState();
+				} catch (rollbackError) {
+					const rollbackReason = rollbackError instanceof Error ? rollbackError.message : String(rollbackError);
+					this.lastError = `${diagnostic} Восстановление System DoH не завершено: ${rollbackReason}. Сохранённая конфигурация и состояние сохранены для повторной проверки.`;
+					throw new Error(this.lastError, { cause: rollbackError });
+				}
 				if (/bind:|forbidden by its access permissions|Only one usage of each socket address/i.test(diagnostic)) {
 					lastBindError = diagnostic;
 					continue;
@@ -488,6 +527,23 @@ var SystemDohManager = class {
 		}
 		this.lastError = lastBindError ?? "Не удалось найти свободный loopback-адрес для System DoH.";
 		throw new Error(this.lastError);
+	}
+	async retainRunningServiceAfterReadinessFailure(state) {
+		const service = await this.queryServiceStatus();
+		if (["unknown", "unavailable"].includes(service.state)) throw new Error("Состояние службы System DoH неизвестно; конфигурация и служба сохранены для повторной проверки.");
+		if (!service.installed || !service.running) return null;
+		if (!await this.isManagedServiceOwned()) throw new Error("Принадлежность работающей службы System DoH не подтверждена; её состояние сохранено без изменений.");
+		const saved = await this.readManagedState();
+		if (!saved || ["url", "localAddress", "localPort", "startedAt"].some(key => saved[key] !== state[key])) throw new Error("Сохранённая конфигурация System DoH изменилась во время проверки; служба и конфигурация сохранены без отката.");
+		await this.writeManagedState({ ...saved, pid: service.pid });
+		this.lastError = "Служба System DoH запущена, но выбранный DoH пока не прошёл проверку. Конфигурация сохранена; Core продолжит фоновое восстановление.";
+		this.invalidateStatusCache();
+		const status = await this.status({ force: true });
+		if (status.verified === true) {
+			this.lastError = null;
+			return { ...status, lastError: null, readinessPending: false, ownedResolverRetained: true };
+		}
+		return { ...status, readinessPending: true, ownedResolverRetained: true };
 	}
 	async stop() {
 		return this.runMutation(() => this.stopInternal());
@@ -505,30 +561,29 @@ var SystemDohManager = class {
 	}
 	async restartInternal() {
 		const currentStatus = await this.status({ force: true });
-		if (currentStatus.running && currentStatus.verified) return currentStatus;
-		if (currentStatus.serviceRunning) throw new Error("Служба DNS работает, но проверка не прошла. Перезапуск без резервного DNS заблокирован.");
-		const managedState = await this.readManagedState();
-		if (this.coreService && !managedState) {
+		if (["unknown", "unavailable"].includes(currentStatus.serviceState)) throw new Error("Состояние службы System DoH неизвестно; перезапуск не выполнен.");
+		const state = await this.readManagedState();
+		if (this.coreService && !state) {
 			const current = await this.coreService.nativeDohStatus();
 			if (!current.url) throw new Error("Конфигурация System DoH отсутствует.");
 			return this.applyInternal(current.url);
 		}
-		const state = await this.readManagedState();
-		if (state?.url && state.localAddress !== "127.0.0.1") return this.applyInternal(state.url, SYSTEM_DOH_DEFAULT_LOCAL_ADDRESS);
-		if (!(await this.queryServiceStatus()).installed) {
-			if (!state?.url) throw new Error("Служба System DoH не установлена и сохранённая конфигурация отсутствует.");
-			return this.applyInternal(state.url, state.localAddress);
-		}
+		if (!state?.url) throw new Error("Сохранённая конфигурация System DoH отсутствует; перезапуск не выполнен.");
+		const service = await this.queryServiceStatus();
+		if (["unknown", "unavailable"].includes(service.state)) throw new Error("Состояние службы System DoH неизвестно; перезапуск не выполнен.");
+		if (!service.installed) return this.applyInternal(state.url, state.localAddress);
+		if (!this.coreService && !await this.isManagedServiceOwned()) throw new Error("Принадлежность службы System DoH не подтверждена; перезапуск не выполнен.");
+		// An explicit restart may replace a degraded or healthy owned process. Core
+		// supplies privileges and exact identity checks; DNS/provider config stays.
 		await this.stopServiceInternal();
 		await this.stopLegacyStandaloneRuntime();
 		await this.startServiceInternal();
-		if (!state || !await this.waitUntilReady(state)) throw new Error("Служба System DoH перезапущена, но локальный DNS не прошёл проверку.");
 		const nextService = await this.queryServiceStatus();
-		await this.writeManagedState({
-			...state,
-			pid: nextService.pid,
-			startedAt: (/* @__PURE__ */ new Date()).toISOString()
-		});
+		await this.writeManagedState({ ...state, pid: nextService.pid, startedAt: (/* @__PURE__ */ new Date()).toISOString() });
+		if (!await this.waitUntilReady(state)) {
+			this.lastError = "Служба System DoH перезапущена, но локальный DNS не прошёл проверку.";
+			throw new Error(this.lastError);
+		}
 		this.lastError = null;
 		this.invalidateStatusCache();
 		return this.status({ force: true });
@@ -580,7 +635,11 @@ var SystemDohManager = class {
 			const state = await this.readManagedState();
 			const service = await this.queryServiceStatus();
 			if (service.installed && state?.url === normalizedUrl && state.localAddress === "127.0.0.1") {
-				if (!service.running) await this.startServiceInternal();
+				// Opening the GUI observes an already running resolver. Core owns
+				// repair of persistent failures; repeated readiness loops hold the
+				// network mutation slot and cannot fix an unreachable upstream.
+				if (service.running) return this.status({ force: true });
+				await this.startServiceInternal();
 				if (await this.waitUntilReady(state)) {
 					const nextService = await this.queryServiceStatus();
 					await this.writeManagedState({
@@ -661,7 +720,8 @@ var SystemDohManager = class {
 			serverAddresses: verified ? (state.localAddress === "127.0.0.1" ? ["127.0.0.1", "::1"] : [state.localAddress]) : [],
 			currentUrl: state?.url || null,
 			ownerInspectionErrors: service.ownerInspectionErrors ?? [],
-			lastError: service.state === "unknown" && service.ownerInspectionErrors?.length ? service.ownerInspectionErrors.map((value) => `${value.code}/${value.stage}`).join("; ") : this.lastError
+			healthState: service.state === "unknown" ? "unknown" : service.running ? verified ? "ready" : "degraded" : "stopped",
+			lastError: service.state === "unknown" && service.ownerInspectionErrors?.length ? service.ownerInspectionErrors.map((value) => `${value.code}/${value.stage}`).join("; ") : service.running && !verified ? "Служба DNS запущена, но запросы через выбранный DoH не прошли проверку. Фоновая служба проверит необходимость восстановления." : this.lastError
 		};
 	}
 	mapNativeStatus(native) {
@@ -741,14 +801,16 @@ var SystemDohManager = class {
 	}
 	async stopServiceInternal() {
 		const service = await this.queryServiceStatus();
-		if (service.state === "unknown") throw new Error("Состояние службы System DoH неизвестно; остановка не выполнена.");
+		if (["unknown", "unavailable"].includes(service.state)) throw new Error("Состояние службы System DoH неизвестно; остановка не выполнена.");
 		if (!service.installed) return;
-		if (service.running || service.state === "start-pending") if (this.coreService) await this.coreService.stopOwnedService(SYSTEM_DOH_SERVICE_NAME);
+		if (this.coreService) await this.coreService.stopOwnedService(SYSTEM_DOH_SERVICE_NAME);
 		else {
-			await this.execServiceWrapper(["stop"], true);
-			await this.execSc(["stop", SYSTEM_DOH_SERVICE_NAME], true);
+			if (!await this.isManagedServiceOwned()) throw new Error("Принадлежность службы System DoH не подтверждена; остановка не выполнена.");
+			if (["running", "start-pending", "paused"].includes(service.state)) {
+				await this.execServiceWrapper(["stop"], false);
+			}
 		}
-		await this.waitForServiceState("stopped", 12e3).catch(() => void 0);
+		await this.waitForServiceState("stopped", 12e3);
 		this.invalidateStatusCache();
 	}
 	async removeServiceInternal() {
@@ -777,7 +839,7 @@ var SystemDohManager = class {
 			"reset=",
 			"3600",
 			"actions=",
-			"restart/5000/restart/10000/restart/60000"
+			"restart/0/restart/1000/restart/60000"
 		], false);
 		await this.execSc([
 			"config",
@@ -1035,8 +1097,12 @@ var SystemDohManager = class {
 	async verifyDns(state) {
 		const addresses = state.localAddress === "127.0.0.1" ? ["127.0.0.1", "::1"] : [state.localAddress];
 		const results = await Promise.all(addresses.map(async address => {
-			for (const domain of SYSTEM_DOH_VERIFICATION_DOMAINS) if (await queryDnsServer(address, state.localPort, domain).catch(() => false)) return true;
-			return false;
+			const controller = new AbortController();
+			try {
+				await Promise.any(SYSTEM_DOH_VERIFICATION_DOMAINS.map(domain => queryDnsServer(address, state.localPort, domain, controller.signal)));
+				return true;
+			} catch { return false; }
+			finally { controller.abort(); }
 		}));
 		return results.every(Boolean);
 	}
@@ -1094,27 +1160,34 @@ var SystemDohManager = class {
 		await promises.rm(this.statePath, { force: true });
 	}
 	async stopLegacyStandaloneRuntime() {
+		if (this.coreService) return this.coreService.stopOwnedService(SYSTEM_DOH_SERVICE_NAME);
 		const script = [
+			"$ErrorActionPreference = 'Stop'",
 			`$target = [System.IO.Path]::GetFullPath('${path.win32.normalize(path.join(this.runtimeDir, SYSTEM_DOH_EXE_NAME)).replace(/'/g, "''")}')`,
-			`$procs = Get-CimInstance Win32_Process -Filter "Name='${SYSTEM_DOH_EXE_NAME}'" -ErrorAction SilentlyContinue`,
+			`$procs = Get-CimInstance Win32_Process -Filter "Name='${SYSTEM_DOH_EXE_NAME}'" -ErrorAction Stop`,
 			"foreach ($proc in @($procs)) {",
 			"  $processPath = [string]$proc.ExecutablePath",
-			"  if ($processPath -and [string]::Equals([System.IO.Path]::GetFullPath($processPath), $target, [System.StringComparison]::OrdinalIgnoreCase)) {",
-			"    Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue",
-			"  }",
+			"  if (-not $processPath) { throw 'DNS runtime identity is unavailable; cleanup refused.' }",
+			"  if (-not [string]::Equals([System.IO.Path]::GetFullPath($processPath), $target, [System.StringComparison]::OrdinalIgnoreCase)) { continue }",
+			"  try { $live = Get-Process -Id $proc.ProcessId -ErrorAction Stop } catch { if ($_.CategoryInfo.Category -eq 'ObjectNotFound') { continue }; throw }",
+			"  try {",
+			"    $held = $live.Handle",
+			"    $born = $live.StartTime.ToUniversalTime()",
+			"    $image = [string]$live.MainModule.FileName",
+			"    if (-not $image -or -not [string]::Equals([System.IO.Path]::GetFullPath($image), $target, [System.StringComparison]::OrdinalIgnoreCase)) { throw 'DNS runtime process identity changed; cleanup refused.' }",
+			"    if ($live.HasExited) { continue }",
+			"    $live.Kill()",
+			"    if (-not $live.WaitForExit(5000)) { throw 'Owned DNS runtime exit was not confirmed.' }",
+			"  } finally { $live.Dispose() }",
+			"}",
+			`$remaining = Get-CimInstance Win32_Process -Filter "Name='${SYSTEM_DOH_EXE_NAME}'" -ErrorAction Stop`,
+			"foreach ($proc in @($remaining)) {",
+			"  $image = [string]$proc.ExecutablePath",
+			"  if (-not $image) { throw 'DNS runtime quiescence is unavailable.' }",
+			"  if ([string]::Equals([System.IO.Path]::GetFullPath($image), $target, [System.StringComparison]::OrdinalIgnoreCase)) { throw 'Owned DNS runtime restarted during cleanup.' }",
 			"}"
 		].join("; ");
-		await execFileAsync$4(resolveWindowsExecutable("powershell.exe"), [
-			"-NoProfile",
-			"-NonInteractive",
-			"-ExecutionPolicy",
-			"Bypass",
-			"-Command",
-			script
-		], {
-			windowsHide: true,
-			timeout: 1e4
-		}).catch(() => void 0);
+		await execFileAsync$4(resolveWindowsExecutable("powershell.exe"), ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script], { windowsHide: true, timeout: 1e4 });
 	}
 	async isPidRunning(pid) {
 		try {

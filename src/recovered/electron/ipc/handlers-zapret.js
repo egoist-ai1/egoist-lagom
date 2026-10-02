@@ -68,16 +68,24 @@ async function assertVpnDisconnected(runtimeManager, message) {
 	if ((await runtimeManager.status()).connected) throw new Error(message);
 }
 async function prepareZapretProbeDns(systemDohManager) {
-	if (!systemDohManager?.status || typeof systemDohManager.stopAndRemove !== "function") return;
-	const current = await systemDohManager.status({ force: true });
-	if (current?.running === true && current?.verified === true) return;
-	const restored = await systemDohManager.stopAndRemove();
-	if (restored?.ok === false) throw new Error(restored.message || restored.error || "Не удалось подготовить DNS для автоподбора профилей.");
-	const after = await systemDohManager.status({ force: true });
-	if (!after || typeof after !== "object") throw new Error("Не удалось проверить DNS перед автоподбором профилей.");
-	if (after?.lastError) throw new Error(after.lastError);
-	if (after.running === true && after.verified !== true) throw new Error("DNS не прошёл проверку перед автоподбором профилей.");
+	if (typeof systemDohManager?.status !== "function") throw new Error("Не удалось проверить DNS перед автоподбором. Выбранный DNS сохранён.");
+	const status = await systemDohManager.status({ force: true });
+	if (!status || typeof status !== "object" || Array.isArray(status) || status.statusError ||
+		status.nativeStatusUnavailable === true || status.ownerInspectionErrors?.length ||
+		["unknown", "unavailable", "query-failed"].includes(status.serviceState) || status.healthState === "unknown") {
+		throw new Error("Не удалось проверить DNS перед автоподбором. Выбранный DNS сохранён.");
+	}
+	if (status.running === true && status.verified === true) return;
+	if (status.enabled === true || status.currentUrl || status.running === true || status.serviceRunning === true ||
+		status.nativeManaged === true && status.enabled !== false || status.healthState === "degraded") {
+		throw new Error(status.lastError || "Выбранный DNS ещё не готов. Автоподбор не будет останавливать или заменять выбранный DNS.");
+	}
+	if (status.running !== false || status.serviceRunning !== false ||
+		status.serviceState && !["stopped", "not-installed"].includes(status.serviceState)) {
+		throw new Error("Не удалось подтвердить остановленное состояние DNS. Выбранный DNS сохранён.");
+	}
 }
+
 function registerZapretHandlers({ stateStore, runtimeManager, systemDohManager, zapretManager, networkCombinatorManager }) {
 	const mutate = (action, operation, guardMessage, requiredLocks = ["packet-interception", "windivert"]) => {
 		const guardedOperation = async () => {

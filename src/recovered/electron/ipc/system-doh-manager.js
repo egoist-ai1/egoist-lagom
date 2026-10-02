@@ -232,7 +232,10 @@ function buildSystemDohXrayConfig(options) {
 			...hasBootstrapHosts ? { hosts: bootstrapHosts } : {},
 			servers: servers.map((address) => ({ address, timeoutMs: 2500 })),
 			disableCache: false,
-			serveStale: false,
+			// Keep same-operator cached answers through brief transport outages.
+			// Xray also extends cached negatives; never use zero (unbounded).
+			serveStale: true,
+			serveExpiredTTL: 120,
 			enableParallelQuery: false,
 			disableFallback: servers.length === 1,
 			queryStrategy: "UseIP"
@@ -240,3 +243,4 @@ function buildSystemDohXrayConfig(options) {
 	}, null, 2)}\n`;
 }
 //#endregion
+

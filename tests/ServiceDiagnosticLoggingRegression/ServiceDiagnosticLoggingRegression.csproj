@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><LangVersion>14.0</LangVersion><ServiceSourceRoot Condition="'$(ServiceSourceRoot)' == ''">../../src/service/EgoistShield.Service</ServiceSourceRoot></PropertyGroup>
+  <ItemGroup><Compile Include="$(ServiceSourceRoot)/ServiceLog.cs" Link="ServiceLog.cs" /><Compile Include="$(ServiceSourceRoot)/ServiceDiagnosticRedaction.cs" Link="ServiceDiagnosticRedaction.cs" /></ItemGroup>
+</Project>

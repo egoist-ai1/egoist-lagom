@@ -183,7 +183,7 @@ internal static class Program
         foreach (bool disabled in new[] { false, true })
         {
             var fixture = new SupervisionFixture(); await fixture.Store.SetRunningAsync(ServiceName, true, default);
-            fixture.ProbeHook = async () => { if (fixture.Now >= TimeSpan.FromSeconds(90)) {
+            fixture.ProbeHook = async () => { if (fixture.Now >= TimeSpan.FromSeconds(75)) {
                 if (disabled) fixture.Status = fixture.Status with { StartType = "disabled" };
                 else await fixture.Store.SetRunningAsync(ServiceName, false, default);
             }};
@@ -202,13 +202,19 @@ internal static class Program
     {
         var fixture = new SupervisionFixture(); await fixture.Store.SetRunningAsync(ServiceName, true, default);
         var supervisor = fixture.Create(); await fixture.FailThree(supervisor);
-        Assert(fixture.Recoveries == 1, "Persistent local failure should recover once after three observations.");
-        await fixture.FailThree(supervisor, 110);
-        Assert(fixture.Recoveries == 1, "A restart loop violated the five-minute backoff.");
-        await fixture.FailThree(fixture.Create(), 160);
-        Assert(fixture.Recoveries == 1, "Core restart erased persisted recovery backoff.");
+        Assert(fixture.Recoveries == 1, "Persistent DNS failure did not recover after two observations.");
+        fixture.Now = TimeSpan.FromSeconds(110); await supervisor.CheckAsync(default);
+        fixture.Now = TimeSpan.FromSeconds(130); await supervisor.CheckAsync(default);
+        Assert(fixture.Recoveries == 1, "A restart loop violated the one-minute DNS cooldown.");
+        fixture.Now = TimeSpan.FromSeconds(135); await supervisor.CheckAsync(default);
+        Assert(fixture.Recoveries == 2, "Second fast DNS recovery never resumed after its cooldown.");
+        var recreated = fixture.Create(); fixture.Now = TimeSpan.FromSeconds(160); await recreated.CheckAsync(default);
+        fixture.Now = TimeSpan.FromSeconds(180); await recreated.CheckAsync(default);
+        Assert(fixture.Recoveries == 2, "Core restart erased persisted one-minute recovery cooldown.");
+        fixture.Now = TimeSpan.FromSeconds(195); await recreated.CheckAsync(default);
+        Assert(fixture.Recoveries == 3, "Third fast DNS recovery never resumed.");
         fixture.Now = TimeSpan.FromSeconds(390); await supervisor.CheckAsync(default);
-        Assert(fixture.Recoveries == 2, "Recovery was not retried after the bounded backoff.");
+        Assert(fixture.Recoveries == 3, "Third recovery did not enter persisted five-minute storm backoff.");
     }
 
     private static async Task DeferredHealthAsync()
@@ -226,14 +232,15 @@ internal static class Program
         var fixture = new SupervisionFixture { Status = new(ServiceName, "stopped", "auto", true) };
         await fixture.Store.SetRunningAsync(ServiceName, true, default);
         await fixture.Store.MarkRecoveryAsync(ServiceName, fixture.Utc.AddDays(14), default);
-        var supervisor = fixture.Create();
-        await fixture.FailThree(supervisor);
+        var supervisor = fixture.Create(); await fixture.FailThree(supervisor);
         Assert(fixture.Recoveries == 1, "A future durable recovery timestamp suppressed recovery after clock correction.");
-        await fixture.FailThree(supervisor, 110);
-        await fixture.FailThree(fixture.Create(), 160);
-        Assert(fixture.Recoveries == 1, "Correcting a future timestamp removed the in-process or persisted minimum recovery interval.");
-        fixture.Now = TimeSpan.FromSeconds(390); await supervisor.CheckAsync(default);
-        Assert(fixture.Recoveries == 2, "The bounded recovery interval did not expire after clock correction.");
+        fixture.Now = TimeSpan.FromSeconds(110); await supervisor.CheckAsync(default);
+        fixture.Now = TimeSpan.FromSeconds(130); await supervisor.CheckAsync(default);
+        Assert(fixture.Recoveries == 1, "Clock correction erased persisted minimum recovery interval.");
+        fixture.Now = TimeSpan.FromSeconds(135); await supervisor.CheckAsync(default);
+        Assert(fixture.Recoveries == 2, "Bounded recovery interval did not expire after clock correction.");
+        var restarted = fixture.Create(); await fixture.FailThree(restarted, 160);
+        Assert(fixture.Recoveries == 2, "Clock correction reset the persisted storm count across Core recreation.");
     }
 
     private static async Task TelegramCollisionAsync()

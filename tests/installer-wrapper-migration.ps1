@@ -36,6 +36,7 @@ function Get-Service { param($Name,$ErrorAction) return [pscustomobject]@{Status
 function Get-CimInstance { param($ClassName,$Filter,$ErrorAction) if($script:cimQueryFails){throw 'Fixture CIM lookup failed'}; $name=($Filter -replace "^Name='",'' -replace "'$",''); return [pscustomobject]@{PathName=$script:registrations[$name]} }
 function Stop-OwnedServiceForInstall { param($Name) $script:stops += $Name; $script:statuses[$Name]='Stopped' }
 function Update-PreservedRuntimeReliability { param($State) }
+function Write-VerifiedSystemDohRecoveryRuntime { param($State) }
 function Restore-PreservedState {
   param($State)
   foreach ($record in $State.services) {
@@ -68,8 +69,9 @@ $state=[pscustomobject]@{version='3.8.0';services=$records;wrapperMigrationPendi
 # Execute the actual post-restore statements from Invoke-WorkerMode. On the
 # archived baseline this restores the old aliases without upgrading binaries.
 $worker=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Invoke-WorkerMode'},$true)
-$workflow=[regex]::Match($worker.Extent.Text,'(?ms)^\s+Restore-PreservedState -State \$state\r?\n(?<steps>.*?)^\s+Reconcile-PreservedZapretProfile -State \$state')
+$workflow=[regex]::Match($worker.Extent.Text,'(?ms)^\s+Restore-PreservedState -State \$state(?: -PreserveSystemDohRuntime:\$keepDns)?\r?\n(?<steps>.*?)^\s+Reconcile-PreservedZapretProfile -State \$state')
 Require $workflow.Success 'Could not find the actual worker post-restore sequence.'
+$keepDns=$false
 . ([scriptblock]::Create('Restore-PreservedState -State $state' + "`n" + $workflow.Groups['steps'].Value))
 foreach ($record in $records) { Require ((Get-FileSha256 $record.pathName) -eq $hash) ('Worker preserved the obsolete wrapper: ' + $record.name) }
 Require ((Get-Content -LiteralPath (Join-Path $StageDirectory 'state.json') -Raw | ConvertFrom-Json).wrapperMigrationPending -eq $true) 'Rollback state was not persisted before migration.'

@@ -79,19 +79,22 @@ test('embedded installer dispatch rejects a PE with the wrong product identity',
   ], { cwd: root, windowsHide: true, timeout: 30_000 }), /product identity is invalid/);
 });
 
-test('worker starts watchdog before service stops and stops SystemDoH last', async () => {
+test('worker starts watchdog before service handoff and preserves enabled owned DNS through payload publication', async () => {
   const source = await fs.readFile(script, 'utf8');
-  const worker = source.match(/function Invoke-WorkerMode[\s\S]*?\r?\n}\r?\n\r?\nif \(\$(?:Recover|Watchdog)\)/)?.[0] ?? '';
+  const worker = source.match(/function Invoke-WorkerMode[\s\S]*?\r?\n}\r?\n\r?\nif \(\$ProbePayloadContinuity\)/)?.[0] ?? '';
   const watchdogStart = worker.indexOf('Start-Process -FilePath $powerShell');
   const runtimeBackup = worker.indexOf('Invoke-RobocopyDirectory -Source $script:RuntimeRoot');
   const dnsBackup = worker.indexOf('Backup-CriticalDnsState');
   const ordinaryStops = worker.indexOf('Suspend-InstallerServiceRestarts -Records');
-  const dnsStop = worker.indexOf('Stop-OwnedServiceForInstall -Name "EgoistShieldSystemDoH"');
+  const dnsStop = worker.indexOf("Stop-OwnedServiceForInstall -Name 'EgoistShieldSystemDoH'");
   const installerStart = worker.indexOf('$installerProcess = Start-Process');
   assert.ok(watchdogStart >= 0 && watchdogStart < ordinaryStops);
   assert.ok(dnsBackup >= 0 && runtimeBackup >= 0 && runtimeBackup < dnsStop);
   assert.ok(ordinaryStops < dnsStop && dnsStop < installerStart);
-  assert.match(source, /Restore-CriticalOwnedDnsBaseline -State \$State/);
+  assert.match(worker, /if \(\$keepDns\) \{\s+\[void\]\(Assert-SystemDohPayloadContinuity -State \$state\)/);
+  assert.match(worker, /Restore-PreservedState -State \$state -PreserveSystemDohRuntime:\$keepDns/);
+  assert.match(worker, /if \(\$keepDns\) \{ \$dnsMigrationDeferred = -not \(Invoke-SystemDohRuntimeMigration/);
+  assert.match(source, /function Restore-CriticalOwnedDnsBaseline/);
   assert.match(source, /Restore-PreservedState/);
   assert.match(source, /Test-LoopbackDnsReady/);
   assert.match(source, /Restore-CriticalAdapterDns -State \$state/);

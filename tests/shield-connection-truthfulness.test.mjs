@@ -19,7 +19,7 @@ function fixture({ telegramRunning = false } = {}) {
       stopStandalone: async () => {},
       stopService: async () => { calls.push('zapret-stop'); state.zapret = false; }
     },
-    dns: { status: async () => ({ running: state.dns, verified: state.dns }) },
+    dns: { status: async () => ({ running: state.dns, serviceRunning: state.dns, verified: state.dns }) },
     applyDns: async () => { state.dns = true; return { ok: true }; },
     resetDns: async () => { calls.push('dns-reset'); state.dns = false; return { ok: true }; },
     telegramProxy: {
@@ -47,7 +47,7 @@ for (const failure of ['throws', 'failed-result', 'not-running']) {
     assert.equal(calls.includes('save'), false);
     assert.equal(calls.includes('tg-link'), false);
     assert.equal(state.zapret, false);
-    assert.equal(state.dns, false);
+    assert.equal(state.dns, true, 'DNS foundation survives addon rollback');
   });
 }
 

@@ -133,6 +133,8 @@ internal static class Program
 	{
 		try
 		{
+			if (Array.Exists(args, argument => argument == SystemDohMigrationPreflightCommand.Flag))
+				return SystemDohMigrationPreflightCommand.RunAsync(args);
 			if (args.Length == 1 && args[0] == "--verify-native-runtime")
 				return NativeRuntimeTrustCommand.RunAsync();
 			if (args.Length == 1 && args[0] == "--run-vpn-runtime")

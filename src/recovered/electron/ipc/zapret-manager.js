@@ -36,6 +36,9 @@ var DEFAULT_USER_LIST_FILES = {
 	"list-general-user.txt": "domain.example.abc\n",
 	"list-exclude-user.txt": "domain.example.abc\n"
 };
+// Application-owned site coverage is separate from upstream and user lists.
+var ZAPRET_NAMED_SITE_FILE = "list-egoist-sites.txt";
+var ZAPRET_NAMED_SITE_CONTENT = "instagram.com\ncdninstagram.com\nx.com\ntwitter.com\ntwimg.com\nt.co\nfut.gg\n";
 var USER_LIST_FILE_NAMES = {
 	generalDomains: "list-general-user.txt",
 	includedCidrs: "ipset-all-user.txt",
@@ -232,7 +235,7 @@ function dedupeNormalizedEntries(entries) {
 function normalizeZapretDomainEntries(entries, placeholder) {
 	const invalid = /* @__PURE__ */ new Set();
 	const normalized = dedupeNormalizedEntries(entries).filter((entry) => entry !== placeholder).filter((entry) => {
-		const isValid = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(entry);
+		const isValid = entry.length <= 253 && /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(entry);
 		if (!isValid) invalid.add(entry);
 		return isValid;
 	});
@@ -402,7 +405,9 @@ function normalizeCurlProbeError(value) {
 function normalizeZapretNetworkEntries(entries, placeholder) {
 	const invalid = /* @__PURE__ */ new Set();
 	const normalized = dedupeNormalizedEntries(entries).filter((entry) => entry !== placeholder).filter((entry) => {
-		const isValid = /^[0-9a-f:.]+(?:\/\d{1,3})?$/i.test(entry);
+		const [address, prefix, extra] = entry.split("/");
+		const family = address.includes("%") ? 0 : isIP(address);
+		const isValid = family !== 0 && extra === void 0 && (prefix === void 0 || /^\d{1,3}$/.test(prefix) && Number(prefix) <= (family === 4 ? 32 : 128));
 		if (!isValid) invalid.add(entry);
 		return isValid;
 	});
@@ -585,6 +590,169 @@ function splitWindowsCommandLine(commandLine) {
 	if (current.length > 0) args.push(current);
 	return args;
 }
+function applyZapretProfileExclusions(commandLine, listsDir) {
+	const strategies = [[]];
+	for (const argument of splitWindowsCommandLine(commandLine)) {
+		if (argument === "--new") strategies.push([]);
+		else strategies.at(-1).push(argument);
+	}
+	const ipExcludes = ["ipset-exclude.txt", "ipset-exclude-user.txt"].map((file) => "--ipset-exclude=" + path.join(listsDir, file));
+	const hostExcludes = ["list-exclude.txt", "list-exclude-user.txt"].map((file) => "--hostlist-exclude=" + path.join(listsDir, file));
+	const generalLists = ["list-general.txt", "list-general-user.txt"].map((file) => ("--hostlist=" + path.join(listsDir, file)).toLowerCase());
+	const namedSites = "--hostlist=" + path.join(listsDir, ZAPRET_NAMED_SITE_FILE);
+	return strategies.map((strategy) => {
+		// Extend only existing general hostname strategies. Voice/STUN,
+		// Google-only, IP-only and custom strategies keep their original scope.
+		if (strategy.some((argument) => generalLists.includes(argument.toLowerCase())) && !strategy.some((argument) => argument.toLowerCase() === namedSites.toLowerCase())) strategy.push(namedSites);
+		const hasHostnameFilter = strategy.some((argument) => /^--hostlist(?:-domains|-auto)?=/.test(argument));
+		// An exclude-only hostlist requires a hostname in winws. Adding it to
+		// Discord/STUN or unknown strategies would disable their media matching.
+		for (const exclusion of [...ipExcludes, ...(hasHostnameFilter ? hostExcludes : [])]) {
+			if (!strategy.some((argument) => argument.toLowerCase() === exclusion.toLowerCase())) strategy.push(exclusion);
+		}
+		return strategy.map((argument) => {
+			if (!/[\s"]/u.test(argument)) return argument;
+			return '"' + argument.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/g, '$1$1') + '"';
+		}).join(" ");
+	}).join(" --new ");
+}
+// DNS is a foundation transport; exclude exact configured endpoints before
+// WinDivert captures packets, regardless of the selected DPI strategy.
+function parseZapretDnsTransportConfiguration(state, config) {
+	if (!state || typeof state !== "object" || !config || typeof config !== "object" || typeof state.url !== "string" || state.url.length > 4096 || !Number.isInteger(state.localPort) || state.localPort < 1 || state.localPort > 65535 || !/^127\./.test(state.localAddress) || isIP(state.localAddress) !== 4) throw new Error("Сохранённая конфигурация DNS для изоляции Zapret некорректна.");
+	const parseUrl = (value) => {
+		if (typeof value !== "string" || value.length > 4096) throw new Error("Некорректный транспорт DNS для изоляции Zapret.");
+		let url;
+		try { url = new URL(value.replace(/^https\+local:/i, "https:")); } catch { throw new Error("Некорректный транспорт DNS для изоляции Zapret."); }
+		if (url.protocol !== "https:" || !url.hostname || url.username || url.password || url.hash) throw new Error("Некорректный транспорт DNS для изоляции Zapret.");
+		if (url.pathname === "/") url.pathname = "/dns-query";
+		const host = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+		const port = url.port ? Number(url.port) : 443;
+		if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("Некорректный транспорт DNS для изоляции Zapret.");
+		return { canonical: url.href, host, port };
+	};
+	const expected = parseUrl(state.url);
+	const servers = config.dns?.servers;
+	if (!Array.isArray(servers) || !servers.length || servers.length > 16 || config.dns?.tag !== "doh-upstream" || !Array.isArray(config.inbounds) || !config.inbounds.some(item => item?.tag === "dns-in" && item.protocol === "dokodemo-door" && item.listen === state.localAddress && item.port === state.localPort)) throw new Error("Рабочая конфигурация DNS для изоляции Zapret не подтверждена.");
+	const endpoints = [];
+	for (let index = 0; index < servers.length; index += 1) {
+		const upstream = parseUrl(typeof servers[index] === "string" ? servers[index] : servers[index]?.address);
+		if (index === 0 && upstream.canonical !== expected.canonical) throw new Error("Сохранённая и рабочая конфигурации DNS для изоляции Zapret различаются.");
+		const family = isIP(upstream.host);
+		const hostKeys = Object.keys(config.dns.hosts ?? {}).filter(key => key.toLowerCase() === upstream.host);
+		if (hostKeys.length > 1) throw new Error("Bootstrap DNS для изоляции Zapret неоднозначен.");
+		const addresses = family ? [upstream.host] : hostKeys.length === 1 ? config.dns.hosts[hostKeys[0]] : null;
+		if (!Array.isArray(addresses) || !addresses.length || addresses.length > 16 || addresses.some(ip => typeof ip !== "string" || !isIP(ip) || /[%\s]/.test(ip))) throw new Error("Bootstrap DNS для изоляции Zapret не подтверждён.");
+		for (const address of addresses) endpoints.push({ address: address.toLowerCase(), port: upstream.port });
+	}
+	return Array.from(new Map(endpoints.map(item => [item.address + "/" + item.port, item])).values()).sort((a, b) => (a.address + "/" + a.port).localeCompare(b.address + "/" + b.port));
+}
+async function readZapretBoundedProtectedFile(filePath, maximum = 65536) {
+	const before = await promises.lstat(filePath);
+	if (!before.isFile() || before.isSymbolicLink() || before.size > maximum || before.size === 0 || path.resolve(await promises.realpath(filePath)).toLowerCase() !== path.resolve(filePath).toLowerCase()) throw new Error("Файл изоляции DNS/Zapret не прошёл проверку.");
+	const handle = await promises.open(filePath, "r");
+	try {
+		const stat = await handle.stat();
+		if (!stat.isFile() || stat.size !== before.size || stat.size > maximum || stat.ino !== before.ino || stat.dev !== before.dev) throw new Error("Файл изоляции DNS/Zapret изменился.");
+		const buffer = Buffer.alloc(stat.size + 1);
+		const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+		const after = await handle.stat();
+		if (bytesRead !== stat.size || after.size !== stat.size || after.mtimeMs !== stat.mtimeMs) throw new Error("Файл изоляции DNS/Zapret изменился.");
+		return buffer.subarray(0, bytesRead).toString("utf8").replace(/^\uFEFF/, "");
+	} finally { await handle.close(); }
+}
+async function readZapretDnsTransportSnapshot(systemDohRoot) {
+	if (!systemDohRoot) return { endpoints: [], fingerprint: null };
+	let root;
+	try { root = await promises.lstat(systemDohRoot); } catch (error) { if (error?.code === "ENOENT") return { endpoints: [], fingerprint: null }; throw new Error("Не удалось проверить изоляцию DNS/Zapret."); }
+	if (!root.isDirectory() || root.isSymbolicLink() || path.resolve(await promises.realpath(systemDohRoot)).toLowerCase() !== path.resolve(systemDohRoot).toLowerCase()) throw new Error("Защищённый каталог DNS для Zapret не подтверждён.");
+	const statePath = path.join(systemDohRoot, "state.json");
+	const configPath = path.join(systemDohRoot, "config.json");
+	const readPair = () => Promise.all([readZapretBoundedProtectedFile(statePath), readZapretBoundedProtectedFile(configPath)]);
+	let pair;
+	try { pair = await readPair(); } catch (error) {
+		if (error?.code === "ENOENT") {
+			const existence = await Promise.all([promises.lstat(statePath).then(() => true, e => e?.code === "ENOENT" ? false : Promise.reject(e)), promises.lstat(configPath).then(() => true, e => e?.code === "ENOENT" ? false : Promise.reject(e))]);
+			if (existence.every(value => !value)) return { endpoints: [], fingerprint: null };
+		}
+		throw new Error("Не удалось прочитать защищённую конфигурацию DNS для Zapret.");
+	}
+	let endpoints;
+	try { endpoints = parseZapretDnsTransportConfiguration(JSON.parse(pair[0]), JSON.parse(pair[1])); } catch { throw new Error("Не удалось подтвердить защищённую конфигурацию DNS для Zapret."); }
+	const confirmation = await readPair();
+	if (pair.some((text, index) => text !== confirmation[index])) throw new Error("Конфигурация DNS изменилась во время подготовки изоляции Zapret.");
+	return { endpoints, fingerprint: createHash("sha256").update(pair[0]).update("\0").update(pair[1]).digest("hex") };
+}
+function buildZapretDnsKernelGuard(endpoints) {
+	if (!Array.isArray(endpoints) || endpoints.length > 256) throw new Error("Некорректные DNS endpoints для изоляции Zapret.");
+	const unique = Array.from(new Map(endpoints.map(item => {
+		const family = isIP(item?.address ?? "");
+		if (!family || /[%\s]/.test(item.address) || !Number.isInteger(item.port) || item.port < 1 || item.port > 65535) throw new Error("Некорректные DNS endpoints для изоляции Zapret.");
+		return [item.address.toLowerCase() + "/" + item.port, { address: item.address.toLowerCase(), port: item.port, family }];
+	})).values()).sort((a, b) => (a.address + "/" + a.port).localeCompare(b.address + "/" + b.port));
+	if (!unique.length) return "";
+	return "(true and (not tcp or (" + unique.map(item => {
+		const field = item.family === 4 ? "ip" : "ipv6";
+		return "(not " + field + " or ((" + field + ".DstAddr != " + item.address + " or tcp.DstPort != " + item.port + ") and (" + field + ".SrcAddr != " + item.address + " or tcp.SrcPort != " + item.port + ")))";
+	}).join(" and ") + ")))";
+}
+function stripZapretDnsKernelGuard(value) {
+	const marker = "(true and (not tcp or (";
+	const location = value.startsWith(marker) ? 0 : value.lastIndexOf(") and " + marker);
+	if (location < 0) return value;
+	const guard = location === 0 ? value : value.slice(location + 6);
+	if (!guard.startsWith(marker) || !guard.endsWith(")))")) throw new Error("Предыдущая изоляция DNS/Zapret не подтверждена.");
+	const body = guard.slice(marker.length, -3);
+	const expression = /\(not (ip|ipv6) or \(\(\1\.DstAddr != ([0-9a-f:.]+) or tcp\.DstPort != ([0-9]+)\) and \(\1\.SrcAddr != \2 or tcp\.SrcPort != \3\)\)\)/g;
+	const entries = [];
+	let last = 0;
+	for (const match of body.matchAll(expression)) {
+		if (body.slice(last, match.index) !== (entries.length ? " and " : "")) throw new Error("Предыдущая изоляция DNS/Zapret не подтверждена.");
+		if (isIP(match[2]) !== (match[1] === "ip" ? 4 : 6)) throw new Error("Предыдущая изоляция DNS/Zapret не подтверждена.");
+		entries.push({ address: match[2], port: Number(match[3]) });
+		last = match.index + match[0].length;
+	}
+	if (last !== body.length || !entries.length || buildZapretDnsKernelGuard(entries) !== guard) throw new Error("Предыдущая изоляция DNS/Zapret не подтверждена.");
+	if (!location) return "";
+	if (!value.startsWith("(")) throw new Error("Предыдущая изоляция DNS/Zapret не подтверждена.");
+	return value.slice(1, location);
+}
+function applyZapretDnsTransportExclusions(commandLine, endpoints, baseFilter = null) {
+	const args = splitWindowsCommandLine(commandLine);
+	const raw = args.filter(value => value.startsWith("--wf-raw="));
+	const part = args.filter(value => value.startsWith("--wf-raw-part="));
+	if (raw.length > 1 || part.length > 1 || args.some(value => ["--wf-raw", "--wf-raw-part", "--wf-save"].includes(value) || value.startsWith("--wf-save="))) throw new Error("Неоднозначный kernel-фильтр Zapret; DNS не изменён.");
+	for (const value of [...raw, ...part]) {
+		const expression = value.slice(value.indexOf("=") + 1);
+		if (!expression || expression.startsWith("@") || /[\r\n\0]/.test(expression)) throw new Error("Kernel-фильтр Zapret из внешнего файла не допускает подтверждённой изоляции DNS.");
+	}
+	const guard = buildZapretDnsKernelGuard(endpoints);
+	if (raw.length) {
+		const previous = stripZapretDnsKernelGuard(raw[0].slice("--wf-raw=".length));
+		args[args.indexOf(raw[0])] = "--wf-raw=" + (guard ? "(" + previous + ") and " + guard : previous);
+	} else if (guard) {
+		// v72.9 ORs --wf-raw-part with its normal port capture. A negative
+		// raw-part broadens capture and cannot exclude DNS. Use the exact
+		// native-generated full filter AND the guard, preserving all options.
+		if (typeof baseFilter !== "string" || !baseFilter.trim() || Buffer.byteLength(baseFilter, "utf8") > 65536 || baseFilter.includes("\0")) throw new Error("Базовый kernel-фильтр Zapret для изоляции DNS не подтверждён.");
+		const boundary = args.indexOf("--new");
+		args.splice(boundary < 0 ? args.length : boundary, 0, "--wf-raw=(" + baseFilter.trim().replace(/[\t\r\n ]+/g, " ") + ") and " + guard);
+	}
+	const result = args.map(argument => /[\s"]/u.test(argument) ? '"' + argument.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/g, '$1$1') + '"' : argument).join(" ");
+	if (result.length > 30000) throw new Error("Kernel-фильтр Zapret превышает безопасную длину команды; DNS сохранён.");
+	return result;
+}
+function readZapretOwnedServiceXml(xml, winwsPath, workDir) {
+	const decode = value => value.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+	const field = name => {
+		const matches = Array.from(xml.matchAll(new RegExp("<" + name + ">([\\s\\S]*?)</" + name + ">", "g")));
+		if (matches.length !== 1) throw new Error("Конфигурация принадлежащей службы Zapret не подтверждена.");
+		return decode(matches[0][1].trim());
+	};
+	if (/<!DOCTYPE|<!ENTITY/i.test(xml) || field("id") !== SERVICE_NAME || path.resolve(field("executable")).toLowerCase() !== path.resolve(winwsPath).toLowerCase() || path.resolve(field("workingdirectory")).toLowerCase() !== path.resolve(workDir, "core").toLowerCase()) throw new Error("Конфигурация принадлежащей службы Zapret не подтверждена.");
+	return { arguments: field("arguments") };
+}
+
 function sleep(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -688,6 +856,7 @@ var ZapretManager = class {
 		this.userDataDir = userDataDir;
 		this.coreService = coreService;
 		this.workDir = protectedComponentRoot ?? path.join(userDataDir, "zapret");
+		this.systemDohProtectionRoot = protectedComponentRoot && path.basename(protectedComponentRoot).toLowerCase() === "zapret" ? path.join(path.dirname(path.resolve(protectedComponentRoot)), "SystemDoH") : null;
 	}
 	getWorkDir() {
 		return this.workDir;
@@ -928,6 +1097,7 @@ var ZapretManager = class {
 			await this.waitForServiceState(SERVICE_NAME, ["STOPPED"], 2e4);
 			service.running = false;
 		}
+		await this.refreshSystemDohTransportProtection();
 		if (service.running && (await this.listIntegratedWinwsProcesses()).length === 0 && !await this.waitForIntegratedWinwsStart(null, 5e3)) {
 			await this.stopServiceInternal(false);
 			service.running = false;
@@ -1034,17 +1204,55 @@ var ZapretManager = class {
 		return this.status({ force: true });
 	}
 	async setGameFilterMode(mode) {
+		if (!["disabled", "all", "tcp", "udp"].includes(mode)) throw new Error("Некорректный режим GameFilter.");
 		await this.ensureProvisioned();
 		const flagPath = path.join(this.workDir, "core", "utils", "game_filter.enabled");
-		if (mode === "disabled") {
+		const previousFlag = await promises.readFile(flagPath, "utf8").catch((error) => {
+			if (error?.code === "ENOENT") return null;
+			throw error;
+		});
+		const previousStatus = await this.status({ force: true });
+		if (["UNKNOWN", "START_PENDING", "STOP_PENDING"].includes(previousStatus.serviceState)) throw new Error("Не удалось подтвердить стабильное состояние Zapret; изменение GameFilter отменено.");
+		if (previousStatus.gameFilterMode === mode) return previousStatus;
+		const activeMode = previousStatus.serviceRunning ? "service" : previousStatus.standaloneRunning ? "standalone" : "none";
+		const profile = activeMode === "service" ? previousStatus.serviceProfile ?? previousStatus.currentProfile : previousStatus.standaloneProfile ?? previousStatus.currentProfile;
+		if (activeMode !== "none" && !profile) throw new Error("Не удалось подтвердить активный профиль Zapret; изменение GameFilter отменено.");
+		const applyActiveProfile = async (restoring = false) => {
+			if (activeMode === "service") {
+				const applied = await this.setServiceProfile(profile);
+				if (restoring && !applied.serviceRunning) await this.startService();
+			} else if (activeMode === "standalone") await this.restartStandalone(profile);
+		};
+		const verify = async (expectedMode) => {
+			const current = await this.status({ force: true });
+			if (current.gameFilterMode !== expectedMode || activeMode === "service" && (!current.serviceRunning || current.serviceReady !== true || current.runtimeReady !== true || (current.serviceProfile ?? current.currentProfile) !== profile) || activeMode === "standalone" && (!current.standaloneRunning || current.runtimeReady !== true || (current.standaloneProfile ?? current.currentProfile) !== profile)) throw new Error(current.lastError || "Не удалось подтвердить применение GameFilter к активному профилю Zapret.");
+			return current;
+		};
+		let profileApplyAttempted = false;
+		try {
 			await promises.mkdir(path.dirname(flagPath), { recursive: true });
-			await promises.writeFile(flagPath, "disabled\n", "utf8");
-		} else {
-			await promises.mkdir(path.dirname(flagPath), { recursive: true });
-			await promises.writeFile(flagPath, `${mode}\n`, "utf8");
+			await promises.writeFile(flagPath, mode + "\n", "utf8");
+			if (await this.readGameFilterMode() !== mode) throw new Error("Не удалось подтвердить сохранение GameFilter.");
+			this.invalidateStatusCache();
+			profileApplyAttempted = activeMode !== "none";
+			await applyActiveProfile();
+			this.lastError = null;
+			return await verify(mode);
+		} catch (error) {
+			let rollbackError = null;
+			try {
+				if (previousFlag === null) await promises.unlink(flagPath).catch((failure) => { if (failure?.code !== "ENOENT") throw failure; });
+				else await promises.writeFile(flagPath, previousFlag, "utf8");
+				this.invalidateStatusCache();
+				if (profileApplyAttempted) await applyActiveProfile(true);
+				await verify(previousStatus.gameFilterMode);
+			} catch (failure) {
+				rollbackError = failure instanceof Error ? failure.message : String(failure);
+			}
+			this.lastError = (error instanceof Error ? error.message : String(error)) + (rollbackError ? ". Восстановление предыдущего GameFilter требует внимания: " + rollbackError : "");
+			this.invalidateStatusCache();
+			throw new Error(this.lastError, { cause: error });
 		}
-		this.invalidateStatusCache();
-		return this.status({ force: true });
 	}
 	async setIpsetMode(mode) {
 		await this.ensureProvisioned();
@@ -1596,7 +1804,7 @@ var ZapretManager = class {
 			confident: bestResult?.confident === true, testedProfiles: testedProfiles.length,
 			totalProfiles: orderedProfiles.length, usedRememberedProfile
 		});
-		const voiceDetail = voiceTarget ? " Голосовой TCP-сервер Discord проверен по последнему локальному адресу; UDP-медиа и вход в канал требуют проверки в Discord." : " Адрес голосового сервера не найден в свежем журнале Discord; голос не проверен.";
+		const voiceDetail = voiceTarget ? " Проверена TCP/TLS-доступность последнего локального адреса голосового сервера Discord; WebSocket, UDP-медиа, голос и трансляции требуют проверки в Discord." : " Адрес голосового сервера не найден в свежем журнале Discord; голос не проверен.";
 		const detail = summary.detail + " Каждый профиль прошёл две проверки доступности." + voiceDetail + " Воспроизведение видео и 4K не проверялись. Рекомендация не включает автоматическое подключение.";
 		if (!cancelled && bestResult) await this.writeAutoSelectMemory(fingerprint, {
 			profile: bestResult.configName, savedAt: new Date().toISOString(), passedTargets: bestResult.passedTargets,
@@ -1831,16 +2039,182 @@ var ZapretManager = class {
 	async assertStandaloneStopped() {
 		if ((await this.status()).standaloneRunning) throw new Error("Сначала остановите standalone-режим Zapret, затем запускайте службу.");
 	}
+	async readDnsKernelCaptureFilter(commandLine) {
+		const winwsPath = path.join(this.workDir, "core", "bin", "winws.exe");
+		const args = splitWindowsCommandLine(commandLine);
+		const directory = await promises.lstat(this.workDir);
+		const executable = await promises.lstat(winwsPath);
+		if (!directory.isDirectory() || directory.isSymbolicLink() || !executable.isFile() || executable.isSymbolicLink() || path.resolve(await promises.realpath(this.workDir)).toLowerCase() !== path.resolve(this.workDir).toLowerCase() || path.resolve(await promises.realpath(winwsPath)).toLowerCase() !== path.resolve(winwsPath).toLowerCase()) throw new Error("Принадлежащий runtime Zapret для изоляции DNS не подтверждён.");
+		const id = createHash("sha256").update(String(process.pid) + "/" + Date.now() + "/" + Math.random()).digest("hex").slice(0, 32);
+		const filterPath = path.join(this.workDir, ".dns-kernel-filter-" + id + ".txt");
+		let created = false;
+		try {
+			const handle = await promises.open(filterPath, "wx"); created = true; await handle.close();
+			await execFileAsync$1(winwsPath, [...args, "--wf-save=" + filterPath], { cwd: path.join(this.workDir, "core"), windowsHide: true, timeout: 8e3, maxBuffer: 128 * 1024 });
+			return await readZapretBoundedProtectedFile(filterPath);
+		} catch { throw new Error("Не удалось подготовить точный kernel-фильтр Zapret; DNS сохранён."); }
+		finally { if (created) await promises.unlink(filterPath).catch(() => {}); }
+	}
+	async isolateDnsTransportArgs(commandLine, endpoints) {
+		const hasRaw = splitWindowsCommandLine(commandLine).some(value => value.startsWith("--wf-raw="));
+		// Validate unsupported user filters before allowing native file access.
+		applyZapretDnsTransportExclusions(commandLine, endpoints, "true");
+		const base = endpoints.length && !hasRaw ? await this.readDnsKernelCaptureFilter(commandLine) : null;
+		return applyZapretDnsTransportExclusions(commandLine, endpoints, base);
+	}
+	async readSystemDohTransportSnapshot() {
+		return readZapretDnsTransportSnapshot(this.systemDohProtectionRoot);
+	}
+	async readDnsProtectionServiceIdentity() {
+		const wrapperPath = this.getServiceWrapperPaths().wrapperPath;
+		const script = [
+			"$ErrorActionPreference='Stop'",
+			"$s=Get-CimInstance Win32_Service -Filter " + psQuote("Name='" + SERVICE_NAME + "'"),
+			"if (!$s) { throw 'Owned Zapret service missing' }",
+			"if ([string]$s.PathName.Trim('\"') -ne " + psQuote(wrapperPath) + ") { throw 'Owned Zapret service image mismatch' }",
+			"$birth=$null",
+			"if ([int]$s.ProcessId -gt 0) { $p=Get-CimInstance Win32_Process -Filter ('ProcessId='+$s.ProcessId); if (!$p -or [string]$p.ExecutablePath -ne " + psQuote(wrapperPath) + ") { throw 'Owned Zapret wrapper identity unavailable' }; $birth=$p.CreationDate.ToUniversalTime().ToString('o') }",
+			"[pscustomobject]@{state=[string]$s.State;pid=[int]$s.ProcessId;birth=$birth;image=[string]$s.PathName.Trim('\"')}|ConvertTo-Json -Compress"
+		].join("; ");
+		let value;
+		try { value = JSON.parse((await this.execPowerShell(script, 8e3)).stdout.trim()); } catch { throw new Error("Не удалось подтвердить личность службы Zapret перед изоляцией DNS."); }
+		if (!value || !["Running", "Stopped"].includes(value.state) || !Number.isInteger(value.pid) || value.pid < 0 || path.resolve(value.image ?? "").toLowerCase() !== path.resolve(wrapperPath).toLowerCase() || value.state === "Running" && (!value.pid || !Number.isFinite(Date.parse(value.birth)))) throw new Error("Личность службы Zapret перед изоляцией DNS не подтверждена.");
+		return value;
+	}
+	async readDnsProtectionStandaloneIdentity() {
+		try {
+			const stateText = await readZapretBoundedProtectedFile(path.join(this.workDir, STANDALONE_STATE_FILE));
+			const state = JSON.parse(stateText);
+			if (!Number.isInteger(state?.pid) || state.pid <= 0 || typeof state.profile !== "string" || !state.profile.trim() || state.profile.length > 128 || !Number.isFinite(Date.parse(state.startedAt))) throw new Error("invalid");
+			const image = path.join(this.workDir, "core", "bin", "winws.exe");
+			const script = ["$ErrorActionPreference='Stop'", "$p=Get-CimInstance Win32_Process -Filter " + psQuote("ProcessId=" + state.pid),
+				"if (!$p -or [string]$p.ExecutablePath -ne " + psQuote(image) + ") { throw 'Owned standalone identity missing' }",
+				"[pscustomobject]@{pid=[int]$p.ProcessId;birth=$p.CreationDate.ToUniversalTime().ToString('o');image=[string]$p.ExecutablePath;commandLine=[string]$p.CommandLine}|ConvertTo-Json -Compress"].join("; ");
+			const value = JSON.parse((await this.execPowerShell(script, 8e3)).stdout.trim());
+			const args = splitWindowsCommandLine(value.commandLine ?? "");
+			if (value.pid !== state.pid || !Number.isFinite(Date.parse(value.birth)) || Math.abs(Date.parse(value.birth) - Date.parse(state.startedAt)) > 30e3 || path.resolve(value.image ?? "").toLowerCase() !== path.resolve(image).toLowerCase() || !args.length || path.resolve(args.shift()).toLowerCase() !== path.resolve(image).toLowerCase() || (value.commandLine ?? "").length > 30000) throw new Error("invalid");
+			return { pid: value.pid, birth: value.birth, image, arguments: args.map(argument => /[\s"]/u.test(argument) ? '"' + argument.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/g, '$1$1') + '"' : argument).join(" "), profile: state.profile, stateFingerprint: createHash("sha256").update(stateText).digest("hex") };
+		} catch { throw new Error("Не удалось подтвердить текущий standalone Zapret; DNS сохранён."); }
+	}
+	async stopDnsProtectionStandaloneIdentity(identity) {
+		const script = ["$ErrorActionPreference='Stop'", "$p=Get-CimInstance Win32_Process -Filter " + psQuote("ProcessId=" + identity.pid),
+			"if (!$p -or [string]$p.ExecutablePath -ne " + psQuote(identity.image) + " -or $p.CreationDate.ToUniversalTime().ToString('o') -ne " + psQuote(identity.birth) + ") { throw 'Owned standalone identity changed' }",
+			"Stop-Process -Id $p.ProcessId -Force -ErrorAction Stop"].join("; ");
+		try { await this.execPowerShell(script, 8e3); } catch { throw new Error("Standalone Zapret изменился перед обновлением изоляции; DNS сохранён."); }
+		const deadline = Date.now() + ZAPRET_PROBE_STOP_TIMEOUT_MS;
+		while ((await this.listIntegratedWinwsProcesses()).length) {
+			if (Date.now() >= deadline) throw new Error("Не подтверждена остановка standalone Zapret; DNS сохранён.");
+			await sleep(120);
+		}
+	}
+	async startDnsProtectionStandaloneArgs(argumentsText, profile) {
+		const child = spawn(path.join(this.workDir, "core", "bin", "winws.exe"), splitWindowsCommandLine(argumentsText), { cwd: path.join(this.workDir, "core"), detached: true, stdio: "ignore", windowsHide: true });
+		let spawnError = null;
+		child.on("error", error => { spawnError = error; });
+		child.unref();
+		try {
+			if (!child.pid || !await this.waitForIntegratedWinwsStart(child.pid, ZAPRET_PROBE_START_TIMEOUT_MS) || spawnError) throw new Error("Owned standalone start failed");
+			await this.writeStandaloneState({ pid: child.pid, profile, startedAt: new Date().toISOString() });
+		} catch {
+			// This handle belongs only to the process just spawned by this method.
+			if (child.exitCode == null) child.kill();
+			throw new Error("Не подтверждён запуск standalone Zapret после изоляции; DNS сохранён.");
+		}
+	}
+	async refreshStandaloneDnsTransportProtection(snapshot, service) {
+		if (this.autoSelectController) throw new Error("Автоподбор Zapret выполняется; обновление изоляции DNS отложено.");
+		const owned = await this.listIntegratedWinwsProcesses();
+		if (owned.length !== 1 || service.running || service.installed && service.state !== "STOPPED") throw new Error("Режим standalone Zapret не подтверждён; DNS сохранён.");
+		const identity = await this.readDnsProtectionStandaloneIdentity();
+		if (owned[0].pid !== identity.pid) throw new Error("Процесс standalone Zapret изменился; DNS сохранён.");
+		const nextArgs = await this.isolateDnsTransportArgs(identity.arguments, snapshot.endpoints);
+		const confirmation = await this.readDnsProtectionStandaloneIdentity();
+		const currentService = await this.queryService(SERVICE_NAME);
+		if (this.autoSelectController || JSON.stringify(identity) !== JSON.stringify(confirmation) || JSON.stringify(service) !== JSON.stringify(currentService) || (await this.readSystemDohTransportSnapshot()).fingerprint !== snapshot.fingerprint) throw new Error("Standalone Zapret или DNS изменился; обновление изоляции отложено.");
+		if (JSON.stringify(splitWindowsCommandLine(nextArgs)) === JSON.stringify(splitWindowsCommandLine(identity.arguments))) return { changed: false, state: "standalone", protectedEndpoints: snapshot.endpoints.length };
+		await this.assertNoExternalConflict();
+		await this.stopDnsProtectionStandaloneIdentity(identity);
+		const stillRequested = async () => {
+			const stateText = await readZapretBoundedProtectedFile(path.join(this.workDir, STANDALONE_STATE_FILE));
+			const scm = await this.queryService(SERVICE_NAME);
+			return !this.autoSelectController && createHash("sha256").update(stateText).digest("hex") === identity.stateFingerprint && JSON.stringify(scm) === JSON.stringify(service) && !(await this.listIntegratedWinwsProcesses()).length;
+		};
+		let restartAllowed = false;
+		try {
+			restartAllowed = await stillRequested();
+			if (!restartAllowed) throw new Error("Standalone intent changed");
+			if ((await this.readSystemDohTransportSnapshot()).fingerprint !== snapshot.fingerprint) throw new Error("DNS generation changed");
+			await this.startDnsProtectionStandaloneArgs(nextArgs, identity.profile);
+			this.invalidateStatusCache();
+			return { changed: true, state: "standalone", protectedEndpoints: snapshot.endpoints.length };
+		} catch {
+			let restored = false;
+			try {
+				if (restartAllowed && await stillRequested()) { await this.startDnsProtectionStandaloneArgs(identity.arguments, identity.profile); restored = true; }
+			} catch {}
+			throw new Error(restored ? "Не удалось обновить изоляцию standalone Zapret; прежний режим восстановлен, DNS сохранён." : "Не удалось обновить изоляцию standalone Zapret; изменение режима не переопределено, DNS сохранён.");
+		}
+	}
+	async refreshSystemDohTransportProtection() {
+		if (!this.systemDohProtectionRoot) return { changed: false, state: "unmanaged", protectedEndpoints: 0 };
+		const snapshot = await this.readSystemDohTransportSnapshot();
+		const service = await this.queryService(SERVICE_NAME);
+		if (!service.running && (await this.listIntegratedWinwsProcesses()).length) return this.refreshStandaloneDnsTransportProtection(snapshot, service);
+		if (!service.installed) return { changed: false, state: "not-installed", protectedEndpoints: snapshot.endpoints.length };
+		if (!["RUNNING", "STOPPED"].includes(service.state)) throw new Error("Состояние Zapret неизвестно или меняется; изоляция DNS отложена.");
+		const { xmlPath } = this.getServiceWrapperPaths();
+		const previousXml = await readZapretBoundedProtectedFile(xmlPath);
+		const winwsPath = path.join(this.workDir, "core", "bin", "winws.exe");
+		const owned = readZapretOwnedServiceXml(previousXml, winwsPath, this.workDir);
+		const nextArgs = await this.isolateDnsTransportArgs(owned.arguments, snapshot.endpoints);
+		if (JSON.stringify(splitWindowsCommandLine(nextArgs)) === JSON.stringify(splitWindowsCommandLine(owned.arguments))) return { changed: false, state: service.running ? "running" : "stopped", protectedEndpoints: snapshot.endpoints.length };
+		const escaped = escapeXmlText(nextArgs);
+		const nextXml = previousXml.replace(/<arguments>[\s\S]*?<\/arguments>/, "<arguments>" + escaped + "</arguments>");
+		const identity = await this.readDnsProtectionServiceIdentity();
+		const confirmation = await this.readSystemDohTransportSnapshot();
+		const currentIdentity = await this.readDnsProtectionServiceIdentity();
+		if (snapshot.fingerprint !== confirmation.fingerprint || JSON.stringify(identity) !== JSON.stringify(currentIdentity) || await readZapretBoundedProtectedFile(xmlPath) !== previousXml) throw new Error("Конфигурация или служба Zapret изменилась; изоляция DNS отложена.");
+		if (service.running !== (identity.state === "Running")) throw new Error("Состояние Zapret изменилось; изоляция DNS отложена.");
+		await this.assertNoExternalConflict();
+		const wasRunning = identity.state === "Running";
+		if (wasRunning) await this.stopServiceInternal(false);
+		try {
+			if ((await this.readSystemDohTransportSnapshot()).fingerprint !== snapshot.fingerprint) throw new Error("DNS изменился перед изоляцией Zapret.");
+			await promises.writeFile(xmlPath, nextXml, "utf8");
+			if (wasRunning) {
+				if (this.coreService) await this.coreService.startOwnedService(SERVICE_NAME);
+				else await this.startWrappedService();
+				await this.waitForServiceState(SERVICE_NAME, ["RUNNING"], SERVICE_START_TIMEOUT_MS);
+				if (!await this.waitForIntegratedWinwsStart(null, ZAPRET_PROBE_START_TIMEOUT_MS)) throw new Error("Zapret не подтвердил изоляцию DNS после запуска.");
+			}
+			this.invalidateStatusCache();
+			return { changed: true, state: wasRunning ? "running" : "stopped", protectedEndpoints: snapshot.endpoints.length };
+		} catch (error) {
+			let restored = true;
+			try {
+				if (wasRunning) await this.stopServiceInternal(false);
+				await promises.writeFile(xmlPath, previousXml, "utf8");
+				if (wasRunning) {
+					if (this.coreService) await this.coreService.startOwnedService(SERVICE_NAME);
+					else await this.startWrappedService();
+					await this.waitForServiceState(SERVICE_NAME, ["RUNNING"], SERVICE_START_TIMEOUT_MS);
+					if (!await this.waitForIntegratedWinwsStart(null, ZAPRET_PROBE_START_TIMEOUT_MS)) restored = false;
+				}
+			} catch { restored = false; }
+			throw new Error(restored ? "Не удалось применить изоляцию DNS/Zapret; прежний Zapret восстановлен, DNS сохранён." : "Не удалось применить изоляцию DNS/Zapret и подтвердить восстановление Zapret; DNS сохранён.");
+		}
+	}
 	async buildServiceCommand(profileName, knownProfiles = this.probeProfiles) {
 		const profile = (knownProfiles ?? await this.listProfiles()).find((item) => item.name === profileName);
 		if (!profile) throw new Error(`Профиль Zapret "${profileName}" не найден.`);
+		const snapshot = await this.readSystemDohTransportSnapshot();
 		return {
 			profile,
-			args: applyZapretPlaceholders(parseZapretWinwsArgs(await promises.readFile(path.join(this.workDir, "core", profile.fileName), "utf8")), {
+			args: await this.isolateDnsTransportArgs(applyZapretProfileExclusions(applyZapretPlaceholders(parseZapretWinwsArgs(await promises.readFile(path.join(this.workDir, "core", profile.fileName), "utf8")), {
 				BIN: ensureTrailingSlash(path.join(this.workDir, "core", "bin")),
 				LISTS: ensureTrailingSlash(path.join(this.workDir, "core", "lists")),
 				...await this.readGameFilterValues()
-			}),
+			}), path.join(this.workDir, "core", "lists")), snapshot.endpoints),
 			winwsPath: path.join(this.workDir, "core", "bin", "winws.exe")
 		};
 	}
@@ -2144,6 +2518,8 @@ var ZapretManager = class {
 	async ensureUserLists() {
 		const listsDir = path.join(this.workDir, "core", "lists");
 		await promises.mkdir(listsDir, { recursive: true });
+		const namedSitePath = path.join(listsDir, ZAPRET_NAMED_SITE_FILE);
+		if (await promises.readFile(namedSitePath, "utf8").catch(() => null) !== ZAPRET_NAMED_SITE_CONTENT) await promises.writeFile(namedSitePath, ZAPRET_NAMED_SITE_CONTENT, "utf8");
 		for (const [fileName, defaultContent] of Object.entries(DEFAULT_USER_LIST_FILES)) {
 			const filePath = path.join(listsDir, fileName);
 			if (!await this.pathExists(filePath)) await promises.writeFile(filePath, defaultContent, "utf8");

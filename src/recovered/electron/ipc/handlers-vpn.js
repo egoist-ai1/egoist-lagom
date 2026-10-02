@@ -658,7 +658,7 @@ async function fetchRouteProbeIp(label, request) {
 		return null;
 	}
 }
-function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networkCombinatorManager, window }) {
+function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networkCombinatorManager, window, onStartupAutoConnectReady }) {
 	/**
 	* A listening local port is only proof that the runtime process started. It
 	* does not prove that traffic can leave through the selected upstream. Keep
@@ -712,7 +712,8 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			await dispatcher.close().catch(() => void 0);
 		}
 	};
-	const connectVpnUncoordinated = async (requestedNodeId, source = "user") => {
+	const connectVpnUncoordinated = async (requestedNodeId, source = "user", isCurrent) => {
+		if (isCurrent && !isCurrent()) return { cancelled: true, connected: false };
 		if (requestedNodeId !== void 0 && requestedNodeId !== null && (typeof requestedNodeId !== "string" || !requestedNodeId.trim())) throw new Error("Неверный ID сервера. Выберите сервер заново.");
 		const state = stateStore.get();
 		const targetNodeId = requestedNodeId || state.activeNodeId || state.nodes[0]?.id;
@@ -751,7 +752,9 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 				}
 			};
 		}
+		if (isCurrent && !isCurrent()) return { cancelled: true, connected: false };
 		let result = await runtimeManager.connect(activeNode, state.domainRules, state.processRules, state.settings);
+		if (isCurrent && !isCurrent()) return { ...result, cancelled: true };
 		if (result.connected && result.activeNodeId === activeNode.id) {
 			const egress = await probeProxyEgress();
 			if (egress.reachable) {
@@ -770,6 +773,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 				});
 				let fallbackConnected = false;
 				for (const fallbackNode of fallbackCandidates.slice(0, 2)) {
+					if (isCurrent && !isCurrent()) return { ...result, cancelled: true };
 					logger.info(`[vpn:connect] Attempting fallback node: ${fallbackNode.name} (${fallbackNode.id})`);
 					try {
 						const fbResult = await runtimeManager.connect(fallbackNode, state.domainRules, state.processRules, state.settings);
@@ -829,8 +833,8 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		logVpnStatusEvent(result.connected ? "info" : "warn", `vpn:connect completed (${source})`, result);
 		return result;
 	};
-	const connectVpn = (requestedNodeId, source = "user") => {
-		const operation = () => connectVpnUncoordinated(requestedNodeId, source);
+	const connectVpn = (requestedNodeId, source = "user", isCurrent) => {
+		const operation = () => isCurrent && !isCurrent() ? { cancelled: true, connected: false } : connectVpnUncoordinated(requestedNodeId, source, isCurrent);
 		return networkCombinatorManager ? networkCombinatorManager.runCoordinatedMutation({
 			module: "vpn",
 			action: source === "watchdog" ? "reconnect" : "connect",
@@ -849,12 +853,44 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 	});
 	reconnectSupervisor.start();
 	globalThis.reconnectSupervisor = reconnectSupervisor;
+	onStartupAutoConnectReady?.(async (nodeId, generation, isStartupCurrent) => {
+		const current = () => {
+			const state = stateStore.get();
+			return reconnectSupervisor.generation === generation && state.settings.autoConnect === true && state.activeNodeId === nodeId && isStartupCurrent();
+		};
+		if (!current()) return { cancelled: true, connected: false };
+		const classifyStartup = result => {
+			const failureClass = classifyReconnectFailure({ ...result, ...result?.diagnostic, message: result?.lastError || result?.diagnostic?.details });
+			return { ...result, startupFailureClass: failureClass, startupRetryable: ["network", "runtime"].includes(failureClass) };
+		};
+		reconnectSupervisor.attemptInFlight = true;
+		try {
+			const result = await connectVpn(nodeId, "startup", current);
+			if (current() && !result?.cancelled) reconnectSupervisor.recordConnectionResult(result, generation);
+			return result?.connected || result?.cancelled ? result : classifyStartup(result);
+		} catch (error) {
+			const result = { connected: false, lastError: error instanceof Error ? error.message : String(error) };
+			if (current()) reconnectSupervisor.recordConnectionResult(result, generation);
+			return classifyStartup(result);
+		} finally {
+			if (reconnectSupervisor.generation === generation) reconnectSupervisor.attemptInFlight = false;
+		}
+	});
+	// Manual stop intent is visible while the request waits for ownership. Polls
+	// must not re-arm the old live route before that request finishes.
+	const runManualStop = async (reason, operation) => {
+		reconnectSupervisor.cancel(reason);
+		const generation = reconnectSupervisor.generation;
+		reconnectSupervisor.attemptInFlight = true;
+		try { return await operation(() => reconnectSupervisor.generation === generation); }
+		finally { if (reconnectSupervisor.generation === generation) reconnectSupervisor.cancel(reason); }
+	};
 	app.once("before-quit", () => reconnectSupervisor.stop());
 	app.once("before-quit", () => speedtestAbortController?.abort());
 	ipcMain.handle("vpn:connect", async (_event, requestedNodeId) => {
 		const generation = reconnectSupervisor.beginManualConnect();
 		try {
-			const result = await connectVpn(requestedNodeId, "user");
+			const result = await connectVpn(requestedNodeId, "user", () => reconnectSupervisor.generation === generation);
 			reconnectSupervisor.recordConnectionResult(result, generation);
 			return { ...result, reconnect: reconnectSupervisor.snapshot() };
 		} catch (error) {
@@ -863,7 +899,6 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		}
 	});
 	const disconnectVpn = async () => {
-		reconnectSupervisor.cancel();
 		const result = await runtimeManager.disconnect();
 		const state = stateStore.get();
 		if (!IS_TEST_MOCK_RUNTIME && state.settings.zapretSuspendDuringVpn) try {
@@ -882,8 +917,8 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		logVpnStatusEvent("info", "vpn:disconnect completed", result);
 		return result;
 	};
-	ipcMain.handle("vpn:disconnect", async () => {
-		const operation = () => disconnectVpn();
+	ipcMain.handle("vpn:disconnect", async () => runManualStop("Отключено вручную", async isCurrent => {
+		const operation = () => isCurrent() ? disconnectVpn() : { cancelled: true };
 		return networkCombinatorManager ? networkCombinatorManager.runCoordinatedMutation({
 			module: "vpn",
 			action: "disconnect",
@@ -893,7 +928,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 				"windivert"
 			]
 		}, operation) : operation();
-	});
+	}));
 	const backgroundService = () => {
 		if (!runtimeManager.backgroundService) throw new Error("Фоновая служба VPN недоступна в этой установке. Переустановите актуальную версию приложения.");
 		return runtimeManager.backgroundService;
@@ -920,9 +955,9 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			logger.warn(`[vpn:service-${action}] Previous network state could not be restored:`, restoreError);
 		}
 	};
-	const coordinatedBackground = (action, operation) => networkCombinatorManager ? networkCombinatorManager.runCoordinatedMutation({
+	const coordinatedBackground = (action, operation) => runManualStop(`Фоновая служба VPN: ${action}`, isCurrent => networkCombinatorManager ? networkCombinatorManager.runCoordinatedMutation({
 		module: "vpn", action, requiredLocks: ["traffic-route", "zapret-suspend", "dns-verify"], conflictsWith: ["packet-interception", "windivert"]
-	}, operation) : operation();
+	}, () => isCurrent() ? operation() : { cancelled: true }) : isCurrent() ? operation() : { cancelled: true });
 	ipcMain.handle("vpn:service-status", async (_event, ...args) => {
 		if (args.length) throw new Error("Проверка фоновой службы VPN не принимает параметры.");
 		return backgroundService().status({ force: true });
@@ -938,7 +973,6 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			await readKnownBackground();
 			const previous = await runtimeManager.status();
 			const previousNode = previous.temporaryRuntimeActive ? state.nodes.find((value) => value.id === previous.activeNodeId) : null;
-			reconnectSupervisor.cancel("Установка фоновой службы VPN");
 			await runtimeManager.shutdownApplicationRuntime();
 			try {
 				if (!IS_TEST_MOCK_RUNTIME) await zapretManager.prepareForVpn(state.settings.zapretSuspendDuringVpn);
@@ -958,7 +992,6 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 		return coordinatedBackground(`service-${action}`, async () => {
 			const before = await readKnownBackground();
 			if (action === "start" && !before.serviceInstalled) throw new Error("Фоновая служба VPN не установлена. Установите её для выбранного сервера.");
-			reconnectSupervisor.cancel(`Фоновая служба VPN: ${action}`);
 			let previousNode = null;
 			if (action === "start") {
 				const state = stateStore.get();

@@ -446,6 +446,8 @@ function Stop-OwnedService {
     [string]$Name,
     [bool]$Delete
   )
+  $continuity = Get-ProtectedSystemDohPayloadContinuity
+  if ($continuity -and $Name -eq 'EgoistShieldSystemDoH') { return }
   $imagePath = Get-ServiceImagePath $Name
   $exclusiveName = Test-ExclusiveOwnedServiceName $Name
 
@@ -500,11 +502,13 @@ function Stop-OwnedProcessByPath {
     [string]$Name,
     [switch]$QuietForeign
   )
+  $continuity = Get-ProtectedSystemDohPayloadContinuity
   $matched = @(Get-CimInstance Win32_Process -Filter "Name='$Name'" -ErrorAction SilentlyContinue)
   if ($matched.Count -eq 0) { return }
 
   $ownedPids = New-Object System.Collections.Generic.HashSet[int]
   foreach ($process in $matched) {
+    if (Test-ProtectedSystemDohPayloadProcess -Process $process -Lease $continuity) { continue }
     if (Test-OwnedPath $process.ExecutablePath) {
       [void]$ownedPids.Add([int]$process.ProcessId)
     } elseif (-not $QuietForeign) {
@@ -526,6 +530,7 @@ function Stop-OwnedProcessByPath {
   }
 
   foreach ($id in $ownedPids) {
+    if ($continuity -and $id -in @([int]$continuity.proof.wrapperPid,[int]$continuity.proof.enginePid)) { throw 'Cleanup tree intersects the held private DNS generation.' }
     Stop-Process -Id $id -Force -ErrorAction SilentlyContinue
   }
 }
@@ -654,6 +659,7 @@ function Get-CriticalLoopbackDnsInterfaces {
 function Test-VerifiedProtectedReinstall {
   $stage = $env:EGOIST_PROTECTED_REINSTALL_STAGE
   if (-not $stage) { return $false }
+  $worker = $null
   try {
     $bootRecovery = Assert-InstallerMaintenanceBootRecovery -StageDirectory $stage
     if ($bootRecovery.verified -ne $true -or $bootRecovery.owner -ne 'EgoistShield' -or $bootRecovery.schemaVersion -ne 1 -or
@@ -669,15 +675,175 @@ function Test-VerifiedProtectedReinstall {
       if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { return $false }
     }
     if (-not (Test-Path -LiteralPath (Join-Path $stage 'backup-ready.flag') -PathType Leaf)) { return $false }
+    $context = Get-InstallerBootRecoveryContext $stage -AllowLegacyInventory
+    foreach ($path in @((Join-Path $stage 'backup-ready.flag'), (Join-Path $stage 'heartbeat.json'), $context.maintenanceMarker)) {
+      Assert-InstallerBootRecoveryPlainPath -Path $path -Leaf
+      Assert-InstallerBootRecoveryFileProtection -Path $path
+      if ((Get-Item -LiteralPath $path -ErrorAction Stop).Length -gt 16384) { return $false }
+    }
+    $maintenance = Get-Content -LiteralPath $context.maintenanceMarker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    if ($maintenance.schemaVersion -ne 1 -or $maintenance.owner -ne 'EgoistShield' -or
+        -not [string]::Equals([string]$maintenance.stage, $stage, [StringComparison]::OrdinalIgnoreCase)) { return $false }
     $heartbeat = Get-Content -LiteralPath (Join-Path $stage 'heartbeat.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     if ($state.schemaVersion -ne 1 -or $state.owner -ne 'EgoistShield' -or
+        $state.handoffStarted -ne $true -or
         [IO.Path]::GetDirectoryName([IO.Path]::GetFullPath([string]$state.installer)) -ne $stage -or
         [string]$state.sha256 -notmatch '^[a-fA-F0-9]{64}$' -or
         (Get-FileSha256 ([string]$state.installer)) -ne [string]$state.sha256) { return $false }
+    Assert-InstallerBootRecoveryPlainPath -Path ([string]$state.installer) -Leaf
+    Assert-InstallerBootRecoveryFileProtection -Path ([string]$state.installer)
     $worker = Get-Process -Id ([int]$heartbeat.workerPid) -ErrorAction Stop
-    if ([int64]$worker.StartTime.Ticks -ne [int64]$heartbeat.workerStartTicks) { return $false }
+    [void]$worker.Handle
+    if ($worker.HasExited -or [int64]$worker.StartTime.Ticks -ne [int64]$heartbeat.workerStartTicks -or
+        -not [string]::Equals([string]$worker.MainModule.FileName, [string]$context.powerShell, [StringComparison]::OrdinalIgnoreCase)) { return $false }
     return $true
   } catch { return $false }
+  finally { if ($worker) { $worker.Dispose() } }
+}
+
+function Test-PreserveProtectedInstallerNetwork {
+  if (-not $env:EGOIST_PROTECTED_REINSTALL_STAGE -or $Phase -eq 'Uninstall') { return $false }
+  if (-not (Test-VerifiedProtectedReinstall)) { throw 'PROTECTED_HANDOFF_UNVERIFIED: Network/activation cleanup refuses an unauthenticated protected installer stage.' }
+  Write-Journal 'protected-network-preserved' @{ phase = [string]$Phase }
+  return $true
+}
+
+function Invoke-ProtectedSystemDohContinuityProbe {
+  param([string]$Stage)
+  $context = Get-InstallerBootRecoveryContext $Stage -AllowLegacyInventory
+  $start = New-Object Diagnostics.ProcessStartInfo
+  $start.FileName = [string]$context.powerShell
+  $workerPath = Join-Path $Stage 'invoke-final-silent-reinstall.ps1'
+  $start.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $workerPath + '" -ProbePayloadContinuity -StageDirectory "' + $Stage + '"'
+  $start.UseShellExecute = $false; $start.CreateNoWindow = $true
+  $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
+  $start.StandardOutputEncoding = [Text.Encoding]::UTF8; $start.StandardErrorEncoding = [Text.Encoding]::UTF8
+  $process = New-Object Diagnostics.Process
+  $process.StartInfo = $start
+  try {
+    if (-not $process.Start()) { throw 'Private DNS continuity probe did not start.' }
+    [void]$process.Handle
+    $output = $process.StandardOutput.ReadToEndAsync()
+    $errors = $process.StandardError.ReadToEndAsync()
+    if (-not $process.WaitForExit(15000)) { $process.Kill(); [void]$process.WaitForExit(3000); throw 'Private DNS continuity probe exceeded its deadline.' }
+    if ($process.ExitCode -ne 0) { throw 'Private DNS continuity probe refused ownership.' }
+    $json = $output.GetAwaiter().GetResult()
+    [void]$errors.GetAwaiter().GetResult()
+    if ([Text.Encoding]::UTF8.GetByteCount($json) -gt 65536) { throw 'Private DNS continuity proof exceeds its limit.' }
+    return $json | ConvertFrom-Json -ErrorAction Stop
+  } finally { $process.Dispose() }
+}
+
+function Assert-ProtectedSystemDohPayloadLease {
+  param([object]$Lease)
+  if (-not $Lease -or -not (Test-VerifiedProtectedReinstall) -or
+      -not [string]::Equals($Lease.stage, $env:EGOIST_PROTECTED_REINSTALL_STAGE, [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'Private DNS continuity transaction lease changed.'
+  }
+  $proof = $Lease.proof
+  if ((Get-FileSha256 (Join-Path $Lease.stage 'state.json')) -cne [string]$Lease.stateSha256) { throw 'Private DNS continuity protected snapshot changed.' }
+  foreach ($file in @($proof.files)) {
+    $path = Join-Path $proof.root ([string]$file.path)
+    Assert-InstallerBootRecoveryPlainPath -Path $path -Leaf
+    if ((Get-Item -LiteralPath $path -ErrorAction Stop).Length -ne [int64]$file.bytes -or (Get-FileSha256 $path) -cne [string]$file.sha256) { throw 'Private DNS continuity runtime generation changed.' }
+  }
+  foreach ($file in @($proof.activation)) {
+    if ((Get-FileSha256 ([string]$file.path)) -cne [string]$file.sha256) { throw 'Private DNS continuity enabled intent changed.' }
+  }
+  if ($proof.ownedDns -and (Get-FileSha256 ([string]$proof.ownedDns.path)) -cne [string]$proof.ownedDns.digest) { throw 'Private DNS continuity DNS journal changed.' }
+  for ($index = 0; $index -lt 2; $index++) {
+    $process = $Lease.processes[$index]
+    $ticks = if ($index -eq 0) { $proof.wrapperStartTicks } else { $proof.engineStartTicks }
+    $path = if ($index -eq 0) { $proof.wrapper } else { $proof.engine }
+    if ($process.HasExited -or [string]$process.StartTime.ToUniversalTime().Ticks -cne [string]$ticks -or
+        -not [string]::Equals([string]$process.MainModule.FileName, [string]$path, [StringComparison]::OrdinalIgnoreCase)) { throw 'Private DNS continuity held process changed.' }
+  }
+  $service = Get-CimInstance Win32_Service -Filter "Name='EgoistShieldSystemDoH'" -OperationTimeoutSec 3 -ErrorAction Stop
+  if (-not $service -or $service.State -ne 'Running' -or [int]$service.ProcessId -ne [int]$proof.wrapperPid -or
+      [string]$service.StartName -notin @('LocalSystem','NT AUTHORITY\SYSTEM') -or
+      -not [string]::Equals((Get-ExecutableFromCommandLine ([string]$service.PathName)), [string]$proof.wrapper, [StringComparison]::OrdinalIgnoreCase)) { throw 'Private DNS continuity service ownership changed.' }
+  $udp = @(Get-CimInstance -Namespace 'root/StandardCimv2' -ClassName MSFT_NetUDPEndpoint -Filter 'LocalPort=53' -OperationTimeoutSec 3 -ErrorAction Stop)
+  $tcp = @(Get-CimInstance -Namespace 'root/StandardCimv2' -ClassName MSFT_NetTCPConnection -Filter 'LocalPort=53 AND State=2' -OperationTimeoutSec 3 -ErrorAction Stop)
+  if (@($proof.listeners).Count -eq 0) { throw 'Private DNS continuity has no owned listener.' }
+  foreach ($address in @($proof.listeners)) {
+    $ip = $null
+    if (-not [Net.IPAddress]::TryParse([string]$address,[ref]$ip) -or -not [Net.IPAddress]::IsLoopback($ip)) { throw 'Private DNS continuity listener is invalid.' }
+    $wildcard = if ($ip.AddressFamily -eq [Net.Sockets.AddressFamily]::InterNetwork) { '0.0.0.0' } else { '::' }
+    foreach ($endpoints in @(@($udp),@($tcp))) {
+      $rows = @($endpoints | Where-Object { [string]$_.LocalAddress -eq $address -or [string]$_.LocalAddress -eq $wildcard })
+      if (@($rows | Where-Object { [int]$_.OwningProcess -ne [int]$proof.enginePid }).Count -gt 0 -or
+          @($rows | Where-Object { [string]$_.LocalAddress -eq $address -and [int]$_.OwningProcess -eq [int]$proof.enginePid }).Count -eq 0) { throw 'Private DNS continuity UDP/TCP listener ownership changed.' }
+    }
+  }
+  return $Lease
+}
+
+function Close-ProtectedSystemDohPayloadContinuity {
+  param([object]$Lease)
+  if ($Lease) {
+    foreach ($process in @($Lease.processes)) { if ($process) { $process.Dispose() } }
+    foreach ($stream in @($Lease.streams)) { if ($stream) { $stream.Dispose() } }
+  }
+}
+
+function Get-ProtectedSystemDohPayloadContinuity {
+  if (-not $env:EGOIST_PROTECTED_REINSTALL_STAGE -or $Phase -eq 'Uninstall') { return $null }
+  if (-not (Test-VerifiedProtectedReinstall)) { throw 'Private DNS continuity stage is unverified.' }
+  $state = Get-Content -LiteralPath (Join-Path $env:EGOIST_PROTECTED_REINSTALL_STAGE 'state.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  if (-not $state.PSObject.Properties['payloadContinuity'] -or -not $state.payloadContinuity) { return $null }
+  $cached = Get-Variable -Name protectedSystemDohPayloadLease -Scope Script -ErrorAction SilentlyContinue
+  if ($cached -and $cached.Value) { return Assert-ProtectedSystemDohPayloadLease $cached.Value }
+  $lease = [pscustomobject]@{stage=$env:EGOIST_PROTECTED_REINSTALL_STAGE;proof=$null;processes=@();streams=@();stateSha256=$null}
+  try {
+    $statePath = Join-Path $lease.stage 'state.json'
+    $lease.streams += [IO.File]::Open($statePath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+    $lease.stateSha256 = Get-FileSha256 $statePath
+    $proof = Invoke-ProtectedSystemDohContinuityProbe -Stage $lease.stage
+    $root = [IO.Path]::GetFullPath((Join-Path $programDataRoot 'EgoistShield\Runtime\SystemDoH'))
+    if ($proof.schemaVersion -ne 1 -or $proof.purpose -cne 'private-dns-payload-continuity' -or
+        -not [string]::Equals([string]$proof.root,$root,[StringComparison]::OrdinalIgnoreCase) -or @($proof.files).Count -ne 4 -or
+        [int]$proof.wrapperPid -le 0 -or [int]$proof.enginePid -le 0 -or [int]$proof.enginePid -eq [int]$proof.wrapperPid) { throw 'Private DNS continuity proof is invalid.' }
+    foreach ($pair in @(@('wrapper','service-wrapper\egoistshield-system-doh-service.exe'),@('engine','runtime\xray-system-doh.exe'),@('config','config.json'))) {
+      if (-not [string]::Equals([string]$proof.($pair[0]),(Join-Path $root $pair[1]),[StringComparison]::OrdinalIgnoreCase)) { throw 'Private DNS continuity fixed path changed.' }
+    }
+    $fixed = @('config.json','service-wrapper\egoistshield-system-doh-service.exe','service-wrapper\egoistshield-system-doh-service.xml','runtime\xray-system-doh.exe')
+    foreach ($relative in $fixed) {
+      $file = @($proof.files | Where-Object { [string]$_.path -ceq $relative })
+      if ($file.Count -ne 1 -or [string]$file[0].sha256 -notmatch '^[A-Fa-f0-9]{64}$' -or [int64]$file[0].bytes -lt 1) { throw 'Private DNS continuity fixed inventory is invalid.' }
+      $path = Join-Path $root $relative
+      Assert-InstallerBootRecoveryPlainPath -Path $path -Leaf
+      Assert-InstallerBootRecoveryFileProtection -Path $path
+      $lease.streams += [IO.File]::Open($path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+    }
+    foreach ($file in @($proof.activation)) { $lease.streams += [IO.File]::Open([string]$file.path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read) }
+    if ($proof.ownedDns) { $lease.streams += [IO.File]::Open([string]$proof.ownedDns.path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read) }
+    foreach ($id in @([int]$proof.wrapperPid,[int]$proof.enginePid)) {
+      $process = Get-Process -Id $id -ErrorAction Stop
+      $lease.processes += $process
+      [void]$process.Handle
+    }
+    $lease.proof = $proof
+    [void](Assert-ProtectedSystemDohPayloadLease $lease)
+    $script:protectedSystemDohPayloadLease = $lease
+    Write-Journal 'private-dns-payload-continuity' @{wrapperPid=[int]$proof.wrapperPid;enginePid=[int]$proof.enginePid}
+    return $lease
+  } catch { Close-ProtectedSystemDohPayloadContinuity $lease; throw }
+}
+
+function Test-ProtectedSystemDohPayloadProcess {
+  param([object]$Process, [object]$Lease)
+  if (-not $Lease) { return $false }
+  $proof = $Lease.proof
+  if ([int]$Process.ProcessId -notin @([int]$proof.wrapperPid,[int]$proof.enginePid)) {
+    if ([string]$Process.ExecutablePath -and ([string]$Process.ExecutablePath).StartsWith($proof.root + '\',[StringComparison]::OrdinalIgnoreCase)) { throw 'An extra process in the private DNS generation prevents cleanup.' }
+    return $false
+  }
+  $index = if ([int]$Process.ProcessId -eq [int]$proof.wrapperPid) { 0 } else { 1 }
+  $expected = if ($index -eq 0) { $proof.wrapper } else { $proof.engine }
+  $ticks = if ($index -eq 0) { $proof.wrapperStartTicks } else { $proof.engineStartTicks }
+  if (-not [string]::Equals([string]$Process.ExecutablePath,[string]$expected,[StringComparison]::OrdinalIgnoreCase) -or
+      -not $Process.CreationDate -or [string]([DateTime]$Process.CreationDate).ToUniversalTime().Ticks -cne [string]$ticks) { throw 'Private DNS continuity process identity changed.' }
+  return $true
 }
 
 function Test-InstallMayStopOwnedRuntimes {
@@ -698,6 +864,10 @@ function Test-InstallMayStopOwnedRuntimes {
         Write-Error 'PROTECTED_UPGRADE_REQUIRED: The existing installation requires the protected handoff to preserve services and settings.' -ErrorAction Continue
         return $false
       }
+    }
+    if ($env:EGOIST_PROTECTED_REINSTALL_STAGE) {
+      if (-not (Test-VerifiedProtectedReinstall)) { throw 'Protected installer handoff ownership is unverified.' }
+      return $true
     }
     if (-not (Test-RunningOwnedSystemDoh)) { return $true }
     $criticalInterfaces = @(Get-CriticalLoopbackDnsInterfaces)
@@ -739,6 +909,8 @@ function Stop-AllOwnedRuntimes {
     Backup-OwnedServiceRegistrations $Services
     $snapshot = @(ConvertFrom-JsonCollectionCompat (
       Get-Content -LiteralPath $serviceBackupManifestPath -Raw -ErrorAction Stop))
+    $continuity = Get-ProtectedSystemDohPayloadContinuity
+    if ($continuity) { $snapshot = @($snapshot | Where-Object { $_.name -ne 'EgoistShieldSystemDoH' }) }
     Suspend-InstallerServiceRestarts -Records $snapshot -SnapshotPath $serviceBackupManifestPath -OwnPath {
       param($path)
       Test-OwnedPath (Get-ExecutableFromCommandLine $path)
@@ -905,6 +1077,8 @@ function Restore-OwnedServiceRegistrations {
   $records = @(ConvertFrom-JsonCollectionCompat (
     Get-Content -LiteralPath $serviceBackupManifestPath -Raw -ErrorAction Stop))
   foreach ($record in $records) {
+    $continuity = Get-ProtectedSystemDohPayloadContinuity
+    if ($continuity -and [string]$record.name -eq 'EgoistShieldSystemDoH') { continue }
     if (-not [string]$record.name -or [string]$record.name -match '[/\\]' -or
         [string]$record.fileName -notmatch '^service-\d+\.reg$') {
       throw "Invalid owned service backup record."
@@ -938,11 +1112,12 @@ function Restore-OwnedServiceRegistrations {
     if ($LASTEXITCODE -ne 0) { throw "Failed to import service backup for $($record.name)." }
   }
 
-  Restore-InstallerServiceStartModes $records {
+  $restartRecords = if (Get-ProtectedSystemDohPayloadContinuity) { @($records | Where-Object { $_.name -ne 'EgoistShieldSystemDoH' }) } else { $records }
+  Restore-InstallerServiceStartModes $restartRecords {
     param($path)
     Test-OwnedPath (Get-ExecutableFromCommandLine $path)
   }
-  foreach ($record in @($records | Sort-Object { [string]$_.name -eq "EgoistShieldCore" })) {
+  foreach ($record in @($restartRecords | Sort-Object { [string]$_.name -eq "EgoistShieldCore" })) {
     if ($record.wasRunning -eq $true -and $record.startMode -ne "Disabled") {
       [void](Invoke-CheckedExternal (Join-Path $env:SystemRoot "System32\sc.exe") @(
         "start", [string]$record.name
@@ -1294,6 +1469,7 @@ function Remove-OwnedStartupArtifacts {
 }
 
 function Invoke-CoreServiceOfflineRecovery {
+  if ($env:EGOIST_PROTECTED_REINSTALL_STAGE -and (Test-PreserveProtectedInstallerNetwork)) { return }
   $serviceExe = Join-Path $installRoot "resources\core-service\win-x64\EgoistShield.Service.exe"
   if (-not (Test-Path -LiteralPath $serviceExe -PathType Leaf)) {
     return
@@ -1307,6 +1483,7 @@ function Invoke-CoreServiceOfflineRecovery {
 
 function Invoke-CoreOwnedDnsCleanup {
   param([switch]$LegacyOnly)
+  if ($env:EGOIST_PROTECTED_REINSTALL_STAGE -and (Test-PreserveProtectedInstallerNetwork)) { return }
   $stateRoot = Join-Path $env:ProgramData "EgoistShield\Service"
   $serviceExe = Join-Path $installRoot "resources\core-service\win-x64\EgoistShield.Service.exe"
   $stateNames = if ($LegacyOnly) { @("owned-dns.json") } else { @("dns-owned-state.json", "owned-dns.json") }
@@ -1324,6 +1501,7 @@ function Invoke-CoreOwnedDnsCleanup {
   }
 }
 function Invoke-CoreNativeDohCleanup {
+  if ($env:EGOIST_PROTECTED_REINSTALL_STAGE -and (Test-PreserveProtectedInstallerNetwork)) { return }
   $stateRoot = Join-Path $env:ProgramData "EgoistShield\Service"
   $statePath = Join-Path $stateRoot "native-doh-state.json"
   if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) {
@@ -1801,6 +1979,7 @@ function Remove-OwnedTunnelAdapters {
 
 function Reset-WindowsNetworkBaseline {
   param([switch]$CaptureForRollback)
+  if ($env:EGOIST_PROTECTED_REINSTALL_STAGE -and (Test-PreserveProtectedInstallerNetwork)) { return }
   if ($CaptureForRollback) { Save-SystemNetworkBaseline }
   Reset-OwnedNetworkState
   Restore-OwnedDnsTransaction
@@ -1810,6 +1989,7 @@ function Reset-WindowsNetworkBaseline {
 }
 
 function Restore-SystemNetworkBaseline {
+  if ($env:EGOIST_PROTECTED_REINSTALL_STAGE -and (Test-PreserveProtectedInstallerNetwork)) { return }
   if (-not (Test-Path -LiteralPath $networkBaselinePath -PathType Leaf)) { return }
   $baseline = Get-Content -LiteralPath $networkBaselinePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if ($baseline.schemaVersion -ne 1 -or $baseline.owner -ne "EgoistShield") {
@@ -1872,6 +2052,7 @@ function Complete-SystemNetworkBaseline {
 }
 
 function Backup-AndResetPersistedNetworkActivation {
+  if ($env:EGOIST_PROTECTED_REINSTALL_STAGE -and (Test-PreserveProtectedInstallerNetwork)) { return }
   if (Test-Path -LiteralPath $userStateBackupManifestPath -PathType Leaf) { return }
   New-Item -ItemType Directory -Path $userStateBackupDirectory -Force -ErrorAction Stop | Out-Null
   $records = New-Object System.Collections.Generic.List[object]
@@ -2089,6 +2270,7 @@ function Remove-OwnedFirewallRules {
 }
 
 function Discard-OwnedNetworkArtifacts {
+  if ($env:EGOIST_PROTECTED_REINSTALL_STAGE -and (Test-PreserveProtectedInstallerNetwork)) { return }
   $dnsJournal = Join-Path $programDataRoot "EgoistShield\transactions\dns-transaction.json"
   if (Test-Path -LiteralPath $dnsJournal -PathType Leaf) {
     $transaction = Get-Content -LiteralPath $dnsJournal -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
@@ -2131,6 +2313,16 @@ function Get-OwnedRuntimeDirectories {
   ) | Where-Object { $_ } | Select-Object -Unique
   if ($Phase -eq 'Uninstall') {
     $directories += @(Join-IfSet $programDataRoot 'EgoistShield\Service\Vpn') | Where-Object { $_ }
+  }
+  $continuity = Get-ProtectedSystemDohPayloadContinuity
+  if ($continuity) {
+    $runtimeParent = [IO.Path]::GetDirectoryName([string]$continuity.proof.root)
+    $directories = @($directories | Where-Object { -not [string]::Equals([IO.Path]::GetFullPath($_),$runtimeParent,[StringComparison]::OrdinalIgnoreCase) })
+    foreach ($item in @(Get-ChildItem -LiteralPath $runtimeParent -Force -ErrorAction Stop)) {
+      if ([string]::Equals($item.FullName,[string]$continuity.proof.root,[StringComparison]::OrdinalIgnoreCase)) { continue }
+      if (-not $item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Private DNS continuity requires ordinary component directories.' }
+      $directories += $item.FullName
+    }
   }
   return @($directories | Where-Object { $_ } | Select-Object -Unique)
 }
@@ -2382,9 +2574,10 @@ function Repair-OwnedRuntimeQuarantineAccess {
   # one protected child was skipped, which recreates the exact VERSION.txt
   # failure on the following Remove-Item. Set a complete DACL per item through
   # .NET instead: any failure is an exception and therefore remains fail-closed.
-  $installerSid = New-Object Security.Principal.SecurityIdentifier($installerIdentitySid)
-  $allowedSids = @($systemSid, $administratorsSid, $installerSid) |
-    Group-Object Value | ForEach-Object { $_.Group[0] }
+  # Core validates private transaction data against this same two-principal
+  # contract. The elevated installer already has the Administrators token;
+  # adding its individual SID makes Core reject the next cleanup/startup.
+  $allowedSids = @($systemSid, $administratorsSid)
 
   $pending = New-Object 'System.Collections.Generic.Queue[string]'
   $pending.Enqueue($destination)
@@ -2500,6 +2693,10 @@ function Test-InstallRootHealthy {
   param([string]$Root)
   $fail = {
     param([string]$Reason)
+    $script:lastInstallHealthFailure = $Reason
+    if (Get-Command -Name Write-Journal -CommandType Function -ErrorAction SilentlyContinue) {
+      Write-Journal "install-health-failed" @{ error = $Reason }
+    }
     Write-Warning "Install health-check failed: $Reason"
     return $false
   }
@@ -2749,8 +2946,6 @@ function Repair-UpgradeStateAccess {
   if (-not $identity.User) {
     throw "Could not resolve the elevated installer identity SID."
   }
-  $installerIdentitySid = $identity.User.Value
-
   $expected = Resolve-NormalizedPath (Join-Path $programDataRoot "EgoistShield\installer")
   $actual = Resolve-NormalizedPath $upgradeStateDirectory
   if (-not $expected -or -not $actual -or
@@ -3149,6 +3344,7 @@ function Complete-InstallerExternalBaseline {
 }
 
 function Reconcile-OrphanedExternalBaseline {
+  if ($env:EGOIST_PROTECTED_REINSTALL_STAGE -and (Test-PreserveProtectedInstallerNetwork)) { return 'protected-retained' }
   $externalArtifacts = @(
     $networkBaselinePath,
     $userStateBackupManifestPath,
@@ -3360,8 +3556,10 @@ function Wait-OwnedFilesReleased {
   $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
   $alive = @()
   while ((Get-Date) -lt $deadline) {
+    $continuity = Get-ProtectedSystemDohPayloadContinuity
     $alive = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-      Where-Object { [int]$_.ProcessId -ne $PID -and (Test-OwnedPath $_.ExecutablePath) })
+      Where-Object { [int]$_.ProcessId -ne $PID -and (Test-OwnedPath $_.ExecutablePath) -and
+        -not (Test-ProtectedSystemDohPayloadProcess -Process $_ -Lease $continuity) })
     if ($alive.Count -eq 0) { return $true }
     Stop-AllProcessesFromOwnedRoots
     Start-Sleep -Milliseconds 400
@@ -3805,21 +4003,35 @@ switch ($Phase) {
     # Раньше карантин удалялся безусловно, поэтому сбой на этом шаге оставлял
     # систему без рабочей версии.
     if (Test-InstallRootHealthy $installRoot) {
+      $finalizationStep = "installed-version"
       try {
         [void](Get-ValidatedInstalledProductVersion $installRoot)
         # New Core is now present, so native DoH cleanup no longer depends on
         # the potentially incompatible binary from the previous release.
+        $finalizationStep = "native-doh-cleanup"
         Invoke-CoreNativeDohCleanup
+        $finalizationStep = "owned-dns-cleanup"
         Invoke-CoreOwnedDnsCleanup
+        $finalizationStep = "optional-services-cleanup"
         Remove-OptionalOwnedServices
         # Every successful install requires a new explicit connection choice.
+        $finalizationStep = "installation-identity"
         Write-ValidatedInstallationIdentity -Root $installRoot
         Write-Journal "optional-components-left-off" @{}
+        $finalizationStep = "runtime-validation"
         Assert-InstalledCandidateRuntime -BeforeCommit
+        $finalizationStep = "gui-compatibility-cleanup"
         Remove-OwnedGuiElevationCompatibility
+        $finalizationStep = "network-artifact-cleanup"
         Discard-OwnedNetworkArtifacts
       } catch {
-        Write-Warning "The new payload is healthy, but the clean network baseline could not be finalized; rolling back: $_"
+        $finalizationError = $_
+        Write-Journal "postinstall-finalization-failed" @{
+          step = $finalizationStep
+          error = [string]$finalizationError.Exception.Message
+          errorId = [string]$finalizationError.FullyQualifiedErrorId
+        }
+        Write-Warning "The new payload is healthy, but the clean network baseline could not be finalized; rolling back: $finalizationError"
         $status = Restore-UpgradeQuarantine
         Update-ShellIconCache
         Write-Output "POSTINSTALL: baseline-rollback-$status"

@@ -42,7 +42,7 @@ test('stopping Telegram requires its background service to stop, even without a 
     api:{telegramProxy:{stop: async () => ({ok:true, running:false, runtimeReady:false, listenerReady:false, serviceRunning:true})}},
     Z: (_name, method) => method(), rubyTelegramReady:readiness.telegram,
     refreshNow: async () => {calls.push('refresh');return {telegramRunning:false}},
-    mounted:{current:true}, setActionError: value => {actionError=value},
+    mounted:{current:true}, actionRecovery:{current:null}, setActionError: value => {actionError=value},
     setTelegramEnabled: () => calls.push('preference'), localStorage:{setItem: () => calls.push('persist')},
     finish: () => calls.push('finish')
   });

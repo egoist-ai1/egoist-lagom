@@ -259,24 +259,33 @@ internal sealed class WindowsDnsController
 
 	private static void VerifyApplied(IReadOnlyCollection<DnsAdapterSnapshot> actual, IReadOnlyCollection<DnsAdapterSnapshot> targets, IReadOnlyCollection<string> desired)
 	{
-		string[] array = desired.Where((string value) => IPAddress.Parse(value).AddressFamily == AddressFamily.InterNetwork).ToArray();
-		string[] array2 = desired.Where((string value) => IPAddress.Parse(value).AddressFamily == AddressFamily.InterNetworkV6).ToArray();
+		string[] ipv4 = desired.Where(value => IPAddress.Parse(value).AddressFamily == AddressFamily.InterNetwork).ToArray();
+		string[] ipv6 = desired.Where(value => IPAddress.Parse(value).AddressFamily == AddressFamily.InterNetworkV6).ToArray();
 		foreach (DnsAdapterSnapshot target in targets)
 		{
-			DnsAdapterSnapshot dnsAdapterSnapshot = FindMatchingAdapter(actual, target);
-			if (array.Length != 0 && (!dnsAdapterSnapshot.Ipv4Static || !AddressSequenceEquals(dnsAdapterSnapshot.Ipv4, array)))
+			DnsAdapterSnapshot adapter = FindMatchingAdapter(actual, target);
+			if (target.Ipv4BindingEnabled.HasValue && adapter.Ipv4BindingEnabled != target.Ipv4BindingEnabled ||
+				target.Ipv6BindingEnabled.HasValue && adapter.Ipv6BindingEnabled != target.Ipv6BindingEnabled)
+				throw new InvalidOperationException("DNS adapter binding changed during apply for interface " + adapter.InterfaceAlias + ".");
+			if (ipv4.Length != 0 && (adapter.Ipv4BindingEnabled != true || !adapter.Ipv4Static || !AddressSequenceEquals(adapter.Ipv4, ipv4)))
+				throw new InvalidOperationException("IPv4 DNS verification failed for interface " + adapter.InterfaceAlias + ".");
+			if (ipv6.Length != 0)
 			{
-				throw new InvalidOperationException("IPv4 DNS verification failed for interface " + dnsAdapterSnapshot.InterfaceAlias + ".");
-			}
-			if (array2.Length != 0 && (!dnsAdapterSnapshot.Ipv6Static || !AddressSequenceEquals(dnsAdapterSnapshot.Ipv6, array2)))
-			{
-				throw new InvalidOperationException("IPv6 DNS verification failed for interface " + dnsAdapterSnapshot.InterfaceAlias + ".");
+				if (target.Ipv6BindingEnabled == false)
+				{
+					// A skipped disabled family must remain exactly as captured. Older
+					// snapshots have null binding flags and cannot enter this branch.
+					if (ipv4.Length == 0 || target.Ipv4BindingEnabled != true || adapter.Ipv4BindingEnabled != true || adapter.Ipv6BindingEnabled != false ||
+						adapter.Ipv6Static != target.Ipv6Static || !AddressSequenceEquals(adapter.Ipv6, target.Ipv6) ||
+						target.Ipv6ConfiguredNameServer == null || !string.Equals(adapter.Ipv6ConfiguredNameServer, target.Ipv6ConfiguredNameServer, StringComparison.Ordinal))
+						throw new InvalidOperationException("Skipped IPv6 DNS changed or has no usable IPv4 channel for interface " + adapter.InterfaceAlias + ".");
+				}
+				else if (adapter.Ipv6BindingEnabled != true || !adapter.Ipv6Static || !AddressSequenceEquals(adapter.Ipv6, ipv6))
+					throw new InvalidOperationException("IPv6 DNS verification failed for interface " + adapter.InterfaceAlias + ".");
 			}
 		}
 		if (actual.Count != targets.Count)
-		{
 			throw new InvalidOperationException("DNS readback returned a different adapter set.");
-		}
 	}
 
 	private static void VerifyReset(IReadOnlyCollection<DnsAdapterSnapshot> actual, IReadOnlyCollection<DnsAdapterSnapshot> targets)
@@ -360,14 +369,140 @@ internal sealed class WindowsDnsController
 	private static string CreateSnapshotScript(IReadOnlyCollection<DnsAdapterSnapshot>? targets)
 	{
 		string text = ((targets == null) ? "$targets = @(\n  Get-NetIPInterface | Where-Object { $adapter = Get-NetAdapter -InterfaceIndex $_.InterfaceIndex -ErrorAction SilentlyContinue; $identity = ([string]$_.InterfaceAlias + ' ' + [string]$adapter.InterfaceDescription); $_.ConnectionState -eq 'Connected' -and $identity -notmatch 'WireGuard|Wintun|Cloudflare\\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\\s_-])(TAP|TUN)([\\s_-]|$)' } |\n    Group-Object InterfaceIndex | ForEach-Object {\n      $iface = $_.Group | Sort-Object InterfaceMetric | Select-Object -First 1\n      [pscustomobject]@{\n        interfaceIndex = [int]$iface.InterfaceIndex\n        interfaceAlias = [string]$iface.InterfaceAlias\n        interfaceGuid = $null\n      }\n    }\n)" : ("$targets = @(); foreach ($item in (ConvertFrom-Json -InputObject '" + SerializeForPowerShell(targets) + "')) { $targets += $item }"));
-		return "$ErrorActionPreference = 'Stop'\n" + text + "\nfunction Resolve-TargetAdapter {\n  param($Target)\n  if ($Target.interfaceGuid) {\n    $adapter = Get-NetAdapter -ErrorAction SilentlyContinue |\n      Where-Object { [string]$_.InterfaceGuid -eq [string]$Target.interfaceGuid } |\n      Select-Object -First 1\n    if (-not $adapter) { throw \"Adapter $($Target.interfaceGuid) is no longer present.\" }\n    return $adapter\n  }\n  $adapter = Get-NetAdapter -InterfaceIndex ([int]$Target.interfaceIndex) -ErrorAction SilentlyContinue\n  if (-not $adapter) { throw \"Adapter index $($Target.interfaceIndex) is no longer present.\" }\n  if ([string]$adapter.Name -ne [string]$Target.interfaceAlias) {\n    throw \"Adapter index $($Target.interfaceIndex) was reused by $($adapter.Name).\"\n  }\n  return $adapter\n}\nfunction Test-StaticDns {\n  param([string]$Guid, [string]$Family)\n  if (-not $Guid) { return $false }\n  $protocol = if ($Family -eq 'IPv4') { 'Tcpip' } else { 'Tcpip6' }\n  try {\n    $value = (Get-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\$protocol\\Parameters\\Interfaces\\$Guid\" -Name NameServer -ErrorAction Stop).NameServer\n    return -not [string]::IsNullOrWhiteSpace([string]$value)\n  } catch { return $false }\n}\nif (-not $targets) { throw 'No connected physical network interface was found.' }\n$result = @()\nforeach ($target in @($targets)) {\n  $adapter = Resolve-TargetAdapter $target\n  $index = [int]$adapter.ifIndex\n  $guid = [string]$adapter.InterfaceGuid\n  $v4 = Get-DnsClientServerAddress -InterfaceIndex $index -AddressFamily IPv4 -ErrorAction Stop\n  $v6 = Get-DnsClientServerAddress -InterfaceIndex $index -AddressFamily IPv6 -ErrorAction Stop\n  $result += [pscustomobject]@{\n    interfaceIndex = $index\n    interfaceAlias = [string]$adapter.Name\n    interfaceGuid = $guid\n    ipv4 = @($v4.ServerAddresses)\n    ipv6 = @($v6.ServerAddresses)\n    ipv4Static = [bool](Test-StaticDns $guid 'IPv4')\n    ipv6Static = [bool](Test-StaticDns $guid 'IPv6')\n  }\n}\nConvertTo-Json -InputObject @($result) -Compress -Depth 5";
+		return "$ErrorActionPreference = 'Stop'\n" + text + "\n" + """
+function Resolve-TargetAdapter {
+  param($Target)
+  if ($Target.interfaceGuid) {
+    $adapter = Get-NetAdapter -ErrorAction SilentlyContinue |
+      Where-Object { [string]$_.InterfaceGuid -eq [string]$Target.interfaceGuid } |
+      Select-Object -First 1
+    if (-not $adapter) { throw "Adapter $($Target.interfaceGuid) is no longer present." }
+    return $adapter
+  }
+  $adapter = Get-NetAdapter -InterfaceIndex ([int]$Target.interfaceIndex) -ErrorAction SilentlyContinue
+  if (-not $adapter) { throw "Adapter index $($Target.interfaceIndex) is no longer present." }
+  if ([string]$adapter.Name -ne [string]$Target.interfaceAlias) {
+    throw "Adapter index $($Target.interfaceIndex) was reused by $($adapter.Name)."
+  }
+  return $adapter
+}
+function Get-FamilyBinding {
+  param($Adapter, [string]$ComponentId)
+  $binding = @(Get-NetAdapterBinding -Name ([WildcardPattern]::Escape([string]$Adapter.Name)) -ComponentID $ComponentId -ErrorAction Stop)
+  if ($binding.Count -ne 1 -or $binding[0].Enabled -isnot [bool]) { throw "Cannot determine $ComponentId binding for $($Adapter.Name)." }
+  return [bool]$binding[0].Enabled
+}
+function Test-StaticDns {
+  param([string]$Guid, [string]$Family)
+  if (-not $Guid) { return $false }
+  $protocol = if ($Family -eq 'IPv4') { 'Tcpip' } else { 'Tcpip6' }
+  try {
+    $value = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\$protocol\Parameters\Interfaces\$Guid" -Name NameServer -ErrorAction Stop).NameServer
+    return -not [string]::IsNullOrWhiteSpace([string]$value)
+  } catch { return $false }
+}
+if (-not $targets) { throw 'No connected physical network interface was found.' }
+$result = @()
+foreach ($target in @($targets)) {
+  $adapter = Resolve-TargetAdapter $target
+  $index = [int]$adapter.ifIndex
+  $guid = [string]$adapter.InterfaceGuid
+  $v4Binding = Get-FamilyBinding $adapter 'ms_tcpip'
+  $v6Binding = Get-FamilyBinding $adapter 'ms_tcpip6'
+  $v4 = Get-DnsClientServerAddress -InterfaceIndex $index -AddressFamily IPv4 -ErrorAction Stop
+  $v6 = Get-DnsClientServerAddress -InterfaceIndex $index -AddressFamily IPv6 -ErrorAction Stop
+  $v4Static = [bool](Test-StaticDns $guid 'IPv4')
+  $v6Static = [bool](Test-StaticDns $guid 'IPv6')
+  $v6ConfiguredNameServer = $null
+  if (-not $v6Binding) {
+    # Disabled IPv6 hides effective addresses; capture its exact configuration
+    # so a static-to-static external change cannot pass unchanged readback.
+    $v6ConfiguredNameServer = [string](Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters\Interfaces\$guid" -ErrorAction Stop).NameServer
+    $v6Static = -not [string]::IsNullOrWhiteSpace($v6ConfiguredNameServer)
+  }
+  if ((Get-FamilyBinding $adapter 'ms_tcpip') -ne $v4Binding -or (Get-FamilyBinding $adapter 'ms_tcpip6') -ne $v6Binding) {
+    throw "Adapter binding changed during DNS snapshot for $($adapter.Name)."
+  }
+  $result += [pscustomobject]@{
+    interfaceIndex = $index
+    interfaceAlias = [string]$adapter.Name
+    interfaceGuid = $guid
+    ipv4 = @($v4.ServerAddresses)
+    ipv6 = @($v6.ServerAddresses)
+    ipv4Static = $v4Static
+    ipv6Static = $v6Static
+    ipv4BindingEnabled = $v4Binding
+    ipv6BindingEnabled = $v6Binding
+    ipv6ConfiguredNameServer = $v6ConfiguredNameServer
+  }
+}
+ConvertTo-Json -InputObject @($result) -Compress -Depth 5
+""";
 	}
 
 	private static string CreateApplyScript(IReadOnlyCollection<DnsAdapterSnapshot> targets, IReadOnlyCollection<string> servers)
 	{
-		string value = ToPowerShellArray(servers.Where((string ipString) => IPAddress.Parse(ipString).AddressFamily == AddressFamily.InterNetwork));
-		string value2 = ToPowerShellArray(servers.Where((string ipString) => IPAddress.Parse(ipString).AddressFamily == AddressFamily.InterNetworkV6));
-		return $"$ErrorActionPreference = 'Stop'\n$targets = @()\nforeach ($item in (ConvertFrom-Json -InputObject '{SerializeForPowerShell(targets)}')) {{ $targets += $item }}\n$ipv4 = {value}\n$ipv6 = {value2}\nforeach ($target in $targets) {{\n  $adapter = Get-NetAdapter -ErrorAction SilentlyContinue |\n    Where-Object {{ [string]$_.InterfaceGuid -eq [string]$target.interfaceGuid }} |\n    Select-Object -First 1\n  if (-not $adapter) {{ throw \"Adapter $($target.interfaceGuid) is no longer present.\" }}\n  $index = [int]$adapter.ifIndex\n  if ($ipv4.Count -gt 0) {{\n    Set-DnsClientServerAddress -InterfaceIndex $index -ServerAddresses $ipv4 -Validate:$false -ErrorAction Stop\n  }}\n  if ($ipv6.Count -gt 0) {{\n    & netsh.exe interface ipv6 set dnsservers name=$index source=static address=$($ipv6[0]) validate=no | Out-Null\n    if ($LASTEXITCODE -ne 0) {{ throw \"IPv6 DNS apply failed for interface $index.\" }}\n    for ($i = 1; $i -lt $ipv6.Count; $i++) {{\n      & netsh.exe interface ipv6 add dnsservers name=$index address=$($ipv6[$i]) index=$($i + 1) validate=no | Out-Null\n      if ($LASTEXITCODE -ne 0) {{ throw \"IPv6 DNS add failed for interface $index.\" }}\n    }}\n  }}\n}}\n& ipconfig.exe /flushdns | Out-Null\nif ($LASTEXITCODE -ne 0) {{ throw 'DNS cache flush failed.' }}";
+		string value = ToPowerShellArray(servers.Where(ipString => IPAddress.Parse(ipString).AddressFamily == AddressFamily.InterNetwork));
+		string value2 = ToPowerShellArray(servers.Where(ipString => IPAddress.Parse(ipString).AddressFamily == AddressFamily.InterNetworkV6));
+		return $$"""
+$ErrorActionPreference = 'Stop'
+$targets = @()
+foreach ($item in (ConvertFrom-Json -InputObject '{{SerializeForPowerShell(targets)}}')) { $targets += $item }
+$ipv4 = {{value}}
+$ipv6 = {{value2}}
+function Get-FamilyBinding {
+  param($Adapter, [string]$ComponentId)
+  $binding = @(Get-NetAdapterBinding -Name ([WildcardPattern]::Escape([string]$Adapter.Name)) -ComponentID $ComponentId -ErrorAction Stop)
+  if ($binding.Count -ne 1 -or $binding[0].Enabled -isnot [bool]) { throw "Cannot determine $ComponentId binding for $($Adapter.Name)." }
+  return [bool]$binding[0].Enabled
+}
+function Confirm-PlanBindings {
+  param($Plan)
+  $v4 = Get-FamilyBinding $Plan.adapter 'ms_tcpip'
+  $v6 = Get-FamilyBinding $Plan.adapter 'ms_tcpip6'
+  if ($v4 -ne $Plan.v4Binding -or $v6 -ne $Plan.v6Binding) { throw "Adapter binding changed before DNS write on $($Plan.adapter.Name)." }
+}
+# Validate all adapters before any family is changed.
+$plans = @()
+foreach ($target in $targets) {
+  $adapter = Get-NetAdapter -ErrorAction SilentlyContinue |
+    Where-Object { [string]$_.InterfaceGuid -eq [string]$target.interfaceGuid } |
+    Select-Object -First 1
+  if (-not $adapter) { throw "Adapter $($target.interfaceGuid) is no longer present." }
+  $v4Binding = Get-FamilyBinding $adapter 'ms_tcpip'
+  $v6Binding = Get-FamilyBinding $adapter 'ms_tcpip6'
+  if (($null -ne $target.ipv4BindingEnabled -and $v4Binding -ne [bool]$target.ipv4BindingEnabled) -or
+      ($null -ne $target.ipv6BindingEnabled -and $v6Binding -ne [bool]$target.ipv6BindingEnabled)) { throw "Adapter binding changed since DNS snapshot for $($adapter.Name)." }
+  if ($ipv4.Count -gt 0 -and -not $v4Binding) { throw "IPv4 binding is disabled on $($adapter.Name)." }
+  $applyV6 = $ipv6.Count -gt 0
+  if ($applyV6 -and -not $v6Binding) {
+    if ($ipv4.Count -eq 0 -or -not $v4Binding -or $target.ipv4BindingEnabled -ne $true -or $target.ipv6BindingEnabled -ne $false) {
+      throw "Disabled IPv6 has no confirmed usable IPv4 DNS request for $($adapter.Name)."
+    }
+    $applyV6 = $false
+  }
+  $plans += [pscustomobject]@{adapter=$adapter; v4Binding=$v4Binding; v6Binding=$v6Binding; applyV6=$applyV6}
+}
+foreach ($plan in $plans) {
+  Confirm-PlanBindings $plan
+  $index = [int]$plan.adapter.ifIndex
+  if ($ipv4.Count -gt 0) {
+    Set-DnsClientServerAddress -InterfaceIndex $index -ServerAddresses $ipv4 -Validate:$false -ErrorAction Stop
+  }
+  if ($plan.applyV6) {
+    Confirm-PlanBindings $plan
+    & netsh.exe interface ipv6 set dnsservers name=$index source=static address=$($ipv6[0]) validate=no | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "IPv6 DNS apply failed for interface $index." }
+    for ($i = 1; $i -lt $ipv6.Count; $i++) {
+      Confirm-PlanBindings $plan
+      & netsh.exe interface ipv6 add dnsservers name=$index address=$($ipv6[$i]) index=$($i + 1) validate=no | Out-Null
+      if ($LASTEXITCODE -ne 0) { throw "IPv6 DNS add failed for interface $index." }
+    }
+  }
+}
+& ipconfig.exe /flushdns | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'DNS cache flush failed.' }
+""";
 	}
 
 	private static string CreateResetScript(IReadOnlyCollection<DnsAdapterSnapshot> targets)
@@ -379,7 +514,7 @@ internal sealed class WindowsDnsController
 	{
 		string value = ToPowerShellArray(desiredServers.Where((string ipString) => IPAddress.Parse(ipString).AddressFamily == AddressFamily.InterNetwork));
 		string value2 = ToPowerShellArray(desiredServers.Where((string ipString) => IPAddress.Parse(ipString).AddressFamily == AddressFamily.InterNetworkV6));
-		return $"$ErrorActionPreference = 'Continue'\n$targets = @()\nforeach ($item in (ConvertFrom-Json -InputObject '{SerializeForPowerShell(snapshot)}')) {{ $targets += $item }}\n$operation = '{operation}'\n$desiredV4 = {value}\n$desiredV6 = {value2}\n$expectedTargets = @()\n{((expectedCurrent == null) ? "" : ("foreach ($item in (ConvertFrom-Json -InputObject '" + SerializeForPowerShell(expectedCurrent) + "')) { $expectedTargets += $item }"))}\n$failures = New-Object System.Collections.Generic.List[string]\nfunction Test-Sequence {{\n  param([string[]]$Left, [string[]]$Right)\n  if ($Left.Count -ne $Right.Count) {{ return $false }}\n  for ($i = 0; $i -lt $Left.Count; $i++) {{\n    if (-not [string]::Equals([string]$Left[$i], [string]$Right[$i], [StringComparison]::OrdinalIgnoreCase)) {{ return $false }}\n  }}\n  return $true\n}}\nfunction Test-StaticDns {{\n  param([string]$Guid, [string]$Family)\n  if (-not $Guid) {{ return $false }}\n  $protocol = if ($Family -eq 'ipv4') {{ 'Tcpip' }} else {{ 'Tcpip6' }}\n  try {{\n    $value = (Get-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\$protocol\\Parameters\\Interfaces\\$Guid\" -Name NameServer -ErrorAction Stop).NameServer\n    return -not [string]::IsNullOrWhiteSpace([string]$value)\n  }} catch {{ return $false }}\n}}\nfunction Set-FamilyDns {{\n  param([string]$Family, [int]$Index, [string[]]$Addresses, [bool]$Static)\n  if (-not $Static -or $Addresses.Count -eq 0) {{\n    & netsh.exe interface $Family set dnsservers name=$Index source=dhcp validate=no | Out-Null\n    if ($LASTEXITCODE -ne 0) {{ throw \"DHCP DNS restore failed for $Family/$Index.\" }}\n    return\n  }}\n  & netsh.exe interface $Family set dnsservers name=$Index source=static address=$($Addresses[0]) validate=no | Out-Null\n  if ($LASTEXITCODE -ne 0) {{ throw \"Static DNS restore failed for $Family/$Index.\" }}\n  for ($i = 1; $i -lt $Addresses.Count; $i++) {{\n    & netsh.exe interface $Family add dnsservers name=$Index address=$($Addresses[$i]) index=$($i + 1) validate=no | Out-Null\n    if ($LASTEXITCODE -ne 0) {{ throw \"DNS restore add failed for $Family/$Index.\" }}\n  }}\n}}\nforeach ($target in $targets) {{\n  $adapter = $null\n  if ($target.interfaceGuid) {{\n    $adapter = Get-NetAdapter -ErrorAction SilentlyContinue |\n      Where-Object {{ [string]$_.InterfaceGuid -eq [string]$target.interfaceGuid }} |\n      Select-Object -First 1\n    if (-not $adapter) {{\n      $failures.Add(\"Adapter $($target.interfaceGuid) is no longer present; index fallback is forbidden.\")\n      continue\n    }}\n  }} else {{\n    $adapter = Get-NetAdapter -InterfaceIndex ([int]$target.interfaceIndex) -ErrorAction SilentlyContinue\n    if (-not $adapter -or [string]$adapter.Name -ne [string]$target.interfaceAlias) {{\n      $failures.Add(\"Legacy adapter identity $($target.interfaceAlias)/$($target.interfaceIndex) no longer matches.\")\n      continue\n    }}\n  }}\n  $index = [int]$adapter.ifIndex\n  $expectedTarget = $null\n  if ($operation -eq 'dns.snapshot') {{\n    $expectedTarget = $expectedTargets | Where-Object {{\n      if ($target.interfaceGuid) {{\n        [string]::Equals([string]$_.interfaceGuid, [string]$target.interfaceGuid, [StringComparison]::OrdinalIgnoreCase)\n      }} else {{\n        [int]$_.interfaceIndex -eq [int]$target.interfaceIndex -and [string]$_.interfaceAlias -eq [string]$target.interfaceAlias\n      }}\n    }} | Select-Object -First 1\n    if (-not $expectedTarget) {{\n      $failures.Add(\"Expected DNS post-state is missing adapter $($adapter.Name).\")\n      continue\n    }}\n  }}\n  foreach ($family in @('ipv4', 'ipv6')) {{\n    $originalAddresses = if ($family -eq 'ipv4') {{ @($target.ipv4) }} else {{ @($target.ipv6) }}\n    $originalStatic = if ($family -eq 'ipv4') {{ [bool]$target.ipv4Static }} else {{ [bool]$target.ipv6Static }}\n    $current = Get-DnsClientServerAddress -InterfaceIndex $index -AddressFamily $(if ($family -eq 'ipv4') {{ 'IPv4' }} else {{ 'IPv6' }}) -ErrorAction SilentlyContinue\n    $currentAddresses = @($current.ServerAddresses)\n    $currentStatic = [bool](Test-StaticDns ([string]$adapter.InterfaceGuid) $family)\n    $alreadyOriginal = $currentStatic -eq $originalStatic -and (-not $originalStatic -or (Test-Sequence $currentAddresses $originalAddresses))\n    if ($alreadyOriginal) {{ continue }}\n\n    $ownedMutation = $false\n    if ($operation -eq 'dns.apply') {{\n      $desired = if ($family -eq 'ipv4') {{ $desiredV4 }} else {{ $desiredV6 }}\n      if ($desired.Count -eq 0) {{\n        continue\n      }}\n      $ownedMutation = $currentStatic -and (Test-Sequence $currentAddresses $desired)\n    }} elseif ($operation -eq 'dns.reset') {{\n      $ownedMutation = -not $currentStatic\n    }} elseif ($operation -eq 'dns.snapshot') {{\n      $expectedAddresses = if ($family -eq 'ipv4') {{ @($expectedTarget.ipv4) }} else {{ @($expectedTarget.ipv6) }}\n      $expectedStatic = if ($family -eq 'ipv4') {{ [bool]$expectedTarget.ipv4Static }} else {{ [bool]$expectedTarget.ipv6Static }}\n      $ownedMutation = $currentStatic -eq $expectedStatic -and (-not $expectedStatic -or (Test-Sequence $currentAddresses $expectedAddresses))\n    }}\n    if (-not $ownedMutation) {{\n      $failures.Add(\"$family on $($adapter.Name) no longer matches the transaction post-state; restore was skipped.\")\n      continue\n    }}\n\n    try {{\n      Set-FamilyDns $family $index $originalAddresses $originalStatic\n    }} catch {{\n      $failures.Add(\"${{family}}/${{index}}: $($_.Exception.Message)\")\n    }}\n  }}\n}}\n& ipconfig.exe /flushdns | Out-Null\nif ($LASTEXITCODE -ne 0) {{ $failures.Add('DNS cache flush failed.') }}\nif ($failures.Count -gt 0) {{ throw ($failures -join ' | ') }}";
+		return $"$ErrorActionPreference = 'Continue'\n$targets = @()\nforeach ($item in (ConvertFrom-Json -InputObject '{SerializeForPowerShell(snapshot)}')) {{ $targets += $item }}\n$operation = '{operation}'\n$desiredV4 = {value}\n$desiredV6 = {value2}\n$expectedTargets = @()\n{((expectedCurrent == null) ? "" : ("foreach ($item in (ConvertFrom-Json -InputObject '" + SerializeForPowerShell(expectedCurrent) + "')) { $expectedTargets += $item }"))}\n$failures = New-Object System.Collections.Generic.List[string]\nfunction Test-Sequence {{\n  param([string[]]$Left, [string[]]$Right)\n  if ($Left.Count -ne $Right.Count) {{ return $false }}\n  for ($i = 0; $i -lt $Left.Count; $i++) {{\n    if (-not [string]::Equals([string]$Left[$i], [string]$Right[$i], [StringComparison]::OrdinalIgnoreCase)) {{ return $false }}\n  }}\n  return $true\n}}\nfunction Test-StaticDns {{\n  param([string]$Guid, [string]$Family)\n  if (-not $Guid) {{ return $false }}\n  $protocol = if ($Family -eq 'ipv4') {{ 'Tcpip' }} else {{ 'Tcpip6' }}\n  try {{\n    $value = (Get-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\$protocol\\Parameters\\Interfaces\\$Guid\" -Name NameServer -ErrorAction Stop).NameServer\n    return -not [string]::IsNullOrWhiteSpace([string]$value)\n  }} catch {{ return $false }}\n}}\nfunction Set-FamilyDns {{\n  param([string]$Family, [int]$Index, [string[]]$Addresses, [bool]$Static)\n  if (-not $Static -or $Addresses.Count -eq 0) {{\n    & netsh.exe interface $Family set dnsservers name=$Index source=dhcp validate=no | Out-Null\n    if ($LASTEXITCODE -ne 0) {{ throw \"DHCP DNS restore failed for $Family/$Index.\" }}\n    return\n  }}\n  & netsh.exe interface $Family set dnsservers name=$Index source=static address=$($Addresses[0]) validate=no | Out-Null\n  if ($LASTEXITCODE -ne 0) {{ throw \"Static DNS restore failed for $Family/$Index.\" }}\n  for ($i = 1; $i -lt $Addresses.Count; $i++) {{\n    & netsh.exe interface $Family add dnsservers name=$Index address=$($Addresses[$i]) index=$($i + 1) validate=no | Out-Null\n    if ($LASTEXITCODE -ne 0) {{ throw \"DNS restore add failed for $Family/$Index.\" }}\n  }}\n}}\nforeach ($target in $targets) {{\n  $adapter = $null\n  if ($target.interfaceGuid) {{\n    $adapter = Get-NetAdapter -ErrorAction SilentlyContinue |\n      Where-Object {{ [string]$_.InterfaceGuid -eq [string]$target.interfaceGuid }} |\n      Select-Object -First 1\n    if (-not $adapter) {{\n      $failures.Add(\"Adapter $($target.interfaceGuid) is no longer present; index fallback is forbidden.\")\n      continue\n    }}\n  }} else {{\n    $adapter = Get-NetAdapter -InterfaceIndex ([int]$target.interfaceIndex) -ErrorAction SilentlyContinue\n    if (-not $adapter -or [string]$adapter.Name -ne [string]$target.interfaceAlias) {{\n      $failures.Add(\"Legacy adapter identity $($target.interfaceAlias)/$($target.interfaceIndex) no longer matches.\")\n      continue\n    }}\n  }}\n  $index = [int]$adapter.ifIndex\n  $expectedTarget = $null\n  if ($operation -eq 'dns.snapshot') {{\n    $expectedTarget = $expectedTargets | Where-Object {{\n      if ($target.interfaceGuid) {{\n        [string]::Equals([string]$_.interfaceGuid, [string]$target.interfaceGuid, [StringComparison]::OrdinalIgnoreCase)\n      }} else {{\n        [int]$_.interfaceIndex -eq [int]$target.interfaceIndex -and [string]$_.interfaceAlias -eq [string]$target.interfaceAlias\n      }}\n    }} | Select-Object -First 1\n    if (-not $expectedTarget) {{\n      $failures.Add(\"Expected DNS post-state is missing adapter $($adapter.Name).\")\n      continue\n    }}\n  }}\n  foreach ($family in @('ipv4', 'ipv6')) {{\n    $originalAddresses = if ($family -eq 'ipv4') {{ @($target.ipv4) }} else {{ @($target.ipv6) }}\n    $originalStatic = if ($family -eq 'ipv4') {{ [bool]$target.ipv4Static }} else {{ [bool]$target.ipv6Static }}\n    $current = Get-DnsClientServerAddress -InterfaceIndex $index -AddressFamily $(if ($family -eq 'ipv4') {{ 'IPv4' }} else {{ 'IPv6' }}) -ErrorAction SilentlyContinue\n    $currentAddresses = @($current.ServerAddresses)\n    $currentStatic = [bool](Test-StaticDns ([string]$adapter.InterfaceGuid) $family)\n    $alreadyOriginal = $currentStatic -eq $originalStatic -and (-not $originalStatic -or (Test-Sequence $currentAddresses $originalAddresses))\n    if ($alreadyOriginal) {{ continue }}\n\n    $ownedMutation = $false\n    if ($operation -eq 'dns.apply') {{\n      $desired = if ($family -eq 'ipv4') {{ $desiredV4 }} else {{ $desiredV6 }}\n      if ($desired.Count -eq 0) {{\n        continue\n      }}\n      $ownedMutation = $currentStatic -and (Test-Sequence $currentAddresses $desired)\n      # An unbound address family can hide DNS that this transaction configured.\n      # Use only the same adapter's exact static configuration to prove ownership.\n      if (-not $ownedMutation -and $currentStatic -and $currentAddresses.Count -eq 0) {{\n        $protocol = if ($family -eq 'ipv4') {{ 'Tcpip' }} else {{ 'Tcpip6' }}\n        try {{\n          $configuredValue = (Get-ItemProperty -LiteralPath \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\$protocol\\Parameters\\Interfaces\\$($adapter.InterfaceGuid)\" -Name NameServer -ErrorAction Stop).NameServer\n          $configured = @(([string]$configuredValue -split '[,;\\s]+') | Where-Object {{ $_ }} | ForEach-Object {{ [Net.IPAddress]::Parse($_).ToString() }})\n          $normalizedDesired = @($desired | ForEach-Object {{ [Net.IPAddress]::Parse($_).ToString() }})\n          $ownedMutation = Test-Sequence $configured $normalizedDesired\n        }} catch {{ $ownedMutation = $false }}\n      }}\n    }} elseif ($operation -eq 'dns.reset') {{\n      $ownedMutation = -not $currentStatic\n    }} elseif ($operation -eq 'dns.snapshot') {{\n      $expectedAddresses = if ($family -eq 'ipv4') {{ @($expectedTarget.ipv4) }} else {{ @($expectedTarget.ipv6) }}\n      $expectedStatic = if ($family -eq 'ipv4') {{ [bool]$expectedTarget.ipv4Static }} else {{ [bool]$expectedTarget.ipv6Static }}\n      $ownedMutation = $currentStatic -eq $expectedStatic -and (-not $expectedStatic -or (Test-Sequence $currentAddresses $expectedAddresses))\n    }}\n    if (-not $ownedMutation) {{\n      $failures.Add(\"$family on $($adapter.Name) no longer matches the transaction post-state; restore was skipped.\")\n      continue\n    }}\n\n    try {{\n      Set-FamilyDns $family $index $originalAddresses $originalStatic\n    }} catch {{\n      $failures.Add(\"${{family}}/${{index}}: $($_.Exception.Message)\")\n    }}\n  }}\n}}\n& ipconfig.exe /flushdns | Out-Null\nif ($LASTEXITCODE -ne 0) {{ $failures.Add('DNS cache flush failed.') }}\nif ($failures.Count -gt 0) {{ throw ($failures -join ' | ') }}";
 	}
 
 	private static string SerializeForPowerShell<T>(T value)

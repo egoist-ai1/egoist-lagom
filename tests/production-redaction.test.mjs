@@ -94,13 +94,16 @@ test('R09: every entry of the actual locally exported ZIP omits the synthetic co
   t.after(() => fs.rm(root, {recursive:true, force:true}));
   const logPath = path.join(root, 'main.log');
   await fs.writeFile(logPath, corpus.log, 'utf8');
+  const dohRoot=path.join(root,'SystemDoH');
+  await fs.mkdir(path.join(dohRoot,'service-logs'),{recursive:true});
+  for(const name of ['egoistshield-system-doh-service.out.log','egoistshield-system-doh-service.0.out.log','egoistshield-system-doh-service.wrapper.log']) await fs.writeFile(path.join(dohRoot,'service-logs',name),'x'.repeat(110*1024)+'\n'+corpus.log,'utf8');
   const ps = process.env.LAGOM_TEST_POWERSHELL || path.join(process.env.SystemRoot || 'C:/Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe');
   const source = sourceFor('electron/ipc/handlers-health');
   const start = source.indexOf('function getLogFilePath$1()');
   const end = source.indexOf('async function buildPerformanceProfile(', start);
   assert.ok(start >= 0 && end > start, 'Actual archive export boundary is present');
   const context = vm.createContext({
-    ...redaction, promises:fs, path, Date,
+    ...redaction, promises:fs, path, Date, Buffer,
     app:{getPath: () => root},
     log:{transports:{file:{getFile: () => ({path:logPath})}},warn(){}},
     shell:{showItemInFolder(){}, async openPath(){}},
@@ -112,14 +115,19 @@ test('R09: every entry of the actual locally exported ZIP omits the synthetic co
   const status = async () => ({running:false, diagnostic:corpus.log, url});
   const result = await context.exportBundle({
     stateStore:{get: () => ({nodes:[],subscriptions:[],processRules:[],domainRules:[],usageHistory:[],settings:corpus.settings})},
-    runtimeManager:{status}, systemDohManager:{status}, zapretManager:{status}, telegramProxyManager:{status},
+    runtimeManager:{status}, systemDohManager:{status,workDir:dohRoot}, zapretManager:{status}, telegramProxyManager:{status},
   });
   assert.equal(result.ok, true, result.message);
   const escaped = result.filePath.replace(/'/g, "''");
   const script = `$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $z=[IO.Compression.ZipFile]::OpenRead('${escaped}'); try { $rows=@($z.Entries | ForEach-Object { $r=[IO.StreamReader]::new($_.Open()); try { [pscustomobject]@{name=$_.FullName; text=$r.ReadToEnd()} } finally {$r.Dispose()} }); ConvertTo-Json -InputObject $rows -Depth 8 -Compress } finally {$z.Dispose()}`;
   const {stdout} = await promisify(execFile)(ps, ['-NoProfile','-NonInteractive','-Command',script], {windowsHide:true, maxBuffer:4*1024*1024, timeout:30000});
   const entries = JSON.parse(stdout.replace(/^\uFEFF/, ''));
-  assert.equal(entries.length, 5);
+  assert.equal(entries.length, 9);
+  const capture = JSON.parse(entries.find(item => item.name === 'diagnostic-capture-manifest.json').text);
+  assert.ok(capture.logs.some(item => item.entry === 'system-doh-runtime.log.redacted.txt' && item.state === 'missing'));
+  assert.ok(capture.logs.some(item => item.entry === 'main.log.redacted.txt' && item.state === 'captured'));
+  assert.deepEqual(entries.filter(item=>item.name.startsWith('system-doh-')).map(item=>item.name).sort(), ['system-doh-current.log.redacted.txt','system-doh-previous.log.redacted.txt','system-doh-wrapper.log.redacted.txt']);
+  for(const entry of entries.filter(item=>item.name.startsWith('system-doh-'))) {assert.ok(entry.text.length<=96*1024);assert.match(entry.text,/redacted/);}
   for (const entry of entries) assertNoSentinels(entry.text);
   assert.match(entries.find(item => item.name === 'main.log.redacted.txt').text, /E_TIMEOUT/);
   assert.equal(await fs.readFile(logPath, 'utf8'), corpus.log, 'Source log is untouched');
@@ -129,14 +137,16 @@ test('R09: archive failure and unavailable-log catch messages redact URL credent
   const root = await fs.mkdtemp(path.join(process.env.LAGOM_TEST_TEMP || os.tmpdir(), 'redaction-error-'));
   t.after(() => fs.rm(root, {recursive:true, force:true}));
   const logPath = path.join(root, 'unavailable.log');
+  await fs.writeFile(logPath, 'fixture', 'utf8');
   const source = sourceFor('electron/ipc/handlers-health');
   const start = source.indexOf('function getLogFilePath$1()');
   const end = source.indexOf('async function buildPerformanceProfile(', start);
   const context = vm.createContext({
-    ...redaction, path, Date,
-    promises:{...fs,readFile:async file => {
+    ...redaction, path, Date, Buffer,
+    promises:{...fs,open:async (...args) => {
+      const [file] = args;
       if (file === logPath) throw new Error(`E_LOG_UNAVAILABLE ${url}`);
-      return fs.readFile(file, 'utf8');
+      return fs.open(...args);
     }},
     app:{getPath: () => root},
     log:{transports:{file:{getFile: () => ({path:logPath})}},warn(){}},

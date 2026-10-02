@@ -120,7 +120,8 @@ test('custom resolver config does not silently send queries to other DNS operato
   const value = JSON.parse(config.buildSystemDohXrayConfig({ url: 'https://private.example/profile?token=sample', localAddress: '127.0.0.1', bootstrapHosts: { 'private.example': ['192.0.2.1'] } }));
   assert.deepEqual(value.dns.servers.map(item => item.address), ['https://private.example/profile?token=sample']);
   assert.notEqual(value.dns.enableParallelQuery, true);
-  assert.notEqual(value.dns.serveStale, true);
+  assert.equal(value.dns.serveStale, true);
+  assert.equal(value.dns.serveExpiredTTL, 120);
   assert.equal(value.log.error, undefined, 'runtime logs must be rotated by the service wrapper');
 });
 
@@ -237,3 +238,4 @@ test('localhost DNS probe load recovers after malformed, truncated and dropped r
   }
   assert.equal(received, 264);
 });
+

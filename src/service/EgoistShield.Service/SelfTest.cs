@@ -749,7 +749,7 @@ internal static class SelfTest
 				Assert(fixture.StartType == mode && fixture.DelayedAutoStart == delayed && fixture.StartupWrites == 0,
 					"recovery and repeated repair preserve startup policy: " + mode + "/" + delayed);
 				Assert(fixture.Dependencies == "Tcpip/Afd" && fixture.FailureReset == 3600 &&
-					fixture.FailureActions == "restart/5000/restart/10000/restart/60000" && fixture.FailureFlag && fixture.Description == description,
+					fixture.FailureActions == "restart/0/restart/1000/restart/60000" && fixture.FailureFlag && fixture.Description == description,
 					"recovery repair still configures dependencies, bounded restart policy and description");
 			}
 		}

@@ -348,6 +348,7 @@ test('starting a service enables autostart and requires its winws child before r
     const { manager } = fixture();
     const events = [];
     manager.ensureProvisioned = async () => {};
+    manager.refreshSystemDohTransportProtection = async () => ({ changed: false });
     manager.assertNoExternalConflict = async () => {};
     manager.queryService = async () => ({ installed: true, running: false });
     manager.prepareStandaloneForServiceStart = async () => async () => events.push('restore');

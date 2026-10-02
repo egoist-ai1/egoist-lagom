@@ -25,6 +25,12 @@ function Assert-InstallerMaintenanceBootRecovery {
   if ($script:bootMissing) { throw 'Fixture protected boot registration is missing.' }
   return [pscustomobject]@{verified=$true;owner='EgoistShield';schemaVersion=1;stage=$StageDirectory}
 }
+function Get-InstallerBootRecoveryContext {
+  param($Stage,[switch]$AllowLegacyInventory)
+  return [pscustomobject]@{maintenanceMarker=(Join-Path $Stage 'service-maintenance.json');powerShell=(Get-Process -Id $PID).MainModule.FileName}
+}
+function Assert-InstallerBootRecoveryPlainPath {param($Path,[switch]$Leaf)}
+function Assert-InstallerBootRecoveryFileProtection {param($Path,[switch]$Directory)}
 function Require {param([bool]$Value,[string]$Message)if(-not $Value){throw $Message}}
 $previousStage=$env:EGOIST_PROTECTED_REINSTALL_STAGE
 try {
@@ -40,11 +46,12 @@ try {
   $installer=Join-Path $stage 'candidate.exe'
   [IO.File]::WriteAllText($installer,'controlled candidate bytes')
   [IO.File]::WriteAllText((Join-Path $stage 'backup-ready.flag'),'ready')
-  $state=@{schemaVersion=1;owner='EgoistShield';installer=$installer;sha256=Get-FileSha256 $installer}
+  $state=@{schemaVersion=1;owner='EgoistShield';installer=$installer;sha256=Get-FileSha256 $installer;handoffStarted=$true}
   $state | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stage 'state.json') -Encoding utf8
   $worker=Get-Process -Id $PID
   $heartbeat=@{workerPid=$PID;workerStartTicks=$worker.StartTime.Ticks}
   $heartbeat | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stage 'heartbeat.json') -Encoding utf8
+  @{schemaVersion=1;owner='EgoistShield';stage=$stage} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stage 'service-maintenance.json') -Encoding utf8
   $env:EGOIST_PROTECTED_REINSTALL_STAGE=$stage
   $script:bootMissing=$true
   Require (-not (Test-VerifiedProtectedReinstall)) 'An old worker stage without verified boot recovery bypassed the new installer.'

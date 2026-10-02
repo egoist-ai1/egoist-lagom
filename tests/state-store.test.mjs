@@ -42,7 +42,7 @@ test('a new installation disables old automatic connections in each user profile
   await store.load();
   assert.equal(store.get().settings.autoStart, false);
   assert.equal(store.get().settings.autoConnect, false);
-  assert.equal(store.get().settings.systemDohEnabled, false);
+  assert.equal(store.get().settings.systemDohEnabled, true, 'installation identity must not reset the user DNS preference');
   assert.equal(store.get().nodes[0].id, 'saved-node');
   await store.patchSettings({ autoConnect: true });
   const reopened = new StateStore(root, installationPath);

@@ -2,6 +2,7 @@
 var __filename = fileURLToPath(import.meta.url);
 var __dirname$1 = path.dirname(__filename);
 var globalStateStore = null;
+var globalStartupAutoConnect = null;
 var execFileAsync = promisify(execFile);
 var runtimeEnvironment = detectRuntimeEnvironment({
 	isPackaged: app.isPackaged,
@@ -802,12 +803,16 @@ async function inspectOwnedLoopbackDnsHealth() {
 }
 async function restoreDnsIfLocalResolverIsDown() {
 	try {
+		// The selected private resolver remains the DNS foundation even while
+		// its service recovers. Automatic recovery must not select router DNS.
+		if (globalStateStore?.get().settings.systemDohEnabled) return false;
 		const [systemDoh, gravityless] = await Promise.all([globalSystemDohManager?.status({ force: true }).catch(() => null) ?? Promise.resolve(null), globalGravitylessDnsManager?.status({ force: true }).catch(() => null) ?? Promise.resolve(null)]);
 		if (!shouldRestoreOwnedDnsForUnavailableResolvers([systemDoh, gravityless])) return false;
 		const coreService = globalSystemDohManager?.coreService ?? globalGravitylessDnsManager?.coreService;
 		if (!coreService) return false;
 		const health = await inspectOwnedLoopbackDnsHealth();
 		if (!health.active || health.healthy) return false;
+		if (globalStateStore?.get().settings.systemDohEnabled) return false;
 		const restored = await coreService.restoreOwnedDns();
 		logger.warn(`[boot] DNS safety net: stopped resolver; restored ${restored.restored ?? 0} owned adapter(s), ${restored.pendingAdapters ?? 0} pending.`);
 		return Number(restored.restored ?? 0) > 0;
@@ -860,24 +865,29 @@ function stopDnsWatchdog() {
 	dnsWatchdogConsecutiveFailures = 0;
 }
 async function recoverBackgroundFeaturesAfterRendererLoad(loadedState) {
+	const startupGeneration = globalThis.reconnectSupervisor?.generation;
 	await Promise.allSettled([...pendingBootRecovery]);
 	logger.info("[boot] background recovery:start");
-	const usesLoopbackDns = isGravitylessLoopbackDnsRequest(String(loadedState.settings.systemDnsServers ?? ""));
 	const recoverDns = async () => {
-		if (globalSystemDohManager && loadedState.settings.systemDohEnabled) {
+		// Read the persisted intent only after acquiring the mutation slot. A
+		// startup snapshot cannot override a later manual disable or endpoint edit.
+		const settings = globalStateStore?.get().settings ?? loadedState.settings;
+		const usesLoopbackDns = isGravitylessLoopbackDnsRequest(String(settings.systemDnsServers ?? ""));
+		if (globalSystemDohManager && settings.systemDohEnabled) {
 			logger.info("[boot] system DoH recovery:start");
 			try {
-				await globalSystemDohManager.recover({
-					enabled: loadedState.settings.systemDohEnabled,
-					url: loadedState.settings.systemDohUrl,
-					localAddress: loadedState.settings.systemDohLocalAddress
+				const recoveredDoh = await globalSystemDohManager.recover({
+					enabled: settings.systemDohEnabled,
+					url: settings.systemDohUrl,
+					localAddress: settings.systemDohLocalAddress
 				});
-				logger.info("[boot] system DoH recovery:complete");
+				if (recoveredDoh?.verified === true) logger.info("[boot] system DoH recovery:complete");
+				else logger.warn("[boot] system DoH recovery:degraded; saved configuration retained, Core supervision continues");
 			} catch (error) {
 				logger.error("[boot] system DoH recovery failed:", error);
 			}
 		}
-		if (globalGravitylessDnsManager && !loadedState.settings.systemDohEnabled && usesLoopbackDns) {
+		if (globalGravitylessDnsManager && !settings.systemDohEnabled && usesLoopbackDns) {
 			logger.info("[boot] Gravityless DNS recovery:start");
 			try {
 				if (!(await globalGravitylessDnsManager.status({ force: true }).catch(() => null))?.verified) await globalGravitylessDnsManager.ensureRunning();
@@ -886,7 +896,7 @@ async function recoverBackgroundFeaturesAfterRendererLoad(loadedState) {
 				logger.error("[boot] Gravityless DNS recovery failed:", error);
 			}
 		}
-		if (usesLoopbackDns || loadedState.settings.systemDohEnabled) await restoreDnsIfLocalResolverIsDown();
+		if (usesLoopbackDns || settings.systemDohEnabled) await restoreDnsIfLocalResolverIsDown();
 	};
 	if (globalNetworkCombinatorManager) await globalNetworkCombinatorManager.runCoordinatedMutation({
 		module: "dns",
@@ -896,7 +906,8 @@ async function recoverBackgroundFeaturesAfterRendererLoad(loadedState) {
 	}, recoverDns);
 	else await recoverDns();
 	// Windows owns automatic service startup. Opening the UI must respect a stopped service.
-	if (loadedState.settings.autoConnect && loadedState.activeNodeId) scheduleAutoConnectWhenNetworkReady(loadedState.activeNodeId);
+	const currentState = globalStateStore?.get() ?? loadedState;
+	if (currentState.settings.autoConnect && currentState.activeNodeId) scheduleAutoConnectWhenNetworkReady(currentState.activeNodeId, startupGeneration);
 	startDnsWatchdog();
 	logger.info("[boot] background recovery:complete");
 }
@@ -913,40 +924,54 @@ async function recoverBackgroundFeaturesAfterRendererLoad(loadedState) {
 * Интервалы растут (1, 2, 4, 8, 15, 15… с) и ограничены общим бюджетом, чтобы
 * ожидание не превратилось в бесконечный опрос.
 */
-async function scheduleAutoConnectWhenNetworkReady(activeNodeId) {
+async function scheduleAutoConnectWhenNetworkReady(activeNodeId, startupGeneration = globalThis.reconnectSupervisor?.generation) {
 	const AUTO_CONNECT_BUDGET_MS = 180 * 1e3;
-	const BACKOFF_STEPS_MS = [
-		1e3,
-		2e3,
-		4e3,
-		8e3,
-		15e3
-	];
+	const BACKOFF_STEPS_MS = [1e3, 2e3, 4e3, 8e3, 15e3];
 	const deadline = Date.now() + AUTO_CONNECT_BUDGET_MS;
+	const startupWindow = mainWindow;
+	const current = () => {
+		const state = globalStateStore?.get();
+		return Date.now() < deadline && !isQuitting && mainWindow === startupWindow && !!startupWindow && !startupWindow.isDestroyed() &&
+			state?.settings.autoConnect === true && state.activeNodeId === activeNodeId &&
+			globalThis.reconnectSupervisor?.generation === startupGeneration;
+	};
 	let attempt = 0;
 	const networkReady = async () => {
+		const { promises: dnsPromises } = await import("node:dns");
+		const resolver = new dnsPromises.Resolver({ timeout: 3e3, tries: 1 });
+		let timer;
 		try {
-			const { promises: dnsPromises } = await import("node:dns");
-			const addresses = await dnsPromises.resolve4("www.msftconnecttest.com");
+			const addresses = await Promise.race([
+				resolver.resolve4("www.msftconnecttest.com"),
+				new Promise(resolve => { timer = setTimeout(() => { resolver.cancel(); resolve([]); }, Math.min(3500, Math.max(1, deadline - Date.now()))); timer.unref?.(); })
+			]);
 			return Array.isArray(addresses) && addresses.length > 0;
-		} catch {
-			return false;
-		}
+		} catch { return false; }
+		finally { if (timer) clearTimeout(timer); resolver.cancel(); }
 	};
-	while (Date.now() < deadline) {
-		if (!mainWindow || mainWindow.isDestroyed()) return;
-		if (await networkReady()) {
+	while (Date.now() < deadline && current()) {
+		const ready = await networkReady();
+		if (!current()) return;
+		if (ready) {
 			logger.info(`[boot] auto-connect: network is ready after ${attempt} probe(s)`);
-			mainWindow.webContents.send("auto-connect", activeNodeId);
-			return;
+			// The internal callback checks the same intent again after acquiring the
+			// route slot. A delayed renderer event could otherwise reconnect after stop.
+			try {
+				const result = await globalStartupAutoConnect?.(activeNodeId, startupGeneration, current);
+				if (!current() || result?.cancelled) return;
+				if (result?.connected === true && result?.egressVerified !== false) return;
+				if (result?.startupRetryable !== true) {
+					logger.warn(`[boot] auto-connect stopped (${result?.startupFailureClass ?? "unknown"}); check the saved node before retrying manually`);
+					return;
+				}
+				logger.warn(`[boot] auto-connect transient failure (${result.startupFailureClass}); a bounded retry is scheduled`);
+			} catch (error) { logger.warn("[boot] auto-connect failed:", error); return; }
 		}
-		const delayMs = BACKOFF_STEPS_MS[Math.min(attempt, BACKOFF_STEPS_MS.length - 1)];
+		const delayMs = Math.min(BACKOFF_STEPS_MS[Math.min(attempt, BACKOFF_STEPS_MS.length - 1)], Math.max(1, deadline - Date.now()));
 		attempt += 1;
-		await new Promise((resolve) => {
-			setTimeout(resolve, delayMs).unref?.();
-		});
+		await new Promise(resolve => { setTimeout(resolve, delayMs).unref?.(); });
 	}
-	logger.warn("[boot] auto-connect skipped: the network did not become usable within the wait budget. The user can connect manually.");
+	if (current()) logger.warn("[boot] auto-connect skipped: the network did not become usable within the wait budget. The user can connect manually.");
 }
 async function createMainWindow() {
 	logger.info("[boot] createMainWindow:start");
@@ -1059,13 +1084,14 @@ async function createMainWindow() {
 	if (!globalRuntimeManager) globalRuntimeManager = new VpnRuntimeManager(process.resourcesPath, USER_DATA_DIR);
 	if (!globalGravitylessDnsManager) globalGravitylessDnsManager = new GravitylessDnsManager(process.resourcesPath, coreService);
 	if (!globalSystemDohManager) globalSystemDohManager = useComponentService(new SystemDohManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "SystemDoH"), coreService), "SystemDoH", coreService);
+	if (productionRuntime) stateStore.readOwnedSystemDohStatus = () => globalSystemDohManager.status({ force: true });
 	if (!globalZapretManager) globalZapretManager = useComponentService(new ZapretManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "Zapret"), coreService), "Zapret", coreService);
 	if (!globalTelegramProxyManager) globalTelegramProxyManager = useComponentService(new TelegramProxyManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "TelegramProxy"), coreService), "TelegramProxy", coreService);
 	if (!globalVpnServiceManager) globalVpnServiceManager = useComponentService(new VpnServiceManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "Vpn")), "Vpn", coreService);
 	globalRuntimeManager.attachBackgroundService(globalVpnServiceManager);
 	if (productionRuntime) await reconcileOwnedSystemStateBeforeUi();
 	logger.info("[boot] registering IPC handlers");
-	globalNetworkCombinatorManager = await registerIpcHandlers(mainWindow, stateStore, globalRuntimeManager, globalGravitylessDnsManager, globalSystemDohManager, globalZapretManager, globalTelegramProxyManager, () => pendingBootRecovery.size === 0);
+	globalNetworkCombinatorManager = await registerIpcHandlers(mainWindow, stateStore, globalRuntimeManager, globalGravitylessDnsManager, globalSystemDohManager, globalZapretManager, globalTelegramProxyManager, () => pendingBootRecovery.size === 0, callback => { globalStartupAutoConnect = callback; });
 	logger.info("[boot] IPC handlers registered");
 	logger.info("[boot] loading persisted state");
 	const loadedState = stateStore.get();

@@ -7,6 +7,8 @@ export class ShieldConnectionController {
     this.pending = null;
     this.cancelled = false;
     this.operationGeneration = 0;
+    this.statusReadSequence = 0;
+    this.lastStatusError = null;
     this.lastConnectOptions = null;
     this.lastActionError = null;
   }
@@ -18,30 +20,59 @@ export class ShieldConnectionController {
 
   async status() {
     const generation = this.operationGeneration;
+    const sequence = ++this.statusReadSequence;
     const [zapretResult, dnsResult, telegramResult] = await Promise.allSettled([
       Promise.resolve().then(() => this.deps.zapret?.status()),
       Promise.resolve().then(() => this.deps.dns?.status()),
       Promise.resolve().then(() => this.deps.telegramProxy?.status?.())
     ]);
-    const errors = [];
-    if (zapretResult.status === 'fulfilled' && zapretResult.value) this.componentStatus.zapret = zapretResult.value;
-    else if (zapretResult.status === 'rejected') errors.push(`Zapret: ${zapretResult.reason instanceof Error ? zapretResult.reason.message : String(zapretResult.reason)}`);
-    if (dnsResult.status === 'fulfilled' && dnsResult.value) this.componentStatus.dns = dnsResult.value;
-    else if (dnsResult.status === 'rejected') errors.push(`DNS: ${dnsResult.reason instanceof Error ? dnsResult.reason.message : String(dnsResult.reason)}`);
-    if (telegramResult.status === 'fulfilled' && telegramResult.value) this.componentStatus.telegram = telegramResult.value;
-    else if (telegramResult.status === 'rejected') errors.push(`Telegram: ${telegramResult.reason instanceof Error ? telegramResult.reason.message : String(telegramResult.reason)}`);
+    // A status read may finish after a manual action or a newer read. Such a
+    // reply must not resurrect the old service snapshot in the shared cache.
+    const current = generation === this.operationGeneration && sequence === this.statusReadSequence;
+    if (current) {
+      const errors = [];
+      const observe = (name, dependency, result) => {
+        if (!dependency) return;
+        if (result.status === 'rejected') {
+          errors.push(`${name}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
+          return;
+        }
+        const value = result.value;
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+          errors.push(`${name}: Служба не вернула состояние`);
+          return;
+        }
+        const unavailable = value.statusError || value.nativeStatusUnavailable === true ||
+          ['unknown', 'unavailable'].includes(value.serviceState) || value.healthState === 'unknown' || value.ownerInspectionErrors?.length;
+        if (unavailable) {
+          errors.push(`${name}: ${value.statusError || value.lastError || 'Состояние службы не подтверждено'}`);
+          return;
+        }
+        const key = name === 'Zapret' ? 'zapret' : name === 'DNS' ? 'dns' : 'telegram';
+        this.componentStatus[key] = value;
+      };
+      observe('Zapret', this.deps.zapret, zapretResult);
+      observe('DNS', this.deps.dns, dnsResult);
+      observe('Telegram', this.deps.telegramProxy, telegramResult);
+      this.lastStatusError = errors.length ? errors.join('; ') : null;
+    }
 
     const zapret = this.componentStatus.zapret;
     const dns = this.componentStatus.dns;
     const telegram = this.componentStatus.telegram;
-    const statusError = errors.length ? errors.join('; ') : null;
+    const statusError = this.lastStatusError;
     const running = zapret ? zapret.runtimeReady !== false && !!(zapret.serviceRunning || zapret.standaloneRunning) : null;
-    const dnsRunning = dns ? dns.running === true && dns.verified !== false : null;
+    const dnsRunning = dns ? dns.running === true && dns.verified === true : null;
+    const dnsConfigured = statusError || !dns || typeof dns.enabled !== 'boolean' ? null : dns.enabled;
+    const dnsServiceRunning = statusError || !dns || typeof dns.serviceRunning !== 'boolean' ? null : dns.serviceRunning;
+    const dnsHealthState = statusError || !dns ? 'unknown' : dnsRunning === true ? 'ready'
+      : (dns.healthState && dns.healthState !== 'ready' ? dns.healthState : null) || (dns.running === true || dns.serviceRunning === true || dns.enabled === true ? 'degraded' : dns.running === false ? 'stopped' : 'unknown');
+    const dnsError = dnsHealthState === 'degraded' ? dns.lastError || 'Служба DNS запущена, но запросы через выбранный DoH не прошли проверку.' : null;
     const telegramRunning = telegram ? telegram.runtimeReady !== false && telegram.listenerReady !== false && !!(telegram.running || telegram.serviceRunning) : null;
     const targetObserved = this.state.action === 'connect'
       ? this.lastConnectOptions && running === true && (!this.lastConnectOptions.dnsEnabled || dnsRunning === true) && (!this.lastConnectOptions.telegramEnabled || telegramRunning === true)
-      : this.state.action === 'disconnect' && running === false && dnsRunning === false && (!this.deps.telegramProxy || telegramRunning === false);
-    if (generation === this.operationGeneration && this.state.phase === 'error' && !this.state.busy && !statusError && targetObserved) {
+      : this.state.action === 'disconnect' && running === false && (!this.deps.telegramProxy || telegramRunning === false);
+    if (current && this.state.phase === 'error' && !this.state.busy && !statusError && targetObserved) {
       const connected = this.state.action === 'connect';
       this.publish({ phase: connected ? 'connected' : 'idle', error: null, progress: connected ? 100 : 0,
         message: connected ? 'Защита и службы работают в фоне' : 'Подключение отключено' });
@@ -50,6 +81,10 @@ export class ShieldConnectionController {
       ...this.state,
       running,
       dnsRunning,
+      dnsConfigured,
+      dnsServiceRunning,
+      dnsHealthState,
+      dnsError,
       telegramRunning,
       profile: zapret?.serviceProfile || zapret?.currentProfile || null,
       error: statusError || this.state.error,
@@ -63,22 +98,25 @@ export class ShieldConnectionController {
     return result;
   }
 
-  async prepareDnsForAutoSelect(dnsBefore) {
-    if (typeof this.deps.dns?.stopAndRemove !== 'function') return dnsBefore;
-    // A stopped/failed owned resolver can leave Windows pointing at its
-    // loopback address. Restore only the component's own DNS transaction so
-    // curl can resolve probe hosts; external static DNS remains untouched.
-    if (dnsBefore?.running === true && dnsBefore?.verified === true) return dnsBefore;
-    if (dnsBefore?.serviceRunning === true) {
-      throw new Error('Служба DNS работает, но проверка не прошла. Автоподбор не будет останавливать единственный локальный DNS.');
+  async prepareDnsForAutoSelect(status) {
+    // DNS is a persistent foundation, not a disposable strategy-probe component.
+    // An addon transaction must never delete an owned resolver or reset adapters.
+    this.checkCancelled();
+    if (!status || typeof status !== 'object' || Array.isArray(status) || status.statusError ||
+        status.nativeStatusUnavailable === true || status.ownerInspectionErrors?.length ||
+        ['unknown', 'unavailable', 'query-failed'].includes(status.serviceState) || status.healthState === 'unknown') {
+      throw new Error('Не удалось проверить DNS перед автоподбором. Выбранный DNS сохранён.');
     }
-    this.publish({ phase: 'dns', progress: 4, message: 'Готовим DNS для проверки профилей' });
-    this.requireSuccess(await this.deps.dns.stopAndRemove(), 'Не удалось подготовить DNS для автоподбора.');
-    const after = await this.deps.dns.status({ force: true });
-    if (!after || typeof after !== 'object') throw new Error('Не удалось проверить DNS перед автоподбором.');
-    if (after?.lastError) throw new Error(after.lastError);
-    if (after.running === true && after.verified !== true) throw new Error('DNS не прошёл проверку перед автоподбором.');
-    return after;
+    if (status.running === true && status.verified === true) return status;
+    if (status.enabled === true || status.currentUrl || status.running === true || status.serviceRunning === true ||
+        status.nativeManaged === true && status.enabled !== false || status.healthState === 'degraded') {
+      throw new Error(status.lastError || 'Выбранный DNS ещё не готов. Автоподбор не будет останавливать или заменять выбранный DNS.');
+    }
+    if (status.running !== false || status.serviceRunning !== false ||
+        status.serviceState && !['stopped', 'not-installed'].includes(status.serviceState)) {
+      throw new Error('Не удалось подтвердить остановленное состояние DNS. Выбранный DNS сохранён.');
+    }
+    return status;
   }
 
   checkCancelled() {
@@ -99,8 +137,9 @@ export class ShieldConnectionController {
     this.publish({ action, busy: true, error: null, phase: action === 'disconnect' ? 'disconnecting' : 'preparing', progress: 0, message: action === 'disconnect' ? 'Восстанавливаем настройки сети' : 'Подготавливаем подключение' });
     this.pending = Promise.resolve().then(() => this.deps.coordinate(action, operation)).catch(error => {
       const message = error instanceof Error ? error.message : String(error);
-      this.lastActionError = this.cancelled ? null : message;
-      this.publish({ phase: this.cancelled ? 'cancelled' : 'error', error: this.cancelled ? null : message, message, progress: 0 });
+      const cleanCancellation = this.cancelled && message === 'Подключение отменено';
+      this.lastActionError = cleanCancellation ? null : message;
+      this.publish({ phase: cleanCancellation ? 'cancelled' : 'error', error: cleanCancellation ? null : message, message, progress: 0 });
       return { ok: false, cancelled: this.cancelled, message };
     }).finally(() => {
       this.pending = null;
@@ -117,18 +156,26 @@ export class ShieldConnectionController {
       // owns the route lock. Repeating it here added two status calls and could
       // race with a freshly completed handoff.
       this.checkCancelled();
-      const before = await this.deps.zapret.status({ force: true });
       let dnsBefore = await this.deps.dns.status({ force: true });
-      let dnsPreparedForProbe = false;
-      if (dnsEnabled && dnsBefore.running === true && dnsBefore.verified !== true) {
-        if (typeof this.deps.dns?.stopAndRemove !== 'function') throw new Error(dnsBefore.lastError || 'DNS не прошёл проверку.');
-        dnsBefore = await this.prepareDnsForAutoSelect(dnsBefore);
-        dnsPreparedForProbe = true;
+      this.checkCancelled();
+      dnsBefore = await this.prepareDnsForAutoSelect(dnsBefore);
+      if (dnsEnabled && !(dnsBefore.running === true && dnsBefore.verified === true)) {
+        this.publish({ phase: 'dns', progress: 4, message: 'Подключаем постоянный зашифрованный DNS' });
+        this.requireSuccess(await this.deps.applyDns(), 'Не удалось подключить DNS.');
+        this.checkCancelled();
+        dnsBefore = await this.deps.dns.status({ force: true });
+        this.checkCancelled();
+        if (!dnsBefore || dnsBefore.running !== true || dnsBefore.verified !== true) {
+          throw new Error(dnsBefore?.lastError || 'DNS не прошёл проверку. Выбранная конфигурация сохранена.');
+        }
       }
+      // DNS setup and its intent survive every subsequent addon failure/cancel.
+      const before = await this.deps.zapret.status({ force: true });
+      this.checkCancelled();
       const telegramBefore = telegramEnabled && this.deps.telegramProxy ? await this.deps.telegramProxy.status({ force: true }) : null;
+      this.checkCancelled();
       if (telegramEnabled && this.deps.telegramProxy && !telegramBefore) throw new Error('Не удалось проверить состояние прокси Telegram.');
       let startedZapret = false;
-      let startedDns = false;
       let startedTg = false;
       try {
         let profile = before.serviceProfile || before.currentProfile;
@@ -139,7 +186,6 @@ export class ShieldConnectionController {
           if (!repaired?.serviceRunning || repaired.runtimeReady === false) throw new Error(repaired?.lastError || 'Рабочий процесс Zapret не подтвердил запуск.');
         }
         if (!before.serviceRunning) {
-          if (!dnsPreparedForProbe) dnsBefore = await this.prepareDnsForAutoSelect(dnsBefore);
           this.checkCancelled();
           this.publish({ phase: 'selecting', progress: 8, message: 'Проверяем стратегии подключения' });
           const result = await this.deps.zapret.autoSelectBestProfile(event => {
@@ -162,14 +208,6 @@ export class ShieldConnectionController {
           if (!status.serviceRunning || status.runtimeReady === false) throw new Error(status.lastError || 'Служба Zapret не подтвердила запуск.');
         }
         this.checkCancelled();
-        if (dnsEnabled && dnsBefore.running !== true) {
-          this.publish({ phase: 'dns', progress: 85, message: 'Подключаем зашифрованный DNS' });
-          startedDns = true;
-          this.requireSuccess(await this.deps.applyDns(), 'Не удалось подключить DNS.');
-          const status = await this.deps.dns.status({ force: true });
-          if (status.running !== true || status.verified !== true) throw new Error(status.lastError || 'DNS не прошёл проверку.');
-        }
-        this.checkCancelled();
         if (telegramEnabled && this.deps.telegramProxy) {
           this.publish({ phase: 'telegram', progress: 92, message: 'Запускаем прокси Telegram' });
           if (!telegramBefore.running && !telegramBefore.serviceRunning) {
@@ -188,16 +226,13 @@ export class ShieldConnectionController {
         }
         this.checkCancelled();
         await this.deps.saveConnected(profile);
+        this.checkCancelled();
         this.publish({ phase: 'connected', progress: 100, message: 'Защита и службы работают в фоне', error: null, profile });
         return { ok: true, profile };
       } catch (error) {
         const rollbackErrors = [];
         if (startedTg && this.deps.telegramProxy) {
           try { await this.stopTelegram(); } catch (e) { rollbackErrors.push(e.message); }
-        }
-        if (startedDns) {
-          try { this.requireSuccess(await this.deps.resetDns(), 'Не удалось восстановить DNS.'); }
-          catch (rollbackError) { rollbackErrors.push(rollbackError.message); }
         }
         if (startedZapret && rollbackErrors.length === 0) {
           try { this.requireSuccess(await this.deps.zapret.stopService(), 'Не удалось остановить службу.'); }
@@ -211,8 +246,7 @@ export class ShieldConnectionController {
 
   disconnect() {
     return this.run('disconnect', async () => {
-      this.requireSuccess(await this.deps.resetDns(), 'Не удалось восстановить DNS.');
-      this.publish({ phase: 'disconnecting', progress: 40, message: 'Останавливаем службы' });
+      this.publish({ phase: 'disconnecting', progress: 40, message: 'Останавливаем дополнения; DNS сохраняется' });
       if (this.deps.telegramProxy) {
         await this.stopTelegram();
       }
@@ -221,7 +255,7 @@ export class ShieldConnectionController {
       this.requireSuccess(await this.deps.zapret.stopService(), 'Не удалось остановить службу.');
       const status = await this.deps.zapret.status({ force: true });
       if (status.serviceRunning || status.standaloneRunning) throw new Error('Служба ещё работает. Повторите отключение.');
-      this.publish({ phase: 'idle', progress: 0, error: null, message: 'Подключение отключено' });
+      this.publish({ phase: 'idle', progress: 0, error: null, message: 'Профиль отключён; DNS работает независимо' });
       return { ok: true };
     });
   }

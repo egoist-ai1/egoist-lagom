@@ -119,6 +119,7 @@ export async function prepareComponents(out, version) {
       }
       await fs.copyFile('src/zapret/general (EGOIST MIX).bat', path.join(core, 'general (EGOIST MIX).bat'));
       await fs.copyFile('src/zapret/list-egoist-discord.txt', path.join(core, 'lists/list-egoist-discord.txt'));
+      await fs.copyFile('src/zapret/list-egoist-sites.txt', path.join(core, 'lists/list-egoist-sites.txt'));
     }
     await fs.writeFile(path.join(target,'VERSION.txt'), input.version + '\n');
   }

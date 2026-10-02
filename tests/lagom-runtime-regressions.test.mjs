@@ -85,16 +85,16 @@ test('Core mutation queue advances after a failed mutation', async () => {
   assert.equal(calls, 2);
 });
 
-test('Direct Zapret auto-select restores an unusable owned DNS resolver before probing', async () => {
+test('Direct Zapret auto-select preserves configured stopped DNS and healthy DNS without teardown', async () => {
   const { prepareZapretProbeDns } = loadRecovered('electron/ipc/handlers-zapret', {}, ['prepareZapretProbeDns']);
   const calls = [];
   let running = false;
   const dns = {
-    status: async () => ({ running, verified: running }),
+    status: async () => ({ running, serviceRunning: running, verified: running, enabled:true }),
     stopAndRemove: async () => { calls.push('restore'); running = false; return { ok: true }; }
   };
-  await prepareZapretProbeDns(dns);
-  assert.deepEqual(calls, ['restore']);
+  await assert.rejects(prepareZapretProbeDns(dns), /DNS/);
+  assert.deepEqual(calls, []);
   running = true;
   calls.length = 0;
   await prepareZapretProbeDns(dns);
@@ -106,13 +106,41 @@ const { coordinateShieldAction } = loadRecovered('electron/ipc/handlers-system',
 }, ['coordinateShieldAction']);
 
 test('Shield handoff waits for VPN owner and verifies stop before invoking the operation', async () => {
-  const manager=managerWith();
-  const events=[];
-  let running=true;
-  const result=await coordinateShieldAction('connect',async()=>{events.push('shield');return 7}, {
-    manager,supervisor:{cancel(){events.push('cancel')}},vpn:{status:async()=>({running}),disconnect:async()=>{assert.equal(manager.activeCoordinatedMutations.size,1);events.push('disconnect');running=false}}
+  const manager = managerWith();
+  const { VpnReconnectSupervisor } = loadRecovered('electron/ipc/vpn-reconnect-supervisor', {}, ['VpnReconnectSupervisor']);
+  const supervisor = new VpnReconnectSupervisor({});
+  const events = [];
+  const cancel = supervisor.cancel.bind(supervisor);
+  supervisor.cancel = reason => { events.push('cancel'); cancel(reason); };
+  let running = true, releaseOwner, enteredOwner;
+  const owned = new Promise(resolve => { enteredOwner = resolve; });
+  const owner = manager.runCoordinatedMutation({ module: 'vpn', action: 'reconnect', requiredLocks: ['traffic-route'] }, async () => {
+    enteredOwner(); await new Promise(resolve => { releaseOwner = resolve; });
   });
-  assert.equal(result,7);assert.deepEqual(events,['cancel','disconnect','shield']);
+  await owned;
+  const handoff = coordinateShieldAction('connect', async () => {
+    assert.equal(running, false, 'Shield work starts only after verified VPN stop');
+    assert.equal(supervisor.attemptInFlight, true, 'retry polling stays paused through handoff');
+    events.push('shield'); return 7;
+  }, { manager, supervisor, vpn: {
+    status: async () => ({ running }),
+    disconnect: async () => {
+      assert.equal(manager.activeCoordinatedMutations.size, 1);
+      assert.equal(supervisor.attemptInFlight, true);
+      events.push('disconnect'); running = false;
+    }
+  } });
+  try {
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(events, ['cancel'], 'an existing route owner is never evicted');
+    assert.equal(manager.activeCoordinatedMutations.size, 1);
+    assert.equal(supervisor.attemptInFlight, true);
+  } finally { releaseOwner(); await owner; }
+  assert.equal(await handoff, 7);
+  assert.deepEqual(events, ['cancel', 'disconnect', 'shield', 'cancel']);
+  assert.equal(supervisor.attemptInFlight, false, 'completed handoff releases its own manual pause');
+  assert.equal(supervisor.snapshot().armed, false);
+  assert.equal(manager.activeCoordinatedMutations.size, 0);
 });
 
 test('Shield handoff reports failed VPN stop and never runs the Shield mutation', async () => {

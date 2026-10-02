@@ -28,6 +28,8 @@ internal sealed class OwnedServiceSupervisor
     private readonly Func<bool> _networkAvailable;
     private readonly TimeSpan _bootGrace;
     private readonly Func<string, CancellationToken, Task>? _repairRecovery;
+    private readonly Func<CancellationToken, Task<bool>>? _dnsRecoveryPreflight;
+    private readonly Func<CancellationToken, IDisposable>? _recoveryMutationScope;
     private readonly ConcurrentDictionary<string, Observation> _observations = new(StringComparer.Ordinal);
 
     internal OwnedServiceSupervisor(OwnedServiceIntentStore intents,
@@ -37,7 +39,9 @@ internal sealed class OwnedServiceSupervisor
         Func<string, bool, CancellationToken, Task> recover,
         Func<string, Task> warn, Func<bool> networkAvailable,
         Func<TimeSpan>? elapsed = null, Func<DateTimeOffset>? utcNow = null, TimeSpan? bootGrace = null,
-        Func<string, CancellationToken, Task>? repairRecovery = null)
+        Func<string, CancellationToken, Task>? repairRecovery = null,
+        Func<CancellationToken, Task<bool>>? dnsRecoveryPreflight = null,
+        Func<CancellationToken, IDisposable>? recoveryMutationScope = null)
     {
         _intents = intents; _status = status; _assertOwned = assertOwned;
         _probe = probe; _recover = recover; _warn = warn;
@@ -47,6 +51,8 @@ internal sealed class OwnedServiceSupervisor
         _networkAvailable = networkAvailable;
         _bootGrace = bootGrace ?? TimeSpan.FromSeconds(60);
         _repairRecovery = repairRecovery;
+        _dnsRecoveryPreflight = dnsRecoveryPreflight;
+        _recoveryMutationScope = recoveryMutationScope;
     }
 
     internal object Describe() => new
@@ -70,6 +76,7 @@ internal sealed class OwnedServiceSupervisor
         {
             cancellationToken.ThrowIfCancellationRequested();
             var observation = _observations.GetValueOrDefault(name) ?? new Observation();
+            bool fastDns = name == "EgoistShieldSystemDoH";
             try
             {
                 var status = await _status(name, cancellationToken);
@@ -77,7 +84,7 @@ internal sealed class OwnedServiceSupervisor
                 if (!status.Installed || status.StartType != "auto" || status.State is not ("running" or "stopped"))
                 {
                     _observations[name] = observation with { Failures = 0, FailureSince = null,
-                        Result = status.State, IntendedRunning = intent?.Running == true };
+                        Result = status.State, IntendedRunning = intent?.Running == true, HealthySince = fastDns ? null : observation.HealthySince };
                     continue;
                 }
                 await _assertOwned(name, cancellationToken);
@@ -91,9 +98,10 @@ internal sealed class OwnedServiceSupervisor
                 if (intent?.Running != true)
                 {
                     _observations[name] = observation with { Failures = 0, FailureSince = null,
-                        Result = "intentionally-off", IntendedRunning = false };
+                        Result = "intentionally-off", IntendedRunning = false, HealthySince = fastDns ? null : observation.HealthySince };
                     continue;
                 }
+                if (fastDns) observation = observation with { Attempts = intent.DnsRecoveryAttempts };
                 if (!observation.RecoveryPolicyVerified && _repairRecovery != null)
                 {
                     observation = observation with { IntendedRunning = true };
@@ -123,8 +131,11 @@ internal sealed class OwnedServiceSupervisor
                 {
                     TimeSpan healthySince = observation.HealthySince ?? now;
                     bool stable = now - healthySince >= TimeSpan.FromMinutes(10);
+                    if (stable && fastDns && intent.DnsRecoveryAttempts > 0)
+                        stable = await _intents.ResetSystemDohRecoveryAttemptsAsync(intent, cancellationToken);
                     _observations[name] = observation with { Failures = 0, FailureSince = null,
-                        Attempts = stable ? 0 : observation.Attempts, HealthySince = healthySince,
+                        Attempts = stable ? 0 : observation.Attempts, NextAttempt = stable ? default : observation.NextAttempt,
+                        HealthySince = healthySince,
                         Result = health == LocalServiceHealth.ScmOnly ? "scm-running" : "local-responsive", IntendedRunning = true };
                     continue;
                 }
@@ -138,11 +149,12 @@ internal sealed class OwnedServiceSupervisor
                     FailureSince = observation.FailureSince ?? now, HealthySince = null,
                     Result = status.State == "stopped" ? "unexpectedly-stopped" : "local-unresponsive", IntendedRunning = true };
                 _observations[name] = observation;
-                // Three observations spanning at least 30 seconds distinguish a
-                // transient startup/network event from a persistent local failure.
+                // DNS gets two independent current local/provider comparisons.
+                // Addons keep their original three-observation policy.
                 TimeSpan? recoveryAge = intent.LastRecoveryAt.HasValue ? _utcNow() - intent.LastRecoveryAt.Value : null;
-                bool recentlyRecovered = recoveryAge >= TimeSpan.Zero && recoveryAge < TimeSpan.FromMinutes(5);
-                if (observation.Failures < 3 || now - observation.FailureSince < TimeSpan.FromSeconds(30) ||
+                TimeSpan recoveryDelay = fastDns ? OwnedServiceIntentStore.SystemDohRecoveryDelay(intent.DnsRecoveryAttempts) : TimeSpan.FromMinutes(5);
+                bool recentlyRecovered = recoveryAge >= TimeSpan.Zero && recoveryAge < recoveryDelay;
+                if (observation.Failures < (fastDns ? 2 : 3) || now - observation.FailureSince < TimeSpan.FromSeconds(fastDns ? 10 : 30) ||
                     now < observation.NextAttempt || recentlyRecovered) continue;
 
                 // Read intent/state again after probing. An external Disabled
@@ -152,7 +164,8 @@ internal sealed class OwnedServiceSupervisor
                 if (!latest.Services.TryGetValue(name, out var stillWanted) || !stillWanted.Running ||
                     !status.Installed || status.StartType != "auto" || status.State is not ("running" or "stopped")) continue;
                 await _assertOwned(name, cancellationToken);
-                var latestHealth = ownsTcpEndpoint ? await _probe(name, cancellationToken) : LocalServiceHealth.Unresponsive;
+                bool requiresFinalProbe = ownsTcpEndpoint || name == "EgoistShieldSystemDoH" && status.State == "running";
+                var latestHealth = requiresFinalProbe ? await _probe(name, cancellationToken) : LocalServiceHealth.Unresponsive;
                 if (latestHealth != LocalServiceHealth.Unresponsive)
                 {
                     _observations[name] = observation with { Failures = 0, FailureSince = null,
@@ -161,14 +174,73 @@ internal sealed class OwnedServiceSupervisor
                             latestHealth == LocalServiceHealth.Responsive ? "local-responsive" : "probe-unavailable" };
                     continue;
                 }
-                int attempts = Math.Min(observation.Attempts + 1, 16);
-                TimeSpan backoff = TimeSpan.FromMinutes(Math.Min(30, 5 * Math.Pow(2, Math.Min(attempts - 1, 3))));
+                if (name == "EgoistShieldSystemDoH" && status.State == "running")
+                {
+                    // The real local/upstream comparison has a bounded network
+                    // deadline. Stop/Disabled or a newer recovery during that
+                    // final probe still wins over the impending mutation.
+                    latest = await _intents.ReadAsync(cancellationToken);
+                    status = await _status(name, cancellationToken);
+                    if (!latest.Services.TryGetValue(name, out stillWanted) || !stillWanted.Running ||
+                        !status.Installed || status.StartType != "auto" || status.State is not ("running" or "stopped")) continue;
+                    recoveryAge = stillWanted.LastRecoveryAt.HasValue ? _utcNow() - stillWanted.LastRecoveryAt.Value : null;
+                    if (recoveryAge >= TimeSpan.Zero && recoveryAge < OwnedServiceIntentStore.SystemDohRecoveryDelay(stillWanted.DnsRecoveryAttempts)) continue;
+                    await _assertOwned(name, cancellationToken);
+                }
+                if (fastDns && status.State == "running" && _dnsRecoveryPreflight != null)
+                {
+                    // Preserve the live resolver and its same-operator cache if
+                    // a fresh Xray cannot yet use this exact saved provider.
+                    if (!await _dnsRecoveryPreflight(cancellationToken))
+                    {
+                        _observations[name] = observation with { NextAttempt = _elapsed() + TimeSpan.FromSeconds(60),
+                            Result = "replacement-not-ready", HealthySince = null };
+                        if (observation.LastWarning == null || now - observation.LastWarning >= TimeSpan.FromMinutes(5))
+                        {
+                            await _warn("System DoH replacement preflight is not ready; the current resolver and cache are retained.");
+                            _observations[name] = _observations[name] with { LastWarning = now };
+                        }
+                        continue;
+                    }
+                    // Candidate readiness cannot override a Stop/Disabled, a
+                    // changed intent or an old resolver which has now recovered.
+                    var expected = stillWanted;
+                    latest = await _intents.ReadAsync(cancellationToken);
+                    status = await _status(name, cancellationToken);
+                    if (!latest.Services.TryGetValue(name, out stillWanted) || stillWanted != expected || !stillWanted.Running ||
+                        !status.Installed || status.StartType != "auto" || status.State != "running") continue;
+                    await _assertOwned(name, cancellationToken);
+                    latest = await _intents.ReadAsync(cancellationToken);
+                    status = await _status(name, cancellationToken);
+                    if (!latest.Services.TryGetValue(name, out stillWanted) || stillWanted != expected || !stillWanted.Running ||
+                        !status.Installed || status.StartType != "auto" || status.State != "running") continue;
+                    await _assertOwned(name, cancellationToken);
+                }
+                // A network transition during final probing/readback must not
+                // restart a service or consume its durable recovery interval.
+                if (!_networkAvailable())
+                {
+                    _observations[name] = observation with { Failures = 0, FailureSince = null, HealthySince = null,
+                        Result = "network-offline", IntendedRunning = true };
+                    continue;
+                }
+                int attempts = Math.Min((fastDns ? stillWanted.DnsRecoveryAttempts : observation.Attempts) + 1, fastDns ? 32 : 16);
+                TimeSpan backoff = fastDns ? OwnedServiceIntentStore.SystemDohRecoveryDelay(attempts) :
+                    TimeSpan.FromMinutes(Math.Min(30, 5 * Math.Pow(2, Math.Min(attempts - 1, 3))));
+                // Commit the DNS count, timestamp and expected generation as one
+                // durable CAS before recovery. A Core crash cannot reset storms.
+                // Foreground can cancel probes, but must not interrupt a committed
+                // native stop/start half-way and strand an otherwise wanted DNS.
+                cancellationToken.ThrowIfCancellationRequested();
+                using var recoveryMutation = _recoveryMutationScope?.Invoke(cancellationToken);
+                if (fastDns)
+                {
+                    if (!await _intents.TryMarkSystemDohRecoveryAsync(stillWanted, _utcNow(), cancellationToken)) continue;
+                }
+                else await _intents.MarkRecoveryAsync(name, _utcNow(), cancellationToken);
                 observation = observation with { Attempts = attempts, NextAttempt = now + backoff,
                     Failures = 0, FailureSince = null, Result = "recovering" };
                 _observations[name] = observation;
-                // Commit the attempt before starting it; a Core process crash
-                // cannot reset the minimum five-minute restart interval.
-                await _intents.MarkRecoveryAsync(name, _utcNow(), cancellationToken);
                 await _warn("Owned service " + name + " has a persistent " + (status.State == "running" ? "local-listener failure" : "stopped state") + "; attempting recovery.");
                 await _recover(name, status.State == "running", cancellationToken);
                 _observations[name] = observation with { Result = "recovery-started" };
@@ -177,6 +249,7 @@ internal sealed class OwnedServiceSupervisor
             catch (Exception error)
             {
                 observation = _observations.GetValueOrDefault(name) ?? observation;
+                if (fastDns) observation = observation with { Failures = 0, FailureSince = null, HealthySince = null };
                 if (observation.LastWarning == null || now - observation.LastWarning >= TimeSpan.FromMinutes(5))
                 {
                     await _warn("Owned service supervision of " + name + " deferred: " + error.Message);
@@ -188,3 +261,5 @@ internal sealed class OwnedServiceSupervisor
         }
     }
 }
+
+

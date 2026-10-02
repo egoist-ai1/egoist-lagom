@@ -15,6 +15,7 @@ foreach ($name in @('Reconcile-PreservedZapretProfile','Restore-CriticalOwnedDns
 function Require([bool]$Value,[string]$Message) { if(-not $Value){throw $Message} }
 function Invoke-InstallerSc {throw 'Forbidden SCM mutation.'}
 function reg.exe {throw 'Forbidden registry mutation.'}
+function Add-ReceiptEvent {param($Stage,$Status,$Message)$script:lastReceiptStatus=$Status}
 $script:StageDirectory=Join-Path $root 's'
 $script:RuntimeRoot=Join-Path $root 'r'
 $script:profileRoot=Join-Path $root 'p'
@@ -61,6 +62,10 @@ Restore-CriticalOwnedDnsBaseline $state
 Require ($script:dnsWrites -eq 2 -and $script:cacheClears -eq 1 -and ($script:dnsRows[0].ServerAddresses -join ',') -eq '192.0.2.53' -and ($script:dnsRows[1].ServerAddresses -join ',') -eq '2001:db8::53') 'Production DNS baseline did not restore and read back both address families on the matching adapter.'
 Write-Output 'PASS: actual baseline recovery selects the GUID-matched adapter and verifies IPv4/IPv6 results'
 Restore-CriticalAdapterDns $state
-Require ($script:dnsWrites -eq 3 -and ($script:dnsRows[0].ServerAddresses -join ',') -eq '127.0.0.1' -and ($script:dnsRows[1].ServerAddresses -join ',') -eq '::1') 'Production critical DNS recovery targeted the wrong adapter or failed readback.'
-Write-Output 'PASS: actual critical resolver recovery targets only the matching active adapter'
-Write-Output 'Installer worker restoration: 3 groups passed; live SCM/registry/network/DNS writes 0; real isolated profile files and controlled adapters.'
+Require ($script:dnsWrites -eq 2 -and ($script:dnsRows[0].ServerAddresses -join ',') -eq '192.0.2.53' -and ($script:dnsRows[1].ServerAddresses -join ',') -eq '2001:db8::53' -and $script:lastReceiptStatus -eq 'adapter-dns-external-preserved') 'Automatic installer recovery overwrote externally changed adapter DNS.'
+Write-Output 'PASS: actual automatic resolver recovery preserves changed VPN/user DNS'
+$script:dnsRows[0].ServerAddresses=@('127.0.0.1');$script:dnsRows[1].ServerAddresses=@('::1')
+Restore-CriticalAdapterDns $state
+Require ($script:dnsWrites -eq 2 -and ($script:dnsRows[0].ServerAddresses -join ',') -eq '127.0.0.1' -and ($script:dnsRows[1].ServerAddresses -join ',') -eq '::1') 'Owned unchanged loopback readback caused a redundant DNS write.'
+Write-Output 'PASS: unchanged owned DNS passes readback without a write racing external processes'
+Write-Output 'Installer worker restoration: 4 groups passed; live SCM/registry/network/DNS writes 0; real isolated profile files and controlled adapters.'

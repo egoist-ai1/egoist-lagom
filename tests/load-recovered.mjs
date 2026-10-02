@@ -6,6 +6,10 @@ export function officialBaselineAvailable() {
 }
 
 export function sourceFor(name) {
+  if (process.env.LAGOM_COMPAT_RECOVERED_MAP) {
+    const selected = JSON.parse(fs.readFileSync(process.env.LAGOM_COMPAT_RECOVERED_MAP, 'utf8'))[name];
+    if (selected) return fs.readFileSync(selected, 'utf8');
+  }
   if (!process.env.SHIELD_BASELINE) return fs.readFileSync(`src/recovered/${name}.js`, 'utf8');
   // The private baseline is intentionally absent from the public checkout. Keep
   // baseline-mode tests runnable there by falling back to the maintained source
@@ -28,3 +32,4 @@ export function loadRecovered(name, bindings, exports) {
   vm.runInContext(`${sourceFor(name)}\n;globalThis.__exports = { ${exports.join(',')} };`, context);
   return context.__exports;
 }
+

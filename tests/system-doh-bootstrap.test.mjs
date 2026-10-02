@@ -16,7 +16,8 @@ test('DoH bootstrap uses pinned addresses without returning to the OS resolver o
   ]);
   assert.equal(config.dns.disableFallback,true);
   assert.equal(config.dns.enableParallelQuery,false);
-  assert.equal(config.dns.serveStale,false);
+  assert.equal(config.dns.serveStale,true);
+  assert.equal(config.dns.serveExpiredTTL,120);
   assert.equal(config.log.loglevel,'warning');
   assert.deepEqual(config.dns.hosts['resolver.example'],['192.0.2.1']);
   assert.deepEqual(config.dns.hosts['health.egoist.invalid'],['127.0.0.1']);
@@ -28,4 +29,20 @@ test('DoH bootstrap uses pinned addresses without returning to the OS resolver o
   assert.equal(outbound?.settings.domainStrategy,'ForceIPv4');
   assert.notEqual(config.dns.tag,'dns-in');
   assert.equal(config.routing.rules.find(rule=>rule.inboundTag.includes('dns-in')).outboundTag,'dns-out');
+});
+test('same-operator DNS cache continuity has a finite two-minute expiry grace',()=>{
+  for(const options of [
+    {url:'https://resolver.example:8443/profile?token=test',bootstrapHosts:{'resolver.example':['192.0.2.1']}},
+    {url:'https://dns.google/dns-query'},
+    {url:'https://192.0.2.53/dns-query'},
+  ]){
+    const config=JSON.parse(buildSystemDohXrayConfig({...options,localAddress:'127.0.0.1'}));
+    assert.equal(config.dns.disableCache,false);
+    assert.equal(config.dns.serveStale,true);
+    assert.equal(config.dns.serveExpiredTTL,120);
+    assert.ok(Number.isInteger(config.dns.serveExpiredTTL)&&config.dns.serveExpiredTTL>0&&config.dns.serveExpiredTTL<=120,'zero would enable unbounded stale answers');
+    assert.deepEqual(config.dns.servers.map(server=>server.address),[options.url]);
+    assert.equal(config.dns.disableFallback,true);
+    assert.equal(config.dns.enableParallelQuery,false);
+  }
 });

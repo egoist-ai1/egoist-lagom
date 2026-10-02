@@ -43,6 +43,7 @@ internal sealed class OperationDispatcher : IDisposable
 	private readonly string _dnsOwnedStatePath;
 
 	private readonly SemaphoreSlim _mutationLock = new SemaphoreSlim(1, 1);
+	private readonly BackgroundSupervisionCancellation _backgroundSupervision = new();
 
 	private readonly ConcurrentDictionary<string, CachedResponse> _responses = new ConcurrentDictionary<string, CachedResponse>(StringComparer.Ordinal);
 
@@ -51,6 +52,8 @@ internal sealed class OperationDispatcher : IDisposable
 	private long _sequence;
 	private readonly Lazy<ComponentWorker> _componentWorker;
 	private readonly Func<JsonElement, bool, CancellationToken, Task<JsonElement>> _executeComponent;
+	private readonly Func<CancellationToken, Task<OwnedServiceStatus>>? _componentSystemDohStop;
+	private readonly Func<CancellationToken, Task>? _componentSystemDohRepairRecovery;
 	private readonly OwnedServiceIntentStore _serviceIntents;
 	private readonly InstallerServiceMaintenance _installerMaintenance;
 	private readonly OwnedServiceSupervisor? _serviceSupervisor;
@@ -70,7 +73,7 @@ internal sealed class OperationDispatcher : IDisposable
 
 	public OperationDispatcher(ServiceOptions options, WindowsDnsController dns, WindowsNativeDohController nativeDoh, OwnedServiceController? services, TransactionJournal journal, ServiceLog log,
 		Func<JsonElement, bool, CancellationToken, Task<JsonElement>>? componentExecutor = null, StateReadException? startupStateError = null,
-		TimeSpan? nativeDohQueryTimeout = null)
+		TimeSpan? nativeDohQueryTimeout = null, Func<CancellationToken, Task<OwnedServiceStatus>>? systemDohStop = null, Func<CancellationToken, Task>? systemDohRepairRecovery = null)
 	{
 		_nativeDohQueryTimeout = nativeDohQueryTimeout ?? NativeDohQueryTimeout;
 		if (_nativeDohQueryTimeout <= TimeSpan.Zero || _nativeDohQueryTimeout > NativeDohQueryTimeout)
@@ -85,6 +88,8 @@ internal sealed class OperationDispatcher : IDisposable
 		_dnsOwnedStatePath = Path.Combine(options.StateRoot, "dns-owned-state.json");
 		_componentWorker = new Lazy<ComponentWorker>(() => new ComponentWorker(options.InstallRoot ?? throw new InvalidOperationException("Component operations require an installed product.")));
 		_executeComponent = componentExecutor ?? ((payload, query, token) => _componentWorker.Value.ExecuteAsync(payload, query, token));
+		_componentSystemDohStop = systemDohStop ?? (services == null ? null : token => services.StopAsync("EgoistShieldSystemDoH", token));
+		_componentSystemDohRepairRecovery = systemDohRepairRecovery ?? (services == null ? null : token => services.RepairRecoveryAsync("EgoistShieldSystemDoH", token));
 		_serviceIntents = new OwnedServiceIntentStore(options.StateRoot);
 		_installerMaintenance = new InstallerServiceMaintenance(options.StateRoot);
 		_bootstrapRefresh = new DnsBootstrapRefreshScheduler(options.StateRoot);
@@ -99,7 +104,9 @@ internal sealed class OperationDispatcher : IDisposable
 					if (running) await services.StopAsync(name, token);
 					await services.StartAsync(name, token);
 				}, message => _log.WarnAsync(message), NetworkInterface.GetIsNetworkAvailable,
-				repairRecovery: services.RepairRecoveryAsync);
+				repairRecovery: services.RepairRecoveryAsync,
+                dnsRecoveryPreflight: token => SystemDohRecoveryPreflight.ProbeOwnedAsync(ProtectedProductRoot.Resolve(options.StateRoot), token),
+                recoveryMutationScope: token => _backgroundSupervision.PausePreemption(token));
 			NetworkChange.NetworkAddressChanged += OnNetworkAddressChanged;
 		}
 	}
@@ -107,34 +114,39 @@ internal sealed class OperationDispatcher : IDisposable
 	internal async Task RunSupervisionAsync(CancellationToken cancellationToken)
 	{
 		if (_serviceSupervisor == null) return;
-		using var timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
+		using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
 		DateTimeOffset? lastWarning = null;
 		while (await timer.WaitForNextTickAsync(cancellationToken))
 		{
 			if (!await _mutationLock.WaitAsync(0, cancellationToken)) continue;
+			var background = _backgroundSupervision.TryBegin(cancellationToken);
+			if (background == null) { _mutationLock.Release(); continue; }
+			var backgroundToken = background.Token;
 			try
 			{
 				if (_installerMaintenance.IsActive() || _startupStateError != null) continue;
 				// A crash marker is recovered by the transaction path, never bypassed
 				// by an independent health repair during partial network mutation.
-				if ((await _journal.ReadActiveResultAsync(cancellationToken)).Kind != AtomicJsonReadKind.Missing) continue;
-				await _journal.ReadResponsesAsync(cancellationToken);
-				if ((await ReconcileCompletedOperationIntentsAsync(cancellationToken)).Count != 0) continue;
+				if ((await _journal.ReadActiveResultAsync(backgroundToken)).Kind != AtomicJsonReadKind.Missing) continue;
+				await _journal.ReadResponsesAsync(backgroundToken);
+				if ((await ReconcileCompletedOperationIntentsAsync(backgroundToken)).Count != 0) continue;
 				TimeSpan now = _maintenanceClock.Elapsed;
-				await MaintainOwnedWrapperLogsAsync(now, cancellationToken);
-				await _serviceSupervisor.CheckAsync(cancellationToken);
-				if (now >= TimeSpan.FromSeconds(60)) await RefreshOwnedDnsBootstrapAsync(cancellationToken);
+                await MaintainOwnedWrapperLogsAsync(now, cancellationToken);
+				await _serviceSupervisor.CheckAsync(backgroundToken);
+                backgroundToken.ThrowIfCancellationRequested();
+                if (now >= TimeSpan.FromSeconds(60)) await RefreshOwnedDnsBootstrapAsync(cancellationToken);
 				if (now >= TimeSpan.FromSeconds(60) && now >= _nextDnsMaintenance &&
 					(Volatile.Read(ref _dnsMaintenanceRequested) != 0 || now >= _nextDnsAudit))
 				{
 					_nextDnsMaintenance = now + TimeSpan.FromMinutes(1);
 					_nextDnsAudit = now + TimeSpan.FromMinutes(10);
 					Interlocked.Exchange(ref _dnsMaintenanceRequested, 0);
-					try { await MaintainOwnedDnsAsync(cancellationToken); }
+                    try { await MaintainOwnedDnsAsync(cancellationToken); }
 					catch { Interlocked.Exchange(ref _dnsMaintenanceRequested, 1); throw; }
 				}
 			}
 			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+			catch (OperationCanceledException) when (background.IsCancellationRequested) { }
 			catch (Exception error)
 			{
 				if (lastWarning == null || DateTimeOffset.UtcNow - lastWarning >= TimeSpan.FromMinutes(5))
@@ -143,7 +155,7 @@ internal sealed class OperationDispatcher : IDisposable
 					lastWarning = DateTimeOffset.UtcNow;
 				}
 			}
-			finally { _mutationLock.Release(); }
+			finally { _backgroundSupervision.End(background); _mutationLock.Release(); }
 		}
 	}
 
@@ -290,32 +302,24 @@ internal sealed class OperationDispatcher : IDisposable
 		if (serviceName == "EgoistShieldZapret") return LocalServiceHealth.ScmOnly;
 		if (serviceName == "EgoistShieldVpn")
 			return await VpnServiceHealthProbe.ProbeAsync(ProtectedProductRoot.Resolve(_options.StateRoot), RequireServiceController(), cancellationToken);
-		string component = serviceName == "EgoistShieldSystemDoH" ? "SystemDoH" : "TelegramProxy";
 		string productRoot = ProtectedProductRoot.Resolve(_options.StateRoot);
-		string file = Path.Combine(productRoot, "Runtime", component,
-			component == "SystemDoH" ? "state.json" : "config.json");
+		if (serviceName == "EgoistShieldSystemDoH")
+		{
+			// Entirely in Core: the Node worker may be waiting for this mutation
+			// slot and cannot safely perform the supervisor's read-only probe.
+			await RequireServiceController().AssertOwnedImagePathAsync(serviceName, cancellationToken);
+			var health = await SystemDohServiceHealthProbe.ProbeOwnedAsync(productRoot, cancellationToken);
+			await RequireServiceController().AssertOwnedImagePathAsync(serviceName, cancellationToken);
+			return health;
+		}
+		string file = Path.Combine(productRoot, "Runtime", "TelegramProxy", "config.json");
 		if (!File.Exists(file)) return LocalServiceHealth.Unknown;
 		TrustedPath.AssertPathUnderRoot(file, productRoot, requireLeaf: true);
 		var config = await AtomicJsonFile.ReadAsync<JsonElement>(file, cancellationToken);
-		string hostKey = component == "SystemDoH" ? "localAddress" : "host";
-		string portKey = component == "SystemDoH" ? "localPort" : "port";
-		if (config.ValueKind != JsonValueKind.Object || !config.TryGetProperty(hostKey, out var host) ||
+		if (config.ValueKind != JsonValueKind.Object || !config.TryGetProperty("host", out var host) ||
 			!IPAddress.TryParse(host.GetString(), out var address) || !IPAddress.IsLoopback(address) ||
-			!config.TryGetProperty(portKey, out var portValue) || !portValue.TryGetInt32(out int port) || port < 1 || port > 65535)
+			!config.TryGetProperty("port", out var portValue) || !portValue.TryGetInt32(out int port) || port < 1 || port > 65535)
 			return LocalServiceHealth.Unknown;
-		if (component == "SystemDoH")
-		{
-			string runtimeConfigPath = Path.Combine(productRoot, "Runtime", component, "config.json");
-			TrustedPath.AssertPathUnderRoot(runtimeConfigPath, productRoot, requireLeaf: true);
-			var runtimeConfig = await AtomicJsonFile.ReadAsync<JsonElement>(runtimeConfigPath, cancellationToken);
-			if (runtimeConfig.ValueKind != JsonValueKind.Object || !runtimeConfig.TryGetProperty("dns", out var dns) ||
-				!dns.TryGetProperty("hosts", out var hosts) || !hosts.TryGetProperty("health.egoist.invalid", out var healthHost) ||
-				!(healthHost.ValueKind == JsonValueKind.String && healthHost.GetString() == "127.0.0.1" ||
-					healthHost.ValueKind == JsonValueKind.Array && healthHost.EnumerateArray().Any(value => value.ValueKind == JsonValueKind.String && value.GetString() == "127.0.0.1")))
-				return LocalServiceHealth.Unknown;
-		}
-		if (component == "SystemDoH")
-			return await LocalServiceHealthProbe.DnsAsync(address, port, TimeSpan.FromSeconds(3), cancellationToken);
 		_telegramListenerSnapshot ??= new WindowsServiceListenerSnapshot(serviceName);
 		return await OwnedTcpListenerProbe.ProbeSnapshotAsync(RequireServiceController().ReadOwnedExecutablePath(serviceName, cancellationToken),
 			address, port, TimeSpan.FromSeconds(8), token => _telegramListenerSnapshot.ReadAsync(port, token), cancellationToken);
@@ -342,7 +346,29 @@ internal sealed class OperationDispatcher : IDisposable
 				method == "prepareForVpn" && args.ValueKind == JsonValueKind.Array && args.GetArrayLength() > 0 && args[0].ValueKind == JsonValueKind.True) ||
 			component == "SystemDoH" && method == "recover" && args.ValueKind == JsonValueKind.Array && args.GetArrayLength() > 0 &&
 				args[0].ValueKind == JsonValueKind.Object && args[0].TryGetProperty("enabled", out var enabled) && enabled.ValueKind == JsonValueKind.False);
+		// The GUI façade restores owned adapters before requesting off. A direct
+		// trusted component caller must satisfy that same prerequisite; pending
+		// adapter ownership must keep the resolver and its saved state available.
+		bool fixedDohStop = !query && component == "SystemDoH" && (method is "restart" or "stop" or "stopAndRemove" && args.ValueKind == JsonValueKind.Array && args.GetArrayLength() == 0 ||
+			method == "recover" && args.ValueKind == JsonValueKind.Array && args.GetArrayLength() == 1 &&
+			args[0].ValueKind == JsonValueKind.Object && args[0].TryGetProperty("enabled", out var offEnabled) && offEnabled.ValueKind == JsonValueKind.False);
+		if (fixedDohStop && off && await ReadDnsOwnedStateAsync(cancellationToken) != null)
+			throw new ServiceOperationException("DNS_RESTORE_REQUIRED", "Owned adapter DNS must be restored before stopping its local resolver; saved state and service are preserved.");
 		if (off && serviceName.Length > 0) await _serviceIntents.SetRunningAsync(serviceName, false, cancellationToken);
+		if (fixedDohStop && _componentSystemDohStop != null)
+		{
+			if (method == "restart") await _serviceIntents.SetRunningAsync(serviceName, true, cancellationToken);
+			// The installed worker has no Core client. Perform the fixed native stop
+			// here, inside the existing mutation slot, before delegating to Node.
+			// No recursive pipe request or arbitrary process target is introduced.
+			var stopped = await _componentSystemDohStop(cancellationToken);
+			if (stopped.ServiceName != "EgoistShieldSystemDoH" || stopped.Installed && stopped.State != "stopped")
+				throw new ServiceOperationException("SYSTEM_DOH_STOP_UNCONFIRMED", "Core could not confirm its owned DNS stopped; the worker was not dispatched.");
+			// Explicit restart repairs SCM policy before the worker starts it, including
+			// recovery suppression left by an interrupted Core forced stop.
+			if (method == "restart" && stopped.Installed && _componentSystemDohRepairRecovery != null)
+				await _componentSystemDohRepairRecovery(cancellationToken);
+		}
 		// The VPN runtime verifies explicit saved start intent before SCM launches it.
 		bool vpnStart = !query && component == "Vpn" && (method is "installService" or "startService");
 		OwnedServiceIntent? previousVpnIntent = null;
@@ -401,13 +427,50 @@ internal sealed class OperationDispatcher : IDisposable
 
 	private async Task<ServiceResponse> DispatchRequestAsync(ServiceRequest request, ClientIdentity identity, bool offlineDnsRestore, CancellationToken cancellationToken)
 	{
-		try { return await DispatchRequestCoreAsync(request, identity, offlineDnsRestore, cancellationToken); }
+		bool mutation = MutationOperations.Contains(request.Operation);
+		using var diagnosticScope = _log.BeginScope(new
+		{
+			actor = identity.IdentityProbe ? "identity-probe" : offlineDnsRestore ? "offline-installer" : identity.DevelopmentOverride ? "development-client" : "authenticated-gui",
+			clientPid = identity.ProcessId, clientImage = Path.GetFileName(identity.ExecutablePath), actorSid = identity.UserSid,
+			requestIdHash = ServiceDiagnosticRedaction.Correlation(request.RequestId), operation = request.Operation,
+			component = DiagnosticName(request.Payload, "component"), method = DiagnosticName(request.Payload, "method")
+		});
+		var elapsed = Stopwatch.StartNew();
+		if (mutation) await LogRequestEventAsync("INFO", "request.started", new { mutation });
+		ServiceResponse response;
+		try { response = await DispatchRequestCoreAsync(request, identity, offlineDnsRestore, cancellationToken); }
 		catch (StateReadException error)
 		{
-			return ServiceResponse.Failure(request.RequestId, Interlocked.Increment(ref _sequence),
+			response = ServiceResponse.Failure(request.RequestId, Interlocked.Increment(ref _sequence),
 				error.Kind == AtomicJsonReadKind.Corrupt ? "STATE_CORRUPT" : "STATE_UNAVAILABLE", error.Message,
 				retryable: error.Kind == AtomicJsonReadKind.Unavailable);
 		}
+		catch (Exception error)
+		{
+			await LogRequestEventAsync("WARN", "request.failed", new { mutation, elapsedMs = elapsed.ElapsedMilliseconds }, error);
+			throw;
+		}
+		if (mutation || !response.Ok)
+			await LogRequestEventAsync(response.Ok ? "INFO" : "WARN", "request.completed", new
+			{
+				mutation, ok = response.Ok, code = response.Error?.Code, message = response.Error?.Message, retryable = response.Error?.Retryable,
+				response.Sequence, elapsedMs = elapsed.ElapsedMilliseconds
+			});
+		return response;
+	}
+
+	private static string? DiagnosticName(JsonElement payload, string name) => payload.ValueKind == JsonValueKind.Object &&
+		payload.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.GetString() is { Length: <= 160 } text
+		? text : null;
+
+	private async Task LogRequestEventAsync(string level, string stage, object fields, Exception? error = null)
+	{
+		// Telemetry does not change request authority, cancellation or its durable
+		// outcome. A slow or unavailable disk must not block DNS recovery.
+		using var deadline = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
+		try { await _log.EventAsync(level, stage, fields, error, deadline.Token); }
+		catch (Exception diagnosticError) when (diagnosticError is IOException or UnauthorizedAccessException or
+			OperationCanceledException or InvalidOperationException or System.Security.SecurityException) { }
 	}
 
 	private async Task<ServiceResponse> DispatchRequestCoreAsync(ServiceRequest request, ClientIdentity identity, bool offlineDnsRestore, CancellationToken cancellationToken)
@@ -566,6 +629,8 @@ internal sealed class OperationDispatcher : IDisposable
 
 	private async Task<ServiceResponse> DispatchMutationAsync(ServiceRequest request, ClientIdentity identity, long sequence, string fingerprint, bool offlineDnsRestore, CancellationToken cancellationToken)
 	{
+		using var foreground = ForegroundMutationPreemption.IsValid(request, identity, _options)
+			? _backgroundSupervision.EnterForeground() : null;
 		bool isRepair = request.Operation == "network.repair-owned";
 		TimeSpan lockTimeout = isRepair ? TimeSpan.FromSeconds(3) : ServiceContract.MutationLockTimeout;
 		if (!(await _mutationLock.WaitAsync(lockTimeout, cancellationToken)))
@@ -1942,3 +2007,4 @@ internal sealed class OperationDispatcher : IDisposable
 		}
 	}
 }
+

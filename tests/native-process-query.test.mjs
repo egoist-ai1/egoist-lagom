@@ -158,7 +158,7 @@ test('actual Windows native CLI/API probe uses only own harmless child and ephem
   const work = await fs.mkdtemp(path.join(base, 'native-query-'));
   const localSdk = path.resolve('.tools/dotnet-10.0.401/dotnet.exe');
   const dotnet = process.env.SHIELD_DOTNET || (process.env.DOTNET_INSTALL_DIR && path.join(process.env.DOTNET_INSTALL_DIR, 'dotnet.exe')) || (await fs.stat(localSdk).then(() => true, () => false) ? localSdk : 'dotnet');
-  const env = { ...process.env, LAGOM_NATIVE_QUERY_TEST_ROOT: path.join(work, 'fixture'), DOTNET_CLI_HOME: path.join(work, 'dotnet-home'), NUGET_PACKAGES: path.join(work, 'n'), TEMP: work, TMP: work,
+  const env = { ...process.env, LAGOM_NATIVE_QUERY_TEST_ROOT: path.join(work, 'fixture'), DOTNET_CLI_HOME: path.join(work, 'dotnet-home'), NUGET_PACKAGES: process.env.LAGOM_NATIVE_NUGET_ROOT || path.join(work, 'n'), TEMP: work, TMP: work,
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1', DOTNET_GENERATE_ASPNET_CERTIFICATE: 'false', DOTNET_CLI_TELEMETRY_OPTOUT: '1', DOTNET_NOLOGO: '1' };
   if (path.isAbsolute(dotnet)) { env.DOTNET_ROOT = path.dirname(dotnet); env.DOTNET_ROOT_X64 = path.dirname(dotnet); }
   const run = promisify(execFile);

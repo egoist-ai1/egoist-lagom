@@ -13,16 +13,18 @@
 * через util.inspect с полными стеками и абсолютными путями пользователя.
 */
 function redactLogValue(value, depth = 0, ancestors = new WeakSet()) {
-	if (typeof value === "string") return redactDiagnosticText(value);
-	if (value instanceof Error) return redactDiagnosticText(`${value.name}: ${value.message}${value.stack ? `\n${value.stack}` : ""}`);
+	if (typeof value === "string") return redactDiagnosticText(value).slice(0, 16384);
 	if (value === null || typeof value !== "object") return value;
 	if (depth >= 4) return "<depth-limit>";
 	if (ancestors.has(value)) return "<circular>";
 	ancestors.add(value);
 	try {
-		if (Array.isArray(value)) return value.map((item) => redactLogValue(item, depth + 1, ancestors));
+		if (value instanceof Error) return { name: value.name, message: redactDiagnosticText(value.message).slice(0, 16384),
+			code: redactLogValue(value.code, depth + 1, ancestors), stack: redactDiagnosticText(value.stack ?? "").slice(0, 16384),
+			cause: redactLogValue(value.cause, depth + 1, ancestors), errors: redactLogValue(value.errors, depth + 1, ancestors) };
+		if (Array.isArray(value)) return value.slice(0, 64).map((item) => redactLogValue(item, depth + 1, ancestors));
 		const result = {};
-		for (const [key, entry] of Object.entries(value)) {
+		for (const [key, entry] of Object.entries(value).slice(0, 64)) {
 			if (isDiagnosticSecretKey(key)) result[key] = "<redacted>";
 			else if (isDiagnosticUrlKey(key)) result[key] = redactDiagnosticObject({ [key]: entry })[key];
 			else result[key] = redactLogValue(entry, depth + 1, ancestors);
@@ -32,13 +34,40 @@ function redactLogValue(value, depth = 0, ancestors = new WeakSet()) {
 		ancestors.delete(value);
 	}
 }
+var diagnosticLoggerSession = "gui-" + (typeof randomUUID === "function" ? randomUUID().replaceAll("-", "") : Date.now().toString(36));
+var diagnosticLoggerSequence = 0;
+function diagnosticLoggerContext() {
+	const now = new Date();
+	return { schemaVersion: 1, source: "gui", sessionId: diagnosticLoggerSession, sequence: ++diagnosticLoggerSequence,
+		timestampUtc: now.toISOString(), timezoneOffsetMinutes: -now.getTimezoneOffset(),
+		pid: typeof process === "object" ? process.pid ?? null : null, parentPid: typeof process === "object" ? process.ppid ?? null : null };
+}
 log.hooks.push((message) => {
 	message.data = message.data.map((item) => redactLogValue(item));
+	// Prefix leaves the runtime-event JSON at the end of the line parseable.
+	const context = "[context] " + JSON.stringify(diagnosticLoggerContext());
+	if (typeof message.data[0] === "string") message.data[0] = context + " " + message.data[0];
+	else message.data.push(context);
 	return message;
 });
 log.transports.file.format = "[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}";
 log.transports.console.format = "[{h}:{i}:{s}] [{level}] {text}";
 log.transports.file.maxSize = 5 * 1024 * 1024;
+log.transports.file.archiveLogFn = (file) => {
+	const current = file.toString();
+	const parsed = path.parse(current);
+	const old = path.join(parsed.dir, parsed.name + ".old" + parsed.ext);
+	try {
+		for (const target of [current, old, old + ".1", old + ".2"]) if (fs.existsSync(target) && fs.lstatSync(target).isSymbolicLink()) throw new Error("Log rotation refused a symbolic link.");
+		if (fs.existsSync(old + ".2")) fs.rmSync(old + ".2");
+		if (fs.existsSync(old + ".1")) fs.renameSync(old + ".1", old + ".2");
+		if (fs.existsSync(old)) fs.renameSync(old, old + ".1");
+		fs.renameSync(current, old);
+	} catch (error) {
+		file.crop?.(256 * 1024);
+		log.transports.console({ data: ["[logger] Log rotation deferred: " + redactDiagnosticText(error.message)], level: "warn", date: new Date() });
+	}
+};
 var DEFAULT_LOG_LEVEL = "info";
 /** Диагностическое окно: debug живёт 15 минут, затем сам возвращается к info. */
 var DIAGNOSTIC_LOG_WINDOW_MS = 900 * 1e3;
@@ -102,12 +131,13 @@ function cleanupOldLogFiles(keepLogsDays) {
 }
 var RUNTIME_EVENT_PREFIX = "[runtime-event]";
 function formatRuntimeLogEvent(entry) {
-	return `${RUNTIME_EVENT_PREFIX} ${JSON.stringify(entry)}`;
+	return `${RUNTIME_EVENT_PREFIX} ${JSON.stringify(redactDiagnosticObject(entry))}`;
 }
 var logger = {
 	error: (...args) => log.error(...args),
 	warn: (...args) => log.warn(...args),
 	info: (...args) => log.info(...args),
-	debug: (...args) => log.debug(...args)
+	debug: (...args) => log.debug(...args),
+	event: (stage, fields = {}, level = "info") => log[normalizeLogLevel(level)]("[diagnostic-event]", { ...redactDiagnosticObject(fields), schemaVersion: 1, stage })
 };
 //#endregion

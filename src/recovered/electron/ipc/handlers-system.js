@@ -8,25 +8,38 @@
 var execFileAsync$6 = promisify(execFile);
 var coreServiceClient = new CoreServiceClient();
 async function coordinateShieldAction(action, operation, { manager, vpn, supervisor }) {
+	const manual = action === "connect" || action === "disconnect";
+	if (manual) supervisor?.cancel("Ручное управление профилем DPI");
+	const generation = supervisor?.generation;
+	if (manual && supervisor) supervisor.attemptInFlight = true;
+	const checkCurrent = () => {
+		if (manual && supervisor && supervisor.generation !== generation) throw new Error("Действие отменено более новой ручной командой.");
+	};
 	const coordinate = (intent, callback) => manager ? manager.runCoordinatedMutation(intent, callback) : callback();
-	return coordinate({
-		module: "shield",
-		action,
-		requiredLocks: ["traffic-route", "zapret-suspend", "packet-interception", "windivert", "dns", "dns-verify", "telegram-proxy"],
-		conflictsWith: []
-	}, async () => {
-		if (action === "connect") {
-			supervisor?.cancel();
-			const before = await vpn.status();
-			if (before?.connected || before?.running || before?.pid) {
-				const result = await vpn.disconnect();
-				if (result?.ok === false) throw new Error(result.message || "Не удалось отключить соединение.");
-				const after = await vpn.status();
-				if (after?.connected || after?.running || after?.pid) throw new Error("Соединение ещё работает. Дождитесь отключения.");
+	try {
+		return await coordinate({
+			module: "shield",
+			action,
+			requiredLocks: ["traffic-route", "zapret-suspend", "packet-interception", "windivert", "dns", "dns-verify", "telegram-proxy"],
+			conflictsWith: []
+		}, async () => {
+			checkCurrent();
+			if (action === "connect") {
+				const before = await vpn.status();
+				checkCurrent();
+				if (before?.connected || before?.running || before?.pid) {
+					const result = await vpn.disconnect();
+					if (result?.ok === false) throw new Error(result.message || "Не удалось отключить соединение.");
+					const after = await vpn.status();
+					if (after?.connected || after?.running || after?.pid) throw new Error("Соединение ещё работает. Дождитесь отключения.");
+				}
 			}
-		}
-		return operation();
-	});
+			checkCurrent();
+			return operation();
+		});
+	} finally {
+		if (manual && supervisor && supervisor.generation === generation) supervisor.cancel("Ручное управление профилем DPI");
+	}
 }
 
 /**
@@ -666,12 +679,16 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			return `Защищённая служба Egoist Lagom Core недоступна или отказала в доступе. ${detail}`;
 		}
 	};
-	const mutateDns = (action, operation) => networkCombinatorManager ? networkCombinatorManager.runCoordinatedMutation({
-		module: "dns",
-		action,
-		requiredLocks: ["dns", "dns-verify"],
-		conflictsWith: ["traffic-route"]
-	}, operation) : operation();
+	const mutateDns = async (action, operation) => {
+		try {
+			return await (networkCombinatorManager ? networkCombinatorManager.runCoordinatedMutation({
+				module: "dns", action, requiredLocks: ["dns", "dns-verify"], conflictsWith: ["traffic-route"]
+			}, operation) : operation());
+		} catch (error) {
+			if (!/Timed out (waiting for|inspecting) .*network|Завершается восстановление сети/.test(String(error?.message))) throw error;
+			return { ok: false, retryable: true, code: "NETWORK_BUSY", status: null, message: "Завершается другое сетевое действие. Настройки DNS сохранены; повторите после завершения проверки." };
+		}
+	};
 	let startupSideEffectAttempted = false;
 	const settingsCommitHooks = {
 		beforeCommit: async (next, previous) => {
@@ -1121,15 +1138,15 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 		const dohHost = parsedDohUrl?.hostname ?? (dohUrl ? hostWithoutPort(dohUrl) : null);
 		const upstream = parsedDohUrl?.host ?? null;
 		const localAddress = firstNonEmpty(systemDohStatus.localAddress, persistedState.settings.systemDohLocalAddress);
-		const firstConfigured = firstNonEmpty(configuredServers[0], persistedState.settings.systemDnsServers);
+		const firstConfigured = firstNonEmpty(configuredServers[0]);
 		const nativeManaged = systemDohStatus.nativeManaged === true;
 		const nativeServers = Array.isArray(systemDohStatus.serverAddresses) ? systemDohStatus.serverAddresses.filter((value) => typeof value === "string") : [];
-		const pointsToNative = nativeManaged && nativeServers.some((server) => configuredServers.includes(server));
-		const pointsToLocal = Boolean(localAddress && configuredServers.includes(localAddress)) || configuredServers.some(isLocalDnsAddress) || isGravitylessLoopbackDnsRequest(String(persistedState.settings.systemDnsServers ?? ""));
+		const pointsToNative = nativeManaged && configuredServers.length > 0 && configuredServers.every((server) => nativeServers.includes(server));
+		const pointsToLocal = configuredServers.length > 0 && configuredServers.every(isLocalDnsAddress);
 		const gravitylessRunning = Boolean(gravitylessStatus?.running || gravitylessStatus?.service?.running || gravitylessStatus?.service?.state === "running");
-		const encrypted = Boolean(systemDohStatus.running && systemDohStatus.encrypted !== false || gravitylessRunning);
-		const address = pointsToNative ? nativeServers.find((server) => configuredServers.includes(server)) ?? firstConfigured : pointsToLocal ? localAddress ?? configuredServers.find(isLocalDnsAddress) ?? "127.0.0.1" : firstConfigured;
-		const providerSource = dohUrl ?? upstream ?? (mode === "gravityless-dns" ? "dns.gravityless.space" : address ?? "");
+		const encrypted = Boolean(mode === "system-doh" && systemDohStatus.running && systemDohStatus.encrypted !== false && (nativeManaged ? pointsToNative : pointsToLocal) || mode === "gravityless-dns" && gravitylessRunning && pointsToLocal);
+		const address = firstConfigured;
+		const providerSource = mode === "system-doh" && (nativeManaged ? pointsToNative : pointsToLocal) ? dohUrl ?? upstream ?? address ?? "" : mode === "gravityless-dns" && pointsToLocal ? "dns.gravityless.space" : address ?? "";
 		const provider = providerFromDnsValue(providerSource) ?? providerFromDnsValue(address) ?? "Не определён";
 		const country = knownDnsCountry(dohHost) ?? await geoipCountry(dohHost ?? address ?? null, providerSource, stateStore.get().settings.allowExternalGeoLookups === true);
 		const hasRuntimeError = Boolean(systemDohStatus.lastError || gravitylessStatus?.lastError);
@@ -1141,7 +1158,7 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			country: country.country,
 			countryCode: country.countryCode,
 			countrySource: country.source ?? null,
-			protocol: systemDohStatus.running ? nativeManaged ? "System DoH (Windows)" : "System DoH" : gravitylessRunning ? "Gravityless DNS" : mode === "manual-dns" ? "Manual DNS" : "System DNS",
+			protocol: mode === "system-doh" && (nativeManaged ? pointsToNative : pointsToLocal) ? nativeManaged ? "System DoH (Windows)" : "System DoH" : mode === "gravityless-dns" && pointsToLocal ? "Gravityless DNS" : mode === "manual-dns" ? "Manual DNS" : "System DNS",
 			localChannel: pointsToNative ? "Windows DNS Client · HTTPS:443" : pointsToLocal ? `${address ?? "127.0.0.1"}:53` : "не активен",
 			encrypted,
 			status,
@@ -1435,7 +1452,8 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 		vpn: runtimeManager,
 		telegramProxy: telegramProxyManager,
 		applyDns: async () => {
-			const targetUrl = stateStore.get().settings.systemDohUrl || "https://cloudflare-dns.com/dns-query";
+			const targetUrl = stateStore.get().settings.systemDohUrl;
+			if (!targetUrl) throw new Error("Добавьте выбранный HTTPS-адрес DoH в разделе DNS.");
 			const persistedState = stateStore.get();
 			const startedStatus = await systemDohManager.apply(targetUrl, persistedState.settings.systemDohLocalAddress);
 			if (startedStatus?.running !== true || startedStatus?.verified !== true) throw new Error("System DoH не прошёл проверку; действующие настройки DNS сохранены.");

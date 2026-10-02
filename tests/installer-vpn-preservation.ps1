@@ -67,6 +67,7 @@ if(-not (Wait-OwnedVpnReady -TimeoutSeconds 2) -or $script:nativeCalls -ne 2){th
 $script:fixedAnswer=Answer (@{serviceName='EgoistShieldVpn';serviceInstalled=$null;serviceState='unknown';running=$null;localHealth='unknown';observation=@{state='unknown'};socksPort=10838;pid=0})
 if(Wait-OwnedVpnReady -TimeoutSeconds 1){throw 'Unresolved VPN readiness must fail after its bounded wait.'};$passes++
 $cleanupAst=[Management.Automation.Language.Parser]::ParseFile((Join-Path $project 'src\installer\owned-cleanup.ps1'),[ref]$tokens,[ref]$errors)
+function Get-ProtectedSystemDohPayloadContinuity {return $null}
 if($errors.Count){throw 'Production cleanup helper does not parse.'}
 foreach($name in @('Get-OwnedRuntimeDirectories','Remove-OwnedRuntimeDirectories','Assert-PlainOwnedDirectoryTree','Join-IfSet')){
   $function=$cleanupAst.Find({param($node)$node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true)

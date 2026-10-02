@@ -1,5 +1,5 @@
 //#region src/electron/ipc/handlers.ts
-async function registerIpcHandlers(window, stateStore, runtimeManager, gravitylessDnsManager, systemDohManager, zapretManager, telegramProxyManager, isNetworkReady = () => true) {
+async function registerIpcHandlers(window, stateStore, runtimeManager, gravitylessDnsManager, systemDohManager, zapretManager, telegramProxyManager, isNetworkReady = () => true, onStartupAutoConnectReady) {
 	await stateStore.load();
 	const ctx = {
 		window,
@@ -8,7 +8,8 @@ async function registerIpcHandlers(window, stateStore, runtimeManager, gravityle
 		gravitylessDnsManager,
 		systemDohManager,
 		zapretManager,
-		telegramProxyManager
+		telegramProxyManager,
+		onStartupAutoConnectReady
 	};
 	const networkCombinatorManager = new NetworkCombinatorManager({
 		isNetworkReady,

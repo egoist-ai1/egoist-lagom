@@ -17,7 +17,19 @@ async function executeWorkerRequest(request) {
     workerProgress = null;
     return workerManagers.Zapret.autoSelectBestProfile(progress => { workerProgress = progress; }, value.args[0]);
   }
-  return workerManagers[value.component][value.method](...value.args);
+  const result = await workerManagers[value.component][value.method](...value.args);
+  if (value.component === 'SystemDoH' && !value.query && ['apply', 'restart', 'recover', 'refreshBootstrap', 'stop', 'stopAndRemove'].includes(value.method) &&
+      typeof workerManagers.Zapret.refreshSystemDohTransportProtection === 'function') {
+    try {
+      const transportIsolation = await workerManagers.Zapret.refreshSystemDohTransportProtection();
+      if (result && typeof result === 'object' && !Array.isArray(result)) return { ...result, transportIsolation };
+    } catch (error) {
+      const message = redactDiagnosticText(error instanceof Error ? error.message : String(error));
+      log.warn('Zapret DNS transport isolation update deferred; DNS result preserved.', message);
+      if (result && typeof result === 'object' && !Array.isArray(result)) return { ...result, transportIsolation: { ok: false, deferred: true, error: message } };
+    }
+  }
+  return result;
 }
 function replyWorker(request) {
   return executeWorkerRequest(request).then(result => ({

@@ -149,6 +149,7 @@ var StateStore = class {
 			logger.info(migration.changed ? "[state-store] Migrated legacy EgoistShield VPN subscriptions/nodes into current state." : "[state-store] Repaired persisted display text encoding.");
 		}
 		await this.applyInstallationDefaults();
+		await this.reconcileOwnedSystemDohPreferences();
 		return this.get();
 	}
 	async applyInstallationDefaults() {
@@ -158,11 +159,66 @@ var StateStore = class {
 		let previous;
 		try { previous = JSON.parse(await promises.readFile(this.activationMarkerPath, "utf8")); } catch { previous = null; }
 		if (previous?.id === installation.id) return;
-		await this.update((current) => ({
-			...current,
-			settings: { ...current.settings, autoStart: false, autoConnect: false, systemDohEnabled: false, systemDnsServers: "", systemDohUrl: "https://cloudflare-dns.com/dns-query", systemDohLocalAddress: "", customDnsUrl: "", useTunMode: false, killSwitch: false }
-		}));
+		await this.update((current) => {
+			const preferredUrl = this.validSystemDohPreferenceUrl(current.settings.systemDohUrl);
+			return {
+				...current,
+				settings: {
+					...current.settings,
+					autoStart: false, autoConnect: false, useTunMode: false, killSwitch: false,
+					systemDohEnabled: preferredUrl ? current.settings.systemDohEnabled : false,
+					systemDohUrl: preferredUrl || DEFAULT_STATE.settings.systemDohUrl,
+					systemDohLocalAddress: preferredUrl ? current.settings.systemDohLocalAddress : ""
+				}
+			};
+		});
 		await promises.writeFile(this.activationMarkerPath, JSON.stringify({ id: installation.id }), "utf8");
+	}
+	validSystemDohPreferenceUrl(value) {
+		const normalized = normalizeSystemDohUrl(value, "");
+		try {
+			const parsed = new URL(normalized);
+			return parsed.protocol === "https:" && parsed.hostname && !parsed.username && !parsed.password && !parsed.hash ? normalized : "";
+		} catch { return ""; }
+	}
+	canRestoreOwnedSystemDohPreference(settings) {
+		return settings.systemDohEnabled === false && !String(settings.systemDnsServers ?? "").trim()
+			&& !String(settings.customDnsUrl ?? "").trim()
+			&& normalizeSystemDohUrl(settings.systemDohUrl, "") === DEFAULT_STATE.settings.systemDohUrl;
+	}
+	async reconcileOwnedSystemDohPreferences() {
+		if (typeof this.readOwnedSystemDohStatus !== "function" || !this.canRestoreOwnedSystemDohPreference(this.get().settings)) return false;
+		let status;
+		try { status = await this.readOwnedSystemDohStatus(); }
+		catch {
+			logger.warn("[state-store] Owned DNS preferences were not reconciled because status inspection failed.");
+			return false;
+		}
+		if (!status || status.available !== true || status.enabled !== true || status.running !== true
+			|| status.verified !== true || status.encrypted !== true
+			|| ["unknown", "unavailable"].includes(status.serviceState)
+			|| status.ownerInspectionErrors?.length) return false;
+		const ownedHealthy = status.nativeManaged === true
+			? status.fallbackToUdp === false
+			: status.nativeManaged === false && status.serviceInstalled === true && status.serviceRunning === true && status.serviceState === "running";
+		const url = this.validSystemDohPreferenceUrl(status.currentUrl);
+		if (!ownedHealthy || !url) return false;
+		let restored = false;
+		await this.update((current) => {
+			if (!this.canRestoreOwnedSystemDohPreference(current.settings)) return current;
+			restored = true;
+			return {
+				...current,
+				settings: {
+					...current.settings,
+					systemDohEnabled: true,
+					systemDohUrl: url,
+					systemDohLocalAddress: status.nativeManaged ? "" : normalizeSystemDohLocalAddress(status.localAddress, "")
+				}
+			};
+		});
+		if (restored) logger.info("[state-store] Restored preferences for the verified owned DNS resolver.");
+		return restored;
 	}
 	get() {
 		return structuredClone({ ...this.state, stateRevision: this.revision });

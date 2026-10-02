@@ -93,6 +93,9 @@ function Get-Service {
 }
 function Start-Sleep {param($Seconds,$Milliseconds)}
 function Test-LoopbackDnsReady {param($State) return $true}
+# Local DNS identity has its own file/process/listener fixtures. This fixture
+# isolates policy restoration and transaction ownership/start ordering.
+function Test-OwnedSystemDohRecoveryRuntime {param($State,[switch]$PreservedRuntimeRecovery)return $true}
 function Wait-OwnedTelegramProxyReady { throw 'Unexpected Telegram readiness fixture boundary.' }
 function Get-CimInstance {
   param($ClassName,$ErrorAction,$OperationTimeoutSec)

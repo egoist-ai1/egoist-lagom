@@ -89,6 +89,24 @@ internal sealed class OwnedServiceController
 		serviceName = NormalizeServiceName(serviceName);
 		EnsureProductDataRootVerified();
 		await AssertOwnedImagePathAsync(serviceName, cancellationToken);
+		if (serviceName == "EgoistShieldSystemDoH")
+		{
+			// A previous Core crash during forced stop cannot leave SCM recovery
+			// suspended across an explicit start, even when persisted intent is off.
+			await RepairRecoveryAsync(serviceName, cancellationToken);
+			if ((await StatusAsync(serviceName, cancellationToken)).State == "stopped")
+			{
+				string root = Path.Combine(_productDataRoot, "Runtime", "SystemDoH");
+				using var generation = new OwnedSystemDohStop.Generation(root, _productDataRoot);
+				async Task AssertStopped(CancellationToken token)
+				{
+					await generation.AssertAsync(token);
+					await AssertOwnedImagePathAsync(serviceName, token);
+					if ((await StatusAsync(serviceName, token)).State != "stopped") throw new IOException("System DoH changed before orphan cleanup for start.");
+				}
+				await CleanupSystemDohRuntimeAsync(root, AssertStopped, cancellationToken);
+			}
+		}
 		return await OwnedServiceTransition.ChangeAsync(serviceName, true,
 			token => StatusAsync(serviceName, token),
 			(control, token) => RunScAsync(new[] { control, serviceName }, token),
@@ -164,6 +182,7 @@ internal sealed class OwnedServiceController
 	{
 		serviceName = NormalizeServiceName(serviceName);
 		OwnedServiceStatus before = await StatusAsync(serviceName, cancellationToken);
+		if (serviceName == "EgoistShieldSystemDoH") return await StopSystemDohAsync(before, cancellationToken);
 		if (!before.Installed)
 		{
 			return before;
@@ -173,6 +192,50 @@ internal sealed class OwnedServiceController
 			token => StatusAsync(serviceName, token),
 			(control, token) => RunScAsync(new[] { control, serviceName }, token),
 			ServiceContract.ServiceTransitionTimeout, cancellationToken);
+	}
+
+	private async Task<OwnedServiceStatus> StopSystemDohAsync(OwnedServiceStatus before, CancellationToken token)
+	{
+		EnsureProductDataRootVerified();
+		string root = Path.Combine(_productDataRoot, "Runtime", "SystemDoH");
+		TrustedPath.AssertPathUnderRoot(root, _productDataRoot, false);
+		using var generation = new OwnedSystemDohStop.Generation(root, _productDataRoot);
+		async Task AssertCurrent(CancellationToken currentToken)
+		{
+			await generation.AssertAsync(currentToken);
+			var current = await StatusAsync("EgoistShieldSystemDoH", currentToken);
+			if (current.Installed != before.Installed) throw new IOException("System DoH registration changed during stop.");
+			if (current.Installed) await AssertOwnedImagePathAsync("EgoistShieldSystemDoH", currentToken);
+		}
+		await AssertCurrent(token);
+		using var wrapper = before.Installed ? new OwnedSystemDohProcess.SystemDohWrapperLease(
+			Path.Combine(root, "service-wrapper", "egoistshield-system-doh-service.exe"), token) : null;
+		async Task AssertHeldCurrent(CancellationToken currentToken)
+		{
+			await AssertCurrent(currentToken);
+			if (wrapper != null) await wrapper.AssertOriginalOrStoppedAsync(currentToken);
+		}
+		return await OwnedSystemDohStop.StopAsync(
+			currentToken => StatusAsync("EgoistShieldSystemDoH", currentToken),
+			async currentToken => { await OwnedServiceTransition.ChangeAsync("EgoistShieldSystemDoH", false,
+				readToken => StatusAsync("EgoistShieldSystemDoH", readToken),
+				(control, controlToken) => RunScAsync(new[] { control, "EgoistShieldSystemDoH" }, controlToken),
+				TimeSpan.FromSeconds(20), currentToken); }, AssertHeldCurrent,
+			currentToken => CleanupSystemDohRuntimeAsync(root, AssertHeldCurrent, currentToken),
+			currentToken => wrapper?.TerminateStopPendingAsync(AssertHeldCurrent, currentToken) ??
+				Task.FromException(new IOException("System DoH wrapper was not captured before stopping.")), token);
+	}
+
+	private static async Task CleanupSystemDohRuntimeAsync(string root, Func<CancellationToken, Task> assertCurrent, CancellationToken token)
+	{
+		await assertCurrent(token);
+		string runtime = Path.Combine(root, "runtime", "xray-system-doh.exe");
+		TrustedPath.AssertPathUnderRoot(runtime, root, false);
+		using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+		using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(token, deadline.Token);
+		await Task.Run(() => OwnedSystemDohProcess.StopProcessesUsingExecutable(runtime, lifetime.Token), lifetime.Token)
+			.WaitAsync(lifetime.Token);
+		await assertCurrent(token);
 	}
 
 	public static string NormalizeServiceName(string serviceName)
@@ -297,6 +360,14 @@ internal sealed class OwnedServiceController
 			throw new InvalidOperationException("Cannot read ImagePath for owned service " + serviceName + ".");
 		}
 		string text = ExtractExecutablePath(Environment.ExpandEnvironmentVariables(obj.Trim()));
+		if (serviceName == "EgoistShieldSystemDoH")
+		{
+			string expected = Path.Combine(_productDataRoot, "Runtime", "SystemDoH", "service-wrapper", "egoistshield-system-doh-service.exe");
+			string command = Environment.ExpandEnvironmentVariables(obj.Trim());
+			if (!Path.GetFullPath(text).Equals(Path.GetFullPath(expected), StringComparison.OrdinalIgnoreCase) ||
+				!(command.Equals(expected, StringComparison.OrdinalIgnoreCase) || command.Equals("\"" + expected + "\"", StringComparison.OrdinalIgnoreCase)))
+				throw new UnauthorizedAccessException("System DoH service ImagePath is not its fixed owned wrapper.");
+		}
 		if (serviceName == ServiceContract.VpnServiceName)
 		{
 			string expected = Path.Combine(_productDataRoot, "Runtime", "Vpn", "service-wrapper", "egoistshield-vpn-service.exe");
@@ -468,7 +539,7 @@ internal sealed class OwnedServiceController
 		string[][] array = new string[3][]
 		{
 			new string[4] { "config", serviceName, "depend=", "Tcpip/Afd" },
-			new string[6] { "failure", serviceName, "reset=", "3600", "actions=", "restart/5000/restart/10000/restart/60000" },
+			new string[6] { "failure", serviceName, "reset=", "3600", "actions=", serviceName == "EgoistShieldSystemDoH" ? "restart/0/restart/1000/restart/60000" : "restart/5000/restart/10000/restart/60000" },
 			new string[3] { "failureflag", serviceName, "1" }
 		};
 		foreach (string[] arguments in array)
