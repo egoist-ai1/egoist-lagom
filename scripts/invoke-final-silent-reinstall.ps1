@@ -1885,10 +1885,13 @@ function Test-OwnedSystemDohRecoveryRuntime {
   $activationReadback = @()
   $ownedDnsReadback = $null
   $transferred = $false
+  $script:SystemDohRecoveryDiagnosticFailure = $null
+  $script:SystemDohRecoveryDiagnosticSubstage = 'recovery-files'
   try {
     $proof = Get-SystemDohRecoveryFiles $State
     $backupRoot = Assert-PlainWrapperMigrationPath -Path (Join-Path $StageDirectory 'runtime-backup\SystemDoH') -Root $StageDirectory
     $backupConfig = Assert-PlainWrapperMigrationPath -Path (Join-Path $backupRoot 'config.json') -Root $backupRoot
+    $script:SystemDohRecoveryDiagnosticSubstage = 'expected-runtime-inventory'
     $expected = @{}
     $receiptHash = $null
     if ($PreservedRuntimeRecovery) {
@@ -1916,6 +1919,7 @@ function Test-OwnedSystemDohRecoveryRuntime {
       }
     }
     if ($expected.Count -ne 4) { return $false }
+    $script:SystemDohRecoveryDiagnosticSubstage = 'runtime-file-leases'
     foreach ($relative in $proof.files) {
       $file = Assert-PlainWrapperMigrationPath -Path (Join-Path $proof.root $relative) -Root $proof.root
       [void](Assert-InstallerBootRecoveryFileProtection -Path $file)
@@ -1927,6 +1931,7 @@ function Test-OwnedSystemDohRecoveryRuntime {
     }
     if ($PreservedRuntimeRecovery -and $proof.record.PSObject.Properties['wrapperSha256'] -and
         [string]$proof.record.wrapperSha256 -cne (Get-FileSha256 $proof.wrapper)) { return $false }
+    $script:SystemDohRecoveryDiagnosticSubstage = 'private-activation-intent'
     foreach ($record in @($State.userState)) {
       $saved = Assert-PlainWrapperMigrationPath -Path (Join-Path (Join-Path $StageDirectory 'user-state') ([string]$record.backupName)) -Root $StageDirectory
       if ((Get-FileSha256 $saved) -cne [string]$record.sha256) { return $false }
@@ -1941,6 +1946,7 @@ function Test-OwnedSystemDohRecoveryRuntime {
         $activationReadback += [pscustomobject]@{ path = $source; digest = $intent }
       }
     }
+    $script:SystemDohRecoveryDiagnosticSubstage = 'owned-dns-journal'
     if (@($State.criticalDns).Count -gt 0) {
       $saved = Assert-PlainWrapperMigrationPath -Path (Join-Path $StageDirectory 'dns-owned-state.json') -Root $StageDirectory
       $current = Assert-PlainWrapperMigrationPath -Path (Join-Path $script:OwnedDataRoot 'Service\dns-owned-state.json') -Root $script:OwnedDataRoot
@@ -1948,20 +1954,25 @@ function Test-OwnedSystemDohRecoveryRuntime {
       $ownedDnsReadback = [pscustomobject]@{ path = $current; digest = (Get-FileSha256 $saved) }
       if ($ownedDnsReadback.digest -cne (Get-FileSha256 $current)) { return $false }
     }
+    $script:SystemDohRecoveryDiagnosticSubstage = 'service-identity'
     [void](Assert-CurrentPreservedServiceOwnership 'EgoistShieldSystemDoH' -RequirePresent)
     $service = Get-CimInstance Win32_Service -Filter "Name='EgoistShieldSystemDoH'" -OperationTimeoutSec 3 -ErrorAction Stop
     if (-not $service -or [string]$service.State -cne 'Running' -or [int]$service.ProcessId -le 0 -or
         [string]$service.StartName -notin @('LocalSystem', 'NT AUTHORITY\SYSTEM') -or
         -not [IO.Path]::GetFullPath(([string]$service.PathName).Trim().Trim('"')).Equals($proof.wrapper, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+    $script:SystemDohRecoveryDiagnosticSubstage = 'wrapper-process'
     $processes = @(Get-CimInstance Win32_Process -Property ProcessId,ParentProcessId,ExecutablePath,CreationDate,CommandLine -OperationTimeoutSec 3 -ErrorAction Stop)
     $wrappers = @($processes | Where-Object { [int]$_.ProcessId -eq [int]$service.ProcessId })
     if ($wrappers.Count -ne 1 -or -not $wrappers[0].CreationDate -or
         -not [string]::Equals([string]$wrappers[0].ExecutablePath, $proof.wrapper, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+    $script:SystemDohRecoveryDiagnosticSubstage = 'engine-parent-process'
     $children = @($processes | Where-Object { [int]$_.ParentProcessId -eq [int]$service.ProcessId -and
         $_.CreationDate -and [DateTime]$_.CreationDate -ge [DateTime]$wrappers[0].CreationDate -and
         [string]::Equals([string]$_.ExecutablePath, $proof.engine, [StringComparison]::OrdinalIgnoreCase) })
     if ($children.Count -ne 1) { return $false }
+    $script:SystemDohRecoveryDiagnosticSubstage = 'engine-config-arguments'
     if (-not (Test-SystemDohConfigArgument -Arguments ([string]$children[0].CommandLine) -ExpectedConfig $proof.config)) { return $false }
+    $script:SystemDohRecoveryDiagnosticSubstage = 'process-birth-and-image'
     foreach ($item in @($wrappers[0], $children[0])) {
       $held = Get-Process -Id ([int]$item.ProcessId) -ErrorAction Stop
       $handles += $held
@@ -1970,6 +1981,7 @@ function Test-OwnedSystemDohRecoveryRuntime {
           [Math]::Abs(($held.StartTime.ToUniversalTime() - ([DateTime]$item.CreationDate).ToUniversalTime()).TotalMilliseconds) -gt 2 -or
           -not [string]::Equals([string]$held.MainModule.FileName, [string]$item.ExecutablePath, [StringComparison]::OrdinalIgnoreCase)) { return $false }
     }
+    $script:SystemDohRecoveryDiagnosticSubstage = 'owned-dns-listeners'
     $listeners = @($proof.configuration.inbounds | Where-Object { [int]$_.port -eq 53 })
     if ($listeners.Count -eq 0) { return $false }
     $udp = @(Get-CimInstance -Namespace 'root/StandardCimv2' -ClassName MSFT_NetUDPEndpoint -Filter 'LocalPort=53' -OperationTimeoutSec 3 -ErrorAction Stop)
@@ -1986,6 +1998,7 @@ function Test-OwnedSystemDohRecoveryRuntime {
             @($applicable | Where-Object { [string]$_.LocalAddress -eq $address -and [int]$_.OwningProcess -eq [int]$children[0].ProcessId }).Count -eq 0) { return $false }
       }
     }
+    $script:SystemDohRecoveryDiagnosticSubstage = 'final-owned-readback'
     $readback = Get-CimInstance Win32_Service -Filter "Name='EgoistShieldSystemDoH'" -OperationTimeoutSec 3 -ErrorAction Stop
     if (-not $readback -or [string]$readback.State -cne 'Running' -or [int]$readback.ProcessId -ne [int]$service.ProcessId) { return $false }
     foreach ($held in $handles) { if ($held.HasExited) { return $false } }
@@ -2016,7 +2029,11 @@ function Test-OwnedSystemDohRecoveryRuntime {
       return $evidence
     }
     return $true
-  } catch { Write-Verbose 'Private DNS local ownership or restored generation could not be confirmed.'; return $false }
+  } catch {
+    try { $script:SystemDohRecoveryDiagnosticFailure = New-InstallerFailureDiagnostic -Failure $_ -Substage $script:SystemDohRecoveryDiagnosticSubstage } catch { }
+    Write-Verbose 'Private DNS local ownership or restored generation could not be confirmed.'
+    return $false
+  }
   finally {
     if (-not $transferred) {
       foreach ($held in $handles) { if ($held) { $held.Dispose() } }
@@ -2043,11 +2060,18 @@ function Test-PreservedPrivateDnsIntent {
 
 function Assert-SystemDohPayloadContinuity {
   param([object]$State, [object]$Evidence = $null)
+  $script:PayloadContinuityDiagnosticSubstage = 'preserved-private-intent'
   if (-not $State.PSObject.Properties['payloadContinuity'] -or -not $State.payloadContinuity -or
       -not (Test-PreservedPrivateDnsIntent -State $State)) { throw 'Private DNS payload continuity is not authorized by preserved enabled intent.' }
+  $script:PayloadContinuityDiagnosticSubstage = 'runtime-proof'
   $actual = if ($Evidence) { $Evidence } else { Test-OwnedSystemDohRecoveryRuntime -State $State -PreservedRuntimeRecovery -AsEvidence }
   $expected = $State.payloadContinuity
-  if ($actual -is [bool] -or -not $actual) { throw 'Private DNS payload continuity local ownership is unverified.' }
+  if ($actual -is [bool] -or -not $actual) {
+    $proofSubstage = Get-Variable -Name SystemDohRecoveryDiagnosticSubstage -Scope Script -ErrorAction SilentlyContinue
+    if ($proofSubstage) { $script:PayloadContinuityDiagnosticSubstage = [string]$proofSubstage.Value }
+    throw 'Private DNS payload continuity local ownership is unverified.'
+  }
+  $script:PayloadContinuityDiagnosticSubstage = 'held-runtime-generation'
   foreach ($field in @('schemaVersion','purpose','installationId','root','wrapper','engine','config','wrapperPid','wrapperStartTicks','enginePid','engineStartTicks')) {
     if ([string]$actual.$field -cne [string]$expected.$field) { throw 'Private DNS payload continuity generation changed.' }
   }
@@ -2085,10 +2109,14 @@ function Close-SystemDohRuntimeLease {
 }
 
 function Invoke-PayloadContinuityProbe {
+  $script:PayloadContinuityDiagnosticSubstage = 'privileged-token'
   if (-not (Test-IsAdministrator)) { throw 'Private DNS continuity probe requires the protected installer token.' }
+  $script:PayloadContinuityDiagnosticSubstage = 'protected-boot-receipt'
   $boot = Assert-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory
   if ($boot.verified -ne $true -or $boot.owner -ne 'EgoistShield') { throw 'Private DNS continuity stage is unverified.' }
+  $script:PayloadContinuityDiagnosticSubstage = 'protected-recovery-snapshot'
   $state = Get-ValidatedMaintenanceRecoveryState -Stage $StageDirectory
+  $script:PayloadContinuityDiagnosticSubstage = 'active-maintenance-owner'
   if ($state.handoffStarted -ne $true -or -not (Test-InstallerServiceMaintenanceOwner)) { throw 'Private DNS continuity transaction is not active.' }
   return Assert-SystemDohPayloadContinuity -State $state
 }
@@ -2754,13 +2782,28 @@ function Invoke-WorkerMode {
 if ($ProbePayloadContinuity) {
   $StageDirectory = Resolve-FullPath -Path $StageDirectory -MustExist
   [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+  $script:PayloadContinuityDiagnosticSubstage = 'probe-start'
+  $script:SystemDohRecoveryDiagnosticFailure = $null
   try {
     $result = Invoke-PayloadContinuityProbe | ConvertTo-Json -Depth 8 -Compress
     if ([Text.Encoding]::UTF8.GetByteCount($result) -gt 65536) { throw 'Continuity proof exceeds its output limit.' }
     [Console]::Out.WriteLine($result)
     exit 0
   }
-  catch { [Console]::Error.WriteLine('Private DNS payload continuity ownership could not be confirmed.'); exit 2 }
+  catch {
+    $probeFailure = $_
+    $diagnosticJson = '{"schemaVersion":1,"purpose":"private-dns-payload-continuity-failure","exceptionType":"System.InvalidOperationException","errorId":"ContinuityDiagnosticUnavailable","line":0,"substage":"probe-diagnostic","errorMessage":"Private DNS payload continuity ownership could not be confirmed."}'
+    try {
+      $diagnostic = $null
+      $proofFailure = Get-Variable -Name SystemDohRecoveryDiagnosticFailure -Scope Script -ErrorAction SilentlyContinue
+      if ($proofFailure -and $proofFailure.Value) { $diagnostic = $proofFailure.Value }
+      if (-not $diagnostic) { $diagnostic = New-InstallerFailureDiagnostic -Failure $probeFailure -Substage $script:PayloadContinuityDiagnosticSubstage }
+      $candidateJson = $diagnostic | ConvertTo-Json -Depth 4 -Compress
+      if ([Text.Encoding]::UTF8.GetByteCount($candidateJson) -le 8192) { $diagnosticJson = $candidateJson }
+    } catch { }
+    try { [Console]::Error.WriteLine($diagnosticJson) } catch { }
+    exit 2
+  }
 }
 
 if ($Recover) {

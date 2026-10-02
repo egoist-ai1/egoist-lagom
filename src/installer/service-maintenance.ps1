@@ -1,4 +1,63 @@
 # Shared by the installer and its protected reinstall worker. No work on import.
+function ConvertTo-InstallerDiagnosticMessage {
+  param([AllowEmptyString()][string]$Message)
+  if (-not $Message) { return '' }
+  # Do not persist invocation text, stack traces, endpoint URLs or credentials.
+  $safe = if ($Message.Length -gt 16384) { $Message.Substring(0, 16384) } else { $Message }
+  # Serialized error fragments can escape credential keys and URI punctuation.
+  $decodeUnicode = [Text.RegularExpressions.MatchEvaluator]{ param($match) [string][char][Convert]::ToInt32($match.Groups[1].Value, 16) }
+  $safe = [regex]::Replace($safe, '(?i)\\+u([0-9a-f]{4})', $decodeUnicode)
+  $safe = [regex]::Replace($safe, '(?im)\b(?:authorization|proxy-authorization|cookie|set-cookie)\s*(?:\\*["''])?\s*[:=]\s*[^\r\n]+', '[redacted authorization]')
+  $safe = [regex]::Replace($safe, '(?i)\b[a-z][a-z0-9+.-]*:(?:/|\\+/|\\+u002f){2}[^\s"''<>]+', '[redacted URL]')
+  $safe = [regex]::Replace($safe, '(?i)\b(?:Bearer|Basic)\s+[A-Za-z0-9+/=_.-]+', '[redacted authorization]')
+  $safe = [regex]::Replace($safe, '(?i)\b(?:access[_-]?token|refresh[_-]?token|api[_-]?key|token|password|passwd|secret|credential)\b\s*(?:\\*["''])?\s*[:=]\s*(?:"(?:\\.|[^"\\])*"|''(?:\\.|[^''\\])*''|[^\s,;]+)', '[redacted credential]')
+  $safe = [regex]::Replace($safe, '(?im)\b(?:arguments|commandline|argv|args)\s*(?:\\*["''])?\s*[:=]\s*[^\r\n]+', '[redacted invocation]')
+  $safe = [regex]::Replace($safe, '[\x00-\x20\x7f]+', ' ').Trim()
+  if ($safe.Length -gt 2048) { $safe = $safe.Substring(0, 2048) }
+  return $safe
+}
+
+function New-InstallerFailureDiagnostic {
+  param([Management.Automation.ErrorRecord]$Failure, [string]$Substage = 'phase-dispatch')
+  if ($Substage -notmatch '^[a-z][a-z0-9-]{0,63}$') { $Substage = 'unknown' }
+  $exceptionType = [string]$Failure.Exception.GetType().FullName
+  if ($exceptionType.Length -gt 256) { $exceptionType = $exceptionType.Substring(0, 256) }
+  $errorId = ConvertTo-InstallerDiagnosticMessage ([string]$Failure.FullyQualifiedErrorId)
+  if ($errorId.Length -gt 256) { $errorId = $errorId.Substring(0, 256) }
+  return [pscustomobject]@{
+    schemaVersion = 1
+    purpose = 'private-dns-payload-continuity-failure'
+    exceptionType = $exceptionType
+    errorId = $errorId
+    line = [int]$Failure.InvocationInfo.ScriptLineNumber
+    substage = $Substage
+    errorMessage = ConvertTo-InstallerDiagnosticMessage ([string]$Failure.Exception.Message)
+  }
+}
+
+function Read-InstallerFailureDiagnostic {
+  param([AllowEmptyString()][string]$Json)
+  try {
+    if (-not $Json -or [Text.Encoding]::UTF8.GetByteCount($Json) -gt 8192) { return $null }
+    $record = $Json | ConvertFrom-Json -ErrorAction Stop
+    if (-not $record -or $record -is [array] -or $record.schemaVersion -ne 1 -or
+        $record.purpose -cne 'private-dns-payload-continuity-failure' -or
+        $record.substage -notmatch '^[a-z][a-z0-9-]{0,63}$' -or
+        ($record.line -isnot [int] -and $record.line -isnot [int64]) -or $record.line -lt 0 -or $record.line -gt 100000 -or
+        $record.exceptionType -isnot [string] -or $record.errorId -isnot [string] -or $record.errorMessage -isnot [string]) { return $null }
+    $exceptionType = ConvertTo-InstallerDiagnosticMessage $record.exceptionType
+    if ($exceptionType.Length -gt 256) { $exceptionType = $exceptionType.Substring(0, 256) }
+    $errorId = ConvertTo-InstallerDiagnosticMessage $record.errorId
+    if ($errorId.Length -gt 256) { $errorId = $errorId.Substring(0, 256) }
+    return [pscustomobject]@{
+      schemaVersion = 1; purpose = 'private-dns-payload-continuity-failure'
+      exceptionType = $exceptionType; errorId = $errorId; line = [int]$record.line
+      substage = [string]$record.substage
+      errorMessage = ConvertTo-InstallerDiagnosticMessage $record.errorMessage
+    }
+  } catch { return $null }
+}
+
 function Invoke-InstallerSc {
   param([string[]]$Arguments, [int[]]$AllowedExitCodes = @(0))
   & (Join-Path $env:SystemRoot "System32\sc.exe") @Arguments | Out-Null

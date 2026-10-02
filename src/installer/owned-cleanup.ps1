@@ -278,6 +278,48 @@ function Write-Journal {
   }
 }
 
+function Write-InstallerPhaseFailure {
+  param(
+    [AllowNull()][Management.Automation.ErrorRecord]$Failure = $null,
+    [int]$ExitCode = 1,
+    [AllowEmptyString()][string]$Message = ''
+  )
+  try {
+    $exceptionType = $null
+    $errorId = 'InstallerPhaseExit'
+    $line = 0
+    if ($Failure) {
+      $exceptionType = [string]$Failure.Exception.GetType().FullName
+      $errorId = ConvertTo-InstallerDiagnosticMessage ([string]$Failure.FullyQualifiedErrorId)
+      $line = [int]$Failure.InvocationInfo.ScriptLineNumber
+      $Message = [string]$Failure.Exception.Message
+    }
+    $substage = 'phase-dispatch'
+    if ($Failure -and $Failure.Exception.Data.Contains('InstallerFailureDiagnostic')) {
+      $probeDiagnostic = Read-InstallerFailureDiagnostic ([string]$Failure.Exception.Data['InstallerFailureDiagnostic'])
+      if ($probeDiagnostic) {
+        $exceptionType = $probeDiagnostic.exceptionType
+        $errorId = $probeDiagnostic.errorId
+        $line = $probeDiagnostic.line
+        $substage = $probeDiagnostic.substage
+        $Message = $probeDiagnostic.errorMessage
+      }
+    }
+    if ($exceptionType -and $exceptionType.Length -gt 256) { $exceptionType = $exceptionType.Substring(0, 256) }
+    if ($errorId.Length -gt 256) { $errorId = $errorId.Substring(0, 256) }
+    Write-Journal 'phase-failed' @{
+      exitCode = $ExitCode
+      exceptionType = $exceptionType
+      errorId = $errorId
+      line = $line
+      substage = $substage
+      errorMessage = ConvertTo-InstallerDiagnosticMessage $Message
+    }
+  } catch {
+    # Diagnostic failure must never replace the original phase exit status.
+  }
+}
+
 function Write-Utf8NoBomFile {
   param(
     [Parameter(Mandatory = $true)][string]$Path,
@@ -726,9 +768,14 @@ function Invoke-ProtectedSystemDohContinuityProbe {
     $output = $process.StandardOutput.ReadToEndAsync()
     $errors = $process.StandardError.ReadToEndAsync()
     if (-not $process.WaitForExit(15000)) { $process.Kill(); [void]$process.WaitForExit(3000); throw 'Private DNS continuity probe exceeded its deadline.' }
-    if ($process.ExitCode -ne 0) { throw 'Private DNS continuity probe refused ownership.' }
+    $errorOutput = $errors.GetAwaiter().GetResult()
+    if ($process.ExitCode -ne 0) {
+      $diagnostic = Read-InstallerFailureDiagnostic -Json $errorOutput
+      $failure = [InvalidOperationException]::new('Private DNS continuity probe refused ownership.')
+      if ($diagnostic) { $failure.Data['InstallerFailureDiagnostic'] = ($diagnostic | ConvertTo-Json -Depth 4 -Compress) }
+      throw $failure
+    }
     $json = $output.GetAwaiter().GetResult()
-    [void]$errors.GetAwaiter().GetResult()
     if ([Text.Encoding]::UTF8.GetByteCount($json) -gt 65536) { throw 'Private DNS continuity proof exceeds its limit.' }
     return $json | ConvertFrom-Json -ErrorAction Stop
   } finally { $process.Dispose() }
@@ -3868,6 +3915,7 @@ function Invoke-SelfTest {
 # ============================================================================
 # Диспетчер фаз.
 # ============================================================================
+try {
 if ($Phase -in @("PreInstall", "PostInstall", "VerifyInstall", "RollbackUpgrade", "Recover")) {
   Repair-UpgradeStateAccess
 }
@@ -3878,7 +3926,8 @@ switch ($Phase) {
   }
   "CheckInstallSafety" {
     if (-not (Test-InstallMayStopOwnedRuntimes)) {
-      if ($script:installSafetyHandoffAllowed) { exit 54 }
+      if ($script:installSafetyHandoffAllowed) { Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 54 -Message 'Protected installer handoff is required.'; exit 54 }
+      Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 58 -Message 'Installer safety validation refused.'
       exit 58
     }
     Write-Output "INSTALL-SAFETY: PASSED"
@@ -3887,12 +3936,13 @@ switch ($Phase) {
   "PreInstall" {
     if (-not (Test-InstallRootUnderProgramFiles $installRoot)) {
       Write-Error "Install root must be a dedicated non-system directory: $installRoot"
+      Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 45 -Message "Installer phase failed with exit code 45."
       exit 45
     }
     # Direct and silent NSIS runs do not pass through the branded wrapper.
     # Refuse before recovery, snapshots, service stops, or network writes when
     # the active Windows DNS path would disappear with SystemDoH.
-    if (-not (Test-InstallMayStopOwnedRuntimes)) { exit 54 }
+    if (-not (Test-InstallMayStopOwnedRuntimes)) { Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 54 -Message 'Installer safety validation refused.'; exit 54 }
     # Незавершённое предыдущее обновление доводится до конца ДО нового:
     # иначе маркер карантина заблокировал бы установку, а старая версия
     # осталась бы лежать в стороне.
@@ -3916,6 +3966,7 @@ switch ($Phase) {
           # поверх нельзя: карантин был бы перезаписан новым, и рабочая версия
           # исчезла бы. Прерываем установку с понятным кодом.
           Write-Error "A previous upgrade is still pending rollback; restart Windows and run the installer again."
+          Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 43 -Message "Installer phase failed with exit code 43."
           exit 43
         }
       }
@@ -3951,6 +4002,7 @@ switch ($Phase) {
     Unload-OwnedWinDivertDriver
     if (-not (Wait-OwnedFilesReleased 20)) {
       Write-Error "Owned runtimes did not release their files within 20 seconds."
+      Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 32 -Message "Installer phase failed with exit code 32."
       exit 32
     }
     # This executable belongs to the previous installed version by definition.
@@ -3993,6 +4045,7 @@ switch ($Phase) {
       }
       if ($quarantineError.Exception.Message -like "INSTALL_ROOT_LOCKED:*") {
         Write-Error $quarantineError.Exception.Message
+        Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 53 -Message "Installer phase failed with exit code 53."
         exit 53
       }
       throw $quarantineError
@@ -4035,7 +4088,8 @@ switch ($Phase) {
         $status = Restore-UpgradeQuarantine
         Update-ShellIconCache
         Write-Output "POSTINSTALL: baseline-rollback-$status"
-        if ($status -eq "restored" -or $status -eq "nothing-to-restore") { exit 41 }
+        if ($status -eq "restored" -or $status -eq "nothing-to-restore") { Write-InstallerPhaseFailure -Failure $finalizationError -ExitCode 41; exit 41 }
+        Write-InstallerPhaseFailure -Failure $finalizationError -ExitCode 42
         exit 42
       }
       # Deleting a now-unused quarantine may be retried by Recover. A cleanup
@@ -4052,7 +4106,8 @@ switch ($Phase) {
       $status = Restore-UpgradeQuarantine
       Update-ShellIconCache
       Write-Output "POSTINSTALL: rollback-$status"
-      if ($status -eq "restored") { exit 41 }
+      if ($status -eq "restored") { Write-InstallerPhaseFailure -ExitCode 41 -Message 'New payload failed its installation health check; the previous version was restored.'; exit 41 }
+      Write-InstallerPhaseFailure -ExitCode 42 -Message 'New payload failed its installation health check; rollback remains pending.'
       exit 42
     }
   }
@@ -4068,7 +4123,7 @@ switch ($Phase) {
     # используют один и тот же ownership-aware код.
     # ModernInstaller calls this phase before NSIS. Keep the same fail-closed
     # guard here so an older or alternate wrapper cannot create a DNS outage.
-    if (-not (Test-InstallMayStopOwnedRuntimes)) { exit 54 }
+    if (-not (Test-InstallMayStopOwnedRuntimes)) { Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 54 -Message 'Installer safety validation refused.'; exit 54 }
     Repair-UpgradeStateAccess
     $running = Get-RunningOwnedServiceNames
     Stop-AllOwnedRuntimes
@@ -4076,7 +4131,7 @@ switch ($Phase) {
     $released = Wait-OwnedFilesReleased 25
     Write-Output ("RESTORE:" + ($running -join ","))
     Write-Output ("RELEASED:" + $released)
-    if (-not $released) { exit 32 }
+    if (-not $released) { Write-InstallerPhaseFailure -ExitCode 32 -Message 'Owned runtimes did not release their files within 25 seconds.'; exit 32 }
     exit 0
   }
   "GuardFiles" {
@@ -4100,6 +4155,7 @@ switch ($Phase) {
     if (-not $env:EGOISTSHIELD_INSTALLER_TEST_REGISTRY_ROOT -or
         -not $env:EGOISTSHIELD_INSTALLER_STATE_DIR) {
       Write-Error "RegistrationSelfTest requires isolated registry and state roots."
+      Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 46 -Message "Installer phase failed with exit code 46."
       exit 46
     }
     Backup-OwnedInstallRegistration
@@ -4109,22 +4165,26 @@ switch ($Phase) {
     if (-not $pending -or -not (Test-Path -LiteralPath $pending) -or
         (Test-Path -LiteralPath $installRoot)) {
       Write-Error "RegistrationSelfTest quarantine step failed."
+      Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 47 -Message "Installer phase failed with exit code 47."
       exit 47
     }
     foreach ($record in @(Read-OwnedInstallRegistrationBackup)) {
       if (Test-Path -LiteralPath $record.providerPath) {
         Write-Error "RegistrationSelfTest did not remove $($record.providerPath)."
+        Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 48 -Message "Installer phase failed with exit code 48."
         exit 48
       }
     }
     $status = Restore-UpgradeQuarantine -SkipRuntimeCleanup
     if ($status -ne "restored" -or -not (Test-InstallRootIdentified $installRoot)) {
       Write-Error "RegistrationSelfTest rollback failed: $status"
+      Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 49 -Message "Installer phase failed with exit code 49."
       exit 49
     }
     foreach ($record in @(Get-OwnedInstallRegistrationKeys)) {
       if (-not (Test-Path -LiteralPath $record.ProviderPath)) {
         Write-Error "RegistrationSelfTest did not restore $($record.ProviderPath)."
+        Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 50 -Message "Installer phase failed with exit code 50."
         exit 50
       }
     }
@@ -4135,6 +4195,7 @@ switch ($Phase) {
     if (-not $env:EGOISTSHIELD_INSTALLER_STATE_DIR -or
         $env:EGOISTSHIELD_INSTALLER_TEST_DISABLE_RUNTIME_CLEANUP -ne "1") {
       Write-Error "QuarantineRetrySelfTest requires isolated installer state and disabled runtime cleanup."
+      Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 51 -Message "Installer phase failed with exit code 51."
       exit 51
     }
     New-UpgradeQuarantine
@@ -4142,6 +4203,7 @@ switch ($Phase) {
     if (-not $pending -or -not (Test-Path -LiteralPath $pending -PathType Container) -or
         (Test-Path -LiteralPath $installRoot)) {
       Write-Error "QuarantineRetrySelfTest did not move the verified install root."
+      Write-InstallerPhaseFailure -Failure $Error[0] -ExitCode 52 -Message "Installer phase failed with exit code 52."
       exit 52
     }
     Write-Output "QUARANTINE-RETRY-SELFTEST:PASSED"
@@ -4150,7 +4212,7 @@ switch ($Phase) {
   "RollbackUpgrade" {
     $status = Restore-UpgradeQuarantine
     Write-Output "ROLLBACK: $status"
-    if ($status -eq 'deferred') { exit 42 }
+    if ($status -eq 'deferred') { Write-InstallerPhaseFailure -ExitCode 42 -Message 'Upgrade rollback remains deferred.'; exit 42 }
     exit 0
   }
   "Recover" {
@@ -4206,7 +4268,7 @@ switch ($Phase) {
   "Uninstall" {
     $uninstallLease = $null
     try { $uninstallLease = Enter-UninstallMaintenanceLease }
-    catch { Write-Error $_.Exception.Message -ErrorAction Continue; exit 59 }
+    catch { Write-InstallerPhaseFailure -Failure $_ -ExitCode 59; Write-Error $_.Exception.Message -ErrorAction Continue; exit 59 }
     try {
     Stop-AllOwnedRuntimes
     try { Invoke-CoreServiceOfflineRecovery } catch { Write-Warning $_ }
@@ -4230,6 +4292,17 @@ switch ($Phase) {
       $uninstallLease.Dispose()
     }
   }
+}
+
+} catch {
+  $phaseFailure = $_
+  $phaseFailureMessage = 'Installer phase failed; see the protected installer journal.'
+  try {
+    $phaseFailureMessage = ConvertTo-InstallerDiagnosticMessage ([string]$phaseFailure.Exception.Message)
+    Write-InstallerPhaseFailure -Failure $phaseFailure -ExitCode 1
+  } catch { }
+  Write-Error $phaseFailureMessage -ErrorAction Continue
+  exit 1
 }
 
 # Сторонние сетевые продукты не удаляются никогда. Процессы и службы с общим
