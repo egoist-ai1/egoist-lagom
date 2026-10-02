@@ -590,7 +590,7 @@ function splitWindowsCommandLine(commandLine) {
 	if (current.length > 0) args.push(current);
 	return args;
 }
-function applyZapretProfileExclusions(commandLine, listsDir) {
+function applyZapretProfileExclusions(commandLine, listsDir, includeExclusions = true) {
 	const strategies = [[]];
 	for (const argument of splitWindowsCommandLine(commandLine)) {
 		if (argument === "--new") strategies.push([]);
@@ -607,7 +607,7 @@ function applyZapretProfileExclusions(commandLine, listsDir) {
 		const hasHostnameFilter = strategy.some((argument) => /^--hostlist(?:-domains|-auto)?=/.test(argument));
 		// An exclude-only hostlist requires a hostname in winws. Adding it to
 		// Discord/STUN or unknown strategies would disable their media matching.
-		for (const exclusion of [...ipExcludes, ...(hasHostnameFilter ? hostExcludes : [])]) {
+		for (const exclusion of includeExclusions ? [...ipExcludes, ...(hasHostnameFilter ? hostExcludes : [])] : []) {
 			if (!strategy.some((argument) => argument.toLowerCase() === exclusion.toLowerCase())) strategy.push(exclusion);
 		}
 		return strategy.map((argument) => {
@@ -2127,7 +2127,11 @@ var ZapretManager = class {
 		if (owned.length !== 1 || service.running || service.installed && service.state !== "STOPPED") throw new Error("Режим standalone Zapret не подтверждён; DNS сохранён.");
 		const identity = await this.readDnsProtectionStandaloneIdentity();
 		if (owned[0].pid !== identity.pid) throw new Error("Процесс standalone Zapret изменился; DNS сохранён.");
-		const nextArgs = await this.isolateDnsTransportArgs(identity.arguments, snapshot.endpoints);
+		if (this.autoSelectController || (await this.readSystemDohTransportSnapshot()).fingerprint !== snapshot.fingerprint || JSON.stringify(service) !== JSON.stringify(await this.queryService(SERVICE_NAME))) throw new Error("Standalone Zapret или DNS изменился; обновление изоляции отложено.");
+		if (this.autoSelectController || JSON.stringify(identity) !== JSON.stringify(await this.readDnsProtectionStandaloneIdentity())) throw new Error("Standalone Zapret или DNS изменился; обновление изоляции отложено.");
+		await this.ensureUserLists();
+		// Refresh saved arguments, never rebuild the user's selected tactics.
+		const nextArgs = await this.isolateDnsTransportArgs(applyZapretProfileExclusions(identity.arguments, path.join(this.workDir, "core", "lists"), false), snapshot.endpoints);
 		const confirmation = await this.readDnsProtectionStandaloneIdentity();
 		const currentService = await this.queryService(SERVICE_NAME);
 		if (this.autoSelectController || JSON.stringify(identity) !== JSON.stringify(confirmation) || JSON.stringify(service) !== JSON.stringify(currentService) || (await this.readSystemDohTransportSnapshot()).fingerprint !== snapshot.fingerprint) throw new Error("Standalone Zapret или DNS изменился; обновление изоляции отложено.");
@@ -2166,11 +2170,17 @@ var ZapretManager = class {
 		const previousXml = await readZapretBoundedProtectedFile(xmlPath);
 		const winwsPath = path.join(this.workDir, "core", "bin", "winws.exe");
 		const owned = readZapretOwnedServiceXml(previousXml, winwsPath, this.workDir);
-		const nextArgs = await this.isolateDnsTransportArgs(owned.arguments, snapshot.endpoints);
+		const identity = await this.readDnsProtectionServiceIdentity();
+		if ((await this.readSystemDohTransportSnapshot()).fingerprint !== snapshot.fingerprint || await readZapretBoundedProtectedFile(xmlPath) !== previousXml) throw new Error("Конфигурация или служба Zapret изменилась; изоляция DNS отложена.");
+		if (service.running !== (identity.state === "Running")) throw new Error("Состояние Zapret изменилось; изоляция DNS отложена.");
+		if (JSON.stringify(identity) !== JSON.stringify(await this.readDnsProtectionServiceIdentity())) throw new Error("Конфигурация или служба Zapret изменилась; изоляция DNS отложена.");
+		await this.ensureUserLists();
+		// The installed wrapper may predate optional site coverage. Keep every
+		// saved tactic/exclusion and add only its eligible managed hostlist.
+		const nextArgs = await this.isolateDnsTransportArgs(applyZapretProfileExclusions(owned.arguments, path.join(this.workDir, "core", "lists"), false), snapshot.endpoints);
 		if (JSON.stringify(splitWindowsCommandLine(nextArgs)) === JSON.stringify(splitWindowsCommandLine(owned.arguments))) return { changed: false, state: service.running ? "running" : "stopped", protectedEndpoints: snapshot.endpoints.length };
 		const escaped = escapeXmlText(nextArgs);
 		const nextXml = previousXml.replace(/<arguments>[\s\S]*?<\/arguments>/, "<arguments>" + escaped + "</arguments>");
-		const identity = await this.readDnsProtectionServiceIdentity();
 		const confirmation = await this.readSystemDohTransportSnapshot();
 		const currentIdentity = await this.readDnsProtectionServiceIdentity();
 		if (snapshot.fingerprint !== confirmation.fingerprint || JSON.stringify(identity) !== JSON.stringify(currentIdentity) || await readZapretBoundedProtectedFile(xmlPath) !== previousXml) throw new Error("Конфигурация или служба Zapret изменилась; изоляция DNS отложена.");
