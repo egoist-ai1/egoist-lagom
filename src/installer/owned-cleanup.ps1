@@ -781,6 +781,13 @@ function Invoke-ProtectedSystemDohContinuityProbe {
   } finally { $process.Dispose() }
 }
 
+function Test-SystemDohContinuitySha256 {
+  param([object]$Actual, [object]$Expected)
+  if ($Actual -isnot [string] -or $Expected -isnot [string]) { return $false }
+  if ($Actual -cnotmatch '\A[A-Fa-f0-9]{64}\z' -or $Expected -cnotmatch '\A[A-Fa-f0-9]{64}\z') { return $false }
+  return [string]::Equals($Actual, $Expected, [StringComparison]::OrdinalIgnoreCase)
+}
+
 function Assert-ProtectedSystemDohPayloadLease {
   param([object]$Lease)
   if (-not $Lease -or -not (Test-VerifiedProtectedReinstall) -or
@@ -792,12 +799,12 @@ function Assert-ProtectedSystemDohPayloadLease {
   foreach ($file in @($proof.files)) {
     $path = Join-Path $proof.root ([string]$file.path)
     Assert-InstallerBootRecoveryPlainPath -Path $path -Leaf
-    if ((Get-Item -LiteralPath $path -ErrorAction Stop).Length -ne [int64]$file.bytes -or (Get-FileSha256 $path) -cne [string]$file.sha256) { throw 'Private DNS continuity runtime generation changed.' }
+    if ((Get-Item -LiteralPath $path -ErrorAction Stop).Length -ne [int64]$file.bytes -or -not (Test-SystemDohContinuitySha256 -Actual (Get-FileSha256 $path) -Expected $file.sha256)) { throw 'Private DNS continuity runtime generation changed.' }
   }
   foreach ($file in @($proof.activation)) {
-    if ((Get-FileSha256 ([string]$file.path)) -cne [string]$file.sha256) { throw 'Private DNS continuity enabled intent changed.' }
+    if (-not (Test-SystemDohContinuitySha256 -Actual (Get-FileSha256 ([string]$file.path)) -Expected $file.sha256)) { throw 'Private DNS continuity enabled intent changed.' }
   }
-  if ($proof.ownedDns -and (Get-FileSha256 ([string]$proof.ownedDns.path)) -cne [string]$proof.ownedDns.digest) { throw 'Private DNS continuity DNS journal changed.' }
+  if ($proof.ownedDns -and -not (Test-SystemDohContinuitySha256 -Actual (Get-FileSha256 ([string]$proof.ownedDns.path)) -Expected $proof.ownedDns.digest)) { throw 'Private DNS continuity DNS journal changed.' }
   for ($index = 0; $index -lt 2; $index++) {
     $process = $Lease.processes[$index]
     $ticks = if ($index -eq 0) { $proof.wrapperStartTicks } else { $proof.engineStartTicks }
