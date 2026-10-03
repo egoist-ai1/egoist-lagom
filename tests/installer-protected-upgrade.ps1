@@ -11,7 +11,15 @@ $source=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\src\installer\owned-
 $tokens=$null;$errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($source,[ref]$tokens,[ref]$errors)
 if ($errors.Count) { throw ($errors | Out-String) }
-foreach ($name in @('Get-FileSha256','Test-InstallRootIdentified','Test-VerifiedProtectedReinstall','Test-InstallMayStopOwnedRuntimes')) {
+$sharedTokens=$null;$sharedErrors=$null
+$sharedAst=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Split-Path -Parent $PSScriptRoot) 'src\installer\service-maintenance.ps1'),[ref]$sharedTokens,[ref]$sharedErrors)
+if($sharedErrors.Count){throw 'Shared diagnostic helpers failed parsing.'}
+foreach($name in @('ConvertTo-InstallerDiagnosticMessage','New-InstallerFailureDiagnostic','Read-InstallerFailureDiagnostic')){
+  $fn=$sharedAst.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true)
+  if(-not $fn){throw ('Missing shared helper '+$name)}
+  . ([scriptblock]::Create($fn.Extent.Text))
+}
+foreach ($name in @('Get-FileSha256','Test-InstallRootIdentified','Test-VerifiedProtectedReinstall','Test-InstallMayStopOwnedRuntimes','Set-ProtectedReinstallFailureDiagnostic','Throw-ProtectedSystemDohTransactionRefusal','Initialize-ProtectedInstallerHeartbeatNative','Assert-ProtectedInstallerHeartbeatSecurity','Open-ProtectedInstallerHeartbeatFile','Open-ProtectedInstallerHeartbeatSnapshot','Read-ProtectedInstallerHeartbeatSnapshot','Close-ProtectedInstallerHeartbeatSnapshot')) {
   $fn=$ast.Find({param($node)$node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true)
   if (-not $fn) { throw "Missing $name" }
   . ([scriptblock]::Create($fn.Extent.Text))
@@ -31,6 +39,14 @@ function Get-InstallerBootRecoveryContext {
 }
 function Assert-InstallerBootRecoveryPlainPath {param($Path,[switch]$Leaf)}
 function Assert-InstallerBootRecoveryFileProtection {param($Path,[switch]$Directory)}
+# ACL/boot/process authority remain the fixture's controlled boundaries.
+# Real native open/pins/attributes/read/close execute; the held ACL policy remains controlled here.
+function Assert-ProtectedInstallerHeartbeatSecurity {
+  param([Security.AccessControl.FileSecurity]$Acl,[switch]$Directory)
+  if(-not $Acl){throw 'Held heartbeat ACL is missing.'}
+  $path=if($Directory){$env:EGOIST_PROTECTED_REINSTALL_STAGE}else{Join-Path $env:EGOIST_PROTECTED_REINSTALL_STAGE 'heartbeat.json'}
+  Assert-InstallerBootRecoveryFileProtection -Path $path
+}
 function Require {param([bool]$Value,[string]$Message)if(-not $Value){throw $Message}}
 $previousStage=$env:EGOIST_PROTECTED_REINSTALL_STAGE
 try {

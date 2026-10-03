@@ -698,49 +698,323 @@ function Get-CriticalLoopbackDnsInterfaces {
   return @($critical)
 }
 
-function Test-VerifiedProtectedReinstall {
-  $stage = $env:EGOIST_PROTECTED_REINSTALL_STAGE
-  if (-not $stage) { return $false }
-  $worker = $null
+function Initialize-ProtectedInstallerHeartbeatNative {
+  if (-not ('LagomInstallerHeartbeatSnapshotNative' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+public static class LagomInstallerHeartbeatSnapshotNative {
+  [StructLayout(LayoutKind.Sequential)]
+  public struct FileInfo {
+    public uint Attributes;
+    public System.Runtime.InteropServices.ComTypes.FILETIME Creation;
+    public System.Runtime.InteropServices.ComTypes.FILETIME Access;
+    public System.Runtime.InteropServices.ComTypes.FILETIME Write;
+    public uint VolumeSerial;
+    public uint SizeHigh;
+    public uint SizeLow;
+    public uint Links;
+    public uint IndexHigh;
+    public uint IndexLow;
+  }
+  [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+  [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+  private static extern SafeFileHandle CreateFileW(string path,uint access,uint share,IntPtr security,uint creation,uint flags,IntPtr template);
+  [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+  [DllImport("kernel32.dll", SetLastError=true)]
+  private static extern bool GetFileInformationByHandle(SafeFileHandle handle,out FileInfo info);
+  [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+  [DllImport("kernel32.dll", SetLastError=true)]
+  private static extern uint GetFileType(SafeFileHandle handle);
+  public static SafeFileHandle OpenHandle(string path) {
+    // Read + READ_CONTROL, ShareRead|Delete, OPEN_EXISTING, OPEN_REPARSE_POINT.
+    SafeFileHandle handle=CreateFileW(path,0x80020000,5,IntPtr.Zero,3,0x00200000,IntPtr.Zero);
+    if(handle.IsInvalid) {
+      int code=Marshal.GetLastWin32Error(); handle.Dispose();
+      throw new IOException("Protected heartbeat native open failed; Win32="+code+".",unchecked((int)(0x80070000u|(uint)code)));
+    }
+    return handle;
+  }
+  [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)]
+  private static extern uint GetFinalPathNameByHandleW(SafeFileHandle handle,System.Text.StringBuilder buffer,uint length,uint flags);
+  public static SafeFileHandle PinDirectory(string path) {
+    SafeFileHandle handle=CreateFileW(path,0x80020000,3,IntPtr.Zero,3,0x00200000|0x02000000,IntPtr.Zero);
+    if(handle.IsInvalid){int code=Marshal.GetLastWin32Error();handle.Dispose();throw new IOException("Protected heartbeat parent pin failed; Win32="+code+".",unchecked((int)(0x80070000u|(uint)code)));}
+    try {
+      FileInfo info;
+      if(GetFileType(handle)!=1 || !GetFileInformationByHandle(handle,out info)) throw new IOException("Protected parent pin is not a readable disk directory.");
+      if((info.Attributes&0x10u)==0 || (info.Attributes&0x400u)!=0) throw new IOException("Protected parent pin is not a plain directory.");
+      System.Text.StringBuilder buffer=new System.Text.StringBuilder(4096);
+      uint count=GetFinalPathNameByHandleW(handle,buffer,(uint)buffer.Capacity,0);
+      if(count==0 || count>=buffer.Capacity) throw new IOException("Protected parent pin final path is unavailable.");
+      string actual=buffer.ToString();
+      if(actual.StartsWith(@"\\?\")) actual=actual.Substring(4);
+      if(!String.Equals(Path.GetFullPath(path).TrimEnd('\\'),Path.GetFullPath(actual).TrimEnd('\\'),StringComparison.OrdinalIgnoreCase)) throw new IOException("Protected parent pin canonical path changed.");
+      return handle;
+    }catch{handle.Dispose();throw;}
+  }
+  [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+  [DllImport("advapi32.dll",SetLastError=true)]
+  private static extern uint GetSecurityInfo(SafeFileHandle handle,int objectType,uint info,out IntPtr owner,out IntPtr group,out IntPtr dacl,out IntPtr sacl,out IntPtr descriptor);
+  [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+  [DllImport("advapi32.dll",SetLastError=true)]
+  private static extern uint GetSecurityDescriptorLength(IntPtr descriptor);
+  [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+  [DllImport("kernel32.dll",SetLastError=true)]
+  private static extern IntPtr LocalFree(IntPtr value);
+  public static System.Security.AccessControl.FileSecurity ReadAcl(SafeFileHandle handle) {
+    IntPtr owner,group,dacl,sacl,descriptor=IntPtr.Zero;
+    try {
+      uint code=GetSecurityInfo(handle,1,7,out owner,out group,out dacl,out sacl,out descriptor);
+      if(code!=0) throw new IOException("Protected held ACL read failed; Win32="+code+".",unchecked((int)(0x80070000u|code)));
+      uint length=GetSecurityDescriptorLength(descriptor);
+      if(length<20 || length>65536) throw new IOException("Protected held ACL descriptor exceeds its bound.");
+      byte[] bytes=new byte[(int)length];Marshal.Copy(descriptor,bytes,0,bytes.Length);
+      System.Security.AccessControl.FileSecurity security=new System.Security.AccessControl.FileSecurity();
+      security.SetSecurityDescriptorBinaryForm(bytes,System.Security.AccessControl.AccessControlSections.Owner|System.Security.AccessControl.AccessControlSections.Group|System.Security.AccessControl.AccessControlSections.Access);
+      return security;
+    } finally {if(descriptor!=IntPtr.Zero) LocalFree(descriptor);}
+  }
+  public static FileInfo Inspect(FileStream stream) {
+    FileInfo info;
+    if(GetFileType(stream.SafeFileHandle)!=1) throw new IOException("Protected heartbeat handle is not a disk file.");
+    if(!GetFileInformationByHandle(stream.SafeFileHandle,out info)) {
+      int code=Marshal.GetLastWin32Error();
+      throw new IOException("Protected heartbeat handle metadata failed; Win32="+code+".",unchecked((int)(0x80070000u|(uint)code)));
+    }
+    if((info.Attributes & (0x10u|0x400u))!=0) throw new IOException("Protected heartbeat handle is a directory or reparse point.");
+    if(info.Links>1) throw new IOException("Protected heartbeat handle has more than one link.");
+    return info;
+  }
+}
+'@ -ErrorAction Stop
+  }
+}
+
+function Assert-ProtectedInstallerHeartbeatSecurity {
+  param([Security.AccessControl.FileSecurity]$Acl, [switch]$Directory)
+  $trusted = @('S-1-5-18','S-1-5-32-544')
+  if ($Acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $trusted) { throw 'Protected heartbeat owner is not SYSTEM or Administrators.' }
+  if ($Directory -and -not $Acl.AreAccessRulesProtected) { throw 'Protected heartbeat parent DACL is not protected.' }
+  $write = [Security.AccessControl.FileSystemRights]::Write -bor [Security.AccessControl.FileSystemRights]::Delete -bor
+    [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor
+    [Security.AccessControl.FileSystemRights]::TakeOwnership
+  $full = @{}
+  foreach ($rule in $Acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])) {
+    $sid = $rule.IdentityReference.Value
+    if ($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Deny) { throw 'Protected heartbeat has an unsupported deny ACE.' }
+    if ($sid -notin $trusted -and ($rule.FileSystemRights -band $write) -ne 0) { throw 'Protected heartbeat permits untrusted writes or deletion.' }
+    if ($sid -in $trusted -and ($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -eq 0 -and
+        ($rule.FileSystemRights -band [Security.AccessControl.FileSystemRights]::FullControl) -eq [Security.AccessControl.FileSystemRights]::FullControl) {
+      $full[$sid] = $true
+    }
+  }
+  if (-not $full.ContainsKey('S-1-5-18') -or -not $full.ContainsKey('S-1-5-32-544')) { throw 'Protected heartbeat lacks SYSTEM/Administrators full control.' }
+}
+
+function Open-ProtectedInstallerHeartbeatFile {
+  param([string]$Stage)
+  $path = Join-Path ([IO.Path]::GetFullPath($Stage).TrimEnd('\')) 'heartbeat.json'
+  $clock = [Diagnostics.Stopwatch]::StartNew()
+  $attempts = 0; $retries = 0; $lastFailure = $null; $handle = $null
   try {
+    while ($true) {
+      # This is an OPEN-attempt budget, not a guarantee about OS scheduling or
+      # exception-dispatch time. No read or authorization operation is retried.
+      if ($clock.Elapsed.TotalMilliseconds -ge 200) {
+        if ($lastFailure) { throw $lastFailure }
+        throw [IO.IOException]::new('Protected heartbeat native open deadline elapsed before the first attempt.')
+      }
+      $attempts++
+      try {
+        $handle = [LagomInstallerHeartbeatSnapshotNative]::OpenHandle($path)
+        if ($clock.Elapsed.TotalMilliseconds -gt 200) {
+          $handle.Dispose(); $handle = $null
+          throw [IO.IOException]::new('Protected heartbeat native open exceeded its 200 ms attempt budget.')
+        }
+        break
+      } catch {
+        $lastFailure = $_
+        $inner = $_.Exception
+        while ($inner.InnerException) { $inner = $inner.InnerException }
+        if ($inner -isnot [IO.IOException] -or $inner.HResult -notin @(-2147024894,-2147024864)) { throw }
+        $remaining = 200 - $clock.Elapsed.TotalMilliseconds
+        if ($remaining -le 0) { throw }
+        $retries++
+        [Threading.Thread]::Sleep([Math]::Min(5,[Math]::Max(1,[int][Math]::Floor($remaining))))
+      }
+    }
+  } finally {
+    $clock.Stop()
+    # Closed numeric facts are best-effort diagnostic metadata only.
+    $script:protectedHeartbeatOpenFacts = [pscustomobject]@{
+      attempts=$attempts; retries=$retries; elapsedMs=[int][Math]::Ceiling($clock.Elapsed.TotalMilliseconds); deadlineMs=200
+    }
+  }
+  # The managed constructor is deliberately outside the native OPEN retry.
+  try { return [IO.FileStream]::new($handle,[IO.FileAccess]::Read) }
+  catch { if ($handle) { $handle.Dispose() }; throw }
+}
+
+function Close-ProtectedInstallerHeartbeatSnapshot {
+  param([object]$Lease)
+  if (-not $Lease) { return }
+  try { if ($Lease.stream) { $Lease.stream.Dispose() } }
+  finally {
+    for ($i=$Lease.parents.Count-1; $i -ge 0; $i--) { $Lease.parents[$i].Dispose() }
+  }
+}
+
+function Open-ProtectedInstallerHeartbeatSnapshot {
+  param([string]$Stage)
+  Initialize-ProtectedInstallerHeartbeatNative
+  $stagePath = [IO.Path]::GetFullPath($Stage).TrimEnd('\')
+  $pins = [Collections.Generic.List[Microsoft.Win32.SafeHandles.SafeFileHandle]]::new()
+  $stream = $null
+  try {
+    # Only the immutable directory chain is inspected by path. A mutable leaf
+    # must never be checked through Get-Item/Get-Acl before or after rotation.
+    Assert-InstallerBootRecoveryPlainPath -Path $stagePath
+    $chain = @(); $cursor = $stagePath
+    while ($cursor) {
+      $chain = @($cursor) + $chain
+      $parent = [IO.Path]::GetDirectoryName($cursor.TrimEnd('\'))
+      if (-not $parent -or $parent -eq $cursor) { break }
+      $cursor = $parent
+    }
+    foreach ($parent in $chain) { $pins.Add([LagomInstallerHeartbeatSnapshotNative]::PinDirectory($parent)) }
+    Assert-ProtectedInstallerHeartbeatSecurity -Acl ([LagomInstallerHeartbeatSnapshotNative]::ReadAcl($pins[$pins.Count-1])) -Directory
+    $stream = Open-ProtectedInstallerHeartbeatFile -Stage $stagePath
+    [void][LagomInstallerHeartbeatSnapshotNative]::Inspect($stream)
+    Assert-ProtectedInstallerHeartbeatSecurity -Acl ([LagomInstallerHeartbeatSnapshotNative]::ReadAcl($stream.SafeFileHandle))
+    if ($stream.Length -gt 16384) { throw [IO.IOException]::new('Protected heartbeat exceeds its 16384-byte metadata limit.') }
+    # Fresh current-call lease. Links=0 is a valid old snapshot unlinked by
+    # File.Replace; its held bytes/ACL and exact live worker still authorize it.
+    return [pscustomobject]@{stream=$stream; parents=$pins}
+  } catch {
+    try { if ($stream) { $stream.Dispose() } }
+    finally { for ($i=$pins.Count-1; $i -ge 0; $i--) { $pins[$i].Dispose() } }
+    throw
+  }
+}
+
+function Read-ProtectedInstallerHeartbeatSnapshot {
+  param([object]$Lease)
+  if (-not $Lease -or -not $Lease.stream) { throw 'Protected heartbeat snapshot is missing.' }
+  $size = $Lease.stream.Length
+  if ($size -lt 0 -or $size -gt 16384) { throw 'Protected heartbeat snapshot exceeds its metadata limit.' }
+  $bytes = [byte[]]::new([int]$size); $offset = 0
+  while ($offset -lt $bytes.Length) {
+    $count = $Lease.stream.Read($bytes,$offset,$bytes.Length-$offset)
+    if ($count -le 0) { throw 'Protected heartbeat snapshot ended early.' }
+    $offset += $count
+  }
+  $text = [Text.UTF8Encoding]::new($false,$true).GetString($bytes)
+  if ($text.Length -gt 0 -and $text[0] -eq [char]0xFEFF) { $text = $text.Substring(1) }
+  return $text
+}
+
+function Set-ProtectedReinstallFailureDiagnostic {
+  param([string]$Substage, [Management.Automation.ErrorRecord]$Failure)
+  try {
+    if ($Substage -notmatch '^[a-z][a-z0-9-]{0,63}$') { $Substage = 'unknown' }
+    $diagnostic = if ($Failure) { New-InstallerFailureDiagnostic -Failure $Failure -Substage $Substage } else {
+      [pscustomobject]@{
+        schemaVersion=1; purpose='private-dns-payload-continuity-failure'
+        exceptionType='System.InvalidOperationException'; errorId=$Substage; line=0
+        substage=$Substage; errorMessage=('Protected installer authorization refused: ' + $Substage)
+      }
+    }
+    $script:protectedReinstallFailureDiagnostic = Read-InstallerFailureDiagnostic -Json ($diagnostic | ConvertTo-Json -Depth 4 -Compress)
+  } catch { $script:protectedReinstallFailureDiagnostic = $null }
+}
+
+function Throw-ProtectedSystemDohTransactionRefusal {
+  param([string]$Substage, [object]$Diagnostic)
+  $failure = [InvalidOperationException]::new('Private DNS continuity transaction lease changed.')
+  try {
+    if (-not $Diagnostic) {
+      $Diagnostic = [pscustomobject]@{
+        schemaVersion=1; purpose='private-dns-payload-continuity-failure'
+        exceptionType='System.InvalidOperationException'; errorId=$Substage; line=0
+        substage=$Substage; errorMessage=('Private DNS transaction refused: ' + $Substage)
+      }
+    }
+    $verified = Read-InstallerFailureDiagnostic -Json ($Diagnostic | ConvertTo-Json -Depth 4 -Compress)
+    if ($verified) { $failure.Data['InstallerFailureDiagnostic'] = ($verified | ConvertTo-Json -Depth 4 -Compress) }
+  } catch {}
+  throw $failure
+}
+
+function Test-VerifiedProtectedReinstall {
+  $script:protectedReinstallFailureDiagnostic = $null
+  $script:protectedHeartbeatOpenFacts = $null
+  $verificationSubstage = 'stage-missing'
+  $stage = $env:EGOIST_PROTECTED_REINSTALL_STAGE
+  if (-not $stage) { Set-ProtectedReinstallFailureDiagnostic -Substage $verificationSubstage; return $false }
+  $worker = $null
+  $heartbeatLease = $null
+  try {
+    $verificationSubstage = 'boot-recovery-auth'
     $bootRecovery = Assert-InstallerMaintenanceBootRecovery -StageDirectory $stage
     if ($bootRecovery.verified -ne $true -or $bootRecovery.owner -ne 'EgoistShield' -or $bootRecovery.schemaVersion -ne 1 -or
-        -not [string]::Equals([string]$bootRecovery.stage, [IO.Path]::GetFullPath($stage).TrimEnd('\'), [StringComparison]::OrdinalIgnoreCase)) { return $false }
+        -not [string]::Equals([string]$bootRecovery.stage, [IO.Path]::GetFullPath($stage).TrimEnd('\'), [StringComparison]::OrdinalIgnoreCase)) { Set-ProtectedReinstallFailureDiagnostic -Substage 'boot-recovery-identity'; return $false }
     $stage = [IO.Path]::GetFullPath($stage).TrimEnd('\')
+    $verificationSubstage = 'protected-state-read'
     $state = Get-Content -LiteralPath (Join-Path $stage 'state.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     $receiptBase = [IO.Path]::GetDirectoryName([string]$bootRecovery.stage)
-    if ($state.PSObject.Properties['receiptBase'] -and -not [string]::Equals([string]$state.receiptBase, $receiptBase, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+    $verificationSubstage = 'protected-state-boundary'
+    if ($state.PSObject.Properties['receiptBase'] -and -not [string]::Equals([string]$state.receiptBase, $receiptBase, [StringComparison]::OrdinalIgnoreCase)) { Set-ProtectedReinstallFailureDiagnostic -Substage 'protected-receipt-base'; return $false }
     $base = [IO.Path]::GetFullPath($receiptBase).TrimEnd('\')
-    if ([IO.Path]::GetDirectoryName($stage) -ne $base) { return $false }
+    if ([IO.Path]::GetDirectoryName($stage) -ne $base) { Set-ProtectedReinstallFailureDiagnostic -Substage 'protected-stage-parent'; return $false }
+    $verificationSubstage = 'protected-stage-path'
     foreach ($path in @($base, $stage)) {
       $item = Get-Item -LiteralPath $path -Force -ErrorAction Stop
-      if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { return $false }
+      if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { Set-ProtectedReinstallFailureDiagnostic -Substage $verificationSubstage; return $false }
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $stage 'backup-ready.flag') -PathType Leaf)) { return $false }
+    if (-not (Test-Path -LiteralPath (Join-Path $stage 'backup-ready.flag') -PathType Leaf)) { Set-ProtectedReinstallFailureDiagnostic -Substage 'protected-backup-ready'; return $false }
+    $verificationSubstage = 'protected-context'
     $context = Get-InstallerBootRecoveryContext $stage -AllowLegacyInventory
     foreach ($path in @((Join-Path $stage 'backup-ready.flag'), (Join-Path $stage 'heartbeat.json'), $context.maintenanceMarker)) {
-      Assert-InstallerBootRecoveryPlainPath -Path $path -Leaf
-      Assert-InstallerBootRecoveryFileProtection -Path $path
-      if ((Get-Item -LiteralPath $path -ErrorAction Stop).Length -gt 16384) { return $false }
+      $verificationSubstage = if ([IO.Path]::GetFileName($path) -eq 'heartbeat.json') { 'heartbeat-protection' } else { 'handoff-metadata-protection' }
+      if ([IO.Path]::GetFileName($path) -eq 'heartbeat.json') {
+        $heartbeatLease = Open-ProtectedInstallerHeartbeatSnapshot -Stage $stage
+      } else {
+        Assert-InstallerBootRecoveryPlainPath -Path $path -Leaf
+        Assert-InstallerBootRecoveryFileProtection -Path $path
+        if ((Get-Item -LiteralPath $path -ErrorAction Stop).Length -gt 16384) { Set-ProtectedReinstallFailureDiagnostic -Substage 'handoff-metadata-size'; return $false }
+      }
     }
+    $verificationSubstage = 'maintenance-marker-read'
     $maintenance = Get-Content -LiteralPath $context.maintenanceMarker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     if ($maintenance.schemaVersion -ne 1 -or $maintenance.owner -ne 'EgoistShield' -or
-        -not [string]::Equals([string]$maintenance.stage, $stage, [StringComparison]::OrdinalIgnoreCase)) { return $false }
-    $heartbeat = Get-Content -LiteralPath (Join-Path $stage 'heartbeat.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        -not [string]::Equals([string]$maintenance.stage, $stage, [StringComparison]::OrdinalIgnoreCase)) { Set-ProtectedReinstallFailureDiagnostic -Substage 'maintenance-marker-identity'; return $false }
+    $verificationSubstage = 'heartbeat-read'
+    $heartbeat = Read-ProtectedInstallerHeartbeatSnapshot -Lease $heartbeatLease | ConvertFrom-Json -ErrorAction Stop
+    $verificationSubstage = 'protected-state-installer-binding'
     if ($state.schemaVersion -ne 1 -or $state.owner -ne 'EgoistShield' -or
         $state.handoffStarted -ne $true -or
         [IO.Path]::GetDirectoryName([IO.Path]::GetFullPath([string]$state.installer)) -ne $stage -or
         [string]$state.sha256 -notmatch '^[a-fA-F0-9]{64}$' -or
-        (Get-FileSha256 ([string]$state.installer)) -ne [string]$state.sha256) { return $false }
+        (Get-FileSha256 ([string]$state.installer)) -ne [string]$state.sha256) { Set-ProtectedReinstallFailureDiagnostic -Substage $verificationSubstage; return $false }
+    $verificationSubstage = 'installer-file-protection'
     Assert-InstallerBootRecoveryPlainPath -Path ([string]$state.installer) -Leaf
     Assert-InstallerBootRecoveryFileProtection -Path ([string]$state.installer)
+    $verificationSubstage = 'heartbeat-worker-open'
     $worker = Get-Process -Id ([int]$heartbeat.workerPid) -ErrorAction Stop
     [void]$worker.Handle
+    $verificationSubstage = 'heartbeat-worker-identity'
     if ($worker.HasExited -or [int64]$worker.StartTime.Ticks -ne [int64]$heartbeat.workerStartTicks -or
-        -not [string]::Equals([string]$worker.MainModule.FileName, [string]$context.powerShell, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+        -not [string]::Equals([string]$worker.MainModule.FileName, [string]$context.powerShell, [StringComparison]::OrdinalIgnoreCase)) { Set-ProtectedReinstallFailureDiagnostic -Substage $verificationSubstage; return $false }
     return $true
-  } catch { return $false }
-  finally { if ($worker) { $worker.Dispose() } }
+  } catch { Set-ProtectedReinstallFailureDiagnostic -Substage $verificationSubstage -Failure $_; return $false }
+  finally {
+    try { if ($worker) { $worker.Dispose() } }
+    finally { Close-ProtectedInstallerHeartbeatSnapshot -Lease $heartbeatLease }
+  }
 }
 
 function Test-PreserveProtectedInstallerNetwork {
@@ -790,9 +1064,12 @@ function Test-SystemDohContinuitySha256 {
 
 function Assert-ProtectedSystemDohPayloadLease {
   param([object]$Lease)
-  if (-not $Lease -or -not (Test-VerifiedProtectedReinstall) -or
-      -not [string]::Equals($Lease.stage, $env:EGOIST_PROTECTED_REINSTALL_STAGE, [StringComparison]::OrdinalIgnoreCase)) {
-    throw 'Private DNS continuity transaction lease changed.'
+  if (-not $Lease) { Throw-ProtectedSystemDohTransactionRefusal -Substage 'continuity-lease-missing' }
+  if (-not (Test-VerifiedProtectedReinstall)) {
+    Throw-ProtectedSystemDohTransactionRefusal -Substage 'continuity-authorization-refused' -Diagnostic $script:protectedReinstallFailureDiagnostic
+  }
+  if (-not [string]::Equals($Lease.stage, $env:EGOIST_PROTECTED_REINSTALL_STAGE, [StringComparison]::OrdinalIgnoreCase)) {
+    Throw-ProtectedSystemDohTransactionRefusal -Substage 'continuity-stage-mismatch'
   }
   $proof = $Lease.proof
   if ((Get-FileSha256 (Join-Path $Lease.stage 'state.json')) -cne [string]$Lease.stateSha256) { throw 'Private DNS continuity protected snapshot changed.' }

@@ -8,7 +8,15 @@ function Require([bool]$Value,[string]$Message){if(-not $Value){throw $Message}}
 $tokens=$null;$errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $project 'src\installer\owned-cleanup.ps1'),[ref]$tokens,[ref]$errors)
 Require ($errors.Count -eq 0) 'Production cleanup does not parse in Windows PowerShell.'
-foreach($name in @('Get-FileSha256','Test-VerifiedProtectedReinstall','Test-PreserveProtectedInstallerNetwork','Test-InstallMayStopOwnedRuntimes','Invoke-CoreServiceOfflineRecovery','Invoke-CoreOwnedDnsCleanup','Invoke-CoreNativeDohCleanup','Reset-WindowsNetworkBaseline','Restore-SystemNetworkBaseline','Backup-AndResetPersistedNetworkActivation','Discard-OwnedNetworkArtifacts','Reconcile-OrphanedExternalBaseline')){
+$sharedTokens=$null;$sharedErrors=$null
+$sharedAst=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Split-Path -Parent $PSScriptRoot) 'src\installer\service-maintenance.ps1'),[ref]$sharedTokens,[ref]$sharedErrors)
+if($sharedErrors.Count){throw 'Shared diagnostic helpers failed parsing.'}
+foreach($name in @('ConvertTo-InstallerDiagnosticMessage','New-InstallerFailureDiagnostic','Read-InstallerFailureDiagnostic')){
+  $fn=$sharedAst.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true)
+  if(-not $fn){throw ('Missing shared helper '+$name)}
+  . ([scriptblock]::Create($fn.Extent.Text))
+}
+foreach($name in @('Set-ProtectedReinstallFailureDiagnostic','Throw-ProtectedSystemDohTransactionRefusal','Initialize-ProtectedInstallerHeartbeatNative','Assert-ProtectedInstallerHeartbeatSecurity','Open-ProtectedInstallerHeartbeatFile','Open-ProtectedInstallerHeartbeatSnapshot','Read-ProtectedInstallerHeartbeatSnapshot','Close-ProtectedInstallerHeartbeatSnapshot','Get-FileSha256','Test-VerifiedProtectedReinstall','Test-PreserveProtectedInstallerNetwork','Test-InstallMayStopOwnedRuntimes','Invoke-CoreServiceOfflineRecovery','Invoke-CoreOwnedDnsCleanup','Invoke-CoreNativeDohCleanup','Reset-WindowsNetworkBaseline','Restore-SystemNetworkBaseline','Backup-AndResetPersistedNetworkActivation','Discard-OwnedNetworkArtifacts','Reconcile-OrphanedExternalBaseline')){
   $fn=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true)
   Require ($null -ne $fn) ('Missing function '+$name)
   . ([scriptblock]::Create($fn.Extent.Text))
@@ -37,6 +45,14 @@ function Assert-InstallerMaintenanceBootRecovery {param($StageDirectory)return [
 function Get-InstallerBootRecoveryContext {param($StageDirectory,[switch]$AllowLegacyInventory)return [pscustomobject]@{maintenanceMarker=$script:marker;powerShell=$script:engine}}
 function Assert-InstallerBootRecoveryPlainPath {param($Path,[switch]$Leaf)Require ([IO.Path]::GetFullPath($Path).StartsWith($root+'\',[StringComparison]::OrdinalIgnoreCase)) 'Protection escaped fixture root.';Require (Test-Path -LiteralPath $Path) 'Protected file is missing.'}
 function Assert-InstallerBootRecoveryFileProtection {param($Path)if($script:unsafeAcl){throw 'Controlled unsafe ACL boundary'}}
+# ACL/boot/process authority remain the fixture's controlled boundaries.
+# Real native open/pins/attributes/read/close execute; the held ACL policy remains controlled here.
+function Assert-ProtectedInstallerHeartbeatSecurity {
+  param([Security.AccessControl.FileSecurity]$Acl,[switch]$Directory)
+  if(-not $Acl){throw 'Held heartbeat ACL is missing.'}
+  $path=if($Directory){$env:EGOIST_PROTECTED_REINSTALL_STAGE}else{Join-Path $env:EGOIST_PROTECTED_REINSTALL_STAGE 'heartbeat.json'}
+  Assert-InstallerBootRecoveryFileProtection -Path $path
+}
 function Get-Process {param($Id,$ErrorAction)Require ($Id -eq 138) 'Wrong worker PID.';$held=[pscustomobject]@{Handle=1;HasExited=$script:exited;StartTime=if($script:wrongBirth){$script:birth.AddSeconds(1)}else{$script:birth};MainModule=[pscustomobject]@{FileName=if($script:wrongImage){'C:\foreign.exe'}else{$script:engine}}};$held|Add-Member ScriptMethod Dispose {};return $held}
 function Write-Journal {param($Event,$Data)$script:journal.Add([string]$Event)}
 function Test-CanonicalInstallerTarget {param($Root)return $true}

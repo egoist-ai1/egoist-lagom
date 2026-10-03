@@ -16,9 +16,17 @@ $workerFunction=Find-Function $worker 'Get-FileSha256'
 # the separately imported cleanup function with the same production name.
 $script:workerHash=$workerFunction.Body.GetScriptBlock()
 function Get-WorkerFileSha256([string]$Path){return & $script:workerHash -Path $Path}
-foreach($name in @('Get-FileSha256','Resolve-NormalizedPath','Get-ExecutableFromCommandLine','Assert-ProtectedSystemDohPayloadLease','Get-ProtectedSystemDohPayloadContinuity','Close-ProtectedSystemDohPayloadContinuity','Test-SystemDohContinuitySha256')){
+$sharedTokens=$null;$sharedErrors=$null
+$sharedAst=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Split-Path -Parent $PSScriptRoot) 'src\installer\service-maintenance.ps1'),[ref]$sharedTokens,[ref]$sharedErrors)
+if($sharedErrors.Count){throw 'Shared diagnostic helpers failed parsing.'}
+foreach($name in @('ConvertTo-InstallerDiagnosticMessage','New-InstallerFailureDiagnostic','Read-InstallerFailureDiagnostic')){
+  $fn=$sharedAst.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true)
+  if(-not $fn){throw ('Missing shared helper '+$name)}
+  . ([scriptblock]::Create($fn.Extent.Text))
+}
+foreach($name in @('Set-ProtectedReinstallFailureDiagnostic','Throw-ProtectedSystemDohTransactionRefusal','Get-FileSha256','Resolve-NormalizedPath','Get-ExecutableFromCommandLine','Assert-ProtectedSystemDohPayloadLease','Get-ProtectedSystemDohPayloadContinuity','Close-ProtectedSystemDohPayloadContinuity','Test-SystemDohContinuitySha256')){
   $fn=Find-Function $cleanup $name
-  if(-not $fn){Require ($name -eq 'Test-SystemDohContinuitySha256' -and $ExpectBaselineFailure) ('Missing function '+$name);continue}
+  if(-not $fn){Require ($name -in @('Test-SystemDohContinuitySha256','Set-ProtectedReinstallFailureDiagnostic','Throw-ProtectedSystemDohTransactionRefusal') -and $ExpectBaselineFailure) ('Missing function '+$name);continue}
   . ([scriptblock]::Create(("`r`n"*($fn.Extent.StartLineNumber-1))+$fn.Extent.Text))
 }
 $plain=Find-Function $boot 'Assert-InstallerBootRecoveryPlainPath'
@@ -26,7 +34,7 @@ $plain=Find-Function $boot 'Assert-InstallerBootRecoveryPlainPath'
 $script:positive=0;$script:negative=0;$script:helperCases=0;$script:liveMutations=0
 $savedStage=$env:EGOIST_PROTECTED_REINSTALL_STAGE
 $Phase='PreInstall'
-function Test-VerifiedProtectedReinstall {return $script:verified}
+function Test-VerifiedProtectedReinstall {$script:protectedReinstallFailureDiagnostic=$null;return $script:verified}
 function Assert-InstallerBootRecoveryFileProtection {param($Path,[switch]$Directory)Require ([IO.Path]::GetFullPath($Path).StartsWith($root+'\',[StringComparison]::OrdinalIgnoreCase)) 'Protection boundary escaped own fixture.'}
 function Invoke-ProtectedSystemDohContinuityProbe {param($Stage)return $script:fixtureLease.proof}
 function Get-Process {param($Id,$ErrorAction)return @($script:fixtureLease.processes|Where-Object {$_.Id -eq $Id})[0]}

@@ -37,6 +37,10 @@ function Read-ProductionAst([string]$Path) {
   return $ast
 }
 $cleanupAst=Read-ProductionAst $cleanupPath
+$sharedAst=Read-ProductionAst (Join-Path $project 'src\installer\service-maintenance.ps1')
+foreach($name in @('ConvertTo-InstallerDiagnosticMessage','New-InstallerFailureDiagnostic','Read-InstallerFailureDiagnostic')) {
+  [void](Import-ProductionFunction $sharedAst $name)
+}
 $workerAst=Read-ProductionAst $workerPath
 $cleanupHash=(Get-FileHash -LiteralPath $cleanupPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $workerHash=(Get-FileHash -LiteralPath $workerPath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -93,7 +97,15 @@ function Get-CimInstance {
   [CmdletBinding()]param([Parameter(Position=0)][string]$ClassName,[string]$Filter,[int]$OperationTimeoutSec,$Property,$Namespace)
   $values=switch ($ClassName) {
     'Win32_Service' { @($script:ServicesByName.Values); break }
-    'Win32_Process' { @($script:Processes); break }
+    'Win32_Process' {
+      # CIM exposes microseconds; the native Get-Process fixture retains exact 100 ns ticks.
+      @($script:Processes | ForEach-Object {
+        $row=$_.PSObject.Copy()
+        [long]$ticks=([DateTime]$row.CreationDate).ToUniversalTime().Ticks
+        $row.CreationDate=[DateTime]::new(($ticks-($ticks % [long]10)),[DateTimeKind]::Utc)
+        $row
+      }); break
+    }
     'MSFT_NetUDPEndpoint' { return @($script:UdpEndpoints) }
     'MSFT_NetTCPConnection' { return @($script:TcpEndpoints) }
     default { throw ('Forbidden uncontrolled CIM class '+$ClassName) }
@@ -141,6 +153,14 @@ function Write-VerifiedSystemDohRecoveryRuntime { param($State) $script:Migratio
 function Write-JsonAtomic { param($Path,$Value) $script:MigrationStateWrites++;Write-FixtureJson $Path $Value }
 function Assert-InstallerBootRecoveryFileProtection { param($Path,[switch]$Directory) [void](Assert-FixturePath $Path);if($script:UnsafeProtection){throw 'Fixture unsafe ACL.'} }
 function Assert-InstallerBootRecoveryPlainPath { param($Path,[switch]$Leaf) [void](Assert-FixturePath $Path);Require (Test-Path -LiteralPath $Path) 'A protected fixture file is missing.' }
+# Real native snapshot/pins/attributes/read/close execute; only held ACL authority is controlled.
+# This payload fixture retains its explicitly controlled boot/ACL authority.
+function Assert-ProtectedInstallerHeartbeatSecurity {
+  param([Security.AccessControl.FileSecurity]$Acl,[switch]$Directory)
+  if(-not $Acl){throw 'Held heartbeat ACL is missing.'}
+  $path=if($Directory){$env:EGOIST_PROTECTED_REINSTALL_STAGE}else{Join-Path $env:EGOIST_PROTECTED_REINSTALL_STAGE 'heartbeat.json'}
+  Assert-InstallerBootRecoveryFileProtection -Path $path
+}
 function Assert-InstallerMaintenanceBootRecovery {
   param($StageDirectory)
   if (-not $script:BootVerified -or -not [string]::Equals([string]$StageDirectory,$script:StageDirectory,[StringComparison]::OrdinalIgnoreCase)) { throw 'Fixture stage authentication refused.' }
