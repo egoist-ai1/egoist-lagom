@@ -25,6 +25,8 @@ function Reconcile-PreservedZapretProfile {param($State)}
 function Restore-InstalledIdentity {param($State)}
 function Test-PayloadRollbackPending {return $false}
 function Restore-PreservedServiceStartModes {param($State)}
+# Core configure is an inert native boundary in this recovery-ordering fixture.
+function Refresh-OwnedCoreProtectedConfiguration {$script:events.Add('configure-core')}
 function Start-PreservedServices {
   param($State)
   Require ((Get-FileHash -LiteralPath $script:backupConfig).Hash -eq (Get-FileHash -LiteralPath $script:restoredConfig).Hash) 'Services started before exact private configuration restoration.'

@@ -11,7 +11,7 @@
 .settings-release-actions > button {
   flex: 1 1 max-content;
   width: auto !important;
-  min-width: max-content !important;
+  min-width: 0 !important;
   max-width: 100%;
   min-height: 42px;
   height: auto;
@@ -183,5 +183,134 @@
 @media (prefers-reduced-motion: reduce) {
   .settings-release-actions > button {
     transition: none !important;
+  }
+}
+
+/* Full application: let expanded content occupy its own document space.
+   The compact shield is a separate surface and is deliberately out of scope. */
+.app-shell .ruby-page-heading:not(.ruby-dashboard-heading) {
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 14px;
+}
+
+.app-shell .ruby-page-heading :is(h1, p) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.app-shell .screen-stage[data-screen="settings"] .settings-layout {
+  flex: none;
+  grid-template-rows: auto;
+  grid-auto-rows: minmax(min-content, max-content);
+  align-items: start;
+  align-content: start;
+  min-height: 0;
+  height: auto;
+  overflow: visible;
+}
+
+.app-shell .screen-stage[data-screen="settings"] .settings-surface {
+  flex: none;
+  min-height: min-content;
+  height: auto;
+  gap: 12px;
+  justify-content: flex-start !important;
+}
+
+.app-shell .screen-stage[data-screen="settings"] :is(.settings-preferences-surface .settings-preferences-list, .settings-service-surface .settings-service-list) {
+  flex: none;
+  min-height: min-content;
+  gap: 10px !important;
+}
+
+.app-shell .screen-stage[data-screen="settings"] .settings-section {
+  flex: none;
+  min-height: min-content;
+  align-content: start;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.app-shell .screen-stage[data-screen="settings"] :is(.settings-surface-head, .settings-section-head) {
+  min-height: min-content;
+  align-content: start;
+}
+
+/* The existing help button keeps these descriptions accessible on click,
+   hover and keyboard focus; aria-describedby retains the complete text. */
+.app-shell .screen-stage[data-screen="settings"] .toggle-setting-row > .toggle-setting-description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.app-shell .screen-stage[data-screen="settings"] .toggle-setting {
+  height: auto;
+  min-width: 0;
+}
+
+.app-shell .screen-stage[data-screen="settings"] .toggle-setting-text > span {
+  display: block;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.app-shell .screen-stage[data-screen="settings"] .ruby-network-settings {
+  grid-column: 1 / -1;
+  display: block !important;
+}
+
+.app-shell .screen-stage[data-screen="settings"] .settings-layout > .app-version {
+  grid-area: auto / 1 / auto / -1;
+}
+
+/* Short desktop windows need the same reachable flow as narrow windows.
+   Server/profile lists and logs retain their own bounded scrolling areas. */
+@media (max-height: 800px) and (min-width: 861px) {
+  .app-shell .screen-stage:is([data-screen="vpn"], [data-screen="dns"], [data-screen="zapret"], [data-screen="telegram-proxy"]) {
+    overflow: hidden auto;
+  }
+
+  .app-shell .screen-stage :is(.vpn-layout, .dns-layout, .zapret-layout, .telegram-layout) {
+    flex: none;
+    height: auto;
+    min-height: min-content;
+    max-height: none;
+    grid-template-rows: auto;
+    grid-auto-rows: minmax(min-content, max-content);
+    align-items: start;
+    align-content: start;
+    overflow: visible;
+  }
+
+  .app-shell .screen-stage :is(.dns-form, .dns-layout .side-stack, .dns-layout .side-stack > .panel, .zapret-main, .zapret-main > .panel, .config-list, .telegram-form, .telegram-status, .vpn-side-stack, .vpn-side-stack > .panel, .vpn-servers-panel) {
+    flex: none;
+    height: auto;
+    min-height: min-content;
+    overflow: visible;
+  }
+
+  .app-shell .screen-stage :is(.dns-form, .telegram-form, .zapret-main > .panel, .vpn-side-stack > .panel) > * {
+    flex-shrink: 0;
+  }
+
+  .app-shell .screen-stage :is(.vpn-server-list, .config-scroll, .telegram-status .log-list) {
+    flex: none;
+    min-height: 72px;
+    max-height: min(360px, 48vh);
+    overflow-y: auto !important;
+  }
+
+  .app-shell .screen-stage .telegram-form {
+    justify-content: flex-start !important;
+    gap: 16px !important;
   }
 }

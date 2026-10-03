@@ -61,6 +61,7 @@ internal sealed class OperationDispatcher : IDisposable
 	private readonly OwnedWrapperLogMaintenance? _wrapperLogMaintenance;
 	private WindowsServiceListenerSnapshot? _telegramListenerSnapshot;
 	private readonly Stopwatch _maintenanceClock = Stopwatch.StartNew();
+	private int _startupRecoveryPending;
 	private TimeSpan _nextDnsMaintenance;
 	private TimeSpan _nextDnsAudit;
 	private int _dnsMaintenanceRequested = 1;
@@ -489,6 +490,11 @@ internal sealed class OperationDispatcher : IDisposable
 			return ServiceResponse.Failure(request.RequestId, sequence, "INSTALLER_MAINTENANCE",
 				"An installer is preserving owned services; retry after installation or recovery completes.", retryable: true);
 		}
+		if (!offlineDnsRestore && Volatile.Read(ref _startupRecoveryPending) != 0 && (mutation || request.Operation == "component.query"))
+		{
+			return ServiceResponse.Failure(request.RequestId, sequence, "CORE_STARTING",
+				"Core startup recovery is still pending; authenticated diagnostics remain available.", retryable: true);
+		}
 		if (request.Operation == "component.query")
 		{
 			var activeRead = await _journal.ReadActiveResultAsync(cancellationToken);
@@ -606,6 +612,8 @@ internal sealed class OperationDispatcher : IDisposable
 			_mutationLock.Release();
 		}
 	}
+
+	internal void SetStartupRecoveryPending(bool pending) => Volatile.Write(ref _startupRecoveryPending, pending ? 1 : 0);
 
 	internal async Task WaitForInstallerMaintenanceAsync(CancellationToken cancellationToken)
 	{
@@ -1956,8 +1964,11 @@ internal sealed class OperationDispatcher : IDisposable
 		catch (StateReadException error) { problems.Add(DescribeStateError(error)); }
 		var original = JsonDefaults.ToElement(_journal.Describe(active.Value));
 		bool uncertain = active.Kind is AtomicJsonReadKind.Corrupt or AtomicJsonReadKind.Unavailable || problems.Count != 0;
+		bool startupPending = Volatile.Read(ref _startupRecoveryPending) != 0;
+		bool installerMaintenance = _installerMaintenance.IsActive();
 		return new { recoveryRequired = uncertain || intents.Count != 0 || original.GetProperty("recoveryRequired").GetBoolean(),
-			mutationReady = active.Kind == AtomicJsonReadKind.Missing && intents.Count == 0 && problems.Count == 0,
+			mutationReady = !startupPending && !installerMaintenance && active.Kind == AtomicJsonReadKind.Missing && intents.Count == 0 && problems.Count == 0,
+			startupPending, installerMaintenance = new { active = installerMaintenance },
 			active = original.GetProperty("active").Clone(), journal = active.Describe(), persistenceProblems = problems,
 			pendingOperations = intents.Select(intent => new { requestId = intent.RequestId, component = intent.Component, method = intent.Method,
 				startedAt = intent.StartedAt, outcome = intent.TerminalResponse == null ? "unknown" : "commit-pending" }).ToArray(),

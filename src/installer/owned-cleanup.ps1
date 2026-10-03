@@ -1119,7 +1119,14 @@ function Close-ProtectedSystemDohPayloadContinuity {
 
 function Get-ProtectedSystemDohPayloadContinuity {
   if (-not $env:EGOIST_PROTECTED_REINSTALL_STAGE -or $Phase -eq 'Uninstall') { return $null }
-  if (-not (Test-VerifiedProtectedReinstall)) { throw 'Private DNS continuity stage is unverified.' }
+  if (-not (Test-VerifiedProtectedReinstall)) {
+    $failure = [InvalidOperationException]::new('Private DNS continuity stage is unverified.')
+    try {
+      $diagnostic = Read-InstallerFailureDiagnostic -Json ($script:protectedReinstallFailureDiagnostic | ConvertTo-Json -Depth 4 -Compress)
+      if ($diagnostic) { $failure.Data['InstallerFailureDiagnostic'] = ($diagnostic | ConvertTo-Json -Depth 4 -Compress) }
+    } catch {}
+    throw $failure
+  }
   $state = Get-Content -LiteralPath (Join-Path $env:EGOIST_PROTECTED_REINSTALL_STAGE 'state.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if (-not $state.PSObject.Properties['payloadContinuity'] -or -not $state.payloadContinuity) { return $null }
   $cached = Get-Variable -Name protectedSystemDohPayloadLease -Scope Script -ErrorAction SilentlyContinue
@@ -1367,9 +1374,67 @@ function Get-VerifiedOwnedServiceRecords {
   return @($records.ToArray() | Sort-Object name -Unique)
 }
 
+
+function Write-ProtectedScmBackupBinding {
+  if (-not $env:EGOIST_PROTECTED_REINSTALL_STAGE) { return }
+  if (-not (Test-VerifiedProtectedReinstall)) { throw 'SCM backup binding requires the current authenticated protected stage.' }
+  $stage = [IO.Path]::GetFullPath($env:EGOIST_PROTECTED_REINSTALL_STAGE).TrimEnd('\')
+  Assert-InstallerBootRecoveryPlainPath -Path $stage
+  Assert-InstallerBootRecoveryFileProtection -Path $stage -Directory
+  Assert-PlainOwnedDirectoryTree $serviceBackupDirectory 'Owned service backup'
+  $stream = [IO.File]::Open($serviceBackupManifestPath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  try {
+    Initialize-ProtectedInstallerHeartbeatNative
+    if ([LagomInstallerHeartbeatSnapshotNative]::Inspect($stream).Links -ne 1 -or $stream.Length -lt 1 -or $stream.Length -gt 1048576) { throw 'SCM backup manifest is linked or exceeds its limit.' }
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { $hash = ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-','').ToLowerInvariant() } finally { $sha.Dispose() }
+    $binding = [ordered]@{schemaVersion=1;owner='EgoistShield';purpose='installer-scm-backup-binding';stage=$stage;manifest=[IO.Path]::GetFullPath($serviceBackupManifestPath);sha256=$hash;bytes=$stream.Length}
+    $path = Join-Path $stage 'service-backup-binding.json'
+    if (Test-Path -LiteralPath $path) {
+      Assert-InstallerBootRecoveryPlainPath -Path $path -Leaf
+      Assert-InstallerBootRecoveryFileProtection -Path $path
+      $old = Get-Content -LiteralPath $path -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+      if ($old.schemaVersion -ne 1 -or $old.owner -cne 'EgoistShield' -or $old.purpose -cne $binding.purpose -or
+          -not [string]::Equals([string]$old.stage,$stage,[StringComparison]::OrdinalIgnoreCase) -or
+          -not [string]::Equals([string]$old.manifest,$binding.manifest,[StringComparison]::OrdinalIgnoreCase) -or
+          -not (Test-SystemDohContinuitySha256 -Actual $hash -Expected $old.sha256) -or [long]$old.bytes -ne $stream.Length) { throw 'SCM backup binding belongs to another generation.' }
+      return
+    }
+    $security = [Security.AccessControl.FileSecurity]::new()
+    $security.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544'));$security.SetAccessRuleProtection($true,$false)
+    foreach ($sid in @('S-1-5-18','S-1-5-32-544')) { $security.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($sid),[Security.AccessControl.FileSystemRights]::FullControl,[Security.AccessControl.AccessControlType]::Allow)) }
+    $output = [IO.FileStream]::new($path,[IO.FileMode]::CreateNew,[Security.AccessControl.FileSystemRights]::ReadData -bor [Security.AccessControl.FileSystemRights]::WriteData,[IO.FileShare]::None,4096,[IO.FileOptions]::WriteThrough,$security)
+    try { $bytes=[Text.UTF8Encoding]::new($false).GetBytes(($binding|ConvertTo-Json -Depth 3 -Compress));$output.Write($bytes,0,$bytes.Length);$output.Flush($true) } finally { $output.Dispose() }
+    Assert-InstallerBootRecoveryFileProtection -Path $path
+    Write-Journal 'service-backup-bound' @{stageId=[IO.Path]::GetFileName($stage);bytes=$stream.Length}
+  } finally { $stream.Dispose() }
+}
+
+function Invalidate-OwnedCoreAclHardeningCache {
+  $marker = Join-Path $programDataRoot 'EgoistShield\Service\acl-hardening.marker'
+  if (-not (Test-Path -LiteralPath $marker)) { return }
+  Assert-InstallerBootRecoveryPlainPath -Path $marker -Leaf
+  Assert-InstallerBootRecoveryFileProtection -Path $marker
+  Initialize-ProtectedInstallerHeartbeatNative
+  $handle = [LagomInstallerHeartbeatSnapshotNative]::OpenHandle($marker)
+  $stream = $null
+  try {
+    $stream = [IO.FileStream]::new($handle,[IO.FileAccess]::Read,4096,$false)
+    if ([LagomInstallerHeartbeatSnapshotNative]::Inspect($stream).Links -ne 1 -or $stream.Length -gt 32) { throw 'Core ACL cache marker is linked or exceeds its limit.' }
+    Assert-ProtectedInstallerHeartbeatSecurity -Acl ([LagomInstallerHeartbeatSnapshotNative]::ReadAcl($stream.SafeFileHandle))
+    $reader = [IO.StreamReader]::new($stream,[Text.UTF8Encoding]::new($false,$true),$false,1024,$true)
+    try { $value=$reader.ReadToEnd() } finally { $reader.Dispose() }
+    if ($value -cne '4' -and $value -cne "4`r`n") { return }
+    $archive = $marker + '.invalidated-' + [Guid]::NewGuid().ToString('N')
+    [IO.File]::Move($marker,$archive)
+    if (Test-Path -LiteralPath $marker) { throw 'Core ACL cache invalidation was not confirmed.' }
+    Write-Journal 'core-acl-cache-invalidated' @{version=4}
+  } finally { if ($stream) { $stream.Dispose() } else { $handle.Dispose() } }
+}
+
 function Backup-OwnedServiceRegistrations {
   param([string[]]$PreviouslyRunning = @())
-  if (Test-Path -LiteralPath $serviceBackupManifestPath -PathType Leaf) { return }
+  if (Test-Path -LiteralPath $serviceBackupManifestPath -PathType Leaf) { Write-ProtectedScmBackupBinding; return }
   New-Item -ItemType Directory -Path $serviceBackupDirectory -Force -ErrorAction Stop | Out-Null
   $running = @(Normalize-ServiceNames $PreviouslyRunning)
   $records = New-Object System.Collections.Generic.List[object]
@@ -1395,6 +1460,7 @@ function Backup-OwnedServiceRegistrations {
   }
   ConvertTo-Json -InputObject @($records.ToArray()) -Depth 5 |
     Set-Content -LiteralPath $serviceBackupManifestPath -Encoding UTF8 -Force -ErrorAction Stop
+  Write-ProtectedScmBackupBinding
   Write-Journal "service-registrations-backed-up" @{ services = $records.Count }
 }
 
@@ -3407,6 +3473,7 @@ function Repair-UpgradeStateAccess {
       & $setFileAcl $repairItem.FullName
     }
   }
+  Invalidate-OwnedCoreAclHardeningCache
 }
 
 function Get-OwnedInstallRegistrationKeys {

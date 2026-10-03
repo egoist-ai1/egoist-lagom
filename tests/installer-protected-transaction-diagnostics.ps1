@@ -25,7 +25,7 @@ if($RedBaseline){
   Write-Output ('RED actual legacy refusal: no Exception.Data diagnostic; phase substage phase-dispatch; native '+$PSVersionTable.PSVersion)
   exit 24
 }
-$names=@('Initialize-ProtectedInstallerHeartbeatNative','Assert-ProtectedInstallerHeartbeatSecurity','Open-ProtectedInstallerHeartbeatFile','Close-ProtectedInstallerHeartbeatSnapshot','Open-ProtectedInstallerHeartbeatSnapshot','Read-ProtectedInstallerHeartbeatSnapshot','Set-ProtectedReinstallFailureDiagnostic','Throw-ProtectedSystemDohTransactionRefusal','Test-VerifiedProtectedReinstall','Get-FileSha256')
+$names=@('Initialize-ProtectedInstallerHeartbeatNative','Assert-ProtectedInstallerHeartbeatSecurity','Open-ProtectedInstallerHeartbeatFile','Close-ProtectedInstallerHeartbeatSnapshot','Open-ProtectedInstallerHeartbeatSnapshot','Read-ProtectedInstallerHeartbeatSnapshot','Set-ProtectedReinstallFailureDiagnostic','Throw-ProtectedSystemDohTransactionRefusal','Test-VerifiedProtectedReinstall','Get-ProtectedSystemDohPayloadContinuity','Get-FileSha256')
 foreach($name in $names){$f=Find-Function $CleanupScript $name;. ([scriptblock]::Create(("`r`n"*($f.Extent.StartLineNumber-1))+$f.Extent.Text))}
 foreach($name in @('Assert-InstallerBootRecoveryPlainPath','Assert-InstallerBootRecoveryFileProtection')){$f=Find-Function $boot $name;. ([scriptblock]::Create($f.Extent.Text))}
 foreach($name in @('New-InstallerProtectedFileSecurity','Write-JsonAtomic','Write-Heartbeat')){$f=Find-Function $workerSource $name;. ([scriptblock]::Create($f.Extent.Text))}
@@ -101,6 +101,13 @@ try{
   }
   $script:bootError='проверка https:\/\/fixture.invalid/fixture-secret Authorization: Custom fixture-secret {"argv":["--token","fixture-secret"]}'
   Boolean-Result $false;$privacy=Refusal-Record ([pscustomobject]@{stage=$stage}) 'boot-recovery-auth'
+  $direct=$null;try{Get-ProtectedSystemDohPayloadContinuity}catch{$direct=$_}
+  Check ([bool]$direct -and $direct.Exception.Message -ceq 'Private DNS continuity stage is unverified.') 'Direct continuity getter did not retain refusal.'
+  $beforeRows=@(Get-Content -LiteralPath $upgradeJournalPath -Encoding UTF8).Count
+  Write-InstallerPhaseFailure -Failure $direct -ExitCode 43
+  $directRows=@(Get-Content -LiteralPath $upgradeJournalPath -Encoding UTF8 | ForEach-Object {$_|ConvertFrom-Json})
+  Check ($directRows.Count -eq $beforeRows+1 -and $directRows[-1].exitCode -eq 43 -and $directRows[-1].substage -ceq 'boot-recovery-auth') 'Actual getter swallowed authorization diagnostic before phase43.'
+  Check (-not ($directRows[-1]|ConvertTo-Json -Compress).Contains('fixture-secret')) 'Direct getter phase leaked private canary.'
   Check ($privacy.errorMessage.Contains('проверка')) 'Nonsensitive Cyrillic diagnostic marker was lost.'
   Check (-not ($privacy|ConvertTo-Json -Compress).Contains('fixture-secret')) 'Secret canary escaped the actual Exception.Data/journal sanitizer.'
   $script:bootError=''

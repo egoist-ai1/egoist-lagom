@@ -308,7 +308,7 @@ internal static partial class SystemDohRecoveryPreflight
                     string backupName = record.GetProperty("backupName").GetString() ?? "";
                     if (!System.Text.RegularExpressions.Regex.IsMatch(backupName, @"\Astate-[0-9]{1,2}\.json\z")) throw new IOException("Invalid activation snapshot filename.");
                     var backup = result.Open(System.IO.Path.Combine(fullStage, "user-state", backupName), fullStage, 4 * 1024 * 1024);
-                    if (await backup.HashAsync(token) != record.GetProperty("sha256").GetString()) throw new IOException("Activation snapshot checksum changed.");
+                    if (!MigrationBackupSha256Matches(await backup.HashAsync(token), record.GetProperty("sha256"))) throw new IOException("Activation snapshot checksum changed.");
                     var current = result.Open(source, profile, 4 * 1024 * 1024, privateFile: false);
                     var savedSettings = MigrationSettings(await backup.ReadJsonAsync(token));
                     var currentSettings = MigrationSettings(await current.ReadJsonAsync(token));
@@ -330,6 +330,17 @@ internal static partial class SystemDohRecoveryPreflight
         public void Dispose() { foreach (var file in _files) file.Dispose(); }
     }
     private static bool MigrationTrustedSid(SecurityIdentifier sid) => sid.IsWellKnown(WellKnownSidType.LocalSystemSid) || sid.IsWellKnown(WellKnownSidType.BuiltinAdministratorsSid);
+    // The installer writes hexadecimal SHA256 in upper case; native leases
+    // produce lower case. Match only a scalar, exact 64-character ASCII digest.
+    internal static bool MigrationBackupSha256Matches(string? actual, JsonElement expected)
+    {
+        if (actual is null || actual.Length != 64 || expected.ValueKind != JsonValueKind.String) return false;
+        string? value = expected.GetString();
+        if (value is null || value.Length != 64) return false;
+        foreach (char item in actual.Concat(value))
+            if (item is not (>= '0' and <= '9' or >= 'A' and <= 'F' or >= 'a' and <= 'f')) return false;
+        return string.Equals(actual, value, StringComparison.OrdinalIgnoreCase);
+    }
     internal static bool MigrationOwnedDocument(JsonElement value) => value.ValueKind == JsonValueKind.Object && !HasDuplicateProperties(value) &&
         value.TryGetProperty("schemaVersion", out var version) && version.TryGetInt32(out int number) && number == 1 &&
         value.TryGetProperty("owner", out var owner) && owner.ValueKind == JsonValueKind.String && owner.GetString() == "EgoistShield";

@@ -119,25 +119,43 @@ internal sealed class ServiceEngine
 	{
 		await _log.InfoAsync($"Starting {"EgoistShieldCore"} {BuildInfo.Version}; pipe={_options.PipeName}.", cancellationToken);
 		using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-		Task? supervision = null;
+		Task? listener = null;
+		Task? startupAndSupervision = null;
+		_dispatcher.SetStartupRecoveryPending(true);
 		try
 		{
-			await _dispatcher.WaitForInstallerMaintenanceAsync(lifetime.Token);
-			await _dispatcher.RecoverOnStartupAsync(lifetime.Token);
-			supervision = _dispatcher.RunSupervisionAsync(lifetime.Token);
-			await _pipeServer.RunAsync(lifetime.Token);
+			// Authenticated hello/status must remain available while an installer
+			// owns the maintenance barrier. The dispatcher still refuses execution.
+			listener = _pipeServer.RunAsync(lifetime.Token);
+			startupAndSupervision = CompleteStartupAndSuperviseAsync(lifetime.Token);
+			Task completed = await Task.WhenAny(listener, startupAndSupervision);
+			await completed;
+			if (completed == startupAndSupervision) await listener;
 		}
 		finally
 		{
 			lifetime.Cancel();
-			if (supervision != null)
+			foreach (Task? task in new[] { listener, startupAndSupervision })
 			{
-				try { await supervision; }
+				if (task == null) continue;
+				try { await task; }
 				catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+				catch (Exception error)
+				{
+					await _log.WarnAsync("Core lifetime task ended with " + error.GetType().Name + ": " + error.Message, CancellationToken.None);
+				}
 			}
 			_dispatcher.Dispose();
 			await _log.InfoAsync("Service stopped.", CancellationToken.None);
 		}
+	}
+
+	private async Task CompleteStartupAndSuperviseAsync(CancellationToken cancellationToken)
+	{
+		await _dispatcher.WaitForInstallerMaintenanceAsync(cancellationToken);
+		await _dispatcher.RecoverOnStartupAsync(cancellationToken);
+		_dispatcher.SetStartupRecoveryPending(false);
+		await _dispatcher.RunSupervisionAsync(cancellationToken);
 	}
 
 	public async Task RecoverOnlyAsync(CancellationToken cancellationToken = default(CancellationToken))

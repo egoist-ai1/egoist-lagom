@@ -281,6 +281,7 @@ var CoreServiceClient = class CoreServiceClient {
 		const startedAt = Date.now();
 		const verifierPath = path.join(process.resourcesPath, "core-service", "win-x64", "EgoistShield.Service.exe");
 		if (!fs.existsSync(verifierPath)) throw new CoreServiceUnavailableError("Core service identity verifier is missing from the installed package.");
+		let result;
 		try {
 			const { stdout } = await execFileAsync$10(verifierPath, [
 				"--verify-pipe-server",
@@ -294,7 +295,7 @@ var CoreServiceClient = class CoreServiceClient {
 				maxBuffer: 128 * 1024,
 				encoding: "utf8"
 			});
-			const result = JSON.parse(String(stdout).trim());
+			result = JSON.parse(String(stdout).trim());
 			if (result.ok !== true || !Number.isSafeInteger(result.serverProcessId) || result.serverProcessId !== result.serviceProcessId || Number(result.serverProcessId) <= 0) throw new Error(`${result.code ?? "IDENTITY_FAILED"}: ${result.message ?? "Core identity was not verified."}`);
 			this.verifiedServicePid = Number(result.serverProcessId);
 			this.identityVerifiedAt = Date.now();
@@ -302,7 +303,18 @@ var CoreServiceClient = class CoreServiceClient {
 			this.verifiedServicePid = null;
 			this.identityVerifiedAt = 0;
 			this.identityInvalidationReason = "identity-failed";
-			throw new CoreServiceUnavailableError(`Core service named-pipe identity verification failed. reason=${diagnostic.reason}, elapsedMs=${Date.now() - startedAt}, previousServicePid=${diagnostic.previousServicePid}, cacheAgeMs=${diagnostic.cacheAgeMs}`, { cause: error });
+			// A failing native verifier exits nonzero, so execFile rejects before
+			// returning its JSON. Read only bounded failure diagnostics; output
+			// from a nonzero exit can never establish server identity.
+			if (!result && typeof error?.stdout === "string" && Buffer.byteLength(error.stdout, "utf8") <= 128 * 1024) {
+				try { result = JSON.parse(error.stdout.trim()); } catch { }
+			}
+			const failure = result && !Array.isArray(result) && result.ok === false ? result : null;
+			const verifierCode = typeof failure?.code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/.test(failure.code) ? failure.code : "unknown";
+			const stage = typeof failure?.message === "string" && failure.message.length <= 4096
+				? /(?:^|[,\s])stage=([a-z-]+)/.exec(failure.message)?.[1] : null;
+			const verifierStage = ["serialize-request", "connect", "server-pid", "scm-identity", "executable", "hello-write", "hello-flush", "hello-read", "hello-validate"].includes(stage) ? stage : "unknown";
+			throw new CoreServiceUnavailableError(`Core service named-pipe identity verification failed. reason=${diagnostic.reason}, verifierCode=${verifierCode}, verifierStage=${verifierStage}, elapsedMs=${Date.now() - startedAt}, previousServicePid=${diagnostic.previousServicePid}, cacheAgeMs=${diagnostic.cacheAgeMs}`, { cause: error });
 		}
 	}
 	exchange(rawRequest, requestTimeoutMs) {

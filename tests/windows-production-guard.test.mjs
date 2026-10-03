@@ -302,7 +302,7 @@ test('actual reinstall functions keep GUI startup suspended on failed restoratio
   const body = "$ErrorActionPreference='Stop';$script:OwnedDataRoot='" + quote(directory) + "';$StageDirectory=(Join-Path $script:OwnedDataRoot 'stage');" +
     "$tokens=$null;$errors=$null;$ast=[Management.Automation.Language.Parser]::ParseFile('" + quote(path.resolve('scripts/invoke-final-silent-reinstall.ps1')) + "',[ref]$tokens,[ref]$errors);" +
     "if($errors.Count){throw 'Production helper did not parse'};" +
-    "foreach($name in @('Enter-InstallerServiceMaintenance','Complete-InstallerServiceMaintenance','Invoke-Recovery')){" +
+    "foreach($name in @('Enter-InstallerServiceMaintenance','Complete-InstallerServiceMaintenance','Complete-InstallerScmBackupBarrier','Invoke-Recovery')){" +
     "$nodes=@($ast.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -ceq $name},$true));if($nodes.Count -ne 1){throw 'Actual function identity ambiguous'};Invoke-Expression $nodes[0].Extent.Text};" +
     "$script:Events=[Collections.Generic.List[string]]::new();" +
     "function Assert-PlainWrapperMigrationPath {param($Path,$Root)return $Path};function Protect-StageDirectory {};" +
@@ -320,7 +320,7 @@ test('actual reinstall functions keep GUI startup suspended on failed restoratio
     "function Stop-OwnedServiceForInstall {};function Stop-PreservedWrappersForRecovery {};" +
     "function Restore-PreservedState {if($script:Fault -ceq 'state'){throw 'Inert state restore failure'}};" +
     "function Reconcile-PreservedZapretProfile {};function Restore-InstalledIdentity {};function Test-PayloadRollbackPending {return $false};" +
-    "function Restore-PreservedServiceStartModes {};function Start-PreservedServices {if($script:Fault -ceq 'services'){throw 'Inert service restore failure'}};" +
+    "function Restore-PreservedServiceStartModes {};function Refresh-OwnedCoreProtectedConfiguration {};function Start-PreservedServices {if($script:Fault -ceq 'services'){throw 'Inert service restore failure'}};" +
     "function Test-LoopbackDnsReady {return $true};function Restore-CriticalAdapterDns {if($script:Fault -ceq 'dns'){throw 'Inert DNS restore failure'}};" +
     "function Restore-CriticalOwnedDnsBaseline {};function Start-InstalledDesktop {throw 'GUI must not launch in fixture'};" +
     "$state=[pscustomobject]@{runAfter=$false;services=@();criticalDns=@([pscustomobject]@{interfaceIndex=17;servers=@('127.0.0.1')})};$failureCases=0;" +

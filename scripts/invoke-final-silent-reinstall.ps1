@@ -941,7 +941,63 @@ function Enter-InstallerServiceMaintenance {
   Suspend-OwnedGuiLoginStartup
 }
 
+
+function Complete-InstallerScmBackupBarrier {
+  $manifest = Join-Path $script:OwnedDataRoot 'installer\service-backup\manifest.json'
+  if (-not (Test-Path -LiteralPath $manifest)) { return }
+  if (-not (Test-InstallerServiceMaintenanceOwner)) { throw 'SCM completion requires the current service maintenance owner.' }
+  $boot = Assert-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory
+  if ($boot.verified -ne $true -or -not [string]::Equals([string]$boot.stage,$StageDirectory,[StringComparison]::OrdinalIgnoreCase)) { throw 'SCM completion stage is not authenticated.' }
+  $bindingPath = Join-Path $StageDirectory 'service-backup-binding.json'
+  Assert-InstallerBootRecoveryPlainPath -Path $bindingPath -Leaf
+  Assert-InstallerBootRecoveryFileProtection -Path $bindingPath
+  # Initialize the existing native identity helper without consuming bootstrap data.
+  $bootstrap = [IO.File]::Open($bindingPath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  try { Assert-OwnedSystemDohInputSingleLink -Stream $bootstrap } finally { $bootstrap.Dispose() }
+  $pins=@();$streams=@()
+  try {
+    foreach ($leafParent in @((Split-Path -Parent $manifest),$StageDirectory)) {
+      $chain=@();$directory=[IO.Path]::GetFullPath($leafParent)
+      while ($directory) { $chain=@($directory)+$chain;$next=[IO.Path]::GetDirectoryName($directory.TrimEnd('\'));if(-not $next -or $next -eq $directory){break};$directory=$next }
+      foreach ($directory in $chain) { $pins += [LagomOwnedDnsInputIdentity.Native]::PinDirectory($directory) }
+    }
+    foreach ($file in @($bindingPath,$manifest)) {
+      Assert-InstallerBootRecoveryPlainPath -Path $file -Leaf
+      Assert-InstallerBootRecoveryFileProtection -Path $file
+      $handle=[LagomOwnedDnsInputIdentity.Native]::OpenPlainFile($file)
+      try { $streams += [IO.FileStream]::new($handle,[IO.FileAccess]::Read,4096,$false) } catch { $handle.Dispose();throw }
+    }
+    if ($streams[0].Length -gt 16384 -or $streams[1].Length -lt 1 -or $streams[1].Length -gt 1048576) { throw 'SCM completion metadata exceeds its bound.' }
+    $reader=[IO.StreamReader]::new($streams[0],[Text.UTF8Encoding]::new($false,$true),$false,1024,$true)
+    try { $binding=$reader.ReadToEnd() | ConvertFrom-Json -ErrorAction Stop } finally { $reader.Dispose() }
+    $sha=[Security.Cryptography.SHA256]::Create()
+    try { $hash=([BitConverter]::ToString($sha.ComputeHash($streams[1]))).Replace('-','').ToLowerInvariant() } finally { $sha.Dispose();$streams[1].Position=0 }
+    if ($binding.schemaVersion -ne 1 -or $binding.owner -cne 'EgoistShield' -or $binding.purpose -cne 'installer-scm-backup-binding' -or
+        -not [string]::Equals([string]$binding.stage,$StageDirectory,[StringComparison]::OrdinalIgnoreCase) -or
+        -not [string]::Equals([string]$binding.manifest,$manifest,[StringComparison]::OrdinalIgnoreCase) -or
+        $binding.sha256 -isnot [string] -or $binding.sha256 -notmatch '\A[A-Fa-f0-9]{64}\z' -or
+        -not [string]::Equals($binding.sha256,$hash,[StringComparison]::OrdinalIgnoreCase) -or
+        ($binding.bytes -isnot [long] -and $binding.bytes -isnot [int]) -or [long]$binding.bytes -ne $streams[1].Length) { throw 'SCM backup binding or generation changed.' }
+    $archive=Join-Path $StageDirectory 'completed-service-backup-manifest.json'
+    if (Test-Path -LiteralPath $archive) { throw 'SCM completion archive already exists.' }
+    if ([LagomOwnedDnsInputIdentity.Native]::Volume($streams[1].SafeFileHandle) -ne [LagomOwnedDnsInputIdentity.Native]::Volume($pins[-1])) { throw 'SCM completion archive is on another volume.' }
+    if (-not (Test-InstallerServiceMaintenanceOwner)) { throw 'SCM maintenance owner changed before completion.' }
+    [IO.File]::Move($manifest,$archive)
+    if ((Test-Path -LiteralPath $manifest) -or -not [string]::Equals([LagomOwnedDnsInputIdentity.Native]::FinalPath($streams[1].SafeFileHandle),$archive,[StringComparison]::OrdinalIgnoreCase)) { throw 'SCM backup archive readback failed.' }
+    Add-ReceiptEvent -Stage 'services' -Status 'scm-backup-completed' -Message 'Verified SCM maintenance barrier was archived; remaining recovery backups were retained.'
+  } finally { foreach($stream in $streams){$stream.Dispose()};for($index=$pins.Count-1;$index -ge 0;$index--){$pins[$index].Dispose()} }
+}
+
+function Refresh-OwnedCoreProtectedConfiguration {
+  if (-not (Test-InstallerServiceMaintenanceOwner)) { throw 'Core configuration refresh requires current maintenance ownership.' }
+  $core=Assert-PlainWrapperMigrationPath -Path (Join-Path $script:OwnedInstallRoot 'resources\core-service\win-x64\EgoistShield.Service.exe') -Root $script:OwnedInstallRoot
+  if (-not (Test-Path -LiteralPath $core -PathType Leaf)) { throw 'Verified installed Core is missing.' }
+  & $core configure --install-root $script:OwnedInstallRoot | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw 'Installed Core protected configuration refresh failed.' }
+}
+
 function Complete-InstallerServiceMaintenance {
+  Complete-InstallerScmBackupBarrier
   $marker = Join-Path $script:OwnedDataRoot "installer\service-maintenance.json"
   if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { Resume-OwnedGuiLoginStartup; return }
   $existing = Get-Content -LiteralPath $marker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
@@ -1414,6 +1470,23 @@ namespace LagomOwnedDnsInputIdentity {
  }
  public static class Native {
   [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetFileInformationByHandle(SafeFileHandle handle,out Info information);
+  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern SafeFileHandle CreateFileW(string p,uint a,uint s,IntPtr d,uint c,uint f,IntPtr t);
+  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern uint GetFinalPathNameByHandleW(SafeFileHandle h,System.Text.StringBuilder b,uint n,uint f);
+  [DllImport("kernel32.dll",SetLastError=true)] static extern uint GetFileType(SafeFileHandle h);
+  public static string FinalPath(SafeFileHandle h) {
+   var b=new System.Text.StringBuilder(4096);uint n=GetFinalPathNameByHandleW(h,b,(uint)b.Capacity,0);
+   if(n==0||n>=b.Capacity)throw new Win32Exception(Marshal.GetLastWin32Error());string p=b.ToString();return p.StartsWith(@"\\?\")?p.Substring(4):p;
+  }
+  static Info Inspect(SafeFileHandle h) {Info i;if(GetFileType(h)!=1||!GetFileInformationByHandle(h,out i))throw new Win32Exception(Marshal.GetLastWin32Error());return i;}
+  public static uint Volume(SafeFileHandle h) {return Inspect(h).Volume;}
+  public static SafeFileHandle PinDirectory(string p) {
+   var h=CreateFileW(p,0x80020000,3,IntPtr.Zero,3,0x02200000,IntPtr.Zero);if(h.IsInvalid){int c=Marshal.GetLastWin32Error();h.Dispose();throw new Win32Exception(c);}
+   try{Info i=Inspect(h);if((i.Attributes&0x10u)==0||(i.Attributes&0x400u)!=0||!String.Equals(System.IO.Path.GetFullPath(p).TrimEnd('\\'),FinalPath(h).TrimEnd('\\'),StringComparison.OrdinalIgnoreCase))throw new System.IO.IOException("SCM parent is not the fixed plain directory.");return h;}catch{h.Dispose();throw;}
+  }
+  public static SafeFileHandle OpenPlainFile(string p) {
+   var h=CreateFileW(p,0x80030000,5,IntPtr.Zero,3,0x00200000,IntPtr.Zero);if(h.IsInvalid){int c=Marshal.GetLastWin32Error();h.Dispose();throw new Win32Exception(c);}
+   try{Info i=Inspect(h);if((i.Attributes&0x410u)!=0||i.Links!=1||!String.Equals(System.IO.Path.GetFullPath(p),FinalPath(h),StringComparison.OrdinalIgnoreCase))throw new System.IO.IOException("SCM leaf is not the fixed ordinary single-link file.");return h;}catch{h.Dispose();throw;}
+  }
   public static uint Links(SafeFileHandle handle) {
    Info information;
    if(!GetFileInformationByHandle(handle,out information)) throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -2316,6 +2389,7 @@ function Invoke-Recovery {
   if ($payloadRollbackPending) { $recoveryErrors += 'payload-rollback-pending: Previous application files are preserved in quarantine; application rollback is not yet confirmed.' }
   try {
     Restore-PreservedServiceStartModes -State $State
+    Refresh-OwnedCoreProtectedConfiguration
     Start-PreservedServices -State $State -PreservedRuntimeRecovery
   } catch { $recoveryErrors += "services: $($_.Exception.Message)" }
   $activePrivateRuntime = @($State.services | Where-Object { $_.name -eq 'EgoistShieldSystemDoH' -and $_.wasRunning -eq $true }).Count -gt 0
@@ -2712,6 +2786,7 @@ function Invoke-WorkerMode {
     else { Write-VerifiedSystemDohRecoveryRuntime -State $state }
     $state | Add-Member -NotePropertyName dnsMigrationDeferred -NotePropertyValue $dnsMigrationDeferred -Force
     Write-JsonAtomic -Path $statePath -Value $state
+    Refresh-OwnedCoreProtectedConfiguration
     Start-PreservedServices -State $state -PreservedRuntimeRecovery:$dnsMigrationDeferred
     $installedExe = Join-Path $script:OwnedInstallRoot "EgoistShield.exe"
     if (-not (Test-Path -LiteralPath $installedExe -PathType Leaf)) { throw "Installed EgoistShield.exe is missing." }
