@@ -2746,6 +2746,235 @@ function Write-RuntimeQuarantineManifest {
   Move-Item -LiteralPath $temporary -Destination $runtimeQuarantineManifestPath -Force -ErrorAction Stop
 }
 
+function Assert-OwnedRuntimeLogRecoverySecurity {
+  param([Security.AccessControl.FileSecurity]$Acl)
+  # Repair-OwnedRuntimeQuarantineAccess grants only the current elevated
+  # installer SID in addition to SYSTEM/Administrators. This is runtime data,
+  # not the protected stage metadata (which retains its stricter ACL policy).
+  $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+  try {
+    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+    if (-not $identity.User -or -not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Wrapper log recovery requires the current elevated installer.' }
+    $trusted = @('S-1-5-18','S-1-5-32-544',$identity.User.Value)
+  } finally { $identity.Dispose() }
+  if ($Acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $trusted) { throw 'Wrapper log recovery owner is untrusted.' }
+  $write = [Security.AccessControl.FileSystemRights]::Write -bor [Security.AccessControl.FileSystemRights]::Delete -bor
+    [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor [Security.AccessControl.FileSystemRights]::TakeOwnership
+  $full = @{}
+  foreach ($rule in $Acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])) {
+    $sid = $rule.IdentityReference.Value
+    if ($rule.AccessControlType -ne [Security.AccessControl.AccessControlType]::Allow -or
+        ($sid -notin $trusted -and ($rule.FileSystemRights -band $write) -ne 0)) { throw 'Wrapper log recovery ACL permits untrusted mutation.' }
+    if ($sid -in @('S-1-5-18','S-1-5-32-544') -and ($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -eq 0 -and
+        ($rule.FileSystemRights -band [Security.AccessControl.FileSystemRights]::FullControl) -eq [Security.AccessControl.FileSystemRights]::FullControl) { $full[$sid] = $true }
+  }
+  if (-not $full.ContainsKey('S-1-5-18') -or -not $full.ContainsKey('S-1-5-32-544')) { throw 'Wrapper log recovery lacks SYSTEM/Administrators full control.' }
+}
+
+function Open-OwnedRuntimeLogRecoveryFile {
+  param([string]$Path, [switch]$ProtectedMetadata)
+  Initialize-ProtectedInstallerHeartbeatNative
+  $path = [IO.Path]::GetFullPath($Path)
+  $pins = [Collections.Generic.List[Microsoft.Win32.SafeHandles.SafeFileHandle]]::new()
+  $stream = $null; $handle = $null
+  try {
+    Assert-InstallerBootRecoveryPlainPath -Path $path -Leaf
+    $chain = @(); $cursor = [IO.Path]::GetDirectoryName($path)
+    while ($cursor) {
+      $chain = @($cursor) + $chain
+      $parent = [IO.Path]::GetDirectoryName($cursor.TrimEnd('\'))
+      if (-not $parent -or $parent -eq $cursor) { break }
+      $cursor = $parent
+    }
+    foreach ($directory in $chain) { $pins.Add([LagomInstallerHeartbeatSnapshotNative]::PinDirectory($directory)) }
+    $handle = [LagomInstallerHeartbeatSnapshotNative]::OpenHandle($path)
+    $stream = [IO.FileStream]::new($handle,[IO.FileAccess]::Read,4096,$false)
+    $fileInfo = [LagomInstallerHeartbeatSnapshotNative]::Inspect($stream)
+    if ($fileInfo.Links -ne 1) { throw 'Wrapper log recovery requires a single linked regular file.' }
+    $acl = [LagomInstallerHeartbeatSnapshotNative]::ReadAcl($stream.SafeFileHandle)
+    if ($ProtectedMetadata) { Assert-ProtectedInstallerHeartbeatSecurity -Acl $acl }
+    else { Assert-OwnedRuntimeLogRecoverySecurity -Acl $acl }
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { $hash = ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-','').ToLowerInvariant() } finally { $sha.Dispose() }
+    $stream.Position = 0
+    return [pscustomobject]@{stream=$stream;parents=$pins;sha256=$hash;bytes=$stream.Length;path=$path;fileInfo=$fileInfo}
+  } catch {
+    try { if ($stream) { $stream.Dispose() } elseif ($handle) { $handle.Dispose() } }
+    finally { for ($i=$pins.Count-1;$i -ge 0;$i--) { $pins[$i].Dispose() } }
+    throw
+  }
+}
+
+function Close-OwnedRuntimeLogRecoveryFile {
+  param([object]$Lease)
+  if (-not $Lease) { return }
+  try { if ($Lease.stream) { $Lease.stream.Dispose() } }
+  finally { for ($i=$Lease.parents.Count-1;$i -ge 0;$i--) { $Lease.parents[$i].Dispose() } }
+}
+
+function Assert-OwnedRuntimeLogRecoveryIdentity {
+  param([object]$Lease, [string]$CurrentPath)
+  if (-not $CurrentPath) { $CurrentPath = $Lease.path }
+  $current = Open-OwnedRuntimeLogRecoveryFile -Path $CurrentPath
+  try {
+    $held = [LagomInstallerHeartbeatSnapshotNative]::Inspect($Lease.stream)
+    if ($held.Links -ne 1 -or $held.VolumeSerial -ne $current.fileInfo.VolumeSerial -or
+        $held.IndexHigh -ne $current.fileInfo.IndexHigh -or $held.IndexLow -ne $current.fileInfo.IndexLow -or
+        $current.bytes -ne $Lease.bytes -or $current.sha256 -cne $Lease.sha256) { throw 'Wrapper log recovery held file identity changed.' }
+  } finally { Close-OwnedRuntimeLogRecoveryFile -Lease $current }
+}
+
+function Open-OwnedRuntimeLogRecoveryTree {
+  param([string]$Path)
+  Initialize-ProtectedInstallerHeartbeatNative
+  $root = [IO.Path]::GetFullPath($Path).TrimEnd('\')
+  $pins = [Collections.Generic.List[Microsoft.Win32.SafeHandles.SafeFileHandle]]::new()
+  try {
+    $chain = @(); $cursor = $root
+    while ($cursor) {
+      $chain = @($cursor) + $chain
+      $parent = [IO.Path]::GetDirectoryName($cursor.TrimEnd('\'))
+      if (-not $parent -or $parent -eq $cursor) { break }
+      $cursor = $parent
+    }
+    foreach ($directory in $chain) { $pins.Add([LagomInstallerHeartbeatSnapshotNative]::PinDirectory($directory)) }
+    $pending = [Collections.Generic.Queue[string]]::new(); $pending.Enqueue($root)
+    while ($pending.Count -gt 0) {
+      $directory = $pending.Dequeue()
+      foreach ($item in @(Get-ChildItem -LiteralPath $directory -Force -ErrorAction Stop)) {
+        if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Wrapper log recovery inventory contains a reparse point.' }
+        if ($item.PSIsContainer) {
+          # Pin before traversing: a mutable child directory cannot be renamed
+          # into a junction between the inventory check and its recursive read.
+          $pins.Add([LagomInstallerHeartbeatSnapshotNative]::PinDirectory($item.FullName))
+          $pending.Enqueue($item.FullName)
+        }
+      }
+    }
+    return [pscustomobject]@{stream=$null;parents=$pins}
+  } catch { for ($i=$pins.Count-1;$i -ge 0;$i--) { $pins[$i].Dispose() }; throw }
+}
+
+function Assert-OwnedWrapperLogRecoveryService {
+  param([object[]]$Definition, [string]$Source)
+  $name = [string]$Definition[0]
+  $expected = Join-Path $Source ('service-wrapper\'+$Definition[1]+'.exe')
+  $rows = @(Get-CimInstance Win32_Service -Filter ("Name='"+$name+"'") -OperationTimeoutSec 3 -ErrorAction Stop)
+  if ($rows.Count -ne 1 -or [string]$rows[0].Name -cne $name -or [string]$rows[0].State -cne 'Stopped' -or
+      [string]$rows[0].StartName -notin @('LocalSystem','NT AUTHORITY\SYSTEM') -or
+      -not [string]::Equals((Get-ExecutableFromCommandLine ([string]$rows[0].PathName)),$expected,[StringComparison]::OrdinalIgnoreCase)) { throw 'Wrapper log recovery requires the stopped canonical owned LocalSystem service.' }
+}
+
+function Preserve-OwnedRuntimeWrapperLogCollisions {
+  param([object[]]$Records)
+  $definitions = @{
+    Zapret = @('EgoistShieldZapret','egoistshield-zapret-service','logs\zapret-service\egoistshield-zapret-service.wrapper.log')
+    TelegramProxy = @('EgoistShieldTelegramProxy','egoistshield-telegram-proxy-service','service-logs\egoistshield-telegram-proxy-service.wrapper.log')
+    Vpn = @('EgoistShieldVpn','egoistshield-vpn-service','logs\egoistshield-vpn-service.wrapper.log')
+  }
+  $plans = [Collections.Generic.List[object]]::new()
+  $leases = [Collections.Generic.List[object]]::new()
+  try {
+    # Validate the WHOLE inventory before archiving even one known log. Every
+    # nonlog collision still uses the original strict hash comparison.
+    foreach ($record in @($Records)) {
+      if (-not (Test-Path -LiteralPath $record.destination -PathType Container) -or -not (Test-Path -LiteralPath $record.source)) { continue }
+      $leases.Add((Open-OwnedRuntimeLogRecoveryTree -Path $record.source))
+      $leases.Add((Open-OwnedRuntimeLogRecoveryTree -Path $record.destination))
+      Assert-PlainOwnedDirectoryTree $record.source 'Runtime recovery source'
+      Assert-PlainOwnedDirectoryTree $record.destination 'Runtime recovery quarantine'
+      foreach ($oldItem in @(Get-ChildItem -LiteralPath $record.destination -Recurse -Force -ErrorAction Stop)) {
+        $relativeItem = $oldItem.FullName.Substring(([string]$record.destination).TrimEnd('\').Length+1)
+        $liveItemPath = Join-Path $record.source $relativeItem
+        if ((Test-Path -LiteralPath $liveItemPath) -and $oldItem.PSIsContainer -ne (Get-Item -LiteralPath $liveItemPath -Force -ErrorAction Stop).PSIsContainer) { throw "Runtime file/directory conflict; both copies preserved: $liveItemPath" }
+      }
+      foreach ($oldFile in @(Get-ChildItem -LiteralPath $record.destination -Recurse -File -Force -ErrorAction Stop)) {
+        $relative = $oldFile.FullName.Substring(([string]$record.destination).TrimEnd('\').Length+1)
+        $live = Join-Path $record.source $relative
+        if (-not (Test-Path -LiteralPath $live)) { continue }
+        $component = [IO.Path]::GetFileName([string]$record.source)
+        $definition = $definitions[$component]
+        $canonical = Join-Path $programDataRoot ('EgoistShield\Runtime\'+$component)
+        if ($definition -and [string]::Equals([IO.Path]::GetFullPath([string]$record.source),[IO.Path]::GetFullPath($canonical),[StringComparison]::OrdinalIgnoreCase) -and
+            [string]::Equals($relative,$definition[2],[StringComparison]::OrdinalIgnoreCase)) {
+          # Even a short hash read must not deny a running wrapper its writes.
+          Assert-OwnedWrapperLogRecoveryService -Definition $definition -Source $record.source
+        }
+        $oldHash = Get-FileSha256 $oldFile.FullName; $liveHash = Get-FileSha256 $live
+        if ((Test-Path -LiteralPath $live -PathType Leaf) -and $oldHash -and $liveHash -and $oldHash -eq $liveHash) { continue }
+        $suffix = ([string]$record.destination).Substring(([string]$record.source).Length)
+        if (-not $definition -or -not [string]::Equals([IO.Path]::GetFullPath([string]$record.source),[IO.Path]::GetFullPath($canonical),[StringComparison]::OrdinalIgnoreCase) -or
+            $suffix -cnotmatch '\A\.upgrade-old-[a-fA-F0-9]{32}\z' -or -not [string]::Equals($relative,$definition[2],[StringComparison]::OrdinalIgnoreCase) -or
+            -not (Test-Path -LiteralPath $live -PathType Leaf)) { throw "Different runtime files require recovery; both copies preserved: $live; $($oldFile.FullName)" }
+        $oldLease = Open-OwnedRuntimeLogRecoveryFile -Path $oldFile.FullName; $leases.Add($oldLease)
+        $liveLease = Open-OwnedRuntimeLogRecoveryFile -Path $live; $leases.Add($liveLease)
+        $plans.Add([pscustomobject]@{component=$component;definition=$definition;record=$record;old=$oldLease;live=$liveLease})
+      }
+    }
+    if ($plans.Count -eq 0) { return }
+    if ($plans.Count -gt 3 -or @($plans | Select-Object -ExpandProperty component -Unique).Count -ne $plans.Count) { throw 'Wrapper log recovery component inventory is ambiguous.' }
+    if (-not (Test-VerifiedProtectedReinstall)) { throw 'Wrapper log recovery requires the current authenticated protected stage.' }
+    $stage = [IO.Path]::GetFullPath($env:EGOIST_PROTECTED_REINSTALL_STAGE).TrimEnd('\')
+    Assert-InstallerBootRecoveryPlainPath -Path $stage
+    Assert-InstallerBootRecoveryFileProtection -Path $stage -Directory
+    $stateLease = Open-OwnedRuntimeLogRecoveryFile -Path (Join-Path $stage 'state.json') -ProtectedMetadata; $leases.Add($stateLease)
+    if ($stateLease.bytes -gt 4194304) { throw 'Wrapper log recovery state exceeds its limit.' }
+    $reader = [IO.StreamReader]::new($stateLease.stream,[Text.UTF8Encoding]::new($false,$true),$true,4096,$true)
+    try { $state = $reader.ReadToEnd() | ConvertFrom-Json -ErrorAction Stop } finally { $reader.Dispose() }
+    foreach ($plan in $plans) {
+      $saved = @($state.services | Where-Object { [string]$_.name -ceq $plan.definition[0] })
+      $wrapper = Join-Path $plan.record.source ('service-wrapper\'+$plan.definition[1]+'.exe')
+      if ($saved.Count -ne 1 -or $saved[0].registration.account -notin @('LocalSystem','NT AUTHORITY\SYSTEM') -or
+          -not [string]::Equals((Get-ExecutableFromCommandLine ([string]$saved[0].pathName)),$wrapper,[StringComparison]::OrdinalIgnoreCase)) { throw 'Wrapper log recovery service snapshot ownership is invalid.' }
+      $wrapperLease = Open-OwnedRuntimeLogRecoveryFile -Path (Join-Path $plan.record.destination ('service-wrapper\'+$plan.definition[1]+'.exe')); $leases.Add($wrapperLease)
+      if (-not (Test-SystemDohContinuitySha256 -Actual $wrapperLease.sha256 -Expected $saved[0].wrapperSha256)) { throw 'Wrapper log recovery wrapper generation differs from the protected snapshot.' }
+    }
+    if (-not (Test-VerifiedProtectedReinstall) -or (Get-FileSha256 (Join-Path $stage 'state.json')) -ne $stateLease.sha256) { throw 'Wrapper log recovery protected transaction changed.' }
+    $history = Join-Path $stage 'recovery-log-history'
+    $directoryAcl = [Security.AccessControl.DirectorySecurity]::new()
+    $directoryAcl.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544')); $directoryAcl.SetAccessRuleProtection($true,$false)
+    $fileAcl = [Security.AccessControl.FileSecurity]::new()
+    $fileAcl.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544')); $fileAcl.SetAccessRuleProtection($true,$false)
+    foreach ($sid in @('S-1-5-18','S-1-5-32-544')) {
+      $identity = [Security.Principal.SecurityIdentifier]::new($sid)
+      $directoryAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity,[Security.AccessControl.FileSystemRights]::FullControl,[Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [Security.AccessControl.InheritanceFlags]::ObjectInherit,[Security.AccessControl.PropagationFlags]::None,[Security.AccessControl.AccessControlType]::Allow))
+      $fileAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity,[Security.AccessControl.FileSystemRights]::FullControl,[Security.AccessControl.AccessControlType]::Allow))
+    }
+    if (-not (Test-Path -LiteralPath $history)) { [void][IO.Directory]::CreateDirectory($history,$directoryAcl) }
+    Assert-InstallerBootRecoveryPlainPath -Path $history; Assert-InstallerBootRecoveryFileProtection -Path $history -Directory
+    $archive = Join-Path $history ([Guid]::NewGuid().ToString('N'))
+    [void][IO.Directory]::CreateDirectory($archive,$directoryAcl)
+    $historyPin = [LagomInstallerHeartbeatSnapshotNative]::PinDirectory($history)
+    $archivePin = $null
+    try { $archivePin = [LagomInstallerHeartbeatSnapshotNative]::PinDirectory($archive) } catch { $historyPin.Dispose(); throw }
+    try {
+      $manifest = [ordered]@{schemaVersion=1;owner='EgoistShield';purpose='owned-wrapper-log-recovery';stageId=[IO.Path]::GetFileName($stage);stateSha256=$stateLease.sha256;files=@()}
+      foreach ($plan in $plans) {
+        if ([IO.Path]::GetPathRoot($plan.old.path) -ne [IO.Path]::GetPathRoot($archive)) { throw 'Wrapper log recovery archive must stay on the same volume.' }
+        $target = Join-Path $archive ($plan.component+'.wrapper.log')
+        if (Test-Path -LiteralPath $target) { throw 'Wrapper log recovery refuses an existing archive target.' }
+        $manifest.files += [ordered]@{component=$plan.component;oldPath=$plan.old.path;livePath=$plan.live.path;archivePath=$target;oldSha256=$plan.old.sha256;oldBytes=$plan.old.bytes;liveSha256=$plan.live.sha256;liveBytes=$plan.live.bytes}
+      }
+      $output = [IO.FileStream]::new((Join-Path $archive 'manifest.json'),[IO.FileMode]::CreateNew,[Security.AccessControl.FileSystemRights]::ReadData -bor [Security.AccessControl.FileSystemRights]::WriteData,[IO.FileShare]::None,4096,[IO.FileOptions]::WriteThrough,$fileAcl)
+      try { $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($manifest | ConvertTo-Json -Depth 5 -Compress)); $output.Write($bytes,0,$bytes.Length); $output.Flush($true) } finally { $output.Dispose() }
+      # Receipt precedes moves, so an interruption still explains every retained
+      # old generation. No log is truncated or overwritten, including on failure.
+      for ($i=0;$i -lt $plans.Count;$i++) {
+        $plan=$plans[$i]; $target=$manifest.files[$i].archivePath
+        Assert-OwnedWrapperLogRecoveryService -Definition $plan.definition -Source $plan.record.source
+        Assert-OwnedRuntimeLogRecoveryIdentity -Lease $plan.old
+        Assert-OwnedRuntimeLogRecoveryIdentity -Lease $plan.live
+        [IO.File]::Move($plan.old.path,$target)
+        [IO.File]::SetAccessControl($target,$fileAcl)
+        Assert-InstallerBootRecoveryFileProtection -Path $target
+        Assert-OwnedRuntimeLogRecoveryIdentity -Lease $plan.old -CurrentPath $target
+        Assert-OwnedRuntimeLogRecoveryIdentity -Lease $plan.live
+      }
+      Write-Journal 'owned-wrapper-logs-preserved' @{files=$plans.Count;stageId=[IO.Path]::GetFileName($stage);archiveId=[IO.Path]::GetFileName($archive)}
+    } finally { try { $archivePin.Dispose() } finally { $historyPin.Dispose() } }
+  } finally { for ($i=$leases.Count-1;$i -ge 0;$i--) { Close-OwnedRuntimeLogRecoveryFile -Lease $leases[$i] } }
+}
+
 function Merge-StaleOwnedRuntimeDirectory {
   param([string]$Source, [string]$Destination)
   # Validate every collision before moving anything. A split directory is not
@@ -2794,6 +3023,7 @@ function Repair-StaleOwnedRuntimeQuarantine {
   # merge only missing files from the owned sibling quarantine, then clear the
   # stale manifest so the next install can start cleanly.
   $records = @(Read-OwnedRuntimeQuarantine)
+  Preserve-OwnedRuntimeWrapperLogCollisions -Records $records
   foreach ($record in $records) {
     $source = Assert-OwnedPath ([string]$record.source) "stale runtime source"
     $destination = Resolve-NormalizedPath ([string]$record.destination)
@@ -2905,6 +3135,7 @@ function Read-OwnedRuntimeQuarantine {
 
 function Restore-OwnedRuntimeQuarantine {
   $records = @(Read-OwnedRuntimeQuarantine)
+  Preserve-OwnedRuntimeWrapperLogCollisions -Records $records
   [array]::Reverse($records)
   foreach ($record in $records) {
     if (-not (Test-Path -LiteralPath $record.destination -PathType Container)) { continue }

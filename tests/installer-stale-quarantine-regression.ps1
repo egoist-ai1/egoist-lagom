@@ -21,7 +21,7 @@ try {
   $tokens = $null; $parseErrors = $null
   $ast = [Management.Automation.Language.Parser]::ParseInput($source, [ref]$tokens, [ref]$parseErrors)
   if ($parseErrors.Count) { throw ($parseErrors | Out-String) }
-  $names = @('Get-FileSha256','ConvertFrom-JsonCollectionCompat','Resolve-NormalizedPath','Test-OwnedPath','Assert-OwnedPath','Read-OwnedRuntimeQuarantine','Assert-PlainOwnedDirectoryTree','Merge-StaleOwnedRuntimeDirectory','Repair-StaleOwnedRuntimeQuarantine','Move-OwnedDirectoryWithRetry','New-OwnedRuntimeQuarantine','Restore-OwnedRuntimeQuarantine','Write-RuntimeQuarantineManifest')
+  $names = @('Get-FileSha256','ConvertFrom-JsonCollectionCompat','Resolve-NormalizedPath','Test-OwnedPath','Assert-OwnedPath','Read-OwnedRuntimeQuarantine','Assert-PlainOwnedDirectoryTree','Initialize-ProtectedInstallerHeartbeatNative','Open-OwnedRuntimeLogRecoveryTree','Close-OwnedRuntimeLogRecoveryFile','Preserve-OwnedRuntimeWrapperLogCollisions','Merge-StaleOwnedRuntimeDirectory','Repair-StaleOwnedRuntimeQuarantine','Move-OwnedDirectoryWithRetry','New-OwnedRuntimeQuarantine','Restore-OwnedRuntimeQuarantine','Write-RuntimeQuarantineManifest')
   $definitions = foreach ($name in $names) {
     $fn = $ast.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name }, $true)
     if (-not $fn) { throw "Function not found: $name" }
