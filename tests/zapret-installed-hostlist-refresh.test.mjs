@@ -13,7 +13,7 @@ const sdk = loadRecovered('electron/ipc/zapret-manager', {
 }, ['ZapretManager', 'splitWindowsCommandLine', 'applyZapretDnsTransportExclusions', 'readZapretOwnedServiceXml']);
 const endpoints = [{ address: '192.0.2.10', port: 8443 }, { address: '2001:db8::1', port: 8443 }];
 const filter = '!impostor and !loopback and ((tcp and (tcp.DstPort == 443 or tcp.SrcPort == 443 or tcp.DstPort == 8443 or tcp.SrcPort == 8443)) or (udp and (udp.DstPort == 443 or udp.SrcPort == 443)))';
-const canonical = 'instagram.com\ncdninstagram.com\nx.com\ntwitter.com\ntwimg.com\nt.co\nfut.gg\n';
+const canonical = 'instagram.com\ncdninstagram.com\nfacebook.com\nx.com\ntwitter.com\ntwimg.com\nt.co\nfut.gg\n';
 const args = value => [...sdk.splitWindowsCommandLine(value)];
 function quote(value) { return '"' + value.replaceAll('"', '\\"') + '"'; }
 

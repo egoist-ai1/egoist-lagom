@@ -38,7 +38,7 @@ var DEFAULT_USER_LIST_FILES = {
 };
 // Application-owned site coverage is separate from upstream and user lists.
 var ZAPRET_NAMED_SITE_FILE = "list-egoist-sites.txt";
-var ZAPRET_NAMED_SITE_CONTENT = "instagram.com\ncdninstagram.com\nx.com\ntwitter.com\ntwimg.com\nt.co\nfut.gg\n";
+var ZAPRET_NAMED_SITE_CONTENT = "instagram.com\ncdninstagram.com\nfacebook.com\nx.com\ntwitter.com\ntwimg.com\nt.co\nfut.gg\n";
 var USER_LIST_FILE_NAMES = {
 	generalDomains: "list-general-user.txt",
 	includedCidrs: "ipset-all-user.txt",

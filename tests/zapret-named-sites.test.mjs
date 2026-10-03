@@ -66,7 +66,7 @@ test('provisioning refreshes its owned named-site list and preserves all user li
   const manager = new ZapretManager('resources', 'app', 'user', work);
   await manager.ensureUserLists();
   const content = await fs.readFile(path.join(lists, 'list-egoist-sites.txt'), 'utf8');
-  assert.equal(content, 'instagram.com\ncdninstagram.com\nx.com\ntwitter.com\ntwimg.com\nt.co\nfut.gg\n');
+  assert.equal(content, 'instagram.com\ncdninstagram.com\nfacebook.com\nx.com\ntwitter.com\ntwimg.com\nt.co\nfut.gg\n');
   assert.equal(await fs.readFile(path.join(lists, 'list-general-user.txt'), 'utf8'), userBytes);
   await manager.ensureUserLists();
   assert.equal(await fs.readFile(path.join(lists, 'list-egoist-sites.txt'), 'utf8'), content);

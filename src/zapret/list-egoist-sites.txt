@@ -1,5 +1,6 @@
 instagram.com
 cdninstagram.com
+facebook.com
 x.com
 twitter.com
 twimg.com
