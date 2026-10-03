@@ -83,7 +83,7 @@ public static class EgoistGuiStartupNative {
  static string Query(int session,int info) { IntPtr value;int bytes;if(!WTSQuerySessionInformation(IntPtr.Zero,session,info,out value,out bytes))throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());try{return Marshal.PtrToStringUni(value)??"";}finally{WTSFreeMemory(value);} }
  public static string Account(int session) { string user=Query(session,5),domain=Query(session,7);if(String.IsNullOrWhiteSpace(user))throw new InvalidOperationException("No interactive session account.");return String.IsNullOrWhiteSpace(domain)?user:domain+"\\"+user; }
 }
-"@ -ErrorAction Stop
+"@ -ReferencedAssemblies @([object].Assembly.Location, [System.Uri].Assembly.Location, [System.Linq.Enumerable].Assembly.Location) -ErrorAction Stop
   }
   $identity=[Security.Principal.WindowsIdentity]::GetCurrent()
   try {

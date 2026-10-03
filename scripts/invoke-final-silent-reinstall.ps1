@@ -1494,7 +1494,7 @@ namespace LagomOwnedDnsInputIdentity {
   }
  }
 }
-"@ -ErrorAction Stop
+"@ -ReferencedAssemblies @([object].Assembly.Location, [System.Uri].Assembly.Location, [System.Linq.Enumerable].Assembly.Location) -ErrorAction Stop
   }
   if (-not $Stream -or $Stream.SafeFileHandle.IsClosed -or [LagomOwnedDnsInputIdentity.Native]::Links($Stream.SafeFileHandle) -ne 1) {
     throw 'Private DNS protection refuses linked or unverifiable input files.'

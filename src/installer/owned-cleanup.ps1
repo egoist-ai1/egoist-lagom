@@ -790,7 +790,7 @@ public static class LagomInstallerHeartbeatSnapshotNative {
     return info;
   }
 }
-'@ -ErrorAction Stop
+'@ -ReferencedAssemblies @([object].Assembly.Location, [System.Uri].Assembly.Location, [System.Linq.Enumerable].Assembly.Location) -ErrorAction Stop
   }
 }
 
@@ -2354,7 +2354,7 @@ namespace EgoistShield.Native {
     public static extern bool InternetSetOption(IntPtr hInternet, int option, IntPtr buffer, int length);
   }
 }
-"@ -ErrorAction Stop
+"@ -ReferencedAssemblies @([object].Assembly.Location, [System.Uri].Assembly.Location, [System.Linq.Enumerable].Assembly.Location) -ErrorAction Stop
     }
     [void][EgoistShield.Native.WinInet]::InternetSetOption([IntPtr]::Zero, 39, [IntPtr]::Zero, 0)
     [void][EgoistShield.Native.WinInet]::InternetSetOption([IntPtr]::Zero, 37, [IntPtr]::Zero, 0)
@@ -4080,7 +4080,7 @@ public static class EgoistShieldRestartManager
         }
     }
 }
-'@ -ErrorAction Stop
+'@ -ReferencedAssemblies @([object].Assembly.Location, [System.Uri].Assembly.Location, [System.Linq.Enumerable].Assembly.Location) -ErrorAction Stop
     return $true
   } catch {
     Write-Warning "Restart Manager API unavailable: $_"

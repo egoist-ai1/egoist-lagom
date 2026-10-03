@@ -63,7 +63,7 @@ namespace LagomInstallerFileLocks {
   }
  }
 }
-"@ -ErrorAction Stop
+"@ -ReferencedAssemblies @([object].Assembly.Location, [System.Uri].Assembly.Location, [System.Linq.Enumerable].Assembly.Location) -ErrorAction Stop
 }
 
 function Get-InstallerFileLockRoots {
