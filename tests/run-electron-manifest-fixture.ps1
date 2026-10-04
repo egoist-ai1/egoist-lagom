@@ -190,8 +190,9 @@ $cases=@();$holds=@();$supervisorFatal=$null;$engineSupervisorStage='held-inputs
 try {
  foreach ($e in $f.images) {$holds+=,(Open-SandboxProbeInput (Join-Path $f.root $e.name) $e.sha256)}
  $engineSupervisorStage='case-selection'
- $engineCases=@(foreach ($engineImageEntry in $f.images) {@{name=$engineImageEntry.level;image=$engineImageEntry;child=$null}})
- $engineCases+=@{name='requireAdministrator-routed';image=$f.images[0];child=$f.images[1]}
+ $engineCases=@(foreach ($engineImageEntry in $f.images) {@{name=$engineImageEntry.level;image=$engineImageEntry;child=$null;sync=$false}})
+ $engineCases+=@{name='requireAdministrator-routed';image=$f.images[0];child=$f.images[1];sync=$false}
+ $engineCases+=@{name='requireAdministrator-synchronized';image=$f.images[0];child=$f.images[1];sync=$true}
  $engineSupervisorStage='case-execution'
  foreach ($selection in $engineCases) {
   $e=$selection.image
@@ -202,12 +203,13 @@ try {
   $expected=Join-Path $f.root $e.name
   $expectedChild=if ($selection.child) {Join-Path $f.root $selection.child.name} else {$expected}
   $expectedChildName=[IO.Path]::GetFileName($expectedChild)
-  $result=[ordered]@{caseName=$selection.name;level=$e.level;childImageName=$expectedChildName;childRoutingSelected=[bool]$selection.child;imageSha256=$e.sha256;asarSha256=$f.asar.sha256;asarHeaderSha256=$f.asar.headerSha256;fuses=$e.fuses;created=$false;assigned=$false;resumed=$false;timedOut=$false;logBudgetExceeded=$false;exitCode=$null;exitHex=$null;processes=@();observationErrors=@();appProof=$null;casePassed=$false;cleanup=@{jobEmpty=$false;parentRetired=$false;handlesClosed=$false}}
+  $result=[ordered]@{caseName=$selection.name;level=$e.level;childImageName=$expectedChildName;childRoutingSelected=[bool]$selection.child;childPathSynchronized=[bool]$selection.sync;imageSha256=$e.sha256;asarSha256=$f.asar.sha256;asarHeaderSha256=$f.asar.headerSha256;fuses=$e.fuses;created=$false;assigned=$false;resumed=$false;timedOut=$false;logBudgetExceeded=$false;exitCode=$null;exitHex=$null;processes=@();observationErrors=@();appProof=$null;casePassed=$false;cleanup=@{jobEmpty=$false;parentRetired=$false;handlesClosed=$false}}
   $job=[IntPtr]::Zero;$parent=[IntPtr]::Zero;$thread=[IntPtr]::Zero;$observed=@{};$observationErrors=@();$clock=[Diagnostics.Stopwatch]::StartNew()
   try {
    $job=[LagomEngineJob]::NewJob()
    $vars=[ordered]@{SystemRoot=$env:SystemRoot;windir=$env:SystemRoot;TEMP=$caseRoot;TMP=$caseRoot;NODE_ENV='production';LAGOM_ENGINE_WORK=$caseRoot;ELECTRON_ENABLE_LOGGING='1';ELECTRON_LOG_FILE=$log;ELECTRON_ENABLE_STACK_DUMPING='1'}
    if ($selection.child) {$vars['LAGOM_ENGINE_CHILD_PATH']=$expectedChild}
+   if ($selection.sync) {$vars['LAGOM_ENGINE_SYNC_CHILD']='1'}
    $environment=(($vars.GetEnumerator()|Sort-Object Key|ForEach-Object {$_.Key+'='+$_.Value}) -join [char]0)+[char]0+[char]0
    $launch=[LagomEngineJob]::CreateSuspended($job,$expected,$f.root,$environment)
    $result.created=[bool]$launch['created']
@@ -266,7 +268,7 @@ try {
      $proof=Read-Json $proofPath 16384
      # Only fixed-schema proof fields; no URLs, environment, messages, or GPU driver metadata.
      $safe=[ordered]@{}
-     foreach ($name in @('schemaVersion','level','pid','electron','chrome','phase','childImageSelected','visible','focusObserved','networkRequestsBlocked','childFailures','result','rendererPid','gpuInfoResolved','metrics','gpuMetricPresent','ok','rendererFailure','errorClass')) {
+     foreach ($name in @('schemaVersion','level','pid','electron','chrome','phase','childImageSelected','childPathSynchronized','actualParentImageName','configuredExeImageName','visible','focusObserved','networkRequestsBlocked','childFailures','result','rendererPid','gpuInfoResolved','metrics','gpuMetricPresent','ok','rendererFailure','errorClass')) {
       if ($proof.PSObject.Properties.Name -contains $name) {$safe[$name]=$proof.$name}
      }
      $result.appProof=$safe
@@ -283,7 +285,7 @@ try {
       }
      }
      $result['rendererOwnedReadback']=$rendererObserved;$result['rendererRestrictedLowTokenReadback']=$rendererSandboxObserved;$result['gpuOwnedReadback']=$gpuObserved;$result['gpuRestrictedLowTokenReadback']=$gpuSandboxObserved
-     $result.casePassed=$result.resumed -and $result.exitCode -eq 0 -and -not $result.timedOut -and -not $result.logBudgetExceeded -and $safe.Contains('ok') -and $safe.ok -eq $true -and $safe.childImageSelected -eq [bool]$selection.child -and $safe.phase -ceq 'engine-complete' -and $safe.pid -eq $result.parent.pid -and $rendererObserved -and $rendererSandboxObserved -and $gpuObserved -and $gpuSandboxObserved -and $result.parent.token['elevated'] -eq $true -and $result.parent.token['integrityRid'] -ge 12288 -and $result.cleanup.jobEmpty -and $result.cleanup.parentRetired -and $result.cleanup.handlesClosed -and -not $result.Contains('supervisorError') -and -not $result.cleanup.ContainsKey('error') -and -not $result.cleanup.ContainsKey('parentError')
+     $result.casePassed=$result.resumed -and $result.exitCode -eq 0 -and -not $result.timedOut -and -not $result.logBudgetExceeded -and $safe.Contains('ok') -and $safe.ok -eq $true -and $safe.childImageSelected -eq [bool]$selection.child -and $safe.childPathSynchronized -eq [bool]$selection.sync -and $safe.actualParentImageName -ceq $e.name -and $safe.configuredExeImageName -ceq $(if($selection.sync){$expectedChildName}else{$e.name}) -and $safe.phase -ceq 'engine-complete' -and $safe.pid -eq $result.parent.pid -and $rendererObserved -and $rendererSandboxObserved -and $gpuObserved -and $gpuSandboxObserved -and $result.parent.token['elevated'] -eq $true -and $result.parent.token['integrityRid'] -ge 12288 -and $result.cleanup.jobEmpty -and $result.cleanup.parentRetired -and $result.cleanup.handlesClosed -and -not $result.Contains('supervisorError') -and -not $result.cleanup.ContainsKey('error') -and -not $result.cleanup.ContainsKey('parentError')
     } catch {$result['proofError']=Error-Metadata $_}
    }
    if ([IO.File]::Exists($log)) {
@@ -312,7 +314,7 @@ try {
  Assert-Fixture $f
  foreach ($i in 0..1) {if ((Get-SandboxProbeHash $holds[$i]) -cne $f.images[$i].sha256) {throw 'Pinned target changed'}}
 } catch {$supervisorFatal=Error-Metadata $_} finally {foreach ($hold in $holds) {$hold.Dispose()}}
-$report=[ordered]@{schemaVersion=1;diagnosticComplete=$cases.Count -eq 3 -and $null -eq $supervisorFatal;allCasesPassed=$cases.Count -eq 3 -and $null -eq $supervisorFatal -and @($cases|Where-Object {-not $_.casePassed}).Count -eq 0;supervisorFatal=$supervisorFatal;supervisorStage=$engineSupervisorStage;sourceVersion=$f.version;sourceImageSha256=$f.sourceImageSha;fixtureReceiptSha256=(Hash $Fixture);librarySha256=$libraryHash;runnerSha256=(Hash $PSCommandPath);callerToken=$caller;pairComparison=$f.pairComparison;cases=$cases;limits=@('Real execution is hosted CI only; no local GUI was executed during preparation.','This fixture tests the engine and manifest boundary, not product IPC/services/installer.','Parent station and child station are not measured.','Owned job active-process cap16; engine25s and cleanup5s per phase; OS native calls are synchronous.','Raw log producer may overshoot1MiB between100ms polls; private exported tail is at most1MiB.','Polling can miss short-lived children; absent owned renderer/GPU readback makes casePassed false.')}
+$report=[ordered]@{schemaVersion=1;diagnosticComplete=$cases.Count -eq 4 -and $null -eq $supervisorFatal;allCasesPassed=$cases.Count -eq 4 -and $null -eq $supervisorFatal -and @($cases|Where-Object {-not $_.casePassed}).Count -eq 0;supervisorFatal=$supervisorFatal;supervisorStage=$engineSupervisorStage;sourceVersion=$f.version;sourceImageSha256=$f.sourceImageSha;fixtureReceiptSha256=(Hash $Fixture);librarySha256=$libraryHash;runnerSha256=(Hash $PSCommandPath);callerToken=$caller;pairComparison=$f.pairComparison;cases=$cases;limits=@('Real execution is hosted CI only; no local GUI was executed during preparation.','This fixture tests the engine and manifest boundary, not product IPC/services/installer.','Parent station and child station are not measured.','Owned job active-process cap16; engine25s and cleanup5s per phase; OS native calls are synchronous.','Raw log producer may overshoot1MiB between100ms polls; private exported tail is at most1MiB.','Polling can miss short-lived children; absent owned renderer/GPU readback makes casePassed false.')}
 $reportPath=Join-Path $Work 'electron-manifest-engine.json'
 Write-OwnJson $reportPath $report $Work
 [ordered]@{schemaVersion=1;report=$reportPath;reportSha256=(Hash $reportPath);diagnosticComplete=$report.diagnosticComplete;allCasesPassed=$report.allCasesPassed}|ConvertTo-Json -Compress
