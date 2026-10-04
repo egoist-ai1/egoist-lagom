@@ -356,6 +356,7 @@ function Save-NativeGuiFailureObservation {
 function Invoke-NativeGui {
   param([ValidateSet('provision-telegram','check-telegram')][string]$Action,[string]$Label)
   Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+  . (Join-Path $PSScriptRoot 'native-gui-diagnostics.ps1') -LibraryOnly
   $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
   [void](Assert-NativeAdministratorOwned $gui -InstallationPath)
   Add-NativeMutation -Kind 'canonical-gui-native-uia' -Target $gui -Purpose $Action
@@ -365,9 +366,12 @@ function Invoke-NativeGui {
   $info.Environment['NODE_ENV']='production'
   # No remote debugger, renderer-accessibility flag, development path or special
   # Core authority is added. InvokePattern operates the actual shipped buttons.
+  $launchDiagnostics=$null
+  try{$launchDiagnostics=New-NativeGuiLaunchDiagnostics -StartInfo $info -Work $script:Work -Label $Label}catch{Write-Warning ('GUI diagnostic setup unavailable: '+$_.Exception.GetType().FullName)}
   $child=[Diagnostics.Process]::new();$child.StartInfo=$info;$closed=$false;$started=$false;$root=$null;$stdout=$null;$stderr=$null
   try{
     $started=$child.Start();if(-not $started){throw 'Canonical GUI did not start.'}
+    if($launchDiagnostics){$launchDiagnostics.child=Get-NativeGuiProcessDiagnostics -Process $child -ExpectedImage $gui;$launchDiagnostics.sessionMatchesParent=($launchDiagnostics.child.sessionId -ne $null -and $launchDiagnostics.child.sessionId -eq $launchDiagnostics.parent.sessionId)}
     $stdout=$child.StandardOutput.ReadToEndAsync();$stderr=$child.StandardError.ReadToEndAsync()
     $hwnd=Wait-NativeCondition -Condition {$child.Refresh();if($child.HasExited){throw "Canonical GUI exited before exposing a window (exit $($child.ExitCode))."};if($child.MainWindowHandle -ne [IntPtr]::Zero){return $child.MainWindowHandle}} -Label 'Canonical GUI native window' -TimeoutSeconds 90 -StopOnError
     if($child.MainModule.FileName -ine $gui){throw 'Actual GUI executable identity changed.'}
@@ -417,15 +421,15 @@ function Invoke-NativeGui {
     if($started){try{Save-NativeGuiFailureObservation -Process $child -Root $root -Label $Label}catch{Write-Warning ('GUI observation unavailable: '+$_.Exception.Message)}}
     throw
   }finally{
-    if($started -and -not $closed -and -not $child.HasExited){
-      # Only the handle created in this function is canceled on test failure.
-      # SCM processes and other GUIs are never selected for this cleanup.
-      $child.Kill();[void]$child.WaitForExit(5000)
-    }
-    foreach($stream in @(@{task=$stdout;name='stdout'},@{task=$stderr;name='stderr'})){
-      if($stream.task -and $stream.task.IsCompletedSuccessfully){$text=$stream.task.GetAwaiter().GetResult();if($text.Length -gt 1048576){$text=$text.Substring(0,1048576)+"`n[diagnostic truncated after 1 MiB]"};[IO.File]::WriteAllText((Join-Path $script:Work ($Label+'.'+$stream.name+'.txt')),$text,[Text.UTF8Encoding]::new($false))}
-    }
-    $child.Dispose()
+    try{
+      if($started -and -not $closed -and -not $child.HasExited){
+        # Only the handle created in this function is canceled on test failure.
+        # SCM processes and other GUIs are never selected for this cleanup.
+        $child.Kill();[void]$child.WaitForExit(5000)
+      }
+    }catch{Write-Warning ('Own GUI cleanup unavailable: '+$_.Exception.GetType().FullName)}
+    try{[void](Complete-NativeGuiDiagnostics -Stdout $stdout -Stderr $stderr -Launch $launchDiagnostics -Work $script:Work -Label $Label)}catch{Write-Warning ('GUI diagnostics unavailable: '+$_.Exception.GetType().FullName)}
+    try{$child.Dispose()}catch{Write-Warning ('Own GUI handle disposal unavailable: '+$_.Exception.GetType().FullName)}
   }
 }
 function Invoke-NativeElevatedGui {
