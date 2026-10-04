@@ -600,10 +600,14 @@ function applyZapretProfileExclusions(commandLine, listsDir, includeExclusions =
 	const hostExcludes = ["list-exclude.txt", "list-exclude-user.txt"].map((file) => "--hostlist-exclude=" + path.join(listsDir, file));
 	const generalLists = ["list-general.txt", "list-general-user.txt"].map((file) => ("--hostlist=" + path.join(listsDir, file)).toLowerCase());
 	const namedSites = "--hostlist=" + path.join(listsDir, ZAPRET_NAMED_SITE_FILE);
+	const discordList = ("--hostlist=" + path.join(listsDir, "list-egoist-discord.txt")).toLowerCase();
 	return strategies.map((strategy) => {
 		// Extend only existing general hostname strategies. Voice/STUN,
 		// Google-only, IP-only and custom strategies keep their original scope.
 		if (strategy.some((argument) => generalLists.includes(argument.toLowerCase())) && !strategy.some((argument) => argument.toLowerCase() === namedSites.toLowerCase())) strategy.push(namedSites);
+		// FUT uses the managed Discord TLS strategy without changing custom
+		// hostlists, user domain filters, voice/STUN or other port scopes.
+		if (strategy.includes("--filter-tcp=80,443") && strategy.includes("--dpi-desync=hostfakesplit") && strategy.some((argument) => argument.toLowerCase() === discordList) && !strategy.some((argument) => argument.toLowerCase().startsWith("--hostlist-domains="))) strategy.push("--hostlist-domains=fut.gg");
 		const hasHostnameFilter = strategy.some((argument) => /^--hostlist(?:-domains|-auto)?=/.test(argument));
 		// An exclude-only hostlist requires a hostname in winws. Adding it to
 		// Discord/STUN or unknown strategies would disable their media matching.
