@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
   [Parameter(Mandatory)][string]$Executable,
-  [Parameter(Mandatory)][ValidateSet('clr','pipeline','parameter','pipeline-progress-silent','security','full-bootstrap')][string]$Case,
+  [Parameter(Mandatory)][ValidateSet('clr','pipeline','parameter','pipeline-progress-silent','security','full-bootstrap','pipeline-qualified','parameter-unqualified','full-bootstrap-qualified-pipeline','full-bootstrap-qualified-parameter')][string]$Case,
   [Parameter(Mandatory)][string]$Work
 )
 $ErrorActionPreference='Stop'

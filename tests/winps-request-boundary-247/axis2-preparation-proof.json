@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "baselineDiagnosticCommit": "b42665209cee446f8513f1cd8eeebb1c32958fa7",
+  "frozenProductCommit": "247cb3c8f3a171202613b5b679ebab400f040ca7",
+  "originalFullBootstrapUnchanged": true,
+  "protectedScriptUnchangedInNewVariants": true,
+  "requestTransformOnly": true,
+  "extraModes": [
+    "case-pipeline-qualified.ps1",
+    "case-parameter-unqualified.ps1",
+    "case-full-bootstrap-qualified-pipeline.ps1",
+    "case-full-bootstrap-qualified-parameter.ps1"
+  ],
+  "fixedInputs": 31,
+  "frozenCSharpInputsUnchanged": 9,
+  "applicationTargetExecutions": 0,
+  "purpose": "Separate module qualification from InputObject binding; original baseline plus exact full bootstrap variants. No cause or admission is established."
+}

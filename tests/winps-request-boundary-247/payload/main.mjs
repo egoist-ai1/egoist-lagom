@@ -7,7 +7,7 @@ import {spawn} from 'node:child_process';
 import {deriveWindowsSystemDirectory} from './frozen-native-runtime-trust.mjs';
 
 const SOURCE = '247cb3c8f3a171202613b5b679ebab400f040ca7';
-const modes = new Set(['clr', 'pipeline', 'parameter', 'pipeline-progress-silent', 'security', 'full-bootstrap']);
+const modes = new Set(['clr', 'pipeline', 'parameter', 'pipeline-progress-silent', 'security', 'full-bootstrap', 'pipeline-qualified', 'parameter-unqualified', 'full-bootstrap-qualified-pipeline', 'full-bootstrap-qualified-parameter']);
 const phases = new Set(['command-start','before-base64','base64-decoded','utf8-decoded','before-clr-compare','before-json','before-security-import','security-imported','request-decoded','result-flushed','probe-exception','protected-root','inventory-open','inventory-valid','code-validation','code-validated']);
 const began = performance.now();
 const ms = () => Math.round(performance.now() - began);
@@ -47,7 +47,7 @@ async function measure() {
   if (!stat.isFile() || stat.isSymbolicLink()) throw Error('Known OS file unavailable');
   const request64 = Buffer.from(JSON.stringify({resourcesPath:'C:\\Program Files\\EgoistShield\\resources'}), 'utf8').toString('base64');
   const template = await fs.readFile(fileURLToPath(new URL('./case-' + mode + '.ps1', import.meta.url)), 'utf8');
-  if (!template.includes('__REQUEST64__') || template.length > (mode === 'full-bootstrap' ? 16384 : 8192)) throw Error('Case input unavailable');
+  if (!template.includes('__REQUEST64__') || template.length > (mode.startsWith('full-bootstrap') ? 16384 : 8192)) throw Error('Case input unavailable');
   const command = template.replaceAll('__REQUEST64__', request64);
   const environment = childEnvironment(system);
   const present = name => Object.keys(environment).some(key => key.toUpperCase() === name);
@@ -112,7 +112,7 @@ async function measure() {
       if (!output.includes('\n')) return;
       try {
         const value = JSON.parse(output.slice(0, output.indexOf('\n')));
-        if (mode === 'full-bootstrap') {
+        if (mode.startsWith('full-bootstrap')) {
           if (typeof value.ok !== 'boolean' || Object.keys(value).length !== 2 ||
               (value.ok ? typeof value.helperPath !== 'string' : typeof value.error !== 'string')) throw Error('Original full response schema');
           finish({code:value.ok ? 'FULL_READ_RESULT' : 'FULL_REJECTED', requestMatched:false, responseValid:true});
@@ -133,7 +133,7 @@ async function measure() {
   if (stderrLine.length <= 2048 && stderrLine) stderrLineSeen(stderrLine);
   await emit('measurement-result', {...outcome, stages, metadata, responseBytes:outcome.responseBytes, stderrBytes, markerBytes, clixmlObserved, preparingModulesProgressObserved, exitObserved, exitCode, closeObserved,
     lastPhase:stderrPhase, streamCloseWithinBudget:drain, stdinDeliberatelyOpen:true, stdinReleasedAfterOutcome:true, childPid:Number.isInteger(child.pid) ? child.pid : null,
-    protectedBootstrapReached:mode === 'full-bootstrap' && stages.some(step => step.phase === 'request-decoded'), measurementComplete:drain, rawStdoutPersisted:false, rawStderrPersisted:false, readyAfterCheck:app.isReady()});
+    protectedBootstrapReached:mode.startsWith('full-bootstrap') && stages.some(step => step.phase === 'request-decoded'), measurementComplete:drain, rawStdoutPersisted:false, rawStderrPersisted:false, readyAfterCheck:app.isReady()});
   return drain;
 }
 
@@ -149,7 +149,7 @@ try {
     const directory = path.join(profile, name); mkdirSync(directory, {recursive:false}); app.setPath(name, directory);
   }
   app.setName('Lagom WinPS boundary diagnostic');
-  emit('entry', {ownedProfile:true, scopeInstalledResourcesRead:mode === 'full-bootstrap', coreInvoked:false});
+  emit('entry', {ownedProfile:true, scopeInstalledResourcesRead:mode.startsWith('full-bootstrap'), coreInvoked:false});
   const complete = await measure();
   app.exit(complete && windowsCreated === 0 ? 0 : 64);
 } catch (error) {
