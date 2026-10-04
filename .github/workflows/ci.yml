@@ -283,6 +283,42 @@ jobs:
           $nativeShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
           & $nativeShell -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tests/sandbox-image-launch-probe.ps1 -Image $image -ImageSha256 $entry[0].sha256 -SourceExecutionLevel asInvoker -Rcedit $rcedit -RceditSha256 $toolHash -Work $probeWork
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Use pinned SDK for the isolated request supervisor
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.401'
+      - name: Measure protected PowerShell request boundaries
+        env:
+          DOTNET_ADD_GLOBAL_TOOLS_TO_PATH: '0'
+          DOTNET_GENERATE_ASPNET_CERTIFICATE: 'false'
+          DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+        run: |
+          ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          $head = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $head -cne $env:GITHUB_SHA) { throw 'Request diagnostic checkout changed.' }
+          $bundle = Join-Path $env:GITHUB_WORKSPACE 'tests\winps-request-boundary-247'
+          $probeWork = Join-Path $env:RUNNER_TEMP 'lagom-sandbox-diagnostic'
+          $text = & node --max-old-space-size=2048 (Join-Path $bundle 'prepare-diagnostic.mjs') --project $env:GITHUB_WORKSPACE --runtime-receipt (Join-Path $probeWork 'runtime-input.json') --work $probeWork --bundle $bundle
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $prepared = ($text -join [char]10) | ConvertFrom-Json
+          if ($prepared.applicationTargetExecutions -ne 0) { throw 'Unexpected preparation execution.' }
+          & dotnet build $prepared.projectFile -c Release --nologo
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = Join-Path $prepared.root 'bin\Release\net10.0-windows\WinPsRequestBoundaryProbe.exe'
+          & $exe --review-only
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $measurements = @()
+          foreach ($entry in @(@{case='full-bootstrap';run='first'},@{case='clr';run='clr'},@{case='pipeline';run='pipeline'},@{case='parameter';run='parameter'},@{case='pipeline-progress-silent';run='progress'},@{case='security';run='security'},@{case='full-bootstrap';run='second'})) {
+            $caseWork = Join-Path $prepared.root ('run-'+$entry.run)
+            New-Item -ItemType Directory -Path $caseWork -ErrorAction Stop | Out-Null
+            & $prepared.runScript -Executable $exe -Case $entry.case -Work $caseWork
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $receipt = Get-Content -LiteralPath (Join-Path $caseWork ('winps-boundary-'+$entry.case+'.json')) -Raw | ConvertFrom-Json
+            $result = @($receipt.events | Where-Object stage -eq 'measurement-result')
+            if ($result.Count -ne 1) { throw 'Measurement result ambiguous.' }
+            $measurements += [ordered]@{run=$entry.run;case=$entry.case;measurementComplete=$receipt.measurementComplete;code=$result[0].code;phase=$result[0].lastPhaseAtOutcome;protectedBootstrapReached=$result[0].protectedBootstrapReached;noOrphans=$receipt.cleanup.noOrphans}
+          }
+          [ordered]@{schemaVersion=1;workflowCommit=$env:GITHUB_SHA;frozenSourceCommit=$prepared.sourceCommit;diagnosticComplete=$true;productAdmissionEstablished=$false;measurements=$measurements} | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $probeWork 'winps-request-boundary-summary.json') -Encoding utf8
       - name: Compare actual isolated Electron manifest launches
         run: |
           ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
@@ -313,6 +349,10 @@ jobs:
           path: |
             ${{ runner.temp }}/lagom-sandbox-diagnostic/*.json
             ${{ runner.temp }}/lagom-sandbox-diagnostic/sandbox-image-*/probe-result.json
+            ${{ runner.temp }}/lagom-sandbox-diagnostic/winps-request-boundary/probe-review-hashes.json
+            ${{ runner.temp }}/lagom-sandbox-diagnostic/winps-request-boundary/static-review-proof.json
+            ${{ runner.temp }}/lagom-sandbox-diagnostic/winps-request-boundary/source-command-shape.json
+            ${{ runner.temp }}/lagom-sandbox-diagnostic/winps-request-boundary/run-*/winps-boundary-*.json
 
   test:
     if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.sandbox_image_diagnostic && (!inputs.installer_diagnostics || inputs.package_candidate || inputs.signed_legacy_release_id != '')) }}

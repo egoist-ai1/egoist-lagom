@@ -1,0 +1,14 @@
+{
+    "schemaVersion":  1,
+    "sourceCommit":  "247cb3c8f3a171202613b5b679ebab400f040ca7",
+    "commandMatchesFrozenTemplate":  true,
+    "protectedScriptUnchanged":  true,
+    "protectedScriptSha256":  "440d518f2333ca501d78f515e9cb2e6037c94fb40d434176b5c9e2f2fd16a229",
+    "protectedScriptUtf8Bytes":  5587,
+    "commandUtf16Bytes":  12210,
+    "encodedCommandCharacters":  16280,
+    "requestUtf8Bytes":  62,
+    "executesCore":  false,
+    "fullModeProtectedReadsAllowed":  true,
+    "executionPerformed":  false
+}

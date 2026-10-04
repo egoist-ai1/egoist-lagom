@@ -1,0 +1,64 @@
+{
+    "schemaVersion":  1,
+    "sourceCommit":  "247cb3c8f3a171202613b5b679ebab400f040ca7",
+    "supervisorSourceCommit":  "622db4ccc208cb4cc4c04e8b9005eb338f13903d",
+    "freezeMethod":  "exact git show for JS; byte-identical previously reviewed frozen nine C#",
+    "supervisorInputs":  [
+                             {
+                                 "sourcePath":  "src/service/EgoistShield.Service/ProtectedExecutable.cs",
+                                 "relative":  "frozen-csharp/ProtectedExecutable.cs",
+                                 "sha256":  "815f4cc8d0e68daa8ff9f7c192e8ed12aa8b0de3e539bf2d4a14291aadace21f",
+                                 "bytes":  15686
+                             },
+                             {
+                                 "sourcePath":  "src/service/EgoistShield.Service/ClientAuthorizer.cs",
+                                 "relative":  "frozen-csharp/ClientAuthorizer.cs",
+                                 "sha256":  "de3e7d33f7b473ae609eda7b5b0a120e4052e44d143128846983b4089f230125",
+                                 "bytes":  7832
+                             },
+                             {
+                                 "sourcePath":  "src/service/EgoistShield.Service/ClientIdentity.cs",
+                                 "relative":  "frozen-csharp/ClientIdentity.cs",
+                                 "sha256":  "a614b0236659c5662f4307ee4390608f543e4cd483958e8310d4a250b9810851",
+                                 "bytes":  180
+                             },
+                             {
+                                 "sourcePath":  "src/service/EgoistShield.Service/ServiceOptions.cs",
+                                 "relative":  "frozen-csharp/ServiceOptions.cs",
+                                 "sha256":  "903bda97fa24e55a6a70645c9e54da26ce419388382bf3996b46481545a93c53",
+                                 "bytes":  167
+                             },
+                             {
+                                 "sourcePath":  "src/service/EgoistShield.Service/ServiceConfig.cs",
+                                 "relative":  "frozen-csharp/ServiceConfig.cs",
+                                 "sha256":  "d96ca1e73e1a46eddb95058374bbec29102fc88c97e9b532a77b2bdd68ee20f2",
+                                 "bytes":  165
+                             },
+                             {
+                                 "sourcePath":  "src/service/EgoistShield.Service/TrustedPath.cs",
+                                 "relative":  "frozen-csharp/TrustedPath.cs",
+                                 "sha256":  "a2aaea306d2eff6c2dd38a9ba37949d4057d6bd9bc0c431c8ec53800719970fc",
+                                 "bytes":  4120
+                             },
+                             {
+                                 "sourcePath":  "src/service/EgoistShield.Service/GuiLaunchPolicy.cs",
+                                 "relative":  "frozen-csharp/GuiLaunchPolicy.cs",
+                                 "sha256":  "402a7b6e1203f7ed27fc05dfde526f8951e78d367036b974488277a9f0d84543",
+                                 "bytes":  4854
+                             },
+                             {
+                                 "sourcePath":  "src/service/EgoistShield.Service/GuiPrivilegePolicy.cs",
+                                 "relative":  "frozen-csharp/GuiPrivilegePolicy.cs",
+                                 "sha256":  "fc595ca06ce2e50280826cd2b4d033fb248645e5c58b51f20edbfa3adb85bef4",
+                                 "bytes":  4327
+                             },
+                             {
+                                 "sourcePath":  "tests/windows-ordinary-gui.cs",
+                                 "relative":  "frozen-csharp/windows-ordinary-gui.cs",
+                                 "sha256":  "b79d0b31ed7edd2bc4567b8905c4187605e68ea5049f1c939d515db5e8cbb714",
+                                 "bytes":  76050
+                             }
+                         ],
+    "nativeModuleSha256":  "0fe654621f12870a508305efbd1589f8cd636e51bcecc24dba86a01205610389",
+    "executionAllowed":  false
+}

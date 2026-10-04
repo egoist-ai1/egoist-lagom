@@ -1,0 +1,144 @@
+{
+    "schemaVersion":  1,
+    "sourceCommit":  "247cb3c8f3a171202613b5b679ebab400f040ca7",
+    "supervisorSourceCommit":  "622db4ccc208cb4cc4c04e8b9005eb338f13903d",
+    "preparedOnly":  true,
+    "applicationTargetExecutions":  0,
+    "inputs":  [
+                   {
+                       "relative":  "README.md",
+                       "sha256":  "bf94bba6e862566da03777311e21a3cc3810919fe84dcd95e664af82be12deb1",
+                       "bytes":  9405
+                   },
+                   {
+                       "relative":  "global.json",
+                       "sha256":  "ce61f5ae207d33d00594c77c5999c7f0dc66434e85a85f38090335d588438974",
+                       "bytes":  109
+                   },
+                   {
+                       "relative":  "source-provenance.json",
+                       "sha256":  "9743be9a331a2ddad6afa18009a38714d62dd82a9dcd64df7ff6cc4447ffcda7",
+                       "bytes":  4163
+                   },
+                   {
+                       "relative":  "source-command-shape.json",
+                       "sha256":  "0aa817c9a7f98571704c39ded7d07db9ef1eb35a312bde66368f025205f55924",
+                       "bytes":  533
+                   },
+                   {
+                       "relative":  "static-review-proof.json",
+                       "sha256":  "80edd151040fcca2a1a7d0ade6938f3569e81368a460b3cd063e0b120d0b116e",
+                       "bytes":  7359
+                   },
+                   {
+                       "relative":  "WinPsRequestBoundaryProbe.csproj",
+                       "sha256":  "ac12209f64c24350270405d75bf1cbb386e358aea2bc96e5eb7a18a9f4973e15",
+                       "bytes":  629
+                   },
+                   {
+                       "relative":  "WinPsRequestBoundaryProbe.cs",
+                       "sha256":  "76e69128198ee33bb12fa708dbaa41ffef0fc3fe635cfb38941382bf927a1d73",
+                       "bytes":  20740
+                   },
+                   {
+                       "relative":  "run-request-boundary.ps1",
+                       "sha256":  "8f53a1eb7044d0aa96b77dced11a920c26ccb9647c56b92a31c67fc85900644a",
+                       "bytes":  1085
+                   },
+                   {
+                       "relative":  "prepare-diagnostic.mjs",
+                       "sha256":  "ad6dd5c507c275acc14db2b7ad3878065c2010850165117c37eb19cb857b9eaf",
+                       "bytes":  9029
+                   },
+                   {
+                       "relative":  "payload/package.json",
+                       "sha256":  "d97816ab80db77108db25a791b6e07660eff2012db2be4cae8c2d0974a8b9933",
+                       "bytes":  103
+                   },
+                   {
+                       "relative":  "payload/main.mjs",
+                       "sha256":  "2c088652adc7b6c3080ffe7163afefd47b9fd2a9d42b4289b196ae87a7d35598",
+                       "bytes":  10730
+                   },
+                   {
+                       "relative":  "payload/frozen-native-runtime-trust.mjs",
+                       "sha256":  "0fe654621f12870a508305efbd1589f8cd636e51bcecc24dba86a01205610389",
+                       "bytes":  24578
+                   },
+                   {
+                       "relative":  "payload/case-clr.ps1",
+                       "sha256":  "43a51b476bda801b457005085576ade9f410217f23fd8521322496cfb3d7e7b5",
+                       "bytes":  1636
+                   },
+                   {
+                       "relative":  "payload/case-pipeline.ps1",
+                       "sha256":  "152b8d15b2f519beae7f1b7d0a741bb7c24bfc78a798b50b718d4d595537c7ba",
+                       "bytes":  1743
+                   },
+                   {
+                       "relative":  "payload/case-parameter.ps1",
+                       "sha256":  "b267470b0627a9766687f2081331fac1b758904baaa03acff3b5128da78f1ccc",
+                       "bytes":  1715
+                   },
+                   {
+                       "relative":  "payload/case-pipeline-progress-silent.ps1",
+                       "sha256":  "941afa75fce176d7a959c140150645c32d5cb59c3fbdf37f3fca80e223bc47dd",
+                       "bytes":  1782
+                   },
+                   {
+                       "relative":  "payload/case-security.ps1",
+                       "sha256":  "36a8254d86d43c334f8f63416cd1795e51c7ac54f7eae6e2b3d45dd380182026",
+                       "bytes":  1776
+                   },
+                   {
+                       "relative":  "payload/case-full-bootstrap.ps1",
+                       "sha256":  "c7a560869481ae5f184f3d102cf914cc9aa2e47e6428f4356ba4958d536f7587",
+                       "bytes":  6034
+                   },
+                   {
+                       "relative":  "frozen-csharp/ProtectedExecutable.cs",
+                       "sha256":  "815f4cc8d0e68daa8ff9f7c192e8ed12aa8b0de3e539bf2d4a14291aadace21f",
+                       "bytes":  15686
+                   },
+                   {
+                       "relative":  "frozen-csharp/ClientAuthorizer.cs",
+                       "sha256":  "de3e7d33f7b473ae609eda7b5b0a120e4052e44d143128846983b4089f230125",
+                       "bytes":  7832
+                   },
+                   {
+                       "relative":  "frozen-csharp/ClientIdentity.cs",
+                       "sha256":  "a614b0236659c5662f4307ee4390608f543e4cd483958e8310d4a250b9810851",
+                       "bytes":  180
+                   },
+                   {
+                       "relative":  "frozen-csharp/ServiceOptions.cs",
+                       "sha256":  "903bda97fa24e55a6a70645c9e54da26ce419388382bf3996b46481545a93c53",
+                       "bytes":  167
+                   },
+                   {
+                       "relative":  "frozen-csharp/ServiceConfig.cs",
+                       "sha256":  "d96ca1e73e1a46eddb95058374bbec29102fc88c97e9b532a77b2bdd68ee20f2",
+                       "bytes":  165
+                   },
+                   {
+                       "relative":  "frozen-csharp/TrustedPath.cs",
+                       "sha256":  "a2aaea306d2eff6c2dd38a9ba37949d4057d6bd9bc0c431c8ec53800719970fc",
+                       "bytes":  4120
+                   },
+                   {
+                       "relative":  "frozen-csharp/GuiLaunchPolicy.cs",
+                       "sha256":  "402a7b6e1203f7ed27fc05dfde526f8951e78d367036b974488277a9f0d84543",
+                       "bytes":  4854
+                   },
+                   {
+                       "relative":  "frozen-csharp/GuiPrivilegePolicy.cs",
+                       "sha256":  "fc595ca06ce2e50280826cd2b4d033fb248645e5c58b51f20edbfa3adb85bef4",
+                       "bytes":  4327
+                   },
+                   {
+                       "relative":  "frozen-csharp/windows-ordinary-gui.cs",
+                       "sha256":  "b79d0b31ed7edd2bc4567b8905c4187605e68ea5049f1c939d515db5e8cbb714",
+                       "bytes":  76050
+                   }
+               ]
+}
