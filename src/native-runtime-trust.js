@@ -46,6 +46,7 @@ const tokenProbe = String.raw`
 `;
 
 const protectedVerifierProbe = String.raw`
+  [Console]::Error.WriteLine('EGOIST_TRUST_PHASE:protected-root')
   $taskRoot = [IO.Path]::GetFullPath((Join-Path $taskRequest.resourcesPath '..')).TrimEnd('\')
   $taskProgramRoots = @([Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles),[Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFilesX86)) | Where-Object {$_}
   $taskTrustedRoot = $taskProgramRoots | Where-Object {$taskRoot.StartsWith($_.TrimEnd('\')+'\',[StringComparison]::OrdinalIgnoreCase)} | Select-Object -First 1
@@ -70,6 +71,7 @@ const protectedVerifierProbe = String.raw`
   }
   $taskHeldFiles = New-Object 'System.Collections.Generic.List[IO.FileStream]'
   try {
+    [Console]::Error.WriteLine('EGOIST_TRUST_PHASE:inventory-open')
     $taskInventoryPath = Join-Path $taskRoot 'resources\worker-host-integrity.json'
     Assert-TaskProtectedPath $taskInventoryPath
     $taskInventoryStream = [IO.File]::Open($taskInventoryPath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
@@ -78,10 +80,12 @@ const protectedVerifierProbe = String.raw`
     $taskInventoryReader = New-Object IO.StreamReader($taskInventoryStream,[Text.Encoding]::UTF8,$true,4096,$true)
     try {$taskInventory = $taskInventoryReader.ReadToEnd() | ConvertFrom-Json} finally {$taskInventoryReader.Dispose()}
     if ($taskInventory.schemaVersion -ne 1 -or $taskInventory.owner -ne 'EgoistShield') {throw 'Native verifier inventory identity is invalid.'}
+    [Console]::Error.WriteLine('EGOIST_TRUST_PHASE:inventory-valid')
     $taskHelperRelative = 'resources/core-service/win-x64/EgoistShield.Service.exe'
     $taskHelper = Join-Path $taskRoot $taskHelperRelative
     $taskHelperFolder = [IO.Path]::GetDirectoryName($taskHelper)
     $taskCodeFiles = @($taskHelper) + @([IO.Directory]::GetFiles($taskHelperFolder) | Where-Object {[IO.Path]::GetExtension($_).Equals('.dll',[StringComparison]::OrdinalIgnoreCase)})
+    [Console]::Error.WriteLine('EGOIST_TRUST_PHASE:code-validation')
     foreach ($taskCodeFile in $taskCodeFiles) {
       Assert-TaskProtectedPath $taskCodeFile
       $taskRelative = $taskCodeFile.Substring($taskRoot.Length+1).Replace('\','/')
@@ -93,8 +97,10 @@ const protectedVerifierProbe = String.raw`
       try {$taskHash = -join ($taskHasher.ComputeHash($taskCodeStream) | ForEach-Object {$_.ToString('x2')})} finally {$taskHasher.Dispose()}
       if ($taskCodeStream.Length -ne $taskPins[0].bytes -or $taskHash -cne $taskPins[0].sha256.ToLowerInvariant()) {throw 'Native verifier bytes differ from its authenticated inventory.'}
     }
+    [Console]::Error.WriteLine('EGOIST_TRUST_PHASE:code-validated')
     [Console]::Out.WriteLine((@{ok=$true;helperPath=$taskHelper} | ConvertTo-Json -Compress))
     [Console]::Out.Flush()
+    [Console]::Error.WriteLine('EGOIST_TRUST_PHASE:result-flushed')
     $null = [Console]::In.ReadLine()
   } finally {foreach ($taskFile in $taskHeldFiles) {$taskFile.Dispose()}}
 `;
@@ -105,7 +111,7 @@ async function probeWindows(script, request = {}) {
   // exception applies only to the OS executable below the loaded KnownDLL root.
   const executable = await ordinaryFile(path.win32.join(systemDirectory, 'WindowsPowerShell', 'v1.0', 'powershell.exe'), { allowSystemHardLinks: true });
   const request64 = Buffer.from(JSON.stringify(request), 'utf8').toString('base64');
-  const command = `$ErrorActionPreference='Stop';try {$taskRequest=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${request64}')) | ConvertFrom-Json;${script}} catch {[Console]::Out.WriteLine((@{ok=$false;error=$_.Exception.Message}|ConvertTo-Json -Compress));exit 1}`;
+  const command = `$ErrorActionPreference='Stop';[Console]::Error.WriteLine('EGOIST_TRUST_PHASE:command-start');try {$taskRequest=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${request64}')) | ConvertFrom-Json;[Console]::Error.WriteLine('EGOIST_TRUST_PHASE:request-decoded');${script}} catch {[Console]::Error.WriteLine('EGOIST_TRUST_PHASE:probe-exception');[Console]::Out.WriteLine((@{ok=$false;error=$_.Exception.Message}|ConvertTo-Json -Compress));exit 1}`;
   const environment = verifierEnvironment();
   for (const key of Object.keys(environment)) if (/^(PATH|SYSTEMROOT|WINDIR|PSMODULEPATH)$/i.test(key)) delete environment[key];
   environment.PATH = systemDirectory + ';' + path.win32.dirname(systemDirectory);
@@ -114,7 +120,25 @@ async function probeWindows(script, request = {}) {
   const child = spawn(executable, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(command, 'utf16le').toString('base64')], {
     windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'], cwd: systemDirectory, env: environment
   });
-  child.stderr.on('data', () => {}); child.stdin.on('error', () => {});
+  // Diagnostic markers only. Never retain or emit arbitrary PowerShell stderr.
+  const phases = new Set(['command-start', 'request-decoded', 'protected-root', 'inventory-open', 'inventory-valid', 'code-validation', 'code-validated', 'result-flushed', 'probe-exception']);
+  let stderrPhase = 'not-observed', stderrBytes = 0, stderrLine = '', discardLine = false;
+  let exitObserved = false, exitCode = null;
+  child.once('exit', code => { exitObserved = true; exitCode = code; });
+  child.stderr.on('data', chunk => {
+    stderrBytes = Math.min(16384, stderrBytes + chunk.length);
+    for (const byte of chunk) {
+      if (byte === 10) {
+        const marker = stderrLine.replace(/\r$/, '');
+        if (!discardLine && marker.startsWith('EGOIST_TRUST_PHASE:') && phases.has(marker.slice(19))) stderrPhase = marker.slice(19);
+        stderrLine = ''; discardLine = false;
+      } else if (!discardLine) {
+        if (stderrLine.length >= 128) { stderrLine = ''; discardLine = true; }
+        else stderrLine += String.fromCharCode(byte);
+      }
+    }
+  });
+  child.stdin.on('error', () => {});
   let released = false;
   const release = () => {
     if (released) return;
@@ -125,10 +149,10 @@ async function probeWindows(script, request = {}) {
   try {
     const value = await new Promise((resolve, reject) => {
       let output = '';
-      const timer = setTimeout(() => { cleanup(); reject(trustFailure('WINDOWS_TRUST_TIMEOUT', 'Windows trust probe exceeded its 30 second budget.', { responseBytes: Buffer.byteLength(output) })); }, 30000);
+      const timer = setTimeout(() => { cleanup(); reject(trustFailure('WINDOWS_TRUST_TIMEOUT', 'Windows trust probe exceeded its 30 second budget.', { responseBytes: Buffer.byteLength(output), exitObserved, exitCode, stderrPhase, stderrBytes })); }, 30000);
       const cleanup = () => { clearTimeout(timer); child.stdout.off('data', onData); child.off('error', onError); child.off('close', onExit); };
       const onError = error => { cleanup(); reject(error); };
-      const onExit = () => { cleanup(); reject(trustFailure('WINDOWS_TRUST_NO_RESPONSE', 'Windows trust probe stopped without a verified result.', { responseBytes: Buffer.byteLength(output) })); };
+      const onExit = () => { cleanup(); reject(trustFailure('WINDOWS_TRUST_NO_RESPONSE', 'Windows trust probe stopped without a verified result.', { responseBytes: Buffer.byteLength(output), exitObserved, exitCode, stderrPhase, stderrBytes })); };
       const onData = chunk => {
         output += chunk.toString('utf8');
         if (Buffer.byteLength(output) > 16384) { cleanup(); reject(trustFailure('WINDOWS_TRUST_RESPONSE_LIMIT', 'Windows trust probe response exceeded its limit.')); return; }

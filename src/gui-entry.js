@@ -31,6 +31,9 @@ if (app.isPackaged && process.platform === 'win32') {
     if (typeof observation?.exitObserved === 'boolean') diagnostic.exitObserved = observation.exitObserved;
     if (observation?.exitCode === null || (Number.isInteger(observation?.exitCode) && observation.exitCode >= -2147483648 && observation.exitCode <= 4294967295)) diagnostic.exitCode = observation.exitCode;
     if (observation?.nativeCode === 'GUI_PRIVILEGE_UNVERIFIED') diagnostic.nativeCode = observation.nativeCode;
+    const trustPhases = new Set(['not-observed', 'command-start', 'request-decoded', 'protected-root', 'inventory-open', 'inventory-valid', 'code-validation', 'code-validated', 'result-flushed', 'probe-exception']);
+    if (trustPhases.has(observation?.stderrPhase)) diagnostic.stderrPhase = observation.stderrPhase;
+    if (Number.isInteger(observation?.stderrBytes) && observation.stderrBytes >= 0 && observation.stderrBytes <= 16384) diagnostic.stderrBytes = observation.stderrBytes;
     // Fixed schema only: no raw exception message, paths, environment or stack.
     console.error('Egoist Lagom could not confirm administrator startup.', JSON.stringify(diagnostic));
     exitCode = 64;

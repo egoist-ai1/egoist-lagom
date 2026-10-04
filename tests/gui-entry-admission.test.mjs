@@ -38,3 +38,17 @@ test('admission diagnostics preserve refusal and omit arbitrary exception conten
     assert.doesNotMatch(JSON.stringify(logs),/private|secret|UNTRUSTED_SECRET_CODE/);
   }
 });
+test('GUI admission emits only enumerated trust phases and bounded stderr counts', async () => {
+  for (const [stderrPhase, stderrBytes, expected] of [
+    ['code-validation', 123, { stderrPhase: 'code-validation', stderrBytes: 123 }],
+    ['private-secret', 17000, {}],
+    ['not-observed', 0, { stderrPhase: 'not-observed', stderrBytes: 0 }]
+  ]) {
+    const logs = [];
+    const error = Object.assign(new Error('private-secret'), { code: 'WINDOWS_TRUST_TIMEOUT', observation: { stderrPhase, stderrBytes } });
+    await execute({ isPackaged: true, exit: value => assert.equal(value, 64) }, { platform: 'win32', argv: ['EgoistShield.exe'], execPath: 'C:\\Program Files\\EgoistShield\\EgoistShield.exe', resourcesPath: 'C:\\Program Files\\EgoistShield\\resources' }, path.win32, isTrustedGuiLaunchArguments, async () => { throw error; }, async () => assert.fail('No elevation after failed proof'), async () => assert.fail('No main after failed proof'), { error: (...values) => logs.push(values) });
+    const diagnostic = JSON.parse(logs[0][1]);
+    const phaseFields = Object.fromEntries(Object.entries(diagnostic).filter(([key]) => key.startsWith('stderr')));
+    assert.deepEqual(phaseFields, expected); assert.doesNotMatch(JSON.stringify(logs), /private|secret/);
+  }
+});
