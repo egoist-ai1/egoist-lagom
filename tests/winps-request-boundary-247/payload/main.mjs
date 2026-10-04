@@ -7,7 +7,7 @@ import {spawn} from 'node:child_process';
 import {deriveWindowsSystemDirectory} from './frozen-native-runtime-trust.mjs';
 
 const SOURCE = '247cb3c8f3a171202613b5b679ebab400f040ca7';
-const modes = new Set(['clr', 'pipeline', 'parameter', 'pipeline-progress-silent', 'security', 'full-bootstrap', 'pipeline-qualified', 'parameter-unqualified', 'full-bootstrap-qualified-pipeline', 'full-bootstrap-qualified-parameter']);
+const modes = new Set(['clr', 'pipeline', 'parameter', 'pipeline-progress-silent', 'security', 'full-bootstrap', 'pipeline-qualified', 'parameter-unqualified', 'full-bootstrap-qualified-pipeline', 'full-bootstrap-qualified-parameter', 'full-bootstrap-qualified-modules']);
 const phases = new Set(['command-start','before-base64','base64-decoded','utf8-decoded','before-clr-compare','before-json','before-security-import','security-imported','request-decoded','result-flushed','probe-exception','protected-root','inventory-open','inventory-valid','code-validation','code-validated']);
 const began = performance.now();
 const ms = () => Math.round(performance.now() - began);

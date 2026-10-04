@@ -47,7 +47,7 @@ const tokenProbe = String.raw`
 
 const protectedVerifierProbe = String.raw`
   [Console]::Error.WriteLine('EGOIST_TRUST_PHASE:protected-root')
-  $taskRoot = [IO.Path]::GetFullPath((Join-Path $taskRequest.resourcesPath '..')).TrimEnd('\')
+  $taskRoot = [IO.Path]::GetFullPath((Microsoft.PowerShell.Management\Join-Path $taskRequest.resourcesPath '..')).TrimEnd('\')
   $taskProgramRoots = @([Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles),[Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFilesX86)) | Where-Object {$_}
   $taskTrustedRoot = $taskProgramRoots | Where-Object {$taskRoot.StartsWith($_.TrimEnd('\')+'\',[StringComparison]::OrdinalIgnoreCase)} | Select-Object -First 1
   if (-not $taskTrustedRoot) {throw 'Native verifier is outside the Windows Program Files root.'}
@@ -110,8 +110,10 @@ async function probeWindows(script, request = {}) {
   // Windows services its own executable through WinSxS hardlinks. This narrow
   // exception applies only to the OS executable below the loaded KnownDLL root.
   const executable = await ordinaryFile(path.win32.join(systemDirectory, 'WindowsPowerShell', 'v1.0', 'powershell.exe'), { allowSystemHardLinks: true });
+  // Resolve known OS modules directly; discovery can consume the startup budget
+  // in an isolated process environment before any protected file is read.
   const request64 = Buffer.from(JSON.stringify(request), 'utf8').toString('base64');
-  const command = `$ErrorActionPreference='Stop';[Console]::Error.WriteLine('EGOIST_TRUST_PHASE:command-start');try {$taskRequest=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${request64}')) | ConvertFrom-Json;[Console]::Error.WriteLine('EGOIST_TRUST_PHASE:request-decoded');${script}} catch {[Console]::Error.WriteLine('EGOIST_TRUST_PHASE:probe-exception');[Console]::Out.WriteLine((@{ok=$false;error=$_.Exception.Message}|ConvertTo-Json -Compress));exit 1}`;
+  const command = `$ErrorActionPreference='Stop';[Console]::Error.WriteLine('EGOIST_TRUST_PHASE:command-start');try {$taskRequest=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${request64}')) | Microsoft.PowerShell.Utility\\ConvertFrom-Json;[Console]::Error.WriteLine('EGOIST_TRUST_PHASE:request-decoded');${script}} catch {[Console]::Error.WriteLine('EGOIST_TRUST_PHASE:probe-exception');[Console]::Out.WriteLine((@{ok=$false;error=$_.Exception.Message}|ConvertTo-Json -Compress));exit 1}`;
   const environment = verifierEnvironment();
   for (const key of Object.keys(environment)) if (/^(PATH|SYSTEMROOT|WINDIR|PSMODULEPATH)$/i.test(key)) delete environment[key];
   environment.PATH = systemDirectory + ';' + path.win32.dirname(systemDirectory);

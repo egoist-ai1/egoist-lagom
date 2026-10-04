@@ -37,13 +37,13 @@
     },
     {
       "relative": "WinPsRequestBoundaryProbe.cs",
-      "sha256": "f7824e15d83ebda0f008b8900f7a22130e1006a820461cc83c569e4d1a2e0130",
-      "bytes": 21126
+      "sha256": "7e354505cc8bfee8dafc3e245bdba8aef93d080750aecb12a79441a08b5cbf58",
+      "bytes": 21273
     },
     {
       "relative": "run-request-boundary.ps1",
-      "sha256": "bca581ae10bb950130d3af9582c3cbec40741b99fe926cdc68cc5e6c41edeaf7",
-      "bytes": 1203
+      "sha256": "fd5fdfcd028817a0cfa4c2ca41a22aea7d8ff723a5e6f0d02e8ef8fb4621ae07",
+      "bytes": 1238
     },
     {
       "relative": "prepare-diagnostic.mjs",
@@ -57,8 +57,8 @@
     },
     {
       "relative": "payload/main.mjs",
-      "sha256": "bb6a210b146313f38c33322ed7ef97271728db1999a50cd017751f724d488ded",
-      "bytes": 10884
+      "sha256": "a58b3b2a0fc4d71d59f9119b945ee670fba16d1fe5b2c5c37fcc6933c7529376",
+      "bytes": 10920
     },
     {
       "relative": "payload/frozen-native-runtime-trust.mjs",
@@ -159,6 +159,11 @@
       "relative": "payload/case-full-bootstrap-qualified-parameter.ps1",
       "sha256": "9aa3bab28d2d15225396c9184ae845895fbd2f83178cb57a749780b511fd3204",
       "bytes": 6076
+    },
+    {
+      "relative": "payload/case-full-bootstrap-qualified-modules.ps1",
+      "sha256": "560d28afa7980c6893d700e82dddb32acb6fca77c46356b60014c153c24f9da6",
+      "bytes": 6095
     }
   ]
 }

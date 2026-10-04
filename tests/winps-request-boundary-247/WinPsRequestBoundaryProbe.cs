@@ -69,7 +69,7 @@ internal static class WinPsRequestBoundaryProbe
                 string stage = value.GetProperty("stage").GetString() ?? "";
                 string mode = value.GetProperty("mode").GetString() ?? "";
                 if (!stages.Contains(stage) || value.GetProperty("schemaVersion").GetInt32() != 1 ||
-                    mode is not ("clr" or "pipeline" or "parameter" or "pipeline-progress-silent" or "security" or "full-bootstrap" or "pipeline-qualified" or "parameter-unqualified" or "full-bootstrap-qualified-pipeline" or "full-bootstrap-qualified-parameter")) continue;
+                    mode is not ("clr" or "pipeline" or "parameter" or "pipeline-progress-silent" or "security" or "full-bootstrap" or "pipeline-qualified" or "parameter-unqualified" or "full-bootstrap-qualified-pipeline" or "full-bootstrap-qualified-parameter" or "full-bootstrap-qualified-modules")) continue;
                 var item = new Dictionary<string, object?> { ["schemaVersion"] = 1, ["mode"] = mode, ["stage"] = stage };
                 foreach (string name in new[] { "elapsedMs", "outcomeElapsedMs", "responseBytes", "stderrBytes", "markerBytes", "windowsCreated", "responseBudgetMs", "releaseKillBudgetMs", "commandUtf16Bytes", "encodedCommandCharacters", "requestUtf8Bytes", "childPid", "exitCode", "exitCodeAtOutcome", "errorHresult" })
                     if (value.TryGetProperty(name, out JsonElement number))
@@ -123,7 +123,7 @@ internal static class WinPsRequestBoundaryProbe
         string expected = Path.GetFullPath(Path.Combine(temp, "lagom-sandbox-diagnostic", "winps-request-boundary"));
         if (!ProbeRoot.Equals(expected, StringComparison.OrdinalIgnoreCase)) throw new UnauthorizedAccessException("Prepared supervisor root differs.");
         _ = Program.Within(ProbeRoot, temp);
-        if (work is not null && (!Path.GetDirectoryName(work)!.Equals(ProbeRoot, StringComparison.OrdinalIgnoreCase) || Path.GetFileName(work) is not ("run-first" or "run-clr" or "run-pipeline" or "run-parameter" or "run-progress" or "run-security" or "run-second" or "run-qualified-pipeline" or "run-unqualified-parameter" or "run-full-qualified-pipeline" or "run-full-qualified-parameter")))
+        if (work is not null && (!Path.GetDirectoryName(work)!.Equals(ProbeRoot, StringComparison.OrdinalIgnoreCase) || Path.GetFileName(work) is not ("run-first" or "run-clr" or "run-pipeline" or "run-parameter" or "run-progress" or "run-security" or "run-second" or "run-qualified-pipeline" or "run-unqualified-parameter" or "run-full-qualified-pipeline" or "run-full-qualified-parameter" or "run-full-qualified-modules" or "run-full-qualified-modules-second")))
             throw new UnauthorizedAccessException("Measurement work is outside the prepared case subtree.");
         return commit;
     }
@@ -136,7 +136,7 @@ internal static class WinPsRequestBoundaryProbe
             Console.WriteLine(JsonSerializer.Serialize(new { schemaVersion = 1, sourceCommit = SourceCommit, immutableInputsVerified = true, electronImage = ElectronImage, electronSha256 = ElectronSha256, startupObject = "OrdinaryGuiHarness.WinPsRequestBoundaryProbe", reviewedSealSha256 = review.ManifestHash, highProbeExecuted = false, childLaunched = false }, Json));
             return 0;
         }
-        if (args.Length != 4 || args[0] != "--case" || args[1] is not ("clr" or "pipeline" or "parameter" or "pipeline-progress-silent" or "security" or "full-bootstrap" or "pipeline-qualified" or "parameter-unqualified" or "full-bootstrap-qualified-pipeline" or "full-bootstrap-qualified-parameter") || args[2] != "--work" || !Path.IsPathFullyQualified(args[3])) { Console.Error.WriteLine("Use --case clr, pipeline, parameter, pipeline-progress-silent, security, or full-bootstrap --work absolute-owned-directory."); return 2; }
+        if (args.Length != 4 || args[0] != "--case" || args[1] is not ("clr" or "pipeline" or "parameter" or "pipeline-progress-silent" or "security" or "full-bootstrap" or "pipeline-qualified" or "parameter-unqualified" or "full-bootstrap-qualified-pipeline" or "full-bootstrap-qualified-parameter" or "full-bootstrap-qualified-modules") || args[2] != "--work" || !Path.IsPathFullyQualified(args[3])) { Console.Error.WriteLine("Use --case clr, pipeline, parameter, pipeline-progress-silent, security, or full-bootstrap --work absolute-owned-directory."); return 2; }
         string mode = args[1];
         string work;
         try { work = Path.GetFullPath(args[3]); _ = HostedScope(work); Program.OrdinaryPath(work, leaf: false); }

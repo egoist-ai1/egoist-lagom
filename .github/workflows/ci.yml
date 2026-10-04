@@ -308,7 +308,7 @@ jobs:
           & $exe --review-only
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $measurements = @()
-          foreach ($entry in @(@{case='full-bootstrap';run='first'},@{case='pipeline-qualified';run='qualified-pipeline'},@{case='parameter-unqualified';run='unqualified-parameter'},@{case='full-bootstrap-qualified-pipeline';run='full-qualified-pipeline'},@{case='full-bootstrap-qualified-parameter';run='full-qualified-parameter'},@{case='pipeline';run='pipeline'})) {
+          foreach ($entry in @(@{case='full-bootstrap';run='first'},@{case='full-bootstrap-qualified-pipeline';run='full-qualified-pipeline'},@{case='full-bootstrap-qualified-modules';run='full-qualified-modules'},@{case='full-bootstrap-qualified-pipeline';run='second'},@{case='full-bootstrap-qualified-modules';run='full-qualified-modules-second'})) {
             $caseWork = Join-Path $prepared.root ('run-'+$entry.run)
             New-Item -ItemType Directory -Path $caseWork -ErrorAction Stop | Out-Null
             & $prepared.runScript -Executable $exe -Case $entry.case -Work $caseWork
