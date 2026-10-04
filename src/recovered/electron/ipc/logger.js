@@ -42,13 +42,20 @@ function diagnosticLoggerContext() {
 		timestampUtc: now.toISOString(), timezoneOffsetMinutes: -now.getTimezoneOffset(),
 		pid: typeof process === "object" ? process.pid ?? null : null, parentPid: typeof process === "object" ? process.ppid ?? null : null };
 }
+// electron-log runs hooks once per transport with the same normalized message.
+// Keep one immutable redacted snapshot so console/file share its correlation.
+var diagnosticLoggerMessages = new WeakMap();
 log.hooks.push((message) => {
-	message.data = message.data.map((item) => redactLogValue(item));
+	const cached = diagnosticLoggerMessages.get(message);
+	if (cached) return cached;
+	const data = message.data.map((item) => redactLogValue(item));
 	// Prefix leaves the runtime-event JSON at the end of the line parseable.
 	const context = "[context] " + JSON.stringify(diagnosticLoggerContext());
-	if (typeof message.data[0] === "string") message.data[0] = context + " " + message.data[0];
-	else message.data.push(context);
-	return message;
+	if (typeof data[0] === "string") data[0] = context + " " + data[0];
+	else data.push(context);
+	const transformed = { ...message, data };
+	diagnosticLoggerMessages.set(message, transformed);
+	return transformed;
 });
 log.transports.file.format = "[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}";
 log.transports.console.format = "[{h}:{i}:{s}] [{level}] {text}";

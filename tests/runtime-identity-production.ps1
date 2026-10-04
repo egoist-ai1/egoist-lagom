@@ -25,9 +25,10 @@ $project = @"
 $projectFile = Join-Path $workDirectory 'IdentityRuntimeProduction.csproj'
 [IO.File]::WriteAllText($projectFile, $project, [Text.UTF8Encoding]::new($false))
 $saved = @{}
-foreach ($name in @('TMP','TEMP','DOTNET_ROOT','DOTNET_CLI_HOME','DOTNET_CLI_TELEMETRY_OPTOUT')) { $saved[$name]=[Environment]::GetEnvironmentVariable($name,'Process') }
+foreach ($name in @('TMP','TEMP','DOTNET_ROOT','DOTNET_CLI_HOME','DOTNET_ADD_GLOBAL_TOOLS_TO_PATH','DOTNET_CLI_TELEMETRY_OPTOUT')) { $saved[$name]=[Environment]::GetEnvironmentVariable($name,'Process') }
 try {
     $env:TEMP=$workDirectory; $env:TMP=$workDirectory; $env:DOTNET_ROOT=[IO.Path]::GetDirectoryName($sdk)
+    $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH='0'
     $env:DOTNET_CLI_HOME=Join-Path $workDirectory 'dotnet-home'; $env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
     & $sdk build $projectFile -c Release --nologo *> (Join-Path $workDirectory 'build.txt')
     if ($LASTEXITCODE -ne 0) { throw "Identity build failed: $workDirectory\build.txt" }

@@ -170,6 +170,7 @@ function Invoke-NativeBounded {
   param([string]$Executable,[string[]]$Arguments,[string]$Label,[int]$TimeoutSeconds=300)
   Assert-NativeOrdinaryPath -Path $Executable -Leaf
   $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$Executable;$info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.RedirectStandardOutput=$true;$info.RedirectStandardError=$true
+  $info.Environment['DOTNET_ADD_GLOBAL_TOOLS_TO_PATH']='0'
   foreach($argument in $Arguments){$info.ArgumentList.Add([string]$argument)}
   $child=[Diagnostics.Process]::new();$child.StartInfo=$info;$watch=[Diagnostics.Stopwatch]::StartNew()
   try{

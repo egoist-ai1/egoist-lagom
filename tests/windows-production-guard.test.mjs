@@ -278,7 +278,13 @@ test('packaged startup task lifecycle uses the public helper and resumes only af
   assert.match(complete, /Remove-Item -LiteralPath \$marker -Force -ErrorAction Stop[\s\S]*?Resume-OwnedGuiLoginStartup/);
   assert.match(complete, /-not \(Test-Path -LiteralPath \$marker -PathType Leaf\)\) \{ Resume-OwnedGuiLoginStartup; return \}/);
   const recovery = reinstall.slice(reinstall.indexOf('function Invoke-Recovery {'), reinstall.indexOf('function Stop-VerifiedInstallerTransactionProcess {'));
-  assert.match(recovery, /\$recoveryErrors\.Count -gt 0[\s\S]*?return \$false[\s\S]*?else[\s\S]*?Complete-InstallerServiceMaintenance/);
+  const restorationGate = recovery.indexOf('$recoveryErrors.Count -gt 0');
+  const maintenanceClosure = recovery.indexOf('Complete-InstallerServiceMaintenance', restorationGate);
+  const closureReadback = recovery.indexOf("if ((Get-InstallerServiceMaintenanceStatus) -ne 'absent')", maintenanceClosure);
+  const desktopLaunch = recovery.indexOf('Start-InstalledDesktop -State $State', closureReadback);
+  assert.ok(restorationGate >= 0 && maintenanceClosure > restorationGate && closureReadback > maintenanceClosure && desktopLaunch > closureReadback);
+  assert.match(recovery.slice(restorationGate, maintenanceClosure), /return \$false/);
+  assert.match(recovery.slice(closureReadback, desktopLaunch), /maintenance-closure[\s\S]*?return \$false/);
   assert.match(recovery, /maintenanceStatus -eq 'absent'\) \{\s*Resume-OwnedGuiLoginStartup/g);
   const worker = reinstall.slice(reinstall.indexOf('Write-Heartbeat -Stage $StageDirectory -Phase "restoring"'));
   assert.ok(worker.indexOf('Start-PreservedServices -State $state') < worker.indexOf('Complete-InstallerServiceMaintenance'));
@@ -316,7 +322,7 @@ test('actual reinstall functions keep GUI startup suspended on failed restoratio
     "if($script:Events.Count -ne 3){throw 'Foreign transaction invoked startup hook'};[IO.File]::WriteAllText($marker,$good);Complete-InstallerServiceMaintenance;Complete-InstallerServiceMaintenance;" +
     "if(($script:Events -join ',') -cne 'marker-created,suspend,suspend,resume,resume'){throw 'Completion/retry hook order differs'};" +
     "function Enter-DeferredReinstallRecoveryLease {$m=[pscustomobject]@{};$m|Add-Member -MemberType ScriptMethod -Name ReleaseMutex -Value {};$m|Add-Member -MemberType ScriptMethod -Name Dispose -Value {};return $m};" +
-    "function Get-InstallerServiceMaintenanceStatus {return 'own'};function Add-ReceiptEvent {};" +
+    "function Get-InstallerServiceMaintenanceStatus {if(-not(Test-Path -LiteralPath $marker)){return 'absent'};$m=Get-Content -LiteralPath $marker -Raw|ConvertFrom-Json;if($m.owner -ceq 'EgoistShield' -and $m.stage -ceq $StageDirectory){return 'owned'};return 'foreign'};function Add-ReceiptEvent {};" +
     "function Stop-OwnedServiceForInstall {};function Stop-PreservedWrappersForRecovery {};" +
     "function Restore-PreservedState {if($script:Fault -ceq 'state'){throw 'Inert state restore failure'}};" +
     "function Reconcile-PreservedZapretProfile {};function Restore-InstalledIdentity {};function Test-PayloadRollbackPending {return $false};" +

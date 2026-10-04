@@ -40,8 +40,13 @@ $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $sdk = if ($DotnetPath) { $DotnetPath } else { Join-Path $projectRoot '.tools/dotnet-10.0.401/dotnet.exe' }
 if (-not [IO.Path]::IsPathFullyQualified($sdk) -or -not [IO.File]::Exists($sdk) -or ((Get-Item -LiteralPath $sdk).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'A pinned ordinary absolute SDK executable is required.' }
 $requiredSdk = (Get-Content -LiteralPath (Join-Path $projectRoot 'global.json') -Raw | ConvertFrom-Json).sdk.version
-$actualSdk = (& $sdk --version | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or $actualSdk -ne $requiredSdk) { throw "Expected SDK $requiredSdk; received $actualSdk." }
+$savedSdkToolsPath = [Environment]::GetEnvironmentVariable('DOTNET_ADD_GLOBAL_TOOLS_TO_PATH', 'Process')
+try {
+    $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH = '0'
+    $actualSdk = (& $sdk --version | Out-String).Trim()
+    $sdkVersionExitCode = $LASTEXITCODE
+} finally { [Environment]::SetEnvironmentVariable('DOTNET_ADD_GLOBAL_TOOLS_TO_PATH', $savedSdkToolsPath, 'Process') }
+if ($sdkVersionExitCode -ne 0 -or $actualSdk -ne $requiredSdk) { throw "Expected SDK $requiredSdk; received $actualSdk." }
 $work = Join-Path ([IO.Path]::GetFullPath($WorkRoot)) ('core-owner-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
 [void][IO.Directory]::CreateDirectory($work)
 Write-Output ('OWNER_EVIDENCE_DIR=' + $work)
@@ -76,9 +81,10 @@ $escapedHistorical = [Security.SecurityElement]::Escape($historicalSource)
 <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0-windows</TargetFramework><RuntimeFrameworkVersion>10.0.12</RuntimeFrameworkVersion><LangVersion>14.0</LangVersion><PlatformTarget>x64</PlatformTarget><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><AllowUnsafeBlocks>true</AllowUnsafeBlocks><GenerateAssemblyInfo>false</GenerateAssemblyInfo><EnableDefaultCompileItems>false</EnableDefaultCompileItems><StartupObject>CoreOwnerRegression.TestProgram</StartupObject></PropertyGroup><ItemGroup><PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0"/><Compile Include="$escapedRoot/**/*.cs" Exclude="$escapedRoot/**/obj/**/*.cs;$escapedRoot/**/bin/**/*.cs"/><Compile Include="$escapedHarness"/></ItemGroup></Project>
 "@ | Set-Content -LiteralPath $project -Encoding utf8
 $saved = @{}
-foreach ($name in @('DOTNET_ROOT','DOTNET_CLI_HOME','NUGET_PACKAGES','TEMP','TMP','DOTNET_CLI_TELEMETRY_OPTOUT')) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
+foreach ($name in @('DOTNET_ROOT','DOTNET_CLI_HOME','DOTNET_ADD_GLOBAL_TOOLS_TO_PATH','NUGET_PACKAGES','TEMP','TMP','DOTNET_CLI_TELEMETRY_OPTOUT')) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
     $env:DOTNET_ROOT = [IO.Path]::GetDirectoryName($sdk)
+    $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH='0'
     $env:DOTNET_CLI_HOME = Join-Path $work 'dotnet-home'
     $env:NUGET_PACKAGES = Join-Path $work 'nuget'
     $env:TEMP = $work; $env:TMP = $work; $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'

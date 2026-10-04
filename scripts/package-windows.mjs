@@ -28,7 +28,8 @@ await fs.mkdir(dist, { recursive: true });
 const buildSource = await packageSource(root);
 const patchedDotnet = path.join(root, '.tools/dotnet-10.0.401/dotnet.exe');
 const dotnet = process.env.SHIELD_DOTNET || (await fs.access(patchedDotnet).then(() => patchedDotnet).catch(() => path.join(root, '.tools/dotnet/dotnet.exe')));
-const sdkCheck = spawnSync(dotnet, ['--version'], { windowsHide: true, encoding: 'utf8' });
+const dotnetEnvironment = { ...process.env, DOTNET_ROOT: path.dirname(dotnet), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1', DOTNET_ADD_GLOBAL_TOOLS_TO_PATH: '0' };
+const sdkCheck = spawnSync(dotnet, ['--version'], { windowsHide: true, env: dotnetEnvironment, encoding: 'utf8' });
 if (sdkCheck.status !== 0) throw new Error('Required .NET SDK is unavailable; install the version selected by global.json or set SHIELD_DOTNET.');
 const requiredSdk = JSON.parse(await fs.readFile('global.json', 'utf8')).sdk.version;
 if (sdkCheck.stdout.trim() !== requiredSdk) throw new Error(`Packaging requires the pinned .NET SDK ${requiredSdk}; received ${sdkCheck.stdout.trim()}.`);
@@ -162,7 +163,6 @@ const cscResult = spawnSync(csc, [
 ], { encoding: 'utf8' });
 if (cscResult.status !== 0) throw new Error('Failed to compile ModernInstaller.exe:\n' + (cscResult.stderr || '') + (cscResult.stdout || ''));
 console.log('Publishing Core service...');
-const dotnetEnvironment = { ...process.env, DOTNET_ROOT: path.dirname(dotnet), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' };
 const coreIntermediate = path.join(evidence, 'core-obj') + path.sep;
 // Single-file publishing adds SDK build tasks that are absent from the normal
 // development restore. Pin that exact graph without rewriting its normal lock.

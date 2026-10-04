@@ -36,6 +36,9 @@ function Invoke-CheckedExternal {
   Assert-FixturePath ([string]$Arguments[1])
   $script:takeownCalls.Add([pscustomobject]@{target=[string]$Arguments[1];recursive=($Arguments -contains '/R')});return 0
 }
+# Native hardening-cache retirement is deliberately inert: this fixture
+# exercises the exact repair AST and only real ACLs on owned fixture files.
+function Invalidate-OwnedCoreAclHardeningCache {$script:cacheInvalidations++}
 function Set-SeedAcl([string]$Path){
   if([IO.Directory]::Exists($Path)){
     $acl=[Security.AccessControl.DirectorySecurity]::new()
@@ -74,7 +77,7 @@ function New-Fixture([string]$Name){
   }
   foreach($path in @($allowed.ToArray()+$excluded.ToArray())){Set-SeedAcl $path}
   $before=@{};foreach($path in $excluded){$before[$path]=(Get-PathAcl $path).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)}
-  $script:newItems=0;$script:takeownCalls.Clear()
+  $script:newItems=0;$script:takeownCalls.Clear();$script:cacheInvalidations=0
   return [pscustomobject]@{root=$case;allowed=@($allowed.ToArray());excluded=@($excluded.ToArray());before=$before}
 }
 function Invoke-RepairWithCallerPoison([string]$Poison=''){
@@ -83,6 +86,7 @@ function Invoke-RepairWithCallerPoison([string]$Poison=''){
   Repair-UpgradeStateAccess
 }
 function Assert-Repaired($Case){
+  Require ($script:cacheInvalidations -eq 1) 'Successful state ACL repair did not invalidate its Core hardening cache exactly once.'
   $expected=@('S-1-5-18','S-1-5-32-544',$actualSid.Value)|Select-Object -Unique|Sort-Object
   foreach($path in $Case.allowed){
     $acl=Get-PathAcl $path;$rules=@($acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier]))
@@ -144,7 +148,7 @@ try{
     $link=if($kind -eq 'root'){$upgradeStateDirectory}else{$registrationBackupDirectory}
     Assert-FixturePath $link;Microsoft.PowerShell.Management\Remove-Item -LiteralPath $link -Recurse -Force
     [void](Microsoft.PowerShell.Management\New-Item -ItemType Junction -Path $link -Target $target)
-    $script:newItems=0;$script:takeownCalls.Clear()
+    $script:newItems=0;$script:takeownCalls.Clear();$script:cacheInvalidations=0
     $failed=$false;try{Invoke-RepairWithCallerPoison}catch{$failed=$_.Exception.Message -like '*reparse point*'}
     Require $failed 'Actual NTFS reparse point was accepted.'
     Require ((Get-PathAcl $target).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -ceq $before) 'Reparse target DACL changed.'
@@ -152,7 +156,7 @@ try{
   }
   $case=New-Fixture 'fixture-env';$before=(Get-PathAcl $upgradeStateDirectory).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)
   $env:EGOISTSHIELD_INSTALLER_STATE_DIR=$upgradeStateDirectory;$script:forceRole=$false;Invoke-RepairWithCallerPoison
-  Require ($takeownCalls.Count -eq 0 -and (Get-PathAcl $upgradeStateDirectory).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -ceq $before) 'Existing fixture-env early return changed DACL or invoked takeown.'
+  Require ($cacheInvalidations -eq 0 -and $takeownCalls.Count -eq 0 -and (Get-PathAcl $upgradeStateDirectory).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -ceq $before) 'Existing fixture-env early return changed DACL or invoked takeown.'
   Write-Output 'PASS: real NTFS root/child reparse guards and existing fixture-env early return retained'
   Write-Output 'Installer upgrade-state identity: 9 cases passed; actual Windows identity and .NET ACL operations; native takeown/SCM/registry/DNS/tasks/UAC 0.'
 }finally{$env:EGOISTSHIELD_INSTALLER_STATE_DIR=$savedFixtureState}

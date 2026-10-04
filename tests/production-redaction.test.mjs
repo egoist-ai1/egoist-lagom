@@ -18,7 +18,7 @@ const corpus = {
   settings: { customDnsUrl: url, systemDohUrl:`https://dns.example.invalid/${sentinels[0]}` },
   nested: [{ endpoint:url, message:`DNS E_TIMEOUT ${url}`, apiKey:sentinels[5], privateKey:sentinels[5], metadata:{password:sentinels[3]} }],
   wireguard:`[Interface]\nPrivateKey = "${sentinels[5]}"\nEndpoint = vpn.example.invalid:51820`,
-  log:`DNS E_TIMEOUT ${url}\nsecret="${sentinels[7]}"\nAuthorization: Bearer ${sentinels[3]}\nCookie: own=${sentinels[2]}\nvless://${sentinels[6]}@vpn.example.invalid:443/path\n-----BEGIN PRIVATE KEY-----\n${sentinels[5]}\n-----END PRIVATE KEY-----`,
+  log:`DNS E_TIMEOUT ${url}\ntg-ws-proxy.exe --host 127.0.0.1 --port 1443 --secret ${sentinels[7]}\nsecret="${sentinels[7]}"\nAuthorization: Bearer ${sentinels[3]}\nCookie: own=${sentinels[2]}\nvless://${sentinels[6]}@vpn.example.invalid:443/path\n-----BEGIN PRIVATE KEY-----\n${sentinels[5]}\n-----END PRIVATE KEY-----`,
 };
 
 test('R09: secret DNS path is hidden in diagnostic text and nested objects; operational data stays unchanged', () => {
@@ -167,4 +167,15 @@ test('R09: archive failure and unavailable-log catch messages redact URL credent
   const text = await fs.readFile(path.join(root,'diagnostics',directory,'main.log.redacted.txt'),'utf8');
   assert.match(text, /E_LOG_UNAVAILABLE/);
   assertNoSentinels(text);
+});
+
+test('runtime CLI credentials are hidden in wrapper text while ordinary options remain useful', () => {
+  for (const flag of ['secret','token','password','api-key','access_token','private-key']) {
+    for (const assignment of [`--${flag} ${sentinels[7]}`, `--${flag}="${sentinels[7]} with spaces"`, `"--${flag}" '${sentinels[7]}'`, `--${flag.toUpperCase()}\t${sentinels[7]}`]) {
+      const input=`tg-ws-proxy.exe --host 127.0.0.1 --port 1443 ${assignment}`;
+      const safe=redaction.redactDiagnosticText(input);assertNoSentinels(safe);assert.match(safe,/--host 127\.0\.0\.1 --port 1443/);assert.match(safe,/<redacted>/);assert.equal(redaction.redactDiagnosticText(safe),safe);
+      assertNoSentinels(JSON.stringify(redaction.redactDiagnosticObject({tail:input})));
+    }
+  }
+  assert.equal(redaction.redactDiagnosticText('--secret-file C:\\safe\\config.json --tokenizer regular'),'--secret-file C:\\safe\\config.json --tokenizer regular');
 });

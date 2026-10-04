@@ -2,6 +2,8 @@
 var UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi;
 var WINDOWS_USER_PATH_RE = /\b([A-Za-z]:\\Users\\)([^\\\s]+)(?=\\)/g;
 var SECRET_ASSIGNMENT_RE = /\b(secret|token|password|passwd|api[_-]?key|access[_-]?token|refresh[_-]?token|private[_-]?key|pre[_-]?shared[_-]?key|preshared[_-]?key|authorization|proxy[_-]?authorization)(["']?\s*[:=]\s*)("(?:\\.|[^"\\])*"?|'(?:\\.|[^'\\])*'?|[^\s,;"']+)/gi;
+// WinSW wrapper logs include argv text; assignment-only redaction misses --secret value.
+var CLI_SECRET_RE = /(--(?:secret|token|password|passwd|api[_-]?key|access[_-]?token|refresh[_-]?token|private[_-]?key|pre[_-]?shared[_-]?key|preshared[_-]?key)["']?)(=|[ \t]+)("(?:\\.|[^"\\])*"?|'(?:\\.|[^'\\])*'?|[^\s,;"']+)/gi;
 var AUTH_HEADER_RE = /\b(authorization|proxy-authorization)(\s*[:=]\s*)(bearer\s+|basic\s+)?([^\s,"']+)/gi;
 var COOKIE_HEADER_RE = /\b(set-cookie|cookie)(\s*[:=]\s*)([^\r\n]+)/gi;
 var PRIVATE_KEY_MARKER_RE = /-----BEGIN [A-Z ]*PRIVATE KEY-----|-----END [A-Z ]*PRIVATE KEY-----/g;
@@ -48,11 +50,12 @@ function redactPrivateKeyBlocks(value) {
 	if (begin !== null) return `${output}${value.slice(copiedUntil, begin)}<private-key>`;
 	return copiedUntil === 0 ? value : `${output}${value.slice(copiedUntil)}`;
 }
+function redactAssignedSecret(_match, key, separator, secret) {
+	const quote = secret[0] === '"' || secret[0] === "'" ? secret[0] : "";
+	return `${key}${separator}${quote}<redacted>${quote}`;
+}
 function redactDiagnosticText(value) {
-	return redactPrivateKeyBlocks(String(value)).replace(/\\+\//g, "/").replace(CONNECTION_URI_RE, "<connection-uri>").replace(URL_WITH_QUERY_RE, redactUrl).replace(AUTH_HEADER_RE, "$1$2$3<redacted>").replace(COOKIE_HEADER_RE, "$1$2<redacted>").replace(SECRET_ASSIGNMENT_RE, (_match, key, separator, secret) => {
-		const quote = secret[0] === '"' || secret[0] === "'" ? secret[0] : "";
-		return `${key}${separator}${quote}<redacted>${quote}`;
-	}).replace(HWID_RE, "$1<redacted>").replace(UUID_RE, diagnosticCorrelationId).replace(WINDOWS_USER_PATH_RE, "$1<user>");
+	return redactPrivateKeyBlocks(String(value)).replace(CLI_SECRET_RE, redactAssignedSecret).replace(/\\+\//g, "/").replace(CONNECTION_URI_RE, "<connection-uri>").replace(URL_WITH_QUERY_RE, redactUrl).replace(AUTH_HEADER_RE, "$1$2$3<redacted>").replace(COOKIE_HEADER_RE, "$1$2<redacted>").replace(SECRET_ASSIGNMENT_RE, redactAssignedSecret).replace(HWID_RE, "$1<redacted>").replace(UUID_RE, diagnosticCorrelationId).replace(WINDOWS_USER_PATH_RE, "$1<user>");
 }
 function isDiagnosticSecretKey(key) {
 	return /authorization|cookie|secret|token|password|passwd|hwid|api[_-]?key|private[_-]?key|pre[_-]?shared[_-]?key|commandline|rawpayload/i.test(key);

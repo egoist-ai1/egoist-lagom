@@ -93,10 +93,11 @@ function registerLogHandlers() {
 	ipcMain.handle("logs:get-path", () => {
 		return getLogFilePath();
 	});
-	ipcMain.handle("logs:open-folder", () => {
+	ipcMain.handle("logs:open-folder", async () => {
 		const logPath = getLogFilePath();
 		const folder = path.dirname(logPath);
-		shell.openPath(folder);
+		const error = await shell.openPath(folder);
+		if (error) throw new Error(`Не удалось открыть папку журналов: ${error}`);
 		return true;
 	});
 }

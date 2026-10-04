@@ -16,8 +16,13 @@ if (-not [IO.Path]::IsPathFullyQualified($sdk) -or -not (Test-Path -LiteralPath 
 $sdk = [IO.Path]::GetFullPath($sdk)
 $sdkRoot = [IO.Path]::GetDirectoryName($sdk)
 $expectedSdk = [string](Get-Content -LiteralPath (Join-Path $projectRoot 'global.json') -Raw | ConvertFrom-Json).sdk.version
-$actualSdk = (& $sdk --version | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or $actualSdk -cne $expectedSdk) { throw "Expected SDK $expectedSdk; actual SDK $actualSdk." }
+$savedSdkToolsPath = [Environment]::GetEnvironmentVariable('DOTNET_ADD_GLOBAL_TOOLS_TO_PATH', 'Process')
+try {
+    $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH = '0'
+    $actualSdk = (& $sdk --version | Out-String).Trim()
+    $sdkVersionExitCode = $LASTEXITCODE
+} finally { [Environment]::SetEnvironmentVariable('DOTNET_ADD_GLOBAL_TOOLS_TO_PATH', $savedSdkToolsPath, 'Process') }
+if ($sdkVersionExitCode -ne 0 -or $actualSdk -cne $expectedSdk) { throw "Expected SDK $expectedSdk; actual SDK $actualSdk." }
 $liveSourceRoot = Join-Path $projectRoot 'src/service'
 $frozenSourceRoot = Join-Path $workDirectory 'source'
 $sourceHashes = @()
@@ -59,9 +64,10 @@ $projectText = @"
 $projectPath = Join-Path $workDirectory 'CorePersistenceProduction.csproj'
 [IO.File]::WriteAllText($projectPath, $projectText, [Text.UTF8Encoding]::new($false))
 $savedEnvironment = @{}
-foreach ($name in @('TMP', 'TEMP', 'DOTNET_ROOT', 'DOTNET_CLI_HOME', 'NUGET_PACKAGES', 'DOTNET_CLI_TELEMETRY_OPTOUT')) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
+foreach ($name in @('TMP', 'TEMP', 'DOTNET_ROOT', 'DOTNET_CLI_HOME','DOTNET_ADD_GLOBAL_TOOLS_TO_PATH', 'NUGET_PACKAGES', 'DOTNET_CLI_TELEMETRY_OPTOUT')) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
     $env:TMP = $workDirectory; $env:TEMP = $workDirectory; $env:DOTNET_ROOT = $sdkRoot
+    $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH='0'
     $env:DOTNET_CLI_HOME = Join-Path $workDirectory 'dotnet-home'
     $env:NUGET_PACKAGES = Join-Path ([IO.Path]::GetFullPath($WorkRoot)) 'nuget'
     $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'

@@ -90,12 +90,20 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
   const [localAction, setLocalAction] = O.useState(null);
   const [cancelBusy, setCancelBusy] = O.useState(false);
 
-  const [dnsEnabled] = O.useState(() => {
+  const [dnsEnabled, setDnsEnabled] = O.useState(() => {
     try { return localStorage.getItem('shield_dns_on_connect') !== 'false'; } catch { return true; }
   });
-  const [telegramEnabled] = O.useState(() => {
+  const [telegramEnabled, setTelegramEnabled] = O.useState(() => {
     try { return localStorage.getItem('shield_telegram_on_connect') !== 'false'; } catch { return true; }
   });
+
+  const [preferencesOpen, setPreferencesOpen] = O.useState(false);
+  const [preferencesError, setPreferencesError] = O.useState('');
+  const preferencesId = O.useId();
+  const preferencesSurface = O.useRef(null);
+  const preferencesTrigger = O.useRef(null);
+  const preferencesVisible = O.useRef(false);
+  preferencesVisible.current = preferencesOpen;
 
   const mounted = O.useRef(true);
   const surface = O.useRef(null);
@@ -162,6 +170,34 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
     refresh();
     return () => { mounted.current = false; clearTimeout(timer); unsubscribe?.(); document.removeEventListener('visibilitychange', visible); };
   }, []);
+
+  O.useEffect(() => {
+    const outside = event => {
+      if (preferencesVisible.current && preferencesSurface.current && !preferencesSurface.current.contains(event.target)) setPreferencesOpen(false);
+    };
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, []);
+  O.useEffect(() => {
+    if (preferencesOpen) preferencesSurface.current?.querySelector('input')?.focus();
+  }, [preferencesOpen]);
+
+  function updatePreference(component, enabled) {
+    try {
+      localStorage.setItem(component === 'dns' ? 'shield_dns_on_connect' : 'shield_telegram_on_connect', String(enabled));
+      (component === 'dns' ? setDnsEnabled : setTelegramEnabled)(enabled);
+      setPreferencesError('');
+    } catch {
+      setPreferencesError('Не удалось сохранить выбор. Повторите попытку.');
+    }
+  }
+  function closePreferences(event) {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    event.stopPropagation();
+    setPreferencesOpen(false);
+    preferencesTrigger.current?.focus();
+  }
 
   const busy = (!(statusError || connection?.statusError) && connection?.busy === true) || localAction === 'connect' || localAction === 'disconnect';
   const dnsBusy = localAction === 'dns';
@@ -363,6 +399,20 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
           <p>{rubyShieldErrorSummary(failure)}</p>
         </div>
       )}
+
+      <div className="shield-on-connect-preferences" ref={preferencesSurface} onKeyDown={closePreferences} style={{ position:'relative', flex:'none', fontSize:11, lineHeight:1.4, marginTop:4, WebkitAppRegion:'no-drag' }}>
+        <button type="button" ref={preferencesTrigger} aria-label="Компоненты при подключении" aria-expanded={preferencesOpen} aria-controls={preferencesId} onClick={() => setPreferencesOpen(open => !open)} style={{ border:0, background:'transparent', color:'inherit', padding:'2px 0', textAlign:'left', cursor:'pointer', font:'inherit' }}>
+          При подключении профиля <span aria-hidden="true">{preferencesOpen ? '▴' : '▾'}</span>
+        </button>
+        {preferencesOpen && <div id={preferencesId} role="group" aria-label="Компоненты при следующем подключении" style={{ position:'absolute', bottom:'calc(100% + 4px)', left:0, right:0, zIndex:5, boxSizing:'border-box', maxHeight:'calc(100vh - 100px)', overflowY:'auto', padding:10, border:'1px solid #52525b', borderRadius:8, background:'#141416', color:'#f4f4f5', boxShadow:'0 6px 20px #0008' }}>
+          <p style={{ margin:'0 0 6px' }}>Выбор для следующего подключения</p>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 16px' }}>
+            <label><input type="checkbox" aria-label="DNS при подключении" checked={dnsEnabled} onChange={event => updatePreference('dns', event.target.checked)} /> DNS</label>
+            <label><input type="checkbox" aria-label="Telegram при подключении" checked={telegramEnabled} onChange={event => updatePreference('telegram', event.target.checked)} /> Telegram</label>
+          </div>
+          {preferencesError && <p role="alert" style={{ margin:'6px 0 0' }}>{preferencesError}</p>}
+        </div>}
+      </div>
 
       <footer className="shield-widget-footer">
         <div className="shield-footer-switches">

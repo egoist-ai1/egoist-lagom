@@ -629,6 +629,7 @@ internal static class SelfTest
 		string marker = Path.Combine(productRoot, "installer", "service-maintenance.json");
 		Directory.CreateDirectory(Path.GetDirectoryName(marker)!);
 		File.WriteAllText(marker, "{");
+		byte[] unchangedInstallerMarker = await File.ReadAllBytesAsync(marker);
 		var options = new ServiceOptions("EgoistShield.Service.SelfTest.Installer." + Guid.NewGuid().ToString("N"), stateRoot, ConsoleMode: true, AllowDevClient: true, null);
 		var journal = new TransactionJournal(stateRoot);
 		var now = DateTimeOffset.UtcNow;
@@ -636,7 +637,7 @@ internal static class SelfTest
 			"test", "test.delay-mutation", TransactionPhase.Committed, JsonDefaults.ToElement(new { }), JsonDefaults.ToElement(new { }), now, now, null);
 		await journal.CreateActiveAsync(terminal);
 		string activePath = Path.Combine(stateRoot, "active-transaction.json");
-		byte[] unchangedMarker = await File.ReadAllBytesAsync(activePath);
+		byte[] unchangedJournal = await File.ReadAllBytesAsync(activePath);
 		using var dispatcher = new OperationDispatcher(options, new WindowsDnsController(), new WindowsNativeDohController(stateRoot), null, journal, new ServiceLog(stateRoot));
 		using (var cancelledWait = new CancellationTokenSource())
 		{
@@ -644,35 +645,72 @@ internal static class SelfTest
 			Assert(!wait.IsCompleted, "active installer marker defers startup readiness");
 			cancelledWait.Cancel();
 			await ExpectAsync<OperationCanceledException>(() => wait, "installer startup wait remains cancellable");
-			Assert((await File.ReadAllBytesAsync(activePath)).SequenceEqual(unchangedMarker), "cancelled maintenance wait preserves terminal journal bytes");
+			Assert((await File.ReadAllBytesAsync(activePath)).SequenceEqual(unchangedJournal), "cancelled maintenance wait preserves terminal journal bytes");
 		}
 		using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 		Task ready = dispatcher.WaitForInstallerMaintenanceAsync(lifetime.Token);
 		ServiceEngine engine = await ServiceEngine.CreateAsync(options, lifetime.Token);
 		Task hosted = engine.RunAsync(lifetime.Token);
+		async Task<ServiceResponse> HostedRequestAsync(ServiceRequest request)
+		{
+			await using var client = new NamedPipeClientStream(".", options.PipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+			await client.ConnectAsync(lifetime.Token);
+			byte[] message = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request, JsonDefaults.Options) + "\n");
+			await client.WriteAsync(message, lifetime.Token);
+			await client.FlushAsync(lifetime.Token);
+			using var reader = new StreamReader(client, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
+			string responseText = await reader.ReadLineAsync(lifetime.Token) ?? throw new InvalidOperationException("Hosted maintenance fixture received no IPC response.");
+			return JsonSerializer.Deserialize<ServiceResponse>(responseText, JsonDefaults.Options)
+				?? throw new InvalidOperationException("Hosted maintenance fixture received an invalid IPC response.");
+		}
+		void AssertMaintenanceReadback(ServiceResponse response, string requestId)
+		{
+			Assert(response.Ok && response.RequestId == requestId, "authenticated hosted IPC readback remains available during maintenance: " + requestId);
+			JsonElement persistence = JsonDefaults.ToElement(response.Result).GetProperty("persistence");
+			Assert(persistence.GetProperty("startupPending").GetBoolean() && persistence.GetProperty("installerMaintenance").GetProperty("active").GetBoolean()
+				&& !persistence.GetProperty("mutationReady").GetBoolean(), "hosted readback reports deferred recovery and blocked mutations: " + requestId);
+		}
 		try
 		{
 			string logPath = Path.Combine(stateRoot, "service.log");
 			while (!File.Exists(logPath) || !(await ReadLiveTextAsync(logPath, lifetime.Token)).Contains("Starting EgoistShieldCore", StringComparison.Ordinal))
 				await Task.Delay(10, lifetime.Token);
-			await using (var blockedClient = new NamedPipeClientStream(".", options.PipeName, PipeDirection.InOut, PipeOptions.Asynchronous))
-				await ExpectAsync<TimeoutException>(() => blockedClient.ConnectAsync(250, lifetime.Token), "hosted Core opens no IPC pipe during installer maintenance");
-			Assert(!ready.IsCompleted && !hosted.IsCompleted, "hosted Core waits for installer completion");
-			Assert((await File.ReadAllBytesAsync(activePath, lifetime.Token)).SequenceEqual(unchangedMarker), "hosted startup leaves terminal recovery journal untouched during maintenance");
-			Assert(!File.Exists(Path.Combine(stateRoot, "transactions.jsonl")), "hosted startup performs no journal archival during maintenance");
+			var helloRequest = new ServiceRequest(1, "self-test:installer:maintenance-hello", "hello", JsonDefaults.ToElement(new { }));
+			ServiceResponse hello = await HostedRequestAsync(helloRequest);
+			AssertMaintenanceReadback(hello, helloRequest.RequestId);
+			JsonElement helloResult = JsonDefaults.ToElement(hello.Result);
+			Assert(helloResult.GetProperty("clientPid").GetInt32() == Environment.ProcessId && helloResult.GetProperty("developmentOverride").GetBoolean(),
+				"hosted maintenance hello authenticates the controlled development client");
+			var statusRequest = new ServiceRequest(1, "self-test:installer:maintenance-status", "service.status", JsonDefaults.ToElement(new { }));
+			ServiceResponse status = await HostedRequestAsync(statusRequest);
+			AssertMaintenanceReadback(status, statusRequest.RequestId);
+			JsonElement statusResult = JsonDefaults.ToElement(status.Result);
+			Assert(statusResult.GetProperty("serviceName").GetString() == "EgoistShieldCore" && statusResult.GetProperty("processId").GetInt32() == Environment.ProcessId
+				&& statusResult.GetProperty("consoleMode").GetBoolean(), "hosted maintenance status identifies the controlled Core process");
+			var mutationRequest = new ServiceRequest(1, "self-test:installer:maintenance-mutation", "test.delay-mutation", JsonDefaults.ToElement(new { delayMs = 1 }));
+			AssertInstallerMaintenance(await HostedRequestAsync(mutationRequest), mutationRequest.RequestId);
+			Assert(!ready.IsCompleted && !hosted.IsCompleted, "hosted Core defers startup recovery until installer completion");
+			Assert((await File.ReadAllBytesAsync(marker, lifetime.Token)).SequenceEqual(unchangedInstallerMarker), "hosted readback and blocked mutation retain malformed installer marker bytes");
+			Assert((await File.ReadAllBytesAsync(activePath, lifetime.Token)).SequenceEqual(unchangedJournal), "hosted startup leaves terminal recovery journal untouched during maintenance");
+			foreach (string file in new[] { "transactions.jsonl", "idempotency-responses.json", "operation-intents.json" })
+				Assert(!File.Exists(Path.Combine(stateRoot, file)), "hosted maintenance IPC performs no journal writes: " + file);
+			Assert(await journal.ReadResponseAsync(mutationRequest.RequestId, lifetime.Token) == null, "hosted maintenance mutation rejection is not persisted");
 			File.Delete(marker);
 			await ready.WaitAsync(lifetime.Token);
-			await using var client = new NamedPipeClientStream(".", options.PipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-			await client.ConnectAsync(lifetime.Token);
-			byte[] hello = Encoding.UTF8.GetBytes("{\"protocolVersion\":1,\"requestId\":\"self-test:installer:hosted-hello\",\"operation\":\"hello\",\"payload\":{}}\n");
-			await client.WriteAsync(hello, lifetime.Token);
-			await client.FlushAsync(lifetime.Token);
-			using var reader = new StreamReader(client, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
-			string responseText = await reader.ReadLineAsync(lifetime.Token) ?? throw new InvalidOperationException("Hosted maintenance fixture received no hello response.");
-			var response = JsonSerializer.Deserialize<ServiceResponse>(responseText, JsonDefaults.Options);
-			Assert(response?.Ok == true, "hosted IPC becomes ready after maintenance marker removal");
+			var recoveredHelloRequest = new ServiceRequest(1, "self-test:installer:hosted-hello", "hello", JsonDefaults.ToElement(new { }));
+			JsonElement recoveredPersistence;
+			do
+			{
+				ServiceResponse response = await HostedRequestAsync(recoveredHelloRequest);
+				Assert(response.Ok && response.RequestId == recoveredHelloRequest.RequestId, "hosted IPC remains available after maintenance marker removal");
+				recoveredPersistence = JsonDefaults.ToElement(response.Result).GetProperty("persistence");
+				if (recoveredPersistence.GetProperty("startupPending").GetBoolean()) await Task.Delay(10, lifetime.Token);
+			} while (recoveredPersistence.GetProperty("startupPending").GetBoolean());
+			Assert(!recoveredPersistence.GetProperty("installerMaintenance").GetProperty("active").GetBoolean() && recoveredPersistence.GetProperty("mutationReady").GetBoolean(),
+				"hosted readback reports completed recovery and mutation readiness after maintenance");
 			Assert(await journal.ReadActiveAsync(lifetime.Token) == null, "hosted startup recovers terminal journal after maintenance marker removal");
 			Assert((await ReadLiveTextAsync(Path.Combine(stateRoot, "transactions.jsonl"), lifetime.Token)).Contains(terminal.TransactionId, StringComparison.Ordinal), "deferred terminal recovery is archived after maintenance");
+			Console.WriteLine("Hosted installer maintenance self-test passed: authenticated hello/status available; malformed marker retained; mutation blocked without journal writes; recovery deferred then completed");
 		}
 		finally
 		{

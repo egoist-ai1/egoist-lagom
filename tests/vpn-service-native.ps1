@@ -25,8 +25,9 @@ $xml=@"
 $csproj=Join-Path $work 'VpnServiceNative.csproj'
 [IO.File]::WriteAllText($csproj,$xml,[Text.UTF8Encoding]::new($false))
 $saved=@{}
-foreach($name in @('DOTNET_ROOT','DOTNET_CLI_HOME','NUGET_PACKAGES','TEMP','TMP')){$saved[$name]=[Environment]::GetEnvironmentVariable($name,'Process')}
+foreach($name in @('DOTNET_ROOT','DOTNET_CLI_HOME','DOTNET_ADD_GLOBAL_TOOLS_TO_PATH','NUGET_PACKAGES','TEMP','TMP')){$saved[$name]=[Environment]::GetEnvironmentVariable($name,'Process')}
 try{
+  $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH='0'
   $env:DOTNET_ROOT=[IO.Path]::GetDirectoryName($sdk);$env:DOTNET_CLI_HOME=Join-Path $work 'dotnet-home';$env:NUGET_PACKAGES=Join-Path $WorkRoot 'nuget';$env:TEMP=$work;$env:TMP=$work
   & $sdk build $csproj -c Release --nologo *> (Join-Path $work 'build.txt')
   if($LASTEXITCODE -ne 0){throw "Native harness build failed: $work/build.txt"}

@@ -43,7 +43,7 @@ export class ShieldConnectionController {
           return;
         }
         const unavailable = value.statusError || value.nativeStatusUnavailable === true ||
-          ['unknown', 'unavailable'].includes(value.serviceState) || value.healthState === 'unknown' || value.ownerInspectionErrors?.length;
+          ['unknown', 'unavailable', 'query-failed'].includes(String(value.serviceState ?? '').toLowerCase()) || value.healthState === 'unknown' || value.ownerInspectionErrors?.length;
         if (unavailable) {
           errors.push(`${name}: ${value.statusError || value.lastError || 'Состояние службы не подтверждено'}`);
           return;
@@ -104,7 +104,7 @@ export class ShieldConnectionController {
     this.checkCancelled();
     if (!status || typeof status !== 'object' || Array.isArray(status) || status.statusError ||
         status.nativeStatusUnavailable === true || status.ownerInspectionErrors?.length ||
-        ['unknown', 'unavailable', 'query-failed'].includes(status.serviceState) || status.healthState === 'unknown') {
+        ['unknown', 'unavailable', 'query-failed'].includes(String(status.serviceState ?? '').toLowerCase()) || status.healthState === 'unknown') {
       throw new Error('Не удалось проверить DNS перед автоподбором. Выбранный DNS сохранён.');
     }
     if (status.running === true && status.verified === true) return status;

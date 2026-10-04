@@ -29,10 +29,13 @@ test('protected reinstall emits branded progress, success and failure states', {
     "$done = Get-Content -LiteralPath (Join-Path $StageDirectory 'status.txt') -Raw",
     "Write-BrandedInstallerStatus -Stage 'recovery' -Status 'recovery-warning'",
     "$failed = Get-Content -LiteralPath (Join-Path $StageDirectory 'status.txt') -Raw",
+    "Write-BrandedInstallerStatus -Stage 'desktop' -Status 'desktop-launch-failed'",
+    "$desktopFailed = Get-Content -LiteralPath (Join-Path $StageDirectory 'status.txt') -Raw -Encoding UTF8",
     "if (-not ([string]$begin).StartsWith('8|')) { throw 'start status missing' }",
     "if (-not ([string]$recovering).StartsWith('88|')) { throw 'early terminal error while recovery is pending' }",
     "if ([string]$done -ne '100|DONE') { throw 'success status missing' }",
     "if (-not ([string]$failed).StartsWith('0|ERROR:')) { throw 'failure status missing' }",
+    "if ([string]$desktopFailed -ne '0|ERROR: Службы и DNS восстановлены. Не удалось запустить приложение; подробности в журнале установки.') { throw 'verified recovery and desktop launch failure were not distinguished' }",
     "Write-Output 'PASS'",
   ];
   try {

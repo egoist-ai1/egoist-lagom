@@ -7,7 +7,7 @@ import { promisify } from 'node:util';
 
 test('local private DNS recovery requires exact generation, owned processes and both DNS listeners', {skip: process.platform !== 'win32'}, async t => {
   assert.ok(path.isAbsolute(process.env.LAGOM_TEST_TEMP || ''), 'Set task-scoped LAGOM_TEST_TEMP.');
-  const dir = await fs.mkdtemp(path.join(process.env.LAGOM_TEST_TEMP, 'private-proof-'));
+  const dir = await fs.mkdtemp(path.join(process.env.LAGOM_TEST_TEMP, 'dp-'));
   const ps = path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
   const result = await promisify(execFile)(ps, ['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',path.resolve('tests/installer-private-dns-proof.ps1'),'-TestDirectory',dir], {
     windowsHide: true, timeout: 45_000, env: {...process.env, TEMP:process.env.LAGOM_TEST_TEMP, TMP:process.env.LAGOM_TEST_TEMP, PSModulePath:path.join(path.dirname(ps),'Modules')}

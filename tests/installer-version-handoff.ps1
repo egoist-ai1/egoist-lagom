@@ -19,6 +19,13 @@ foreach($name in @('Get-FileSha256','Write-Utf8NoBomFile','Test-InstallRootIdent
 function Require {param([bool]$Value,[string]$Message)if(-not $Value){throw $Message}}
 function Refused {param([scriptblock]$Action) $failed=$false;try{& $Action}catch{$failed=$true};Require $failed 'Unverified metadata was accepted.'}
 function Get-CanonicalInstallerRoot {return $script:canonicalRoot}
+# The actual phase writes a protected diagnostic before returning its code.
+# Keep that external log boundary inert and verify the exact safety reason.
+function Write-InstallerPhaseFailure {
+  param($Failure,[int]$ExitCode,[string]$Message)
+  Require ($ExitCode -in @(54,58) -and $Failure -is [Management.Automation.ErrorRecord]) 'Safety diagnostic lost its refusal code or error record.'
+  Require (($ExitCode -eq 54 -and $Message -eq 'Protected installer handoff is required.') -or ($ExitCode -eq 58 -and $Message -eq 'Installer safety validation refused.')) 'Safety diagnostic changed its refusal meaning.'
+}
 $script:protected=$false;$script:dnsFailure=$false
 function Test-VerifiedProtectedReinstall {return $script:protected}
 function Test-RunningOwnedSystemDoh {if($script:dnsFailure){throw 'Fixture DNS query failed'};return $false}

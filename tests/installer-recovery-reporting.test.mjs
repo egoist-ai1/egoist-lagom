@@ -11,6 +11,9 @@ test('recovery reports pending application rollback and preserves the desktop la
   try{
     const result=await exec(path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoProfile','-NonInteractive','-File',path.resolve('tests/installer-recovery-reporting.ps1'),'-TestDirectory',directory],{windowsHide:true,timeout:30000});
     assert.match(result.stdout,/PASS:/);
+    assert.match(result.stdout,/fault matrix with runAfter true\/false/);
+    assert.match(result.stdout,/GUI starts only after verified closure/);
+    assert.match(result.stdout,/retry does not replay the preserved snapshot/);
   }finally{
     assert.equal(await fs.realpath(directory),directory);
     await fs.rm(directory,{recursive:true,force:true});

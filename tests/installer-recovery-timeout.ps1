@@ -53,6 +53,8 @@ function Restore-PreservedState {param($State)}
 function Reconcile-PreservedZapretProfile {param($State)}
 function Restore-InstalledIdentity {param($State)}
 function Restore-PreservedServiceStartModes {param($State)}
+# This fixture isolates recovery retry/ownership from native Core ACL repair.
+function Refresh-OwnedCoreProtectedConfiguration {$script:coreRefreshes++}
 function Start-PreservedServices {param($State)}
 function Test-PayloadRollbackPending { return $false }
 function Test-LoopbackDnsReady {param($State) return $true}
@@ -65,7 +67,7 @@ function New-Case([string]$Name) {
   $script:StageDirectory=Join-Path $root $Name
   New-Item -ItemType Directory -Path $script:StageDirectory -Force | Out-Null
   $script:statuses=New-Object 'Collections.Generic.List[string]'
-  $script:recoveryAttempts=0;$script:failUntil=0;$script:retirements=0;$script:bootAssertions=0
+  $script:recoveryAttempts=0;$script:failUntil=0;$script:retirements=0;$script:bootAssertions=0;$script:coreRefreshes=0
   $script:state=[pscustomobject]@{schemaVersion=1;owner='EgoistShield';handoffStarted=$true;runAfter=$false;installer=(Join-Path $script:StageDirectory 'unused.exe');services=@()}
   Write-JsonAtomic -Path (Join-Path $script:StageDirectory 'state.json') -Value $script:state
   Write-JsonAtomic -Path (Join-Path $script:StageDirectory 'maintenance-marker.json') -Value @{owner='EgoistShield'}
@@ -97,6 +99,7 @@ New-Case 'transient'
 $script:failUntil=1
 $outcome=Invoke-WatchdogMode
 Require ($outcome -eq $true -and $script:recoveryAttempts -eq 2) 'Transient failure stopped the recovery retry loop.'
+Require ($script:coreRefreshes -eq 2) 'Recovery retries skipped the Core configuration refresh boundary.'
 Require ($script:statuses -contains 'recovery-warning' -and $script:statuses[-1] -eq 'recovered') 'Transient recovery error was not retained before verified recovery.'
 Require (-not (Test-InstallerServiceMaintenanceOwner) -and $script:retirements -eq 1) 'Successful retry did not retire its own recovery registration.'
 Require (([IO.File]::ReadAllText((Join-Path $StageDirectory 'complete.flag'))).Trim() -eq 'watchdog-recovered') 'Verified recovery did not become terminal.'
@@ -168,6 +171,7 @@ try {
   Write-JsonAtomic -Path (Join-Path $StageDirectory 'heartbeat.json') -Value @{owner='EgoistShield';workerPid=$holder.Id;workerStartTicks=[int64]$holder.StartTime.Ticks;workerExecutable=$powerShell;installerPid=0;installerStartTicks=0}
   Require ((Invoke-WatchdogMode) -eq $true) 'Expired watchdog did not stop its exact hung worker and acquire the released lease.'
   Require ($holder.WaitForExit(5000) -and $script:recoveryAttempts -eq 1) 'Hung holder was not terminated before the serialized recovery.'
+  Require ($script:coreRefreshes -eq 1) 'Serialized recovery skipped its Core configuration refresh boundary.'
   Require (-not (Test-InstallerServiceMaintenanceOwner)) 'Hung worker left maintenance Disabled after recovery.'
   Write-Output 'PASS: actual harmless hung worker holds mutex; watchdog cancels stops exact holder and recovers under released lease'
 

@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 const exec = promisify(execFile);
 
 test('production installer lifecycle preserves policies, ownership, maintenance lease and interrupted stage', {skip:process.platform !== 'win32'}, async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'lagom-maintenance-lifecycle-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ml-'));
   try {
     const ps = path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
     const env = {...process.env, PSModulePath:path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/Modules')};

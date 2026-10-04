@@ -443,6 +443,7 @@ function Write-BrandedInstallerStatus {
     "recovering" { "88|Восстанавливаем предыдущую рабочую версию..." }
     "succeeded" { "100|DONE" }
     "recovered" { "0|ERROR: Обновление прервалось. Службы и DNS восстановлены." }
+    "desktop-launch-failed" { "0|ERROR: Службы и DNS восстановлены. Не удалось запустить приложение; подробности в журнале установки." }
     "recovery-warning" { "0|ERROR: Восстановление требует внимания. Подробности в защищённом журнале установки." }
     "failed" { "0|ERROR: Установка не завершена. Подробности в защищённом журнале установки." }
     default { $null }
@@ -2410,17 +2411,27 @@ function Invoke-Recovery {
       $recoveryErrors += "dns-private-degraded: SystemDoH is not answering and local restoration is unverified; preserved private settings and current adapter DNS were retained without switching to another resolver."
     }
   }
-  if ($State.runAfter -ne $false -and -not $payloadRollbackPending) {
-    try { Start-InstalledDesktop -State $State } catch { $recoveryErrors += "desktop: $($_.Exception.Message)" }
-  }
   if ($recoveryErrors.Count -gt 0) {
     Add-ReceiptEvent -Stage "recovery" -Status "recovery-warning" -Message ($recoveryErrors -join " | ")
     return $false
-  } else {
-    Complete-InstallerServiceMaintenance
-    Add-ReceiptEvent -Stage "recovery" -Status "recovered" -Message "Previously active owned services and DNS settings were restored; private upstream availability is reported separately."
-    return $true
   }
+  try {
+    Complete-InstallerServiceMaintenance
+    if ((Get-InstallerServiceMaintenanceStatus) -ne 'absent') { throw 'Service maintenance closure did not pass readback.' }
+  } catch {
+    Add-ReceiptEvent -Stage 'recovery' -Status 'recovery-warning' -Message ("maintenance-closure: " + $_.Exception.Message)
+    return $false
+  }
+  Add-ReceiptEvent -Stage "recovery" -Status "recovered" -Message "Previously active owned services and DNS settings were restored; private upstream availability is reported separately."
+  if ($State.runAfter -ne $false) {
+    try { Start-InstalledDesktop -State $State }
+    catch {
+      # Service/DNS recovery is already committed. A GUI launch failure must
+      # not replay its preserved snapshot or claim that the desktop started.
+      Add-ReceiptEvent -Stage 'desktop' -Status 'desktop-launch-failed' -Message ("Services and DNS were restored and maintenance closed, but the desktop launch was not confirmed: " + $_.Exception.Message) -Data @{ recoveryComplete = $true; maintenanceClosed = $true }
+    }
+  }
+  return $true
   } finally {
     $recoveryLease.ReleaseMutex()
     $recoveryLease.Dispose()

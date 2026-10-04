@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 2.0
 if (-not $env:LAGOM_TEST_TEMP -or -not [IO.Path]::IsPathRooted($env:LAGOM_TEST_TEMP)) { throw 'Set task-scoped LAGOM_TEST_TEMP.' }
-$fixtureRoot = Join-Path $env:LAGOM_TEST_TEMP ('w [x]-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
+$fixtureRoot = Join-Path $env:LAGOM_TEST_TEMP ('[x] ' + [Guid]::NewGuid().ToString('N').Substring(0,8))
 $script:RuntimeRoot = Join-Path $fixtureRoot 'Runtime'
 $script:OwnedInstallRoot = Join-Path $fixtureRoot 'Installed'
 $StageDirectory = Join-Path $fixtureRoot 'Stage'

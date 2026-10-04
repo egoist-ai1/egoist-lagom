@@ -169,3 +169,18 @@ test('actual busy polling effect does not supersede a dirty foreground preflight
 test('actual lifetime cleanup prevents pending status callbacks from adopting facts after unmount',async()=>{
   const tg=deferred(),h=harness({status:()=>tg.promise}),dispose=h.mountPoll();await flush();h.unmount(dispose);tg.resolve({config:config(),serviceInstalled:false});await flush();assert.equal(h.snapshot.telegram,null);
 });
+
+for (const [state,label,tone,activeConnections] of [['degraded','Есть ошибки маршрута','warn',2],['error','Маршрут недоступен','bad',0]]) {
+  test(`route ${state} is shown separately from a ready local Telegram proxy`,async()=>{
+    const h=harness();h.setNative({serviceRunning:true,running:true,runtimeReady:true,listenerReady:true,health:{route:{state,mode:'cloudflare',activeConnections,totalConnections:3,successfulFallbackConnections:2}}});await h.context.v2();
+    const tree=h.render(),route=h.elements(tree).find(v=>v.props?.className?.startsWith('telegram-status-chip')&&h.text(v).startsWith('Маршрут'));
+    assert.ok(route);assert.equal(h.text(route),'Маршрут'+label);assert.equal(h.elements(route).find(v=>v.type==='Fp').props.tone,tone);
+    const proxy=h.elements(tree).find(v=>v.props?.className?.startsWith('telegram-status-chip')&&h.text(v).startsWith('Прокси'));
+    assert.equal(h.text(proxy),'Проксиработает','Local listener readiness does not prove the remote route');
+  });
+}
+test('stale Telegram route does not retain cached error tone',async()=>{
+  const h=harness({initialTelegram:{config:config(),serviceRunning:true,running:true,runtimeReady:true,listenerReady:true,health:{route:{state:'error'}},uiObservation:{known:false,stale:true}}});
+  const route=h.elements(h.render()).find(v=>v.props?.className?.startsWith('telegram-status-chip')&&h.text(v).startsWith('Маршрут'));
+  assert.ok(route);assert.equal(h.text(route),'Маршрутне проверен');assert.equal(h.elements(route).find(v=>v.type==='Fp').props.tone,'idle');
+});

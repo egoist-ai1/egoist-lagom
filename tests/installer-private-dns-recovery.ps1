@@ -12,7 +12,7 @@ function Enter-DeferredReinstallRecoveryLease {
   $lease|Add-Member ScriptMethod Dispose {}
   return $lease
 }
-function Get-InstallerServiceMaintenanceStatus {return 'owned'}
+function Get-InstallerServiceMaintenanceStatus {if($script:ownsMaintenance){return 'owned'};return 'absent'}
 function Stop-OwnedServiceForInstall {param($Name)$script:events.Add('stop-core')}
 function Stop-PreservedWrappersForRecovery {param($State)$script:events.Add('stop-wrappers')}
 function Restore-PreservedState {
@@ -38,7 +38,7 @@ function Test-OwnedSystemDohRecoveryRuntime {param($State,[switch]$PreservedRunt
 function Restore-CriticalAdapterDns {param($State)$script:adapterWrites++;$script:dns=@('127.0.0.1','::1');$script:events.Add('restore-owned-loopback')}
 function Restore-CriticalOwnedDnsBaseline {param($State)$script:baselineWrites++;$script:dns=@('192.0.2.53');$script:events.Add('baseline-fallback')}
 function Start-InstalledDesktop {throw 'A private DNS recovery fixture must not launch the GUI.'}
-function Complete-InstallerServiceMaintenance {$script:completions++;$script:events.Add('complete')}
+function Complete-InstallerServiceMaintenance {Require $script:ownsMaintenance 'Fixture maintenance was already closed.';$script:completions++;$script:events.Add('complete');$script:ownsMaintenance=$false}
 function Add-ReceiptEvent {param($Stage,$Status,$Message)$script:lastStatus=$Status;$script:lastMessage=$Message}
 function Resume-OwnedGuiLoginStartup {throw 'An active recovery fixture must not resume closed maintenance.'}
 function Set-DnsClientServerAddress {throw 'Forbidden native adapter mutation.'}
@@ -66,7 +66,7 @@ foreach($relative in $sources){
     [IO.File]::WriteAllText($script:restoredConfig,'incomplete-new-config')
     [IO.File]::WriteAllText($script:restoredIntent,'incomplete-new-intent')
     $script:events=New-Object 'Collections.Generic.List[string]'
-    $script:adapterWrites=0;$script:baselineWrites=0;$script:completions=0;$script:lastStatus='';$script:lastMessage=''
+    $script:adapterWrites=0;$script:baselineWrites=0;$script:completions=0;$script:lastStatus='';$script:lastMessage='';$script:ownsMaintenance=$true
     $script:ready=$scenario -like 'private-ready*'
     $script:localProof=$scenario -in @('private-down-local-restored','private-down-external-dns','private-ready','private-ready-no-adapters-verified')
     $script:dns=if($scenario -eq 'private-down-external-dns'){@('198.51.100.53')}else{@('127.0.0.1','::1')}
@@ -77,14 +77,14 @@ foreach($relative in $sources){
     Require ($script:events.IndexOf('restore-private-state') -lt $script:events.IndexOf('start-private-services')) ('Private state was not restored before service restart: '+($script:events -join ',')+'; '+$script:lastMessage)
     Require ($script:baselineWrites -eq 0) 'Automatic installer recovery changed the operator to the recorded baseline DNS.'
     if($script:ready -and $script:localProof){
-      Require ($outcome -eq $true -and $script:lastStatus -eq 'recovered' -and $script:completions -eq 1) 'Healthy private rollback did not become verified recovery.'
+      Require ($outcome -eq $true -and $script:lastStatus -eq 'recovered' -and $script:completions -eq 1 -and -not $script:ownsMaintenance) 'Healthy private rollback did not become verified recovery.'
       $expectedWrites=if($state.criticalDns.Count -gt 0){1}else{0}
       Require ($script:adapterWrites -eq $expectedWrites -and ($script:dns -join '|') -eq '127.0.0.1|::1') 'Healthy recovery did not respect its owned adapter snapshots.'
     }elseif($script:localProof){
-      Require ($outcome -eq $true -and $script:lastStatus -eq 'recovered' -and $script:completions -eq 1) 'Locally verified private restoration did not release maintenance for Core recovery.'
+      Require ($outcome -eq $true -and $script:lastStatus -eq 'recovered' -and $script:completions -eq 1 -and -not $script:ownsMaintenance) 'Locally verified private restoration did not release maintenance for Core recovery.'
       Require ($script:adapterWrites -eq 0 -and ($script:dns -join '|') -eq $beforeDns) 'Degraded private restoration overwrote adapter DNS.'
     }else{
-      Require ($outcome -eq $false -and $script:lastStatus -eq 'recovery-warning' -and $script:completions -eq 0) 'Unavailable private DoH incorrectly completed maintenance.'
+      Require ($outcome -eq $false -and $script:lastStatus -eq 'recovery-warning' -and $script:completions -eq 0 -and $script:ownsMaintenance) 'Unavailable private DoH incorrectly completed maintenance.'
       Require ($script:adapterWrites -eq 0 -and ($script:dns -join '|') -eq $beforeDns) 'Unavailable private DoH rewrote current or externally changed adapter DNS.'
       Require ($script:lastMessage -like '*dns-private-degraded*') 'Degraded private DNS was not clearly recorded.'
     }

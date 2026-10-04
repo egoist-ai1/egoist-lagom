@@ -55,9 +55,10 @@ function Build-OrdinaryGuiHarness {
   $projectFile=Join-Path $directory 'OrdinaryGuiHarness.csproj'
   [IO.File]::WriteAllText($projectFile,$project,[Text.UTF8Encoding]::new($false))
   $saved=@{}
-  foreach($name in @('TEMP','TMP','DOTNET_ROOT','DOTNET_CLI_HOME','DOTNET_CLI_TELEMETRY_OPTOUT','DOTNET_SKIP_FIRST_TIME_EXPERIENCE','DOTNET_GENERATE_ASPNET_CERTIFICATE')){$saved[$name]=[Environment]::GetEnvironmentVariable($name,'Process')}
+  foreach($name in @('TEMP','TMP','DOTNET_ROOT','DOTNET_CLI_HOME','DOTNET_ADD_GLOBAL_TOOLS_TO_PATH','DOTNET_CLI_TELEMETRY_OPTOUT','DOTNET_SKIP_FIRST_TIME_EXPERIENCE','DOTNET_GENERATE_ASPNET_CERTIFICATE')){$saved[$name]=[Environment]::GetEnvironmentVariable($name,'Process')}
   try{
     $env:TEMP=$directory;$env:TMP=$directory;$env:DOTNET_ROOT=[IO.Path]::GetDirectoryName($sdk)
+    $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH='0'
     $env:DOTNET_CLI_HOME=Join-Path $directory 'dotnet-home';$env:DOTNET_CLI_TELEMETRY_OPTOUT='1';$env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE='1';$env:DOTNET_GENERATE_ASPNET_CERTIFICATE='false'
     & $sdk build $projectFile -c Release --nologo *> (Join-Path $directory 'build.txt')
     if($LASTEXITCODE -ne 0){throw "Ordinary GUI harness build failed: $directory\build.txt"}

@@ -233,6 +233,7 @@ jobs:
     timeout-minutes: 35
     env:
       DOTNET_MULTILEVEL_LOOKUP: '0'
+      DOTNET_ADD_GLOBAL_TOOLS_TO_PATH: '0'
       DOTNET_CLI_TELEMETRY_OPTOUT: '1'
       DOTNET_NOLOGO: '1'
     steps:
@@ -292,6 +293,7 @@ jobs:
           $testWork = Join-Path $env:RUNNER_TEMP 'lagom-tests'
           New-Item -ItemType Directory -Path $testWork -Force | Out-Null
           $dotnetPath = Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe'
+          $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH = '0'
           $actualSdk = & $dotnetPath --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
@@ -398,6 +400,7 @@ jobs:
       contents: read
     env:
       DOTNET_MULTILEVEL_LOOKUP: '0'
+      DOTNET_ADD_GLOBAL_TOOLS_TO_PATH: '0'
       DOTNET_CLI_TELEMETRY_OPTOUT: '1'
       DOTNET_NOLOGO: '1'
       PYTHONDONTWRITEBYTECODE: '1'
@@ -448,6 +451,7 @@ jobs:
           foreach ($tool in @($dotnetPath, $sevenZipPath, $makensisPath)) {
             if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) { throw "Required tool is missing: $tool" }
           }
+          $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH = '0'
           $actualSdk = & $dotnetPath --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $sdkPin = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version

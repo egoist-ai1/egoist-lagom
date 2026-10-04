@@ -58,6 +58,7 @@ function Start-VpnOwnedChild {
   $info.RedirectStandardOutput=$true;$info.RedirectStandardError=$true;$info.WorkingDirectory=$script:VpnWork
   foreach($argument in $Arguments){$info.ArgumentList.Add($argument)}
   foreach($name in @($info.Environment.Keys)){if($name -match '^(DOTNET_|COMPLUS_|CORECLR_|COR_)'){[void]$info.Environment.Remove($name)}}
+  $info.Environment['DOTNET_ADD_GLOBAL_TOOLS_TO_PATH']='0'
   if($DotnetRoot){$info.Environment['DOTNET_ROOT']=$DotnetRoot;$info.Environment['DOTNET_ROOT_X64']=$DotnetRoot}
   $process=[Diagnostics.Process]::new();$process.StartInfo=$info
   if(-not $process.Start()){throw "Owned $Label child did not start."}
@@ -318,8 +319,9 @@ function Build-VpnProbe {
   $projectRoot=[IO.Path]::GetFullPath((Join-Path $script:VpnTestsRoot '..'))
   $sdk=if($env:SHIELD_DOTNET){[IO.Path]::GetFullPath($env:SHIELD_DOTNET)}else{Join-Path $projectRoot '.tools\dotnet-10.0.401\dotnet.exe'}
   $saved=@{}
-  foreach($name in @('TEMP','TMP','DOTNET_CLI_HOME','DOTNET_CLI_TELEMETRY_OPTOUT')){$saved[$name]=[Environment]::GetEnvironmentVariable($name,'Process')}
+  foreach($name in @('TEMP','TMP','DOTNET_CLI_HOME','DOTNET_ADD_GLOBAL_TOOLS_TO_PATH','DOTNET_CLI_TELEMETRY_OPTOUT')){$saved[$name]=[Environment]::GetEnvironmentVariable($name,'Process')}
   try{
+    $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH='0'
     $env:TEMP=$directory;$env:TMP=$directory;$env:DOTNET_CLI_HOME=Join-Path $directory 'dotnet-home';$env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
     [void](Invoke-VpnBounded -Executable $sdk -Arguments @('build',$projectFile,'-c','Release','--nologo','--ignore-failed-sources') -Label 'plain-tcp-probe-build' -TimeoutSeconds 60)
   }finally{foreach($name in $saved.Keys){[Environment]::SetEnvironmentVariable($name,$saved[$name],'Process')}}
