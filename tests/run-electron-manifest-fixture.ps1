@@ -123,13 +123,13 @@ function Error-Metadata($ErrorRecord) {
  $code=if ($ex -is [ComponentModel.Win32Exception]) {$ex.NativeErrorCode} else {$null}
  return @{errorClass=$ex.GetType().Name;win32Error=$code}
 }
-function Read-Identity([IntPtr]$Handle,[string]$Root,[string]$ExpectedImage) {
+function Read-Identity([IntPtr]$Handle,[string]$Root,[string]$ExpectedImage,[string]$AllowedAuxiliaryImage=$null) {
  $id=[LagomEngineJob]::Identity($Handle)
  $actual=[IO.Path]::GetFullPath([string]$id['image'])
- if ($actual -ine $ExpectedImage) { throw 'Owned process image differs from the selected case' }
+ if ($actual -ine $ExpectedImage -and $actual -ine $AllowedAuxiliaryImage) { throw 'Owned process image differs from the selected case' }
  $token=[LagomEngineJob]::Token($Handle)
  try {$metadata=[LagomSandboxImageProbe]::TokenMetadata($token)} finally {[void][LagomEngineJob]::CloseHandle($token)}
- return @{pid=$id['pid'];birthUtc=$id['birthUtc'];birthFileTime=$id['birthFileTime'];sessionId=$id['sessionId'];imageRelative=$actual.Substring($Root.TrimEnd('\').Length+1);imageMatchesCase=$true;token=$metadata}
+ return @{pid=$id['pid'];birthUtc=$id['birthUtc'];birthFileTime=$id['birthFileTime'];sessionId=$id['sessionId'];imageRelative=$actual.Substring($Root.TrimEnd('\').Length+1);imageMatchesCase=$actual -ieq $ExpectedImage;token=$metadata}
 }
 function Assert-Fixture($f) {
  if ($f.schemaVersion -ne 1 -or $f.version -cne '44.5.1' -or $f.librarySha -cne $libraryHash -or $f.project -ine [IO.Path]::GetFullPath($Project) -or $f.work -ine [IO.Path]::GetFullPath($Work) -or $f.images.Count -ne 2) { throw 'Fixture selection mismatch' }
@@ -189,17 +189,23 @@ if (-not $caller['elevated'] -or $caller['integrityRid'] -lt 12288 -or $caller['
 $cases=@();$holds=@();$supervisorFatal=$null
 try {
  foreach ($e in $f.images) {$holds+=,(Open-SandboxProbeInput (Join-Path $f.root $e.name) $e.sha256)}
- foreach ($e in $f.images) {
-  $caseRoot=Join-Path $Work ('engine-case-'+$e.level+'-'+[Guid]::NewGuid().ToString('N'))
+ $engineCases=@(foreach ($image in $f.images) {@{name=$image.level;image=$image;child=$null}})
+ $engineCases+=@{name='requireAdministrator-routed';image=$f.images[0];child=$f.images[1]}
+ foreach ($selection in $engineCases) {
+  $e=$selection.image
+  $caseRoot=Join-Path $Work ('engine-case-'+$selection.name+'-'+[Guid]::NewGuid().ToString('N'))
   [LagomSandboxImageProbe]::NewDirectory($caseRoot)
   $private=Join-Path $caseRoot 'private';[LagomSandboxImageProbe]::NewDirectory($private)
   $log=Join-Path $private 'chromium.raw.log'
   $expected=Join-Path $f.root $e.name
-  $result=[ordered]@{level=$e.level;imageSha256=$e.sha256;asarSha256=$f.asar.sha256;asarHeaderSha256=$f.asar.headerSha256;fuses=$e.fuses;created=$false;assigned=$false;resumed=$false;timedOut=$false;logBudgetExceeded=$false;exitCode=$null;exitHex=$null;processes=@();observationErrors=@();appProof=$null;casePassed=$false;cleanup=@{jobEmpty=$false;parentRetired=$false;handlesClosed=$false}}
+  $expectedChild=if ($selection.child) {Join-Path $f.root $selection.child.name} else {$expected}
+  $expectedChildName=[IO.Path]::GetFileName($expectedChild)
+  $result=[ordered]@{caseName=$selection.name;level=$e.level;childImageName=$expectedChildName;childRoutingSelected=[bool]$selection.child;imageSha256=$e.sha256;asarSha256=$f.asar.sha256;asarHeaderSha256=$f.asar.headerSha256;fuses=$e.fuses;created=$false;assigned=$false;resumed=$false;timedOut=$false;logBudgetExceeded=$false;exitCode=$null;exitHex=$null;processes=@();observationErrors=@();appProof=$null;casePassed=$false;cleanup=@{jobEmpty=$false;parentRetired=$false;handlesClosed=$false}}
   $job=[IntPtr]::Zero;$parent=[IntPtr]::Zero;$thread=[IntPtr]::Zero;$observed=@{};$observationErrors=@();$clock=[Diagnostics.Stopwatch]::StartNew()
   try {
    $job=[LagomEngineJob]::NewJob()
    $vars=[ordered]@{SystemRoot=$env:SystemRoot;windir=$env:SystemRoot;TEMP=$caseRoot;TMP=$caseRoot;NODE_ENV='production';LAGOM_ENGINE_WORK=$caseRoot;ELECTRON_ENABLE_LOGGING='1';ELECTRON_LOG_FILE=$log;ELECTRON_ENABLE_STACK_DUMPING='1'}
+   if ($selection.child) {$vars['LAGOM_ENGINE_CHILD_PATH']=$expectedChild}
    $environment=(($vars.GetEnumerator()|Sort-Object Key|ForEach-Object {$_.Key+'='+$_.Value}) -join [char]0)+[char]0+[char]0
    $launch=[LagomEngineJob]::CreateSuspended($job,$expected,$f.root,$environment)
    $result.created=[bool]$launch['created']
@@ -215,7 +221,8 @@ try {
      $h=[IntPtr]::Zero
      try {
       $h=[LagomEngineJob]::OpenOwned($job,$id)
-      $info=Read-Identity $h $f.root $expected
+      $selectedImage=if ($id -eq $launch['pid']) {$expected} else {$expectedChild}
+      $info=Read-Identity $h $f.root $selectedImage $expected
       $key=([string]$info.pid)+'/'+([string]$info.birthFileTime)
       if (-not $observed.ContainsKey($key) -and $observed.Count -lt 64) { $observed[$key]=$info }
      } catch {if ($observationErrors.Count -lt 16) {$observationErrors+=,(Error-Metadata $_)}}
@@ -257,17 +264,24 @@ try {
      $proof=Read-Json $proofPath 16384
      # Only fixed-schema proof fields; no URLs, environment, messages, or GPU driver metadata.
      $safe=[ordered]@{}
-     foreach ($name in @('schemaVersion','level','pid','electron','chrome','phase','visible','focusObserved','networkRequestsBlocked','childFailures','result','rendererPid','gpuInfoResolved','metrics','gpuMetricPresent','ok','rendererFailure','errorClass')) {
+     foreach ($name in @('schemaVersion','level','pid','electron','chrome','phase','childImageSelected','visible','focusObserved','networkRequestsBlocked','childFailures','result','rendererPid','gpuInfoResolved','metrics','gpuMetricPresent','ok','rendererFailure','errorClass')) {
       if ($proof.PSObject.Properties.Name -contains $name) {$safe[$name]=$proof.$name}
      }
      $result.appProof=$safe
      $rendererRecords=@(if($safe.Contains('rendererPid')){$result.processes|Where-Object {$_.pid -eq $safe.rendererPid}})
      $rendererObserved=@($rendererRecords).Count -gt 0
-     $rendererSandboxObserved=@($rendererRecords|Where-Object {$_.token['isRestricted'] -eq $true -and $_.token['integrityRid'] -le 4096}).Count -gt 0
-     $gpuObserved=$false
-     if ($safe.Contains('metrics')) {foreach ($metric in $safe.metrics) {if ($metric.type -ceq 'GPU' -and @($result.processes|Where-Object {$_.pid -eq $metric.pid}).Count -gt 0) {$gpuObserved=$true}}}
-     $result['rendererOwnedReadback']=$rendererObserved;$result['rendererRestrictedLowTokenReadback']=$rendererSandboxObserved;$result['gpuOwnedReadback']=$gpuObserved
-     $result.casePassed=$result.resumed -and $result.exitCode -eq 0 -and -not $result.timedOut -and -not $result.logBudgetExceeded -and $safe.Contains('ok') -and $safe.ok -eq $true -and $safe.phase -ceq 'engine-complete' -and $safe.pid -eq $result.parent.pid -and $rendererObserved -and $rendererSandboxObserved -and $gpuObserved -and $result.cleanup.jobEmpty -and $result.cleanup.parentRetired -and $result.cleanup.handlesClosed -and -not $result.Contains('supervisorError') -and -not $result.cleanup.ContainsKey('error') -and -not $result.cleanup.ContainsKey('parentError')
+     $rendererSandboxObserved=@($rendererRecords|Where-Object {$_.token['isRestricted'] -eq $true -and $_.token['integrityRid'] -le 4096 -and $_.token['elevated'] -eq $false -and $_.imageRelative -ceq $expectedChildName}).Count -gt 0
+     $gpuObserved=$false;$gpuSandboxObserved=$false
+     if ($safe.Contains('metrics')) {
+      foreach ($metric in $safe.metrics) {
+       if ($metric.type -cne 'GPU') {continue}
+       $gpuRecords=@($result.processes|Where-Object {$_.pid -eq $metric.pid -and $_.imageRelative -ceq $expectedChildName})
+       if ($gpuRecords.Count -gt 0) {$gpuObserved=$true}
+       if (@($gpuRecords|Where-Object {$_.token['isRestricted'] -eq $true -and $_.token['integrityRid'] -le 4096 -and $_.token['elevated'] -eq $false}).Count -gt 0) {$gpuSandboxObserved=$true}
+      }
+     }
+     $result['rendererOwnedReadback']=$rendererObserved;$result['rendererRestrictedLowTokenReadback']=$rendererSandboxObserved;$result['gpuOwnedReadback']=$gpuObserved;$result['gpuRestrictedLowTokenReadback']=$gpuSandboxObserved
+     $result.casePassed=$result.resumed -and $result.exitCode -eq 0 -and -not $result.timedOut -and -not $result.logBudgetExceeded -and $safe.Contains('ok') -and $safe.ok -eq $true -and $safe.childImageSelected -eq [bool]$selection.child -and $safe.phase -ceq 'engine-complete' -and $safe.pid -eq $result.parent.pid -and $rendererObserved -and $rendererSandboxObserved -and $gpuObserved -and $gpuSandboxObserved -and $result.parent.token['elevated'] -eq $true -and $result.parent.token['integrityRid'] -ge 12288 -and $result.cleanup.jobEmpty -and $result.cleanup.parentRetired -and $result.cleanup.handlesClosed -and -not $result.Contains('supervisorError') -and -not $result.cleanup.ContainsKey('error') -and -not $result.cleanup.ContainsKey('parentError')
     } catch {$result['proofError']=Error-Metadata $_}
    }
    if ([IO.File]::Exists($log)) {
@@ -295,7 +309,7 @@ try {
  Assert-Fixture $f
  foreach ($i in 0..1) {if ((Get-SandboxProbeHash $holds[$i]) -cne $f.images[$i].sha256) {throw 'Pinned target changed'}}
 } catch {$supervisorFatal=Error-Metadata $_} finally {foreach ($hold in $holds) {$hold.Dispose()}}
-$report=[ordered]@{schemaVersion=1;diagnosticComplete=$cases.Count -eq 2 -and $null -eq $supervisorFatal;allCasesPassed=$cases.Count -eq 2 -and $null -eq $supervisorFatal -and @($cases|Where-Object {-not $_.casePassed}).Count -eq 0;supervisorFatal=$supervisorFatal;sourceVersion=$f.version;sourceImageSha256=$f.sourceImageSha;fixtureReceiptSha256=(Hash $Fixture);librarySha256=$libraryHash;runnerSha256=(Hash $PSCommandPath);callerToken=$caller;pairComparison=$f.pairComparison;cases=$cases;limits=@('Real execution is hosted CI only; no local GUI was executed during preparation.','This fixture tests the engine and manifest boundary, not product IPC/services/installer.','Parent station and child station are not measured.','Owned job active-process cap16; engine25s and cleanup5s per phase; OS native calls are synchronous.','Raw log producer may overshoot1MiB between100ms polls; private exported tail is at most1MiB.','Polling can miss short-lived children; absent owned renderer/GPU readback makes casePassed false.')}
+$report=[ordered]@{schemaVersion=1;diagnosticComplete=$cases.Count -eq 3 -and $null -eq $supervisorFatal;allCasesPassed=$cases.Count -eq 3 -and $null -eq $supervisorFatal -and @($cases|Where-Object {-not $_.casePassed}).Count -eq 0;supervisorFatal=$supervisorFatal;sourceVersion=$f.version;sourceImageSha256=$f.sourceImageSha;fixtureReceiptSha256=(Hash $Fixture);librarySha256=$libraryHash;runnerSha256=(Hash $PSCommandPath);callerToken=$caller;pairComparison=$f.pairComparison;cases=$cases;limits=@('Real execution is hosted CI only; no local GUI was executed during preparation.','This fixture tests the engine and manifest boundary, not product IPC/services/installer.','Parent station and child station are not measured.','Owned job active-process cap16; engine25s and cleanup5s per phase; OS native calls are synchronous.','Raw log producer may overshoot1MiB between100ms polls; private exported tail is at most1MiB.','Polling can miss short-lived children; absent owned renderer/GPU readback makes casePassed false.')}
 $reportPath=Join-Path $Work 'electron-manifest-engine.json'
 Write-OwnJson $reportPath $report $Work
 [ordered]@{schemaVersion=1;report=$reportPath;reportSha256=(Hash $reportPath);diagnosticComplete=$report.diagnosticComplete;allCasesPassed=$report.allCasesPassed}|ConvertTo-Json -Compress
