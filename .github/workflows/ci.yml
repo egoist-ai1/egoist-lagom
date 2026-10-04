@@ -7,6 +7,10 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
+      sandbox_image_diagnostic:
+        description: Measure suspended image creation under isolated restricted tokens without installing the product
+        type: boolean
+        default: false
       package_candidate:
         description: Build and upload an unsigned Windows candidate after checks
         type: boolean
@@ -57,7 +61,7 @@ permissions:
 
 jobs:
   installer-diagnostics:
-    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.installer_diagnostics || inputs.ordinary_gui_diagnostic) }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.sandbox_image_diagnostic && (inputs.installer_diagnostics || inputs.ordinary_gui_diagnostic) }}
     runs-on: ${{ matrix.variant == 'candidate' && 'windows-latest' || 'windows-2022' }}
     timeout-minutes: 15
     strategy:
@@ -227,8 +231,71 @@ jobs:
           if-no-files-found: error
           path: ${{ runner.temp }}/lagom-installer-diagnostics
 
+  sandbox-image-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.sandbox_image_diagnostic
+    runs-on: windows-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate exclusive diagnostic selection
+        run: |
+          ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          $event = Get-Content -LiteralPath $env:GITHUB_EVENT_PATH -Raw | ConvertFrom-Json
+          foreach ($property in $event.inputs.PSObject.Properties) {
+            if ($property.Name -ne 'sandbox_image_diagnostic' -and [string]$property.Value -cnotin @('false','')) { throw 'Image diagnostics must be selected alone.' }
+          }
+          $head = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $head -cne $env:GITHUB_SHA) { throw 'Diagnostic checkout differs from the workflow SHA.' }
+      - name: Use Node.js for the locked resource editor
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Use Python for pinned runtime verification
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare verified diagnostic inputs
+        run: |
+          npm ci --ignore-scripts --no-audit --fund=false --cache (Join-Path $env:RUNNER_TEMP 'lagom-sandbox-npm-cache')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $probeWork = Join-Path $env:RUNNER_TEMP 'lagom-sandbox-diagnostic'
+          if (Test-Path -LiteralPath $probeWork) { throw 'Diagnostic work must be fresh.' }
+          New-Item -ItemType Directory -Path $probeWork -ErrorAction Stop | Out-Null
+          $runtimeText = & python scripts/fetch-electron-runtime.py --project-root $env:GITHUB_WORKSPACE --work-dir $probeWork
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $runtime = ($runtimeText -join "`n") | ConvertFrom-Json
+          [IO.File]::WriteAllText((Join-Path $probeWork 'runtime-input.json'), ($runtime | ConvertTo-Json -Depth 15), [Text.UTF8Encoding]::new($false))
+          $entry = @($runtime.files | Where-Object { $_.path -ceq 'electron.exe' })
+          if ($entry.Count -ne 1) { throw 'Pinned GUI inventory is ambiguous.' }
+          $image = Join-Path ([string]$runtime.runtimePath) 'electron.exe'
+          if ((Get-Item -LiteralPath $image).Length -ne $entry[0].bytes -or (Get-FileHash -LiteralPath $image).Hash.ToLowerInvariant() -cne $entry[0].sha256) { throw 'Pinned runtime image changed.' }
+          $rcedit = Join-Path $env:GITHUB_WORKSPACE 'node_modules\rcedit\bin\rcedit-x64.exe'
+          $toolHash = '3E7801DB1A5EDBEC91B49A24A094AAD776CB4515488EA5A4CA2289C400EADE2A'
+          if ((Get-FileHash -LiteralPath $rcedit).Hash -cne $toolHash) { throw 'Locked resource editor changed.' }
+          $nativeShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+          & $nativeShell -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tests/sandbox-image-launch-probe.ps1 -Image $image -ImageSha256 $entry[0].sha256 -SourceExecutionLevel asInvoker -Rcedit $rcedit -RceditSha256 $toolHash -Work $probeWork
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload bounded diagnostic metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lagom-sandbox-image-diagnostic
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/lagom-sandbox-diagnostic/*.json
+            ${{ runner.temp }}/lagom-sandbox-diagnostic/sandbox-image-*/probe-result.json
+
   test:
-    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.installer_diagnostics || inputs.package_candidate || inputs.signed_legacy_release_id != '' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.sandbox_image_diagnostic && (!inputs.installer_diagnostics || inputs.package_candidate || inputs.signed_legacy_release_id != '')) }}
     runs-on: windows-latest
     timeout-minutes: 35
     env:
@@ -406,7 +473,7 @@ jobs:
           }
 
   candidate:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.package_candidate }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.sandbox_image_diagnostic && inputs.package_candidate }}
     needs: test
     runs-on: windows-latest
     timeout-minutes: 90
@@ -576,7 +643,7 @@ jobs:
           path: ${{ runner.temp }}/lagom-candidate/evidence
 
   signed-candidate:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.signed_legacy_release_id != '' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.sandbox_image_diagnostic && inputs.signed_legacy_release_id != '' }}
     needs: test
     runs-on: windows-latest
     timeout-minutes: 60
@@ -682,7 +749,7 @@ jobs:
 
   legacy:
     name: legacy (${{ matrix.old_version }})
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.signed_legacy_release_id != '' && !inputs.signed_current_only }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.sandbox_image_diagnostic && inputs.signed_legacy_release_id != '' && !inputs.signed_current_only }}
     needs: test
     strategy:
       fail-fast: false
