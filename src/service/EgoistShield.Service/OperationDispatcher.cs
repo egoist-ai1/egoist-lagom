@@ -1954,6 +1954,7 @@ internal sealed class OperationDispatcher : IDisposable
 
 	internal async Task<object> DescribePersistenceAsync(CancellationToken cancellationToken = default)
 	{
+		bool startupPending = Volatile.Read(ref _startupRecoveryPending) != 0;
 		var active = await _journal.ReadActiveResultAsync(cancellationToken);
 		var problems = new List<object>();
 		if (_startupStateError != null) problems.Add(DescribeStateError(_startupStateError));
@@ -1964,7 +1965,9 @@ internal sealed class OperationDispatcher : IDisposable
 		catch (StateReadException error) { problems.Add(DescribeStateError(error)); }
 		var original = JsonDefaults.ToElement(_journal.Describe(active.Value));
 		bool uncertain = active.Kind is AtomicJsonReadKind.Corrupt or AtomicJsonReadKind.Unavailable || problems.Count != 0;
-		bool startupPending = Volatile.Read(ref _startupRecoveryPending) != 0;
+		// Completion must not relabel older journal bytes as post-recovery.
+		// Pending at either end conservatively blocks readiness for this read.
+		startupPending |= Volatile.Read(ref _startupRecoveryPending) != 0;
 		bool installerMaintenance = _installerMaintenance.IsActive();
 		return new { recoveryRequired = uncertain || intents.Count != 0 || original.GetProperty("recoveryRequired").GetBoolean(),
 			mutationReady = !startupPending && !installerMaintenance && active.Kind == AtomicJsonReadKind.Missing && intents.Count == 0 && problems.Count == 0,

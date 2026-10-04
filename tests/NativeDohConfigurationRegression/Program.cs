@@ -26,6 +26,8 @@ internal static partial class Program
         var elapsed = Stopwatch.StartNew();
         try
         {
+            await Check("startup persistence read retains one readiness epoch across recovery", StartupReadbackEpochAsync);
+            if (args.Contains("--startup-readback-only")) return 0;
             await Check("disabled IPv6 DNS apply respects actual binding and preserves skipped family", DisabledIpv6ApplyAsync);
             if (args.Contains("--disabled-ipv6-apply-only")) return 0;
             await Check("disabled IPv6 configured DNS recovery preserves ownership and unblocks routes", DisabledIpv6RecoveryAsync);
