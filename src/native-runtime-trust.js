@@ -4,6 +4,10 @@ import { spawn } from 'node:child_process';
 
 const runtimeNames = new Set(['xray', 'sing-box']);
 
+function trustFailure(code, message, observation = {}) {
+  return Object.assign(new Error(message), { code, observation });
+}
+
 function verifierEnvironment() {
   const environment = { ...process.env };
   for (const key of Object.keys(environment))
@@ -121,17 +125,17 @@ async function probeWindows(script, request = {}) {
   try {
     const value = await new Promise((resolve, reject) => {
       let output = '';
-      const timer = setTimeout(() => { cleanup(); reject(new Error('Windows trust probe exceeded its 30 second budget.')); }, 30000);
+      const timer = setTimeout(() => { cleanup(); reject(trustFailure('WINDOWS_TRUST_TIMEOUT', 'Windows trust probe exceeded its 30 second budget.', { responseBytes: Buffer.byteLength(output) })); }, 30000);
       const cleanup = () => { clearTimeout(timer); child.stdout.off('data', onData); child.off('error', onError); child.off('close', onExit); };
       const onError = error => { cleanup(); reject(error); };
-      const onExit = () => { cleanup(); reject(new Error('Windows trust probe stopped without a verified result.')); };
+      const onExit = () => { cleanup(); reject(trustFailure('WINDOWS_TRUST_NO_RESPONSE', 'Windows trust probe stopped without a verified result.', { responseBytes: Buffer.byteLength(output) })); };
       const onData = chunk => {
         output += chunk.toString('utf8');
-        if (Buffer.byteLength(output) > 16384) { cleanup(); reject(new Error('Windows trust probe response exceeded its limit.')); return; }
+        if (Buffer.byteLength(output) > 16384) { cleanup(); reject(trustFailure('WINDOWS_TRUST_RESPONSE_LIMIT', 'Windows trust probe response exceeded its limit.')); return; }
         if (!output.includes('\n')) return;
         cleanup();
-        try { const value = JSON.parse(output.slice(0, output.indexOf('\n'))); if (value.ok !== true) throw new Error(value.error || 'Windows trust probe rejected this operation.'); resolve(value); }
-        catch (error) { reject(error); }
+        try { const value = JSON.parse(output.slice(0, output.indexOf('\n'))); if (value.ok !== true) throw trustFailure('WINDOWS_TRUST_REJECTED', value.error || 'Windows trust probe rejected this operation.'); resolve(value); }
+        catch (error) { reject(error.code === 'WINDOWS_TRUST_REJECTED' ? error : trustFailure('WINDOWS_TRUST_INVALID_RESPONSE', 'Windows trust probe response is invalid.')); }
       };
       child.stdout.on('data', onData); child.once('error', onError); child.once('close', onExit);
     });
@@ -156,11 +160,12 @@ export async function checkProtectedGuiPrivilege(resourcesPath) {
     if (path.resolve(proof.value.helperPath).toLowerCase() !== expected.toLowerCase()) throw new Error('GUI privilege helper identity mismatch.');
     const child = spawn(expected, ['--gui-startup-privilege'], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], cwd: path.dirname(expected), env: verifierEnvironment() });
     return await new Promise((resolve, reject) => {
-      let output = '', expired = false;
-      const timer = setTimeout(() => { expired = true; child.kill(); reject(new Error('GUI token inspection exceeded its budget.')); }, 30000);
+      let output = '', expired = false, exitObserved = false, exitCode = null;
+      child.once('exit', code => { exitObserved = true; exitCode = code; });
+      const timer = setTimeout(() => { expired = true; child.kill(); reject(trustFailure(exitObserved ? 'GUI_TOKEN_STREAM_TIMEOUT' : 'GUI_TOKEN_PROCESS_TIMEOUT', 'GUI token inspection exceeded its budget.', { responseBytes: Buffer.byteLength(output), exitObserved, exitCode })); }, 30000);
       child.stdout.on('data', bytes => {
         if (expired) return;
-        if (Buffer.byteLength(output) + bytes.length > 16384) { expired = true; clearTimeout(timer); child.kill(); reject(new Error('GUI token result exceeded its limit.')); return; }
+        if (Buffer.byteLength(output) + bytes.length > 16384) { expired = true; clearTimeout(timer); child.kill(); reject(trustFailure('GUI_TOKEN_RESPONSE_LIMIT', 'GUI token result exceeded its limit.')); return; }
         output += bytes.toString('utf8');
       });
       child.stderr.on('data', () => {});
@@ -170,9 +175,9 @@ export async function checkProtectedGuiPrivilege(resourcesPath) {
         if (expired) return;
         try {
           const value = JSON.parse(output);
-          if (code !== 0 || value.ok !== true || typeof value.admitted !== 'boolean' || typeof value.canRequestElevation !== 'boolean') throw new Error('GUI token could not be verified.');
+          if (code !== 0 || value.ok !== true || typeof value.admitted !== 'boolean' || typeof value.canRequestElevation !== 'boolean') throw trustFailure('GUI_TOKEN_UNVERIFIED', 'GUI token could not be verified.', { nativeCode: value.code === 'GUI_PRIVILEGE_UNVERIFIED' ? value.code : null, exitCode: code });
           resolve({ admitted: value.admitted, canRequestElevation: value.canRequestElevation });
-        } catch (error) { reject(error); }
+        } catch (error) { reject(error.code === 'GUI_TOKEN_UNVERIFIED' ? error : trustFailure('GUI_TOKEN_INVALID_RESPONSE', 'GUI token result is invalid.', { exitCode: code })); }
       });
     });
   } finally { proof.release(); }

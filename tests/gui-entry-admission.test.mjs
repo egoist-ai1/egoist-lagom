@@ -20,3 +20,21 @@ for(const [name,options,expected] of [
   assert.deepEqual(proof,expected);
   if(options.args)assert.equal(probes,0);
 });
+test('admission diagnostics preserve refusal and omit arbitrary exception content',async()=>{
+  for(const code of ['WINDOWS_TRUST_TIMEOUT','GUI_TOKEN_STREAM_TIMEOUT','GUI_TOKEN_PROCESS_TIMEOUT','UNTRUSTED_SECRET_CODE']) {
+    const logs=[],proof={imports:0,exits:[]};
+    const error=Object.assign(new Error('private-path-and-token-secret'),{code,observation:{responseBytes:7,exitObserved:true,exitCode:0,nativeCode:'private-secret',path:'private-path',stack:'private-stack'}});
+    await execute({isPackaged:true,exit:value=>proof.exits.push(value)},{platform:'win32',argv:['EgoistShield.exe'],execPath:'C:\\Program Files\\EgoistShield\\EgoistShield.exe',resourcesPath:'C:\\Program Files\\EgoistShield\\resources'},path.win32,isTrustedGuiLaunchArguments,async()=>{throw error;},async()=>assert.fail('No elevation after failed privilege proof'),async()=>{proof.imports++;},{error:(...values)=>logs.push(values)});
+    assert.deepEqual(proof,{imports:0,exits:[64]});
+    assert.equal(logs.length,1);
+    const diagnostic=JSON.parse(logs[0][1]);
+    assert.equal(diagnostic.stage,'privilege');
+    assert.equal(diagnostic.code,code==='UNTRUSTED_SECRET_CODE'?'GUI_ADMISSION_UNVERIFIED':code);
+    assert.equal(diagnostic.responseBytes,7);
+    assert.equal(diagnostic.exitObserved,true);
+    assert.equal(diagnostic.exitCode,0);
+    assert.ok(Number.isFinite(diagnostic.elapsedMs));
+    assert.deepEqual(Object.keys(diagnostic).sort(),['stage','code','elapsedMs','responseBytes','exitObserved','exitCode'].sort());
+    assert.doesNotMatch(JSON.stringify(logs),/private|secret|UNTRUSTED_SECRET_CODE/);
+  }
+});
