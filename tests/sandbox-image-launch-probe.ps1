@@ -124,6 +124,12 @@ public static class LagomSandboxImageProbe {
     try{if(!DuplicateTokenEx(original,0x000F01FF,IntPtr.Zero,2,1,out result))throw Error("DuplicateTokenEx");return result;}
     finally{CloseHandle(original);}
   }
+  public static IntPtr RestrictedLowFromCurrent() {
+    IntPtr original=IntPtr.Zero;
+    if(!OpenProcessToken(GetCurrentProcess(),0x000F01FF,out original))throw Error("OpenProcessToken restricted base");
+    try{return RestrictedLow(original);}
+    finally{CloseHandle(original);}
+  }
   public static IntPtr RestrictedLow(IntPtr primary) {
     IntPtr groups=Info(primary,2),privileges=Info(primary,3),user=Info(primary,1),restriction=IntPtr.Zero,disabled=IntPtr.Zero,result=IntPtr.Zero,lowSid=IntPtr.Zero,label=IntPtr.Zero;
     try{
@@ -351,7 +357,7 @@ function Invoke-SandboxImageLaunchProbe {
       if($left.Count -ne $right.Count){throw 'PE inventory keys changed.'}
       foreach($key in $left.Keys){if(-not $right.ContainsKey($key)){throw 'PE inventory key changed.'};if($kind -eq 'resources' -and $key -eq $adminInventory['manifestKey']){continue};if($left[$key] -cne $right[$key]){throw 'PE content changed outside manifest.'}}
     }
-    $primary=[LagomSandboxImageProbe]::CurrentPrimary();$restricted=[LagomSandboxImageProbe]::RestrictedLow($primary)
+    $primary=[LagomSandboxImageProbe]::CurrentPrimary();$restricted=[LagomSandboxImageProbe]::RestrictedLowFromCurrent()
     $primaryMetadata=[LagomSandboxImageProbe]::TokenMetadata($primary);$restrictedMetadata=[LagomSandboxImageProbe]::TokenMetadata($restricted)
     if($primaryMetadata['tokenType'] -ne 1 -or $restrictedMetadata['tokenType'] -ne 1 -or $restrictedMetadata['integrityRid'] -ne 4096 -or $restrictedMetadata['administrativeEnabledSidCount'] -ne 0 -or $restrictedMetadata['privilegeCount'] -ne 0 -or $restrictedMetadata['isAppContainer'] -or -not $restrictedMetadata['isRestricted'] -or $restrictedMetadata['restrictingSidCount'] -ne 1 -or $restrictedMetadata['restrictingSidProfile'] -cne 'own-token-user'){throw 'Restricted token readback differs from the probe contract.'}
     $cases=@()
@@ -366,7 +372,7 @@ function Invoke-SandboxImageLaunchProbe {
     if($afterHash -ine $ImageSha256 -or (Get-SandboxProbeHash $tool) -ine $RceditSha256){throw 'Pinned original/tool input changed.'}
     $result=[ordered]@{
       schemaVersion=1;kind='suspended-same-image-manifest-counterfactual';observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
-      sourceSha256=$afterHash;sourceBytes=$source.Length;sourceExecutionLevel=$SourceExecutionLevel;rceditSha256=$RceditSha256.ToLowerInvariant()
+      sourceSha256=$afterHash;sourceBytes=$source.Length;sourceExecutionLevel=$SourceExecutionLevel;restrictedBase='actual-caller-process-primary';rceditSha256=$RceditSha256.ToLowerInvariant()
       requireAdministratorSha256=(Get-SandboxProbeHash $adminHold);asInvokerSha256=(Get-SandboxProbeHash $invokerHold)
       sourcePreserved=$true;copyInvariants=[ordered]@{originalCopyByteIdentical=$true;manifestOnlySemanticChange=$true;nonManifestResourceBytesEqual=$true;nonResourceSectionBytesEqual=$true;peResourceLayoutAndHeadersMayDiffer=$true;rceditVersionResourceRestoredByteExactly=$true}
       cases=$cases;allCapturedHandlesClosed=$true;targetThreadEverResumed=$false;targetApplicationCodeExecuted=$false
