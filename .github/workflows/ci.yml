@@ -452,6 +452,10 @@ jobs:
         run: |
           choco install nsis 7zip --no-progress --yes
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $nsisSystemDll = Join-Path ${env:ProgramFiles(x86)} 'NSIS\Plugins\x86-unicode\System.dll'
+          $nsisPlugin = Get-Item -LiteralPath $nsisSystemDll -Force -ErrorAction Stop
+          if ($nsisPlugin.PSIsContainer -or ($nsisPlugin.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Installed NSIS System.dll must be an ordinary file.' }
+          "EGOISTSHIELD_TEST_NSIS_SYSTEM_DLL=$nsisSystemDll" >> $env:GITHUB_ENV
       - name: Prepare runner-owned work and tool paths
         id: prepare
         run: |
