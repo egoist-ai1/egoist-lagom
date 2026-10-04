@@ -11,6 +11,12 @@
   [int]$GuardMaxSeconds = 600
 )
 
+# NSIS and .NET launchers can inherit incompatible PowerShell 7 module paths.
+# Select this Windows PowerShell process's built-in modules before any cmdlet.
+if ($PSVersionTable.PSEdition -eq 'Desktop') {
+  $env:PSModulePath = [IO.Path]::Combine($PSHOME, 'Modules')
+}
+
 $ErrorActionPreference = "Stop"
 $maintenanceHelper = Join-Path $PSScriptRoot "service-maintenance.ps1"
 if (-not (Test-Path -LiteralPath $maintenanceHelper -PathType Leaf)) {

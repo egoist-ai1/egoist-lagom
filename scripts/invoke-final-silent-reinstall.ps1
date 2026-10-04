@@ -56,6 +56,12 @@ param(
   [string]$StageDirectory
 )
 
+# NSIS and .NET launchers can inherit incompatible PowerShell 7 module paths.
+# Select this Windows PowerShell process's built-in modules before any cmdlet.
+if ($PSVersionTable.PSEdition -eq 'Desktop') {
+  $env:PSModulePath = [IO.Path]::Combine($PSHOME, 'Modules')
+}
+
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
 
