@@ -18,7 +18,7 @@ New-Item -ItemType Directory -Path $stateDirectory -Force|Out-Null
 $marker=Join-Path $stateDirectory 'pending-upgrade-quarantine.txt'
 function Add-ReceiptEvent {param($Stage,$Status,$Message,$Data) $script:lastStatus=$Status;$script:receiptStatuses.Add([string]$Status);$script:lastReceiptData=$Data}
 function Stop-OwnedServiceForInstall {param($Name)$script:stopCount++}
-function Restore-PreservedState {param($State) if($script:restoreFault -eq 'state'){throw 'Inert state restoration failure.'}}
+function Restore-PreservedState {param($State) $script:preservedStateRestores++;if($script:restoreFault -eq 'state'){throw 'Inert state restoration failure.'}}
 function Reconcile-PreservedZapretProfile {param($State)}
 function Restore-InstalledIdentity {param($State)}
 function Restore-PreservedServiceStartModes {param($State)}
@@ -29,6 +29,7 @@ function Refresh-OwnedCoreProtectedConfiguration {
   $script:startupEvents.Add('core-config-refreshed')
 }
 $script:ownsMaintenance=$false
+$script:preHandoffClosureExpected=$false;$script:preservedStateRestores=0;$script:preHandoffRestoreBaseline=0
 $script:restoreFault='';$script:maintenanceStatusOverride=''
 $script:guiStartupSuspended=$false
 $script:startupEvents=New-Object 'Collections.Generic.List[string]'
@@ -56,7 +57,9 @@ function Enter-DeferredReinstallRecoveryLease {
 }
 function Complete-InstallerServiceMaintenance {
   if($script:restoreFault -eq 'closure'){throw 'Inert maintenance closure failure.'}
-  if($script:startupEvents.IndexOf('services-restored') -lt 0 -or $script:startupEvents.IndexOf('dns-restored') -lt 0){throw 'Completion preceded fixture services/DNS restoration.'}
+  if($script:preHandoffClosureExpected){
+    if($script:stopCount -ne 0 -or $script:preservedStateRestores -ne $script:preHandoffRestoreBaseline -or $script:startupEvents.Count -ne 0){throw 'Pre-handoff closure replayed a preserved snapshot or changed fixture services/DNS.'}
+  }elseif($script:startupEvents.IndexOf('services-restored') -lt 0 -or $script:startupEvents.IndexOf('dns-restored') -lt 0){throw 'Completion preceded fixture services/DNS restoration.'}
   $script:ownsMaintenance=$false
   $script:startupEvents.Add('marker-closed')
   Resume-OwnedGuiLoginStartup
@@ -111,9 +114,13 @@ if(($script:startupEvents -join ',') -ne 'core-config-refreshed,services-restore
 Write-Output 'PASS: legacy state without the handoff marker still runs recovery'
 $script:ownsMaintenance=$true;$script:stopCount=0;$script:launchCount=0;$script:lastStatus=$null
 $script:startupEvents.Clear();$script:receiptStatuses.Clear();$script:guiStartupSuspended=$true
-Invoke-Recovery -State ([pscustomobject]@{runAfter=$false;handoffStarted=$false;services=@();criticalDns=@([pscustomobject]@{interfaceIndex=17;servers=@('127.0.0.1')})}) -Reason 'owned marker persisted before handoff flag'
-if($script:stopCount -ne 1 -or $script:launchCount -ne 0 -or $script:lastStatus -ne 'recovered'){throw 'An acquired marker could not recover a crash before the handoff state write.'}
-Write-Output 'PASS: owned marker recovers a crash before handoff flag without launching GUI'
+$script:preHandoffRestoreBaseline=$script:preservedStateRestores;$script:preHandoffClosureExpected=$true
+try{
+  $outcome=Invoke-Recovery -State ([pscustomobject]@{runAfter=$false;handoffStarted=$false;services=@();criticalDns=@([pscustomobject]@{interfaceIndex=17;servers=@('127.0.0.1')})}) -Reason 'owned marker persisted before handoff flag'
+}finally{$script:preHandoffClosureExpected=$false}
+if($outcome -ne $true -or $script:stopCount -ne 0 -or $script:preservedStateRestores -ne $script:preHandoffRestoreBaseline -or $script:launchCount -ne 0 -or $script:lastStatus -ne 'recovery-not-needed'){throw 'Owned pre-handoff closure replayed preserved state, mutated services or launched GUI.'}
+if($script:ownsMaintenance -or $script:guiStartupSuspended -or ($script:startupEvents -join ',') -ne 'marker-closed,resume'){throw 'Owned pre-handoff marker did not close and resume startup with verified ordering.'}
+Write-Output 'PASS: owned pre-handoff marker closes without replaying services/DNS or launching GUI'
 Write-Output 'PASS: recovery does not claim payload rollback or start the desktop while its marker remains pending'
 foreach($runAfter in @($false,$true)){
   foreach($fault in @('state','core-config','services','dns','local-runtime','closure')){

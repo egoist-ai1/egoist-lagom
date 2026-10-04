@@ -47,6 +47,11 @@ function New-FixtureCase {
     $destination = $source + '.upgrade-old-' + [Guid]::NewGuid().ToString('N')
     $stage = Join-Path $caseRoot 'protected-stage'
     foreach ($directory in @($source, $destination, $stage)) { [void][IO.Directory]::CreateDirectory($directory) }
+    # The actual protected-metadata check also reads this newly created stage
+    # directory through a held handle. Select its fixture owner; retain its DACL.
+    $stageAcl = [IO.Directory]::GetAccessControl($stage, [Security.AccessControl.AccessControlSections]::Owner)
+    $stageAcl.SetOwner([Security.Principal.SecurityIdentifier]::new($script:fixtureSid))
+    [IO.Directory]::SetAccessControl($stage, $stageAcl)
     $liveLog = Join-Path $source $RelativeLog
     $oldLog = Join-Path $destination $RelativeLog
     Write-FixtureFile $liveLog "historical line`r`nnew appended line`r`n"
