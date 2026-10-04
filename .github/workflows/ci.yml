@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       sandbox_image_diagnostic:
-        description: Measure suspended image creation under isolated restricted tokens without installing the product
+        description: Diagnose restricted image creation and isolated Electron manifests without installing the product
         type: boolean
         default: false
       package_candidate:
@@ -283,6 +283,23 @@ jobs:
           $nativeShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
           & $nativeShell -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tests/sandbox-image-launch-probe.ps1 -Image $image -ImageSha256 $entry[0].sha256 -SourceExecutionLevel asInvoker -Rcedit $rcedit -RceditSha256 $toolHash -Work $probeWork
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Compare actual isolated Electron manifest launches
+        run: |
+          ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          $head = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $head -cne $env:GITHUB_SHA) { throw 'Engine diagnostic checkout changed.' }
+          $probeWork = Join-Path $env:RUNNER_TEMP 'lagom-sandbox-diagnostic'
+          $library = Join-Path $env:GITHUB_WORKSPACE 'tests\sandbox-image-launch-probe.ps1'
+          $runner = Join-Path $env:GITHUB_WORKSPACE 'tests\run-electron-manifest-fixture.ps1'
+          $python = (Get-Command python -CommandType Application -ErrorAction Stop).Source
+          $preparedText = & node --max-old-space-size=2048 tests/prepare-electron-manifest-fixture.mjs --project $env:GITHUB_WORKSPACE --runtime-receipt (Join-Path $probeWork 'runtime-input.json') --work $probeWork --python $python --library $library --runner $runner
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $prepared = ($preparedText -join "`n") | ConvertFrom-Json
+          if ($prepared.applicationTargetExecutions -ne 0 -or (Get-FileHash -LiteralPath $prepared.fixture).Hash.ToLowerInvariant() -cne $prepared.fixtureSha256) { throw 'Prepared engine fixture changed.' }
+          & $runner -Mode Run -Project $env:GITHUB_WORKSPACE -Work $probeWork -Fixture $prepared.fixture -Library $library
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $result = Get-Content -LiteralPath (Join-Path $probeWork 'electron-manifest-engine.json') -Raw | ConvertFrom-Json
+          if (-not $result.diagnosticComplete) { throw 'Engine diagnostic did not complete; inspect bounded metadata.' }
       - name: Upload bounded diagnostic metadata
         if: always()
         uses: actions/upload-artifact@v4
