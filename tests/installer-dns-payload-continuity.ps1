@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$TestDirectory)
+﻿param([Parameter(Mandatory=$true)][string]$TestDirectory)
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version 2.0
 [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)
@@ -122,7 +122,14 @@ function Get-ChildItem {
   return Microsoft.PowerShell.Management\Get-ChildItem @PSBoundParameters
 }
 function Stop-InstallerOwnedService { param([string]$Name,$OwnPath) $script:StoppedServices.Add($Name) }
-function Stop-Process { [CmdletBinding()]param([int]$Id,[switch]$Force) $script:StoppedProcesses.Add($Id) }
+function Stop-Process { throw 'Forbidden PID-only process termination in DNS fixture.' }
+function Stop-InstallerOwnedProcess {
+  param($Record,$OwnPath)
+  Require ($null -ne $Record -and (& $OwnPath ([string]$Record.ExecutablePath))) 'Cleanup reached an unowned process leaf.'
+  Require (@($script:Processes|Where-Object {[int]$_.ProcessId -eq [int]$Record.ProcessId}).Count -eq 1) 'Cleanup selected an unknown fixture PID.'
+  $script:StoppedProcesses.Add([int]$Record.ProcessId)
+  return $true
+}
 function Get-Process {
   [CmdletBinding()]param([int]$Id)
   $item=@($script:Processes | Where-Object { [int]$_.ProcessId -eq $Id })

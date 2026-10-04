@@ -1090,7 +1090,7 @@ function Stop-OwnedProcesses {
     if (-not $executable) { continue }
     try { $full = [IO.Path]::GetFullPath($executable) } catch { continue }
     if (-not $full.StartsWith($script:OwnedInstallRoot + '\', [StringComparison]::OrdinalIgnoreCase)) { continue }
-    Stop-Process -Id ([int]$process.ProcessId) -Force -ErrorAction Stop
+    [void](Stop-InstallerOwnedProcess -Record $process -OwnPath {param($candidate) $candidate.StartsWith($script:OwnedInstallRoot + '\', [StringComparison]::OrdinalIgnoreCase)})
   }
 }
 

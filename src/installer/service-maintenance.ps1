@@ -1,4 +1,4 @@
-# Shared by the installer and its protected reinstall worker. No work on import.
+﻿# Shared by the installer and its protected reinstall worker. No work on import.
 function ConvertTo-InstallerDiagnosticMessage {
   param([AllowEmptyString()][string]$Message)
   if (-not $Message) { return '' }
@@ -168,6 +168,38 @@ function Stop-InstallerOwnedService {
     Start-Sleep -Milliseconds 250
   }
   throw "Owned service $Name did not remain stopped; installation cannot replace its files."
+}
+
+# Caller supplies a fresh CIM record and its product ownership predicate.
+# The captured process handle, birth and image authorize termination together.
+function Stop-InstallerOwnedProcess {
+  param([object]$Record, [scriptblock]$OwnPath)
+  if (-not $Record -or [int]$Record.ProcessId -le 0 -or -not $Record.CreationDate -or
+      -not $Record.ExecutablePath -or -not (& $OwnPath ([string]$Record.ExecutablePath))) {
+    throw 'Cannot prove the exact owned process selected for cleanup.'
+  }
+  try { $ownedProcess = [Diagnostics.Process]::GetProcessById([int]$Record.ProcessId) }
+  catch [ArgumentException] { return $false }
+  $capturedHandle = [IntPtr]::Zero
+  try {
+    if ($ownedProcess.HasExited) { return $false }
+    $capturedHandle = $ownedProcess.Handle
+    if (-not $capturedHandle -or $capturedHandle -eq [IntPtr]::Zero) { throw 'Owned process handle is unavailable.' }
+    $actualImage = [string]$ownedProcess.Path
+    if ([Math]::Abs(($ownedProcess.StartTime.ToUniversalTime() - ([DateTime]$Record.CreationDate).ToUniversalTime()).TotalMilliseconds) -ge 1 -or
+        -not [string]::Equals($actualImage, [string]$Record.ExecutablePath, [StringComparison]::OrdinalIgnoreCase) -or
+        -not (& $OwnPath $actualImage)) { throw 'Owned process identity changed before cleanup.' }
+    $ownedProcess.Kill()
+    if (-not $ownedProcess.WaitForExit(5000)) { throw 'The exact owned process did not retire after cleanup.' }
+    return $true
+  } catch {
+    $cleanupError = $_
+    # A captured exited handle cannot be recycled into a live replacement PID.
+    if ($capturedHandle -and $capturedHandle -ne [IntPtr]::Zero) {
+      try { if ($ownedProcess.HasExited) { return $false } } catch {}
+    }
+    throw $cleanupError
+  } finally { $ownedProcess.Dispose() }
 }
 
 function Get-InstallerServiceState {

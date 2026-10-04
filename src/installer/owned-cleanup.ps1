@@ -23,7 +23,7 @@ if (-not (Test-Path -LiteralPath $maintenanceHelper -PathType Leaf)) {
   throw "Required installer service maintenance helper is missing. No cleanup was performed."
 }
 . $maintenanceHelper
-foreach ($requiredFunction in @("Invoke-InstallerSc", "Get-InstallerServicePolicy", "Set-InstallerServiceStartMode", "Stop-InstallerOwnedService", "Get-InstallerServiceState", "Suspend-InstallerServiceRestarts", "Restore-InstallerServiceStartModes")) {
+foreach ($requiredFunction in @("Invoke-InstallerSc", "Get-InstallerServicePolicy", "Set-InstallerServiceStartMode", "Stop-InstallerOwnedService", "Get-InstallerServiceState", "Stop-InstallerOwnedProcess", "Suspend-InstallerServiceRestarts", "Restore-InstallerServiceStartModes")) {
   if (-not (Get-Command -Name $requiredFunction -CommandType Function -ErrorAction SilentlyContinue)) {
     throw "Required installer service maintenance function is missing: $requiredFunction. No cleanup was performed."
   }
@@ -538,48 +538,23 @@ function Stop-OwnedService {
 
 <#
 .SYNOPSIS
-  Останавливает процесс и его дочернее дерево только при доказанном пути.
+  Останавливает каждый процесс только при доказанном пути и времени запуска.
 .DESCRIPTION
-  Дети Electron (GPU/renderer/utility) запускаются из того же exe, поэтому их
-  ExecutablePath тоже лежит в owned root. Дополнительно снимаются потомки по
-  ParentProcessId: у некоторых utility-процессов путь не читается, но родитель
-  уже доказан. Чужие одноимённые процессы не затрагиваются никогда.
+  Для каждого процесса проверяются его собственный ExecutablePath, время
+  запуска и захваченный handle. Один ParentProcessId не разрешает завершение
+  потомка. Процессы с недоказанным происхождением остаются нетронутыми.
 #>
 function Stop-OwnedProcessByPath {
-  param(
-    [string]$Name,
-    [switch]$QuietForeign
-  )
+  param([string]$Name, [switch]$QuietForeign)
   $continuity = Get-ProtectedSystemDohPayloadContinuity
-  $matched = @(Get-CimInstance Win32_Process -Filter "Name='$Name'" -ErrorAction SilentlyContinue)
-  if ($matched.Count -eq 0) { return }
-
-  $ownedPids = New-Object System.Collections.Generic.HashSet[int]
-  foreach ($process in $matched) {
-    if (Test-ProtectedSystemDohPayloadProcess -Process $process -Lease $continuity) { continue }
-    if (Test-OwnedPath $process.ExecutablePath) {
-      [void]$ownedPids.Add([int]$process.ProcessId)
+  $matched = @(Get-CimInstance Win32_Process -Filter "Name='$Name'" -OperationTimeoutSec 3 -ErrorAction Stop)
+  foreach ($record in $matched) {
+    if (Test-ProtectedSystemDohPayloadProcess -Process $record -Lease $continuity) { continue }
+    if (Test-OwnedPath ([string]$record.ExecutablePath)) {
+      [void](Stop-InstallerOwnedProcess -Record $record -OwnPath ${function:Test-OwnedPath})
     } elseif (-not $QuietForeign) {
-      Write-Warning "Skipped third-party $Name process PID $($process.ProcessId)."
+      Write-Warning "Skipped unverified $Name process PID $($record.ProcessId)."
     }
-  }
-  if ($ownedPids.Count -eq 0) { return }
-
-  # Потомки доказанных процессов: обход в ширину по ParentProcessId.
-  $allProcesses = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-    Select-Object ProcessId, ParentProcessId)
-  $queue = New-Object System.Collections.Generic.Queue[int]
-  foreach ($id in $ownedPids) { $queue.Enqueue($id) }
-  while ($queue.Count -gt 0) {
-    $parent = $queue.Dequeue()
-    foreach ($child in ($allProcesses | Where-Object { $_.ParentProcessId -eq $parent })) {
-      if ($ownedPids.Add([int]$child.ProcessId)) { $queue.Enqueue([int]$child.ProcessId) }
-    }
-  }
-
-  foreach ($id in $ownedPids) {
-    if ($continuity -and $id -in @([int]$continuity.proof.wrapperPid,[int]$continuity.proof.enginePid)) { throw 'Cleanup tree intersects the held private DNS generation.' }
-    Stop-Process -Id $id -Force -ErrorAction SilentlyContinue
   }
 }
 
@@ -609,24 +584,33 @@ function Invoke-OwnedFileGuard {
 
   $deadline = (Get-Date).AddSeconds([Math]::Min([Math]::Max($MaxSeconds, 1), 1800))
   $stopped = 0
-  Write-Output "GUARD:READY"
+  try { $guardOwner = [Diagnostics.Process]::GetProcessById($OwnerPid) }
+  catch [ArgumentException] { Write-Output 'GUARD:DONE:0'; return }
+  try {
+    [void]$guardOwner.Handle
+    Write-Output "GUARD:READY"
 
   while ((Get-Date) -lt $deadline) {
-    if (-not (Get-Process -Id $OwnerPid -ErrorAction SilentlyContinue)) { break }
+    if ($guardOwner.HasExited) { break }
     if ($StopFile -and (Test-Path -LiteralPath $StopFile -PathType Leaf)) { break }
 
     $owned = @(Get-CimInstance Win32_Process -Filter "Name='EgoistShield.exe'" -ErrorAction SilentlyContinue |
       Where-Object { Test-OwnedPath $_.ExecutablePath })
-    if ($owned.Count -gt 0) {
-      $pids = @($owned | ForEach-Object { [int]$_.ProcessId })
-      Stop-OwnedProcessByPath "EgoistShield.exe" -QuietForeign
-      $stopped += $pids.Count
-      Write-Output ("GUARD:STOPPED:" + ($pids -join ","))
+    $retiredIds = @()
+    $continuity = Get-ProtectedSystemDohPayloadContinuity
+    foreach ($record in $owned) {
+      if (Test-ProtectedSystemDohPayloadProcess -Process $record -Lease $continuity) { continue }
+      if (Stop-InstallerOwnedProcess -Record $record -OwnPath ${function:Test-OwnedPath}) { $retiredIds += [int]$record.ProcessId }
+    }
+    if ($retiredIds.Count -gt 0) {
+      $stopped += $retiredIds.Count
+      Write-Output ("GUARD:STOPPED:" + ($retiredIds -join ","))
     }
     Start-Sleep -Milliseconds 125
   }
 
   Write-Output "GUARD:DONE:$stopped"
+  } finally { $guardOwner.Dispose() }
 }
 
 function Stop-AllProcessesFromOwnedRoots {
@@ -4342,6 +4326,7 @@ function Get-InstallRootLockOwners {
         Name = [string]$process.Name
         ProcessId = [int]$process.ProcessId
         ExecutablePath = [string]$process.ExecutablePath
+        CreationDate = $process.CreationDate
         Owned = [bool](Test-OwnedPath $process.ExecutablePath)
       }
     }
@@ -4369,7 +4354,9 @@ function Move-InstallRootToQuarantineWithRetry {
       foreach ($owner in $lastOwners) {
         $safePath = if ($owner.ExecutablePath) { $owner.ExecutablePath } else { "unavailable" }
         if ($owner.Owned) {
-          Stop-Process -Id $owner.ProcessId -Force -ErrorAction SilentlyContinue
+          $continuity = Get-ProtectedSystemDohPayloadContinuity
+          if (Test-ProtectedSystemDohPayloadProcess -Process $owner -Lease $continuity) { throw 'Quarantine lock intersects the held private DNS generation.' }
+          [void](Stop-InstallerOwnedProcess -Record $owner -OwnPath ${function:Test-OwnedPath})
           Write-Output ("BUSY_OWNED_HANDLE:name={0};pid={1};path={2};attempt={3}" -f $owner.Name, $owner.ProcessId, $safePath, $attempt)
         } else {
           Write-Output ("BUSY_FOREIGN_HANDLE:name={0};pid={1};path={2};attempt={3}" -f $owner.Name, $owner.ProcessId, $safePath, $attempt)
