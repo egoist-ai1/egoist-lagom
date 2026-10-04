@@ -387,7 +387,8 @@ jobs:
           if (-not (Test-Path -LiteralPath $env:LAGOM_TEST_POWERSHELL -PathType Leaf)) { throw 'PowerShell 7 is required for native long-path junction fixtures' }
           $coreIntermediate = (Join-Path $env:LAGOM_TEST_TEMP 'wrapper-core-obj') + '\'
           $coreOutput = (Join-Path $env:LAGOM_TEST_TEMP 'wrapper-core-bin') + '\'
-          dotnet build src/service/EgoistShield.Service.csproj -c Release -p:RestoreLockedMode=true -p:PublishSingleFile=true -p:SelfContained=true "-p:BaseIntermediateOutputPath=$coreIntermediate" "-p:MSBuildProjectExtensionsPath=$coreIntermediate" "-p:OutputPath=$coreOutput" '-p:DefaultItemExcludes=obj\**\*.cs' -v quiet
+          $corePublishLock = Join-Path $env:GITHUB_WORKSPACE 'src/service/packages.publish.lock.json'
+          dotnet build src/service/EgoistShield.Service.csproj -c Release -p:RestoreLockedMode=true -p:PublishSingleFile=true -p:SelfContained=true "-p:NuGetLockFilePath=$corePublishLock" "-p:BaseIntermediateOutputPath=$coreIntermediate" "-p:MSBuildProjectExtensionsPath=$coreIntermediate" "-p:OutputPath=$coreOutput" '-p:DefaultItemExcludes=obj\**\*.cs' -v quiet
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $coreAssembly = Join-Path $coreOutput 'EgoistShield.Service.dll'
           if (-not (Test-Path -LiteralPath $coreAssembly -PathType Leaf)) { throw 'Actual Core assembly for the log guard regression is missing' }
