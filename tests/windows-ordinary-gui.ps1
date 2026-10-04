@@ -61,7 +61,25 @@ function Build-OrdinaryGuiHarness {
     $env:DOTNET_ADD_GLOBAL_TOOLS_TO_PATH='0'
     $env:DOTNET_CLI_HOME=Join-Path $directory 'dotnet-home';$env:DOTNET_CLI_TELEMETRY_OPTOUT='1';$env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE='1';$env:DOTNET_GENERATE_ASPNET_CERTIFICATE='false'
     & $sdk build $projectFile -c Release --nologo *> (Join-Path $directory 'build.txt')
-    if($LASTEXITCODE -ne 0){throw "Ordinary GUI harness build failed: $directory\build.txt"}
+    $buildExitCode=$LASTEXITCODE
+    if($buildExitCode -ne 0){
+      # Export only bounded compiler codes and known source locations. Raw
+      # messages, paths, commands and environment remain in the local build.txt.
+      $sourceFiles=@('ProtectedExecutable.cs','ClientAuthorizer.cs','ClientIdentity.cs','ServiceOptions.cs','ServiceConfig.cs','TrustedPath.cs','GuiLaunchPolicy.cs','windows-ordinary-gui.cs','OrdinaryGuiHarness.csproj')
+      $diagnostics=[Collections.Generic.List[object]]::new()
+      foreach($line in @(Get-Content -LiteralPath (Join-Path $directory 'build.txt') -Encoding UTF8 -Tail 40)){
+        if($line -notmatch '(?i)\b(?<kind>error|warning)\s+(?<code>[A-Z]{2,12}[0-9]{2,6})\s*:'){continue}
+        $row=[ordered]@{kind=$Matches.kind.ToLowerInvariant();code=$Matches.code.ToUpperInvariant();source=$null;line=$null;column=$null}
+        if($line -match '(?<file>[A-Za-z0-9_.-]+\.(?:cs|csproj))\((?<line>[0-9]{1,6})(?:,(?<column>[0-9]{1,6}))?\)\s*:'){
+          if($Matches.file -cin $sourceFiles){$row.source=$Matches.file;$row.line=[int]$Matches.line;if($Matches.ContainsKey('column') -and $Matches.column){$row.column=[int]$Matches.column}}
+        }
+        $diagnostics.Add([pscustomobject]$row)
+        Write-Host ('Ordinary GUI compiler {0} {1}; source={2}; line={3}; column={4}' -f $row.kind,$row.code,$row.source,$row.line,$row.column)
+      }
+      $compilerReport=[ordered]@{schemaVersion=1;buildExitCode=$buildExitCode;targetFramework='net10.0-windows';tailLines=40;maxDiagnostics=40;diagnostics=@($diagnostics.ToArray())}
+      [IO.File]::WriteAllText((Join-Path $directory 'compiler-diagnostics.json'),($compilerReport|ConvertTo-Json -Depth 4),[Text.UTF8Encoding]::new($false))
+      throw "Ordinary GUI harness build failed: $directory\build.txt"
+    }
   }finally{foreach($name in $saved.Keys){[Environment]::SetEnvironmentVariable($name,$saved[$name],'Process')}}
   return [pscustomobject]@{Directory=$directory;Executable=(Join-Path $directory 'bin\Release\net10.0-windows\OrdinaryGuiHarness.exe');DotnetRoot=[IO.Path]::GetDirectoryName($sdk);SourceHashes=(Join-Path $directory 'source-hashes.json')}
 }

@@ -165,7 +165,7 @@ function Write-GuiStartupReceipt {
   try {
     $stream=[IO.FileStream]::new($temporary,'CreateNew',[Security.AccessControl.FileSystemRights]::Write,'None',4096,[IO.FileOptions]::WriteThrough,$security)
     $bytes=[Text.UTF8Encoding]::new($false).GetBytes(($Record | ConvertTo-Json -Depth 5));$stream.Write($bytes,0,$bytes.Length);$stream.Flush($true);$stream.Dispose();$stream=$null
-    if(Test-Path -LiteralPath $Context.receipt){[IO.File]::Replace($temporary,$Context.receipt,$null)}else{[IO.File]::Move($temporary,$Context.receipt)}
+    if(Test-Path -LiteralPath $Context.receipt){[IO.File]::Replace($temporary,$Context.receipt,[NullString]::Value)}else{[IO.File]::Move($temporary,$Context.receipt)}
     [void](Read-GuiStartupReceipt $Context)
   } finally {if($stream){$stream.Dispose()};if(Test-Path -LiteralPath $temporary){[IO.File]::Delete($temporary)}}
 }

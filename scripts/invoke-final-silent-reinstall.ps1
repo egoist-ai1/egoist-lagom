@@ -514,7 +514,7 @@ function Add-ReceiptEvent {
   try {
     $receiptPath = Join-Path $StageDirectory "receipt.json"
     $receipt = if (Test-Path -LiteralPath $receiptPath -PathType Leaf) {
-      Get-Content -LiteralPath $receiptPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+      Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     } else {
       [pscustomobject]@{
         schemaVersion = 1
@@ -590,7 +590,7 @@ function Get-ValidatedRelease {
   param([string]$Installer, [string]$Manifest, [string]$Version, [string]$Sha256, [switch]$AllowStagedPair)
   $installerFull = Resolve-FullPath -Path $Installer -MustExist -Leaf
   $manifestFull = Resolve-FullPath -Path $Manifest -MustExist -Leaf
-  $manifestObject = Get-Content -LiteralPath $manifestFull -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $manifestObject = Get-Content -LiteralPath $manifestFull -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if ([string]$manifestObject.product -ne "Egoist Lagom") { throw "Unexpected product in integrity manifest." }
   if ([string]$manifestObject.version -ne $Version) { throw "Integrity manifest version does not match $Version." }
   if ([string]$manifestObject.installer.sha256 -ne $Sha256.ToUpperInvariant()) { throw "Expected SHA-256 does not match the integrity manifest." }
@@ -829,7 +829,7 @@ function Backup-CriticalDnsState {
     if (-not (Test-Path -LiteralPath $stateFile -PathType Leaf)) { throw "Owned DNS state is missing while Windows depends on loopback DNS." }
     $backup = Join-Path $Stage "dns-owned-state.json"
     Copy-Item -LiteralPath $stateFile -Destination $backup -Force -ErrorAction Stop
-    $metadata = Get-Content -LiteralPath $backup -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $metadata = Get-Content -LiteralPath $backup -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     if ($metadata.schemaVersion -ne 1 -or $metadata.owner -ne "EgoistShield") { throw "Owned DNS state is invalid." }
   }
   return @($records)
@@ -869,7 +869,7 @@ function Restore-CriticalAdapterDns {
 
 function Get-InstalledIdentity {
   $path = Join-Path $script:OwnedInstallRoot "resources\installation.json"
-  $metadata = Get-Content -LiteralPath $path -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $metadata = Get-Content -LiteralPath $path -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   $parsed = [Guid]::Empty
   if (-not [Guid]::TryParse([string]$metadata.id, [ref]$parsed) -or $parsed -eq [Guid]::Empty) {
     throw "Installed Shield identity is invalid."
@@ -901,7 +901,7 @@ function Reconcile-PreservedZapretProfile {
   if (-not $profileRoot) { return }
   $file = Join-Path $profileRoot "AppData\Roaming\Egoist Shield\egoistshield-state.json"
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { return }
-  $settings = Get-Content -LiteralPath $file -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $settings = Get-Content -LiteralPath $file -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if (-not $settings.settings) { throw "Shield user state has no settings object." }
   $settings.settings.zapretProfile = $preservedProfile
   $temporary = "$file.profile.tmp"
@@ -931,7 +931,7 @@ function Enter-InstallerServiceMaintenance {
   Protect-StageDirectory -Path $directory
   $marker = Join-Path $directory "service-maintenance.json"
   if (Test-Path -LiteralPath $marker -PathType Leaf) {
-    $existing = Get-Content -LiteralPath $marker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $existing = Get-Content -LiteralPath $marker -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     if ($existing.schemaVersion -ne 1 -or $existing.owner -ne "EgoistShield" -or [string]$existing.stage -ne $StageDirectory) {
       throw "Another service maintenance transaction requires recovery."
     }
@@ -1001,7 +1001,7 @@ function Complete-InstallerServiceMaintenance {
   Complete-InstallerScmBackupBarrier
   $marker = Join-Path $script:OwnedDataRoot "installer\service-maintenance.json"
   if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { Resume-OwnedGuiLoginStartup; return }
-  $existing = Get-Content -LiteralPath $marker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $existing = Get-Content -LiteralPath $marker -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if ($existing.owner -ne "EgoistShield" -or [string]$existing.stage -ne $StageDirectory) {
     throw "Refusing to remove another service maintenance transaction."
   }
@@ -1015,7 +1015,7 @@ function Get-InstallerServiceMaintenanceStatus {
   [void](Assert-PlainWrapperMigrationPath -Path $marker -Root $script:OwnedDataRoot)
   $item = Get-Item -LiteralPath $marker -ErrorAction Stop
   if ($item.PSIsContainer -or $item.Length -gt 16384) { throw "Service maintenance marker is invalid or exceeds its limit." }
-  $existing = Get-Content -LiteralPath $marker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $existing = Get-Content -LiteralPath $marker -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if ($existing.schemaVersion -ne 1 -or $existing.owner -ne 'EgoistShield' -or
       -not [IO.Path]::IsPathRooted([string]$existing.stage)) { throw "Service maintenance marker identity is unverified." }
   if ([string]::Equals([string]$existing.stage, $StageDirectory, [StringComparison]::OrdinalIgnoreCase)) { return 'owned' }
@@ -1042,7 +1042,7 @@ function Get-ValidatedMaintenanceRecoveryState {
   $previousStage = Assert-PlainWrapperMigrationPath -Path $Stage -Root $deferredRoot
   $previousStatePath = Assert-PlainWrapperMigrationPath -Path (Join-Path $previousStage "state.json") -Root $previousStage
   if ((Get-Item -LiteralPath $previousStatePath -ErrorAction Stop).Length -gt 4194304) { throw "Previous reinstall state exceeds its limit." }
-  $previous = Get-Content -LiteralPath $previousStatePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $previous = Get-Content -LiteralPath $previousStatePath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if ($previous.schemaVersion -ne 1 -or $previous.owner -ne "EgoistShield") { throw "Unverified previous reinstall state." }
   [void](Assert-PlainWrapperMigrationPath -Path ([string]$previous.installer) -Root $previousStage)
   [void](Assert-PlainWrapperMigrationPath -Path ([string]$previous.manifest) -Root $previousStage)
@@ -1063,7 +1063,7 @@ function Resume-InterruptedServiceMaintenance {
   if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { return }
   [void](Assert-PlainWrapperMigrationPath -Path $marker -Root $script:OwnedDataRoot)
   if ((Get-Item -LiteralPath $marker -ErrorAction Stop).Length -gt 16384) { throw "Service maintenance marker exceeds its limit." }
-  $pending = Get-Content -LiteralPath $marker -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $pending = Get-Content -LiteralPath $marker -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if ($pending.schemaVersion -ne 1 -or $pending.owner -ne "EgoistShield") { throw "Unverified service maintenance marker." }
   $previousStage = [string]$pending.stage
   # The caller holds the shared deferred-reinstall mutex. The same lease also
@@ -1260,7 +1260,7 @@ function Get-VerifiedPackagedServiceWrapper {
   $relative = 'zapret/service-wrapper/egoistshield-zapret-service.exe'
   $manifestPath = Assert-PlainWrapperMigrationPath -Path (Join-Path $script:OwnedInstallRoot 'resources\runtime\manifest.json') -Root $script:OwnedInstallRoot
   if ((Get-Item -LiteralPath $manifestPath -ErrorAction Stop).Length -gt 4194304) { throw 'Wrapper payload manifest exceeds its migration limit.' }
-  $manifest = Get-Content -LiteralPath $manifestPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if ([int]$manifest.schemaVersion -ne 1 -or [string]$manifest.packageVersion -ne $Version) { throw 'Wrapper payload manifest version is not the installed release.' }
   $components = @($manifest.components | Where-Object { $_.name -eq 'zapret' -and $_.present -eq $true })
   if ($components.Count -ne 1) { throw 'Wrapper payload component inventory is missing or ambiguous.' }
@@ -1387,7 +1387,7 @@ function Update-PreservedRuntimeReliability {
     if ($name -ne 'EgoistShieldSystemDoH') { continue }
     $configPath = Assert-OwnedRuntimeMigrationPath (Join-Path $componentRoot 'config.json')
     if ((Get-Item -LiteralPath $configPath).Length -gt 1048576) { throw 'DNS configuration exceeds its migration limit.' }
-    $config = Get-Content -LiteralPath $configPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $config = Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     if (-not $config.dns -or -not $config.inbounds -or -not $config.log) { throw 'DNS configuration does not match the managed Xray format.' }
     foreach ($inbound in @($config.inbounds)) {
       $address = $null
@@ -1530,7 +1530,7 @@ function Protect-OwnedSystemDohMigrationInputs {
       $extraReadback += [pscustomobject]@{path=$path;sha256=(Get-FileSha256 $path)}
     }
     foreach ($stream in @($lease.streams | Select-Object -First 4) + $extraStreams) { Assert-OwnedSystemDohInputSingleLink -Stream $stream }
-    $runtimeState = Get-Content -LiteralPath (Join-Path $root 'state.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $runtimeState = Get-Content -LiteralPath (Join-Path $root 'state.json') -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     if ($runtimeState.localAddress -cne '127.0.0.1' -or $runtimeState.localPort -ne 53 -or
         ($runtimeState.PSObject.Properties['enabled'] -and $runtimeState.enabled -ne $true)) { throw 'Private DNS protection state is incompatible.' }
     $savedEndpoint = [Uri]$runtimeState.url
@@ -1538,14 +1538,14 @@ function Protect-OwnedSystemDohMigrationInputs {
     $primary = @($State.userState | Where-Object { [IO.Path]::GetFileName([string]$_.source) -eq 'egoistshield-state.json' })
     if ($primary.Count -eq 0) { throw 'Private DNS protection enabled intent is missing.' }
     foreach ($record in $primary) {
-      $current = Get-Content -LiteralPath $record.source -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+      $current = Get-Content -LiteralPath $record.source -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
       $settings = if ($current.PSObject.Properties['settings']) { $current.settings } else { $current }
       if ($settings.systemDohEnabled -ne $true -or ([Uri]$settings.systemDohUrl).AbsoluteUri -cne $savedEndpoint.AbsoluteUri) {
         throw 'Private DNS protection current private intent changed.'
       }
     }
     if ($hasIntent) {
-      $intent = Get-Content -LiteralPath $intentPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+      $intent = Get-Content -LiteralPath $intentPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
       if ($intent.schemaVersion -ne 1 -or $intent.owner -cne 'EgoistShield' -or
           -not $intent.services.PSObject.Properties['EgoistShieldSystemDoH'] -or $intent.services.EgoistShieldSystemDoH.running -ne $true) {
         throw 'Private DNS protection supervision intent is unowned or stopped.'
@@ -1600,7 +1600,7 @@ function Invoke-OwnedSystemDohMigrationPreflight {
         [string]$result.wrapperPid -cne [string]$evidence.wrapperPid -or [string]$result.wrapperStartTicks -cne [string]$evidence.wrapperStartTicks -or
         [string]$result.productionPid -cne [string]$evidence.enginePid -or [string]$result.productionStartTicks -cne [string]$evidence.engineStartTicks -or
         [string]$result.originalConfigSha256 -ine (Get-FileSha256 $evidence.config)) { throw 'Private DNS candidate preflight generation changed.' }
-    $config = Get-Content -LiteralPath $evidence.config -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $config = Get-Content -LiteralPath $evidence.config -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     $patched = Get-PatchedSystemDohMigrationConfiguration $config
     if ((Get-SystemDohMigrationCandidateDigest $patched) -cne [string]$result.candidateSha256) { throw 'Private DNS candidate preflight fixed configuration digest changed.' }
     [void](Assert-SystemDohPayloadContinuity -State $State)
@@ -1618,7 +1618,7 @@ function Prepare-SystemDohMigrationPayload {
   if (Test-Path -LiteralPath $directory) { throw 'Private DNS migration candidate already exists; retained candidate requires recovery.' }
   New-Item -ItemType Directory -Path $directory -ErrorAction Stop | Out-Null
   Protect-InstallerStageTree -Stage $directory
-  $config = Get-PatchedSystemDohMigrationConfiguration (Get-Content -LiteralPath $evidence.config -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop)
+  $config = Get-PatchedSystemDohMigrationConfiguration (Get-Content -LiteralPath $evidence.config -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop)
   if ((Get-SystemDohMigrationCandidateDigest $config) -cne [string]$Preflight.candidateSha256) { throw 'Private DNS staged candidate does not match its successful preflight.' }
   [IO.File]::WriteAllText((Join-Path $directory 'config.json'), (($config | ConvertTo-Json -Depth 64) + "`n"), [Text.UTF8Encoding]::new($false))
   $xml = Join-Path $evidence.root 'service-wrapper\egoistshield-system-doh-service.xml'
@@ -1706,7 +1706,7 @@ function Invoke-SystemDohRuntimeMigration {
         [IO.File]::Replace($temporary,$destination,[NullString]::Value)
       } finally { if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force -ErrorAction Stop } }
     }
-    $patched = Get-Content -LiteralPath (Join-Path $candidate.root 'config.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $patched = Get-Content -LiteralPath (Join-Path $candidate.root 'config.json') -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     if ((Get-SystemDohMigrationCandidateDigest $patched) -cne $candidate.candidateSha256) { throw 'Private DNS switch configuration digest changed.' }
     $record = @($State.services | Where-Object { $_.name -eq 'EgoistShieldSystemDoH' })[0]
     Set-InstallerServiceStartMode 'EgoistShieldSystemDoH' ([string]$record.startMode) ([bool]$record.delayedAutoStart) { param($path) Test-OwnedServicePath $path }
@@ -1838,7 +1838,7 @@ function Get-SystemDohPrivatePolicyDigest {
 function Get-SystemDohActivationDigest {
   param([string]$Path)
   if ((Get-Item -LiteralPath $Path).Length -gt 4194304) { throw 'Private activation state exceeds its limit.' }
-  $stored = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $stored = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   $settings = if ($stored.PSObject.Properties['settings']) { $stored.settings } else { $stored }
   $values = [ordered]@{}
   foreach ($property in @($settings.PSObject.Properties | Where-Object { $_.Name -match '^systemDoh|^systemDnsServers$' } | Sort-Object Name)) { $values[$property.Name] = $property.Value }
@@ -1918,7 +1918,7 @@ function Get-SystemDohRecoveryFiles {
   $expectedEngine = [IO.Path]::GetFullPath((Join-Path $root 'runtime\xray-system-doh.exe'))
   if (-not $engine.Equals($expectedEngine, [StringComparison]::OrdinalIgnoreCase)) { throw 'Private DNS engine path changed.' }
   if (-not (Test-SystemDohConfigArgument -Arguments $document.SelectSingleNode('/service/arguments').InnerText -ExpectedConfig $config)) { throw 'Private DNS wrapper does not select the expected configuration.' }
-  $configuration = Get-Content -LiteralPath $config -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $configuration = Get-Content -LiteralPath $config -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   $files = @('config.json', 'service-wrapper\egoistshield-system-doh-service.exe', 'service-wrapper\egoistshield-system-doh-service.xml', 'runtime\xray-system-doh.exe')
   return [pscustomobject]@{ record = $record; root = $root; config = $config; wrapper = $wrapper; engine = $engine; configuration = $configuration; files = $files }
 }
@@ -1933,7 +1933,7 @@ function Write-VerifiedSystemDohRecoveryRuntime {
   $backupRoot = Assert-PlainWrapperMigrationPath -Path (Join-Path $StageDirectory 'runtime-backup\SystemDoH') -Root $StageDirectory
   $backupConfig = Assert-PlainWrapperMigrationPath -Path (Join-Path $backupRoot 'config.json') -Root $backupRoot
   if ((Get-Item -LiteralPath $backupConfig).Length -gt 1048576) { throw 'Saved private policy exceeds its limit.' }
-  $original = Get-Content -LiteralPath $backupConfig -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $original = Get-Content -LiteralPath $backupConfig -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   $policy = Get-SystemDohPrivatePolicyDigest $proof.configuration
   if ($policy -cne (Get-SystemDohPrivatePolicyDigest $original)) { throw 'Runtime migration changed the preserved private DNS policy.' }
   $identity = Get-InstalledIdentity
@@ -1978,13 +1978,13 @@ function Test-OwnedSystemDohRecoveryRuntime {
       [void](Assert-InstallerBootRecoveryFileProtection -Path $receiptPath)
       if ((Get-Item -LiteralPath $receiptPath).Length -gt 16384) { return $false }
       $receiptHash = Get-FileSha256 $receiptPath
-      $receipt = Get-Content -LiteralPath $receiptPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+      $receipt = Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
       if ($receipt.schemaVersion -ne 1 -or $receipt.owner -cne 'EgoistShield' -or
           [string]$receipt.stage -cne $StageDirectory -or [string]$receipt.installationId -cne [string]$State.installationId -or
           [string]$receipt.generation -notmatch '^[0-9a-f]{32}$' -or @($receipt.files).Count -ne 4 -or
           [string]$receipt.originalConfigSha256 -cne (Get-FileSha256 $backupConfig) -or
           [string]$receipt.privatePolicySha256 -cne (Get-SystemDohPrivatePolicyDigest $proof.configuration)) { return $false }
-      $original = Get-Content -LiteralPath $backupConfig -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+      $original = Get-Content -LiteralPath $backupConfig -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
       if ([string]$receipt.privatePolicySha256 -cne (Get-SystemDohPrivatePolicyDigest $original)) { return $false }
       foreach ($entry in @($receipt.files)) {
         if ($proof.files -cnotcontains [string]$entry.path -or $expected.ContainsKey([string]$entry.path) -or
@@ -2122,7 +2122,7 @@ function Test-PreservedPrivateDnsIntent {
   foreach ($record in @($State.userState | Where-Object { [IO.Path]::GetFileName([string]$_.source) -eq 'egoistshield-state.json' })) {
     $saved = Join-Path (Join-Path $StageDirectory 'user-state') ([string]$record.backupName)
     if ((Get-FileSha256 $saved) -cne [string]$record.sha256) { throw 'Private DNS intent snapshot checksum changed.' }
-    $document = Get-Content -LiteralPath $saved -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $document = Get-Content -LiteralPath $saved -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     $settings = if ($document.PSObject.Properties['settings']) { $document.settings } else { $document }
     if ($settings.PSObject.Properties['systemDohEnabled']) {
       if ($settings.systemDohEnabled -ne $true) { return $false }
@@ -2244,7 +2244,7 @@ function Start-PreservedServices {
     }
     if ($name -eq 'EgoistShieldTelegramProxy') {
       $componentRoot = Join-Path $script:RuntimeRoot 'TelegramProxy'
-      $config = Get-Content -LiteralPath (Join-Path $componentRoot 'config.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+      $config = Get-Content -LiteralPath (Join-Path $componentRoot 'config.json') -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
       $wrapper = Join-Path $componentRoot 'service-wrapper\egoistshield-telegram-proxy-service.exe'
       if (-not (Wait-OwnedTelegramProxyReady -ExpectedWrapper $wrapper -Port ([int]$config.port) -HostAddress ([string]$config.host))) {
         throw 'Telegram Proxy did not confirm an owned listener after reinstall; a foreign listener is not readiness.'
@@ -2305,7 +2305,7 @@ function Restore-CriticalOwnedDnsBaseline {
   param([object]$State)
   if (@($State.criticalDns).Count -eq 0) { return }
   $backup = Join-Path $StageDirectory 'dns-owned-state.json'
-  $metadata = Get-Content -LiteralPath $backup -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $metadata = Get-Content -LiteralPath $backup -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   if ($metadata.schemaVersion -ne 1 -or $metadata.owner -ne 'EgoistShield') { throw 'Protected DNS ownership state is invalid.' }
   $adapters = @(Get-NetAdapter -IncludeHidden -ErrorAction Stop)
   foreach ($record in @($State.criticalDns)) {
@@ -2362,9 +2362,12 @@ function Invoke-Recovery {
   try {
   $maintenanceStatus = Get-InstallerServiceMaintenanceStatus
   if ($maintenanceStatus -eq 'foreign') { throw "Another service maintenance stage is active; preserved state was not replayed." }
-  if ($State.PSObject.Properties['handoffStarted'] -and $State.handoffStarted -ne $true -and
-      $maintenanceStatus -eq 'absent') {
-    Resume-OwnedGuiLoginStartup
+  if ($State.PSObject.Properties['handoffStarted'] -and $State.handoffStarted -ne $true) {
+    # Entry can fail after its marker is written but before the handoff flag.
+    # Only close that owned boundary; no runtime or service snapshot was changed.
+    if ($maintenanceStatus -eq 'owned') { Complete-InstallerServiceMaintenance }
+    else { Resume-OwnedGuiLoginStartup }
+    if ((Get-InstallerServiceMaintenanceStatus) -ne 'absent') { throw 'Pre-handoff maintenance closure did not pass readback.' }
     Add-ReceiptEvent -Stage 'recovery' -Status 'recovery-not-needed' -Message 'Update failed before service handoff; no services or DNS were stopped.'
     return $true
   }
@@ -2509,7 +2512,7 @@ function Invoke-WatchdogMode {
   if (Test-InstallerTransactionComplete) { return $true }
   [void](Assert-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory)
   $deadlinePath = Join-Path $StageDirectory "watchdog-deadline.txt"
-  $deadline = [DateTime]::Parse((Get-Content -LiteralPath $deadlinePath -Raw), [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind)
+  $deadline = [DateTime]::Parse((Get-Content -LiteralPath $deadlinePath -Raw -Encoding UTF8), [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind)
   $waitingState = Get-ValidatedMaintenanceRecoveryState -Stage $StageDirectory
   $maximumSeconds = 1200
   if ($waitingState.PSObject.Properties['watchdogTimeoutSeconds']) { $maximumSeconds = [int]$waitingState.watchdogTimeoutSeconds }
@@ -2520,7 +2523,7 @@ function Invoke-WatchdogMode {
     $heartbeatPath = Join-Path $StageDirectory "heartbeat.json"
     if (Test-Path -LiteralPath $heartbeatPath -PathType Leaf) {
       try {
-        $heartbeat = Get-Content -LiteralPath $heartbeatPath -Raw | ConvertFrom-Json
+        $heartbeat = Get-Content -LiteralPath $heartbeatPath -Raw -Encoding UTF8 | ConvertFrom-Json
         $workerProcess = Get-Process -Id ([int]$heartbeat.workerPid) -ErrorAction SilentlyContinue
         if (-not $workerProcess -or [int64]$workerProcess.StartTime.Ticks -ne [int64]$heartbeat.workerStartTicks) { break }
       } catch { Write-Verbose "Watchdog could not inspect worker heartbeat: $($_.Exception.Message)" }
@@ -2536,7 +2539,7 @@ function Invoke-WatchdogMode {
   for ($grace = 0; $grace -lt 5; $grace++) {
     if (Test-InstallerTransactionComplete) { return $true }
     if (-not (Test-Path -LiteralPath $heartbeatPath -PathType Leaf)) { break }
-    $heartbeat = Get-Content -LiteralPath $heartbeatPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $heartbeat = Get-Content -LiteralPath $heartbeatPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
     $workerProcess = Get-Process -Id ([int]$heartbeat.workerPid) -ErrorAction SilentlyContinue
     try {
       if (-not $workerProcess -or [int64]$workerProcess.StartTime.Ticks -ne [int64]$heartbeat.workerStartTicks) { break }
@@ -2545,7 +2548,7 @@ function Invoke-WatchdogMode {
   }
   try {
     if (Test-Path -LiteralPath $heartbeatPath -PathType Leaf) {
-      $heartbeat = Get-Content -LiteralPath $heartbeatPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+      $heartbeat = Get-Content -LiteralPath $heartbeatPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
       if ($heartbeat.owner -ne "EgoistShield") { throw "Unverified installer heartbeat owner." }
       if ([int]$heartbeat.installerPid -gt 0 -and
           -not (Stop-VerifiedInstallerTransactionProcess -ProcessId ([int]$heartbeat.installerPid) -StartTicks ([int64]$heartbeat.installerStartTicks) -Executable ([string]$state.installer))) {
@@ -2694,7 +2697,7 @@ function Invoke-WorkerMode {
   if (-not (Test-IsAdministrator)) { throw "Deferred reinstall worker requires an elevated administrator token." }
   Assert-SupportedServiceFramework
   $statePath = Join-Path $StageDirectory "state.json"
-  $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+  $state = Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
   $release = Get-ValidatedRelease -Installer ([string]$state.installer) -Manifest ([string]$state.manifest) -Version ([string]$state.version) -Sha256 ([string]$state.sha256) -AllowStagedPair
   $mutex = New-Object Threading.Mutex($false, "Global\EgoistShield.DeferredReinstall")
   $previousWait = 0
@@ -2834,7 +2837,7 @@ function Invoke-WorkerMode {
           }
         }
       }
-      $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+      $state = Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
       if ($state.handoffStarted -eq $true -or (Test-InstallerServiceMaintenanceOwner)) {
         $recoveryComplete = Invoke-InstallerRecoveryAttempts -State $state -Reason $primaryWorkerReason -Attempts 2 -RetrySeconds 2
       } else {

@@ -333,17 +333,44 @@ test('actual reinstall functions keep GUI startup suspended on failed restoratio
     "foreach($fault in @('state','services','dns')){$script:Fault=$fault;[IO.File]::WriteAllText($marker,$good);$before=$script:Events.Count;" +
     "$result=Invoke-Recovery -State $state -Reason 'inert owned boundary fixture';if($result -ne $false -or -not(Test-Path -LiteralPath $marker) -or $script:Events.Count -ne $before){throw 'Failed restoration reopened GUI startup or lost maintenance marker'};$failureCases++};" +
     "$script:Fault='';$result=Invoke-Recovery -State $state -Reason 'inert owned boundary fixture';if($result -ne $true -or (Test-Path -LiteralPath $marker) -or $script:Events[$script:Events.Count-1] -cne 'resume'){throw 'Verified restoration did not close marker before resume'};" +
-    "@{foreignTransactionsRefused=$refused;failedRestoreCases=$failureCases;successfulRestore=$true;liveServiceMutations=0;liveDnsMutations=0;liveTaskMutations=0}|ConvertTo-Json -Compress";
+    "$state|Add-Member -NotePropertyName handoffStarted -NotePropertyValue $false;$script:Fault='state';[IO.File]::WriteAllText($marker,$good);" +
+    "$result=Invoke-Recovery -State $state -Reason 'before handoff';if($result -ne $true -or (Test-Path -LiteralPath $marker) -or $script:Events[$script:Events.Count-1] -cne 'resume'){throw 'Pre-handoff owned boundary replayed a live runtime or did not close'};" +
+    "[IO.File]::WriteAllText($marker,('{\"schemaVersion\":1,\"owner\":\"Foreign\",\"stage\":\"foreign\"}'));$before=$script:Events.Count;$foreignRefused=$false;try{Invoke-Recovery -State $state -Reason 'foreign before handoff'}catch{$foreignRefused=$true};" +
+    "if(-not$foreignRefused -or $script:Events.Count -ne $before -or -not(Test-Path -LiteralPath $marker)){throw 'Pre-handoff recovery accepted a foreign marker'};" +
+    "@{foreignTransactionsRefused=$refused;failedRestoreCases=$failureCases;successfulRestore=$true;preHandoffOwnedClosed=$true;preHandoffForeignRefused=$true;liveServiceMutations=0;liveDnsMutations=0;liveTaskMutations=0}|ConvertTo-Json -Compress";
   try {
     const child = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', body],
       { encoding: 'utf8', windowsHide: true, timeout: 15000 });
     assert.equal(child.status, 0, child.stdout + '\n' + child.stderr);
     assert.deepEqual(JSON.parse(child.stdout), {
       foreignTransactionsRefused: 2, failedRestoreCases: 3, successfulRestore: true,
+      preHandoffOwnedClosed: true, preHandoffForeignRefused: true,
       liveServiceMutations: 0, liveDnsMutations: 0, liveTaskMutations: 0,
     });
   } finally {
     assert.equal(path.dirname(directory), path.resolve(process.env.LAGOM_TEST_TEMP));
     await fs.rm(directory, { recursive: true, force: true });
   }
+});
+
+
+test('actual installer receipt preserves UTF-8 messages across repeated JSON writes', {
+  skip: process.platform !== 'win32' || !process.env.LAGOM_TEST_TEMP,
+}, async () => {
+  const shell = process.env.LAGOM_WINDOWS_POWERSHELL || path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const directory = await fs.mkdtemp(path.join(process.env.LAGOM_TEST_TEMP, 'receipt-utf8-'));
+  const quote = value => value.replaceAll("'", "''");
+  const body = "$ErrorActionPreference='Stop';[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);$StageDirectory='" + quote(directory) + "';" +
+    "$tokens=$null;$errors=$null;$ast=[Management.Automation.Language.Parser]::ParseFile('" + quote(path.resolve('scripts/invoke-final-silent-reinstall.ps1')) + "',[ref]$tokens,[ref]$errors);if($errors.Count){throw 'Production helper did not parse'};" +
+    "$node=@($ast.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -ceq 'Add-ReceiptEvent'},$true));if($node.Count -ne 1){throw 'Receipt function identity ambiguous'};Invoke-Expression $node[0].Extent.Text;" +
+    "function Enter-InstallerReceiptLease {$m=[pscustomobject]@{};$m|Add-Member -MemberType ScriptMethod -Name ReleaseMutex -Value {};$m|Add-Member -MemberType ScriptMethod -Name Dispose -Value {};return $m};" +
+    "function Write-JsonAtomic {param($Path,$Value)[IO.File]::WriteAllText($Path,($Value|ConvertTo-Json -Depth 12),[Text.UTF8Encoding]::new($false))};function Write-BrandedInstallerStatus {};" +
+    "$message='Ошибка замены файла: проверка повторной записи №2';foreach($n in 1..4){Add-ReceiptEvent -Stage 'fixture' -Status 'checked' -Message $message};" +
+    "$receipt=Get-Content -LiteralPath (Join-Path $StageDirectory 'receipt.json') -Raw -Encoding UTF8|ConvertFrom-Json;if($receipt.events.Count -ne 4 -or @($receipt.events|Where-Object{$_.message -cne $message}).Count){throw 'UTF8 receipt message changed after repeated write'};" +
+    "@{events=$receipt.events.Count;unicodePreserved=$true;liveMutations=0}|ConvertTo-Json -Compress";
+  try {
+    const child = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', body], {encoding:'utf8',windowsHide:true,timeout:15000});
+    assert.equal(child.status,0,child.stdout+'\n'+child.stderr);
+    assert.deepEqual(JSON.parse(child.stdout),{events:4,unicodePreserved:true,liveMutations:0});
+  } finally { await fs.rm(directory,{recursive:true,force:true}); }
 });

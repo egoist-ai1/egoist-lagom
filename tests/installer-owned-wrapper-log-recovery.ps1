@@ -16,6 +16,8 @@ if ((Split-Path -Leaf $fixtureRoot) -notmatch '^wlr-[a-zA-Z0-9]{6}$') {
 if ((Get-Item -LiteralPath $fixtureRoot).Attributes -band [IO.FileAttributes]::ReparsePoint) {
     throw 'The fixture root must be ordinary.'
 }
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+try { $script:fixtureSid = $identity.User.Value } finally { $identity.Dispose() }
 $script:checks = 0
 $script:results = New-Object 'System.Collections.Generic.List[object]'
 $utf8 = New-Object Text.UTF8Encoding($false)
@@ -30,6 +32,11 @@ function Write-FixtureFile {
     Check ($full.StartsWith($fixtureRoot + '\', [StringComparison]::OrdinalIgnoreCase)) 'file stays in own fixture'
     [void][IO.Directory]::CreateDirectory((Split-Path -Parent $full))
     [IO.File]::WriteAllText($full, $Content, $utf8)
+    # Elevated tokens may default new-file ownership to Administrators.
+    # Set only the owner of this newly created fixture file; retain its DACL.
+    $acl = [IO.File]::GetAccessControl($full, [Security.AccessControl.AccessControlSections]::Owner)
+    $acl.SetOwner([Security.Principal.SecurityIdentifier]::new($script:fixtureSid))
+    [IO.File]::SetAccessControl($full, $acl)
 }
 function New-FixtureCase {
     param([string]$Name, [string]$Component = 'Zapret', [string]$RelativeLog = 'logs\zapret-service\egoistshield-zapret-service.wrapper.log')
@@ -91,8 +98,6 @@ $sourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash.ToL
 $tokens = $null; $errors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile($sourcePath, [ref]$tokens, [ref]$errors)
 Check ($errors.Count -eq 0) 'current source parses'
-$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-try { $script:fixtureSid = $identity.User.Value } finally { $identity.Dispose() }
 $required = @(
     'Resolve-NormalizedPath', 'Get-ExecutableFromCommandLine', 'Test-OwnedPath', 'Assert-OwnedPath',
     'ConvertFrom-JsonCollectionCompat', 'Get-FileSha256', 'Assert-PlainOwnedDirectoryTree',

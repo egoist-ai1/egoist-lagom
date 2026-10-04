@@ -328,6 +328,10 @@ jobs:
         run: |
           choco install nsis --no-progress --yes
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $nsisSystemDll = Join-Path ${env:ProgramFiles(x86)} 'NSIS\Plugins\x86-unicode\System.dll'
+          $nsisPlugin = Get-Item -LiteralPath $nsisSystemDll -Force -ErrorAction Stop
+          if ($nsisPlugin.PSIsContainer -or ($nsisPlugin.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Installed NSIS System.dll must be an ordinary file.' }
+          "EGOISTSHIELD_TEST_NSIS_SYSTEM_DLL=$nsisSystemDll" >> $env:GITHUB_ENV
       - name: Run tests
         env:
           SHIELD_MAKENSIS: C:\\Program Files (x86)\\NSIS\\makensis.exe
@@ -335,6 +339,15 @@ jobs:
         run: |
           npm test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preserve bounded ordinary GUI compiler diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ordinary-gui-compiler-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: ignore
+          # Fixed-schema codes/source locations only; no raw logs, commands, paths or environment.
+          path: ${{ runner.temp }}/lagom-tests/ordinary-gui-diag-*/**/compiler-diagnostics.json
       - name: Run Core fault and recovery regressions
         shell: pwsh
         run: |
