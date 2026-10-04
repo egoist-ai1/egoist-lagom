@@ -2077,7 +2077,7 @@ var ZapretManager = class {
 			"[pscustomobject]@{state=[string]$s.State;pid=[int]$s.ProcessId;birth=$birth;image=[string]$s.PathName.Trim('\"')}|ConvertTo-Json -Compress"
 		].join("; ");
 		let value;
-		try { value = JSON.parse((await this.execPowerShell(script, 8e3)).stdout.trim()); } catch { throw new Error("Не удалось подтвердить личность службы Zapret перед изоляцией DNS."); }
+		try { value = JSON.parse((await this.execPowerShell(script, 8e3)).trim()); } catch { throw new Error("Не удалось подтвердить личность службы Zapret перед изоляцией DNS."); }
 		if (!value || !["Running", "Stopped"].includes(value.state) || !Number.isInteger(value.pid) || value.pid < 0 || path.resolve(value.image ?? "").toLowerCase() !== path.resolve(wrapperPath).toLowerCase() || value.state === "Running" && (!value.pid || !Number.isFinite(Date.parse(value.birth)))) throw new Error("Личность службы Zapret перед изоляцией DNS не подтверждена.");
 		return value;
 	}
@@ -2090,7 +2090,7 @@ var ZapretManager = class {
 			const script = ["$ErrorActionPreference='Stop'", "$p=Get-CimInstance Win32_Process -Filter " + psQuote("ProcessId=" + state.pid),
 				"if (!$p -or [string]$p.ExecutablePath -ne " + psQuote(image) + ") { throw 'Owned standalone identity missing' }",
 				"[pscustomobject]@{pid=[int]$p.ProcessId;birth=$p.CreationDate.ToUniversalTime().ToString('o');image=[string]$p.ExecutablePath;commandLine=[string]$p.CommandLine}|ConvertTo-Json -Compress"].join("; ");
-			const value = JSON.parse((await this.execPowerShell(script, 8e3)).stdout.trim());
+			const value = JSON.parse((await this.execPowerShell(script, 8e3)).trim());
 			const args = splitWindowsCommandLine(value.commandLine ?? "");
 			if (value.pid !== state.pid || !Number.isFinite(Date.parse(value.birth)) || Math.abs(Date.parse(value.birth) - Date.parse(state.startedAt)) > 30e3 || path.resolve(value.image ?? "").toLowerCase() !== path.resolve(image).toLowerCase() || !args.length || path.resolve(args.shift()).toLowerCase() !== path.resolve(image).toLowerCase() || (value.commandLine ?? "").length > 30000) throw new Error("invalid");
 			return { pid: value.pid, birth: value.birth, image, arguments: args.map(argument => /[\s"]/u.test(argument) ? '"' + argument.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/g, '$1$1') + '"' : argument).join(" "), profile: state.profile, stateFingerprint: createHash("sha256").update(stateText).digest("hex") };
