@@ -75,7 +75,7 @@ test('small real body drips cannot extend the total deadline', async t => {
   });
   t.after(() => clearInterval(interval));
   const started = performance.now();
-  await assert.rejects(transport().downloadFileWithProgress(url, destination, null, {}, { ...budgets, totalTimeoutMs: 180, validateUrl }), /total deadline/);
+  await assert.rejects(transport().downloadFileWithProgress(url, destination, null, {}, { ...budgets, headerTimeoutMs: 1000, bodyIdleTimeoutMs: 1000, totalTimeoutMs: 180, validateUrl }), /total deadline/);
   assert.ok(performance.now() - started < 1000);
   await lastGood(root, destination);
 });

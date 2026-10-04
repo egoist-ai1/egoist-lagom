@@ -1,4 +1,4 @@
-param([Parameter(Mandatory = $true)][string]$WorkRoot)
+﻿param([Parameter(Mandatory = $true)][string]$WorkRoot)
 $ErrorActionPreference = 'Stop'
 if (-not [IO.Path]::IsPathFullyQualified($WorkRoot)) { throw 'Use the absolute task-owned work directory.' }
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -8,7 +8,7 @@ $sdkRoot = Join-Path $projectRoot '.tools/dotnet-10.0.401'
 $sdk = if ($env:SHIELD_DOTNET) { $env:SHIELD_DOTNET } else { Join-Path $sdkRoot 'dotnet.exe' }
 if (-not (Test-Path -LiteralPath $sdk -PathType Leaf)) { throw 'The pinned .NET SDK is missing.' }
 $frozen = Join-Path $workDirectory 'src'; [void][IO.Directory]::CreateDirectory($frozen)
-$sources = @('ProtectedExecutable.cs', 'ClientAuthorizer.cs', 'ClientIdentity.cs', 'ServiceOptions.cs', 'ServiceConfig.cs', 'TrustedPath.cs', 'GuiLaunchPolicy.cs', 'ComponentWorker.cs', 'ServiceOperationException.cs')
+$sources = @('ProtectedExecutable.cs', 'ClientAuthorizer.cs', 'ClientIdentity.cs', 'ServiceOptions.cs', 'ServiceConfig.cs', 'TrustedPath.cs', 'GuiLaunchPolicy.cs', 'GuiPrivilegePolicy.cs', 'ComponentWorker.cs', 'ServiceOperationException.cs')
 $sourceHashes = @()
 foreach ($name in $sources) {
     $original = Join-Path $projectRoot ('src/service/EgoistShield.Service/' + $name)

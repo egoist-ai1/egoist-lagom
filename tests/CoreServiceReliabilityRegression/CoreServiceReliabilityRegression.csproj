@@ -31,6 +31,7 @@
     <Compile Include="$(ServiceSourceRoot)/ClientAuthorizer.cs" Link="ClientAuthorizer.cs" />
     <Compile Include="$(ServiceSourceRoot)/ClientIdentity.cs" Link="ClientIdentity.cs" />
     <Compile Include="$(ServiceSourceRoot)/GuiLaunchPolicy.cs" Link="GuiLaunchPolicy.cs" />
+    <Compile Include="$(ServiceSourceRoot)/GuiPrivilegePolicy.cs" Link="GuiPrivilegePolicy.cs" />
     <Compile Include="$(ServiceSourceRoot)/ServiceConfig.cs" Link="ServiceConfig.cs" />
     <Compile Include="$(ServiceSourceRoot)/ServiceOptions.cs" Link="ServiceOptions.cs" />
     <Compile Include="$(ServiceSourceRoot)/ServiceOperationException.cs" Link="ServiceOperationException.cs" />
