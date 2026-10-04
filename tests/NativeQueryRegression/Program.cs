@@ -29,19 +29,22 @@ internal static class Program
         string root = Environment.GetEnvironmentVariable("LAGOM_NATIVE_QUERY_TEST_ROOT") ?? throw new ArgumentException("Isolated test root required.");
         root = Path.GetFullPath(root);
         Directory.CreateDirectory(root);
+        await VerifyOwnedDeleteLocksAsync(root);
         string self = Environment.ProcessPath!;
         string ownedExecutable = Path.Combine(Path.GetDirectoryName(self)!, "winws.exe");
         if (File.Exists(ownedExecutable)) throw new IOException("Existing fixture executable will not be replaced.");
         File.Copy(self, ownedExecutable);
-        using var child = new Process { StartInfo = new ProcessStartInfo(ownedExecutable)
+        var child = new Process { StartInfo = new ProcessStartInfo(ownedExecutable)
         {
             UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = root,
             RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true
         } };
         child.StartInfo.ArgumentList.Add("--fixture-child");
+        bool childStarted = false;
         try
         {
-            Require(child.Start(), "harmless child starts");
+            childStarted = child.Start();
+            Require(childStarted, "harmless child starts");
             string line = await child.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(8)) ?? throw new IOException("Missing fixture readiness.");
             using var ready = JsonDocument.Parse(line);
             int pid = ready.RootElement.GetProperty("processId").GetInt32();
@@ -118,16 +121,97 @@ internal static class Program
             await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
             Require(child.ExitCode == 0, "owned child exits and closes listeners");
             Require(!WindowsServiceListenerSnapshot.ReadListeners(port4, default).Any(row => row.OwningProcess == pid), "closed actual listener is removed from native table");
-            Console.WriteLine(JsonSerializer.Serialize(new { kind = "actual-harmless-native-query-regression", checks = Checks,
-                actualNativeApis = true, administrator = new System.Security.Principal.WindowsPrincipal(System.Security.Principal.WindowsIdentity.GetCurrent())
-                    .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator), scmWrites = false, dnsWrites = false, registryWrites = false,
-                serviceInstallationVerified = false, remoteConnectivityVerified = false }));
-            return 0;
         }
         finally
         {
-            if (child.Id > 0 && !child.HasExited) { child.Kill(entireProcessTree: true); await child.WaitForExitAsync(); }
-            File.Delete(ownedExecutable);
+            try
+            {
+                if (childStarted && !child.HasExited)
+                {
+                    child.Kill(entireProcessTree: true);
+                    await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                }
+            }
+            finally { child.Dispose(); }
+            await DeleteOwnedFixtureFileAsync(ownedExecutable);
+        }
+        Console.WriteLine(JsonSerializer.Serialize(new { kind = "actual-harmless-native-query-regression", checks = Checks,
+            actualNativeApis = true, administrator = new System.Security.Principal.WindowsPrincipal(System.Security.Principal.WindowsIdentity.GetCurrent())
+                .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator), scmWrites = false, dnsWrites = false, registryWrites = false,
+            serviceInstallationVerified = false, remoteConnectivityVerified = false }));
+        return 0;
+    }
+
+    private static async Task DeleteOwnedFixtureFileAsync(string path)
+    {
+        var watch = Stopwatch.StartNew();
+        int attempts = 0;
+        while (true)
+        {
+            attempts++;
+            try { File.Delete(path); return; }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                TimeSpan remaining = TimeSpan.FromSeconds(2) - watch.Elapsed;
+                if (remaining > TimeSpan.Zero)
+                    await Task.Delay(remaining < TimeSpan.FromMilliseconds(50) ? remaining : TimeSpan.FromMilliseconds(50));
+                if (watch.Elapsed < TimeSpan.FromSeconds(2)) continue;
+                // Diagnostics must not replace the original bounded cleanup failure.
+                try
+                {
+                    int? attributes = null;
+                    try { attributes = (int)File.GetAttributes(path); } catch { }
+                    Console.Error.WriteLine(JsonSerializer.Serialize(new { phase = "owned-fixture-delete-expired",
+                        exceptionType = error.GetType().Name, hResult = error.HResult, lowWin32Code = error.HResult & 0xffff,
+                        attempts, elapsedMs = watch.Elapsed.TotalMilliseconds, attributes }));
+                }
+                catch { }
+                throw;
+            }
+        }
+    }
+
+    private static async Task VerifyOwnedDeleteLocksAsync(string root)
+    {
+        for (int scenario = 0; scenario < 2; scenario++)
+        {
+            string path = Path.Combine(root, $"delete-lock-{Guid.NewGuid():N}.tmp");
+            FileStream? held = null;
+            bool created = false;
+            Task released = Task.CompletedTask;
+            try
+            {
+                held = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
+                created = true;
+                bool blocked = false;
+                try { File.Delete(path); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { blocked = true; }
+                if (!blocked) throw new InvalidOperationException("Actual Windows delete exclusion was not enforced.");
+                if (scenario == 0)
+                {
+                    FileStream ownLock = held;
+                    released = Task.Run(async () => { await Task.Delay(150); ownLock.Dispose(); });
+                    var watch = Stopwatch.StartNew();
+                    await DeleteOwnedFixtureFileAsync(path);
+                    await released;
+                    Require(!File.Exists(path), "actual delete exclusion succeeds only after delayed own lock release", watch.Elapsed.TotalMilliseconds);
+                }
+                else
+                {
+                    var watch = Stopwatch.StartNew();
+                    bool expired = false;
+                    try { await DeleteOwnedFixtureFileAsync(path); }
+                    catch (Exception error) when (error is IOException or UnauthorizedAccessException) { expired = true; }
+                    Require(expired && watch.Elapsed >= TimeSpan.FromSeconds(2) && File.Exists(path),
+                        "actual permanent own delete exclusion expires as a failure", watch.Elapsed.TotalMilliseconds);
+                }
+            }
+            finally
+            {
+                await released;
+                held?.Dispose();
+                if (created) await DeleteOwnedFixtureFileAsync(path);
+            }
         }
     }
 
