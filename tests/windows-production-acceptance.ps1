@@ -450,6 +450,7 @@ function Invoke-NativeElevatedGui {
     Assert-NativeElevatedGuiTokenProof -Token $proof.token -RunnerToken $proof.runnerToken
     if($proof.executable -ine $gui -or @($proof.arguments).Count -ne 0 -or $proof.source.commit -cne $script:SourceCommit -or $proof.artifactSourceCommit -cne $script:SourceCommit -or $proof.harnessSourceCommit -cne $script:SourceCommit){throw 'Elevated GUI launch/source identity mismatch.'}
     $child=[Diagnostics.Process]::GetProcessById([int]$proof.processId)
+    $heldGuiProcessHandle=$child.Handle
     $identity=Get-NativeProcessIdentity $child.Id
     if($identity.executable -ine $gui -or [Math]::Abs(([DateTimeOffset]::Parse($proof.startTimeUtc).UtcDateTime-$child.StartTime.ToUniversalTime()).TotalMilliseconds) -gt 20){throw 'Elevated GUI creation identity changed.'}
     $hwnd=[IntPtr]([long]$proof.mainWindowHandle)
@@ -485,9 +486,43 @@ function Invoke-NativeElevatedGui {
     if($owner.ReturnValue -ne 0 -or $owner.Sid -ne 'S-1-5-18'){throw 'Elevated GUI component operation was not executed by the LocalSystem worker.'}
     $pattern=$null
     if(-not $root.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'Elevated GUI lacks native close pattern.'}
+    $closeDiagnostics=[ordered]@{
+      schemaVersion=1;processId=$child.Id;startTimeUtc=$proof.startTimeUtc;callerProcessHandleHeld=($heldGuiProcessHandle -ne [IntPtr]::Zero)
+      powershellVersion=$PSVersionTable.PSVersion.ToString();runtimeVersion=[Environment]::Version.ToString()
+      closeRequestedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');closeReturnedAtUtc=$null;closeElapsedMilliseconds=$null
+      waitBudgetMilliseconds=30000;waitStartedAtUtc=$null;waitFinishedAtUtc=$null;waitElapsedMilliseconds=$null;waitReturned=$null;exitCodeAtWait=$null;hasExitedBeforeCleanup=$null;exitCodeBeforeCleanup=$null;processExitUtcBeforeCleanup=$null;readbackErrorType=$null;readbackHresult=$null;readbackStartedAtUtc=$null;readbackFinishedAtUtc=$null
+    }
+    $script:Receipt.elevatedGui.before=$before;$script:Receipt.elevatedGui.stopped=$stopped;$script:Receipt.elevatedGui.after=$after
+    $script:Receipt.elevatedGui.operationCompletion=$completion;$script:Receipt.elevatedGui.endpoint=$endpoint
+    $script:Receipt.elevatedGui.workerOwnerSid=$owner.Sid
+    $script:Receipt.elevatedGui.closeDiagnostics=$closeDiagnostics;Save-NativeReceipt
+    $closeWatch=[Diagnostics.Stopwatch]::StartNew()
     ([Windows.Automation.WindowPattern]$pattern).Close()
-    if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'Elevated GUI did not exit normally.'};$closed=$true
-    $script:Receipt.elevatedGui=[ordered]@{ok=$true;result='passed-elevated-gui-ipc';managementMode='administrator-required';normalUacPromptObserved=$false;launch=$proof;actualProcess=$identity;automation='native UIAutomation InvokePattern and WindowPattern';operationCompletion=$completion;before=$before;stopped=$stopped;after=$after;endpoint=$endpoint;worker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;exitCode=$child.ExitCode;cleanup=$null}
+    $closeDiagnostics.closeElapsedMilliseconds=$closeWatch.ElapsedMilliseconds
+    $closeDiagnostics.closeReturnedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    $closeDiagnostics.waitStartedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    $waitWatch=[Diagnostics.Stopwatch]::StartNew()
+    $waitReturned=$child.WaitForExit(30000)
+    $closeDiagnostics.waitElapsedMilliseconds=$waitWatch.ElapsedMilliseconds
+    $closeDiagnostics.waitFinishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    $closeDiagnostics.waitReturned=$waitReturned
+    $exitCodeAtWait=if($waitReturned){$child.ExitCode}else{$null}
+    $closeDiagnostics.exitCodeAtWait=$exitCodeAtWait
+    $closeDiagnostics.readbackStartedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    try{
+      $closeDiagnostics.hasExitedBeforeCleanup=$child.HasExited
+      if($closeDiagnostics.hasExitedBeforeCleanup){
+        $closeDiagnostics.exitCodeBeforeCleanup=$child.ExitCode
+        $closeDiagnostics.processExitUtcBeforeCleanup=$child.ExitTime.ToUniversalTime().ToString('o')
+      }
+    }catch{
+      $closeDiagnostics.readbackErrorType=$_.Exception.GetType().Name
+      $closeDiagnostics.readbackHresult=$_.Exception.HResult
+    }
+    $closeDiagnostics.readbackFinishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    Save-NativeReceipt
+    if(-not $waitReturned -or $exitCodeAtWait -ne 0){throw 'Elevated GUI did not exit normally.'};$closed=$true
+    $script:Receipt.elevatedGui=[ordered]@{ok=$true;result='passed-elevated-gui-ipc';managementMode='administrator-required';normalUacPromptObserved=$false;launch=$proof;actualProcess=$identity;automation='native UIAutomation InvokePattern and WindowPattern';operationCompletion=$completion;before=$before;stopped=$stopped;after=$after;endpoint=$endpoint;worker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;exitCode=$child.ExitCode;cleanup=$null;closeDiagnostics=$closeDiagnostics}
     Save-NativeReceipt
   }catch{$operationError=$_;$script:Receipt.elevatedGui.ok=$false;$script:Receipt.elevatedGui.result='failed';$script:Receipt.elevatedGui.error=$_.Exception.Message;Save-NativeReceipt}
   finally{

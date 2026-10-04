@@ -587,7 +587,7 @@ internal sealed class SafeKernelHandle : SafeHandleZeroOrMinusOneIsInvalid
     internal SafeKernelHandle(IntPtr value) : base(true) => SetHandle(value);
     protected override bool ReleaseHandle() => Native.CloseHandle(handle);
 }
-internal sealed record ChildObservation(uint WaitResult, int? WaitNativeError, uint? ExitCode, int? ExitCodeNativeError);
+internal sealed record ChildObservation(uint WaitResult, int? WaitNativeError, uint? ExitCode, int? ExitCodeNativeError, string ObservedAtUtc, string? ProcessStartUtc, string? ProcessExitUtc, int? ProcessTimesNativeError);
 internal sealed record CapturedStream(string Text, long ObservedBytes, bool Truncated, bool Completed, int? NativeError);
 internal sealed record OutputProof(bool CaptureAvailable, string? UnavailableReason, CapturedStream Stdout, CapturedStream Stderr);
 internal sealed class NativeChildOutput : IDisposable
@@ -687,7 +687,11 @@ internal sealed class LaunchedProcess : IDisposable
     {
         uint wait = Native.WaitForSingleObject(Process, 0); int? waitError = wait == uint.MaxValue ? Marshal.GetLastWin32Error() : null;
         bool read = Native.GetExitCodeProcess(Process, out uint code); int? exitError = read ? null : Marshal.GetLastWin32Error();
-        return new(wait, waitError, read ? code : null, exitError);
+        bool timesRead = Native.GetProcessTimes(Process, out long created, out long exited, out _, out _);
+        int? timesError = timesRead ? null : Marshal.GetLastWin32Error();
+        string? startUtc = timesRead ? DateTime.FromFileTimeUtc(created).ToString("O", System.Globalization.CultureInfo.InvariantCulture) : null;
+        string? exitUtc = timesRead && exited > 0 ? DateTime.FromFileTimeUtc(exited).ToString("O", System.Globalization.CultureInfo.InvariantCulture) : null;
+        return new(wait, waitError, read ? code : null, exitError, DateTimeOffset.UtcNow.ToString("o"), startUtc, exitUtc, timesError);
     }
     internal bool Alive => Native.WaitForSingleObject(Process, 0) == 0x102;
     internal uint ExitCode { get { if (!Native.GetExitCodeProcess(Process, out uint code)) throw Native.Error("Get child exit code"); return code; } }

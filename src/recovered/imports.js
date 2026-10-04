@@ -8,6 +8,7 @@ import { BrowserWindow, Menu, Notification, Tray, app, clipboard, dialog, ipcMai
 import { createHash, createPublicKey, randomBytes, randomUUID, verify } from "node:crypto";
 import dgram, { createSocket } from "node:dgram";
 import log from "electron-log";
+import { createGuiLifecycleTelemetry } from "./src/gui-lifecycle-telemetry.js";
 import { parse } from "yaml";
 import os, { hostname, tmpdir } from "node:os";
 import net, { Socket, createConnection, createServer, isIP } from "node:net";

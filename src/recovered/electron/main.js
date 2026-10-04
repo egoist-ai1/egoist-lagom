@@ -1,6 +1,7 @@
 //#region src/electron/main.ts
 var __filename = fileURLToPath(import.meta.url);
 var __dirname$1 = path.dirname(__filename);
+var guiLifecycleTelemetry = createGuiLifecycleTelemetry();
 var globalStateStore = null;
 var globalStartupAutoConnect = null;
 var execFileAsync = promisify(execFile);
@@ -444,6 +445,7 @@ async function performGracefulShutdown() {
 	else logger.info(`[exit] Graceful cleanup complete: ${result.completedSteps.join(", ") || "no active runtimes"}`);
 }
 app.on("before-quit", (event) => {
+	observeGuiLifecycleTelemetry("before-quit");
 	isQuitting = true;
 	if (componentUpdateInterval) {
 		clearInterval(componentUpdateInterval);
@@ -473,12 +475,16 @@ app.on("before-quit", (event) => {
 	event.preventDefault();
 	if (shutdownPromise) return;
 	shutdownPromise = performGracefulShutdown().finally(() => {
+		observeGuiLifecycleTelemetry("shutdown-finally");
 		shutdownComplete = true;
 		if (tray) {
 			tray.destroy();
 			tray = null;
 		}
-		setImmediate(() => app.quit());
+		setImmediate(() => {
+			observeGuiLifecycleTelemetry("quit-requested");
+			app.quit();
+		});
 	});
 });
 var activeSingboxReq = null;
@@ -1138,9 +1144,12 @@ async function createMainWindow() {
 	logger.info("[window] loadFile resolved successfully");
 	if (minimizedLaunch) mainWindow.hide();
 	mainWindow.on("close", (event) => {
+		observeGuiLifecycleTelemetry("window-close");
 		persistCurrentWindowState();
+		observeGuiLifecycleTelemetry("window-state-persisted");
 		const minimizeToTray = Boolean(globalStateStore?.get().settings.minimizeToTray);
 		if (!isQuitting && minimizeToTray) {
+			observeGuiLifecycleTelemetry("close-to-tray");
 			event.preventDefault();
 			applyShieldWindowMode(mainWindow, true);
 			mainWindow?.webContents?.send("switch-to-widget");
@@ -1150,6 +1159,7 @@ async function createMainWindow() {
 		isQuitting = true;
 	});
 	mainWindow.on("closed", () => {
+		observeGuiLifecycleTelemetry("window-closed");
 		if (windowStateTimer) clearTimeout(windowStateTimer);
 		mainWindow = null;
 	});
@@ -1253,7 +1263,9 @@ else {
 		}
 	});
 }
+app.on("will-quit", () => observeGuiLifecycleTelemetry("will-quit"));
 app.on("window-all-closed", () => {
+	observeGuiLifecycleTelemetry("window-all-closed");
 	if (process.platform !== "darwin") app.quit();
 });
 //#endregion
