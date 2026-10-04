@@ -37,7 +37,7 @@ function Build-OrdinaryGuiHarness {
   Assert-OrdinaryGuiPath -Path $sdk -Leaf
   $frozen=Join-Path $directory 'src';[void][IO.Directory]::CreateDirectory($frozen)
   $hashes=@()
-  foreach($name in @('ProtectedExecutable.cs','ClientAuthorizer.cs','ClientIdentity.cs','ServiceOptions.cs','ServiceConfig.cs','TrustedPath.cs','GuiLaunchPolicy.cs')){
+  foreach($name in @('ProtectedExecutable.cs','ClientAuthorizer.cs','ClientIdentity.cs','ServiceOptions.cs','ServiceConfig.cs','TrustedPath.cs','GuiLaunchPolicy.cs','GuiPrivilegePolicy.cs')){
     $original=Join-Path $projectRoot ('src\service\EgoistShield.Service\'+$name)
     $destination=Join-Path $frozen $name
     [IO.File]::WriteAllBytes($destination,[IO.File]::ReadAllBytes($original))
@@ -65,7 +65,7 @@ function Build-OrdinaryGuiHarness {
     if($buildExitCode -ne 0){
       # Export only bounded compiler codes and known source locations. Raw
       # messages, paths, commands and environment remain in the local build.txt.
-      $sourceFiles=@('ProtectedExecutable.cs','ClientAuthorizer.cs','ClientIdentity.cs','ServiceOptions.cs','ServiceConfig.cs','TrustedPath.cs','GuiLaunchPolicy.cs','windows-ordinary-gui.cs','OrdinaryGuiHarness.csproj')
+      $sourceFiles=@('ProtectedExecutable.cs','ClientAuthorizer.cs','ClientIdentity.cs','ServiceOptions.cs','ServiceConfig.cs','TrustedPath.cs','GuiLaunchPolicy.cs','GuiPrivilegePolicy.cs','windows-ordinary-gui.cs','OrdinaryGuiHarness.csproj')
       $diagnostics=[Collections.Generic.List[object]]::new()
       foreach($line in @(Get-Content -LiteralPath (Join-Path $directory 'build.txt') -Encoding UTF8 -Tail 40)){
         if($line -notmatch '(?i)\b(?<kind>error|warning)\s+(?<code>[A-Z]{2,12}[0-9]{2,6})\s*:'){continue}

@@ -30,7 +30,7 @@ test('cleanup refuses a missing, damaged or incomplete required helper before co
       const marker = path.join(fixture, 'continued.txt');
       await fs.writeFile(path.join(fixture, 'gui-login-startup.ps1'), '\uFEFF' + startup.replace(/^\uFEFF/,''));
       await fs.writeFile(script, '\uFEFF' + prefix + '\n[IO.File]::WriteAllText($env:LAGOM_IMPORT_MARKER, "continued")\n');
-      if (content !== null) await fs.writeFile(path.join(fixture, 'service-maintenance.ps1'), '\uFEFF' + content);
+      if (content !== null) await fs.writeFile(path.join(fixture, 'service-maintenance.ps1'), '\uFEFF' + content.replace(/^\uFEFF/,''));
       if (bootContent !== null) await fs.writeFile(path.join(fixture, 'maintenance-boot-recovery.ps1'), '\uFEFF' + bootContent.replace(/^\uFEFF/,''));
       let result;
       try {
