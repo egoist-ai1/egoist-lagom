@@ -697,10 +697,10 @@ internal static class SelfTest
 			Assert(await journal.ReadResponseAsync(mutationRequest.RequestId, lifetime.Token) == null, "hosted maintenance mutation rejection is not persisted");
 			File.Delete(marker);
 			await ready.WaitAsync(lifetime.Token);
-			var recoveredHelloRequest = new ServiceRequest(1, "self-test:installer:hosted-hello", "hello", JsonDefaults.ToElement(new { }));
 			JsonElement recoveredPersistence;
 			do
 			{
+				var recoveredHelloRequest = new ServiceRequest(1, "self-test:installer:hosted-hello:" + Guid.NewGuid().ToString("N"), "hello", JsonDefaults.ToElement(new { }));
 				ServiceResponse response = await HostedRequestAsync(recoveredHelloRequest);
 				Assert(response.Ok && response.RequestId == recoveredHelloRequest.RequestId, "hosted IPC remains available after maintenance marker removal");
 				recoveredPersistence = JsonDefaults.ToElement(response.Result).GetProperty("persistence");
