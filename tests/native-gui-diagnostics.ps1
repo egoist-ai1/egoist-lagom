@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param([switch]$LibraryOnly,[string]$TestDirectory='')
 
 function Get-NativeGuiProcessDiagnostics {
@@ -169,13 +169,22 @@ $launch=New-NativeGuiLaunchDiagnostics -StartInfo $info -Work $TestDirectory -La
 Assert-DiagnosticFixture ($launch.launch.emptyArguments -and $launch.environmentPolicy.forbiddenVariableCount -eq 0 -and $launch.childWindowStationObserved -eq $false) 'Empty launch or environment proof changed.'
 foreach($name in $names){Assert-DiagnosticFixture ($before[$name] -ceq [Environment]::GetEnvironmentVariable($name,'Process')) 'Diagnostic setup mutated the parent environment.'}
 [IO.File]::WriteAllText($launch.chromiumRawPath,('discarded chromium'+('x'*1100000)+' chromium tail'),[Text.UTF8Encoding]::new($false))
-$info.Arguments='-NoLogo -NoProfile -NonInteractive -Command "[Console]::Out.Write(''owned child stdout'');[Console]::Error.Write(''owned child stderr'');[Threading.Thread]::Sleep(100)"'
+$info.RedirectStandardInput=$true
+$info.Arguments='-NoLogo -NoProfile -NonInteractive -Command "[Console]::Out.Write(''owned child stdout'');[Console]::Error.Write(''owned child stderr'');if(-not [Console]::In.ReadLineAsync().Wait(8000)){exit 91}"'
 $child=[Diagnostics.Process]::new();$child.StartInfo=$info
 try{
   Assert-DiagnosticFixture ($child.Start()) 'Owned fixture child did not start.'
-  $launch.child=Get-NativeGuiProcessDiagnostics -Process $child -ExpectedImage $info.FileName
+  [void]$child.Handle
+  $identityClock=[Diagnostics.Stopwatch]::StartNew()
+  do{
+    $launch.child=Get-NativeGuiProcessDiagnostics -Process $child -ExpectedImage $info.FileName
+    if($launch.child.status -eq 'complete' -and $launch.child.imageMatchesExpected){break}
+    if($child.HasExited -or $identityClock.ElapsedMilliseconds -ge 5000){break}
+    [Threading.Thread]::Sleep(10)
+  }while($true)
   $launch.sessionMatchesParent=($launch.child.sessionId -eq $launch.parent.sessionId)
   $stdout=$child.StandardOutput.ReadToEndAsync();$stderr=$child.StandardError.ReadToEndAsync()
+  $child.StandardInput.WriteLine('release');$child.StandardInput.Close()
   Assert-DiagnosticFixture ($child.WaitForExit(10000) -and $child.ExitCode -eq 0) 'Owned fixture child did not exit zero.'
   $actual=Complete-NativeGuiDiagnostics -Stdout $stdout -Stderr $stderr -Launch $launch -Work $TestDirectory -Label 'owned-child'
   Assert-DiagnosticFixture ($launch.child.status -eq 'complete' -and $launch.child.processId -eq $child.Id -and $launch.child.birthUtc -and $launch.child.imageMatchesExpected -and $launch.sessionMatchesParent) 'Own child PID/birth/session/image proof unavailable.'

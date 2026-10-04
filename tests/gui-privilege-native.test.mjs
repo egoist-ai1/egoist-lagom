@@ -12,9 +12,11 @@ test('actual GUI token guard and captured suspended launch preserve admission an
   assert.ok(path.isAbsolute(process.env.LAGOM_TEST_TEMP||''));
   const root=path.join(process.env.LAGOM_TEST_TEMP,'gg-'+crypto.randomUUID().slice(0,8));
   await fs.mkdir(root,{recursive:false});
-  const dotnet=process.env.SHIELD_DOTNET||process.env.LAGOM_TEST_DOTNET||path.join(project,'.tools','dotnet-10.0.401','dotnet.exe');
+  const dotnet=process.env.SHIELD_DOTNET||process.env.LAGOM_TEST_DOTNET||(process.env.DOTNET_INSTALL_DIR&&path.join(process.env.DOTNET_INSTALL_DIR,'dotnet.exe'))||(process.env.DOTNET_ROOT&&path.join(process.env.DOTNET_ROOT,'dotnet.exe'))||path.join(project,'.tools','dotnet-10.0.401','dotnet.exe');
   await fs.access(dotnet);
   const environment={...process.env,NUGET_PACKAGES:path.join(path.dirname(process.env.LAGOM_TEST_TEMP),'gui-nuget'),DOTNET_ROOT:path.dirname(dotnet),DOTNET_CLI_HOME:path.join(root,'cli-home'),DOTNET_ADD_GLOBAL_TOOLS_TO_PATH:'0',DOTNET_CLI_TELEMETRY_OPTOUT:'1',DOTNET_NOLOGO:'1'};
+  const sdkProof=await exec(dotnet,['--version'],{cwd:project,windowsHide:true,timeout:10000,env:environment});
+  assert.equal(sdkProof.stdout.trim(),JSON.parse(await fs.readFile(path.join(project,'global.json'),'utf8')).sdk.version);
   const sourceOut=path.join(root,'production-bin');
   await exec(dotnet,['build',path.join(project,'src/service/EgoistShield.Service.csproj'),'--ignore-failed-sources','-m:1','/p:UseSharedCompilation=false','/p:RestoreLockedMode=true','/p:BaseIntermediateOutputPath='+path.join(root,'production-obj')+path.sep,'/p:OutputPath='+sourceOut+path.sep],{cwd:project,windowsHide:true,env:environment,timeout:90000,maxBuffer:1048576});
   await fs.copyFile(path.join(project,'tests/gui-privilege-native-fixture.cs'),path.join(root,'Program.cs'));
