@@ -150,7 +150,7 @@ test('staging uses all new runtime files and product resources without old runti
     const out = path.join(f.root, 'out/new');
     const staged = await stageElectronPayload({ runtime, out, recoveredResources: resources });
     assert.equal(await fs.readFile(path.join(out, 'LICENSE'), 'utf8'), 'fresh-runtime:LICENSE');
-    assert.ok(staged.provenance.executable.modifiedFor.includes('requireAdministrator GUI manifest'));
+    assert.ok(staged.provenance.executable.modifiedFor.includes('asInvoker Electron manifest with protected native UAC entry gate'));
     assert.equal(await fs.readFile(path.join(out, 'version'), 'utf8'), '44.5.1');
     assert.equal(await fs.readFile(path.join(out, 'resources/brand/icon.ico'), 'utf8'), 'product icon');
     for (const relative of ['electron.exe', 'libEGL.dll', 'resources/default_app.asar', 'resources/app.asar', 'resources/core-service/old.dll', 'resources/scripts/system-control/old.ps1', 'resources/elevate.exe']) assert.equal(await fs.stat(path.join(out, ...relative.split('/'))).catch(() => null), null, relative);
@@ -192,11 +192,11 @@ test('staging rejects an injected runtime file even after an earlier successful 
   } finally { await f.close(); }
 });
 
-test('production packaging pins the runtime and requests GUI administrator rights while the worker retains its caller token', async () => {
+test('production packaging pins the runtime and retains one-image Electron sandbox with protected native UAC entry while the worker retains its caller token', async () => {
   const source = await fs.readFile(path.join(root, 'scripts/package-windows.mjs'), 'utf8');
   assert.ok(source.indexOf('const electronRuntime = await verifyPinnedElectronRuntime(root)') < source.indexOf('await fs.rm(out,'));
   assert.doesNotMatch(source, /fs\.cp\(recoveredApp, out/);
-  assert.match(source, /rcedit\(guiExecutable,[^\n]*'requested-execution-level': 'requireAdministrator'/);
+  assert.match(source, /rcedit\(guiExecutable,[^\n]*'requested-execution-level': 'asInvoker'/);
   assert.match(source, /rcedit\(workerExecutable,[^\n]*'requested-execution-level': 'asInvoker'/);
   assert.match(source, /electronRuntime: packagedElectron/);
   assert.match(source, /packagedElectron\.runtimeFiles\.map/);

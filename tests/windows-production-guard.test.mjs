@@ -109,14 +109,14 @@ test('native child timeout retires its own process and retains bounded stdout, s
   }
 });
 
-test('native GUI PE contract requires administrator for GUI and retains asInvoker for SYSTEM worker', { skip: process.platform !== 'win32' }, () => {
+test('native GUI PE contract uses asInvoker for one-image Electron and retains actual High token admission', { skip: process.platform !== 'win32' }, () => {
   const shell = process.env.LAGOM_TEST_POWERSHELL || process.env.LAGOM_WINDOWS_POWERSHELL ||
     path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
   const source = path.resolve('tests/windows-production-acceptance.ps1').replaceAll("'", "''");
   const body = "$ErrorActionPreference='Stop';. '" + source + "' -LibraryOnly;" +
-    "Assert-NativeGuiExecutionLevel -Role 'gui' -Level 'requireAdministrator';" +
+    "Assert-NativeGuiExecutionLevel -Role 'gui' -Level 'asInvoker';" +
     "Assert-NativeGuiExecutionLevel -Role 'worker' -Level 'asInvoker';" +
-    "$refused=0;foreach($case in @(@{role='gui';level='asInvoker'},@{role='worker';level='requireAdministrator'},@{role='gui';level='highestAvailable'},@{role='gui';level=''})){" +
+    "$refused=0;foreach($case in @(@{role='gui';level='requireAdministrator'},@{role='worker';level='requireAdministrator'},@{role='gui';level='highestAvailable'},@{role='gui';level=''})){" +
     "try{Assert-NativeGuiExecutionLevel -Role $case.role -Level $case.level;throw 'Bad manifest accepted'}catch{if($_.Exception.Message -eq 'Bad manifest accepted'){throw};$refused++}};" +
     "@{refused=$refused;physicalMutations=0}|ConvertTo-Json -Compress";
   const child = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', body],
@@ -181,7 +181,7 @@ test('native network gate binds each elevated launch to the same operation, proc
   const commit = 'a'.repeat(40), hash = 'b'.repeat(64);
   const executable = 'C:\\Program Files\\EgoistShield\\EgoistShield.exe';
   const entries = ['Apply', 'Reset'].flatMap((operation, index) => {
-    const proof = { launchPolicy: 'elevated', elevatedGui: true, guiRequestedExecutionLevel: 'requireAdministrator',
+    const proof = { launchPolicy: 'elevated', elevatedGui: true, guiRequestedExecutionLevel: 'asInvoker',
       token, runnerToken: token, executable, arguments: [], source: { commit, version: '3.8.0', integrityManifestSha256: hash },
       artifactSourceCommit: commit, harnessSourceCommit: commit, processId: 123 + index,
       startTimeUtc: '2026-10-01T12:00:0' + index + '.0000000Z' };
@@ -203,7 +203,7 @@ test('native network gate binds each elevated launch to the same operation, proc
     "'wrong-source'{$bad.gui[0].launch.source.commit=('c'*40)}" +
     "'wrong-exe'{$bad.gui[0].launch.executable='C:\\foreign.exe'}" +
     "'extra-arg'{$bad.gui[0].launch.arguments=@('--no-sandbox')}" +
-    "'false-manifest'{$bad.gui[0].launch.guiRequestedExecutionLevel='asInvoker'}" +
+    "'false-manifest'{$bad.gui[0].launch.guiRequestedExecutionLevel='requireAdministrator'}" +
     "'false-integrity'{$bad.gui[0].launch.source.integrityManifestSha256=('c'*64)}" +
     "'cleanup-operation'{$bad.gui[1].operation='Other'}" +
     "'cleanup-pid'{$bad.gui[1].cleanup.launch.processId=999}" +

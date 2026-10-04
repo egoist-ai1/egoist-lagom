@@ -94,7 +94,7 @@ await fs.cp('resources/release', path.join(out,'resources/release'), { recursive
 const guiExecutable = path.join(out, 'EgoistShield.exe');
 const workerExecutable = path.join(out, 'EgoistShield.Worker.exe');
 await fs.copyFile(guiExecutable, workerExecutable);
-await rcedit(guiExecutable, { 'file-version': pkg.version, 'product-version': pkg.version, 'requested-execution-level': 'requireAdministrator', 'version-string': { ProductName: 'Egoist Lagom', FileDescription: 'Egoist Lagom', ProductVersion: pkg.version, FileVersion: pkg.version }, icon: path.join(out, 'resources/brand/icon.ico') });
+await rcedit(guiExecutable, { 'file-version': pkg.version, 'product-version': pkg.version, 'requested-execution-level': 'asInvoker', 'version-string': { ProductName: 'Egoist Lagom', FileDescription: 'Egoist Lagom', ProductVersion: pkg.version, FileVersion: pkg.version }, icon: path.join(out, 'resources/brand/icon.ico') });
 await rcedit(workerExecutable, { 'file-version': pkg.version, 'product-version': pkg.version, 'requested-execution-level': 'asInvoker', 'version-string': { ProductName: 'Egoist Lagom Background Host', FileDescription: 'Egoist Lagom protected component worker', ProductVersion: pkg.version, FileVersion: pkg.version } });
 await fs.mkdir(appRoot, { recursive: true });
 await fs.cp('.vite', path.join(appRoot, '.vite'), { recursive: true });

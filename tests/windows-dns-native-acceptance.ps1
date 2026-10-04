@@ -202,7 +202,7 @@ function Assert-DnsElevatedGuiProof {
   param($Proof)
   $identity=[Security.Principal.WindowsIdentity]::GetCurrent();$current=[Diagnostics.Process]::GetCurrentProcess()
   try{
-    if($Proof.launchPolicy -cne 'elevated' -or $Proof.elevatedGui -isnot [bool] -or -not $Proof.elevatedGui -or $Proof.guiRequestedExecutionLevel -cne 'requireAdministrator' -or @($Proof.arguments).Count -ne 0 -or $Proof.executable -ine (Join-Path $script:InstallRoot 'EgoistShield.exe') -or $Proof.source.commit -cne $DnsExpectedSourceCommit){throw 'Dns GUI launch is not the actual source-bound elevated empty-argv process.'}
+    if($Proof.launchPolicy -cne 'elevated' -or $Proof.elevatedGui -isnot [bool] -or -not $Proof.elevatedGui -or $Proof.guiRequestedExecutionLevel -cne 'asInvoker' -or @($Proof.arguments).Count -ne 0 -or $Proof.executable -ine (Join-Path $script:InstallRoot 'EgoistShield.exe') -or $Proof.source.commit -cne $DnsExpectedSourceCommit){throw 'Dns GUI launch is not the actual source-bound elevated empty-argv process.'}
     foreach($token in @($Proof.token,$Proof.runnerToken)){
       if($token.elevated -isnot [bool] -or -not $token.elevated -or $token.administratorsEnabled -isnot [bool] -or -not $token.administratorsEnabled -or ($token.integrityRid -isnot [int] -and $token.integrityRid -isnot [long]) -or $token.integrityRid -lt 12288 -or $token.uiAccess -isnot [bool] -or $token.uiAccess -or $token.tokenType -ne 1){throw 'Dns GUI requires a measured elevated administrator primary high token.'}
       if($token.userSid -in @('S-1-5-18','S-1-5-19','S-1-5-20') -or $token.userSid -cne $identity.User.Value -or $token.sessionId -ne $current.SessionId){throw 'Dns GUI token does not belong to the actual current Windows user/session.'}

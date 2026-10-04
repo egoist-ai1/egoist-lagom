@@ -59,6 +59,7 @@ internal sealed class ClientAuthorizer
 			if (string.Equals(text, fullPath2, StringComparison.OrdinalIgnoreCase))
 			{
 				GuiLaunchPolicy.RequireMainProcess(client);
+				GuiPrivilegePolicy.Require(client);
 				_ = _guiLease!.Value;
 				return new ClientIdentity((int)clientProcessId, text, DevelopmentOverride: false, userSid);
 			}

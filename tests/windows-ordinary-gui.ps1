@@ -171,7 +171,7 @@ function Start-OrdinaryGuiLease {
     }
     if(-not $ready -or $ready.launchPolicy -cne $LaunchPolicy){throw 'Actual GUI launch policy proof is missing.'}
     if($LaunchPolicy -eq 'elevated'){
-      if($ready.elevatedGui -ne $true -or $ready.guiRequestedExecutionLevel -cne 'requireAdministrator' -or $ready.token.elevated -ne $true -or $ready.token.administratorsEnabled -ne $true -or $ready.token.integrityRid -lt 12288 -or $ready.token.uiAccess -ne $false -or $ready.token.tokenType -ne 1 -or $ready.token.userSid -cne $ready.runnerToken.userSid -or $ready.token.sessionId -ne $ready.runnerToken.sessionId){throw 'Actual current elevated administrator GUI proof is missing.'}
+      if($ready.elevatedGui -ne $true -or $ready.guiRequestedExecutionLevel -cne 'asInvoker' -or $ready.token.elevated -ne $true -or $ready.token.administratorsEnabled -ne $true -or $ready.token.integrityRid -lt 12288 -or $ready.token.uiAccess -ne $false -or $ready.token.tokenType -ne 1 -or $ready.token.userSid -cne $ready.runnerToken.userSid -or $ready.token.sessionId -ne $ready.runnerToken.sessionId){throw 'Actual current elevated administrator GUI proof is missing.'}
     }elseif($ready.token.elevated -or $ready.token.administratorsEnabled -or $ready.token.integrityRid -ne 8192 -or $ready.token.uiAccess){throw 'Actual ordinary medium GUI token proof is missing.'}
     return [pscustomobject]@{Guardian=$guardian;Receipt=$ready;ReceiptPath=$receipt;Output=$output;Errors=$errors;Build=$build}
   }catch{

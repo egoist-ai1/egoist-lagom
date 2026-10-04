@@ -133,7 +133,11 @@ internal static class Program
 	{
 		try
 		{
-			if (Array.Exists(args, argument => argument == SystemDohMigrationPreflightCommand.Flag))
+			if (args.Length == 1 && args[0] == GuiElevationCommand.PrivilegeFlag)
+                return GuiElevationCommand.CheckPrivilegeAsync();
+            if (args.Length > 0 && args[0] == GuiElevationCommand.Flag)
+                return GuiElevationCommand.RunAsync(args);
+            if (Array.Exists(args, argument => argument == SystemDohMigrationPreflightCommand.Flag))
 				return SystemDohMigrationPreflightCommand.RunAsync(args);
 			if (args.Length == 1 && args[0] == "--verify-native-runtime")
 				return NativeRuntimeTrustCommand.RunAsync();

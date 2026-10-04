@@ -243,7 +243,7 @@ public static class LagomAcceptanceResources {
 }
 function Assert-NativeGuiExecutionLevel {
   param([ValidateSet('gui','worker')][string]$Role,[string]$Level)
-  $expected=if($Role -ceq 'gui'){'requireAdministrator'}else{'asInvoker'}
+  $expected='asInvoker'
   if($Level -cne $expected){throw ("Installed "+$Role+" PE requests an incorrect execution level; expected "+$expected+'.')}
 }
 function Assert-NativeElevatedGuiTokenProof {
@@ -286,7 +286,7 @@ function Assert-NativeGuiElevation {
   Assert-NativeOrdinaryPath -Path $link -Leaf
   $bytes=[IO.File]::ReadAllBytes($link)
   if($bytes.Length -lt 76 -or [BitConverter]::ToUInt32($bytes,0) -ne 76 -or ([BitConverter]::ToUInt32($bytes,20) -band 0x2000) -ne 0){throw 'Installed Start Menu shortcut retains RunAsUser or has an invalid shell-link header.'}
-  return [ordered]@{guiManifest='requireAdministrator';workerManifest='asInvoker';layers=$values;shortcut=$link;shortcutRunAsUser=$false;embeddedAsarIntegrityVerified=$true}
+  return [ordered]@{guiManifest='asInvoker';workerManifest='asInvoker';layers=$values;shortcut=$link;shortcutRunAsUser=$false;embeddedAsarIntegrityVerified=$true}
 }
 function Set-NativeOwnedLegacyLayer {
   $gui=Join-Path $script:InstallRoot 'EgoistShield.exe'
@@ -446,7 +446,7 @@ function Invoke-NativeElevatedGui {
     $lease=Start-ElevatedGuiLease -CanonicalInstalledGuiPath $gui -IntegrityManifestPath $script:ManifestPath -ExpectedSourceCommit $script:SourceCommit -WorkRoot $script:Work -EvidenceDirectory $elevatedEvidence
     $proof=$lease.Receipt
     $script:Receipt.elevatedGui.launch=$proof
-    if($proof.launchPolicy -cne 'elevated' -or $proof.elevatedGui -ne $true -or $proof.guiRequestedExecutionLevel -cne 'requireAdministrator'){throw 'Elevated GUI lease did not prove the explicit current-token launch policy.'}
+    if($proof.launchPolicy -cne 'elevated' -or $proof.elevatedGui -ne $true -or $proof.guiRequestedExecutionLevel -cne 'asInvoker'){throw 'Elevated GUI lease did not prove the explicit current-token launch policy.'}
     Assert-NativeElevatedGuiTokenProof -Token $proof.token -RunnerToken $proof.runnerToken
     if($proof.executable -ine $gui -or @($proof.arguments).Count -ne 0 -or $proof.source.commit -cne $script:SourceCommit -or $proof.artifactSourceCommit -cne $script:SourceCommit -or $proof.harnessSourceCommit -cne $script:SourceCommit){throw 'Elevated GUI launch/source identity mismatch.'}
     $child=[Diagnostics.Process]::GetProcessById([int]$proof.processId)
@@ -842,7 +842,7 @@ function Assert-NativeNetworkGuiReceipts {
   if($launches.Count -ne 2 -or $cleanups.Count -ne 2 -or @($launches.operation | Select-Object -Unique).Count -ne 2){throw 'Network GUI requires two distinct operations and exactly two paired normal-close receipts.'}
   foreach($entry in $launches){
     $proof=$entry.launch
-    if($proof.launchPolicy -cne 'elevated' -or $proof.elevatedGui -ne $true -or $proof.guiRequestedExecutionLevel -cne 'requireAdministrator'){throw 'Network GUI launch does not prove the administrator manifest and current-token policy.'}
+    if($proof.launchPolicy -cne 'elevated' -or $proof.elevatedGui -ne $true -or $proof.guiRequestedExecutionLevel -cne 'asInvoker'){throw 'Network GUI launch does not prove the protected UAC entry and current-token policy.'}
     Assert-NativeElevatedGuiTokenProof -Token $proof.token -RunnerToken $proof.runnerToken
     if($proof.executable -ine $InstalledGuiPath -or @($proof.arguments).Count -ne 0 -or $proof.source.commit -cne $SourceCommit -or $proof.artifactSourceCommit -cne $SourceCommit -or $proof.harnessSourceCommit -cne $SourceCommit -or $proof.source.version -cne $Receipt.candidateVersion -or [string]$proof.source.integrityManifestSha256 -cnotmatch '^[a-fA-F0-9]{64}$' -or $proof.source.integrityManifestSha256 -ine $ExpectedIntegritySha256){throw 'Network GUI launch identity differs from the exact installed signed source/payload.'}
     if(($proof.processId -isnot [int] -and $proof.processId -isnot [long]) -or $proof.processId -le 0 -or [string]::IsNullOrWhiteSpace([string]$proof.startTimeUtc)){throw 'Network GUI launched process birth identity is absent.'}
@@ -939,7 +939,7 @@ function Invoke-NativeAcceptance {
     schemaVersion=1;kind='actual-native-hosted-windows-acceptance';sourceCommit=$script:SourceCommit;candidateVersion=$script:Version
     installer=[ordered]@{path=$script:Installer;sha256=$script:InstallerHash;bytes=[long]$manifest.installer.bytes}
     host=[ordered]@{computerName=$env:COMPUTERNAME;os=[Environment]::OSVersion.VersionString;powershell=$PSVersionTable.PSVersion.ToString();administrator=$administrator;runnerEnvironment=$env:RUNNER_ENVIRONMENT;githubRunId=$env:GITHUB_RUN_ID;githubRunAttempt=$env:GITHUB_RUN_ATTEMPT}
-    guiLaunchContract=[ordered]@{managementMode='administrator-required';guiManifest='requireAdministrator';workerManifest='asInvoker';authorization='normal Windows UAC; explicit administrator GUI product contract';restrictedTokenAcceptanceRequested=$false;normalUacPromptObserved=$false};startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');result='running';cleanStartVerified=$true;mutations=@();checks=@();gui=@();networkReadbacks=@();privateStateReadbacks=@();beforeNetwork=(Get-NativeNetworkFingerprint);releaseReady=$false
+    guiLaunchContract=[ordered]@{managementMode='administrator-required';guiManifest='asInvoker';workerManifest='asInvoker';authorization='protected native Windows UAC entry; actual High administrator Core token contract';restrictedTokenAcceptanceRequested=$false;normalUacPromptObserved=$false};startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');result='running';cleanStartVerified=$true;mutations=@();checks=@();gui=@();networkReadbacks=@();privateStateReadbacks=@();beforeNetwork=(Get-NativeNetworkFingerprint);releaseReady=$false
     releaseGates=@(
       [ordered]@{name='Reboot/interrupted installation SYSTEM recovery';status='not-tested';reason='A live hosted runner cannot reboot within this job. Actual Task registration/principal/action/removal are exercised.'},
       [ordered]@{name='System DNS from elevated GUI, persistence and restoration';status='not-tested';reason='Separate actual installed DNS gate must pass.'},

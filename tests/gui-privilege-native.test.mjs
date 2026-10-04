@@ -1,0 +1,38 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+const exec=promisify(execFile);
+const project=path.resolve(import.meta.dirname,'..');
+
+test('actual GUI token guard and captured suspended launch preserve admission and retirement', {skip:process.platform!=='win32',timeout:180000},async()=>{
+  assert.ok(path.isAbsolute(process.env.LAGOM_TEST_TEMP||''));
+  const root=path.join(process.env.LAGOM_TEST_TEMP,'gg-'+crypto.randomUUID().slice(0,8));
+  await fs.mkdir(root,{recursive:false});
+  const dotnet=process.env.SHIELD_DOTNET||process.env.LAGOM_TEST_DOTNET||path.join(project,'.tools','dotnet-10.0.401','dotnet.exe');
+  await fs.access(dotnet);
+  const environment={...process.env,NUGET_PACKAGES:path.join(path.dirname(process.env.LAGOM_TEST_TEMP),'gui-nuget'),DOTNET_ROOT:path.dirname(dotnet),DOTNET_CLI_HOME:path.join(root,'cli-home'),DOTNET_ADD_GLOBAL_TOOLS_TO_PATH:'0',DOTNET_CLI_TELEMETRY_OPTOUT:'1',DOTNET_NOLOGO:'1'};
+  const sourceOut=path.join(root,'production-bin');
+  await exec(dotnet,['build',path.join(project,'src/service/EgoistShield.Service.csproj'),'--ignore-failed-sources','-m:1','/p:UseSharedCompilation=false','/p:RestoreLockedMode=true','/p:BaseIntermediateOutputPath='+path.join(root,'production-obj')+path.sep,'/p:OutputPath='+sourceOut+path.sep],{cwd:project,windowsHide:true,env:environment,timeout:90000,maxBuffer:1048576});
+  await fs.copyFile(path.join(project,'tests/gui-privilege-native-fixture.cs'),path.join(root,'Program.cs'));
+  await fs.writeFile(path.join(root,'GateFixture.csproj'),'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0-windows</TargetFramework><RuntimeIdentifier>win-x64</RuntimeIdentifier><RuntimeFrameworkVersion>10.0.12</RuntimeFrameworkVersion><Nullable>enable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup><ItemGroup><Compile Include="Program.cs" /></ItemGroup></Project>');
+  const published=path.join(root,'published');
+  await exec(dotnet,['publish',path.join(root,'GateFixture.csproj'),'--self-contained','true','-o',published,'-m:1','/p:UseSharedCompilation=false'],{cwd:project,windowsHide:true,env:environment,timeout:90000,maxBuffer:1048576});
+  const execution=await exec(path.join(published,'GateFixture.exe'),[path.join(sourceOut,'EgoistShield.Service.dll')],{cwd:root,windowsHide:true,env:environment,timeout:15000,maxBuffer:16384});
+  assert.equal(execution.stderr.trim(),'');
+  const proof=JSON.parse(execution.stdout);
+  assert.equal(proof.administrator,proof.principal);
+  assert.equal(proof.admitted,proof.elevated&&proof.administrator&&!proof.restricted&&proof.integrity>=12288);
+  assert.equal(proof.requireRejected,!proof.admitted);
+  assert.equal(proof.launchRejected,!proof.admitted);
+  assert.equal(proof.executed,proof.admitted);
+  if(proof.admitted)assert.equal(proof.ownedChildHigh,true);
+  assert.equal(proof.expiredRejected,true);
+  for(const field of ['unrelatedProcessKills','networkMutations','scmMutations'])assert.equal(proof[field],0);
+  const sourceHashes={};
+  for(const name of ['GuiPrivilegePolicy.cs','GuiElevationCommand.cs','ClientAuthorizer.cs','Program.cs'])sourceHashes[name]=crypto.createHash('sha256').update(await fs.readFile(path.join(project,'src/service/EgoistShield.Service',name))).digest('hex');
+  await fs.writeFile(path.join(root,'receipt.json'),JSON.stringify({schemaVersion:1,proof,sourceHashes},null,2)+'\n');
+});

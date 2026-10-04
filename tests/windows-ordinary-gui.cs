@@ -236,9 +236,9 @@ internal static class Program
             using var stream = new MemoryStream(bytes);
             using var xml = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = 131072 });
             XElement[] levels = XDocument.Load(xml).Descendants().Where(node => node.Name.LocalName == "requestedExecutionLevel").ToArray();
-            if (levels.Length != 1 || (string?)levels[0].Attribute("level") != "requireAdministrator" || (string?)levels[0].Attribute("uiAccess") is not (null or "false"))
-                throw new UnauthorizedAccessException("Authenticated elevated GUI must embed requireAdministrator with uiAccess=false.");
-            return "requireAdministrator";
+            if (levels.Length != 1 || (string?)levels[0].Attribute("level") != "asInvoker" || (string?)levels[0].Attribute("uiAccess") is not (null or "false"))
+                throw new UnauthorizedAccessException("Authenticated elevated GUI must embed asInvoker with uiAccess=false; native entry and actual token enforce administrator admission.");
+            return "asInvoker";
         }
         finally { Native.FreeLibrary(module); }
     }

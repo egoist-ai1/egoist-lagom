@@ -129,14 +129,14 @@ test('Dns elevated GUI receipt guard rejects medium/foreign/malformed launch pro
     try{$sid=$identity.User.Value;$session=$process.SessionId}finally{$identity.Dispose();$process.Dispose()};
     $script:InstallRoot=Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'EgoistShield';$DnsExpectedSourceCommit='a'*40;
     $token=@{elevated=$true;administratorsEnabled=$true;integrityRid=12288;uiAccess=$false;tokenType=1;userSid=$sid;sessionId=$session};
-    $template=@{launchPolicy='elevated';elevatedGui=$true;guiRequestedExecutionLevel='requireAdministrator';arguments=@();executable=(Join-Path $script:InstallRoot 'EgoistShield.exe');source=@{commit=$DnsExpectedSourceCommit};token=$token;runnerToken=$token}|ConvertTo-Json -Depth 6;
+    $template=@{launchPolicy='elevated';elevatedGui=$true;guiRequestedExecutionLevel='asInvoker';arguments=@();executable=(Join-Path $script:InstallRoot 'EgoistShield.exe');source=@{commit=$DnsExpectedSourceCommit};token=$token;runnerToken=$token}|ConvertTo-Json -Depth 6;
     $valid=$template|ConvertFrom-Json;Assert-DnsElevatedGuiProof $valid;
     $mutations=@(
       {$args[0].token.integrityRid=8192},{$args[0].token.elevated=$false},{$args[0].token.administratorsEnabled=$false},
       {$args[0].token.uiAccess=$true},{$args[0].token.tokenType=2},{$args[0].token.userSid=$sid+'-foreign'},{$args[0].token.sessionId=$session+1},
       {$args[0].runnerToken.userSid=$sid+'-foreign'},{$args[0].runnerToken.sessionId=$session+1},{$args[0].runnerToken.integrityRid=8192},
       {$args[0].runnerToken.elevated=$false},{$args[0].runnerToken.administratorsEnabled=$false},{$args[0].runnerToken.tokenType=2},
-      {$args[0].guiRequestedExecutionLevel='asInvoker'},{$args[0].launchPolicy='ordinary'},{$args[0].elevatedGui=$false},{$args[0].elevatedGui='true'},{$args[0].arguments=@('--override')},
+      {$args[0].guiRequestedExecutionLevel='requireAdministrator'},{$args[0].launchPolicy='ordinary'},{$args[0].elevatedGui=$false},{$args[0].elevatedGui='true'},{$args[0].arguments=@('--override')},
       {$args[0].executable+='-foreign'},{$args[0].source.commit='b'*40},{$args[0].token.elevated='true'},{$args[0].token.integrityRid='12288'},
       {$args[0].PSObject.Properties.Remove('launchPolicy')}
     );

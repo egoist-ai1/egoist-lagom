@@ -125,6 +125,7 @@ namespace EgoistShield.Installer
         private bool _launchedAfterInstall;
         private Button _closeButton;
         private Button _finishButton;
+        private TextBlock _launchFeedback;
 
         [System.Runtime.InteropServices.DllImport("gdi32.dll", SetLastError = true)]
         private static extern int AddFontResourceEx(string lpszFilename, uint fl, IntPtr pdv);
@@ -680,6 +681,8 @@ namespace EgoistShield.Installer
             btnFinish.Height = 40;
             btnFinish.Click += (s, e) => FinishAndLaunch();
             centerStack.Children.Add(btnFinish);
+            _launchFeedback = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White, FontSize = 11, Width = 300, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 10, 0, 0) };
+            centerStack.Children.Add(_launchFeedback);
 
             Grid.SetRow(centerStack, 1);
             _completeView.Children.Add(centerStack);
@@ -876,43 +879,45 @@ namespace EgoistShield.Installer
             }
             catch { }
 
-            if (!_launchedAfterInstall) LaunchInstalledDesktop();
+            if (!_launchedAfterInstall && !LaunchInstalledDesktop()) return;
 
             Close();
         }
 
-        private void LaunchInstalledDesktop()
+        private bool LaunchInstalledDesktop()
         {
-            if (_launchedAfterInstall || string.IsNullOrEmpty(_chosenDir)) return;
+            if (_launchedAfterInstall) return true;
+            if (string.IsNullOrEmpty(_chosenDir)) return false;
             string exePath = System.IO.Path.Combine(_chosenDir, "EgoistShield.exe");
-            if (File.Exists(exePath))
+            try
             {
-                try
+                if (!File.Exists(exePath)) throw new FileNotFoundException();
+                using (Process started = Process.Start(new ProcessStartInfo
                 {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = exePath,
-                        UseShellExecute = true,
-                        Verb = "runas"
-                    });
-                    _launchedAfterInstall = true;
-                    if (_finishButton != null) _finishButton.Content = "Закрыть";
-                }
-                catch
+                    FileName = exePath,
+                    UseShellExecute = true,
+                    Verb = "runas",
+                    WorkingDirectory = _chosenDir
+                }))
                 {
-                    try
-                    {
-                        Process.Start(new ProcessStartInfo
-                        {
-                            FileName = exePath,
-                            UseShellExecute = true
-                        });
-                        _launchedAfterInstall = true;
-                        if (_finishButton != null) _finishButton.Content = "Закрыть";
-                    }
-                    catch { }
+                    if (started == null) throw new InvalidOperationException();
                 }
+                _launchedAfterInstall = true;
+                if (_launchFeedback != null) _launchFeedback.Text = "Открываю приложение…";
+                if (_finishButton != null) _finishButton.Content = "Закрыть";
+                return true;
             }
+            catch (System.ComponentModel.Win32Exception error)
+            {
+                if (_launchFeedback != null) _launchFeedback.Text = error.NativeErrorCode == 1223
+                    ? "Запуск отменён. Чтобы открыть приложение, нажмите кнопку снова и подтвердите UAC."
+                    : "Не удалось запустить приложение. Повторите запуск через кнопку.";
+            }
+            catch
+            {
+                if (_launchFeedback != null) _launchFeedback.Text = "Не удалось запустить приложение. Повторите запуск через кнопку.";
+            }
+            return false;
         }
 
         private void CloseInstaller()

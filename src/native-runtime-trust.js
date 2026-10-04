@@ -122,7 +122,7 @@ async function probeWindows(script, request = {}) {
     const value = await new Promise((resolve, reject) => {
       let output = '';
       const timer = setTimeout(() => { cleanup(); reject(new Error('Windows trust probe exceeded its 30 second budget.')); }, 30000);
-      const cleanup = () => { clearTimeout(timer); child.stdout.off('data', onData); child.off('error', onError); child.off('exit', onExit); };
+      const cleanup = () => { clearTimeout(timer); child.stdout.off('data', onData); child.off('error', onError); child.off('close', onExit); };
       const onError = error => { cleanup(); reject(error); };
       const onExit = () => { cleanup(); reject(new Error('Windows trust probe stopped without a verified result.')); };
       const onData = chunk => {
@@ -133,7 +133,7 @@ async function probeWindows(script, request = {}) {
         try { const value = JSON.parse(output.slice(0, output.indexOf('\n'))); if (value.ok !== true) throw new Error(value.error || 'Windows trust probe rejected this operation.'); resolve(value); }
         catch (error) { reject(error); }
       };
-      child.stdout.on('data', onData); child.once('error', onError); child.once('exit', onExit);
+      child.stdout.on('data', onData); child.once('error', onError); child.once('close', onExit);
     });
     child.stdout.resume();
     return { value, release, child, systemDirectory };
@@ -148,6 +148,71 @@ export async function checkNativeExecutionPrivilege() {
   } finally { probe.release(); }
 }
 
+export async function checkProtectedGuiPrivilege(resourcesPath) {
+  const resources = path.resolve(resourcesPath);
+  const proof = await probeWindows(protectedVerifierProbe, { resourcesPath: resources });
+  try {
+    const expected = path.join(resources, 'core-service', 'win-x64', 'EgoistShield.Service.exe');
+    if (path.resolve(proof.value.helperPath).toLowerCase() !== expected.toLowerCase()) throw new Error('GUI privilege helper identity mismatch.');
+    const child = spawn(expected, ['--gui-startup-privilege'], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], cwd: path.dirname(expected), env: verifierEnvironment() });
+    return await new Promise((resolve, reject) => {
+      let output = '', expired = false;
+      const timer = setTimeout(() => { expired = true; child.kill(); reject(new Error('GUI token inspection exceeded its budget.')); }, 30000);
+      child.stdout.on('data', bytes => {
+        if (expired) return;
+        if (Buffer.byteLength(output) + bytes.length > 16384) { expired = true; clearTimeout(timer); child.kill(); reject(new Error('GUI token result exceeded its limit.')); return; }
+        output += bytes.toString('utf8');
+      });
+      child.stderr.on('data', () => {});
+      child.once('error', error => { clearTimeout(timer); reject(error); });
+      child.once('close', code => {
+        clearTimeout(timer);
+        if (expired) return;
+        try {
+          const value = JSON.parse(output);
+          if (code !== 0 || value.ok !== true || typeof value.admitted !== 'boolean' || typeof value.canRequestElevation !== 'boolean') throw new Error('GUI token could not be verified.');
+          resolve({ admitted: value.admitted, canRequestElevation: value.canRequestElevation });
+        } catch (error) { reject(error); }
+      });
+    });
+  } finally { proof.release(); }
+}
+export async function requestProtectedGuiElevation(resourcesPath, arguments_) {
+  const allowed = new Set(['--background', '--minimized']);
+  if (!Array.isArray(arguments_) || arguments_.length > 2 || new Set(arguments_).size !== arguments_.length || arguments_.some(value => !allowed.has(value)))
+    throw new Error('Unsupported GUI elevation arguments.');
+  const resources = path.resolve(resourcesPath);
+  const proof = await probeWindows(protectedVerifierProbe, { resourcesPath: resources });
+  try {
+    const expected = path.join(resources, 'core-service', 'win-x64', 'EgoistShield.Service.exe');
+    if (path.resolve(proof.value.helperPath).toLowerCase() !== expected.toLowerCase()) throw new Error('GUI launcher identity mismatch.');
+    const child = spawn(expected, ['--launch-elevated-gui', ...arguments_], {
+      windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], cwd: path.dirname(expected), env: verifierEnvironment()
+    });
+    const result = await new Promise((resolve, reject) => {
+      let output = '', expired = false;
+      const timer = setTimeout(() => { expired = true; child.kill(); reject(new Error('GUI elevation exceeded its startup budget.')); }, 120000);
+      child.stdout.on('data', bytes => {
+        if (expired) return;
+        if (Buffer.byteLength(output) + bytes.length > 16384) { expired = true; clearTimeout(timer); child.kill(); reject(new Error('GUI elevation result exceeded its limit.')); return; }
+        output += bytes.toString('utf8');
+      });
+      child.stderr.on('data', () => {});
+      child.once('error', error => { clearTimeout(timer); reject(error); });
+      child.once('close', code => {
+        clearTimeout(timer);
+        if (expired) return;
+        try {
+          const value = JSON.parse(output);
+          if (code === 0 && value.ok === true && ['started', 'elevated-launcher-completed'].includes(value.phase)) resolve({ ok: true, cancelled: false });
+          else if (code === 2 && value.ok === false && value.cancelled === true && value.code === 'UAC_CANCELLED') resolve({ ok: false, cancelled: true });
+          else reject(new Error('Protected GUI launcher rejected startup.'));
+        } catch (error) { reject(error); }
+      });
+    });
+    return result;
+  } finally { proof.release(); }
+}
 async function ordinaryFile(file, { allowSystemHardLinks = false } = {}) {
   const absolute = path.resolve(file);
   const root = path.parse(absolute).root;
