@@ -63,7 +63,7 @@ export async function prepare(options){
   return {schemaVersion:1,fixture:fixturePath,fixtureSha256:await hash(fixturePath),runnerSha256:fixture.runnerSha,applicationTargetExecutions:0};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  try{const options={};for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i];if(!/^--(project|runtime-receipt|work|python|library|runner)$/.test(key)||!process.argv[i+1]||options[key.slice(2)])throw Error('Invalid arguments');options[key.slice(2)]=process.argv[i+1];}for(const k of ['project','runtime-receipt','work','python','library'])if(!options[k])throw Error('Missing --'+k);console.log(JSON.stringify(await prepare(options)));}
+  try{const options={};for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i];if(!/^--(project|runtime-receipt|work|python|library|runner)$/.test(key)||!process.argv[i+1]||options[key.slice(2)])throw Error('Invalid argument pair; argvIndex='+i+'; argc='+process.argv.length+'; knownKey='+/^--(project|runtime-receipt|work|python|library|runner)$/.test(key)+'; hasValue='+Boolean(process.argv[i+1]));options[key.slice(2)]=process.argv[i+1];}for(const k of ['project','runtime-receipt','work','python','library'])if(!options[k])throw Error('Missing --'+k);console.log(JSON.stringify(await prepare(options)));}
   catch(error){console.error(JSON.stringify({schemaVersion:1,preparationFailed:true,errorClass:error.constructor.name,message:error.message}));process.exitCode=1;}
 }
 

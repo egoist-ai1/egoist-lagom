@@ -291,7 +291,10 @@ jobs:
           $probeWork = Join-Path $env:RUNNER_TEMP 'lagom-sandbox-diagnostic'
           $library = Join-Path $env:GITHUB_WORKSPACE 'tests\sandbox-image-launch-probe.ps1'
           $runner = Join-Path $env:GITHUB_WORKSPACE 'tests\run-electron-manifest-fixture.ps1'
-          $python = (Get-Command python -CommandType Application -ErrorAction Stop).Source
+          $pythonCommands = @(Get-Command python -CommandType Application -ErrorAction Stop)
+          $python = [string]$pythonCommands[0].Source
+          if (-not [IO.Path]::IsPathRooted($python) -or -not [IO.File]::Exists($python)) { throw 'Selected Python application is not an existing absolute file.' }
+          [ordered]@{pythonApplicationMatches=$pythonCommands.Count;selectedPythonFileExists=$true} | ConvertTo-Json -Compress
           $preparedText = & node --max-old-space-size=2048 tests/prepare-electron-manifest-fixture.mjs --project $env:GITHUB_WORKSPACE --runtime-receipt (Join-Path $probeWork 'runtime-input.json') --work $probeWork --python $python --library $library --runner $runner
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $prepared = ($preparedText -join "`n") | ConvertFrom-Json
