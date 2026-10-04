@@ -121,7 +121,7 @@ function Error-Metadata($ErrorRecord) {
  $ex=$ErrorRecord.Exception
  while ($ex.InnerException) { $ex=$ex.InnerException }
  $code=if ($ex -is [ComponentModel.Win32Exception]) {$ex.NativeErrorCode} else {$null}
- return @{errorClass=$ex.GetType().Name;win32Error=$code}
+ return @{errorClass=$ex.GetType().Name;win32Error=$code;sourceLine=if($ErrorRecord.InvocationInfo){$ErrorRecord.InvocationInfo.ScriptLineNumber}else{$null}}
 }
 function Read-Identity([IntPtr]$Handle,[string]$Root,[string]$ExpectedImage,[string]$AllowedAuxiliaryImage=$null) {
  $id=[LagomEngineJob]::Identity($Handle)
@@ -186,11 +186,13 @@ if (-not $f.prepared -or -not $f.pairComparison.nonManifestResourcesEqual -or -n
 $callerToken=[LagomEngineJob]::CurrentToken()
 try {$caller=[LagomSandboxImageProbe]::TokenMetadata($callerToken)} finally {[void][LagomEngineJob]::CloseHandle($callerToken)}
 if (-not $caller['elevated'] -or $caller['integrityRid'] -lt 12288 -or $caller['administrativeEnabledSidCount'] -lt 1) { throw 'Actual elevated high administrator token required' }
-$cases=@();$holds=@();$supervisorFatal=$null
+$cases=@();$holds=@();$supervisorFatal=$null;$engineSupervisorStage='held-inputs'
 try {
  foreach ($e in $f.images) {$holds+=,(Open-SandboxProbeInput (Join-Path $f.root $e.name) $e.sha256)}
- $engineCases=@(foreach ($image in $f.images) {@{name=$image.level;image=$image;child=$null}})
+ $engineSupervisorStage='case-selection'
+ $engineCases=@(foreach ($engineImageEntry in $f.images) {@{name=$engineImageEntry.level;image=$engineImageEntry;child=$null}})
  $engineCases+=@{name='requireAdministrator-routed';image=$f.images[0];child=$f.images[1]}
+ $engineSupervisorStage='case-execution'
  foreach ($selection in $engineCases) {
   $e=$selection.image
   $caseRoot=Join-Path $Work ('engine-case-'+$selection.name+'-'+[Guid]::NewGuid().ToString('N'))
@@ -306,10 +308,11 @@ try {
    if (-not $result.cleanup.jobEmpty -or -not $result.cleanup.handlesClosed -or ($result.created -and -not $result.cleanup.parentRetired)) {throw 'Owned fixture cleanup incomplete'}
   }
  }
+ $engineSupervisorStage='final-readback'
  Assert-Fixture $f
  foreach ($i in 0..1) {if ((Get-SandboxProbeHash $holds[$i]) -cne $f.images[$i].sha256) {throw 'Pinned target changed'}}
 } catch {$supervisorFatal=Error-Metadata $_} finally {foreach ($hold in $holds) {$hold.Dispose()}}
-$report=[ordered]@{schemaVersion=1;diagnosticComplete=$cases.Count -eq 3 -and $null -eq $supervisorFatal;allCasesPassed=$cases.Count -eq 3 -and $null -eq $supervisorFatal -and @($cases|Where-Object {-not $_.casePassed}).Count -eq 0;supervisorFatal=$supervisorFatal;sourceVersion=$f.version;sourceImageSha256=$f.sourceImageSha;fixtureReceiptSha256=(Hash $Fixture);librarySha256=$libraryHash;runnerSha256=(Hash $PSCommandPath);callerToken=$caller;pairComparison=$f.pairComparison;cases=$cases;limits=@('Real execution is hosted CI only; no local GUI was executed during preparation.','This fixture tests the engine and manifest boundary, not product IPC/services/installer.','Parent station and child station are not measured.','Owned job active-process cap16; engine25s and cleanup5s per phase; OS native calls are synchronous.','Raw log producer may overshoot1MiB between100ms polls; private exported tail is at most1MiB.','Polling can miss short-lived children; absent owned renderer/GPU readback makes casePassed false.')}
+$report=[ordered]@{schemaVersion=1;diagnosticComplete=$cases.Count -eq 3 -and $null -eq $supervisorFatal;allCasesPassed=$cases.Count -eq 3 -and $null -eq $supervisorFatal -and @($cases|Where-Object {-not $_.casePassed}).Count -eq 0;supervisorFatal=$supervisorFatal;supervisorStage=$engineSupervisorStage;sourceVersion=$f.version;sourceImageSha256=$f.sourceImageSha;fixtureReceiptSha256=(Hash $Fixture);librarySha256=$libraryHash;runnerSha256=(Hash $PSCommandPath);callerToken=$caller;pairComparison=$f.pairComparison;cases=$cases;limits=@('Real execution is hosted CI only; no local GUI was executed during preparation.','This fixture tests the engine and manifest boundary, not product IPC/services/installer.','Parent station and child station are not measured.','Owned job active-process cap16; engine25s and cleanup5s per phase; OS native calls are synchronous.','Raw log producer may overshoot1MiB between100ms polls; private exported tail is at most1MiB.','Polling can miss short-lived children; absent owned renderer/GPU readback makes casePassed false.')}
 $reportPath=Join-Path $Work 'electron-manifest-engine.json'
 Write-OwnJson $reportPath $report $Work
 [ordered]@{schemaVersion=1;report=$reportPath;reportSha256=(Hash $reportPath);diagnosticComplete=$report.diagnosticComplete;allCasesPassed=$report.allCasesPassed}|ConvertTo-Json -Compress
