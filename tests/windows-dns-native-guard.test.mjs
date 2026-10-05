@@ -53,6 +53,22 @@ test('TCP443 without TLS, one direction, unrelated provider, or unrelated time c
     capture([packet(true, undefined, 443, [8, 8, 8, 8]), packet(false, undefined, 443, [8, 8, 8, 8])]),
     capture([packet(true), packet(false)], { stamp: Date.parse(startedAtUtc) - 5000 })]) assert.equal(analyzeCapture(bytes, options).ok, false);
 });
+test('duplicated outgoing TLS packets cannot imply a missing incoming response', () => {
+  const outgoingOnly = capture(Array.from({ length: 6 }, () => packet(true)));
+  const proof = analyzeCapture(outgoingOnly, options);
+  assert.equal(proof.ok, false);
+  assert.equal(proof.outgoingProviderPackets, 6);
+  assert.equal(proof.incomingProviderPackets, 0);
+  assert.equal(proof.outgoingTlsPackets, 6);
+  assert.equal(proof.incomingTlsPackets, 0);
+  assert.deepEqual(proof.bidirectional, []);
+  assert.match(proof.claim, /unknown or failed/);
+  const observedBoth = analyzeCapture(capture([packet(true), packet(true), packet(false)]), options);
+  assert.equal(observedBoth.ok, true);
+  assert.equal(observedBoth.outgoingTlsPackets, 2);
+  assert.equal(observedBoth.incomingTlsPackets, 1);
+});
+
 test('a matching plaintext TCP DNS probe makes TLS evidence fail', () => {
   const question = createProbeQuery(options.names[0], 456); const length = Buffer.alloc(2); length.writeUInt16BE(question.length);
   const proof = analyzeCapture(capture([packet(true), packet(false), packet(true, Buffer.concat([length, question]), 53)]), options);

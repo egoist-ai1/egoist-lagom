@@ -484,7 +484,7 @@ function Invoke-DnsTransportProbe {
   $capture=Join-Path $script:DnsWork ($Phase+'.etl');$pcap=Join-Path $script:DnsWork ($Phase+'.pcapng');$started=$false
   try{
     Add-NativeMutation 'owned-bounded-provider-packet-capture' $capture 'Only the approved provider IPs on TCP/UDP53 and443, 256 bytes per packet, one MiB ETL; no runner control/token traffic.'
-    [void](Invoke-NativeBounded $script:DnsPktmon @('start','--capture','--comp','nics','--pkt-size','256','--file-size','1','--log-mode','circular','--file-name',$capture) ('pktmon-'+$Phase+'-start') 15);$started=$true
+    [void](Invoke-NativeBounded $script:DnsPktmon @('start','--capture','--comp','all','--pkt-size','256','--file-size','1','--log-mode','circular','--file-name',$capture) ('pktmon-'+$Phase+'-start') 15);$started=$true
     $label=[Guid]::NewGuid().ToString('N').Substring(0,20)
     $result=Invoke-NativeBounded $script:DnsPowerShell @('-NoLogo','-NoProfile','-NonInteractive','-File',(Join-Path $script:DnsTestsRoot 'windows-dns-native-acceptance.ps1'),'-Mode','QueryProbe','-ExpectedSourceCommit',$DnsExpectedSourceCommit,'-DnsProbeLabel',$label) ('windows-dns-'+$Phase) 25
     $query=$result.stdout | ConvertFrom-Json;Start-Sleep -Milliseconds 500

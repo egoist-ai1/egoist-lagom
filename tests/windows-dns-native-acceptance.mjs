@@ -96,6 +96,7 @@ export function analyzeCapture(buffer, options) {
   assert.ok(buffer.length > 28 && buffer.length <= 8 * 1024 * 1024, 'Capture bound');
   const allowed = new Set(options.servers.map(normalizedIp)); const interfaces = []; const flows = new Map();
   let little = true, section = false, packets = 0, knownPackets = 0, clearProbePackets = 0, unsupported = 0;
+  let outgoingProviderPackets = 0, incomingProviderPackets = 0, outgoingTlsPackets = 0, incomingTlsPackets = 0;
   const start = Date.parse(options.startedAtUtc) - 250, end = Date.parse(options.finishedAtUtc) + 250;
   assert.ok(Number.isFinite(start) && Number.isFinite(end) && end >= start && end - start < 45000);
   for (let offset = 0; offset < buffer.length;) {
@@ -115,11 +116,13 @@ export function analyzeCapture(buffer, options) {
         let packet; try { packet = decodePacket(buffer.subarray(offset + 28, offset + 28 + captured), info.link); } catch { unsupported++; }
         if (packet && (allowed.has(normalizedIp(packet.src)) || allowed.has(normalizedIp(packet.dst)))) {
           knownPackets++; const outgoing = allowed.has(normalizedIp(packet.dst)); const server = outgoing ? packet.dst : packet.src;
+          if (outgoing) outgoingProviderPackets++; else incomingProviderPackets++;
           if (packet.srcPort === 53 || packet.dstPort === 53) {
             let data = packet.data; if (packet.protocol === 6) data = data.subarray(2);
             if (options.names.some(name => data.includes(createProbeQuery(name, 0).subarray(12)))) clearProbePackets++;
           }
           if (packet.protocol === 6 && (packet.srcPort === 443 || packet.dstPort === 443) && packet.data.length >= 5 && packet.data[0] === 23 && packet.data[1] === 3 && packet.data[2] >= 1 && packet.data[2] <= 4) {
+            if (outgoing) outgoingTlsPackets++; else incomingTlsPackets++;
             const client = outgoing ? packet.src : packet.dst, port = outgoing ? packet.srcPort : packet.dstPort;
             const key = normalizedIp(server) + '/' + normalizedIp(client) + '/' + port; const flow = flows.get(key) ?? { server, client, port, outgoingTlsRecords: 0, incomingTlsRecords: 0 };
             flow[outgoing ? 'outgoingTlsRecords' : 'incomingTlsRecords']++; flows.set(key, flow);
@@ -130,8 +133,12 @@ export function analyzeCapture(buffer, options) {
     offset += length;
   }
   const bidirectional = [...flows.values()].filter(flow => flow.outgoingTlsRecords && flow.incomingTlsRecords);
-  return { ok: knownPackets > 0 && bidirectional.length > 0 && clearProbePackets === 0 && unsupported === 0, packets, knownPackets, clearProbePackets, unsupported, bidirectional,
-    claim: 'Observed provider TLS application records during forced Windows DNS queries and no matching plaintext probe question. TLS payload is not decrypted; Windows DNS policy/API evidence is separate.' };
+  const ok = knownPackets > 0 && bidirectional.length > 0 && clearProbePackets === 0 && unsupported === 0;
+  return { ok, packets, knownPackets, clearProbePackets, unsupported, bidirectional,
+    outgoingProviderPackets, incomingProviderPackets, outgoingTlsPackets, incomingTlsPackets,
+    claim: ok
+      ? 'Observed provider TLS application records during forced Windows DNS queries and no matching plaintext probe question. TLS payload is not decrypted; Windows DNS policy/API evidence is separate.'
+      : 'Encrypted DNS transport evidence remains unknown or failed. Packet direction counts describe the capture only; TLS payload is not decrypted.' };
 }
 
 async function main() {
