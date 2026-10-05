@@ -218,16 +218,24 @@ function Select-VpnUiOption {
   param([string]$Name,[string]$Option)
   $combo=Find-VpnUiElement -Name $Name -ControlType ([Windows.Automation.ControlType]::ComboBox)
   $expansion=$null
-  if($combo.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern,[ref]$expansion)){$expansion.Expand()}
-  $optionElement=Find-VpnUiElement -Name $Option -Scope $combo -TimeoutSeconds 15
-  $selection=$null
-  if(-not $optionElement.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern,[ref]$selection)){throw 'A real native select option lacks SelectionItemPattern.'}
-  $selection.Select()
-  if($expansion){$expansion.Collapse()}
-  $selectionPattern=$combo.GetCurrentPattern([Windows.Automation.SelectionPattern]::Pattern)
-  $selected=@($selectionPattern.GetCurrentSelection())
-  if($selected.Count -ne 1 -or $selected[0].Current.Name -cne $Option){throw 'The genuine select did not retain the requested option.'}
-  Add-VpnEvidence ('elevated-gui-selection:'+ $Name) ([ordered]@{selected=$Option;controlType=$combo.Current.ControlType.ProgrammaticName})
+  try{
+    if($combo.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern,[ref]$expansion)){$expansion.Expand()}
+    $optionElement=Find-VpnUiElement -Name $Option -Scope $combo -TimeoutSeconds 15
+    $selection=$null
+    if(-not $optionElement.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern,[ref]$selection)){throw 'A real native select option lacks SelectionItemPattern.'}
+    $selection.Select()
+    $selectionPattern=$null
+    if($combo.TryGetCurrentPattern([Windows.Automation.SelectionPattern]::Pattern,[ref]$selectionPattern)){
+      $selected=@($selectionPattern.GetCurrentSelection())
+    }else{
+      $selected=@($combo.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.Condition]::TrueCondition) | Where-Object {
+        $itemPattern=$null
+        $_.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern,[ref]$itemPattern) -and $itemPattern.Current.IsSelected
+      })
+    }
+    if($selected.Count -ne 1 -or $selected[0].Current.Name -cne $Option -or $selected[0].Current.ProcessId -ne [int]$script:VpnGuiLease.Receipt.processId){throw 'The genuine select did not retain the requested option.'}
+    Add-VpnEvidence ('elevated-gui-selection:'+ $Name) ([ordered]@{selected=$Option;controlType=$combo.Current.ControlType.ProgrammaticName})
+  }finally{if($expansion){$expansion.Collapse()}}
 }
 function Invoke-VpnNavigation {
   param([string]$Name)
