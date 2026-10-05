@@ -32,7 +32,7 @@ function Assert-DnsNativeHost {
 }
 function ConvertTo-DnsIpSequence {
   param($Addresses)
-  return @($Addresses | ForEach-Object {[Net.IPAddress]::Parse([string]$_).ToString().ToLowerInvariant()})
+  return ,@($Addresses | ForEach-Object {[Net.IPAddress]::Parse([string]$_).ToString().ToLowerInvariant()})
 }
 function Test-DnsSameSequence {
   param($Left,$Right)

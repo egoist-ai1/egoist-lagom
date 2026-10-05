@@ -528,6 +528,9 @@ internal static class Program
         finally { Native.DestroyEnvironmentBlock(environment); }
         var system = new StringBuilder(32768); if (Native.GetSystemDirectory(system, (uint)system.Capacity) == 0) throw Native.Error("Get actual system directory");
         string windows = Directory.GetParent(system.ToString())!.FullName;
+        string systemDrive = Path.GetPathRoot(windows)?.TrimEnd('\\', '/') ?? "";
+        if (systemDrive.Length != 2 || !char.IsAsciiLetter(systemDrive[0]) || systemDrive[1] != ':') throw new InvalidDataException("Actual Windows drive is unavailable.");
+        values["SystemDrive"] = systemDrive;
         values["PATH"] = system.ToString(); values["SystemRoot"] = windows; values["WINDIR"] = windows;
         values["ProgramData"] = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
         values["ALLUSERSPROFILE"] = values["ProgramData"];
