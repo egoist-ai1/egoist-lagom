@@ -31,10 +31,10 @@ test('actual Windows DNS query failures retain statuses before the unchanged fai
   assert.equal(child.status, 0, `actual DNS query observation regression failed: ${failed.join('; ')}`);
   assert.equal(result.kind, 'actual-windows-dns-query-failure-inert-regression');
   assert.equal(result.nativeDefinitionCompiled, false, 'inert route must never compile or invoke the native P/Invoke definition');
-  assert.equal(result.caseCount, 17);
-  assert.equal(result.passedCaseCount, 17);
+  assert.equal(result.caseCount, 18);
+  assert.equal(result.passedCaseCount, 18);
   assert.equal(result.allPassed, true);
-  for (const label of ['positive-nxdomain-status', 'positive-other-status', 'positive-no-addresses', 'negative-success-no-addresses', 'negative-success-with-address', 'negative-other-status', 'both-statuses-failed']) {
+  for (const label of ['positive-nxdomain-status', 'positive-other-status', 'positive-no-addresses', 'negative-success-no-addresses', 'negative-success-with-address', 'negative-other-status', 'negative-no-records-9501-refused', 'both-statuses-failed']) {
     const observed = result.cases.find(item => item.name === label);
     assert.equal(observed?.accepted, false, 'diagnostics must never waive the original native DNS predicate');
     assert.equal(observed?.queryCount, 2, 'no retry or extra native query may be introduced');

@@ -458,7 +458,7 @@ public static class LagomNativeDnsQuery {
 }
 '@}
   if(-not $DnsProbeLabel){throw 'Owned random probe identity is required.'}
-  $started=[DateTimeOffset]::UtcNow.ToString('o');$names=@('example.com.',('lagom-'+$DnsProbeLabel+'.example.com.'))
+  $started=[DateTimeOffset]::UtcNow.ToString('o');$names=@('example.com.',('lagom-'+$DnsProbeLabel+'.invalid.'))
   $positive=[LagomNativeDnsQuery]::Query($names[0]);$negative=[LagomNativeDnsQuery]::Query($names[1])
   if($positive.status -ne 0 -or $positive.addresses.Count -lt 1 -or $negative.status -ne 9003){
     try{
@@ -654,7 +654,18 @@ function Invoke-DnsNativeAcceptance {
   finally{
     if($guardian){
       if(-not $restored){try{[void](Assert-DnsBaselineRestored);$restored=$true;$script:Receipt.failureCleanup='independent baseline was already unchanged'}catch{
-        try{Invoke-DnsElevatedGui 'Reset';[void](Assert-DnsBaselineRestored);$restored=$true}catch{$script:Receipt.guiFailureCleanupError=$_.Exception.Message}
+        try{
+          Invoke-DnsElevatedGui 'Reset'
+          $script:DnsLastFailedBaselineObservation=$null
+          try{[void](Assert-DnsBaselineRestored)}catch{
+            $postCloseError=$_
+            if($script:DnsLastFailedBaselineObservation){
+              try{Save-DnsFailedBaselineInventory $script:DnsLastFailedBaselineObservation}catch{$script:Receipt.baselineFailureInventoryError=[ordered]@{class=$_.Exception.GetBaseException().GetType().FullName;hresult=$_.Exception.GetBaseException().HResult}}
+            }
+            throw $postCloseError
+          }
+          $restored=$true
+        }catch{$script:Receipt.guiFailureCleanupError=$_.Exception.Message}
       }}
       if($restored){[IO.File]::WriteAllText([string]$guardian.Plan.disarm,'restored through actual elevated GUI and independent readback',[Text.UTF8Encoding]::new($false))}else{[IO.File]::WriteAllText([string]$guardian.Plan.force,'acceptance failed; compare-and-restore only',[Text.UTF8Encoding]::new($false))}
       if(-not $guardian.Process.WaitForExit(45000)){$script:Receipt.guardianTimeout=$true;$script:Receipt.result='failed';if(-not $failure){$failure=[Exception]::new('Emergency guardian cleanup timed out; runner must be retired.')}}

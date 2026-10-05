@@ -49,7 +49,7 @@ function Run-Control([string]$Name,$Control,[bool]$ExpectedSuccess,[string]$Erro
   $accepted=$null -eq $errorRecord;$passed=$accepted -eq $ExpectedSuccess
   $passed=$passed -and $script:QueryNames.Count -eq $ExpectedQueryCount
   if($ExpectedQueryCount -gt 0){$passed=$passed -and $script:QueryNames[0] -ceq 'example.com.'}
-  if($ExpectedQueryCount -gt 1){$passed=$passed -and $script:QueryNames[1] -ceq ('lagom-'+$script:DnsProbeLabel+'.example.com.')}
+  if($ExpectedQueryCount -gt 1){$passed=$passed -and $script:QueryNames[1] -ceq ('lagom-'+$script:DnsProbeLabel+'.invalid.')}
   if($ErrorMarker){$passed=$passed -and $errorRecord -and $errorRecord.Exception.ToString().Contains($ErrorMarker)}
   if($ExpectedSuccess){
     $passed=$passed -and $returned.Count -eq 1 -and $script:Lines.Count -eq 0 -and $script:WriteAttempts -eq 0
@@ -90,6 +90,7 @@ Run-Control 'positive-no-addresses' @{positiveCount=0} $false $gate -RequireDiag
 Run-Control 'negative-success-no-addresses' @{negativeStatus=0} $false $gate -RequireDiagnostic
 Run-Control 'negative-success-with-address' @{negativeStatus=0;negativeCount=1} $false $gate -RequireDiagnostic
 Run-Control 'negative-other-status' @{negativeStatus=9002} $false $gate -RequireDiagnostic
+Run-Control 'negative-no-records-9501-refused' @{negativeStatus=9501} $false $gate -RequireDiagnostic
 Run-Control 'both-statuses-failed' @{positiveStatus=1460;negativeStatus=9002} $false $gate -RequireDiagnostic
 Run-Control 'diagnostic-writer-failure-original-gate-retained' @{positiveStatus=1460;writeThrow=$true} $false $gate
 Run-Control 'diagnostic-serialization-failure-original-gate-retained' @{positiveStatus=1460;positiveElapsed='not-a-number'} $false $gate

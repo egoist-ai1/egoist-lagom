@@ -872,9 +872,13 @@ function stopDnsWatchdog() {
 }
 async function recoverBackgroundFeaturesAfterRendererLoad(loadedState) {
 	const startupGeneration = globalThis.reconnectSupervisor?.generation;
+	const startupWindow = mainWindow;
+	const canInitialize = () => !isQuitting && !!startupWindow && mainWindow === startupWindow && !startupWindow.isDestroyed();
 	await Promise.allSettled([...pendingBootRecovery]);
+	if (!canInitialize()) return;
 	logger.info("[boot] background recovery:start");
 	const recoverDns = async () => {
+		if (!canInitialize()) return;
 		// Read the persisted intent only after acquiring the mutation slot. A
 		// startup snapshot cannot override a later manual disable or endpoint edit.
 		const settings = globalStateStore?.get().settings ?? loadedState.settings;
@@ -904,18 +908,26 @@ async function recoverBackgroundFeaturesAfterRendererLoad(loadedState) {
 		}
 		if (usesLoopbackDns || settings.systemDohEnabled) await restoreDnsIfLocalResolverIsDown();
 	};
-	if (globalNetworkCombinatorManager) await globalNetworkCombinatorManager.runCoordinatedMutation({
-		module: "dns",
-		action: "boot-recovery",
-		requiredLocks: ["dns", "dns-verify"],
-		conflictsWith: ["traffic-route"]
-	}, recoverDns);
-	else await recoverDns();
+	let dnsRecoveryFailed = false;
+	try {
+		if (globalNetworkCombinatorManager) await globalNetworkCombinatorManager.runCoordinatedMutation({
+			module: "dns",
+			action: "boot-recovery",
+			requiredLocks: ["dns", "dns-verify"],
+			conflictsWith: ["traffic-route"]
+		}, recoverDns);
+		else await recoverDns();
+	} catch (error) {
+		dnsRecoveryFailed = true;
+		logger.error("[boot] DNS background recovery failed; independent initialization will continue:", error);
+	}
+	if (!canInitialize()) return;
 	// Windows owns automatic service startup. Opening the UI must respect a stopped service.
 	const currentState = globalStateStore?.get() ?? loadedState;
-	if (currentState.settings.autoConnect && currentState.activeNodeId) scheduleAutoConnectWhenNetworkReady(currentState.activeNodeId, startupGeneration);
+	if (globalThis.reconnectSupervisor?.generation === startupGeneration && currentState.settings.autoConnect && currentState.activeNodeId) scheduleAutoConnectWhenNetworkReady(currentState.activeNodeId, startupGeneration);
 	startDnsWatchdog();
-	logger.info("[boot] background recovery:complete");
+	if (dnsRecoveryFailed) logger.warn("[boot] background recovery:degraded; independent features initialized");
+	else logger.info("[boot] background recovery:complete");
 }
 /**
 * Запускает автоподключение, когда сеть действительно готова.
