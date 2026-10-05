@@ -490,7 +490,7 @@ function Invoke-DnsTransportProbe {
   $diagnosticError=$null;$diagnosticOperation=$null
   try{
     Add-NativeMutation 'owned-bounded-provider-packet-capture' $capture 'Only the approved provider IPs, 256 bytes per packet, one MiB ETL; provider-IP filter diagnosis, no runner IP filters.'
-    [void](Invoke-NativeBounded $script:DnsPktmon @('start','--capture','--comp','all','--pkt-size','256','--flags','0x01A','--file-size','1','--log-mode','circular','--file-name',$capture) ('pktmon-'+$Phase+'-start') 15);$started=$true
+    [void](Invoke-NativeBounded $script:DnsPktmon @('start','--capture','--comp','all','--pkt-size','256','--flags','0x01A','--file-size','1','--log-mode','memory','--file-name',$capture) ('pktmon-'+$Phase+'-start') 15);$started=$true
     foreach($diagnostic in @(@{operation='components-before-query';arguments=@('list','--json')},@{operation='filters-before-query';arguments=@('filter','list')},@{operation='status-before-query';arguments=@('status','--buffer-info')})){
       try{[void](Invoke-NativeBounded $script:DnsPktmon $diagnostic.arguments ('pktmon-'+$Phase+'-'+$diagnostic.operation) 15)}catch{if(-not $diagnosticError){$diagnosticError=$_;$diagnosticOperation=$diagnostic.operation}}
     }
