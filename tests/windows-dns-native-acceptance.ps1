@@ -486,11 +486,15 @@ function Invoke-DnsTransportProbe {
   param([string]$Phase)
   [void](Assert-DnsNativeHost)
   Invoke-DnsGuardianHeartbeat
-  $capture=Join-Path $script:DnsWork ($Phase+'.etl');$pcap=Join-Path $script:DnsWork ($Phase+'.pcapng');$metadata=Join-Path $script:DnsWork ($Phase+'-capture-metadata.txt');$started=$false
+  # Memory capture flushes the default PktMon.etl in the stop command's working directory.
+  $captureRoot=Join-Path $script:DnsWork ($Phase+'-capture');$capture=Join-Path $captureRoot 'PktMon.etl';$pcap=Join-Path $script:DnsWork ($Phase+'.pcapng');$metadata=Join-Path $script:DnsWork ($Phase+'-capture-metadata.txt');$started=$false
   $diagnosticError=$null;$diagnosticOperation=$null
   try{
     Add-NativeMutation 'owned-bounded-provider-packet-capture' $capture 'Only the approved provider IPs, 256 bytes per packet, one MiB ETL; provider-IP filter diagnosis, no runner IP filters.'
-    [void](Invoke-NativeBounded $script:DnsPktmon @('start','--capture','--comp','all','--pkt-size','256','--flags','0x01A','--file-size','1','--log-mode','memory','--file-name',$capture) ('pktmon-'+$Phase+'-start') 15);$started=$true
+    [void](Assert-NativePathWithin $captureRoot $script:DnsWork)
+    if(Test-Path -LiteralPath $captureRoot){throw 'Fresh owned capture directory already exists.'}
+    [void][IO.Directory]::CreateDirectory($captureRoot);Assert-NativeOrdinaryPath $captureRoot
+    [void](Invoke-NativeBounded $script:DnsPktmon @('start','--capture','--comp','all','--pkt-size','256','--flags','0x01A','--file-size','1','--log-mode','memory','--file-name',$capture) ('pktmon-'+$Phase+'-start') 15 -WorkingDirectory $captureRoot);$started=$true
     foreach($diagnostic in @(@{operation='components-before-query';arguments=@('list','--json')},@{operation='filters-before-query';arguments=@('filter','list')},@{operation='status-before-query';arguments=@('status','--buffer-info')})){
       try{[void](Invoke-NativeBounded $script:DnsPktmon $diagnostic.arguments ('pktmon-'+$Phase+'-'+$diagnostic.operation) 15)}catch{if(-not $diagnosticError){$diagnosticError=$_;$diagnosticOperation=$diagnostic.operation}}
     }
@@ -499,7 +503,7 @@ function Invoke-DnsTransportProbe {
     $result=Invoke-NativeBounded $script:DnsPowerShell @('-NoLogo','-NoProfile','-NonInteractive','-File',(Join-Path $script:DnsTestsRoot 'windows-dns-native-acceptance.ps1'),'-Mode','QueryProbe','-ExpectedSourceCommit',$DnsExpectedSourceCommit,'-DnsProbeLabel',$label) ('windows-dns-'+$Phase) 25
     $query=$result.stdout | ConvertFrom-Json;Start-Sleep -Milliseconds 500
     try{[void](Invoke-NativeBounded $script:DnsPktmon @('counters','--json') ('pktmon-'+$Phase+'-counters-before-stop') 15)}catch{if(-not $diagnosticError){$diagnosticError=$_;$diagnosticOperation='counters-before-stop'}}
-    [void](Invoke-NativeBounded $script:DnsPktmon @('stop') ('pktmon-'+$Phase+'-stop') 15);$started=$false
+    [void](Invoke-NativeBounded $script:DnsPktmon @('stop') ('pktmon-'+$Phase+'-stop') 15 -WorkingDirectory $captureRoot);$started=$false
     Invoke-DnsGuardianHeartbeat
     # Diagnostic errors cannot replace the original query/stop/convert/transport verdict.
     $formatterSucceeded=$false
@@ -525,7 +529,7 @@ function Invoke-DnsTransportProbe {
     if($diagnosticError){throw $diagnosticError}
     $transport=Get-Content -LiteralPath $output -Raw | ConvertFrom-Json
     $script:Receipt.probes+=[ordered]@{phase=$Phase;windowsDnsApi=$query;providerTlsCapture=$transport;packetCaptureSha256=(Get-FileHash -LiteralPath $pcap -Algorithm SHA256).Hash;policyProofSeparate=$true};Save-NativeReceipt
-  }finally{if($started){[void](Invoke-NativeBounded $script:DnsPktmon @('stop') ('pktmon-'+$Phase+'-failure-stop') 15)};Invoke-DnsGuardianHeartbeat}
+  }finally{if($started){[void](Invoke-NativeBounded $script:DnsPktmon @('stop') ('pktmon-'+$Phase+'-failure-stop') 15 -WorkingDirectory $captureRoot)};Invoke-DnsGuardianHeartbeat}
 }
 
 function Invoke-DnsGuardianLaunch {

@@ -167,9 +167,10 @@ function Add-NativeMutation {
   $script:Receipt.mutations+=[ordered]@{atUtc=[DateTimeOffset]::UtcNow.ToString('o');kind=$Kind;target=$Target;purpose=$Purpose};Save-NativeReceipt
 }
 function Invoke-NativeBounded {
-  param([string]$Executable,[string[]]$Arguments,[string]$Label,[int]$TimeoutSeconds=300)
+  param([string]$Executable,[string[]]$Arguments,[string]$Label,[int]$TimeoutSeconds=300,[string]$WorkingDirectory='')
   Assert-NativeOrdinaryPath -Path $Executable -Leaf
   $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$Executable;$info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.RedirectStandardOutput=$true;$info.RedirectStandardError=$true
+  if($WorkingDirectory){$info.WorkingDirectory=Assert-NativePathWithin $WorkingDirectory $script:Work;Assert-NativeOrdinaryPath $info.WorkingDirectory}
   $info.Environment['DOTNET_ADD_GLOBAL_TOOLS_TO_PATH']='0'
   foreach($argument in $Arguments){$info.ArgumentList.Add([string]$argument)}
   $child=[Diagnostics.Process]::new();$child.StartInfo=$info;$watch=[Diagnostics.Stopwatch]::StartNew()
