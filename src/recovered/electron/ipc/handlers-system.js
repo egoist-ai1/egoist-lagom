@@ -623,7 +623,12 @@ async function fetchIpApiCountry(target) {
 }
 async function createDnsMutationRollbackSnapshot(reason) {
 	if (process.platform !== "win32") return createAdapterDnsRollbackSnapshot([], reason);
-	const script = ["$configs = Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue", "$configs | Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Compress"].join("; ");
+	const script = [
+		"Microsoft.PowerShell.Core\\Import-Module -Name ([IO.Path]::Combine($PSHOME, 'Modules', 'Microsoft.PowerShell.Utility', 'Microsoft.PowerShell.Utility.psd1')) -ErrorAction Stop",
+		"Microsoft.PowerShell.Core\\Import-Module -Name ([IO.Path]::Combine($PSHOME, 'Modules', 'DnsClient', 'DnsClient.psd1')) -ErrorAction Stop",
+		"$configs = DnsClient\\Get-DnsClientServerAddress -AddressFamily IPv4,IPv6 -ErrorAction SilentlyContinue",
+		"$configs | Microsoft.PowerShell.Utility\\Select-Object InterfaceAlias,InterfaceIndex,AddressFamily,ServerAddresses | Microsoft.PowerShell.Utility\\ConvertTo-Json -Compress"
+	].join("; ");
 	let stdout;
 	try {
 		stdout = (await execFileAsync$6(resolveWindowsExecutable("powershell.exe"), [
