@@ -560,7 +560,16 @@ function Assert-NativePrivateState {
     $acl=Get-Acl -LiteralPath $file
     foreach($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){
       if(($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0){continue}
-      if($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and $rule.IdentityReference.Value -notin @('S-1-5-18','S-1-5-32-544') -and ($rule.FileSystemRights -band [Security.AccessControl.FileSystemRights]::ReadData) -ne 0){throw "Credential state is readable by an unrelated principal before backup: $file"}
+      if($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and $rule.IdentityReference.Value -notin @('S-1-5-18','S-1-5-32-544') -and ($rule.FileSystemRights -band [Security.AccessControl.FileSystemRights]::ReadData) -ne 0){
+        $failure=[ordered]@{phase=$Label;path=$file;offendingRule=[ordered]@{sid=$rule.IdentityReference.Value;rights=[int]$rule.FileSystemRights;inherited=$rule.IsInherited;inheritance=[int]$rule.InheritanceFlags;propagation=[int]$rule.PropagationFlags};fileAcl=$null;parentAcl=$null;diagnosticErrorType=$null}
+        try{
+          $failure.fileAcl=Get-NativePathAclSnapshot $file
+          $failure.parentAcl=Get-NativePathAclSnapshot ([IO.Path]::GetDirectoryName($file))
+        }catch{$failure.diagnosticErrorType=$_.Exception.GetType().Name}
+        if(-not $script:Receipt.Contains('privateStateFailures')){$script:Receipt.privateStateFailures=@()}
+        $script:Receipt.privateStateFailures+=$failure;Save-NativeReceipt
+        throw "Credential state is readable by an unrelated principal before backup: $file"
+      }
     }
     $records+=[ordered]@{path=$file;exists=$true;owner=$protected.owner;privateContent=$true;sddl=$acl.Sddl}
   }

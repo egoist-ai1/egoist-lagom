@@ -203,8 +203,23 @@ internal static partial class TestProgram
             Check(new FileInfo(path).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access) == acl, "Nonproduction hardening changed an existing file ACL.");
             return new { appendPreserved = true, redactionPreserved = true, rotationPreserved = true, nonproductionAclUnchanged = true };
         });
+        using var privateRootsProcess = System.Diagnostics.Process.GetCurrentProcess();
+        GuiPrivilege privateRootsToken = GuiPrivilegePolicy.Read(privateRootsProcess);
+        if (privateRootsToken.Allowed)
+            await Run("private-root-provisioning-high-ntfs", () => {
+                Check(CorePrivateRootsProduction.TestProgram.Main(Array.Empty<string>()) == 0,
+                    "Actual High isolated NTFS private-root regression failed.");
+                return Task.FromResult<object>(new { positiveCaseExecuted = true, actualToken = privateRootsToken,
+                    productionFilesystemWrites = 0, fixtureLocation = "own compiled harness directory" });
+            });
+        else
+            await Run("private-root-provisioning-token-refusal", () => {
+                Reject(() => GuiPrivilegePolicy.Require(privateRootsProcess));
+                return Task.FromResult<object>(new { positiveCaseExecuted = false, actualToken = privateRootsToken,
+                    admittedTokenPolicyRefused = true, filesystemWrites = 0 });
+            });
         string resultPath = Path.Combine(Work, "results.json");
-        string output = JsonSerializer.Serialize(new { schemaVersion = 1, actualSystem = identity.IsSystem, actualAdministrator = administrator, productionFilesystemWrites = 0, results = Results }, new JsonSerializerOptions { WriteIndented = true });
+        string output = JsonSerializer.Serialize(new { schemaVersion = 1, actualSystem = identity.IsSystem, actualAdministrator = administrator, productionFilesystemWrites = 0, privateRootProvisioningPositiveExecuted = privateRootsToken.Allowed, privateRootProvisioningToken = privateRootsToken, results = Results }, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(resultPath, output);
         Console.WriteLine(output);
         return Results.All(value => JsonSerializer.SerializeToElement(value).GetProperty("passed").GetBoolean()) ? 0 : 1;

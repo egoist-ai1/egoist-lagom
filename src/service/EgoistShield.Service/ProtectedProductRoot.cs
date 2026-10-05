@@ -61,12 +61,8 @@ internal static class ProtectedProductRoot
 			bool needsDeepPass = !HardeningMarkerIsCurrent(markerPath);
 			// Protect secret roots before touching public ancestor inheritance. No
 			// recursive ACL reset may briefly expose existing connection credentials.
-			foreach (string relative in PrivateDirectories)
-			{
-				string directory = Path.Combine(productRoot, relative);
-				if (!Directory.Exists(directory)) continue;
-				ApplyDirectoryAcl(directory, privateData: true, owner!);
-			}
+			PreparePrivateDirectories(productRoot, owner!, cancellationToken);
+
 			ApplyDirectoryAcl(productRoot, privateData: false, owner!);
 			foreach (string directory in ManagedSubdirectories.Select(name => Path.Combine(productRoot, name)))
 				ApplyDirectoryAcl(directory, IsPrivatePath(directory, productRoot), owner!);
@@ -95,6 +91,23 @@ internal static class ProtectedProductRoot
 	}
 
 	private static readonly string[] PrivateDirectories = { "Service", "installer", Path.Combine("Runtime", "Vpn"), Path.Combine("Runtime", "TelegramProxy"), Path.Combine("Runtime", "SystemDoH") };
+	// Provision secret roots even on a current-marker startup, before a worker
+	// can create credentials under a publicly readable Runtime parent.
+	internal static void PreparePrivateDirectories(string productRoot, SecurityIdentifier owner,
+		CancellationToken cancellationToken = default)
+	{
+		AssertTrustedOwner(owner);
+		foreach (string relative in PrivateDirectories)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			string directory = Path.Combine(productRoot, relative);
+			TrustedPath.AssertPathUnderRoot(directory, productRoot, Directory.Exists(directory));
+			if (!Directory.Exists(directory))
+				new DirectoryInfo(directory).Create(CreateDirectoryAclForOwner(privateData: true, owner));
+			TrustedPath.AssertPathUnderRoot(directory, productRoot, requireLeaf: true);
+			ApplyDirectoryAcl(directory, privateData: true, owner);
+		}
+	}
 	internal static bool IsPrivatePath(string candidate, string productRoot)
 	{
 		string normalized = Path.GetFullPath(candidate);
