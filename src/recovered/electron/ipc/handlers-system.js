@@ -663,8 +663,39 @@ async function createDnsMutationRollbackSnapshot(reason) {
 	}
 	return createAdapterDnsRollbackSnapshot([...records.values()], reason);
 }
+function recordSystemDohApplyFailure(phase, startedAt, outcome, error) {
+	// Fixed metadata only: never serialize the Error/cause graph or user input.
+	try {
+		const field = (value, key) => {
+			try {
+				for (let depth = 0; value && typeof value === "object" && depth < 4; depth++, value = Object.getPrototypeOf(value)) {
+					const descriptor = Object.getOwnPropertyDescriptor(value, key);
+					if (descriptor) return Object.prototype.hasOwnProperty.call(descriptor, "value") ? descriptor.value : void 0;
+				}
+			} catch {}
+		};
+		const metadata = value => {
+			const name = field(value, "name"), code = field(value, "code"), killed = field(value, "killed"), signal = field(value, "signal");
+			return {
+				name: ["Error", "TypeError", "RangeError", "SyntaxError", "AggregateError", "AbortError", "CoreServiceUnavailableError", "CoreServiceRequestError"].includes(name) ? name : typeof name === "string" ? "OtherError" : null,
+				code: ["NETWORK_BUSY", "CLIENT_NOT_AUTHORIZED", "CORE_SERVICE_UNAVAILABLE", "PIPE_IDENTITY_TIMEOUT", "PIPE_IDENTITY_MISMATCH", "OPERATION_FAILED", "OPERATION_CANCELLED", "STATE_UNAVAILABLE", "STATE_CORRUPT", "TRUNCATED_RESPONSE", "INVALID_RESPONSE", "EACCES", "EPERM", "ETIMEDOUT", "ENOENT", "ECONNREFUSED", "ECONNRESET", "ENOBUFS", "ERR_CHILD_PROCESS_STDIO_MAXBUFFER"].includes(code) ? code : Number.isInteger(code) && code >= -2147483648 && code <= 4294967295 ? code : typeof code === "string" ? "OTHER" : null,
+				killed: typeof killed === "boolean" ? killed : null,
+				signal: ["SIGTERM", "SIGKILL", "SIGINT", "SIGABRT", "SIGBREAK"].includes(signal) ? signal : typeof signal === "string" ? "OTHER" : null
+			};
+		};
+		const cause = error && typeof error === "object" ? Object.getOwnPropertyDescriptor(error, "cause") : null;
+		let elapsedMs = null;
+		try { const now = Date.now(); if (Number.isFinite(now) && Number.isFinite(startedAt)) elapsedMs = Math.max(0, Math.min(2147483647, Math.trunc(now - startedAt))); } catch {}
+		logger.warn("[system-doh-apply-diagnostic]", JSON.stringify({
+			schemaVersion: 1, action: "system-doh-apply", outcome,
+			phase, elapsedMs,
+			error: metadata(error),
+			cause: cause && Object.prototype.hasOwnProperty.call(cause, "value") && cause.value != null ? metadata(cause.value) : null
+		}));
+	} catch {}
+}
 function registerSystemHandlers({ window, stateStore, runtimeManager, gravitylessDnsManager, systemDohManager, zapretManager, telegramProxyManager, networkCombinatorManager }) {
-	const dnsMutationAccessError = async (useSystemDohBroker, directAdminMessage) => {
+	const dnsMutationAccessError = async (useSystemDohBroker, directAdminMessage, onFailure) => {
 		if (!app.isPackaged) return await runtimeManager.isAdmin() ? null : directAdminMessage;
 		const broker = useSystemDohBroker
 			? (typeof getSystemDohServiceBroker === "function" ? getSystemDohServiceBroker(systemDohManager) : null)
@@ -675,16 +706,18 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 			if (hello?.protocolVersion !== 1 || hello.clientPid !== process.pid || hello.identityProbe !== false || hello.developmentOverride !== false) throw new Error("Core не подтвердил доступ текущего приложения.");
 			return null;
 		} catch (error) {
+			try { onFailure?.(error); } catch {}
 			const detail = error instanceof Error ? error.message.slice(0, 400) : "Ответ Core не подтверждён.";
 			return `Защищённая служба Egoist Lagom Core недоступна или отказала в доступе. ${detail}`;
 		}
 	};
-	const mutateDns = async (action, operation) => {
+	const mutateDns = async (action, operation, onFailure) => {
 		try {
 			return await (networkCombinatorManager ? networkCombinatorManager.runCoordinatedMutation({
 				module: "dns", action, requiredLocks: ["dns", "dns-verify"], conflictsWith: ["traffic-route"]
 			}, operation) : operation());
 		} catch (error) {
+			try { onFailure?.(error); } catch {}
 			if (!/Timed out (waiting for|inspecting) .*network|Завершается восстановление сети/.test(String(error?.message))) throw error;
 			return { ok: false, retryable: true, code: "NETWORK_BUSY", status: null, message: "Завершается другое сетевое действие. Настройки DNS сохранены; повторите после завершения проверки." };
 		}
@@ -1273,37 +1306,51 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 		return systemDohManager.status();
 	});
 	ipcMain.handle("system-doh:apply", async (_event, rawInput) => {
+		let diagnosticStartedAt = null;
+		try { diagnosticStartedAt = Date.now(); } catch {}
+		let diagnosticPhase = "coordinate", diagnosticReported = false;
+		const diagnosticFailure = (outcome, error) => {
+			if (diagnosticReported) return;
+			diagnosticReported = true;
+			recordSystemDohApplyFailure(diagnosticPhase, diagnosticStartedAt, outcome, error);
+		};
 		return mutateDns("system-doh-apply", async () => {
+			diagnosticPhase = "parse-input";
 			const url = SystemDohUrlInputSchema.parse(rawInput);
 			const mock = process.env.NODE_ENV === "test";
 			const persistedState = stateStore.get();
 			const switchingFromGravityless = isGravitylessLoopbackDnsRequest(persistedState.settings.systemDnsServers ?? "");
 			let gravitylessWasRunning = false;
 			if (!mock) {
-				const accessError = await dnsMutationAccessError(true, "Для включения System DoH нужен запуск приложения от имени администратора.");
-				if (accessError) return {
-					ok: false,
-					message: accessError,
-					status: null
-				};
+				diagnosticPhase = "access-hello";
+				const accessError = await dnsMutationAccessError(true, "Для включения System DoH нужен запуск приложения от имени администратора.", error => diagnosticFailure("access-refused", error));
+				if (accessError) {
+					diagnosticFailure("access-refused", null);
+					return { ok: false, message: accessError, status: null };
+				}
 			}
 			try {
+				diagnosticPhase = "rollback-snapshot";
 				const rollbackSnapshot = await createDnsMutationRollbackSnapshot("system-doh-apply");
 				// The manager keeps an already active resolver online and rejects an
 				// unsafe upstream switch before changing service or adapter state.
 				if (!mock && gravitylessDnsManager && switchingFromGravityless) {
+					diagnosticPhase = "gravityless-switch";
 					const gravitylessBefore = await gravitylessDnsManager.status({ force: true });
 					gravitylessWasRunning = gravitylessBefore.running;
 					if (gravitylessBefore.service.state !== "not-installed") await gravitylessDnsManager.stopAndRemove();
 				}
+				diagnosticPhase = "manager-apply";
 				const startedStatus = mock ? createMockSystemDohStatus({
 					url,
 					localAddress: "1.1.1.1",
 					running: true
 				}) : await systemDohManager.apply(url, persistedState.settings.systemDohLocalAddress);
+				diagnosticPhase = "verify-started-status";
 				if (!startedStatus.localAddress) throw new Error("System DoH запустился без локального адреса.");
 				if (startedStatus.running !== true || startedStatus.verified !== true) throw new Error("System DoH не прошёл проверку; действующие настройки DNS сохранены.");
 				if (!mock && startedStatus.nativeManaged !== true) try {
+					diagnosticPhase = "legacy-dns-apply";
 					await setSystemDnsThroughCurrentOwner(localSystemDohServers(startedStatus), false, SYSTEM_DOH_VERIFICATION_DOMAINS);
 				} catch (error) {
 					if (gravitylessWasRunning && gravitylessDnsManager) await gravitylessDnsManager.ensureRunning().catch((restoreError) => {
@@ -1311,8 +1358,11 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 					});
 					throw error;
 				}
+				diagnosticPhase = "read-final-status";
 				const nextStatus = mock ? startedStatus : await systemDohManager.status({ force: true });
+				diagnosticPhase = "verify-final-status";
 				if (nextStatus.running !== true || nextStatus.verified !== true) throw new Error("Повторная проверка System DoH не подтвердила готовность.");
+				diagnosticPhase = "persist-settings";
 				await patchSettingsWithLoginItemSync({
 					systemDohEnabled: true,
 					systemDohUrl: url,
@@ -1326,6 +1376,7 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 					rollbackSnapshot
 				};
 			} catch (error) {
+				diagnosticFailure("failed", error);
 				if (!mock && gravitylessWasRunning && gravitylessDnsManager) await gravitylessDnsManager.ensureRunning().catch((restoreError) => {
 					logger.warn("[system-doh] Failed to restore Gravityless after System DoH startup error:", restoreError);
 				});
@@ -1341,7 +1392,7 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 					}) : await systemDohManager.status()
 				};
 			}
-		});
+		}, error => diagnosticFailure("failed", error));
 	});
 	ipcMain.handle("system-doh:reset", async () => {
 		return mutateDns("system-doh-reset", async () => {

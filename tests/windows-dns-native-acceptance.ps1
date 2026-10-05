@@ -188,8 +188,61 @@ function Assert-DnsControlProbe {
   }
   return [ordered]@{phase=$Phase;records=$records;actualHostedControlConnections=$runnerConnections;runnerProcesses=@($runnerProcesses | Select-Object Name,ProcessId,CreationDate);tokensOrHeadersRecorded=$false}
 }
+function Get-DnsGuardianHeartbeatMutex {
+  param([string]$Path)
+  $canonical=[IO.Path]::GetFullPath($Path).ToUpperInvariant()
+  $sha=[Security.Cryptography.SHA256]::Create()
+  try{$digest=$sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($canonical))}finally{$sha.Dispose()}
+  $name='Local\LagomDnsHeartbeat-'+[BitConverter]::ToString($digest).Replace('-','')
+  return [Threading.Mutex]::new($false,$name)
+}
 function Invoke-DnsGuardianHeartbeat {
-  if($script:DnsHeartbeat){[IO.File]::WriteAllText($script:DnsHeartbeat,[DateTimeOffset]::UtcNow.ToString('o'),[Text.UTF8Encoding]::new($false))}
+  if(-not $script:DnsHeartbeat){return}
+  $mutex=Get-DnsGuardianHeartbeatMutex $script:DnsHeartbeat
+  $acquired=$false;$temporary=$null;$owned=$false;$stream=$null
+  try{
+    try{$acquired=$mutex.WaitOne(500)}catch [Threading.AbandonedMutexException]{$acquired=$true;throw}
+    if(-not $acquired){throw 'DNS heartbeat lock was unavailable.'}
+    $temporary=$script:DnsHeartbeat+'.'+[Guid]::NewGuid().ToString('N')+'.tmp'
+    $bytes=[Text.UTF8Encoding]::new($false).GetBytes([DateTimeOffset]::UtcNow.ToString('o'))
+    $stream=[IO.File]::Open($temporary,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None);$owned=$true
+    $stream.Write($bytes,0,$bytes.Length);$stream.Dispose();$stream=$null
+    if([IO.File]::Exists($script:DnsHeartbeat)){
+      if(([IO.File]::GetAttributes($script:DnsHeartbeat) -band [IO.FileAttributes]::ReparsePoint) -ne 0){throw 'DNS heartbeat must be an ordinary owned file.'}
+      [IO.File]::Replace($temporary,$script:DnsHeartbeat,[NullString]::Value)
+    }else{[IO.File]::Move($temporary,$script:DnsHeartbeat)}
+  }finally{
+    try{if($stream){$stream.Dispose()};if($owned -and [IO.File]::Exists($temporary)){[IO.File]::Delete($temporary)}}
+    finally{try{if($acquired){$mutex.ReleaseMutex()}}finally{$mutex.Dispose()}}
+  }
+}
+function Read-DnsGuardianHeartbeatObservation {
+  param([string]$Path,[Nullable[DateTimeOffset]]$Now,[double]$TimeoutSeconds)
+  $stream=$null;$mutex=$null;$acquired=$false;$status='unavailable';$failureClass='none';$ageSeconds=$null;$failureHResult=$null
+  try{
+    $mutex=Get-DnsGuardianHeartbeatMutex $Path
+    try{$acquired=$mutex.WaitOne(500)}catch [Threading.AbandonedMutexException]{$acquired=$true;$failureClass='lock-abandoned'}
+    if(-not $acquired){$failureClass='lock-timeout'}
+    elseif($failureClass -cne 'lock-abandoned'){
+      $stream=[IO.File]::Open($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,([IO.FileShare]::Read -bor [IO.FileShare]::Delete))
+      $buffer=[byte[]]::new(129);$count=0
+      while($count -lt $buffer.Length){$read=$stream.Read($buffer,$count,$buffer.Length-$count);if($read -eq 0){break};$count+=$read}
+      if($count -eq 0 -or $count -gt 128){$failureClass='invalid'}
+      else{
+        $text=[Text.UTF8Encoding]::new($false,$true).GetString($buffer,0,$count)
+        $heartbeat=[DateTimeOffset]::Parse($text,[Globalization.CultureInfo]::InvariantCulture)
+        $observedNow=if($null -eq $Now){[DateTimeOffset]::UtcNow}else{$Now}
+        $age=($observedNow-$heartbeat).TotalSeconds;$ageSeconds=[Math]::Round($age,3)
+        $status=if($age -gt $TimeoutSeconds){'expired'}else{'fresh'}
+      }
+    }
+  }catch{
+    $base=$_.Exception.GetBaseException();$failureHResult=$base.HResult
+    $failureClass=if($base -is [IO.IOException]){'io'}elseif($base -is [UnauthorizedAccessException]){'access'}elseif($base -is [FormatException] -or $base -is [Text.DecoderFallbackException]){'invalid'}else{'other'}
+  }finally{
+    try{if($stream){$stream.Dispose()}}finally{try{if($acquired){$mutex.ReleaseMutex()}}finally{if($mutex){$mutex.Dispose()}}}
+  }
+  return [pscustomobject]@{status=$status;failureClass=$failureClass;ageSeconds=$ageSeconds;failureHResult=$failureHResult}
 }
 function Assert-DnsPrivateOwnedState {
   param([string]$Phase)
@@ -443,9 +496,11 @@ function Invoke-DnsGuardian {
   do{
     if(Test-Path -LiteralPath ([string]$plan.disarm)){Assert-NativeOrdinaryPath ([string]$plan.disarm) -Leaf;$record.stage='disarmed';break}
     $alive=$false;try{$parent=[Diagnostics.Process]::GetProcessById([int]$plan.parentPid);$alive=-not $parent.HasExited -and [Math]::Abs(($parent.StartTime.ToUniversalTime()-([DateTimeOffset]$plan.parentCreatedUtc).UtcDateTime).TotalMilliseconds) -lt 20;$parent.Dispose()}catch{$alive=$false}
-    $stale=$true;try{$heartbeat=[DateTimeOffset]::Parse([IO.File]::ReadAllText([string]$plan.heartbeat));$stale=([DateTimeOffset]::UtcNow-$heartbeat).TotalSeconds -gt $plan.timeoutSeconds}catch{$stale=$true}
+    $heartbeatObservation=Read-DnsGuardianHeartbeatObservation ([string]$plan.heartbeat) $null ([double]$plan.timeoutSeconds)
+    $stale=$heartbeatObservation.status -cne 'fresh'
     if(-not $alive -or $stale -or $watch.Elapsed.TotalSeconds -gt $plan.maximumSeconds -or (Test-Path -LiteralPath ([string]$plan.force))){
-      $record.stage='emergency-failed-gate';$record.reason=if(-not $alive){'parent exited/identity changed'}elseif($stale){'heartbeat expired'}elseif($watch.Elapsed.TotalSeconds -gt $plan.maximumSeconds){'maximum lease expired'}else{'caller failure'}
+      $record.stage='emergency-failed-gate';$record.reason=if(-not $alive){'parent exited/identity changed'}elseif($stale){if($heartbeatObservation.status -ceq 'expired'){'heartbeat expired'}else{'heartbeat unavailable'}}elseif($watch.Elapsed.TotalSeconds -gt $plan.maximumSeconds){'maximum lease expired'}else{'caller failure'}
+      $record.heartbeatObservation=$heartbeatObservation
       try{$record.restore=Invoke-DnsEmergencyRestore $plan}catch{$record.restoreError=$_.Exception.Message};break
     }
     Start-Sleep -Milliseconds 500
