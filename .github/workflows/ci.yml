@@ -391,6 +391,24 @@ jobs:
           Assert-OrdinaryGuiDiagnosticSelection -Selection $ordinarySelection
           if ($env:NATIVE_ACCEPTANCE -eq 'true' -and $env:PACKAGE_CANDIDATE -ne 'true') { throw 'Native acceptance requires a packaged candidate.' }
           if ($env:SIGNED_LEGACY_RELEASE_ID -and $env:SIGNED_LEGACY_RELEASE_ID -notmatch '^[1-9][0-9]{0,18}$') { throw 'Signed legacy release ID must be an exact GitHub release ID.' }
+      - name: Capture bounded read-only hosted DNS topology
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.native_acceptance }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          ./tests/windows-production-acceptance.ps1 -Mode GuardOnly
+          $head=(git rev-parse HEAD).Trim()
+          if($LASTEXITCODE -ne 0 -or $head -cne $env:GITHUB_SHA){throw 'Topology diagnostic source differs from actual workflow SHA.'}
+          $adapters=@(Get-NetAdapter -IncludeHidden -ErrorAction Stop)
+          $interfaces=@(Get-NetIPInterface -ErrorAction Stop)
+          $routes=@(Get-NetRoute -DestinationPrefix '0.0.0.0/0' -PolicyStore ActiveStore -ErrorAction Stop)
+          $physical=@(Get-NetAdapter -Physical -IncludeHidden -ErrorAction Stop)
+          if($adapters.Count -gt 64 -or $interfaces.Count -gt 128 -or $routes.Count -gt 32 -or $physical.Count -gt 64){throw 'Read-only topology inventory bound exceeded.'}
+          function Bounded-Label([string]$value){return $value.Substring(0,[Math]::Min(128,$value.Length))}
+          $snapshot=[ordered]@{schemaVersion=1;kind='early-hosted-read-only-dns-topology';atUtc=[DateTimeOffset]::UtcNow.ToString('o');sourceCommit=$head;runId=$env:GITHUB_RUN_ID;runAttempt=$env:GITHUB_RUN_ATTEMPT;preInstallObservation=$true;currentNativePreflightProven=$false;mutations=0;physicalIndices=@($physical | ForEach-Object{[int]$_.ifIndex} | Sort-Object -Unique);adapters=@($adapters | Sort-Object ifIndex | ForEach-Object{[ordered]@{index=[int]$_.ifIndex;alias=(Bounded-Label ([string]$_.Name));description=(Bounded-Label ([string]$_.InterfaceDescription));status=[string]$_.Status;hardwareInterface=$_.HardwareInterface;virtual=$_.Virtual}});interfaces=@($interfaces | Sort-Object InterfaceIndex,AddressFamily | ForEach-Object{[ordered]@{index=[int]$_.InterfaceIndex;alias=(Bounded-Label ([string]$_.InterfaceAlias));family=[string]$_.AddressFamily;connectionState=[string]$_.ConnectionState}});defaultRoutes=@($routes | ForEach-Object{[ordered]@{index=[int]$_.InterfaceIndex;metric=[int]$_.RouteMetric;nextHop=[string]$_.NextHop}})}
+          $json=$snapshot | ConvertTo-Json -Depth 5 -Compress
+          if([Text.Encoding]::UTF8.GetByteCount($json) -gt 65536){throw 'Read-only topology output bound exceeded.'}
+          Write-Output ('LAGOM_READONLY_DNS_TOPOLOGY='+$json)
       - name: Read the pinned SDK
         id: sdk
         shell: pwsh

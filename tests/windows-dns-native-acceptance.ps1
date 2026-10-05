@@ -153,7 +153,10 @@ function Get-DnsSafeAdapter {
   }
   $targets=@($eligible | Sort-Object -Unique)
   $routes=@(Get-NetRoute -DestinationPrefix '0.0.0.0/0' -PolicyStore ActiveStore -ErrorAction Stop)
-  if($targets.Count -ne 1 -or $routes.Count -ne 1 -or [int]$routes[0].InterfaceIndex -ne $targets[0]){throw 'Ambiguous/default adapter topology refused before DNS mutation.'}
+  if($targets.Count -ne 1 -or $routes.Count -ne 1 -or [int]$routes[0].InterfaceIndex -ne $targets[0]){
+    $preflight=[ordered]@{schemaVersion=1;stage='dns-safe-adapter-preflight';eligibleCount=$targets.Count;eligibleIndices=@($targets | Select-Object -First 32);eligibleAdapters=@($Inventory.adapters | Where-Object {$_.index -in $targets} | Sort-Object index | Select-Object -First 8 | ForEach-Object {$alias=[string]$_.alias;$description=[string]$_.description;[ordered]@{index=[int]$_.index;alias=$alias.Substring(0,[Math]::Min(96,$alias.Length));description=$description.Substring(0,[Math]::Min(128,$description.Length))}});defaultRouteCount=$routes.Count;defaultRouteIndices=@($routes | Select-Object -First 32 | ForEach-Object {[int]$_.InterfaceIndex});matched=$false;truncated=($targets.Count -gt 8 -or $routes.Count -gt 32)}
+    throw ('Ambiguous/default adapter topology refused before DNS mutation. Preflight='+($preflight | ConvertTo-Json -Depth 3 -Compress))
+  }
   $rows=@($Inventory.adapters | Where-Object {$_.index -eq $targets[0]})
   if($rows.Count -ne 1 -or [string]$rows[0].guid -notmatch '^\{?[a-fA-F0-9-]{36}\}?$' -or $rows[0].families.ipv4.apiPresent -ne $true -or $rows[0].families.ipv4.servers.Count -lt 1){throw 'Stable GUID/original DNS is unavailable.'}
   foreach($family in @('ipv4','ipv6')){foreach($server in $rows[0].families[$family].servers){if([Net.IPAddress]::IsLoopback([Net.IPAddress]::Parse([string]$server))){throw 'Original loopback DNS requires a separate owned resolver gate.'}}}

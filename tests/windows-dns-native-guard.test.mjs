@@ -161,7 +161,7 @@ test('inert DNS inventory distinguishes missing families and rejects malformed r
     '-SourcePath', path.resolve('tests/windows-dns-native-acceptance.ps1'), '-WorkRoot', work]);
   assert.equal(result.status, 0, [result.error?.code, result.signal, result.stdout, result.stderr].filter(Boolean).join('\n'));
   const receipt = JSON.parse(fs.readFileSync(path.join(work, 'dns-inventory-regression.json'), 'utf8'));
-  assert.equal(receipt.groups, 15); assert.equal(receipt.results.every(row => row.passed), true);
+  assert.equal(receipt.groups, 17); assert.equal(receipt.results.every(row => row.passed), true);
   assert.equal(receipt.controlledInputs, true); assert.equal(receipt.actualNativeDnsQueries, 0);
   assert.equal(receipt.liveDnsMutations + receipt.liveScmMutations + receipt.liveTaskMutations + receipt.liveRegistryMutations, 0);
   assert.equal(receipt.nativeAcceptancePassed, false);

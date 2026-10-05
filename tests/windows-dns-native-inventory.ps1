@@ -174,6 +174,29 @@ Run-Case 'ambiguous-or-mismatched-default-route-refused' {
   Set-NormalTopology;$script:Routes=@([pscustomobject]@{InterfaceIndex=20})
   Expect-Refusal {Get-DnsSafeAdapter $script:Inventory} 'Ambiguous/default adapter topology'
 }
+Run-Case 'diagnostic-two-eligible-one-default-retains-original-refusal' {
+  Set-NormalTopology;$script:Inventory.adapters+= (New-Adapter 20)
+  $script:Interfaces+= [pscustomobject]@{InterfaceIndex=20;InterfaceAlias='vEthernet (nat)';ConnectionState='Connected'}
+  $message=$null;try{Get-DnsSafeAdapter $script:Inventory|Out-Null}catch{$message=$_.Exception.Message}
+  Check ($null -ne $message -and $message.Contains(' Preflight=')) 'Original topology refusal lost diagnostic suffix.'
+  $meta=ConvertFrom-Json -InputObject $message.Substring($message.IndexOf(' Preflight=')+11)
+  Check ($meta.stage -ceq 'dns-safe-adapter-preflight' -and $meta.eligibleCount -eq 2 -and $meta.defaultRouteCount -eq 1 -and -not $meta.matched -and -not $meta.truncated) 'Same-input refusal counts differ.'
+  Check (($meta.eligibleIndices -join ',') -ceq '10,20' -and ($meta.defaultRouteIndices -join ',') -ceq '10') 'Actual queried indices differ from diagnostic.'
+}
+Run-Case 'diagnostic-raw-route-duplicates-and-bounded-indices-retain-refusal' {
+  Set-NormalTopology;$script:Routes+= [pscustomobject]@{InterfaceIndex=10}
+  $message=$null;try{Get-DnsSafeAdapter $script:Inventory|Out-Null}catch{$message=$_.Exception.Message}
+  Check ($null -ne $message -and $message.Contains(' Preflight=')) 'Duplicate route was accepted or lost diagnostics.'
+  $meta=ConvertFrom-Json -InputObject $message.Substring($message.IndexOf(' Preflight=')+11)
+  Check ($meta.eligibleCount -eq 1 -and $meta.defaultRouteCount -eq 2 -and ($meta.defaultRouteIndices -join ',') -ceq '10,10' -and -not $meta.matched) 'Raw route duplicate evidence was collapsed.'
+  Set-NormalTopology;$script:Routes=@(1..40|ForEach-Object{[pscustomobject]@{InterfaceIndex=10}})
+  $message=$null;try{Get-DnsSafeAdapter $script:Inventory|Out-Null}catch{$message=$_.Exception.Message}
+  $meta=ConvertFrom-Json -InputObject $message.Substring($message.IndexOf(' Preflight=')+11)
+  Check ($meta.defaultRouteCount -eq 40 -and $meta.defaultRouteIndices.Count -eq 32 -and $meta.truncated -and -not $meta.matched -and $message.Length -lt 1024) 'Fixed diagnostic bound or refusal changed.'
+  $sourceFunction=@($ast.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -ceq 'Get-DnsSafeAdapter'},$false))[0].Extent.Text
+  Check ($sourceFunction.Contains('if($targets.Count -ne 1 -or $routes.Count -ne 1 -or [int]$routes[0].InterfaceIndex -ne $targets[0])')) 'Original unsafe-topology predicate changed.'
+  Check ($sourceFunction.Contains('Get-NetIPInterface -ErrorAction Stop') -and $sourceFunction.Contains("Get-NetRoute -DestinationPrefix '0.0.0.0/0' -PolicyStore ActiveStore -ErrorAction Stop")) 'Original terminating topology query changed.'
+}
 # Static placement checks protect the active and pre-mutation managed-family call sites.
 Run-Case 'presence-guard-used-by-active-readback-and-before-provider' {
   $active=@($ast.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -ceq 'Assert-DnsPrivateOwnedState'},$false))[0].Extent.Text
