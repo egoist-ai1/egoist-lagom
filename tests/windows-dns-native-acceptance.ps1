@@ -486,22 +486,48 @@ function Invoke-DnsTransportProbe {
   param([string]$Phase)
   [void](Assert-DnsNativeHost)
   Invoke-DnsGuardianHeartbeat
-  $capture=Join-Path $script:DnsWork ($Phase+'.etl');$pcap=Join-Path $script:DnsWork ($Phase+'.pcapng');$started=$false
+  $capture=Join-Path $script:DnsWork ($Phase+'.etl');$pcap=Join-Path $script:DnsWork ($Phase+'.pcapng');$metadata=Join-Path $script:DnsWork ($Phase+'-capture-metadata.txt');$started=$false
+  $diagnosticError=$null;$diagnosticOperation=$null
   try{
     Add-NativeMutation 'owned-bounded-provider-packet-capture' $capture 'Only the approved provider IPs, 256 bytes per packet, one MiB ETL; provider-IP filter diagnosis, no runner IP filters.'
-    [void](Invoke-NativeBounded $script:DnsPktmon @('start','--capture','--comp','all','--pkt-size','256','--file-size','1','--log-mode','circular','--file-name',$capture) ('pktmon-'+$Phase+'-start') 15);$started=$true
+    [void](Invoke-NativeBounded $script:DnsPktmon @('start','--capture','--comp','all','--pkt-size','256','--flags','0x01A','--file-size','1','--log-mode','circular','--file-name',$capture) ('pktmon-'+$Phase+'-start') 15);$started=$true
+    foreach($diagnostic in @(@{operation='components-before-query';arguments=@('list','--json')},@{operation='filters-before-query';arguments=@('filter','list')},@{operation='status-before-query';arguments=@('status','--buffer-info')})){
+      try{[void](Invoke-NativeBounded $script:DnsPktmon $diagnostic.arguments ('pktmon-'+$Phase+'-'+$diagnostic.operation) 15)}catch{if(-not $diagnosticError){$diagnosticError=$_;$diagnosticOperation=$diagnostic.operation}}
+    }
+    Invoke-DnsGuardianHeartbeat
     $label=[Guid]::NewGuid().ToString('N').Substring(0,20)
     $result=Invoke-NativeBounded $script:DnsPowerShell @('-NoLogo','-NoProfile','-NonInteractive','-File',(Join-Path $script:DnsTestsRoot 'windows-dns-native-acceptance.ps1'),'-Mode','QueryProbe','-ExpectedSourceCommit',$DnsExpectedSourceCommit,'-DnsProbeLabel',$label) ('windows-dns-'+$Phase) 25
     $query=$result.stdout | ConvertFrom-Json;Start-Sleep -Milliseconds 500
+    try{[void](Invoke-NativeBounded $script:DnsPktmon @('counters','--json') ('pktmon-'+$Phase+'-counters-before-stop') 15)}catch{if(-not $diagnosticError){$diagnosticError=$_;$diagnosticOperation='counters-before-stop'}}
     [void](Invoke-NativeBounded $script:DnsPktmon @('stop') ('pktmon-'+$Phase+'-stop') 15);$started=$false
+    Invoke-DnsGuardianHeartbeat
+    # Diagnostic errors cannot replace the original query/stop/convert/transport verdict.
+    $formatterSucceeded=$false
+    try{[void](Invoke-NativeBounded $script:DnsPktmon @('etl2txt',$capture,'--out',$metadata,'--metadata') ('pktmon-'+$Phase+'-metadata') 30);$formatterSucceeded=$true}catch{if(-not $diagnosticError){$diagnosticError=$_;$diagnosticOperation='metadata-formatter'}}
+    try{
+      [void](Assert-NativePathWithin $metadata $script:DnsWork);Assert-NativeOrdinaryPath $metadata -Leaf
+      $stream=[IO.File]::Open($metadata,[IO.FileMode]::Open,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
+      try{$originalBytes=$stream.Length;if($originalBytes -gt 1048576){$stream.SetLength(1048576)};$retainedBytes=$stream.Length}finally{$stream.Dispose()}
+      $metadataReceipt=[ordered]@{schemaVersion=1;kind='owned-pktmon-offline-metadata';sourceCommit=$DnsExpectedSourceCommit;phase=$Phase;captureFlags='0x01A';maximumRetainedBytes=1048576;originalBytes=$originalBytes;retainedBytes=$retainedBytes;truncated=($originalBytes -gt $retainedBytes);sha256=(Get-FileHash -LiteralPath $metadata -Algorithm SHA256).Hash;formatterSucceeded=$formatterSucceeded;diagnosticOnly=$true;encryptedWireClaim=$false}
+      [IO.File]::WriteAllText((Join-Path $script:DnsWork ($Phase+'-capture-metadata.json')),($metadataReceipt | ConvertTo-Json -Depth 4),[Text.UTF8Encoding]::new($false))
+    }catch{if(-not $diagnosticError){$diagnosticError=$_;$diagnosticOperation='metadata-retention'}}
+    if($diagnosticError){
+      try{
+        $diagnosticFailure=[ordered]@{schemaVersion=1;kind='owned-pktmon-diagnostic-failure';sourceCommit=$DnsExpectedSourceCommit;phase=$Phase;operation=$diagnosticOperation;exceptionClass=$diagnosticError.Exception.GetType().FullName;hresult=$diagnosticError.Exception.HResult;diagnosticOnly=$true;transportVerdictPending=$true;encryptedWireClaim=$false}
+        $diagnosticJson=$diagnosticFailure | ConvertTo-Json -Depth 4;if([Text.Encoding]::UTF8.GetByteCount($diagnosticJson) -gt 4096){throw 'Diagnostic failure receipt exceeded its bound.'}
+        [IO.File]::WriteAllText((Join-Path $script:DnsWork ($Phase+'-capture-diagnostic-failure.json')),$diagnosticJson,[Text.UTF8Encoding]::new($false))
+      }catch{} # Receipt failure cannot replace the first diagnostic or original probe error.
+    }
     [void](Invoke-NativeBounded $script:DnsPktmon @('etl2pcap',$capture,'--out',$pcap) ('pktmon-'+$Phase+'-convert') 20)
     $output=Join-Path $script:DnsWork ($Phase+'-transport.json');$options=Join-Path $script:DnsWork ($Phase+'-transport-options.json')
     [IO.File]::WriteAllText($options,([ordered]@{sourceCommit=$DnsExpectedSourceCommit;capture=$pcap;output=$output;servers=$script:DnsProfile.servers;names=$query.names;startedAtUtc=$query.startedAtUtc;finishedAtUtc=$query.finishedAtUtc} | ConvertTo-Json -Depth 8),[Text.UTF8Encoding]::new($false))
     [void](Invoke-NativeBounded $script:Node @((Join-Path $script:DnsTestsRoot 'windows-dns-native-acceptance.mjs'),'capture',$options) ('transport-'+$Phase) 15)
+    if($diagnosticError){throw $diagnosticError}
     $transport=Get-Content -LiteralPath $output -Raw | ConvertFrom-Json
     $script:Receipt.probes+=[ordered]@{phase=$Phase;windowsDnsApi=$query;providerTlsCapture=$transport;packetCaptureSha256=(Get-FileHash -LiteralPath $pcap -Algorithm SHA256).Hash;policyProofSeparate=$true};Save-NativeReceipt
   }finally{if($started){[void](Invoke-NativeBounded $script:DnsPktmon @('stop') ('pktmon-'+$Phase+'-failure-stop') 15)};Invoke-DnsGuardianHeartbeat}
 }
+
 function Invoke-DnsGuardianLaunch {
   $script:DnsHeartbeat=Join-Path $script:DnsWork 'guardian-heartbeat.txt';Invoke-DnsGuardianHeartbeat
   $plan=Join-Path $script:DnsWork 'guardian-plan.json';$parent=[Diagnostics.Process]::GetCurrentProcess()
