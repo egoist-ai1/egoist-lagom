@@ -172,7 +172,7 @@ internal static partial class Program
     private static async Task ConfigureScriptAsync(string mode)
     {
         var initial = mode == "missing" ? Array.Empty<NativeDohEntrySnapshot>() : new[] {
-            new NativeDohEntrySnapshot("1.1.1.1", true, mode == "foreign" ? "https://foreign.example/dns-query" : mode == "bad-readback" ? NewUrl : OldUrl, mode == "weakened", true) };
+            new NativeDohEntrySnapshot("1.1.1.1", true, mode == "foreign" ? "https://foreign.example/dns-query" : OldUrl, mode == "weakened", true) };
         var json = Json(initial).Replace("'", "''");
         string mocks = """
             $global:mockEntries = @{}
@@ -193,7 +193,7 @@ internal static partial class Program
             }
             function Remove-DnsClientDohServerAddress { throw 'Configuration must never delete a registration before replacing it.' }
             """;
-        if (mode == "bad-readback") mocks += "\nfunction Set-DnsClientDohServerAddress { [CmdletBinding()] param([string]$ServerAddress, [string]$DohTemplate, [bool]$AllowFallbackToUdp, [bool]$AutoUpgrade) $global:mockEntries[$ServerAddress].allowFallbackToUdp = $true }\n";
+        if (mode == "bad-readback") mocks += "\nfunction Set-DnsClientDohServerAddress { [CmdletBinding()] param([string]$ServerAddress, [string]$DohTemplate, [bool]$AllowFallbackToUdp, [bool]$AutoUpgrade) $global:mockEntries[$ServerAddress].dohTemplate = $DohTemplate; $global:mockEntries[$ServerAddress].allowFallbackToUdp = $true }\n";
         string script = mocks + "\nforeach ($item in (ConvertFrom-Json -InputObject '" + json + "')) { $global:mockEntries[[string]$item.serverAddress] = $item }\n$failure = $null\ntry {\n" +
             WindowsNativeDohController.CreateConfigureScript(NewUrl, new[] { "1.1.1.1" }, Owned()) +
             "\n} catch { $failure = $_.Exception.Message }\n[pscustomobject]@{ failure=$failure; calls=@($global:mockCalls); entries=@($global:mockEntries.Values) } | ConvertTo-Json -Compress -Depth 6\n";

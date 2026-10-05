@@ -352,7 +352,9 @@ function Invoke-DnsElevatedGui {
     $lease=Start-ElevatedGuiLease -CanonicalInstalledGuiPath (Join-Path $script:InstallRoot 'EgoistShield.exe') -IntegrityManifestPath $script:ManifestPath -ExpectedSourceCommit $DnsExpectedSourceCommit -WorkRoot $script:DnsWork -EvidenceDirectory $script:Evidence -LeaseSeconds 420
     $proof=$lease.Receipt
     Assert-DnsElevatedGuiProof $proof
-    $child=[Diagnostics.Process]::GetProcessById([int]$proof.processId);$identity=Get-NativeProcessIdentity $child.Id
+    $child=[Diagnostics.Process]::GetProcessById([int]$proof.processId)
+    $heldGuiProcessHandle=$child.Handle
+    $identity=Get-NativeProcessIdentity $child.Id
     if($identity.executable -ine $proof.executable -or [Math]::Abs(($child.StartTime.ToUniversalTime()-[DateTimeOffset]::Parse($proof.startTimeUtc).UtcDateTime).TotalMilliseconds) -gt 20){throw 'DNS elevated GUI process birth identity changed.'}
     $root=[Windows.Automation.AutomationElement]::FromHandle([IntPtr]([long]$proof.mainWindowHandle))
     if(-not $root -or $root.Current.ProcessId -ne $child.Id){throw 'DNS UIA is not bound to the exact elevated GUI HWND.'}
@@ -386,8 +388,40 @@ function Invoke-DnsElevatedGui {
       try{[void](Wait-NativeCondition {Invoke-DnsGuardianHeartbeat;Assert-DnsBaselineRestored} 'Actual GUI restored independent original DNS/DoH inventory' 90)}catch{$resetWaitFailed=$true;throw}
     }
     $pattern=$null;if(-not $root.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'DNS GUI native close control is unavailable.'}
+    $closeDiagnostics=[ordered]@{
+      schemaVersion=1;processId=$child.Id;startTimeUtc=$proof.startTimeUtc;callerProcessHandleHeld=($heldGuiProcessHandle -ne [IntPtr]::Zero)
+      powershellVersion=$PSVersionTable.PSVersion.ToString();runtimeVersion=[Environment]::Version.ToString()
+      closeRequestedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');closeReturnedAtUtc=$null;closeElapsedMilliseconds=$null
+      waitBudgetMilliseconds=30000;waitStartedAtUtc=$null;waitFinishedAtUtc=$null;waitElapsedMilliseconds=$null;waitReturned=$null;exitCodeAtWait=$null;hasExitedBeforeCleanup=$null;exitCodeBeforeCleanup=$null;processExitUtcBeforeCleanup=$null;readbackErrorType=$null;readbackHresult=$null;readbackStartedAtUtc=$null;readbackFinishedAtUtc=$null
+    }
+    $script:Receipt.gui+=[ordered]@{operation=$Operation;phase='close-observation';closeDiagnostics=$closeDiagnostics}
+    try{Save-NativeReceipt}catch{} # Diagnostics cannot replace the original close outcome.
+    $closeWatch=[Diagnostics.Stopwatch]::StartNew()
     ([Windows.Automation.WindowPattern]$pattern).Close()
-    if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'DNS elevated GUI did not exit normally.'};$closed=$true
+    $closeDiagnostics.closeElapsedMilliseconds=$closeWatch.ElapsedMilliseconds
+    $closeDiagnostics.closeReturnedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    $closeDiagnostics.waitStartedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    $waitWatch=[Diagnostics.Stopwatch]::StartNew()
+    $waitReturned=$child.WaitForExit(30000)
+    $closeDiagnostics.waitElapsedMilliseconds=$waitWatch.ElapsedMilliseconds
+    $closeDiagnostics.waitFinishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    $closeDiagnostics.waitReturned=$waitReturned
+    $exitCodeAtWait=if($waitReturned){$child.ExitCode}else{$null}
+    $closeDiagnostics.exitCodeAtWait=$exitCodeAtWait
+    $closeDiagnostics.readbackStartedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    try{
+      $closeDiagnostics.hasExitedBeforeCleanup=$child.HasExited
+      if($closeDiagnostics.hasExitedBeforeCleanup){
+        $closeDiagnostics.exitCodeBeforeCleanup=$child.ExitCode
+        $closeDiagnostics.processExitUtcBeforeCleanup=$child.ExitTime.ToUniversalTime().ToString('o')
+      }
+    }catch{
+      $closeDiagnostics.readbackErrorType=$_.Exception.GetType().Name
+      $closeDiagnostics.readbackHresult=$_.Exception.HResult
+    }
+    $closeDiagnostics.readbackFinishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    try{Save-NativeReceipt}catch{} # Diagnostics cannot replace the original close outcome.
+    if(-not $waitReturned -or $exitCodeAtWait -ne 0){throw 'DNS elevated GUI did not exit normally.'};$closed=$true
     $script:Receipt.gui+=[ordered]@{operation=$Operation;launch=$proof;process=$identity;normalExit=$true;exitCode=$child.ExitCode;automation='actual HWND native UIA ValuePattern/InvokePattern/WindowPattern';productionOverride=$false}
   }catch{
     $operationError=$_

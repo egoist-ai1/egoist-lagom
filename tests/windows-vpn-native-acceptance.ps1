@@ -262,15 +262,48 @@ function Start-VpnElevatedGui {
 function Close-VpnElevatedGui {
   $child=[Diagnostics.Process]::GetProcessById([int]$script:VpnGuiLease.Receipt.processId)
   try{
+    $heldGuiProcessHandle=$child.Handle
+    $closeDiagnostics=[ordered]@{
+      schemaVersion=1;processId=$child.Id;startTimeUtc=$script:VpnGuiLease.Receipt.startTimeUtc;callerProcessHandleHeld=($heldGuiProcessHandle -ne [IntPtr]::Zero)
+      powershellVersion=$PSVersionTable.PSVersion.ToString();runtimeVersion=[Environment]::Version.ToString()
+      closeRequestedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');closeReturnedAtUtc=$null;closeElapsedMilliseconds=$null
+      waitBudgetMilliseconds=30000;waitStartedAtUtc=$null;waitFinishedAtUtc=$null;waitElapsedMilliseconds=$null;waitReturned=$null;exitCodeAtWait=$null;hasExitedBeforeCleanup=$null;exitCodeBeforeCleanup=$null;processExitUtcBeforeCleanup=$null;readbackErrorType=$null;readbackHresult=$null;readbackStartedAtUtc=$null;readbackFinishedAtUtc=$null
+    }
+    $script:VpnReceipt.gui+=[ordered]@{operation=$script:VpnGuiOperation;phase='close-observation';closeDiagnostics=$closeDiagnostics}
+    try{Save-VpnReceipt}catch{} # Diagnostics cannot replace the original close outcome.
+    $closeWatch=[Diagnostics.Stopwatch]::StartNew()
     Invoke-VpnUiButton -Name 'Закрыть приложение'
-    if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'The actual normal GUI close did not terminate successfully.'}
+    $closeDiagnostics.closeElapsedMilliseconds=$closeWatch.ElapsedMilliseconds
+    $closeDiagnostics.closeReturnedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    $closeDiagnostics.waitStartedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    $waitWatch=[Diagnostics.Stopwatch]::StartNew()
+    $waitReturned=$child.WaitForExit(30000)
+    $closeDiagnostics.waitElapsedMilliseconds=$waitWatch.ElapsedMilliseconds
+    $closeDiagnostics.waitFinishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    $closeDiagnostics.waitReturned=$waitReturned
+    $exitCodeAtWait=if($waitReturned){$child.ExitCode}else{$null}
+    $closeDiagnostics.exitCodeAtWait=$exitCodeAtWait
+    $closeDiagnostics.readbackStartedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    try{
+      $closeDiagnostics.hasExitedBeforeCleanup=$child.HasExited
+      if($closeDiagnostics.hasExitedBeforeCleanup){
+        $closeDiagnostics.exitCodeBeforeCleanup=$child.ExitCode
+        $closeDiagnostics.processExitUtcBeforeCleanup=$child.ExitTime.ToUniversalTime().ToString('o')
+      }
+    }catch{
+      $closeDiagnostics.readbackErrorType=$_.Exception.GetType().Name
+      $closeDiagnostics.readbackHresult=$_.Exception.HResult
+    }
+    $closeDiagnostics.readbackFinishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    try{Save-VpnReceipt}catch{} # Diagnostics cannot replace the original close outcome.
+    if(-not $waitReturned -or $exitCodeAtWait -ne 0){throw 'The actual normal GUI close did not terminate successfully.'}
     Assert-NativeNoGui
     $cleanup=Stop-ElevatedGuiLease -Lease $script:VpnGuiLease;$script:VpnGuiLease=$null
     if(-not $cleanup.exitedNormally -or $cleanup.exitCode -ne 0 -or -not $cleanup.cleanup.noOrphans){throw 'Elevated GUI guardian has no normal zero-orphan close proof.'}
     Add-VpnEvidence 'actual-normal-gui-close-and-zero-gui-processes' $cleanup
     $script:VpnReceipt.gui+=[ordered]@{operation=$script:VpnGuiOperation;phase='close';normalExit=$true;cleanup=$cleanup}
     $script:VpnGuiOperation=$null
-  }finally{$child.Dispose()}
+  }finally{try{Save-VpnReceipt}catch{};$child.Dispose()}
 }
 function Read-VpnUiProfile {
   Assert-NativeOrdinaryPath -Path $script:VpnStateFile -Leaf
