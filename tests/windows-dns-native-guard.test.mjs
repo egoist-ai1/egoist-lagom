@@ -151,3 +151,18 @@ test('Dns elevated GUI receipt guard rejects medium/foreign/malformed launch pro
   assert.equal(receipt.validControlledShapeAccepted, true); assert.equal(receipt.refused, 23);
   assert.equal(receipt.actualGuiLaunches + receipt.liveMutations, 0); assert.equal(receipt.nativeAcceptancePassed, false);
 });
+
+test('inert DNS inventory distinguishes missing families and rejects malformed rows and unsafe topology', { skip: process.platform !== 'win32' }, () => {
+  const base = process.env.LAGOM_TEST_TEMP;
+  assert.ok(base && path.isAbsolute(base), 'Set private task-owned LAGOM_TEST_TEMP.');
+  assert.ok(fs.statSync(base).isDirectory());
+  const work = fs.mkdtempSync(path.join(base, 'dns-inventory-regression-'));
+  const result = run(['-File', path.resolve('tests/windows-dns-native-inventory.ps1'),
+    '-SourcePath', path.resolve('tests/windows-dns-native-acceptance.ps1'), '-WorkRoot', work]);
+  assert.equal(result.status, 0, [result.error?.code, result.signal, result.stdout, result.stderr].filter(Boolean).join('\n'));
+  const receipt = JSON.parse(fs.readFileSync(path.join(work, 'dns-inventory-regression.json'), 'utf8'));
+  assert.equal(receipt.groups, 15); assert.equal(receipt.results.every(row => row.passed), true);
+  assert.equal(receipt.controlledInputs, true); assert.equal(receipt.actualNativeDnsQueries, 0);
+  assert.equal(receipt.liveDnsMutations + receipt.liveScmMutations + receipt.liveTaskMutations + receipt.liveRegistryMutations, 0);
+  assert.equal(receipt.nativeAcceptancePassed, false);
+});

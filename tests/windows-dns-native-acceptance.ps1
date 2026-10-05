@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
   [Alias('Mode')][ValidateSet('Run','GuardOnly','EmergencyGuardian','QueryProbe')][string]$DnsNativeMode='Run',
   [Alias('IntegrityManifestPath')][string]$DnsIntegrityManifestPath='',
@@ -70,15 +70,46 @@ function Get-DnsNativeRegistryTree {
   Read-DnsNativeRegistryKey $Subkey 0
   return $rows.ToArray()
 }
+function Get-DnsNativeServerAddressMap {
+  $map=@{}
+  # One unfiltered terminating query distinguishes an absent family from a CIM failure.
+  foreach($row in @(Get-DnsClientServerAddress -ErrorAction Stop)){
+    $index=[int]$row.InterfaceIndex;$addressFamily=[int]$row.AddressFamily
+    if($index -lt 1 -or $addressFamily -notin @(2,23)){throw 'DNS API returned an invalid interface/family identity.'}
+    $key=([string]$index+'/'+[string]$addressFamily)
+    if($map.ContainsKey($key)){throw 'DNS API returned duplicate interface/family rows.'}
+    $servers=@();if($null -ne $row.ServerAddresses){$servers=@($row.ServerAddresses)}
+    foreach($server in $servers){
+      if([int]([Net.IPAddress]::Parse([string]$server).AddressFamily) -ne $addressFamily){throw 'DNS API server address differs from its declared family.'}
+    }
+    $map[$key]=[ordered]@{apiPresent=$true;servers=$servers}
+  }
+  return $map
+}
+function Get-DnsNativeApiFamily {
+  param($Map,[int]$Index,[int]$AddressFamily)
+  if($Index -lt 1 -or $AddressFamily -notin @(2,23)){throw 'DNS API family lookup identity is invalid.'}
+  $key=([string]$Index+'/'+[string]$AddressFamily)
+  if($Map.ContainsKey($key)){return $Map[$key]}
+  return [ordered]@{apiPresent=$false;servers=@()}
+}
+function Assert-DnsNativeApiPresence {
+  param($Original,$Actual,[bool]$Managed)
+  if($Original.apiPresent -isnot [bool] -or $Actual.apiPresent -isnot [bool] -or
+     $Original.apiPresent -ne $Actual.apiPresent -or ($Managed -and -not $Actual.apiPresent)){
+    throw 'DNS API family presence differs from the original or managed family.'
+  }
+}
 function Get-DnsNativeInventory {
+  $dnsServerAddresses=Get-DnsNativeServerAddressMap
   $adapters=@(Get-NetAdapter -IncludeHidden | Sort-Object ifIndex | ForEach-Object {
     $adapter=$_;$families=[ordered]@{}
     foreach($family in @('ipv4','ipv6')){
       $protocol=if($family -eq 'ipv4'){'Tcpip'}else{'Tcpip6'}
       $key=[Microsoft.Win32.Registry]::LocalMachine.OpenSubKey('SYSTEM\CurrentControlSet\Services\'+$protocol+'\Parameters\Interfaces\'+[string]$adapter.InterfaceGuid,$false)
       try{$nameServer=if($key){$key.GetValue('NameServer',$null)}else{$null};$dhcp=if($key){$key.GetValue('DhcpNameServer',$null)}else{$null}}finally{if($key){$key.Dispose()}}
-      $rows=@(Get-DnsClientServerAddress -InterfaceIndex ([int]$adapter.ifIndex) -AddressFamily $(if($family -eq 'ipv4'){'IPv4'}else{'IPv6'}) -ErrorAction Stop)
-      $families[$family]=[ordered]@{servers=@($rows | ForEach-Object {$_.ServerAddresses});static=(-not [string]::IsNullOrWhiteSpace([string]$nameServer));nameServer=$nameServer;dhcpNameServer=$dhcp}
+      $api=Get-DnsNativeApiFamily $dnsServerAddresses ([int]$adapter.ifIndex) $(if($family -eq 'ipv4'){2}else{23})
+      $families[$family]=[ordered]@{apiPresent=[bool]$api.apiPresent;servers=@($api.servers);static=(-not [string]::IsNullOrWhiteSpace([string]$nameServer));nameServer=$nameServer;dhcpNameServer=$dhcp}
     }
     [ordered]@{index=[int]$adapter.ifIndex;guid=[string]$adapter.InterfaceGuid;alias=[string]$adapter.Name;description=[string]$adapter.InterfaceDescription;status=[string]$adapter.Status;families=$families}
   })
@@ -110,15 +141,21 @@ function Assert-DnsNoForeignState {
 }
 function Get-DnsSafeAdapter {
   param($Inventory)
-  $targets=@(Get-NetIPInterface | Where-Object {
-    $adapter=Get-NetAdapter -InterfaceIndex $_.InterfaceIndex -ErrorAction SilentlyContinue
-    $identity=([string]$_.InterfaceAlias+' '+[string]$adapter.InterfaceDescription)
-    $_.ConnectionState -eq 'Connected' -and $identity -notmatch 'WireGuard|Wintun|Cloudflare\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\s_-])(TAP|TUN)([\s_-]|$)'
-  } | Group-Object InterfaceIndex | ForEach-Object {[int]$_.Name})
-  $routes=@(Get-NetRoute -DestinationPrefix '0.0.0.0/0' -PolicyStore ActiveStore)
+  $excluded='WireGuard|Wintun|Cloudflare\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\s_-])(TAP|TUN)([\s_-]|$)'
+  $eligible=[Collections.Generic.List[int]]::new()
+  foreach($interface in @(Get-NetIPInterface -ErrorAction Stop)){
+    if($interface.ConnectionState -ne 'Connected' -or [string]$interface.InterfaceAlias -match $excluded){continue}
+    $adapters=@($Inventory.adapters | Where-Object {$_.index -eq [int]$interface.InterfaceIndex})
+    if($adapters.Count -ne 1){throw 'Eligible IP interface does not identify exactly one inventoried adapter.'}
+    $identity=([string]$interface.InterfaceAlias+' '+[string]$adapters[0].description)
+    if($identity -match $excluded){continue}
+    $eligible.Add([int]$interface.InterfaceIndex)
+  }
+  $targets=@($eligible | Sort-Object -Unique)
+  $routes=@(Get-NetRoute -DestinationPrefix '0.0.0.0/0' -PolicyStore ActiveStore -ErrorAction Stop)
   if($targets.Count -ne 1 -or $routes.Count -ne 1 -or [int]$routes[0].InterfaceIndex -ne $targets[0]){throw 'Ambiguous/default adapter topology refused before DNS mutation.'}
   $rows=@($Inventory.adapters | Where-Object {$_.index -eq $targets[0]})
-  if($rows.Count -ne 1 -or [string]$rows[0].guid -notmatch '^\{?[a-fA-F0-9-]{36}\}?$' -or $rows[0].families.ipv4.servers.Count -lt 1){throw 'Stable GUID/original DNS is unavailable.'}
+  if($rows.Count -ne 1 -or [string]$rows[0].guid -notmatch '^\{?[a-fA-F0-9-]{36}\}?$' -or $rows[0].families.ipv4.apiPresent -ne $true -or $rows[0].families.ipv4.servers.Count -lt 1){throw 'Stable GUID/original DNS is unavailable.'}
   foreach($family in @('ipv4','ipv6')){foreach($server in $rows[0].families[$family].servers){if([Net.IPAddress]::IsLoopback([Net.IPAddress]::Parse([string]$server))){throw 'Original loopback DNS requires a separate owned resolver gate.'}}}
   return $rows[0]
 }
@@ -173,6 +210,7 @@ function Assert-DnsPrivateOwnedState {
     $actual=@($current.adapters | Where-Object {$_.guid -ieq $original.guid});if($actual.Count -ne 1){throw 'DNS adapter set changed.'}
     foreach($family in @('ipv4','ipv6')){
       $managed=$original.guid -ieq $script:DnsAdapter.guid -and @($script:DnsProfile[$family]).Count -gt 0
+      Assert-DnsNativeApiPresence $original.families[$family] $actual[0].families[$family] $managed
       $expected=if($managed){$script:DnsProfile[$family]}else{$original.families[$family].servers}
       if(-not (Test-DnsSameSequence $actual[0].families[$family].servers $expected) -or ($managed -and -not $actual[0].families[$family].static) -or (-not $managed -and $actual[0].families[$family].nameServer -cne $original.families[$family].nameServer)){throw 'Per-adapter DNS actual state does not match owned/preserved families.'}
     }
@@ -423,6 +461,7 @@ function Invoke-DnsNativeAcceptance {
   $script:Evidence=if($DnsEvidenceDirectory){Assert-NativePathWithin $DnsEvidenceDirectory $script:DnsWork}else{Join-Path $script:DnsWork 'evidence'}
   $script:DnsBefore=Get-DnsNativeInventory;$script:DnsAdapter=Get-DnsSafeAdapter $script:DnsBefore
   $ipv6=@(Get-NetRoute -DestinationPrefix '::/0' -PolicyStore ActiveStore -ErrorAction SilentlyContinue | Where-Object {$_.InterfaceIndex -eq $script:DnsAdapter.index}).Count -gt 0
+  if($ipv6){Assert-DnsNativeApiPresence $script:DnsAdapter.families.ipv6 $script:DnsAdapter.families.ipv6 $true}
   $script:DnsProfile=Get-DnsNativeProvider $Provider $ipv6
   $allowed=ConvertTo-DnsIpSequence $script:DnsProfile.servers
   foreach($entry in @($script:DnsBefore.doh | Where-Object {(ConvertTo-DnsIpSequence @($_.serverAddress))[0] -in $allowed})){if($entry.dohTemplate -cne $script:DnsProfile.url){throw 'Selected provider address already has a foreign DoH template.'}}
