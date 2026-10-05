@@ -443,7 +443,7 @@ function Write-BrandedInstallerStatus {
     "dns-stopped" { "38|Компоненты сохранены. Устанавливаем новую версию..." }
     "dns-preserved" { "38|DNS работает. Устанавливаем новую версию..." }
     "installer-exited" {
-      if ([int]$Data.exitCode -eq 0) { "82|Восстанавливаем DNS и службы..." }
+      if ([int]$Data.exitCode -eq 0) { "82|Настраиваем и запускаем новую версию..." }
       else { "88|Установка прервалась. Восстанавливаем предыдущую версию и DNS..." }
     }
     "recovering" { "88|Восстанавливаем предыдущую рабочую версию..." }
@@ -1343,6 +1343,67 @@ function Stop-PreservedWrappersForRecovery {
   }
 }
 
+function Update-PreservedSystemDohEngine {
+  param([object]$State)
+  $records = @($State.services | Where-Object { $_.name -eq 'EgoistShieldSystemDoH' })
+  if ($records.Count -eq 0) { return }
+  if ($records.Count -ne 1) { throw 'SystemDoH engine service snapshot is ambiguous.' }
+  $root = Assert-PlainWrapperMigrationPath -Path (Join-Path $script:RuntimeRoot 'SystemDoH') -Root $script:RuntimeRoot
+  $wrapper = Assert-PlainWrapperMigrationPath -Path (Join-Path $root 'service-wrapper\egoistshield-system-doh-service.exe') -Root $root
+  if ([IO.Path]::GetFullPath(([string]$records[0].pathName).Trim().Trim('"')) -ine $wrapper) { throw 'SystemDoH engine saved service ownership mismatch.' }
+  Assert-PreservedWrapperStopped -Name 'EgoistShieldSystemDoH' -Wrapper $wrapper
+  $destination = Assert-PlainWrapperMigrationPath -Path (Join-Path $root 'runtime\xray-system-doh.exe') -Root $root
+  $backup = Assert-PlainWrapperMigrationPath -Path (Join-Path $StageDirectory 'runtime-backup\SystemDoH\runtime\xray-system-doh.exe') -Root $StageDirectory
+  $inventoryPath = Assert-PlainWrapperMigrationPath -Path (Join-Path $script:OwnedInstallRoot 'resources\worker-host-integrity.json') -Root $script:OwnedInstallRoot
+  $manifestPath = Assert-PlainWrapperMigrationPath -Path (Join-Path $script:OwnedInstallRoot 'resources\runtime\manifest.json') -Root $script:OwnedInstallRoot
+  $source = Assert-PlainWrapperMigrationPath -Path (Join-Path $script:OwnedInstallRoot 'resources\runtime\xray\xray.exe') -Root $script:OwnedInstallRoot
+  $streams = @()
+  try {
+    foreach ($path in @($inventoryPath,$manifestPath,$source,$backup,$destination)) {
+      [void](Assert-InstallerBootRecoveryFileProtection -Path $path)
+      $stream = [IO.File]::Open($path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+      $streams += $stream
+      Assert-OwnedSystemDohInputSingleLink -Stream $stream
+    }
+    if ($streams[0].Length -le 0 -or $streams[0].Length -gt 1048576 -or
+        $streams[1].Length -le 0 -or $streams[1].Length -gt 4194304) { throw 'SystemDoH payload inventory exceeds its limit.' }
+    $inventory = Get-Content -LiteralPath $inventoryPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $manifestPins = @($inventory.files | Where-Object { $_.path -ceq 'resources/runtime/manifest.json' -and @($_.roles) -contains 'cli' })
+    if ($inventory.schemaVersion -ne 1 -or $inventory.owner -cne 'EgoistShield' -or $manifestPins.Count -ne 1 -or
+        [string]$manifestPins[0].sha256 -notmatch '^[A-Fa-f0-9]{64}$' -or [int64]$manifestPins[0].bytes -ne $streams[1].Length -or
+        (Get-FileSha256 $manifestPath) -ine [string]$manifestPins[0].sha256) { throw 'SystemDoH installed manifest failed host-integrity validation.' }
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    if ($manifest.schemaVersion -ne 1 -or [string]$manifest.packageVersion -cne [string]$State.version) { throw 'SystemDoH engine payload version is not the installed release.' }
+    $components = @($manifest.components | Where-Object { $_.name -ceq 'xray' -and $_.present -eq $true })
+    if ($components.Count -ne 1) { throw 'SystemDoH engine payload component is missing or ambiguous.' }
+    $pins = @($components[0].files | Where-Object { $_.path -ceq 'xray/xray.exe' })
+    if ($pins.Count -ne 1 -or [string]$pins[0].sha256 -notmatch '^[A-Fa-f0-9]{64}$' -or
+        [int64]$pins[0].size -le 0 -or [int64]$pins[0].size -gt 268435456 -or [int64]$pins[0].size -ne $streams[2].Length -or
+        (Get-FileSha256 $source) -ine [string]$pins[0].sha256) { throw 'SystemDoH packaged engine failed checksum validation.' }
+    [void](Assert-InstallerBootRecoveryFileProtection -Path $destination)
+    if ($streams[3].Length -gt 268435456 -or $streams[4].Length -gt 268435456) { throw 'SystemDoH engine input exceeds its limit.' }
+    $currentHash = Get-FileSha256 $destination
+    if ($currentHash -ine (Get-FileSha256 $backup) -and $currentHash -ine [string]$pins[0].sha256) { throw 'SystemDoH runtime engine is not the preserved or new verified binary.' }
+    if (@(Get-CimInstance Win32_Process -Property ExecutablePath -OperationTimeoutSec 3 -ErrorAction Stop |
+        Where-Object { [string]::Equals([string]$_.ExecutablePath,$destination,[StringComparison]::OrdinalIgnoreCase) }).Count -gt 0) { throw 'SystemDoH engine replacement requires no running owned engine.' }
+    $State | Add-Member -NotePropertyName systemDohEngineSha256 -NotePropertyValue ([string]$pins[0].sha256) -Force
+    $State | Add-Member -NotePropertyName wrapperMigrationPending -NotePropertyValue $true -Force
+    Write-JsonAtomic -Path (Join-Path $StageDirectory 'state.json') -Value $State
+    if ($currentHash -ieq [string]$pins[0].sha256) { return }
+    $temporary = Assert-PlainWrapperMigrationPath -Path ($destination + '.migration-' + [Guid]::NewGuid().ToString('N')) -Root $root
+    if ($temporary.Length -ge 260) { throw 'SystemDoH engine migration exceeds the supported Windows IO boundary.' }
+    try {
+      [IO.File]::Copy($source,$temporary,$false)
+      if ((Get-Item -LiteralPath $temporary).Length -ne [int64]$pins[0].size -or
+          (Get-FileSha256 $temporary) -ine [string]$pins[0].sha256) { throw 'Staged SystemDoH engine failed checksum readback.' }
+      Assert-PreservedWrapperStopped -Name 'EgoistShieldSystemDoH' -Wrapper $wrapper
+      $streams[4].Dispose()
+      [IO.File]::Replace($temporary,$destination,[NullString]::Value)
+      if ((Get-FileSha256 $destination) -ine [string]$pins[0].sha256) { throw 'New SystemDoH engine failed checksum readback.' }
+    } finally { if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force -ErrorAction Stop } }
+  } finally { foreach ($stream in $streams) { $stream.Dispose() } }
+}
+
 function Update-PreservedRuntimeReliability {
   param([object]$State, [switch]$PreserveSystemDohRuntime)
   $definitions = @{
@@ -1949,6 +2010,8 @@ function Write-VerifiedSystemDohRecoveryRuntime {
     $file = Assert-PlainWrapperMigrationPath -Path (Join-Path $proof.root $relative) -Root $proof.root
     $files += [pscustomobject]@{ path = $relative; bytes = (Get-Item -LiteralPath $file).Length; sha256 = Get-FileSha256 $file }
   }
+  if ($State.PSObject.Properties['systemDohEngineSha256'] -and
+      (Get-FileSha256 (Join-Path $proof.root 'runtime\xray-system-doh.exe')) -ine [string]$State.systemDohEngineSha256) { throw 'Recorded SystemDoH engine does not match the newly installed payload.' }
   $receiptPath = Assert-PlainWrapperMigrationPath -Path (Join-Path $StageDirectory 'system-doh-migrated-runtime.json') -Root $StageDirectory
   Write-JsonAtomic -Path $receiptPath -Value @{
     schemaVersion = 1; owner = 'EgoistShield'; stage = $StageDirectory; installationId = $identity
@@ -2738,14 +2801,8 @@ function Invoke-WorkerMode {
     Write-Heartbeat -Stage $StageDirectory -Phase "preparing"
     Protect-InstallerStageTree -Stage $StageDirectory
     [void](Register-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory)
-    $keepDns = @($state.services | Where-Object { $_.name -eq 'EgoistShieldSystemDoH' -and $_.wasRunning -eq $true }).Count -gt 0 -and
-      (Test-PreservedPrivateDnsIntent -State $state)
-    if ($keepDns) {
-      $continuity = Test-OwnedSystemDohRecoveryRuntime -State $state -PreservedRuntimeRecovery -AsEvidence
-      if (-not $continuity -or $continuity -is [bool]) { throw 'The running private resolver could not be pinned before handoff; no payload mutation was started.' }
-      $state | Add-Member -NotePropertyName payloadContinuity -NotePropertyValue $continuity -Force
-      Write-JsonAtomic -Path $statePath -Value $state
-    }
+    # Successful reinstall creates the new payload runtime; DNS may be absent during handoff.
+    $keepDns = $false
     $powerShell = Get-NativePowerShellPath
     $watchdogArguments = @("-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", (Join-Path $StageDirectory "invoke-final-silent-reinstall.ps1"), "-Watchdog", "-StageDirectory", $StageDirectory)
     $watchdogCommandLine = ($watchdogArguments | ForEach-Object { ConvertTo-InstallerWindowsArgument ([string]$_) }) -join ' '
@@ -2765,13 +2822,8 @@ function Invoke-WorkerMode {
       Assert-InstallerNotCancelled
       Stop-OwnedServiceForInstall -Name $name
     }
-    if ($keepDns) {
-      [void](Assert-SystemDohPayloadContinuity -State $state)
-      Add-ReceiptEvent -Stage 'handoff' -Status 'dns-preserved' -Message 'The exact independently installed private resolver remains running through payload publication.'
-    } else {
-      Stop-OwnedServiceForInstall -Name 'EgoistShieldSystemDoH'
-      Add-ReceiptEvent -Stage 'handoff' -Status 'dns-stopped' -Message 'No enabled running private resolver was selected for continuity; optional service handoff is starting.'
-    }
+    Stop-OwnedServiceForInstall -Name 'EgoistShieldSystemDoH'
+    Add-ReceiptEvent -Stage 'handoff' -Status 'dns-stopped' -Message 'The verified old resolver stopped last; installation will create the new runtime with the preserved private policy.'
     Assert-InstallerNotCancelled
     Set-Content -LiteralPath (Join-Path $StageDirectory "backup-ready.flag") -Value "ready" -Encoding ASCII -Force
 
@@ -2796,14 +2848,14 @@ function Invoke-WorkerMode {
     Assert-InstallerNotCancelled
     Stop-OwnedServiceForInstall -Name "EgoistShieldCore"
     Restore-PreservedState -State $state -PreserveSystemDohRuntime:$keepDns
+    Update-PreservedSystemDohEngine -State $state
     Update-PreservedRuntimeReliability -State $state -PreserveSystemDohRuntime:$keepDns
     Update-PreservedServiceWrappers -State $state -PreserveSystemDohRuntime:$keepDns
     Reconcile-PreservedZapretProfile -State $state
     Restore-InstalledIdentity -State $state
     Restore-PreservedServiceStartModes -State $state
     $dnsMigrationDeferred = $false
-    if ($keepDns) { $dnsMigrationDeferred = -not (Invoke-SystemDohRuntimeMigration -State $state) }
-    else { Write-VerifiedSystemDohRecoveryRuntime -State $state }
+    Write-VerifiedSystemDohRecoveryRuntime -State $state
     $state | Add-Member -NotePropertyName dnsMigrationDeferred -NotePropertyValue $dnsMigrationDeferred -Force
     Write-JsonAtomic -Path $statePath -Value $state
     Refresh-OwnedCoreProtectedConfiguration
@@ -2824,7 +2876,7 @@ function Invoke-WorkerMode {
     Complete-InstallerServiceMaintenance
     [void](Unregister-InstallerMaintenanceBootRecovery -StageDirectory $StageDirectory -RestorationVerified:$true)
     if ($state.runAfter -ne $false) { Start-InstalledDesktop -State $state }
-    Add-ReceiptEvent -Stage "verify" -Status "succeeded" -Message "Installer, version, Core and owned private runtime passed readback; private upstream availability and deferred migration were reported separately." -Data @{ installedVersion = $installedVersion; privateUpstreamReady = $privateUpstreamReady; dnsMigrationDeferred = $dnsMigrationDeferred }
+    Add-ReceiptEvent -Stage "verify" -Status "succeeded" -Message "Installer, version, Core and owned private runtime passed readback; private upstream availability was reported separately." -Data @{ installedVersion = $installedVersion; privateUpstreamReady = $privateUpstreamReady; dnsMigrationDeferred = $dnsMigrationDeferred }
     $updateMessage = if ($privateUpstreamReady) { "Обновление до $installedVersion установлено; службы и DNS проверены." } else { "Обновление до $installedVersion установлено; службы восстановлены. Приватный DNS ожидает доступности сервера без смены оператора." }
     Write-DesktopUpdateResult -State $state -Ok $true -Message $updateMessage
     Set-Content -LiteralPath (Join-Path $StageDirectory "complete.flag") -Value "success" -Encoding ASCII -Force

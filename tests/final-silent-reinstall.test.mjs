@@ -79,7 +79,7 @@ test('embedded installer dispatch rejects a PE with the wrong product identity',
   ], { cwd: root, windowsHide: true, timeout: 30_000 }), /product identity is invalid/);
 });
 
-test('worker starts watchdog before service handoff and preserves enabled owned DNS through payload publication', async () => {
+test('worker stops old DNS last and verifies the new runtime before starting preserved services', async () => {
   const source = await fs.readFile(script, 'utf8');
   const worker = source.match(/function Invoke-WorkerMode[\s\S]*?\r?\n}\r?\n\r?\nif \(\$ProbePayloadContinuity\)/)?.[0] ?? '';
   const watchdogStart = worker.indexOf('Start-Process -FilePath $powerShell');
@@ -91,9 +91,19 @@ test('worker starts watchdog before service handoff and preserves enabled owned 
   assert.ok(watchdogStart >= 0 && watchdogStart < ordinaryStops);
   assert.ok(dnsBackup >= 0 && runtimeBackup >= 0 && runtimeBackup < dnsStop);
   assert.ok(ordinaryStops < dnsStop && dnsStop < installerStart);
-  assert.match(worker, /if \(\$keepDns\) \{\s+\[void\]\(Assert-SystemDohPayloadContinuity -State \$state\)/);
+  assert.match(worker, /\$keepDns = \$false/);
+  assert.doesNotMatch(worker, /Invoke-SystemDohRuntimeMigration|payloadContinuity|dns-preserved/);
   assert.match(worker, /Restore-PreservedState -State \$state -PreserveSystemDohRuntime:\$keepDns/);
-  assert.match(worker, /if \(\$keepDns\) \{ \$dnsMigrationDeferred = -not \(Invoke-SystemDohRuntimeMigration/);
+  const restore = worker.indexOf('Restore-PreservedState -State $state');
+  const engine = worker.indexOf('Update-PreservedSystemDohEngine -State $state');
+  const configuration = worker.indexOf('Update-PreservedRuntimeReliability -State $state');
+  const wrappers = worker.indexOf('Update-PreservedServiceWrappers -State $state');
+  const generation = worker.indexOf('Write-VerifiedSystemDohRecoveryRuntime -State $state');
+  const start = worker.indexOf('Start-PreservedServices -State $state');
+  assert.ok(installerStart < restore && restore < engine && engine < configuration);
+  assert.ok(configuration < wrappers && wrappers < generation && generation < start);
+  assert.match(worker, /\$dnsMigrationDeferred = \$false/);
+  assert.match(source, /Recorded SystemDoH engine does not match the newly installed payload/);
   assert.match(source, /function Restore-CriticalOwnedDnsBaseline/);
   assert.match(source, /Restore-PreservedState/);
   assert.match(source, /Test-LoopbackDnsReady/);

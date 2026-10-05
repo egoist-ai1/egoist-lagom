@@ -5,6 +5,16 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 const execute=promisify(execFile);
+// Cold PS7 startup and inert C# compilation have their own bounded test budget.
+const compilerTimeoutMs=60_000;
+const compilerStages=['environment:entry','environment:parse','environment:compile','environment:environment','environment:json'];
+function compilerDiagnostic(stderr){
+ const lines=String(stderr||'').split(/\r?\n/).filter(Boolean);
+ const marker=lines.find(line=>line.startsWith('environment:error:'));
+ let failure=null;
+ if(marker&&marker.length<=1024){try{failure=JSON.parse(marker.slice('environment:error:'.length));}catch{}}
+ return {stages:lines.filter(line=>compilerStages.includes(line)).slice(0,compilerStages.length),failure};
+}
 const ps7=process.env.LAGOM_TEST_POWERSHELL7||process.env.LAGOM_TEST_POWERSHELL;
 const ps5=path.join(process.env.SystemRoot||'C:\\Windows','System32/WindowsPowerShell/v1.0/powershell.exe');
 const source=path.resolve(process.env.LAGOM_TEST_ORDINARY_GUI_SOURCE||'tests/windows-ordinary-gui.cs');
@@ -29,7 +39,7 @@ const roots="$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue
  "psEdition=[string]$PSVersionTable.PSEdition;startupEntryExecuted=$false;nativeTaskScmRegistryWrites=0};"+
  "$json=Microsoft.PowerShell.Utility\\ConvertTo-Json -InputObject $r -Compress;[Console]::Error.WriteLine('startup:json');[Console]::Out.WriteLine($json)";
 for(const [shell,edition] of [[ps5,'Desktop'],[ps7,'Core']]){
- test(edition+' startup known-folder roots use the native GUI environment derived from its actual Windows root',{skip:process.platform!=='win32'},async()=>{
+ test(edition+' startup known-folder roots use the native GUI environment derived from its actual Windows root',{skip:process.platform!=='win32',timeout:compilerTimeoutMs+20_000},async()=>{
   assert.ok(ps7&&path.isAbsolute(ps7),'Absolute selected LAGOM_TEST_POWERSHELL or LAGOM_TEST_POWERSHELL7 required.');
   assert.ok((await fs.stat(ps7)).isFile(),'Selected PowerShell 7 executable must exist.');
   const base=process.env.LAGOM_TEST_TEMP;
@@ -37,8 +47,10 @@ for(const [shell,edition] of [[ps5,'Desktop'],[ps7,'Core']]){
   assert.ok((await fs.stat(base)).isDirectory(),'Existing caller-owned LAGOM_TEST_TEMP required.');
   const dir=await fs.mkdtemp(path.join(base,'gui-system-drive-'));
   try{
-   const compiled=await execute(ps7,[...args,'-File',fixture,'-HarnessPath',source,'-WorkDirectory',dir],{env:{...process.env,TEMP:dir,TMP:dir},windowsHide:true,timeout:20_000,maxBuffer:128*1024});
-   assert.equal(compiled.stderr.trim(),'');const proof=JSON.parse(compiled.stdout);
+   let compiled;const compilerStarted=performance.now();
+   try{compiled=await execute(ps7,[...args,'-File',fixture,'-HarnessPath',source,'-WorkDirectory',dir],{env:{...process.env,TEMP:dir,TMP:dir},windowsHide:true,timeout:compilerTimeoutMs,maxBuffer:128*1024});}
+   catch(error){error.guiEnvironmentCompilerProbe={budgetMs:compilerTimeoutMs,elapsedMs:Math.round(performance.now()-compilerStarted),...compilerDiagnostic(error.stderr)};throw error;}
+   assert.deepEqual(compiled.stderr.trim().split(/\r?\n/),compilerStages);const proof=JSON.parse(compiled.stdout);
    assert.equal(proof.psEdition,'Core');assert.equal(proof.rows.length,6);
    for(const row of proof.rows)assert.equal(row.passed,true,row.name);
    for(const key of ['nativeEnvironmentTokenCalls','nativeLaunches','settingsTaskScmRegistryWrites'])assert.equal(proof[key],0);
@@ -52,3 +64,21 @@ for(const [shell,edition] of [[ps5,'Desktop'],[ps7,'Core']]){
   }finally{assert.equal(path.dirname(dir),path.resolve(base));await fs.rm(dir,{recursive:true,force:true});}
  });
 }
+
+test('inert environment compiler reports a bounded parse failure before compilation',{skip:process.platform!=='win32',timeout:compilerTimeoutMs+5_000},async()=>{
+ assert.ok(ps7&&path.isAbsolute(ps7),'Absolute selected PowerShell7 required.');
+ const base=process.env.LAGOM_TEST_TEMP;assert.ok(base&&path.isAbsolute(base),'Absolute caller-owned LAGOM_TEST_TEMP required.');
+ assert.ok((await fs.stat(base)).isDirectory(),'Existing caller-owned temporary directory required.');
+ const dir=await fs.mkdtemp(path.join(base,'gui-environment-error-'));
+ try{
+  const malformed=path.join(dir,'owned-malformed-tail.cs');await fs.writeFile(malformed,'// Inert extraction bounds are deliberately absent.\n');
+  await assert.rejects(execute(ps7,[...args,'-File',fixture,'-HarnessPath',malformed,'-WorkDirectory',dir],{env:{...process.env,TEMP:dir,TMP:dir},windowsHide:true,timeout:compilerTimeoutMs,maxBuffer:128*1024}),error=>{
+   assert.equal(error.code,1);assert.equal(error.signal,null);assert.equal(error.killed,false);assert.equal(error.stdout.trim(),'');
+   const lines=error.stderr.trim().split(/\r?\n/);assert.equal(lines.length,3);assert.ok(lines[2].startsWith('environment:error:'));assert.ok(lines[2].length<=1024);
+   const diagnostic=compilerDiagnostic(error.stderr);assert.deepEqual(diagnostic.stages,compilerStages.slice(0,2));
+   assert.deepEqual(Object.keys(diagnostic.failure).sort(),['category','class','hresult','phase','schemaVersion'].sort());
+   assert.equal(diagnostic.failure.schemaVersion,1);assert.equal(diagnostic.failure.phase,'parse');assert.match(diagnostic.failure.class,/^[A-Za-z.]+$/);assert.ok(Number.isInteger(diagnostic.failure.hresult));
+   assert.equal(diagnostic.stages.includes('environment:compile'),false);assert.equal(diagnostic.stages.includes('environment:environment'),false);return true;
+  });
+ }finally{assert.equal(path.dirname(dir),path.resolve(base));await fs.rm(dir,{recursive:true,force:true});}
+});

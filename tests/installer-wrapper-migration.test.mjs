@@ -15,6 +15,7 @@ test('protected upgrade migrates verified stopped wrappers and restores their or
   const { stdout, stderr } = await execFileAsync(powershell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'tests', 'installer-wrapper-migration.ps1')], { cwd: root, windowsHide: true, timeout: 30_000 });
   assert.equal(stderr.trim(), '');
   assert.match(stdout, /Wrapper migration checks: 21 passed/);
+  assert.match(stdout, /SystemDoH engine migration checks: 8 passed/);
 });
 
 test('worker and watchdog persist handoff before stops and gate rollback before handoff', async () => {

@@ -14,7 +14,7 @@ $tokens = $null; $errors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile([IO.Path]::GetFullPath($SourceScript), [ref]$tokens, [ref]$errors)
 if ($errors.Count) { throw ($errors | Out-String) }
 $fixtureLease='Local\LagomWrapperMigration-'+[Guid]::NewGuid().ToString('N')
-foreach ($name in @('Get-FileSha256','Write-JsonAtomic','Get-PreservedWrapperDefinitions','Assert-PlainWrapperMigrationPath','Get-VerifiedPackagedServiceWrapper','Assert-PreservedWrapperStopped','Update-PreservedServiceWrappers','Stop-PreservedWrappersForRecovery','Assert-SupportedServiceFramework','Invoke-WorkerMode','Assert-InstallerNotCancelled','Enter-InstallerWorkerLease')) {
+foreach ($name in @('Get-FileSha256','Write-JsonAtomic','Get-PreservedWrapperDefinitions','Assert-PlainWrapperMigrationPath','Get-VerifiedPackagedServiceWrapper','Update-PreservedSystemDohEngine','Assert-PreservedWrapperStopped','Update-PreservedServiceWrappers','Stop-PreservedWrappersForRecovery','Assert-SupportedServiceFramework','Invoke-WorkerMode','Assert-InstallerNotCancelled','Enter-InstallerWorkerLease')) {
   $fn = $ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name}, $true)
   if ($fn) { . ([scriptblock]::Create($fn.Extent.Text.Replace('Global\EgoistShield.DeferredReinstall',$fixtureLease))) }
 }
@@ -33,7 +33,21 @@ $script:statuses = @{}
 $script:stops = @()
 $script:cimQueryFails = $false
 function Get-Service { param($Name,$ErrorAction) return [pscustomobject]@{Status=$script:statuses[$Name]} }
-function Get-CimInstance { param($ClassName,$Filter,$ErrorAction) if($script:cimQueryFails){throw 'Fixture CIM lookup failed'}; $name=($Filter -replace "^Name='",'' -replace "'$",''); return [pscustomobject]@{PathName=$script:registrations[$name]} }
+function Get-CimInstance {
+  param($ClassName,$Filter,$ErrorAction,$Property,$OperationTimeoutSec)
+  if($script:cimQueryFails){throw 'Fixture CIM lookup failed'}
+  if($ClassName -eq 'Win32_Process') { if($script:liveEngine){return [pscustomobject]@{ExecutablePath=$engine}};return @() }
+  $name=($Filter -replace "^Name='",'' -replace "'$",''); return [pscustomobject]@{PathName=$script:registrations[$name]}
+}
+function Assert-InstallerBootRecoveryFileProtection {
+  param($Path)
+  Require ([IO.Path]::GetFullPath($Path).StartsWith($fixtureRoot+'\',[StringComparison]::OrdinalIgnoreCase)) 'Protection adapter escaped the fixture.'
+}
+function Assert-OwnedSystemDohInputSingleLink {
+  param([IO.FileStream]$Stream)
+  Require ($Stream -and -not $Stream.SafeFileHandle.IsClosed) 'Input lease was not held.'
+}
+$script:liveEngine=$false
 function Stop-OwnedServiceForInstall { param($Name) $script:stops += $Name; $script:statuses[$Name]='Stopped' }
 function Update-PreservedRuntimeReliability { param($State) }
 function Write-VerifiedSystemDohRecoveryRuntime { param($State) }
@@ -53,7 +67,16 @@ Require ((Get-FileSha256 $canonical) -eq $hash) 'Fixture requires the exact veri
 Copy-Item -LiteralPath $canonical -Destination $packaged
 $manifestPath=Join-Path $script:OwnedInstallRoot 'resources\runtime\manifest.json'
 $manifest=[pscustomobject]@{schemaVersion=1;packageVersion='3.8.0';components=@([pscustomobject]@{name='zapret';present=$true;files=@([pscustomobject]@{path=$relative;sha256=$hash;size=655872})})}
-function Reset-Manifest { Write-JsonAtomic -Path $manifestPath -Value $manifest }
+function Reset-Manifest {
+  Write-JsonAtomic -Path $manifestPath -Value $manifest
+  Write-JsonAtomic -Path $inventoryPath -Value ([pscustomobject]@{schemaVersion=1;owner='EgoistShield';files=@([pscustomobject]@{path='resources/runtime/manifest.json';roles=@('cli');bytes=([IO.FileInfo]$manifestPath).Length;sha256=(Get-FileSha256 $manifestPath)})})
+}
+$inventoryPath=Join-Path $script:OwnedInstallRoot 'resources\worker-host-integrity.json'
+$engineSource=Join-Path $script:OwnedInstallRoot 'resources\runtime\xray\xray.exe'
+New-Item -ItemType Directory -Path (Split-Path -Parent $engineSource) -Force | Out-Null
+[IO.File]::WriteAllText($engineSource,'New shipped engine sentinel; never executed.')
+$engineHash=Get-FileSha256 $engineSource
+$manifest.components += [pscustomobject]@{name='xray';present=$true;files=@([pscustomobject]@{path='xray/xray.exe';sha256=$engineHash;size=([IO.FileInfo]$engineSource).Length})}
 Reset-Manifest
 $records=@()
 foreach ($definition in @(@('EgoistShieldSystemDoH','SystemDoH','egoistshield-system-doh-service'),@('EgoistShieldTelegramProxy','TelegramProxy','egoistshield-telegram-proxy-service'),@('EgoistShieldZapret','Zapret','egoistshield-zapret-service'))) {
@@ -66,6 +89,14 @@ foreach ($definition in @(@('EgoistShieldSystemDoH','SystemDoH','egoistshield-sy
   $script:statuses[$definition[0]]='Stopped'
 }
 $state=[pscustomobject]@{version='3.8.0';services=$records;wrapperMigrationPending=$false;handoffStarted=$false}
+$engine=Join-Path $script:RuntimeRoot 'SystemDoH\runtime\xray-system-doh.exe'
+$engineBackup=Join-Path $StageDirectory 'runtime-backup\SystemDoH\runtime\xray-system-doh.exe'
+New-Item -ItemType Directory -Path (Split-Path -Parent $engine),(Split-Path -Parent $engineBackup) -Force | Out-Null
+[IO.File]::WriteAllText($engine,'Old preserved engine sentinel; never executed.')
+Copy-Item -LiteralPath $engine -Destination $engineBackup
+$privateConfig=Join-Path $script:RuntimeRoot 'SystemDoH\config.json'
+[IO.File]::WriteAllText($privateConfig,'{"privateProvider":"fixture.invalid","hosts":{"private.invalid":"192.0.2.4"}}')
+$privateConfigHash=Get-FileSha256 $privateConfig
 # Execute the actual post-restore statements from Invoke-WorkerMode. On the
 # archived baseline this restores the old aliases without upgrading binaries.
 $worker=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Invoke-WorkerMode'},$true)
@@ -77,6 +108,9 @@ foreach ($record in $records) { Require ((Get-FileSha256 $record.pathName) -eq $
 Require ((Get-Content -LiteralPath (Join-Path $StageDirectory 'state.json') -Raw | ConvertFrom-Json).wrapperMigrationPending -eq $true) 'Rollback state was not persisted before migration.'
 Require ($records[2].wasRunning -eq $false) 'Migration changed the stopped-service intent.'
 Write-Output 'PASS: actual worker restore sequence migrates three exact stopped aliases and records rollback state'
+Require ((Get-FileSha256 $engine) -eq $engineHash -and (Get-FileSha256 $privateConfig) -eq $privateConfigHash -and $state.systemDohEngineSha256 -eq $engineHash) 'Actual worker sequence retained old engine or changed private config.'
+Require ((Get-Content -LiteralPath (Join-Path $StageDirectory 'state.json') -Raw | ConvertFrom-Json).systemDohEngineSha256 -eq $engineHash) 'New engine digest was not persisted before mutation.'
+Write-Output 'PASS: actual worker sequence selects the newly pinned engine while keeping private config'
 Update-PreservedServiceWrappers $state
 Write-Output 'PASS: verified aliases are idempotent and stopped intent is preserved'
 
@@ -166,6 +200,84 @@ Write-Output 'PASS: migration refuses a real junction before reading or writing 
 Expect-Refused { Assert-PlainWrapperMigrationPath -Path (Join-Path $fixtureRoot 'outside.exe') -Root $script:RuntimeRoot } '*outside its owned root*'
 Write-Output 'PASS: an outside destination is rejected'
 
+Update-PreservedSystemDohEngine $state
+Require ((Get-FileSha256 $engine) -eq $engineHash -and (Get-FileSha256 $privateConfig) -eq $privateConfigHash) 'Already new engine was not idempotent.'
+Write-Output 'PASS: exact new engine is idempotent without config changes'
+function Reset-Engine {Copy-Item -LiteralPath $engineBackup -Destination $engine -Force;$script:statuses['EgoistShieldSystemDoH']='Stopped';$script:liveEngine=$false;Reset-Manifest}
+Reset-Engine
+$oldEngineHash=Get-FileSha256 $engine
+$script:statuses['EgoistShieldSystemDoH']='Running'
+Expect-Refused {Update-PreservedSystemDohEngine $state} '*requires stopped service*'
+$script:statuses['EgoistShieldSystemDoH']='Stopped';$script:liveEngine=$true
+Expect-Refused {Update-PreservedSystemDohEngine $state} '*requires no running owned engine*'
+Require ((Get-FileSha256 $engine) -eq $oldEngineHash) 'Live runtime refusal changed the engine.'
+$script:liveEngine=$false
+Write-Output 'PASS: running service or surviving engine cannot authorize replacement'
+$inventory=Get-Content -LiteralPath $inventoryPath -Raw | ConvertFrom-Json
+$inventory.files[0].sha256='0'*64;Write-JsonAtomic -Path $inventoryPath -Value $inventory
+Expect-Refused {Update-PreservedSystemDohEngine $state} '*host-integrity validation*'
+Require ((Get-FileSha256 $engine) -eq $oldEngineHash) 'Wrong host digest changed the engine.'
+Reset-Manifest
+Write-Output 'PASS: wrong installed manifest digest is rejected'
+$manifest.packageVersion='3.7.9';Reset-Manifest
+Expect-Refused {Update-PreservedSystemDohEngine $state} '*not the installed release*'
+Require ((Get-FileSha256 $engine) -eq $oldEngineHash) 'Stale version changed the engine.'
+$manifest.packageVersion='3.8.0';Reset-Manifest
+Write-Output 'PASS: stale engine package version is rejected'
+[IO.File]::AppendAllText($engineSource,'tampered')
+Expect-Refused {Update-PreservedSystemDohEngine $state} '*checksum validation*'
+Require ((Get-FileSha256 $engine) -eq $oldEngineHash) 'Wrong shipped engine digest changed the runtime.'
+[IO.File]::WriteAllText($engineSource,'New shipped engine sentinel; never executed.')
+Write-Output 'PASS: shipped engine checksum mismatch is rejected'
+$oldPath=$records[0].pathName;$records[0].pathName='C:\Foreign\wrapper.exe'
+Expect-Refused {Update-PreservedSystemDohEngine $state} '*saved service ownership mismatch*'
+$records[0].pathName=$oldPath
+[IO.File]::WriteAllText($engine,'Foreign current engine sentinel; never executed.')
+Expect-Refused {Update-PreservedSystemDohEngine $state} '*not the preserved or new verified binary*'
+Require ([IO.File]::ReadAllText($engine) -eq 'Foreign current engine sentinel; never executed.' -and (Get-FileSha256 $privateConfig) -eq $privateConfigHash) 'Ownership refusal changed engine or private config.'
+Reset-Engine
+Write-Output 'PASS: foreign service path or current engine is rejected before replacement'
+# Inject only the final digest observation, after the real atomic replacement.
+$script:originalEngineHashFunction=(Get-Command Get-FileSha256).ScriptBlock
+$script:rejectNewEngineReadback=$true
+function Get-FileSha256 {
+  param([string]$Path)
+  $hashValue=& $script:originalEngineHashFunction $Path
+  if($script:rejectNewEngineReadback -and $Path -eq $engine -and $hashValue -eq $engineHash){return ('0'*64)}
+  return $hashValue
+}
+Expect-Refused {Update-PreservedSystemDohEngine $state} '*New SystemDoH engine failed checksum readback*'
+$script:rejectNewEngineReadback=$false
+Require ((Get-FileSha256 $engine) -eq $engineHash -and $state.wrapperMigrationPending -eq $true) 'Fixture did not exercise a replaced engine with pending rollback.'
+Require ((Get-Content -LiteralPath (Join-Path $StageDirectory 'state.json') -Raw | ConvertFrom-Json).wrapperMigrationPending -eq $true) 'Rollback marker was not durable before engine replacement.'
+# Execute the actual restoration body with only SCM/DNS and owned directory-copy adapters.
+$restoreBody=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Restore-PreservedState'},$true)
+. ([scriptblock]::Create($restoreBody.Extent.Text))
+function Assert-PreservedServiceRegistration {param($Record)}
+function Get-PreservedRegistryBackup {param($Record)}
+function Assert-CurrentPreservedServiceOwnership {param($Name)}
+function Restore-PreservedServiceRegistration {param($Record)}
+function Restore-CriticalDnsState {param($State)}
+function Protect-InstallerStageTree {
+  param($Stage)
+  Require ([IO.Path]::GetFullPath($Stage).StartsWith($fixtureRoot+'\',[StringComparison]::OrdinalIgnoreCase)) 'Restoration protection escaped the fixture.'
+}
+function Invoke-RobocopyDirectory {
+  param($Source,$Destination,$ExcludeDirectories)
+  Require ($Source -eq (Join-Path $StageDirectory 'runtime-backup') -and $Destination -eq $script:RuntimeRoot) 'Restoration copy escaped its exact fixture roots.'
+  foreach($file in @(Get-ChildItem -LiteralPath $Source -Recurse -File)) {
+    $target=Join-Path $Destination ($file.FullName.Substring($Source.Length+1))
+    New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
+    Copy-Item -LiteralPath $file.FullName -Destination $target -Force
+  }
+}
+$state | Add-Member -NotePropertyName userState -NotePropertyValue @() -Force
+Copy-Item -LiteralPath $privateConfig -Destination (Join-Path $StageDirectory 'runtime-backup\SystemDoH\config.json')
+Restore-PreservedState $state
+Require ((Get-FileSha256 $engine) -eq $oldEngineHash -and (Get-FileSha256 $privateConfig) -eq $privateConfigHash) 'Actual restore body did not recover the old engine and private config after pending replacement failure.'
+Require (@(Get-ChildItem -LiteralPath (Split-Path -Parent $engine) -Filter '*.migration-*').Count -eq 0) 'Engine temporary file leaked after failure.'
+Write-Output 'PASS: final engine readback failure retains pending rollback and actual restore body recovers old engine/config'
+Write-Output 'SystemDoH engine migration checks: 8 passed; real isolated atomic copy/restore, controlled SCM/protection adapters; no engine execution'
 $script:frameworkRelease=0
 function Get-ServiceFrameworkRelease { return $script:frameworkRelease }
 foreach ($release in @(0,461808,528039)) { $script:frameworkRelease=$release; Expect-Refused { Assert-SupportedServiceFramework } '*Framework 4.8 or newer*' }
