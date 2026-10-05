@@ -40,9 +40,10 @@ function Get-DnsClientServerAddress {
 function Get-NetIPInterface {[CmdletBinding()]param();return $script:Interfaces}
 function Get-NetRoute {[CmdletBinding()]param([string]$DestinationPrefix,[string]$PolicyStore);return $script:Routes}
 function Get-NetAdapter {
-  [CmdletBinding()]param([int]$InterfaceIndex)
+  [CmdletBinding()]param([int]$InterfaceIndex,[switch]$Physical)
+  if($Physical){return $script:PhysicalAdapters}
   $script:AdapterLookups++
-  return @($script:PhysicalAdapters | Where-Object {$_.ifIndex -eq $InterfaceIndex})
+  return @($script:Inventory.adapters | Where-Object {$_.index -eq $InterfaceIndex} | ForEach-Object {New-PhysicalFixtureRow $_.index})
 }
 function Get-CimInstance {throw 'Unexpected live CIM query.'}
 function Get-ScheduledTask {throw 'Unexpected live Task query.'}
@@ -80,16 +81,20 @@ function New-ApiRow([int]$Index,[int]$Family,[string[]]$Servers) {
   return [pscustomobject]@{InterfaceIndex=$Index;AddressFamily=$Family;ServerAddresses=$Servers}
 }
 function New-Adapter([int]$Index) {
-  return [ordered]@{index=$Index;guid='11111111-1111-1111-1111-111111111111';alias='Ethernet';description='Ethernet fixture';status='Up';families=[ordered]@{
+  return [ordered]@{index=$Index;guid=('00000000-0000-0000-0000-'+$Index.ToString('D12'));alias=$(if($Index -eq 20){'Ethernet 2'}else{'Ethernet'});description='Ethernet fixture';status='Up';families=[ordered]@{
     ipv4=[ordered]@{apiPresent=$true;servers=@('192.0.2.53');static=$false;nameServer=$null;dhcpNameServer='192.0.2.53'}
     ipv6=[ordered]@{apiPresent=$false;servers=@();static=$false;nameServer=$null;dhcpNameServer=$null}
   }}
+}
+function New-PhysicalFixtureRow([int]$Index) {
+  $adapter=@($script:Inventory.adapters|Where-Object {$_.index -eq $Index})[0]
+  return [pscustomobject]@{ifIndex=$Index;Name=$adapter.alias;InterfaceGuid=$adapter.guid;InterfaceDescription=$adapter.description}
 }
 function Set-NormalTopology {
   $script:Inventory=[ordered]@{adapters=@((New-Adapter 10))}
   $script:Interfaces=@([pscustomobject]@{InterfaceIndex=10;InterfaceAlias='Ethernet';ConnectionState='Connected'})
   $script:Routes=@([pscustomobject]@{InterfaceIndex=10})
-  $script:PhysicalAdapters=@([pscustomobject]@{ifIndex=10;InterfaceDescription='Ethernet fixture'})
+  $script:PhysicalAdapters=@((New-PhysicalFixtureRow 10))
 }
 Run-Case 'frozen-filtered-family-fails-absent-hidden-family' {
   $script:ApiRows=@((New-ApiRow 2 23 @()));$adapter=@{ifIndex=2};$family='ipv4'
@@ -160,6 +165,7 @@ Run-Case 'duplicate-or-multiple-eligible-adapters-refused' {
   Expect-Refusal {Get-DnsSafeAdapter $script:Inventory} 'exactly one inventoried adapter'
   Set-NormalTopology;$script:Inventory.adapters+= (New-Adapter 20)
   $script:Interfaces+= [pscustomobject]@{InterfaceIndex=20;InterfaceAlias='Ethernet 2';ConnectionState='Connected'}
+  $script:PhysicalAdapters+= (New-PhysicalFixtureRow 20)
   Expect-Refusal {Get-DnsSafeAdapter $script:Inventory} 'Ambiguous/default adapter topology'
 }
 Run-Case 'absent-selected-ipv4-and-managed-description-refused' {
@@ -176,7 +182,8 @@ Run-Case 'ambiguous-or-mismatched-default-route-refused' {
 }
 Run-Case 'diagnostic-two-eligible-one-default-retains-original-refusal' {
   Set-NormalTopology;$script:Inventory.adapters+= (New-Adapter 20)
-  $script:Interfaces+= [pscustomobject]@{InterfaceIndex=20;InterfaceAlias='vEthernet (nat)';ConnectionState='Connected'}
+  $script:Interfaces+= [pscustomobject]@{InterfaceIndex=20;InterfaceAlias='Ethernet 2';ConnectionState='Connected'}
+  $script:PhysicalAdapters+= (New-PhysicalFixtureRow 20)
   $message=$null;try{Get-DnsSafeAdapter $script:Inventory|Out-Null}catch{$message=$_.Exception.Message}
   Check ($null -ne $message -and $message.Contains(' Preflight=')) 'Original topology refusal lost diagnostic suffix.'
   $meta=ConvertFrom-Json -InputObject $message.Substring($message.IndexOf(' Preflight=')+11)
@@ -196,6 +203,13 @@ Run-Case 'diagnostic-raw-route-duplicates-and-bounded-indices-retain-refusal' {
   $sourceFunction=@($ast.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -ceq 'Get-DnsSafeAdapter'},$false))[0].Extent.Text
   Check ($sourceFunction.Contains('if($targets.Count -ne 1 -or $routes.Count -ne 1 -or [int]$routes[0].InterfaceIndex -ne $targets[0])')) 'Original unsafe-topology predicate changed.'
   Check ($sourceFunction.Contains('Get-NetIPInterface -ErrorAction Stop') -and $sourceFunction.Contains("Get-NetRoute -DestinationPrefix '0.0.0.0/0' -PolicyStore ActiveStore -ErrorAction Stop")) 'Original terminating topology query changed.'
+}
+Run-Case 'known-nonphysical-connected-interface-is-not-automatic-target' {
+  Set-NormalTopology;$script:Inventory.adapters+= (New-Adapter 20)
+  $script:Inventory.adapters[1].alias='vEthernet (nat)';$script:Inventory.adapters[1].description='Hyper-V Virtual Ethernet'
+  $script:Interfaces+= [pscustomobject]@{InterfaceIndex=20;InterfaceAlias='vEthernet (nat)';ConnectionState='Connected'}
+  $actual=Get-DnsSafeAdapter $script:Inventory
+  Check ($actual.index -eq 10 -and $script:PhysicalAdapters.Count -eq 1) 'Known nonphysical adapter changed automatic physical scope.'
 }
 # Static placement checks protect the active and pre-mutation managed-family call sites.
 Run-Case 'presence-guard-used-by-active-readback-and-before-provider' {

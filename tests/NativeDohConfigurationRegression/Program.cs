@@ -26,6 +26,11 @@ internal static partial class Program
         var elapsed = Stopwatch.StartNew();
         try
         {
+            await PhysicalEnrollmentCallerRegressionAsync();
+            if (args.Contains("--physical-enrollment-only")) {
+                Console.WriteLine($"Physical enrollment/recorded caller mock regression passed: {_passed} groups; nativeActions=0; work={_work}");
+                return 0;
+            }
             await Check("startup persistence read retains one readiness epoch across recovery", StartupReadbackEpochAsync);
             if (args.Contains("--startup-readback-only")) return 0;
             await Check("disabled IPv6 DNS apply respects actual binding and preserves skipped family", DisabledIpv6ApplyAsync);
@@ -215,9 +220,14 @@ internal static partial class Program
         internal readonly Dictionary<string, NativeDohEntrySnapshot> Entries = new(StringComparer.OrdinalIgnoreCase);
         internal readonly List<string> Events = new();
         internal readonly WindowsNativeDohController Native;
+        internal readonly WindowsDnsController Dns;
+        internal HashSet<string>? PhysicalGuids;
+        internal readonly HashSet<string> DisconnectedGuids = new(StringComparer.OrdinalIgnoreCase);
         internal readonly TransactionJournal Journal;
         internal readonly OperationDispatcher Dispatcher;
         internal bool FailApply;
+        internal bool ForbidDnsWrites;
+        internal bool ForbidNativeWrites;
         internal bool EnforceSwitchOrder;
         internal int BootstrapCalls;
         internal bool FailBootstrap;
@@ -226,7 +236,8 @@ internal static partial class Program
             Adapters = current ?? new[] { Baseline with { Ipv4 = new[] { "1.1.1.1" }, Ipv4Static = true } };
             Native = new WindowsNativeDohController(Root, NativeScript);
             Journal = new TransactionJournal(Root);
-            Dispatcher = new OperationDispatcher(new ServiceOptions("test-no-pipe", Root, true, true, null), new WindowsDnsController(DnsScript), Native, null, Journal, new ServiceLog(Root), (payload, query, token) =>
+            Dns = new WindowsDnsController(DnsScript);
+            Dispatcher = new OperationDispatcher(new ServiceOptions("test-no-pipe", Root, true, true, null), Dns, Native, null, Journal, new ServiceLog(Root), (payload, query, token) =>
             {
                 Assert(query && payload.GetProperty("method").GetString() == "bootstrapServers", "Unexpected or mutating bootstrap worker call.");
                 BootstrapCalls++; Events.Add("bootstrap.query");
@@ -244,11 +255,20 @@ internal static partial class Program
         private Task<ProcessResult> DnsScript(string script, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
+            if (ForbidDnsWrites && (script.Contains("$operation = '") || script.Contains("$ipv4 = @(") || script.Contains("-ResetServerAddresses")))
+                throw new InvalidOperationException("INERT_DNS_WRITE_GUARD");
             if (script.Contains("$operation = '"))
             {
                 var targets = Targets(script); Events.Add("dns.restore");
                 Adapters = Adapters.Select(current => targets.SingleOrDefault(x => x.InterfaceGuid == current.InterfaceGuid) ?? current).ToArray();
                 return Task.FromResult(new ProcessResult(0, "", ""));
+            }
+            if (script.Contains("Set-DnsClientServerAddress") && script.Contains("-ResetServerAddresses"))
+            {
+                var targets = Targets(script); Events.Add("dns.reset");
+                Adapters = Adapters.Select(current => targets.Any(x => x.InterfaceGuid == current.InterfaceGuid)
+                    ? current with { Ipv4Static=false, Ipv6Static=false } : current).ToArray();
+                return Task.FromResult(new ProcessResult(0,"",""));
             }
             if (script.Contains("$ipv4 = @("))
             {
@@ -262,7 +282,10 @@ internal static partial class Program
             if (script.Contains("$result = @()"))
             {
                 Events.Add("dns.readback"); var inputs = JsonInputs(script);
-                var actual = inputs.Length > 0 ? Adapters.Where(x => Parse<DnsAdapterSnapshot[]>(inputs[0]).Any(t => t.InterfaceGuid == x.InterfaceGuid)).ToArray() : Adapters;
+                bool physical = script.Contains("Get-NetAdapter -Physical -ErrorAction Stop");
+                Events.Add(inputs.Length > 0 ? "dns.explicit" : physical ? "dns.physical" : "dns.general");
+                var actual = inputs.Length > 0 ? Adapters.Where(x => Parse<DnsAdapterSnapshot[]>(inputs[0]).Any(t => t.InterfaceGuid == x.InterfaceGuid)).ToArray() :
+                    Adapters.Where(x => !DisconnectedGuids.Contains(x.InterfaceGuid) && (!physical || PhysicalGuids == null || PhysicalGuids.Contains(x.InterfaceGuid))).ToArray();
                 return Task.FromResult(Result(actual));
             }
             if (script.Contains("flushdns")) { Events.Add("dns.flush"); return Task.FromResult(new ProcessResult(0, "", "")); }
@@ -272,6 +295,9 @@ internal static partial class Program
         private Task<ProcessResult> NativeScript(string script, CancellationToken token)
         {
             token.ThrowIfCancellationRequested(); var inputs = JsonInputs(script);
+            if (ForbidNativeWrites && !script.Contains("$rows = @()") && !script.Contains("Get-NetRoute -AddressFamily IPv6"))
+                throw new InvalidOperationException("INERT_NATIVE_WRITE_GUARD");
+            if (script.Contains("Get-NetRoute -AddressFamily IPv6")) { Events.Add("native.route-read"); return Task.FromResult(new ProcessResult(0,"false","")); }
             if (script.Contains("$rows = @()"))
             {
                 var rows = Parse<string[]>(inputs[0]).Select(server => Entries.GetValueOrDefault(server) ?? new(server, false, null, false, false)).ToArray();

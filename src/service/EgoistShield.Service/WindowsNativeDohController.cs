@@ -170,8 +170,10 @@ internal sealed class WindowsNativeDohController
 			return;
 		}
 		string[] servers = WindowsDnsController.ValidateServers(state.Servers);
-		DnsAdapterSnapshot[] array = await dns.ReadSnapshotAsync(cancellationToken);
 		DnsAdapterSnapshot[] originalDnsAdapters = state.OriginalDnsAdapters;
+		DnsAdapterSnapshot[] array = originalDnsAdapters is { Length: > 0 }
+			? await dns.ReadRequiredSnapshotAsync(originalDnsAdapters, cancellationToken)
+			: await dns.ReadSnapshotAsync(cancellationToken);
 		if (originalDnsAdapters != null && originalDnsAdapters.Length > 0)
 		{
 			var targets = new DnsOwnedState(1, "EgoistShield", servers, originalDnsAdapters).RestoreTargets(array, out _, repairLoopback: false);

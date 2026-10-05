@@ -161,7 +161,7 @@ test('inert DNS inventory distinguishes missing families and rejects malformed r
     '-SourcePath', path.resolve('tests/windows-dns-native-acceptance.ps1'), '-WorkRoot', work]);
   assert.equal(result.status, 0, [result.error?.code, result.signal, result.stdout, result.stderr].filter(Boolean).join('\n'));
   const receipt = JSON.parse(fs.readFileSync(path.join(work, 'dns-inventory-regression.json'), 'utf8'));
-  assert.equal(receipt.groups, 17); assert.equal(receipt.results.every(row => row.passed), true);
+  assert.equal(receipt.groups, 18); assert.equal(receipt.results.every(row => row.passed), true);
   assert.equal(receipt.controlledInputs, true); assert.equal(receipt.actualNativeDnsQueries, 0);
   assert.equal(receipt.liveDnsMutations + receipt.liveScmMutations + receipt.liveTaskMutations + receipt.liveRegistryMutations, 0);
   assert.equal(receipt.nativeAcceptancePassed, false);
@@ -195,5 +195,36 @@ test('actual DNS guardian identity preserves JSON timestamp precision in WinPS5 
     assert.equal(receipt.retainedToleranceMilliseconds, 20); assert.equal(receipt.retainedHeartbeatSeconds, 180); assert.equal(receipt.retainedMaximumSeconds, 1200);
     assert.equal(receipt.actualNativeAcceptance, false);
     assert.equal(receipt.guardianInvocations + receipt.serviceNetworkTaskRegistryMutations + receipt.foreignPidQueries, 0);
+  }
+});
+
+test('actual Core automatic DNS snapshot uses connected physical API identities and preserves explicit virtual ownership', { skip: process.platform !== 'win32' }, () => {
+  const base = process.env.LAGOM_TEST_TEMP;
+  assert.ok(base && path.isAbsolute(base), 'Set private task-owned LAGOM_TEST_TEMP.');
+  assert.ok(fs.statSync(base).isDirectory());
+  const work = fs.mkdtempSync(path.join(base, 'dns-physical-scope-'));
+  const fixture = path.resolve('tests/windows-dns-physical-enrollment.ps1');
+  const core = path.resolve('src/service/EgoistShield.Service/WindowsDnsController.cs');
+  const acceptance = path.resolve('tests/windows-dns-native-acceptance.ps1');
+  const ps7 = process.env.LAGOM_TEST_POWERSHELL7 || 'pwsh.exe';
+  const args = mode => ['-File', fixture, '-Mode', mode, '-CoreSource', core, '-AcceptanceSource', acceptance, '-WorkRoot', work];
+  const prepared = run(args('Prepare'), 15000, ps7);
+  assert.equal(prepared.status, 0, [prepared.error?.code, prepared.signal, prepared.stdout, prepared.stderr].filter(Boolean).join('\n'));
+  const compile = JSON.parse(fs.readFileSync(path.join(work, 'physical-snapshot-generator.json'), 'utf8'));
+  assert.equal(compile.actualMethodsExtracted, true);
+  assert.equal(compile.fullCoreBuildPerformed || compile.nativeAcceptancePassed, false);
+  assert.equal(compile.liveNativeQueriesOrWrites, 0);
+  for (const interpreter of [
+    { executable: path.join(process.env.SystemRoot || 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe'), edition: 'Desktop', major: 5 },
+    { executable: ps7, edition: 'Core', major: 7 },
+  ]) {
+    const result = run(args('Control'), 15000, interpreter.executable);
+    assert.equal(result.status, 0, [result.error?.code, result.signal, result.stdout, result.stderr].filter(Boolean).join('\n'));
+    const receipt = JSON.parse(fs.readFileSync(path.join(work, 'physical-scope-' + interpreter.edition + '.json'), 'utf8'));
+    assert.equal(Number(receipt.powershell.split('.')[0]), interpreter.major);
+    assert.equal(receipt.groups, 13);
+    assert.equal(receipt.accepted && receipt.results.every(row => row.passed), true);
+    assert.equal(receipt.actualNativeAcceptance, false);
+    assert.equal(receipt.liveNativeQueriesOrWrites, 0);
   }
 });

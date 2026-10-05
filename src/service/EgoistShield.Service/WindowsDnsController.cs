@@ -24,6 +24,26 @@ internal sealed class WindowsDnsController
 		return ReadSnapshotCoreAsync(null, cancellationToken);
 	}
 
+	public Task<DnsAdapterSnapshot[]> ReadPhysicalSnapshotAsync(CancellationToken cancellationToken = default(CancellationToken))
+	{
+		return ReadSnapshotCoreAsync(null, cancellationToken, physicalOnly: true);
+	}
+
+	public async Task<DnsAdapterSnapshot[]> ReadRequiredSnapshotAsync(IReadOnlyCollection<DnsAdapterSnapshot> targets, CancellationToken cancellationToken)
+	{
+		var present = await ReadPresentSnapshotAsync(targets, cancellationToken);
+		EnsureRecordedTargetsPresent(present, targets);
+		return present;
+	}
+
+	internal static void EnsureRecordedTargetsPresent(IReadOnlyCollection<DnsAdapterSnapshot> present, IReadOnlyCollection<DnsAdapterSnapshot> recorded)
+	{
+		EnsureStableTargetIdentity(recorded);
+		EnsureStableTargetIdentity(present);
+		if (IntersectByStableIdentity(present, recorded).Length != recorded.Count)
+			throw new InvalidOperationException("Recorded DNS adapters are unavailable; existing ownership was preserved.");
+	}
+
 	public async Task<DnsAdapterSnapshot[]> ReadPresentSnapshotAsync(IReadOnlyCollection<DnsAdapterSnapshot> targets, CancellationToken cancellationToken)
 	{
 		if (targets.Count == 0) return Array.Empty<DnsAdapterSnapshot>();
@@ -207,9 +227,9 @@ internal sealed class WindowsDnsController
 		}
 	}
 
-	private async Task<DnsAdapterSnapshot[]> ReadSnapshotCoreAsync(IReadOnlyCollection<DnsAdapterSnapshot>? targets, CancellationToken cancellationToken)
+	private async Task<DnsAdapterSnapshot[]> ReadSnapshotCoreAsync(IReadOnlyCollection<DnsAdapterSnapshot>? targets, CancellationToken cancellationToken, bool physicalOnly = false)
 	{
-		ProcessResult obj = await RunPowerShellAsync(CreateSnapshotScript(targets), cancellationToken);
+		ProcessResult obj = await RunPowerShellAsync(CreateSnapshotScript(targets, physicalOnly), cancellationToken);
 		EnsureSuccess(obj, "read DNS snapshot");
 		DnsAdapterSnapshot[] array = JsonSerializer.Deserialize<DnsAdapterSnapshot[]>(obj.StandardOutput, JsonDefaults.Options);
 		if (array == null || array.Length == 0)
@@ -366,9 +386,9 @@ internal sealed class WindowsDnsController
 		return left.SequenceEqual<string>(right, StringComparer.OrdinalIgnoreCase);
 	}
 
-	private static string CreateSnapshotScript(IReadOnlyCollection<DnsAdapterSnapshot>? targets)
+	private static string CreateSnapshotScript(IReadOnlyCollection<DnsAdapterSnapshot>? targets, bool physicalOnly = false)
 	{
-		string text = ((targets == null) ? "$targets = @(\n  Get-NetIPInterface | Where-Object { $adapter = Get-NetAdapter -InterfaceIndex $_.InterfaceIndex -ErrorAction SilentlyContinue; $identity = ([string]$_.InterfaceAlias + ' ' + [string]$adapter.InterfaceDescription); $_.ConnectionState -eq 'Connected' -and $identity -notmatch 'WireGuard|Wintun|Cloudflare\\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\\s_-])(TAP|TUN)([\\s_-]|$)' } |\n    Group-Object InterfaceIndex | ForEach-Object {\n      $iface = $_.Group | Sort-Object InterfaceMetric | Select-Object -First 1\n      [pscustomobject]@{\n        interfaceIndex = [int]$iface.InterfaceIndex\n        interfaceAlias = [string]$iface.InterfaceAlias\n        interfaceGuid = $null\n      }\n    }\n)" : ("$targets = @(); foreach ($item in (ConvertFrom-Json -InputObject '" + SerializeForPowerShell(targets) + "')) { $targets += $item }"));
+		string text = ((targets == null) ? (physicalOnly ? "$allAdapters = @(Get-NetAdapter -IncludeHidden -ErrorAction Stop)\n$physicalAdapters = @(Get-NetAdapter -Physical -ErrorAction Stop)\n$targets = @(\n  Get-NetIPInterface -ErrorAction Stop |\n    Where-Object { $_.ConnectionState -eq 'Connected' -and [string]$_.InterfaceAlias -notmatch 'WireGuard|Wintun|Cloudflare\\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\\s_-])(TAP|TUN)([\\s_-]|$)' } |\n    Group-Object InterfaceIndex | ForEach-Object {\n      $iface = $_.Group | Sort-Object InterfaceMetric | Select-Object -First 1\n      $index = [int]$iface.InterfaceIndex\n      $matches = @($allAdapters | Where-Object { [int]$_.ifIndex -eq $index })\n      if ($index -lt 1 -or $matches.Count -ne 1) { throw 'Connected DNS interface does not identify exactly one adapter.' }\n      $adapter = $matches[0]\n      $identity = ([string]$iface.InterfaceAlias + ' ' + [string]$adapter.InterfaceDescription)\n      if ($identity -match 'WireGuard|Wintun|Cloudflare\\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\\s_-])(TAP|TUN)([\\s_-]|$)') { return }\n      $guid = [Guid]::Empty\n      if (-not [Guid]::TryParse([string]$adapter.InterfaceGuid, [ref]$guid) -or $guid -eq [Guid]::Empty) { throw 'Connected DNS adapter GUID is invalid.' }\n      $physical = @($physicalAdapters | Where-Object { [int]$_.ifIndex -eq $index -or [string]$_.InterfaceGuid -ieq [string]$adapter.InterfaceGuid })\n      if ($physical.Count -eq 0) { return }\n      if ($physical.Count -ne 1 -or [int]$physical[0].ifIndex -ne $index -or [string]$physical[0].InterfaceGuid -ine [string]$adapter.InterfaceGuid -or\n          [string]$physical[0].Name -ine [string]$adapter.Name -or [string]$physical[0].InterfaceDescription -cne [string]$adapter.InterfaceDescription -or\n          @($_.Group | Where-Object { [string]$_.InterfaceAlias -ine [string]$adapter.Name }).Count) { throw 'Physical DNS adapter identity changed or is ambiguous.' }\n      [pscustomobject]@{\n        interfaceIndex = $index\n        interfaceAlias = [string]$adapter.Name\n        interfaceGuid = [string]$adapter.InterfaceGuid\n      }\n    }\n)" : "$targets = @(\n  Get-NetIPInterface | Where-Object { $adapter = Get-NetAdapter -InterfaceIndex $_.InterfaceIndex -ErrorAction SilentlyContinue; $identity = ([string]$_.InterfaceAlias + ' ' + [string]$adapter.InterfaceDescription); $_.ConnectionState -eq 'Connected' -and $identity -notmatch 'WireGuard|Wintun|Cloudflare\\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\\s_-])(TAP|TUN)([\\s_-]|$)' } |\n    Group-Object InterfaceIndex | ForEach-Object {\n      $iface = $_.Group | Sort-Object InterfaceMetric | Select-Object -First 1\n      [pscustomobject]@{\n        interfaceIndex = [int]$iface.InterfaceIndex\n        interfaceAlias = [string]$iface.InterfaceAlias\n        interfaceGuid = $null\n      }\n    }\n)") : ("$targets = @(); foreach ($item in (ConvertFrom-Json -InputObject '" + SerializeForPowerShell(targets) + "')) { $targets += $item }"));
 		return "$ErrorActionPreference = 'Stop'\n" + text + "\n" + """
 function Resolve-TargetAdapter {
   param($Target)

@@ -143,12 +143,20 @@ function Get-DnsSafeAdapter {
   param($Inventory)
   $excluded='WireGuard|Wintun|Cloudflare\s+WARP|VPN|Loopback|isatap|Teredo|Pseudo|Npcap|Bluetooth|(^|[\s_-])(TAP|TUN)([\s_-]|$)'
   $eligible=[Collections.Generic.List[int]]::new()
+  $physicalAdapters=@(Get-NetAdapter -Physical -ErrorAction Stop)
   foreach($interface in @(Get-NetIPInterface -ErrorAction Stop)){
     if($interface.ConnectionState -ne 'Connected' -or [string]$interface.InterfaceAlias -match $excluded){continue}
     $adapters=@($Inventory.adapters | Where-Object {$_.index -eq [int]$interface.InterfaceIndex})
     if($adapters.Count -ne 1){throw 'Eligible IP interface does not identify exactly one inventoried adapter.'}
     $identity=([string]$interface.InterfaceAlias+' '+[string]$adapters[0].description)
     if($identity -match $excluded){continue}
+    $guid=[Guid]::Empty
+    if(-not [Guid]::TryParse([string]$adapters[0].guid,[ref]$guid) -or $guid -eq [Guid]::Empty){throw 'Connected DNS adapter GUID is invalid.'}
+    $physical=@($physicalAdapters | Where-Object {[int]$_.ifIndex -eq [int]$interface.InterfaceIndex -or [string]$_.InterfaceGuid -ieq [string]$adapters[0].guid})
+    if($physical.Count -eq 0){continue}
+    if($physical.Count -ne 1 -or [int]$physical[0].ifIndex -ne [int]$interface.InterfaceIndex -or [string]$physical[0].InterfaceGuid -ine [string]$adapters[0].guid -or
+       [string]$physical[0].Name -ine [string]$adapters[0].alias -or [string]$physical[0].Name -ine [string]$interface.InterfaceAlias -or
+       [string]$physical[0].InterfaceDescription -cne [string]$adapters[0].description){throw 'Physical DNS adapter identity changed or is ambiguous.'}
     $eligible.Add([int]$interface.InterfaceIndex)
   }
   $targets=@($eligible | Sort-Object -Unique)

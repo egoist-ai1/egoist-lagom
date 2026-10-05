@@ -277,7 +277,7 @@ internal sealed class OperationDispatcher : IDisposable
 				await _log.InfoAsync("Restored missing owned native DoH registrations; adapter DNS was preserved.", cancellationToken);
 			}
 		}
-		var current = await _dns.ReadSnapshotAsync(cancellationToken);
+		var current = await _dns.ReadPhysicalSnapshotAsync(cancellationToken);
 		var targets = DnsMaintenancePolicy.NewAutomaticAdapters(current, native?.OriginalDnsAdapters ?? local?.OriginalAdapters ?? Array.Empty<DnsAdapterSnapshot>());
 		if (targets.Length == 0) return;
 		string operation = native == null ? "dns.apply" : "dns.doh.apply";
@@ -925,7 +925,7 @@ internal sealed class OperationDispatcher : IDisposable
 		DnsApplyPayload dnsApplyPayload = request.Payload.Deserialize<DnsApplyPayload>(JsonDefaults.Options) ?? throw new ArgumentException("DNS payload is required.");
 		string[] servers = WindowsDnsController.ValidateServers(dnsApplyPayload.Servers ?? Array.Empty<string>());
 		string[] probeHosts = WindowsDnsController.ValidateProbeHosts(dnsApplyPayload.ProbeHosts ?? Array.Empty<string>());
-		DnsAdapterSnapshot[] original = targetAdapters ?? await _dns.ReadSnapshotAsync(cancellationToken);
+		DnsAdapterSnapshot[] original = targetAdapters ?? await _dns.ReadPhysicalSnapshotAsync(cancellationToken);
 		DnsOwnedState? previousOwnership = await ReadDnsOwnedStateAsync(cancellationToken);
 		previousOwnership?.Validate();
 		ActiveTransaction transaction = CreateTransaction(request, "dns", JsonDefaults.ToElement(new DnsOwnedTransactionSnapshot(original, previousOwnership)), JsonDefaults.ToElement(new { servers, probeHosts }), sequence);
@@ -952,9 +952,11 @@ internal sealed class OperationDispatcher : IDisposable
 
 	private async Task<object> ExecuteDnsResetAsync(ServiceRequest request, long sequence, CancellationToken cancellationToken)
 	{
-		DnsAdapterSnapshot[] original = await _dns.ReadSnapshotAsync(cancellationToken);
 		DnsOwnedState? previousOwnership = await ReadDnsOwnedStateAsync(cancellationToken);
 		previousOwnership?.Validate();
+		DnsAdapterSnapshot[] original = previousOwnership?.OriginalAdapters is { Length: > 0 } recorded
+			? await _dns.ReadRequiredSnapshotAsync(recorded, cancellationToken)
+			: await _dns.ReadSnapshotAsync(cancellationToken);
 		ActiveTransaction transaction = CreateTransaction(request, "dns", JsonDefaults.ToElement(new DnsOwnedTransactionSnapshot(original, previousOwnership)), JsonDefaults.ToElement(new
 		{
 			mode = "dhcp"
@@ -1144,7 +1146,7 @@ internal sealed class OperationDispatcher : IDisposable
 		string url = WindowsNativeDohController.ValidateUrl(nativeDohApplyPayload.Url);
 		string[] servers = WindowsDnsController.ValidateServers(nativeDohApplyPayload.Servers ?? Array.Empty<string>());
 		string[] probeHosts = WindowsDnsController.ValidateProbeHosts(nativeDohApplyPayload.ProbeHosts ?? Array.Empty<string>());
-		DnsAdapterSnapshot[] originalDns = targetAdapters ?? await _dns.ReadSnapshotAsync(cancellationToken);
+		DnsAdapterSnapshot[] originalDns = targetAdapters ?? await _dns.ReadPhysicalSnapshotAsync(cancellationToken);
 		NativeDohOwnedState before = await _nativeDoh.ReadOwnedStateAsync(cancellationToken);
 		ValidateNativeDohOwnedState(before);
 		if (before != null && before.Servers.Select(server => IPAddress.Parse(server).AddressFamily).Distinct()
@@ -1215,7 +1217,9 @@ internal sealed class OperationDispatcher : IDisposable
 	{
 		NativeDohOwnedState before = await _nativeDoh.ReadOwnedStateAsync(cancellationToken);
 		ValidateNativeDohOwnedState(before);
-		DnsAdapterSnapshot[] originalDns = await _dns.ReadSnapshotAsync(cancellationToken);
+		DnsAdapterSnapshot[] originalDns = before?.OriginalDnsAdapters is { Length: > 0 } recorded
+			? await _dns.ReadRequiredSnapshotAsync(recorded, cancellationToken)
+			: await _dns.ReadSnapshotAsync(cancellationToken);
 		NativeDohEntrySnapshot[] array = (((object)before != null) ? (await _nativeDoh.ReadEntriesAsync(before.Servers, cancellationToken)) : Array.Empty<NativeDohEntrySnapshot>());
 		NativeDohEntrySnapshot[] entries = array;
 		NativeDohTransactionSnapshot value = new NativeDohTransactionSnapshot(originalDns, before, entries);
@@ -1794,9 +1798,11 @@ internal sealed class OperationDispatcher : IDisposable
 
 	private async Task<NativeDohHealth> ReadNativeDohHealthAsync(CancellationToken cancellationToken)
 	{
-		DnsAdapterSnapshot[] adapters = await _dns.ReadSnapshotAsync(cancellationToken);
 		NativeDohOwnedState state = await _nativeDoh.ReadOwnedStateAsync(cancellationToken);
 		ValidateNativeDohOwnedState(state);
+		DnsAdapterSnapshot[] adapters = state?.OriginalDnsAdapters is { Length: > 0 } recorded
+			? await _dns.ReadRequiredSnapshotAsync(recorded, cancellationToken)
+			: await _dns.ReadSnapshotAsync(cancellationToken);
 		if ((object)state == null)
 		{
 			return new NativeDohHealth(null, adapters, Array.Empty<NativeDohEntrySnapshot>(), EntriesMatch: false, DnsOwned: false);
@@ -1810,6 +1816,7 @@ internal sealed class OperationDispatcher : IDisposable
 		DnsAdapterSnapshot[] originalDnsAdapters = state.OriginalDnsAdapters;
 		if (originalDnsAdapters != null && originalDnsAdapters.Length > 0)
 		{
+			WindowsDnsController.EnsureRecordedTargetsPresent(current, originalDnsAdapters);
 			var targets = NativeDohRestoreTargets(state, current);
 			if (targets.Length != 0)
 			{
