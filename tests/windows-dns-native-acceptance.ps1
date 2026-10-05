@@ -146,7 +146,12 @@ function Get-DnsSafeAdapter {
   $physicalAdapters=@(Get-NetAdapter -Physical -ErrorAction Stop)
   foreach($interface in @(Get-NetIPInterface -ErrorAction Stop)){
     if($interface.ConnectionState -ne 'Connected' -or [string]$interface.InterfaceAlias -match $excluded){continue}
-    $adapters=@($Inventory.adapters | Where-Object {$_.index -eq [int]$interface.InterfaceIndex})
+    $index=[int]$interface.InterfaceIndex
+    if($index -lt 1){throw 'Connected DNS interface index is invalid.'}
+    $physicalByIndex=@($physicalAdapters | Where-Object {[int]$_.ifIndex -eq $index})
+    if($physicalByIndex.Count -eq 0){continue}
+    if($physicalByIndex.Count -ne 1){throw 'Physical DNS adapter identity changed or is ambiguous.'}
+    $adapters=@($Inventory.adapters | Where-Object {$_.index -eq $index})
     if($adapters.Count -ne 1){throw 'Eligible IP interface does not identify exactly one inventoried adapter.'}
     $identity=([string]$interface.InterfaceAlias+' '+[string]$adapters[0].description)
     if($identity -match $excluded){continue}

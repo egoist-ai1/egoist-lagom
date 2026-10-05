@@ -238,7 +238,7 @@ test('actual Core automatic DNS snapshot uses connected physical API identities 
     assert.equal(result.status, 0, [result.error?.code, result.signal, result.stdout, result.stderr].filter(Boolean).join('\n'));
     const receipt = JSON.parse(fs.readFileSync(path.join(work, 'physical-scope-' + interpreter.edition + '.json'), 'utf8'));
     assert.equal(Number(receipt.powershell.split('.')[0]), interpreter.major);
-    assert.equal(receipt.groups, 13);
+    assert.equal(receipt.groups, 17);
     assert.equal(receipt.accepted && receipt.results.every(row => row.passed), true);
     assert.equal(receipt.actualNativeAcceptance, false);
     assert.equal(receipt.liveNativeQueriesOrWrites, 0);

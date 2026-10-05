@@ -543,7 +543,7 @@ function Invoke-NativeElevatedGui {
   Assert-NativeNetworkPreserved 'elevated-gui-stop-start-and-close'
   $gate=@($script:Receipt.releaseGates | Where-Object {$_.name -eq 'GUI IPC from an actual elevated Windows user token'})
   if($gate.Count -ne 1){throw 'Elevated GUI release gate is missing or ambiguous.'}
-  $gate[0].status='passed';$gate[0].reason='Actual current Windows GUI token: elevated, Administrators enabled, high integrity, same user/session, primary and no UIAccess. GUI manifest requires administrator through normal Windows UAC; no filtered-token or sandbox bypass is used. Genuine shipped UI controls stopped and restarted SCM Telegram through the protected LocalSystem Core worker; normal GUI exit and zero-orphan cleanup verified.'
+  $gate[0].status='passed';$gate[0].reason='Actual current Windows GUI token: elevated, Administrators enabled, high integrity, same user/session, primary and no UIAccess. The GUI manifest is asInvoker; this explicit native acceptance launch inherited the actual elevated administrator runner token. No filtered-token or sandbox bypass is used. Genuine shipped UI controls stopped and restarted SCM Telegram through the protected LocalSystem Core worker; normal GUI exit and zero-orphan cleanup verified.'
   $script:Receipt.checks+=[ordered]@{name='actual-elevated-gui-core-broker-service-stop-start-and-normal-quit';ok=$true};Save-NativeReceipt
 }
 

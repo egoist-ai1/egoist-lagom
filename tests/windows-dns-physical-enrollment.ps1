@@ -186,16 +186,38 @@ Case 'explicit-recorded-disconnected-virtual-guid-remains-readable' {
   $result=RunSnapshot $explicit
   Check ($result.Count -eq 1 -and $result[0].interfaceIndex -eq 20 -and $result[0].interfaceGuid -ceq $guid20 -and $script:PhysicalCalls -eq 0) 'Explicit virtual ownership target was physically filtered.'
 }
-Case 'unknown-connected-adapter-refused-before-classification' {
+Case 'unmapped-nonphysical-interface-is-excluded-from-automatic-targets' {
   Setup;$script:AllAdapters=@($script:AllAdapters[0]);$script:Inventory.adapters=@($script:Inventory.adapters[0])
+  $result=RunSnapshot $new
+  Check ($result.Count -eq 1 -and $result[0].interfaceIndex -eq 10) 'Unmapped nonphysical interface blocked or entered automatic physical targets.'
+  Check ((Get-DnsSafeAdapter $script:Inventory).index -eq 10) 'Unmapped nonphysical interface blocked the single physical/default harness target.'
+}
+Case 'selected-physical-adapter-missing-from-inventory-is-refused' {
+  Setup;$script:AllAdapters=@($script:AllAdapters[1]);$script:Inventory.adapters=@($script:Inventory.adapters[1])
   Refuses {RunSnapshot $new} 'exactly one adapter'
   Refuses {Get-DnsSafeAdapter $script:Inventory} 'exactly one inventoried adapter'
+}
+Case 'selected-physical-adapter-duplicate-inventory-is-refused' {
+  Setup;$script:AllAdapters+= $script:AllAdapters[0];$script:Inventory.adapters+= $script:Inventory.adapters[0]
+  Refuses {RunSnapshot $new} 'exactly one adapter'
+  Refuses {Get-DnsSafeAdapter $script:Inventory} 'exactly one inventoried adapter'
+}
+Case 'unmapped-nonphysical-default-route-remains-refused' {
+  Setup;$script:AllAdapters=@($script:AllAdapters[0]);$script:Inventory.adapters=@($script:Inventory.adapters[0]);$script:Routes=@([pscustomobject]@{InterfaceIndex=20})
+  $result=RunSnapshot $new
+  Check ($result.Count -eq 1 -and $result[0].interfaceIndex -eq 10) 'Automatic physical scope selected a nonphysical default route.'
+  Refuses {Get-DnsSafeAdapter $script:Inventory} 'Ambiguous/default adapter topology'
 }
 Case 'physical-guid-mismatch-and-duplicate-identity-refused' {
   Setup;$script:Physical=@([pscustomobject]@{ifIndex=10;Name='Ethernet';InterfaceGuid=$guid20;InterfaceDescription='Hardware Ethernet'})
   Refuses {RunSnapshot $new} 'identity changed or is ambiguous'
   Refuses {Get-DnsSafeAdapter $script:Inventory} 'identity changed or is ambiguous'
   Setup;$script:Physical+= $script:Physical[0]
+  Refuses {RunSnapshot $new} 'identity changed or is ambiguous'
+  Refuses {Get-DnsSafeAdapter $script:Inventory} 'identity changed or is ambiguous'
+}
+Case 'cross-index-physical-guid-collision-remains-refused' {
+  Setup;$script:Physical+= [pscustomobject]@{ifIndex=30;Name='Ethernet other';InterfaceGuid=$guid10;InterfaceDescription='Other physical fixture'}
   Refuses {RunSnapshot $new} 'identity changed or is ambiguous'
   Refuses {Get-DnsSafeAdapter $script:Inventory} 'identity changed or is ambiguous'
 }

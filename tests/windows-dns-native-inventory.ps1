@@ -151,10 +151,11 @@ Run-Case 'connected-loopback-and-disconnected-missing-are-classified-before-look
   $actual=Get-DnsSafeAdapter $script:Inventory
   Check ($actual.index -eq 10 -and $script:AdapterLookups -eq 0) 'Excluded/missing adapters required a live adapter lookup.'
 }
-Run-Case 'eligible-unknown-interface-refused' {
+Run-Case 'unknown-nonphysical-interface-is-excluded-from-automatic-targets' {
   Set-NormalTopology
   $script:Interfaces+= [pscustomobject]@{InterfaceIndex=20;InterfaceAlias='Ethernet unknown';ConnectionState='Connected'}
-  Expect-Refusal {Get-DnsSafeAdapter $script:Inventory} 'exactly one inventoried adapter'
+  $actual=Get-DnsSafeAdapter $script:Inventory
+  Check ($actual.index -eq 10) 'Unmapped interface outside physical API scope blocked or became an automatic target.'
 }
 Run-Case 'normal-exact-default-adapter-passes' {
   Set-NormalTopology
