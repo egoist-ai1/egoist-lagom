@@ -164,6 +164,7 @@ test('queued startup DNS recovery respects a later manual disable and keeps the 
   let settings = { systemDohEnabled: true, systemDohUrl: 'https://dns.example.test:8443/private-saved-path', systemDohLocalAddress: '127.0.0.1', systemDnsServers: '', autoConnect: false };
   const loadedState = { settings: { ...settings } };
   const context = vm.createContext({ Promise, logger: noLog, pendingBootRecovery: new Set(),
+    mainWindow: { isDestroyed: () => false }, isQuitting: false,
     globalStateStore: { get: () => ({ settings }) },
     globalSystemDohManager: { recover: async options => { calls.push(options); return { verified: true }; } }, globalGravitylessDnsManager: null,
     globalNetworkCombinatorManager: { runCoordinatedMutation: async (_intent, work) => { entered.resolve(); await wait.promise; return work(); } },
