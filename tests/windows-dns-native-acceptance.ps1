@@ -488,7 +488,7 @@ function Invoke-DnsTransportProbe {
   Invoke-DnsGuardianHeartbeat
   $capture=Join-Path $script:DnsWork ($Phase+'.etl');$pcap=Join-Path $script:DnsWork ($Phase+'.pcapng');$started=$false
   try{
-    Add-NativeMutation 'owned-bounded-provider-packet-capture' $capture 'Only the approved provider IPs on TCP/UDP53 and443, 256 bytes per packet, one MiB ETL; no runner control/token traffic.'
+    Add-NativeMutation 'owned-bounded-provider-packet-capture' $capture 'Only the approved provider IPs, 256 bytes per packet, one MiB ETL; provider-IP filter diagnosis, no runner IP filters.'
     [void](Invoke-NativeBounded $script:DnsPktmon @('start','--capture','--comp','all','--pkt-size','256','--file-size','1','--log-mode','circular','--file-name',$capture) ('pktmon-'+$Phase+'-start') 15);$started=$true
     $label=[Guid]::NewGuid().ToString('N').Substring(0,20)
     $result=Invoke-NativeBounded $script:DnsPowerShell @('-NoLogo','-NoProfile','-NonInteractive','-File',(Join-Path $script:DnsTestsRoot 'windows-dns-native-acceptance.ps1'),'-Mode','QueryProbe','-ExpectedSourceCommit',$DnsExpectedSourceCommit,'-DnsProbeLabel',$label) ('windows-dns-'+$Phase) 25
@@ -639,11 +639,11 @@ function Invoke-DnsNativeAcceptance {
     $status=Invoke-NativeBounded $script:DnsPktmon @('status') 'pktmon-original-status' 15
     $list=Invoke-NativeBounded $script:DnsPktmon @('filter','list') 'pktmon-original-filters' 15
     if($status.stdout -notmatch '(?i)not running|not started|stopped' -or $list.stdout -notmatch '(?i)no filters|none'){throw 'Packet Monitor is in use or its English empty-state contract is unknown; no capture or DNS change is allowed.'}
-    foreach($server in $script:DnsProfile.servers){foreach($port in @(53,443)){
+    foreach($server in $script:DnsProfile.servers){
       $name='LagomDns-'+[Guid]::NewGuid().ToString('N').Substring(0,10)
-      [void](Invoke-NativeBounded $script:DnsPktmon @('filter','add',$name,'-i',$server,'-p',[string]$port) ('pktmon-filter-add-'+$name) 15);$filters+=$name
-      Add-NativeMutation 'owned-provider-packet-filter' $name ($server+':'+$port+'; exact named filter only')
-    }}
+      [void](Invoke-NativeBounded $script:DnsPktmon @('filter','add',$name,'-i',$server) ('pktmon-filter-add-'+$name) 15);$filters+=$name
+      Add-NativeMutation 'owned-provider-packet-filter' $name ($server+'; exact provider IP, no port predicate; exact named filter only')
+    }
     $guardian=Invoke-DnsGuardianLaunch
     Invoke-DnsElevatedGui 'Apply'
     [void](Assert-DnsPrivateOwnedState 'actual-gui-closed');Invoke-DnsTransportProbe 'without-gui'
