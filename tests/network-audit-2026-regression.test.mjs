@@ -8,7 +8,8 @@ import { randomUUID, createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
-import { loadRecovered } from './load-recovered.mjs';
+import vm from 'node:vm';
+import { loadRecovered, sourceFor } from './load-recovered.mjs';
 
 const logger = { info() {}, warn() {}, debug() {}, error() {} };
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -99,19 +100,82 @@ test('late manual connect result cannot rearm a cancelled reconnect generation',
   assert.equal(supervisor.snapshot().phase, 'idle');
 });
 
-test('caller cancellation interrupts Retry-After wait without another fetch', async () => {
+test('caller cancellation interrupts Retry-After wait without another fetch', async t => {
   const caller = new AbortController();
+  const timers = new Map();
+  const listeners = new Set();
+  const removed = new Set();
+  let now = 0;
+  let timerCount = 0;
+  let backoffEntered = false;
   let requests = 0;
-  const started = performance.now();
-  const promise = safeApi().fetchWithRetry('https://fixture.invalid', {
-    timeoutMs: 1000, retries: 2, signal: caller.signal,
-    fetchImpl: async (_url, { signal }) => { requests++; if (signal.aborted) throw signal.reason; return new Response(null, { status: 503, headers: { 'retry-after': '1' } }); },
+  let outcome;
+  const signal = {
+    get aborted() { return caller.signal.aborted; },
+    get reason() { return caller.signal.reason; },
+    addEventListener(type, listener, options) {
+      assert.equal(type, 'abort');
+      listeners.add(listener);
+      caller.signal.addEventListener(type, listener, options);
+      if (listeners.size === 2) backoffEntered = true;
+    },
+    removeEventListener(type, listener) {
+      assert.equal(type, 'abort');
+      listeners.delete(listener);
+      removed.add(listener);
+      caller.signal.removeEventListener(type, listener);
+    },
+  };
+  t.after(() => {
+    for (const listener of listeners) caller.signal.removeEventListener('abort', listener);
+    timers.clear();
   });
-  await wait(25);
-  caller.abort();
-  await assert.rejects(promise, error => error.name === 'AbortError');
-  assert.ok(performance.now() - started < 500, 'one-second Retry-After should end at cancellation');
+  class ClockDate extends Date { static now() { return now; } }
+  const context = vm.createContext({
+    AbortController, Error, Date: ClockDate, URL, Buffer, TextDecoder,
+    fetch() { throw new Error('Unexpected fixture network access'); },
+    setTimeout(callback, ms) {
+      const timer = { callback, ms, due: now + ms, ordinal: ++timerCount };
+      timers.set(timer, timer);
+      return timer;
+    },
+    clearTimeout(timer) { timers.delete(timer); },
+  });
+  // loadRecovered's global timer defaults override bindings, so this one case
+  // supplies its scheduler directly to the VM running the actual selected source.
+  vm.runInContext(sourceFor('electron/ipc/safe-network') + '\n;globalThis.api = { fetchWithRetry };', context);
+  context.api.fetchWithRetry('https://fixture.invalid', {
+    timeoutMs: 1000, retries: 2, signal,
+    fetchImpl: async (_url, { signal: requestSignal }) => {
+      requests++;
+      if (requestSignal.aborted) throw requestSignal.reason;
+      return new Response(null, { status: 503, headers: { 'retry-after': '1' } });
+    },
+  }).then(value => { outcome = { value }; }, error => { outcome = { error }; });
+  for (let turn = 0; turn < 32 && !backoffEntered && !outcome; turn++) await Promise.resolve();
+  assert.equal(backoffEntered, true, 'must reach Retry-After backoff before aborting');
+  assert.equal(outcome, undefined);
   assert.equal(requests, 1);
+  assert.equal(caller.signal.aborted, false);
+  assert.equal(timerCount, 3, 'two attempt deadlines plus the retry delay');
+  const retryTimer = [...timers.values()].find(timer => timer.ordinal === 3);
+  assert.equal(retryTimer?.ms, 1000);
+  assert.equal(retryTimer?.due, 1000);
+  // Simulate a pre-abort scheduling delay beyond the old 500 ms wall assertion,
+  // while the one-second retry is still pending and no timer has fired.
+  now = 750;
+  caller.abort();
+  for (let turn = 0; turn < 32 && !outcome; turn++) await Promise.resolve();
+  assert.ok(outcome, 'caller cancellation must settle without firing the retry timer');
+  assert.equal(outcome.error?.name, 'AbortError');
+  assert.equal(requests, 1);
+  assert.equal(timers.size, 0, 'all attempt and backoff timers must be cleared');
+  assert.equal(listeners.size, 0, 'all caller abort listeners must be removed');
+  assert.equal(removed.size, 2, 'both attempt and backoff listeners must be released');
+  now = 2000;
+  for (const timer of [...timers.values()]) if (timer.due <= now) timer.callback();
+  for (let turn = 0; turn < 4; turn++) await Promise.resolve();
+  assert.equal(requests, 1, 'the expired retry deadline cannot start another fetch');
 });
 
 test('HTTP retry allowlist is respected while default temporary-status retries remain', async () => {
