@@ -431,7 +431,7 @@ function Invoke-DnsGuardian {
   $watch=[Diagnostics.Stopwatch]::StartNew()
   do{
     if(Test-Path -LiteralPath ([string]$plan.disarm)){Assert-NativeOrdinaryPath ([string]$plan.disarm) -Leaf;$record.stage='disarmed';break}
-    $alive=$false;try{$parent=[Diagnostics.Process]::GetProcessById([int]$plan.parentPid);$alive=-not $parent.HasExited -and [Math]::Abs(($parent.StartTime.ToUniversalTime()-[DateTimeOffset]::Parse($plan.parentCreatedUtc).UtcDateTime).TotalMilliseconds) -lt 20;$parent.Dispose()}catch{$alive=$false}
+    $alive=$false;try{$parent=[Diagnostics.Process]::GetProcessById([int]$plan.parentPid);$alive=-not $parent.HasExited -and [Math]::Abs(($parent.StartTime.ToUniversalTime()-([DateTimeOffset]$plan.parentCreatedUtc).UtcDateTime).TotalMilliseconds) -lt 20;$parent.Dispose()}catch{$alive=$false}
     $stale=$true;try{$heartbeat=[DateTimeOffset]::Parse([IO.File]::ReadAllText([string]$plan.heartbeat));$stale=([DateTimeOffset]::UtcNow-$heartbeat).TotalSeconds -gt $plan.timeoutSeconds}catch{$stale=$true}
     if(-not $alive -or $stale -or $watch.Elapsed.TotalSeconds -gt $plan.maximumSeconds -or (Test-Path -LiteralPath ([string]$plan.force))){
       $record.stage='emergency-failed-gate';$record.reason=if(-not $alive){'parent exited/identity changed'}elseif($stale){'heartbeat expired'}elseif($watch.Elapsed.TotalSeconds -gt $plan.maximumSeconds){'maximum lease expired'}else{'caller failure'}

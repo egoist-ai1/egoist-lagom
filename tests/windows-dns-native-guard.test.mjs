@@ -66,10 +66,10 @@ test('truncated blocks, unsupported links and oversized snapshots fail closed', 
 });
 
 const shell = process.env.LAGOM_TEST_POWERSHELL || process.env.LAGOM_WINDOWS_POWERSHELL || path.join(process.env.SystemRoot || 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe');
-function run(args, timeout = 15000) {
+function run(args, timeout = 15000, interpreter = shell) {
   const env = { ...process.env, GITHUB_ACTIONS: 'false', RUNNER_ENVIRONMENT: 'self-hosted' };
-  if (path.basename(shell).toLowerCase() === 'powershell.exe') for (const key of Object.keys(env)) if (key.toLowerCase() === 'psmodulepath') delete env[key];
-  return spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', ...args], { env, encoding: 'utf8', windowsHide: true, timeout });
+  if (path.basename(interpreter).toLowerCase() === 'powershell.exe') for (const key of Object.keys(env)) if (key.toLowerCase() === 'psmodulepath') delete env[key];
+  return spawnSync(interpreter, ['-NoLogo', '-NoProfile', '-NonInteractive', ...args], { env, encoding: 'utf8', windowsHide: true, timeout });
 }
 test('actual Run/GuardOnly/Guardian/Query invocation refuses physical non-hosted process before input or writes', { skip: process.platform !== 'win32' }, () => {
   for (const mode of ['Run', 'GuardOnly', 'EmergencyGuardian', 'QueryProbe']) {
@@ -165,4 +165,35 @@ test('inert DNS inventory distinguishes missing families and rejects malformed r
   assert.equal(receipt.controlledInputs, true); assert.equal(receipt.actualNativeDnsQueries, 0);
   assert.equal(receipt.liveDnsMutations + receipt.liveScmMutations + receipt.liveTaskMutations + receipt.liveRegistryMutations, 0);
   assert.equal(receipt.nativeAcceptancePassed, false);
+});
+test('actual DNS guardian identity preserves JSON timestamp precision in WinPS5 and PS7', { skip: process.platform !== 'win32' }, () => {
+  const base = process.env.LAGOM_TEST_TEMP;
+  assert.ok(base && path.isAbsolute(base), 'Set private task-owned LAGOM_TEST_TEMP.');
+  assert.ok(fs.statSync(base).isDirectory());
+  const interpreters = [
+    { executable: path.join(process.env.SystemRoot || 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe'), edition: 'Desktop', major: 5 },
+    { executable: process.env.LAGOM_TEST_POWERSHELL7 || 'pwsh.exe', edition: 'Core', major: 7 },
+  ];
+  for (const interpreter of interpreters) {
+    const work = fs.mkdtempSync(path.join(base, 'dns-guardian-identity-'));
+    const result = run(['-File', path.resolve('tests/windows-dns-native-guardian-identity.ps1'),
+      '-SourcePath', path.resolve('tests/windows-dns-native-acceptance.ps1'), '-WorkRoot', work], 15000, interpreter.executable);
+    assert.equal(result.status, 0, [result.error?.code, result.signal, result.stdout, result.stderr].filter(Boolean).join('\n'));
+    const receipt = JSON.parse(fs.readFileSync(path.join(work, 'guardian-identity-' + interpreter.edition + '-' + interpreter.major + '-r2.json'), 'utf8'));
+    assert.equal(receipt.accepted, true); assert.equal(receipt.edition, interpreter.edition);
+    assert.equal(Number(receipt.powershell.split('.')[0]), interpreter.major);
+    assert.equal(receipt.readerExtractedFromActualSource && receipt.predicateExtractedFromActualSource && receipt.readerUnchanged, true);
+    assert.equal(receipt.cases.length, 22);
+    for (const row of receipt.cases.filter(row => row.case === 'default-json')) {
+      assert.equal(row.fixed.alive, true); assert.equal(row.fixed.differenceMilliseconds, 0);
+      assert.equal(row.old.alive, interpreter.major === 5);
+      if (interpreter.major === 7) {
+        assert.equal(row.inputFractionMilliseconds, 110.6698); assert.equal(row.oldParsedFractionMilliseconds, 0);
+      }
+    }
+    assert.equal(receipt.ownProcessBirthMatch.alive, true);
+    assert.equal(receipt.retainedToleranceMilliseconds, 20); assert.equal(receipt.retainedHeartbeatSeconds, 180); assert.equal(receipt.retainedMaximumSeconds, 1200);
+    assert.equal(receipt.actualNativeAcceptance, false);
+    assert.equal(receipt.guardianInvocations + receipt.serviceNetworkTaskRegistryMutations + receipt.foreignPidQueries, 0);
+  }
 });
