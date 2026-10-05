@@ -262,7 +262,9 @@ function Assert-DnsPrivateOwnedState {
   if($baselines.Count -ne 1 -or $baselines[0].interfaceGuid -ine $script:DnsAdapter.guid){throw 'Core native DNS baseline changed adapter identity.'}
   foreach($family in @('ipv4','ipv6')){
     $staticName=$family+'Static'
+    try{
     if([bool]$baselines[0].$staticName -ne [bool]$script:DnsAdapter.families[$family].static -or -not (Test-DnsSameSequence $baselines[0].$family $script:DnsAdapter.families[$family].servers)){throw 'Protected Core baseline differs from independent original DNS inventory.'}
+    }catch{throw [InvalidOperationException]::new(('DNS sequence observation failed for baseline/'+$family),$_.Exception)}
   }
   $records=@(Get-DnsClientDohServerAddress)
   foreach($server in $script:DnsProfile.servers){
@@ -275,8 +277,10 @@ function Assert-DnsPrivateOwnedState {
     foreach($family in @('ipv4','ipv6')){
       $managed=$original.guid -ieq $script:DnsAdapter.guid -and @($script:DnsProfile[$family]).Count -gt 0
       Assert-DnsNativeApiPresence $original.families[$family] $actual[0].families[$family] $managed
-      $expected=if($managed){$script:DnsProfile[$family]}else{$original.families[$family].servers}
+      $expected=$original.families[$family].servers;if($managed){$expected=$script:DnsProfile[$family]}
+      try{
       if(-not (Test-DnsSameSequence $actual[0].families[$family].servers $expected) -or ($managed -and -not $actual[0].families[$family].static) -or (-not $managed -and $actual[0].families[$family].nameServer -cne $original.families[$family].nameServer)){throw 'Per-adapter DNS actual state does not match owned/preserved families.'}
+      }catch{throw [InvalidOperationException]::new(('DNS sequence observation failed for actual/'+$family),$_.Exception)}
     }
   }
   Assert-DnsUnrelatedPreserved $current
@@ -293,9 +297,35 @@ function Assert-DnsUnrelatedPreserved {
   $actual=@($Current.doh | Where-Object {(ConvertTo-DnsIpSequence @($_.serverAddress))[0] -notin $allowed})
   if(($original | ConvertTo-Json -Depth 8 -Compress) -cne ($actual | ConvertTo-Json -Depth 8 -Compress)){throw 'DNS operation changed unrelated Windows DoH registrations.'}
 }
+function Save-DnsFailedBaselineInventory {
+  param($Observation)
+  # Inert/library imports and guardian/query modes must never create observations.
+  if($DnsLibraryOnly -or $DnsNativeMode -cne 'Run'){return}
+  $captured=Get-Variable -Name DnsFailedBaselineCaptured -Scope Script -ErrorAction SilentlyContinue
+  if($captured -and $captured.Value){return}
+  $script:DnsFailedBaselineCaptured=$true
+  [void](Assert-DnsNativeHost)
+  if($script:SourceCommit -cne $DnsExpectedSourceCommit -or $script:Receipt.sourceCommit -cne $DnsExpectedSourceCommit){throw 'Failed baseline observation source identity differs.'}
+  $directory=Assert-NativePathWithin ([string]$script:Evidence) ([string]$script:DnsWork)
+  Assert-NativeOrdinaryPath $directory
+  if(-not [IO.Directory]::Exists($directory)){throw 'Failed baseline observation evidence directory is absent.'}
+  $path=Assert-NativePathWithin (Join-Path $directory 'failed-baseline-current-inventory.json') ([string]$script:DnsWork)
+  $observation=[ordered]@{schemaVersion=1;kind='failed-dns-baseline-current-inventory';sourceCommit=$DnsExpectedSourceCommit;observedAtUtc=$Observation.observedAtUtc;capturedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');baselineUnmodified=$true;current=$Observation.current}
+  $bytes=[Text.UTF8Encoding]::new($false).GetBytes(($observation | ConvertTo-Json -Depth 28 -Compress))
+  if($bytes.Length -gt 1048576){throw 'Failed baseline observation exceeds one MiB.'}
+  $stream=[IO.File]::Open($path,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+  try{$stream.Write($bytes,0,$bytes.Length)}finally{$stream.Dispose()}
+  $sha=[Security.Cryptography.SHA256]::Create()
+  try{$hash=[BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-','').ToLowerInvariant()}finally{$sha.Dispose()}
+  $workPrefix=([IO.Path]::GetFullPath([string]$script:DnsWork).TrimEnd([char[]]'\/')+[IO.Path]::DirectorySeparatorChar)
+  $script:Receipt.baselineFailureInventory=[ordered]@{relativePath=$path.Substring($workPrefix.Length);bytes=$bytes.Length;sha256=$hash;currentInventoryCaptured=$true;baselineUnmodified=$true}
+}
 function Assert-DnsBaselineRestored {
   $current=Get-DnsNativeInventory
-  if(($current | ConvertTo-Json -Depth 25 -Compress) -cne ($script:DnsBefore | ConvertTo-Json -Depth 25 -Compress)){throw 'Original DNS/DoH registry, API, adapters, proxy, routes, IPv6 bindings or Task definitions were not restored exactly.'}
+  if(($current | ConvertTo-Json -Depth 25 -Compress) -cne ($script:DnsBefore | ConvertTo-Json -Depth 25 -Compress)){
+    if(-not $DnsLibraryOnly -and $DnsNativeMode -ceq 'Run'){$script:DnsLastFailedBaselineObservation=[ordered]@{observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');current=$current}}
+    throw 'Original DNS/DoH registry, API, adapters, proxy, routes, IPv6 bindings or Task definitions were not restored exactly.'
+  }
   foreach($relative in @('Service\native-doh-state.json','Service\dns-owned-state.json')){if(Test-Path -LiteralPath (Join-Path $script:DataRoot $relative)){throw 'Protected DNS ownership intent remains after GUI disable.'}}
   [void](Assert-NativeService 'EgoistShieldCore' $script:Core -Running)
   return [ordered]@{originalDnsAndDohRestored=$true;originalStaticDhcpChoiceRestored=$true;unrelatedPreserved=$true;coreRunning=$true}
@@ -315,7 +345,8 @@ function Assert-DnsElevatedGuiProof {
 function Invoke-DnsElevatedGui {
   param([ValidateSet('Apply','Reset')][string]$Operation)
   Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
-  $lease=$null;$child=$null;$closed=$false;$operationError=$null;$cleanup=$null
+  $lease=$null;$child=$null;$closed=$false;$operationError=$null;$cleanup=$null;$resetWaitFailed=$false
+  if($Operation -eq 'Reset'){$script:DnsLastFailedBaselineObservation=$null}
   try{
     Invoke-DnsGuardianHeartbeat
     $lease=Start-ElevatedGuiLease -CanonicalInstalledGuiPath (Join-Path $script:InstallRoot 'EgoistShield.exe') -IntegrityManifestPath $script:ManifestPath -ExpectedSourceCommit $DnsExpectedSourceCommit -WorkRoot $script:DnsWork -EvidenceDirectory $script:Evidence -LeaseSeconds 420
@@ -352,13 +383,18 @@ function Invoke-DnsElevatedGui {
       $confirm=Wait-NativeCondition {& $find 'Отключить' ([Windows.Automation.ControlType]::Button)} 'Actual DNS disable confirmation' 30
       Add-NativeMutation 'elevated-gui-native-doh-reset' $script:DnsProfile.url 'Actual reopened elevated GUI restores original owned DNS/DoH through Core.'
       ([Windows.Automation.InvokePattern]$confirm.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
-      [void](Wait-NativeCondition {Invoke-DnsGuardianHeartbeat;Assert-DnsBaselineRestored} 'Actual GUI restored independent original DNS/DoH inventory' 90)
+      try{[void](Wait-NativeCondition {Invoke-DnsGuardianHeartbeat;Assert-DnsBaselineRestored} 'Actual GUI restored independent original DNS/DoH inventory' 90)}catch{$resetWaitFailed=$true;throw}
     }
     $pattern=$null;if(-not $root.TryGetCurrentPattern([Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)){throw 'DNS GUI native close control is unavailable.'}
     ([Windows.Automation.WindowPattern]$pattern).Close()
     if(-not $child.WaitForExit(30000) -or $child.ExitCode -ne 0){throw 'DNS elevated GUI did not exit normally.'};$closed=$true
     $script:Receipt.gui+=[ordered]@{operation=$Operation;launch=$proof;process=$identity;normalExit=$true;exitCode=$child.ExitCode;automation='actual HWND native UIA ValuePattern/InvokePattern/WindowPattern';productionOverride=$false}
-  }catch{$operationError=$_}finally{
+  }catch{
+    $operationError=$_
+    if($Operation -eq 'Reset' -and $resetWaitFailed -and $script:DnsLastFailedBaselineObservation){
+      try{Save-DnsFailedBaselineInventory $script:DnsLastFailedBaselineObservation}catch{$script:Receipt.baselineFailureInventoryError=[ordered]@{class=$_.Exception.GetBaseException().GetType().FullName;hresult=$_.Exception.GetBaseException().HResult}}
+    }
+  }finally{
     if($lease){try{$cleanup=Stop-ElevatedGuiLease $lease;if(-not $closed -or -not $cleanup.exitedNormally -or $cleanup.exitCode -ne 0){throw 'DNS elevated GUI did not have a normal verified zero-orphan exit.'}}catch{if(-not $operationError){$operationError=$_}}}
     if($child){$child.Dispose()};if($cleanup){$script:Receipt.gui+=[ordered]@{operation=$Operation;cleanup=$cleanup}};Save-NativeReceipt
   }

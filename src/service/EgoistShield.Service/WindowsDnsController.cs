@@ -412,6 +412,26 @@ function Get-FamilyBinding {
   if ($binding.Count -ne 1 -or $binding[0].Enabled -isnot [bool]) { throw "Cannot determine $ComponentId binding for $($Adapter.Name)." }
   return [bool]$binding[0].Enabled
 }
+function Get-SnapshotServerAddresses {
+  param($Family, [string]$AddressFamily)
+  $rows = @($Family)
+  if ($rows.Count -ne 1 -or $null -eq $rows[0] -or $null -eq $rows[0].PSObject.Properties['ServerAddresses']) {
+    throw "DNS $AddressFamily API did not return exactly one server-address row."
+  }
+  $value = $rows[0].ServerAddresses
+  if ($null -eq $value) { return ,([string[]]@()) }
+  $addresses = @()
+  $expected = if ($AddressFamily -eq 'IPv4') { [Net.Sockets.AddressFamily]::InterNetwork } else { [Net.Sockets.AddressFamily]::InterNetworkV6 }
+  foreach ($address in @($value)) {
+    $parsed = $null
+    if ($address -isnot [string] -or [string]::IsNullOrWhiteSpace($address) -or
+        -not [Net.IPAddress]::TryParse($address, [ref]$parsed) -or $parsed.AddressFamily -ne $expected) {
+      throw "DNS $AddressFamily API returned an invalid server address."
+    }
+    $addresses += $address
+  }
+  return ,([string[]]$addresses)
+}
 function Test-StaticDns {
   param([string]$Guid, [string]$Family)
   if (-not $Guid) { return $false }
@@ -447,8 +467,8 @@ foreach ($target in @($targets)) {
     interfaceIndex = $index
     interfaceAlias = [string]$adapter.Name
     interfaceGuid = $guid
-    ipv4 = @($v4.ServerAddresses)
-    ipv6 = @($v6.ServerAddresses)
+    ipv4 = (Get-SnapshotServerAddresses $v4 'IPv4')
+    ipv6 = (Get-SnapshotServerAddresses $v6 'IPv6')
     ipv4Static = $v4Static
     ipv6Static = $v6Static
     ipv4BindingEnabled = $v4Binding
