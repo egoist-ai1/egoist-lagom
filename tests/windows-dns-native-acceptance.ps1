@@ -460,7 +460,21 @@ public static class LagomNativeDnsQuery {
   if(-not $DnsProbeLabel){throw 'Owned random probe identity is required.'}
   $started=[DateTimeOffset]::UtcNow.ToString('o');$names=@('example.com.',('lagom-'+$DnsProbeLabel+'.example.com.'))
   $positive=[LagomNativeDnsQuery]::Query($names[0]);$negative=[LagomNativeDnsQuery]::Query($names[1])
-  if($positive.status -ne 0 -or $positive.addresses.Count -lt 1 -or $negative.status -ne 9003){throw 'Real cache-bypassing Windows DNS positive/NXDOMAIN query failed.'}
+  if($positive.status -ne 0 -or $positive.addresses.Count -lt 1 -or $negative.status -ne 9003){
+    try{
+      $observation=[ordered]@{
+        schemaVersion=1;kind='windows-dns-query-failure';scope='windows-system-dns-query-probe'
+        startedAtUtc=$started;finishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');recordType=1;options=0x848
+        names=$names;records=@(
+          [ordered]@{role='positive';status=[int]$positive.status;addressCount=[int]$positive.addresses.Count;elapsedMs=[double]$positive.elapsedMs;api=[string]$positive.api;options=[int]$positive.options;cacheBypassed=[bool]$positive.cacheBypassed;hostsBypassed=[bool]$positive.hostsBypassed;multicastDisabled=[bool]$positive.multicastDisabled},
+          [ordered]@{role='negative';status=[int]$negative.status;addressCount=[int]$negative.addresses.Count;elapsedMs=[double]$negative.elapsedMs;api=[string]$negative.api;options=[int]$negative.options;cacheBypassed=[bool]$negative.cacheBypassed;hostsBypassed=[bool]$negative.hostsBypassed;multicastDisabled=[bool]$negative.multicastDisabled}
+        );encryptedWireClaim=$false
+      }
+      $line='[lagom-dns-query] '+($observation | ConvertTo-Json -Depth 5 -Compress)
+      if($line.Length -le 4096){[Console]::Error.WriteLine($line)}
+    }catch{} # A diagnostic failure cannot replace the original DNS query failure.
+    throw 'Real cache-bypassing Windows DNS positive/NXDOMAIN query failed.'
+  }
   return [ordered]@{ok=$true;startedAtUtc=$started;finishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');names=$names;records=@($positive,$negative);encryptedWireClaim=$false}
 }
 function Invoke-DnsTransportProbe {
