@@ -6,10 +6,12 @@ param(
   [ValidatePattern('^$|^[a-f0-9]{40}$')][string]$ExpectedSourceCommit='',
   [ValidateRange(0,120)][int]$SoakMinutes=0,
   [string]$UpgradeBaselineInstaller='',
-  [switch]$LibraryOnly
+  [switch]$LibraryOnly,
+  [switch]$TraceReadonlyBootstrap
 )
 Set-StrictMode -Version 2.0
 $ErrorActionPreference='Stop'
+if($LibraryOnly -and $TraceReadonlyBootstrap){$nativeReadonlyBootstrapClock=[Diagnostics.Stopwatch]::StartNew();[Console]::Error.WriteLine('readonly-library|shared|bootstrap-start|0')}
 
 function Get-NativeAcceptanceEnvironmentErrors {
   param([hashtable]$Environment,[bool]$Administrator,[bool]$Windows)
@@ -487,6 +489,10 @@ function Invoke-NativeElevatedGui {
       $row=@(Get-NativeProductServices | Where-Object {$_.Name -eq 'EgoistShieldTelegramProxy'})
       if($row.Count -eq 1 -and $row[0].PathName.Trim().Trim('"') -ieq $wrapper -and $row[0].State -eq 'Stopped' -and [int]$row[0].ProcessId -eq 0){return $row[0]}
     } -Label 'Real SCM Telegram stop through elevated GUI/Core IPC' -TimeoutSeconds 90
+    # SCM Stopped can precede the stop IPC/status response. Complete the genuine
+    # GUI OFF action before the fixture can change its observed endpoint status.
+    $stopCompletion=Wait-NativeTelegramStoppedGuiCompletion -FindButton $findButton -Process $child -Root $root -Label 'Elevated GUI'
+    $script:Receipt.elevatedGui.stopOperationCompletion=$stopCompletion;Save-NativeReceipt
     Invoke-NativeTelegramOccupiedPort -FindButton $findButton -Process $child -Root $root -BeforeState $portFixtureBefore
     $start=Wait-NativeCondition -Condition {& $findButton 'Запустить'} -Label 'Elevated GUI actual start control' -TimeoutSeconds 60
     ([Windows.Automation.InvokePattern]$start.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
@@ -543,7 +549,7 @@ function Invoke-NativeElevatedGui {
     $closeDiagnostics.readbackFinishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
     Save-NativeReceipt
     if(-not $waitReturned -or $exitCodeAtWait -ne 0){throw 'Elevated GUI did not exit normally.'};$closed=$true
-    $script:Receipt.elevatedGui=[ordered]@{ok=$true;result='passed-elevated-gui-ipc';managementMode='administrator-required';normalUacPromptObserved=$false;launch=$proof;actualProcess=$identity;automation='native UIAutomation InvokePattern and WindowPattern';operationCompletion=$completion;before=$before;stopped=$stopped;after=$after;endpoint=$endpoint;worker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;exitCode=$child.ExitCode;cleanup=$null;closeDiagnostics=$closeDiagnostics}
+    $script:Receipt.elevatedGui=[ordered]@{ok=$true;result='passed-elevated-gui-ipc';managementMode='administrator-required';normalUacPromptObserved=$false;launch=$proof;actualProcess=$identity;automation='native UIAutomation InvokePattern and WindowPattern';stopOperationCompletion=$stopCompletion;operationCompletion=$completion;before=$before;stopped=$stopped;after=$after;endpoint=$endpoint;worker=Get-NativeProcessIdentity ([int]$workers[0].ProcessId);workerOwnerSid=$owner.Sid;exitCode=$child.ExitCode;cleanup=$null;closeDiagnostics=$closeDiagnostics}
     Save-NativeReceipt
   }catch{$operationError=$_;$script:Receipt.elevatedGui.ok=$false;$script:Receipt.elevatedGui.result='failed';$script:Receipt.elevatedGui.error=$_.Exception.Message;Save-NativeReceipt}
   finally{
@@ -882,6 +888,16 @@ function Get-NativeTelegramGuiVisibleError {
     if($element.Current.ControlType -eq [Windows.Automation.ControlType]::Text -and $element.Current.Name -ceq $title -and -not $element.Current.IsOffscreen){return [ordered]@{title=$title;observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}}
   }
   return $null
+}
+function Wait-NativeTelegramStoppedGuiCompletion {
+  param([scriptblock]$FindButton,$Process,$Root,[string]$Label,[ValidateRange(1,45)][int]$TimeoutSeconds=45)
+  return Wait-NativeCondition -Label ($Label+' actual Telegram stop operation completion') -TimeoutSeconds $TimeoutSeconds -StopOnError -Condition {
+    $Process.Refresh();if($Process.HasExited){throw 'Actual GUI exited before Telegram stop operation completion.'}
+    if($Root.Current.ProcessId -ne $Process.Id){throw 'Telegram stop completion observation root changed GUI identity.'}
+    if(Get-NativeTelegramGuiVisibleError -Root $Root){throw 'Actual GUI reports failed Telegram stop operation: Действие не выполнено.'}
+    $start=& $FindButton 'Запустить'
+    if($start -and $start.Current.Name -ceq 'Запустить' -and $start.Current.IsEnabled -and -not $start.Current.IsOffscreen){return [ordered]@{name='Запустить';enabled=$true;processId=$Process.Id;observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}}
+  }
 }
 function Wait-NativeTelegramGuiCompletion {
   param([scriptblock]$FindButton,$Process,$Root,[string]$Label,[ValidateRange(1,45)][int]$TimeoutSeconds=45)
@@ -1440,5 +1456,6 @@ function Invoke-NativeAcceptance {
   Write-Output ('Actual bounded native acceptance passed. Receipt: '+$script:ReceiptPath+'; untested gates: '+@($script:Receipt.releaseGates | Where-Object {$_.status -ne 'passed'}).Count)
 }
 
+if($LibraryOnly -and $TraceReadonlyBootstrap){[Console]::Error.WriteLine('readonly-library|shared|definitions-ready|'+$nativeReadonlyBootstrapClock.ElapsedMilliseconds)}
 if($LibraryOnly){return}
 Invoke-NativeAcceptance

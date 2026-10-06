@@ -2107,8 +2107,18 @@ var ZapretManager = class {
 			"[pscustomobject]@{state=[string]$s.State;pid=[int]$s.ProcessId;birth=$birth;image=[string]$s.PathName.Trim('\"')}|ConvertTo-Json -Compress"
 		].join("; ");
 		let value;
-		try { value = JSON.parse((await this.execPowerShell(script, 8e3)).trim()); } catch { throw new Error("Не удалось подтвердить личность службы Zapret перед изоляцией DNS."); }
-		if (!value || !["Running", "Stopped"].includes(value.state) || !Number.isInteger(value.pid) || value.pid < 0 || path.resolve(value.image ?? "").toLowerCase() !== path.resolve(wrapperPath).toLowerCase() || value.state === "Running" && (!value.pid || !Number.isFinite(Date.parse(value.birth)))) throw new Error("Личность службы Zapret перед изоляцией DNS не подтверждена.");
+		try { value = JSON.parse((await this.execPowerShell(script, 8e3)).trim()); }
+		catch (error) {
+			const diagnostic = error?.powerShellDiagnostic ?? Object.freeze({ kind: error instanceof SyntaxError ? "invalid-json" : "invalid-response" });
+			const failure = new Error("Не удалось подтвердить личность службы Zapret перед изоляцией DNS.", { cause: error });
+			failure.nativeQueryDiagnostic = diagnostic;
+			throw failure;
+		}
+		if (!value || !["Running", "Stopped"].includes(value.state) || !Number.isInteger(value.pid) || value.pid < 0 || typeof value.image !== "string" || path.resolve(value.image ?? "").toLowerCase() !== path.resolve(wrapperPath).toLowerCase() || value.state === "Running" && (!value.pid || !Number.isFinite(Date.parse(value.birth)))) {
+			const failure = new Error("Личность службы Zapret перед изоляцией DNS не подтверждена.");
+			failure.nativeQueryDiagnostic = Object.freeze({ kind: "invalid-snapshot" });
+			throw failure;
+		}
 		return value;
 	}
 	async readDnsProtectionStandaloneIdentity() {

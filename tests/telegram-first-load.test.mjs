@@ -48,7 +48,7 @@ function harness(options={}){
     useRef(initial){const index=hookIndex++;if(!(index in hooks))hooks[index]={current:initial};return hooks[index]},useEffect:fn=>effects.push(fn)},
     V:{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})},readGeneration:{current:0},telegramReadSequence:{current:0},rendererMounted:{current:true},telegramForegroundReads:{current:0},h2:{current:false},_2:{current:null},Mf:1000,jf:1000,Nf:1000,updateRevision:{current:0},f2:{current:new Map()},d2:{current:0},p2:{current:false},Zf:{},
     r2:updater=>{snapshot=updater(snapshot)},get n2(){return snapshot},s2:value=>calls.activity.push(value),l2(){},zapretHistoryResult:(_next,previous)=>previous??null});
-  for(const name of ['im','am','Z','om','sm','cm','lm','um','Q','$','Dm','Om','Em','If','Lf','Rf'])vm.runInContext(extract(renderer,name),context);
+  for(const name of ['im','am','Z','om','sm','cm','lm','um','Q','$','Dm','Om','Em','If','Lf','Rf','rubyTelegramStoppedActionConfirmed'])vm.runInContext(extract(renderer,name),context);
   vm.runInContext(widget.slice(0,widget.indexOf('function ShieldWidget(')),context);
   const bf=renderer.match(/Bf = (\{ host:.*?checkUpdates: true \})/);assert.ok(bf);vm.runInContext(`globalThis.Bf=${bf[1]};`,context);
   if(renderer.includes('let readTelegramStatus =')){

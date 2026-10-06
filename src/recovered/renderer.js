@@ -10879,7 +10879,7 @@ function np() {
       if (resultState) r2(previous => (resultState.stateRevision ?? 0) >= (previous.state?.stateRevision ?? 0) ? { ...previous,state:resultState } : previous);
       if (e3 === `speedtest` && r2((e4) => ({ ...e4, speedtest: i4 })), e3 === `update-check` && updateRequest === updateRevision.current && r2((e4) => ({ ...e4, update: i4 })), i4 && typeof i4 == `object` && `ok` in i4 && i4.ok === false) throw Error(sm(i4, `Backend rejected ${e3}.`));
       if (i4 === false) throw Error(`Backend rejected ${e3}.`);
-      if (i4 && typeof i4 == `object` && om(i4) && e3 !== `speedtest`) throw Error(sm(i4));
+      if (i4 && typeof i4 == `object` && om(i4) && e3 !== `speedtest` && !rubyTelegramStoppedActionConfirmed(e3, i4)) throw Error(sm(i4));
       e3 === `route-probe` && r2((e4) => ({ ...e4, routeProbe: i4 }));
       let a4 = e3 === `route-probe` ? gp(i4) : null;
       e3 === `dns-check` && r2((e4) => ({ ...e4, dnsCheck: i4 })), e3 === `admin-check` && r2((e4) => ({ ...e4, isAdmin: !!i4?.isAdmin })), e3 === `diagnostics-export` && r2((e4) => ({ ...e4, diagnosticsExport: i4 }));
@@ -11735,6 +11735,16 @@ function am(e2, t2) {
 }
 function Z(e2, t2, ...n2) {
   return t2 ? t2(...n2) : Promise.reject(Error(`IPC method is unavailable: ${e2}`));
+}
+function rubyTelegramStoppedActionConfirmed(action, status) {
+  // stop() resolves after its owned service/runtime cleanup. A foreign listener
+  // in that returned snapshot prevents the next start; it does not undo OFF.
+  return action === `tg-stop` && status?.serviceInstalled === true && status.serviceState === `stopped`
+    && status.serviceRunning === false && status.running === false
+    && status.runtimeReady === false && status.listenerReady === false
+    && status.listenerOwnership === `foreign` && status.portConflict?.available === false
+    && (status.ok === undefined || status.ok === true) && status.lifecycle !== `failed`
+    && (status.error == null || typeof status.error === `string` && status.error.trim().length === 0);
 }
 function om(e2) {
   let t2 = e2;

@@ -8,15 +8,21 @@ param(
   [string]$CandidateAssetsDirectory='',
   [string]$ExpectedSourceCommit='',
   [string]$EvidenceDirectory='',
-  [switch]$LibraryOnly
+  [switch]$LibraryOnly,
+  [switch]$TraceReadonlyBootstrap
 )
 Set-StrictMode -Version 2.0
 $ErrorActionPreference='Stop'
+# Diagnostic entry is restricted to explicit LibraryOnly final-readback children.
+if($LibraryOnly -and $TraceReadonlyBootstrap){$dpiReadonlyBootstrapClock=[Diagnostics.Stopwatch]::StartNew();[Console]::Error.WriteLine('readonly-library|dpi|bootstrap-start|0')}
 # Keep caller arguments: the shared library has its own parameter block.
-$parameters=@{};foreach($name in @('Mode','IntegrityManifestPath','CandidateAssetsDirectory','ExpectedSourceCommit','EvidenceDirectory','LibraryOnly')){$parameters[$name]=Get-Variable -Name $name -ValueOnly}
-. (Join-Path $PSScriptRoot 'windows-production-acceptance.ps1') -LibraryOnly
+$parameters=@{};foreach($name in @('Mode','IntegrityManifestPath','CandidateAssetsDirectory','ExpectedSourceCommit','EvidenceDirectory','LibraryOnly','TraceReadonlyBootstrap')){$parameters[$name]=Get-Variable -Name $name -ValueOnly}
+if($LibraryOnly -and $TraceReadonlyBootstrap){[Console]::Error.WriteLine('readonly-library|dpi|parameters-captured|'+$dpiReadonlyBootstrapClock.ElapsedMilliseconds)}
+. (Join-Path $PSScriptRoot 'windows-production-acceptance.ps1') -LibraryOnly -TraceReadonlyBootstrap:($LibraryOnly -and $TraceReadonlyBootstrap)
+if($LibraryOnly -and $TraceReadonlyBootstrap){[Console]::Error.WriteLine('readonly-library|dpi|shared-library-ready|'+$dpiReadonlyBootstrapClock.ElapsedMilliseconds)}
 foreach($name in $parameters.Keys){Set-Variable -Name $name -Value $parameters[$name]}
 Remove-Variable parameters
+if($LibraryOnly -and $TraceReadonlyBootstrap){[Console]::Error.WriteLine('readonly-library|dpi|parameters-restored|'+$dpiReadonlyBootstrapClock.ElapsedMilliseconds)}
 
 function Initialize-DpiNativeTypes {
   if('LagomDpiAcceptance.Probe' -as [type]){return}
@@ -312,7 +318,7 @@ function Save-DpiReadonlyToolDiagnostics {
         $item.file=$Label+'.'+$entry.name+'.txt'
         $path=Assert-NativePathWithin (Join-Path $script:Work $item.file) $script:Work
         [IO.File]::WriteAllText($path,$text,[Text.UTF8Encoding]::new($false))
-        if($entry.name -eq 'stderr'){$record.stages=@($text -split '\r?\n' | Where-Object {$_ -cmatch '^readonly-stage\|(?:services|tasks|drivers|winws|network)\|(?:process-start|library-ready|query-ready|serialized)\|[0-9]+$'})}
+        if($entry.name -eq 'stderr'){$record.stages=@($text -split '\r?\n' | Where-Object {$_ -cmatch '^(?:readonly-stage\|(?:services|tasks|drivers|winws|network)\|(?:process-start|library-ready|query-ready|serialized)|readonly-library\|(?:dpi|shared)\|(?:bootstrap-start|parameters-captured|shared-library-ready|parameters-restored|definitions-ready))\|[0-9]+$'})}
       }
     }catch{$item.status='unavailable';$item.error=$_.Exception.Message}
     $record[$entry.name]=$item
@@ -395,7 +401,7 @@ function Invoke-DpiReadonlySnapshot {
     '$ErrorActionPreference=''Stop''',
     '$readbackWatch=[Diagnostics.Stopwatch]::StartNew()',
     ('[Console]::Error.WriteLine(''readonly-stage|'+$Name+'|process-start|''+$readbackWatch.ElapsedMilliseconds)'),
-    ('. '''+$source.Replace("'","''")+''' -LibraryOnly'),
+    ('. '''+$source.Replace("'","''")+''' -LibraryOnly -TraceReadonlyBootstrap'),
     ('[Console]::Error.WriteLine(''readonly-stage|'+$Name+'|library-ready|''+$readbackWatch.ElapsedMilliseconds)'),
     ('$value='+$query),
     ('[Console]::Error.WriteLine(''readonly-stage|'+$Name+'|query-ready|''+$readbackWatch.ElapsedMilliseconds)'),
@@ -823,5 +829,6 @@ function Invoke-DpiAcceptance {
   if($script:DpiReceipt.result -ne 'passed-20-bounded-production-DPI-pairs'){throw ('DPI acceptance did not complete: '+($retirementErrors -join '; '))}
   Write-Output ('Actual protected-production DPI 20 pairs passed. Receipt: '+$script:DpiReceiptPath+'; Core RPC/cancellation/journal not covered.')
 }
+if($LibraryOnly -and $TraceReadonlyBootstrap){[Console]::Error.WriteLine('readonly-library|dpi|definitions-ready|'+$dpiReadonlyBootstrapClock.ElapsedMilliseconds)}
 if($LibraryOnly){return}
 Invoke-DpiAcceptance

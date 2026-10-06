@@ -35,7 +35,7 @@ function fixture(t) {
     f2:{current:new Map()},updateRevision:{current:0},readGeneration:{current:0},d2:{current:0},Zf:{},
     s2(){},l2(){},p2:{current:false},y2:async()=>{}
   });
-  for(const name of ['Z','If','Lf','Rf','om','sm','cm','lm','um'])vm.runInContext(extractTopLevelFunction(renderer,name),context);
+  for(const name of ['Z','If','Lf','Rf','om','sm','cm','lm','um','rubyTelegramStoppedActionConfirmed'])vm.runInContext(extractTopLevelFunction(renderer,name),context);
   const start=renderer.indexOf('const storageController = O.useMemo('),end=renderer.indexOf('  const readStorageState',start);
   assert.ok(start>=0&&end>start,'Actual renderer storage lifecycle is present');
   vm.runInContext(renderer.slice(start,end)+'\nglobalThis.storageController=storageController;\nglobalThis.runAction='+extractRendererCallback(renderer,'S2')+';',context);
