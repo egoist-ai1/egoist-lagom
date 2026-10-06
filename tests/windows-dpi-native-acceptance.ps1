@@ -191,6 +191,8 @@ function Start-DpiChild {
   $windows=[Environment]::GetFolderPath('Windows')
   $info.Environment['PATH']=(Join-Path $windows 'System32')+';'+$windows
   $info.Environment['COMSPEC']=Join-Path $windows 'System32\cmd.exe'
+  # WindowsPS5 uses PATHEXT to recognize .exe in pipelines (including NSIS helpers).
+  $info.Environment['PATHEXT']='.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC'
   $info.Environment['TEMP']=$script:Work;$info.Environment['TMP']=$script:Work
   if(-not $Worker){Set-NativeWindowsPowerShellChildEnvironment -StartInfo $info}
   if($Worker){
@@ -212,7 +214,7 @@ function Start-DpiChild {
     $started=$child.Start()
     if(-not $started){throw "Child launch failed: $Label"}
     $handle=$child.Handle
-    $owner=[pscustomobject]@{label=$Label;process=$child;handle=$handle;executable=[IO.Path]::GetFullPath($Executable);birthTicks=[LagomDpiAcceptance.Probe]::BirthTicks($handle);stderr=$child.StandardError.ReadToEndAsync();read=$null}
+    $owner=[pscustomobject]@{label=$Label;process=$child;processId=$child.Id;handle=$handle;executable=[IO.Path]::GetFullPath($Executable);birthTicks=[LagomDpiAcceptance.Probe]::BirthTicks($handle);stderr=$child.StandardError.ReadToEndAsync();read=$null}
     if([LagomDpiAcceptance.Probe]::Image($handle) -ine $owner.executable){throw "Started child image differs: $Label"}
     return $owner
   }catch{
@@ -264,6 +266,7 @@ function Wait-DpiTask {
 function Invoke-DpiTool {
   param([string]$Executable,[string[]]$Arguments,[string]$Label,[int]$Seconds=60,[string]$InputText='')
   $child=Start-DpiChild $Executable $Arguments $Label
+  $primaryError=$null;$retirementError=$null;$stdout=$null;$watch=[Diagnostics.Stopwatch]::StartNew()
   try{
     if($InputText){$child.process.StandardInput.Write($InputText)}
     $child.process.StandardInput.Close()
@@ -274,7 +277,50 @@ function Invoke-DpiTool {
     if($child.process.ExitCode -ne 0){throw "Child failed ($($child.process.ExitCode)): $Label; $err"}
     if([Text.Encoding]::UTF8.GetByteCount($output) -gt 4MB){throw "Tool output bound exceeded: $Label"}
     return $output.Trim()
-  }finally{Stop-DpiOwnedChild $child}
+  }catch{$primaryError=$_;throw}
+  finally{
+    try{Stop-DpiOwnedChild $child}catch{
+      $retirementError=$_
+      if($primaryError){$primaryError.Exception.Data['ownedRetirementDiagnostic']=$retirementError.Exception.Message;$primaryError.Exception.Data['ownedRetirementConfirmed']=$false}
+    }
+    if($Label -cmatch '^final-readonly-(services|tasks|drivers|winws|network)$'){
+      try{Save-DpiReadonlyToolDiagnostics $child $stdout $Label $Seconds $watch $primaryError $retirementError}catch{if($primaryError){$primaryError.Exception.Data['readonlyDiagnosticCaptureError']=$_.Exception.Message}else{Write-Warning ('Readonly diagnostics unavailable: '+$_.Exception.Message)}}
+    }
+    if($retirementError -and -not $primaryError){throw $retirementError}
+  }
+}
+function Save-DpiReadonlyToolDiagnostics {
+  param($Owner,$Stdout,[string]$Label,[int]$Seconds,$Watch,$PrimaryError,$RetirementError)
+  $record=[ordered]@{kind='readonly-final-tool-observation';label=$Label;seconds=$Seconds;elapsedMilliseconds=$Watch.ElapsedMilliseconds;processId=$Owner.processId;executable=$Owner.executable;birthTicks=$Owner.birthTicks;retirementConfirmed=($null -eq $RetirementError);stages=@()}
+  if($PrimaryError){$record.primaryError=$PrimaryError.Exception.Message;$record.primaryErrorId=$PrimaryError.FullyQualifiedErrorId}
+  if($RetirementError){$record.retirementError=$RetirementError.Exception.Message}
+  foreach($entry in @(@{name='stdout';task=$Stdout;maximum=1048576},@{name='stderr';task=$Owner.stderr;maximum=65536})){
+    $item=[ordered]@{status='unavailable';complete=$false}
+    try{
+      if($entry.task -and -not $entry.task.IsCompleted){[void]$entry.task.Wait(1000)}
+      if($entry.task -and $entry.task.Status -eq [Threading.Tasks.TaskStatus]::RanToCompletion){
+        $text=$entry.task.GetAwaiter().GetResult();$bytes=[Text.Encoding]::UTF8.GetByteCount($text)
+        $item.complete=$true;$item.status='captured';$item.bytes=$bytes;$item.truncated=($bytes -gt $entry.maximum)
+        # UTF-8 characters occupy at least one byte; the text prefix is bounded
+        # again by bytes, so surrogate/multibyte errors cannot expand the file.
+        if($text.Length -gt $entry.maximum){$text=$text.Substring(0,$entry.maximum)}
+        while([Text.Encoding]::UTF8.GetByteCount($text) -gt $entry.maximum){$text=$text.Substring(0,[Math]::Max(0,$text.Length-1024))}
+        $item.file=$Label+'.'+$entry.name+'.txt'
+        $path=Assert-NativePathWithin (Join-Path $script:Work $item.file) $script:Work
+        [IO.File]::WriteAllText($path,$text,[Text.UTF8Encoding]::new($false))
+        if($entry.name -eq 'stderr'){$record.stages=@($text -split '\r?\n' | Where-Object {$_ -cmatch '^readonly-stage\|(?:services|tasks|drivers|winws|network)\|(?:process-start|library-ready|query-ready|serialized)\|[0-9]+$'})}
+      }
+    }catch{$item.status='unavailable';$item.error=$_.Exception.Message}
+    $record[$entry.name]=$item
+  }
+  $record.file=$Label+'.observation.json'
+  $path=Assert-NativePathWithin (Join-Path $script:Work $record.file) $script:Work
+  $record | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $path -Encoding utf8
+  $receipt=Get-Variable -Scope Script -Name DpiReceipt -ErrorAction SilentlyContinue
+  if($receipt -and $receipt.Value -is [Collections.IDictionary]){
+    if(-not $script:DpiReceipt.Contains('readonlyToolObservations')){$script:DpiReceipt.readonlyToolObservations=@()}
+    $script:DpiReceipt.readonlyToolObservations+=@($record)
+  }
 }
 function Read-DpiLine {
   param($Owner,[int]$Seconds=60)
@@ -343,9 +389,14 @@ function Invoke-DpiReadonlySnapshot {
   $source=Join-Path $PSScriptRoot 'windows-dpi-native-acceptance.ps1'
   $commands=@(
     '$ErrorActionPreference=''Stop''',
+    '$readbackWatch=[Diagnostics.Stopwatch]::StartNew()',
+    ('[Console]::Error.WriteLine(''readonly-stage|'+$Name+'|process-start|''+$readbackWatch.ElapsedMilliseconds)'),
     ('. '''+$source.Replace("'","''")+''' -LibraryOnly'),
+    ('[Console]::Error.WriteLine(''readonly-stage|'+$Name+'|library-ready|''+$readbackWatch.ElapsedMilliseconds)'),
     ('$value='+$query),
-    ('ConvertTo-Json -InputObject ([ordered]@{schemaVersion=1;kind=''readonly-final-state'';name='''+$Name+''';value=$value}) -Depth 16 -Compress')
+    ('[Console]::Error.WriteLine(''readonly-stage|'+$Name+'|query-ready|''+$readbackWatch.ElapsedMilliseconds)'),
+    ('ConvertTo-Json -InputObject ([ordered]@{schemaVersion=1;kind=''readonly-final-state'';name='''+$Name+''';value=$value}) -Depth 16 -Compress'),
+    ('[Console]::Error.WriteLine(''readonly-stage|'+$Name+'|serialized|''+$readbackWatch.ElapsedMilliseconds)')
   )
   $encoded=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes(($commands -join [Environment]::NewLine)))
   $powershell=Join-Path ([Environment]::GetFolderPath('Windows')) 'System32\WindowsPowerShell\v1.0\powershell.exe'

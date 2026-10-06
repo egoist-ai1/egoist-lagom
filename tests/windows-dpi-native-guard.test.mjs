@@ -103,12 +103,14 @@ test('PS7 C# compiles without DLL/driver open; owned child identity, deadline an
     '$script:Work=' + quoted(ownTemp) + ';$env:GITHUB_WORKSPACE=' + quoted(root),
     '$script:DpiClock=[Diagnostics.Stopwatch]::StartNew();$script:DpiBudget=30',
     '$parentModulePath=$env:PSModulePath',
+    '$parentPathExt=$env:PATHEXT',
     '$child=Start-DpiChild ' + quoted(process.execPath) + ' @(' + quoted(helper) + ",'Fixture') 'own guard fixture'",
     '$cases=@()',
     'try {',
     '$ready=Read-DpiLine $child 8',
     'if($ready.processId -ne $child.process.Id){throw "Own readiness identity mismatch"}',
     "if($child.process.StartInfo.Environment['PSModulePath'] -ine [IO.Path]::GetFullPath([IO.Path]::Combine([Environment]::GetFolderPath('Windows'),'System32/WindowsPowerShell/v1.0/Modules')) -or $env:PSModulePath -cne $parentModulePath){throw 'Actual generic child WindowsPS module isolation missing or parent changed'};$cases+='child-only-native-module-path'",
+    "if($child.process.StartInfo.Environment['PATHEXT'] -cne '.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC' -or $env:PATHEXT -cne $parentPathExt){throw 'Generic child PATHEXT missing or parent changed'};$cases+='child-only-native-extension-discovery'",
     '[void](Assert-DpiHeldProcess $child);$cases+="held-path-and-birth"',
     '$born=$child.birthTicks;$child.birthTicks--;$denied=$false;try{[void](Assert-DpiHeldProcess $child)}catch{$denied=$true};$child.birthTicks=$born;if(-not $denied){throw "Wrong birth admitted"};$cases+="wrong-birth-denied"',
     '$image=$child.executable;$child.executable="C:\\foreign\\node.exe";$denied=$false;try{[void](Assert-DpiHeldProcess $child)}catch{$denied=$true};$child.executable=$image;if(-not $denied){throw "Foreign image admitted"};$cases+="wrong-image-denied"',
@@ -129,7 +131,38 @@ test('PS7 C# compiles without DLL/driver open; owned child identity, deadline an
   const receipt = JSON.parse(runPowerShell(code).trim());
   assert.equal(receipt.ok, true);
   assert.equal(receipt.nativeActions, 0);
-  assert.equal(receipt.cases.length, 7);
+  assert.equal(receipt.cases.length, 8);
+});
+
+test('actual readonly PS5 child reproduces executable pipeline refusal without startup PATHEXT', { skip: process.platform !== 'win32', timeout: 40000 }, () => {
+  const body = [
+    "$ErrorActionPreference='Stop';$rows=@()",
+    "foreach($leaf in @('whoami.exe','where.exe')){",
+    "  $file=Join-Path ([Environment]::GetFolderPath('Windows')) ('System32/'+$leaf)",
+    "  [string[]]$arguments=if($leaf -eq 'whoami.exe'){@('/user')}else{@('/Q','whoami.exe')}",
+    '  try{$output=@(& $file @arguments 2>&1|ForEach-Object{"$_"});$rows+=@([ordered]@{leaf=$leaf;ok=$true;exitCode=$LASTEXITCODE})}',
+    '  catch{$rows+=@([ordered]@{leaf=$leaf;ok=$false;errorId=$_.FullyQualifiedErrorId})}',
+    '}',
+    '[ordered]@{version=$PSVersionTable.PSVersion.Major;pathext=$env:PATHEXT;rows=$rows}|ConvertTo-Json -Depth 5 -Compress',
+  ].join('\n');
+  const encoded = Buffer.from(body, 'utf16le').toString('base64');
+  const code = [
+    "$ErrorActionPreference='Stop'",
+    '. ' + quoted(script) + ' -LibraryOnly',
+    'Initialize-DpiNativeTypes',
+    '$script:Work=' + quoted(ownTemp) + ';$env:GITHUB_WORKSPACE=' + quoted(root),
+    '$script:DpiClock=[Diagnostics.Stopwatch]::StartNew();$script:DpiBudget=30;$parentPathExt=$env:PATHEXT',
+    "$ps5=Join-Path ([Environment]::GetFolderPath('Windows')) 'System32/WindowsPowerShell/v1.0/powershell.exe'",
+    '$arguments=@("-NoLogo","-NoProfile","-NonInteractive","-OutputFormat","Text","-EncodedCommand",' + quoted(encoded) + ')',
+    "$negativeEnvironment=${function:Set-NativeWindowsPowerShellChildEnvironment};function Set-NativeWindowsPowerShellChildEnvironment {param($StartInfo);& $negativeEnvironment -StartInfo $StartInfo;[void]$StartInfo.Environment.Remove('PATHEXT')}",
+    "$negative=(Invoke-DpiTool $ps5 $arguments 'own-readonly-missing-PATHEXT' 10)|ConvertFrom-Json",
+    'Set-Item -LiteralPath Function:Set-NativeWindowsPowerShellChildEnvironment -Value $negativeEnvironment',
+    "$positive=(Invoke-DpiTool $ps5 $arguments 'own-readonly-canonical-PATHEXT' 10)|ConvertFrom-Json",
+    "if(@($negative.rows|Where-Object{$_.ok -ne $false -or $_.errorId -cne 'CantActivateDocumentInPipeline'}).Count -ne 0){throw 'Missing startup PATHEXT did not reproduce exact document error'}",
+    "if(@($positive.rows|Where-Object{$_.ok -ne $true -or $_.exitCode -ne 0}).Count -ne 0 -or $env:PATHEXT -cne $parentPathExt){throw 'Generic child executable recognition failed or parent env changed'}",
+    '[ordered]@{ok=$true;negativeFailures=@($negative.rows).Count;positiveExits=@($positive.rows).Count;parentEnvPreserved=$true;nativeMutations=0}|ConvertTo-Json -Compress',
+  ].join('\n');
+  assert.deepEqual(JSON.parse(runPowerShell(code).trim()), { ok: true, negativeFailures: 2, positiveExits: 2, parentEnvPreserved: true, nativeMutations: 0 });
 });
 test('native entry refuses unsupported environment before file/native action; pure supported-host contract is explicit', { skip: process.platform !== 'win32' }, () => {
   const code = [
@@ -163,6 +196,7 @@ test('actual finally preserves Setup failure and collects installer diagnostics 
     "  if($encoded -match '(?:start|stop|install|remove)Service|Reset-|Set-Dns|sc\.exe|--winws-process-snapshot'){throw 'Mutating or unverified Core command in readback'}",
     "  $expected=@{'final-readonly-services'='Get-NativeProductServices';'final-readonly-tasks'='Get-NativeProductTasks';'final-readonly-drivers'='Get-DpiDrivers';'final-readonly-winws'='Get-DpiGlobalWinws';'final-readonly-network'='Get-NativeNetworkFingerprint'}",
     "  if(-not $encoded.Contains($expected[$Label]) -or $Executable -ine (Join-Path ([Environment]::GetFolderPath('Windows')) 'System32/WindowsPowerShell/v1.0/powershell.exe')){throw 'Actual readonly source/controller or PS5 path changed'}",
+    "  foreach($stage in @('process-start','library-ready','query-ready','serialized')){if(-not $encoded.Contains('|'+$stage+'|')){throw 'Readonly query stage marker missing'}}",
     '  $script:FinalReadbackCalls+=@([ordered]@{label=$Label;seconds=$Seconds;executable=$Executable;code=$encoded})',
     '  switch($Label){',
     "    'final-readonly-services' {return ([ordered]@{schemaVersion=1;kind='readonly-final-state';name='services';value=@([ordered]@{Name='EgoistShieldCore';State='Running';StartMode='Auto';StartName='LocalSystem';PathName=$script:Core;ProcessId=1544})}|ConvertTo-Json -Depth 6 -Compress)}",
@@ -203,4 +237,24 @@ test('final readbacks distinguish unavailable from absent and continue after ind
     '[ordered]@{ok=$true;readbacks=$script:Readbacks.Count;unavailable=$failures.Count;nativeActions=0}|ConvertTo-Json -Compress',
   ].join('\n');
   assert.deepEqual(JSON.parse(runPowerShell(code).trim()), { ok: true, readbacks: 5, unavailable: 2, nativeActions: 0 });
+});
+
+test('readonly deadline survives forced owned retirement and exports bounded stage evidence', { skip: process.platform !== 'win32', timeout: 40000 }, () => {
+  const code = [
+    "$ErrorActionPreference='Stop'",
+    '. ' + quoted(script) + ' -LibraryOnly',
+    'Initialize-DpiNativeTypes',
+    '$script:Work=Join-Path ' + quoted(ownTemp) + " 'readonly-timeout';$env:GITHUB_WORKSPACE=" + quoted(root),
+    'New-Item -ItemType Directory -Path $script:Work -Force|Out-Null',
+    "$fixture=Join-Path $script:Work 'own-readonly-hang.cjs'",
+    "[IO.File]::WriteAllText($fixture,'process.stderr.write(\"readonly-stage|drivers|process-start|0\\n\"+String.fromCharCode(233).repeat(100000));process.stdout.write(String.fromCodePoint(0x1f642).repeat(300000));process.stdin.resume();setInterval(()=>{},1000);')",
+    '$script:DpiClock=[Diagnostics.Stopwatch]::StartNew();$script:DpiBudget=30;$script:DpiReceipt=[ordered]@{nativeActions=0}',
+    '$caught=$null;try{[void](Invoke-DpiTool ' + quoted(process.execPath) + " @($fixture) 'final-readonly-drivers' 2)}catch{$caught=$_}",
+    "if(-not $caught -or $caught.Exception.Message -cne 'Bounded child operation timed out: final-readonly-drivers' -or $caught.Exception.Data['ownedRetirementDiagnostic'] -notmatch 'Forced owned child retirement' -or $caught.Exception.Data['ownedRetirementConfirmed'] -ne $false){throw 'First deadline masked by child retirement'}",
+    "$observation=Get-Content -LiteralPath (Join-Path $script:Work 'final-readonly-drivers.observation.json') -Raw|ConvertFrom-Json",
+    "if($observation.retirementConfirmed -ne $false -or $observation.primaryError -cne $caught.Exception.Message -or $observation.stages.Count -ne 1 -or $observation.stderr.status -cne 'captured' -or $observation.stderr.truncated -ne $true -or $observation.stdout.truncated -ne $true -or (Get-Item -LiteralPath (Join-Path $script:Work $observation.stderr.file)).Length -gt 65536 -or (Get-Item -LiteralPath (Join-Path $script:Work $observation.stdout.file)).Length -gt 1048576 -or $observation.processId -le 0 -or $observation.birthTicks -le 0){throw 'Bounded correlated unavailable-state evidence missing'}",
+    'if($script:DpiReceipt.nativeActions -ne 0 -or @($script:DpiReceipt.readonlyToolObservations).Count -ne 1){throw "Readback diagnostic counted as mutation or was not retained"}',
+    '[ordered]@{ok=$true;primaryDeadlinePreserved=$true;retirementConfirmed=$false;stages=1;nativeMutations=0}|ConvertTo-Json -Compress',
+  ].join('\n');
+  assert.deepEqual(JSON.parse(runPowerShell(code).trim()), { ok: true, primaryDeadlinePreserved: true, retirementConfirmed: false, stages: 1, nativeMutations: 0 });
 });

@@ -836,34 +836,123 @@ function Assert-NativeBootTask {
   $xml.Save((Join-Path $script:Work ($taskName+'.xml')))
   return [ordered]@{taskName=$taskName;taskPath=$task.TaskPath;state=[string]$task.State;principal='S-1-5-18';logonType=[string]$task.Principal.LogonType;highest=$true;bootTrigger=$true;action=[string]$action.Command;arguments=[string]$action.Arguments;actualBootExecuted=$false}
 }
+function Initialize-NativeCandidateInstallerHelpers {
+  param([object]$Manifest,[string]$SourceRoot,[string]$Destination)
+  Assert-NativeOrdinaryPath -Path $SourceRoot
+  Assert-NativeOrdinaryPath -Path (Split-Path -Parent $Destination)
+  if(Test-Path -LiteralPath $Destination){throw 'Candidate installer helper destination must be fresh.'}
+  $files=@(
+    @('invoke-final-silent-reinstall.ps1','scripts\invoke-final-silent-reinstall.ps1'),
+    @('service-maintenance.ps1','src\installer\service-maintenance.ps1'),
+    @('maintenance-boot-recovery.ps1','src\installer\maintenance-boot-recovery.ps1'),
+    @('gui-login-startup.ps1','src\installer\gui-login-startup.ps1')
+  )
+  $prepared=@()
+  foreach($pair in $files){
+    $relative='resources/installer/'+$pair[0]
+    $entries=@($Manifest.payload | Where-Object {$_.path -ceq $relative})
+    if($entries.Count -ne 1 -or [string]$entries[0].sha256 -cnotmatch '^[a-fA-F0-9]{64}$' -or [long]$entries[0].bytes -le 3){throw 'Candidate helper payload identity is missing or ambiguous.'}
+    $source=Join-Path $SourceRoot $pair[1];Assert-NativeOrdinaryPath -Path $source -Leaf
+    $bytes=[IO.File]::ReadAllBytes($source)
+    if($bytes.Length -lt 3 -or $bytes[0] -ne 0xef -or $bytes[1] -ne 0xbb -or $bytes[2] -ne 0xbf){$bytes=[byte[]](@(0xef,0xbb,0xbf)+$bytes)}
+    $algorithm=[Security.Cryptography.SHA256]::Create()
+    try{$digest=([BitConverter]::ToString($algorithm.ComputeHash($bytes))).Replace('-','')}finally{$algorithm.Dispose()}
+    if($bytes.Length -ne [long]$entries[0].bytes -or $digest -ine [string]$entries[0].sha256){throw 'Current helper does not match immutable candidate payload bytes.'}
+    $prepared+=@{name=$pair[0];bytes=$bytes;sha256=$digest;payloadPath=$relative}
+  }
+  New-Item -ItemType Directory -Path $Destination -ErrorAction Stop | Out-Null
+  $inventory=@()
+  foreach($file in $prepared){
+    $target=Join-Path $Destination $file.name
+    $stream=[IO.File]::Open($target,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+    try{$stream.Write($file.bytes,0,$file.bytes.Length);$stream.Flush($true)}finally{$stream.Dispose()}
+    if((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash -ine $file.sha256){throw 'Candidate helper write failed immutable readback.'}
+    $inventory+=[ordered]@{path=$target;payloadPath=$file.payloadPath;bytes=$file.bytes.Length;sha256=$file.sha256}
+  }
+  return [ordered]@{helper=(Join-Path $Destination 'invoke-final-silent-reinstall.ps1');inventory=$inventory;immutablePayloadMatched=$true}
+}
+function Assert-NativeProtectedStage {
+  param([string]$Stage)
+  $statePath=Join-Path $Stage 'state.json'
+  [void](Assert-NativeAdministratorOwned $statePath)
+  $state=Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json
+  if($state.schemaVersion -ne 1 -or $state.owner -cne 'EgoistShield' -or $state.version -cne $script:Version -or
+    $state.sha256 -ine $script:InstallerHash -or [long]$state.bytes -ne (Get-Item -LiteralPath $script:Installer).Length -or
+    $state.runAfter -isnot [bool] -or $state.runAfter -ne $false -or [IO.Path]::GetFullPath([string]$state.sourceInstaller) -ine $script:Installer -or
+    [IO.Path]::GetFullPath([string]$state.installer) -ine (Join-Path $Stage ('EgoistShield-Setup-'+$script:Version+'.exe')) -or
+    [IO.Path]::GetFullPath([string]$state.manifest) -ine (Join-Path $Stage 'package-integrity.json')){throw 'Protected stage does not identify the admitted immutable installer.'}
+  $inventory=@()
+  foreach($name in @('invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1','gui-login-startup.ps1')){
+    $entries=@($script:CandidateManifest.payload|Where-Object {$_.path -ceq ('resources/installer/'+$name)})
+    if($entries.Count -ne 1){throw 'Protected helper payload is missing or ambiguous.'}
+    $file=Join-Path $Stage $name;[void](Assert-NativeAdministratorOwned $file)
+    $hash=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash
+    if($hash -ine $entries[0].sha256 -or (Get-Item -LiteralPath $file).Length -ne [long]$entries[0].bytes){throw 'Protected helper does not match current immutable payload.'}
+    $inventory+=[ordered]@{path=$file;sha256=$hash;bytes=[long]$entries[0].bytes}
+  }
+  foreach($file in @([string]$state.installer,[string]$state.manifest)){[void](Assert-NativeAdministratorOwned $file)}
+  if((Get-FileHash -LiteralPath $state.installer -Algorithm SHA256).Hash -ine $script:InstallerHash -or
+    (Get-FileHash -LiteralPath $state.manifest -Algorithm SHA256).Hash -ine (Get-FileHash -LiteralPath $script:ManifestPath -Algorithm SHA256).Hash){throw 'Protected staging changed admitted installer or manifest bytes.'}
+  return [ordered]@{installerSha256=$script:InstallerHash;helpers=$inventory;runAfter=$false;currentPayloadMatched=$true}
+}
+function Assert-NativeProtectedCompletion {
+  param([object]$Receipt,[string]$RunId,[string]$Flag)
+  if($Flag.Trim() -cne 'success' -or $Receipt.schemaVersion -ne 1 -or $Receipt.owner -cne 'EgoistShield' -or $Receipt.runId -cne $RunId){throw 'Protected completion flag or receipt identity is unverified.'}
+  $events=@($Receipt.events)
+  $verified=@($events | Where-Object {$_.stage -ceq 'verify' -and $_.status -ceq 'succeeded'})
+  $installers=@($events | Where-Object {$_.stage -ceq 'installer' -and $_.status -ceq 'installer-exited'})
+  if($verified.Count -ne 1 -or $installers.Count -ne 1 -or ($installers[0].data.exitCode -isnot [int] -and $installers[0].data.exitCode -isnot [int64]) -or $installers[0].data.exitCode -ne 0){throw 'Protected completion lacks one verified installer exit and final readback.'}
+  if(@($events | Where-Object {$_.status -in @('failed','recovery-pending','recovery-warning','recovering','recovered','desktop-launch-failed')}).Count -ne 0){throw 'Protected completion contains a failed or recovered transaction.'}
+}
 function Invoke-NativeProtectedReinstall {
+  param([ValidateSet('same-version','upgrade-3.8.0')][string]$Operation='same-version')
+  $key=if($Operation -eq 'upgrade-3.8.0'){'protectedUpgrade'}else{'reinstall'}
+  $prefix=if($Operation -eq 'upgrade-3.8.0'){'protected-upgrade'}else{'reinstall'}
   $helper=Join-Path $script:InstallRoot 'resources\installer\invoke-final-silent-reinstall.ps1'
-  Add-NativeMutation -Kind 'protected-reinstall' -Target $script:InstallRoot -Purpose 'Actual same-version upgrade while Core/TG retain automatic recovery.'
-  $dispatch=Invoke-NativeBounded -Executable $script:NativePowerShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',$helper,'-InstallerPath',$script:Installer,'-IntegrityManifestPath',$script:ManifestPath,'-ExpectedVersion',$script:Version,'-ExpectedSha256',$script:InstallerHash,'-NoRunAfter','-DelaySeconds','8') -Label 'protected-reinstall-dispatch' -TimeoutSeconds 90
+  $helperProof=$null
+  if($Operation -eq 'upgrade-3.8.0'){
+    # The old baseline helper is not substituted for the current tested payload.
+    $helperProof=Initialize-NativeCandidateInstallerHelpers -Manifest $script:CandidateManifest -SourceRoot (Split-Path -Parent $PSScriptRoot) -Destination (Join-Path $script:Work 'candidate-installer-helpers')
+    $helper=$helperProof.helper
+  }
+  Add-NativeMutation -Kind ('protected-'+$Operation) -Target $script:InstallRoot -Purpose 'Production handoff preserves owned services, private DNS, startup intent and settings.'
+  $dispatch=Invoke-NativeBounded -Executable $script:NativePowerShell -Arguments @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',$helper,'-InstallerPath',$script:Installer,'-IntegrityManifestPath',$script:ManifestPath,'-ExpectedVersion',$script:Version,'-ExpectedSha256',$script:InstallerHash,'-FromVersion',$(if($Operation -eq 'upgrade-3.8.0'){'3.8.0'}else{$script:Version}),'-NoRunAfter','-DelaySeconds','8') -Label ($prefix+'-dispatch') -TimeoutSeconds 90
   $result=$dispatch.stdout | ConvertFrom-Json
-  if($result.dispatched -ne $true -or [string]$result.runId -cnotmatch '^[a-f0-9]{32}$'){throw 'Production reinstall returned no protected run identity.'}
+  if($result.dispatched -isnot [bool] -or -not $result.dispatched -or [string]$result.runId -cnotmatch '^[a-f0-9]{32}$'){throw 'Production reinstall returned no protected run identity.'}
   $stage=Join-Path $script:DeferredRoot ([string]$result.runId)
-  if([IO.Path]::GetFullPath([string]$result.state) -ine (Join-Path $stage 'state.json')){throw 'Production stage escaped its canonical root.'}
+  if([IO.Path]::GetFullPath([string]$result.state) -ine (Join-Path $stage 'state.json') -or [IO.Path]::GetFullPath([string]$result.receipt) -ine (Join-Path $stage 'receipt.json')){throw 'Production stage escaped its canonical root.'}
   [void](Assert-NativeAdministratorOwned $stage)
-  $script:Receipt.reinstall=[ordered]@{stage=$stage;dispatched=$true;bootTask=$null;completed=$false};Save-NativeReceipt
+  $record=[ordered]@{stage=$stage;operation=$Operation;dispatched=$true;bootTask=$null;completed=$false;helperProof=$helperProof;diagnosticCopies=@()}
+  $script:Receipt[$key]=$record;Save-NativeReceipt
   $taskName='EgoistShield-InstallerBootRecovery-'+[string]$result.runId;$watch=[Diagnostics.Stopwatch]::StartNew()
-  do{
-    Observe-NativeGuiStartupSuspension
-    $task=Get-ScheduledTask -TaskName $taskName -TaskPath '\' -ErrorAction SilentlyContinue
-    if($task -and -not $script:Receipt.reinstall.bootTask){
-      $script:Receipt.reinstall.bootTask=Assert-NativeBootTask -Stage $stage
-      foreach($name in @('state.json','boot-recovery.json','invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1','gui-login-startup.ps1')){[void](Assert-NativeAdministratorOwned (Join-Path $stage $name))};Save-NativeReceipt
+  try{
+    do{
+      Observe-NativeGuiStartupSuspension
+      $task=Get-ScheduledTask -TaskName $taskName -TaskPath '\' -ErrorAction SilentlyContinue
+      if($task -and -not $record.bootTask){
+        $record.bootTask=Assert-NativeBootTask -Stage $stage
+        $record.stageProof=Assert-NativeProtectedStage -Stage $stage
+        foreach($name in @('state.json','boot-recovery.json','invoke-final-silent-reinstall.ps1','service-maintenance.ps1','maintenance-boot-recovery.ps1','gui-login-startup.ps1')){[void](Assert-NativeAdministratorOwned (Join-Path $stage $name))};Save-NativeReceipt
+      }
+      if(Test-Path -LiteralPath (Join-Path $stage 'complete.flag') -PathType Leaf){break};Start-Sleep -Milliseconds 200
+    }while($watch.Elapsed.TotalSeconds -lt 900)
+    if(-not (Test-Path -LiteralPath (Join-Path $stage 'complete.flag') -PathType Leaf)){throw 'Actual protected reinstall exceeded 15 minutes; production recovery state retained.'}
+    $receipt=Get-Content -LiteralPath (Join-Path $stage 'receipt.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-NativeProtectedCompletion -Receipt $receipt -RunId ([string]$result.runId) -Flag ([IO.File]::ReadAllText((Join-Path $stage 'complete.flag')))
+    if(-not $record.bootTask){throw 'Actual production SYSTEM Task registration was never observed.'}
+    [void](Wait-NativeCondition -Condition {if(-not (Get-ScheduledTask -TaskName $taskName -TaskPath '\' -ErrorAction SilentlyContinue)){return $true}} -Label 'Production Task unregistration' -TimeoutSeconds 30)
+    if(Test-Path -LiteralPath (Join-Path $script:DataRoot 'installer\service-maintenance.json')){throw 'Protected completion retained the maintenance marker.'}
+    $record.completed=$true;$record.elapsedMilliseconds=$dispatch.elapsedMilliseconds+$watch.ElapsedMilliseconds;$record.elapsedSeconds=[Math]::Round($watch.Elapsed.TotalSeconds,2);$record.taskRemoved=$true;Save-NativeReceipt
+  }finally{
+    foreach($name in @('receipt.json','state.json','boot-recovery.json','worker.stdout.log','worker.stderr.log')){
+      $file=Join-Path $stage $name
+      try{
+        if(Test-Path -LiteralPath $file -PathType Leaf){Copy-Item -LiteralPath $file -Destination (Join-Path $script:Work ($prefix+'-'+$name));$record.diagnosticCopies+=@{name=$name;status='captured'}}
+      }catch{$record.diagnosticCopies+=@{name=$name;status='unavailable';exceptionType=$_.Exception.GetType().FullName}}
     }
-    if(Test-Path -LiteralPath (Join-Path $stage 'complete.flag') -PathType Leaf){break};Start-Sleep -Milliseconds 200
-  }while($watch.Elapsed.TotalSeconds -lt 900)
-  if(-not (Test-Path -LiteralPath (Join-Path $stage 'complete.flag') -PathType Leaf)){throw 'Actual protected reinstall exceeded 15 minutes; production recovery state retained.'}
-  foreach($name in @('receipt.json','state.json','boot-recovery.json','worker.stdout.log','worker.stderr.log')){$file=Join-Path $stage $name;if(Test-Path -LiteralPath $file -PathType Leaf){Copy-Item -LiteralPath $file -Destination (Join-Path $script:Work ('reinstall-'+$name))}}
-  $receipt=Get-Content -LiteralPath (Join-Path $stage 'receipt.json') -Raw | ConvertFrom-Json
-  $events=if($receipt.PSObject.Properties['events']){@($receipt.events)}else{@()}
-  if(@($events | Where-Object {$_.stage -eq 'verify' -and $_.status -eq 'succeeded'}).Count -ne 1){throw 'Reinstall complete flag lacks actual successful verification receipt.'}
-  if(-not $script:Receipt.reinstall.bootTask){throw 'Actual production SYSTEM Task registration was never observed.'}
-  [void](Wait-NativeCondition -Condition {if(-not (Get-ScheduledTask -TaskName $taskName -TaskPath '\' -ErrorAction SilentlyContinue)){return $true}} -Label 'Production Task unregistration' -TimeoutSeconds 30)
-  $script:Receipt.reinstall.completed=$true;$script:Receipt.reinstall.elapsedSeconds=[Math]::Round($watch.Elapsed.TotalSeconds,2);$script:Receipt.reinstall.taskRemoved=$true;Save-NativeReceipt
+    try{Save-NativeReceipt}catch{Write-Warning 'Protected diagnostics receipt unavailable; original transaction failure retained.'}
+  }
+  return $record
 }
 function Stop-NativeVerifiedCoreForRecovery {
   $before=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
@@ -1088,6 +1177,7 @@ function Invoke-NativeAcceptance {
   $script:InstallerHash=(Get-FileHash -LiteralPath $script:Installer -Algorithm SHA256).Hash
   if($script:InstallerHash -ine [string]$manifest.installer.sha256 -or (Get-Item -LiteralPath $script:Installer).Length -ne [long]$manifest.installer.bytes){throw 'Actual Setup differs from its source-bound integrity receipt.'}
   $script:Version=[string]$manifest.version
+  $script:CandidateManifest=$manifest
   $script:InstallRoot=Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'EgoistShield'
   $script:DataRoot=Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) 'EgoistShield'
   $script:InstallerDataRoot=Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) 'EgoistShieldInstaller'
@@ -1128,7 +1218,8 @@ function Invoke-NativeAcceptance {
     Initialize-NativeUpgradeBaseline -Installer $UpgradeBaselineInstaller
     $mutationKind=if($UpgradeBaselineInstaller){'official-3.8.0-to-candidate-upgrade'}else{'setup-clean-install'}
     Add-NativeMutation -Kind $mutationKind -Target $script:InstallRoot -Purpose 'Actual generated candidate silent installation or original-version upgrade.'
-    $install=Invoke-NativeBounded -Executable $script:Installer -Arguments @('/S') -Label 'clean-install' -TimeoutSeconds 600
+    if($UpgradeBaselineInstaller){$install=Invoke-NativeProtectedReinstall -Operation 'upgrade-3.8.0'}
+    else{$install=Invoke-NativeBounded -Executable $script:Installer -Arguments @('/S') -Label 'clean-install' -TimeoutSeconds 600}
     $installKind=if($UpgradeBaselineInstaller){'actual-original-3.8.0-to-candidate-installer-upgrade'}else{'actual-generated-setup-clean-install'}
     $script:Receipt.checks+=[ordered]@{name=$installKind;ok=$true;milliseconds=$install.elapsedMilliseconds}
     Assert-NativeUpgradeProfile 'after-installer'
@@ -1154,7 +1245,7 @@ function Invoke-NativeAcceptance {
     $script:Receipt.guiStartup=[ordered]@{kind='actual-packaged-gui-startup-helper-task-lifecycle';operations=@();disabledDuringTransaction=$false;restoredAfterReinstall=$false;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false}
     Add-NativeMutation -Kind 'actual-owned-gui-startup-opt-in-task' -Target 'current verified interactive user' -Purpose 'Actual packaged public Sync/Verify helper and Task Scheduler highest interactive readback; no logon is provoked.'
     [void](Invoke-NativeGuiStartupOperation -Operation Sync -Enabled true -Label 'gui-startup-enable' -ExpectedEnabled $true)
-    Set-NativeOwnedLegacyLayer;Invoke-NativeProtectedReinstall
+    Set-NativeOwnedLegacyLayer;[void](Invoke-NativeProtectedReinstall)
     if(-not $script:Receipt.guiStartup.disabledDuringTransaction){throw 'Enabled GUI startup task was not actually observed suspended during the reinstall transaction.'}
     [void](Invoke-NativeGuiStartupOperation -Operation Verify -Label 'gui-startup-after-reinstall' -ExpectedEnabled $true)
     $script:Receipt.guiStartup.restoredAfterReinstall=$true;Save-NativeReceipt
