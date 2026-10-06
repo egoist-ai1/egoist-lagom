@@ -37,7 +37,15 @@ flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
 
 def run_input_child(arguments, stage, timeout_seconds=1200, discard_stdout=False):
     # CREATE_NO_WINDOW without explicit handles can hide the child failure on Windows.
-    # These fixed build actors never receive credentials or private product data.
+    # Only this exact component actor receives the optional read-only API credential.
+    import os
+    child_env = dict(os.environ)
+    build_token = child_env.pop('SHIELD_BUILD_GITHUB_TOKEN', None)
+    if build_token and stage == 'components':
+        expected_actor = [sys.executable, str(ROOT / 'scripts/download-component-candidates.py'), '--work-dir', str(args.work_dir)]
+        if list(arguments) != expected_actor:
+            raise ValueError('Build API token is restricted to the fixed component downloader')
+        child_env['SHIELD_BUILD_GITHUB_TOKEN'] = build_token
     evidence = args.work_dir / 'evidence'
     evidence.mkdir(exist_ok=True)
     record_dir = Path(tempfile.mkdtemp(prefix='bootstrap-child-', dir=evidence))
@@ -47,7 +55,7 @@ def run_input_child(arguments, stage, timeout_seconds=1200, discard_stdout=False
     try:
         result = subprocess.run(arguments, check=False,
                                 stdout=subprocess.DEVNULL if discard_stdout else subprocess.PIPE,
-                                stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, creationflags=flags, timeout=timeout_seconds)
+                                stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, creationflags=flags, timeout=timeout_seconds, env=child_env)
         output, error = result.stdout or b'', result.stderr or b''
     except subprocess.TimeoutExpired as exc:
         failure = exc
@@ -55,6 +63,18 @@ def run_input_child(arguments, stage, timeout_seconds=1200, discard_stdout=False
     except OSError as exc:
         failure = exc
         output, error = b'', b''
+    stdout_bytes, stderr_bytes = len(output), len(error)
+    diagnostics_redacted = False
+    if build_token:
+        secret = build_token.encode('utf-8')
+        safe_output = output.replace(secret, b'[redacted-build-token]')
+        safe_error = error.replace(secret, b'[redacted-build-token]')
+        diagnostics_redacted = safe_output != output or safe_error != error
+        output, error = safe_output, safe_error
+    if result is not None:
+        result.stdout, result.stderr = output, error
+    if isinstance(failure, subprocess.TimeoutExpired):
+        failure.stdout, failure.stderr = output, error
     limit = 65536
     (record_dir / 'stdout.log').write_bytes(output[-limit:])
     (record_dir / 'stderr.log').write_bytes(error[-limit:])
@@ -64,9 +84,9 @@ def run_input_child(arguments, stage, timeout_seconds=1200, discard_stdout=False
               'exitCode': None if failure else result.returncode,
               'elapsedMilliseconds': round((time.monotonic() - started) * 1000, 3),
               'stdoutCaptured': not discard_stdout, 'stderrCaptured': True,
-              'stdoutBytes': len(output), 'stderrBytes': len(error),
-              'stdoutTruncated': len(output) > limit, 'stderrTruncated': len(error) > limit,
-              'timeoutSeconds': timeout_seconds, 'environmentDumped': False}
+              'stdoutBytes': stdout_bytes, 'stderrBytes': stderr_bytes,
+              'stdoutTruncated': max(stdout_bytes, len(output)) > limit, 'stderrTruncated': max(stderr_bytes, len(error)) > limit,
+              'timeoutSeconds': timeout_seconds, 'environmentDumped': False, 'diagnosticsRedacted': diagnostics_redacted}
     (record_dir / 'result.json').write_text(json.dumps(record, indent=2) + '\n', encoding='utf-8')
     if failure or result.returncode != 0:
         print(f'Build input stage {stage} failed; diagnostics: {record_dir}', file=sys.stderr, flush=True)

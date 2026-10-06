@@ -643,6 +643,8 @@ jobs:
           npm ci
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Recover checksum-verified build inputs
+        env:
+          SHIELD_BUILD_GITHUB_TOKEN: ${{ github.token }}
         run: |
           python scripts/bootstrap-build-inputs.py --seven-zip $env:SHIELD_SEVEN_ZIP --work-dir $env:LAGOM_CANDIDATE_WORK
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

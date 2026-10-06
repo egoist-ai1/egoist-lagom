@@ -2549,6 +2549,10 @@ details.protection-check-facts > summary {
     flex-wrap: wrap;
   }
 
+  .screen-stage[data-screen="zapret"] .zapret-status-panel .kv-list > div {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+
   .screen-stage[data-screen="zapret"] .table-head {
     display: none;
   }
@@ -2635,6 +2639,7 @@ details.protection-check-facts > summary {
 .ruby-storage-notice small{font-size:11px;color:#a1a1aa}
 .ruby-storage-actions{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0}
 .ruby-storage-actions button{min-height:32px}
+.ruby-storage-actions button[aria-disabled="true"]{opacity:.66;cursor:not-allowed;filter:saturate(.72)}
 .ruby-storage-notice.compact{height:auto;min-height:0;flex-direction:column;gap:4px;padding:8px 10px;margin:5px 0;flex:none}
 .ruby-storage-notice.compact strong{font-size:12px}
 .ruby-storage-notice.compact p{font-size:11px;margin:2px 0}

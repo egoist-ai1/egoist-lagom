@@ -372,13 +372,30 @@ function ShieldServerPicker({nodes,activeId,onClose,onManage,onSelect}){
 }
 
 function RubyStorageNotice({storage,onRetry,onDiagnostics,compact=false}){
+  const retryButton=O.useRef(null),focusScope=O.useRef(null),manualRetryFocus=O.useRef(false);
+  O.useLayoutEffect(()=>{
+    if(storage?.retrying)return;
+    if(!storage?.writable){manualRetryFocus.current=false;return;}
+    if(!manualRetryFocus.current)return;
+    manualRetryFocus.current=false;
+    const active=document.activeElement;
+    if(active&&active!==document.body&&active.isConnected)return;
+    const target=focusScope.current?.querySelector('.ruby-sidebar nav button.active, .shield-settings-open-btn');
+    if(target?.isConnected)target.focus({preventScroll:true});
+  },[storage?.retrying,storage?.writable]);
   if(!storage||storage.writable)return null;
   const corrupt=storage.error==='STATE_STORAGE_CORRUPT';
   const title=corrupt?'Файл настроек повреждён':storage.status==='loading'?'Проверяем настройки':'Настройки недоступны';
   const checked=storage.checkedAt?new Date(storage.checkedAt).toLocaleTimeString('ru-RU'):null;
+  const retry=()=>{
+    if(storage.retrying)return;
+    manualRetryFocus.current=document.activeElement===retryButton.current;
+    focusScope.current=retryButton.current?.closest('main');
+    onRetry?.();
+  };
   return <aside className={'ruby-storage-notice'+(compact?' compact':'')} aria-label="Состояние локальных данных">
     <div role="status" aria-live="polite"><strong>{title}</strong><p>{compact?'Изменения приостановлены.':corrupt?'Исходные файлы сохранены. Изменения заблокированы до подтверждённого восстановления.':'Можно просматривать последние подтверждённые данные. Изменения приостановлены; фоновые службы продолжают работать.'}</p>{checked&&<small>Проверка <time dateTime={storage.checkedAt}>{checked}</time>{storage.systemCode?' · '+storage.systemCode:''}</small>}</div>
-    <div className="ruby-storage-actions"><button type="button" className="btn-secondary compact" disabled={storage.retrying} aria-busy={!!storage.retrying} onClick={onRetry}>{storage.retrying?'Проверяем…':'Повторить'}</button>{onDiagnostics&&<button type="button" className="btn-secondary compact" onClick={onDiagnostics}>Диагностика</button>}</div>
+    <div className="ruby-storage-actions"><button type="button" className="btn-secondary compact" ref={retryButton} aria-disabled={!!storage.retrying} aria-busy={!!storage.retrying} onBlur={()=>{manualRetryFocus.current=false;}} onClick={retry}>{storage.retrying?'Проверяем…':'Повторить'}</button>{onDiagnostics&&<button type="button" className="btn-secondary compact" onClick={onDiagnostics}>Диагностика</button>}</div>
   </aside>;
 }
 function ap({ activeScreen, activity, children, onAppInfo, onDismissActivity, onNavigate, snapshot, onRetryStorage }) {

@@ -3,8 +3,10 @@ import argparse
 import importlib.util
 import json
 import os
+import re
 import sys
 import tempfile
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -13,6 +15,37 @@ PROJECT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('component_input_verifier', PROJECT / 'scripts/verify-component-inputs.py')
 verifier = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(verifier)
+
+
+class RejectReleaseRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        try:
+            fp.close()
+        finally:
+            raise ValueError('Official release metadata redirects are not allowed')
+
+
+def read_release_metadata(pin):
+    repository, tag = pin.get('repository'), pin.get('tag')
+    if not isinstance(repository, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9][A-Za-z0-9_.-]{0,99}', repository):
+        raise ValueError('Invalid official release repository')
+    if not isinstance(tag, str) or not tag or tag in {'.', '..'} or any(ord(c) < 32 or ord(c) == 127 for c in tag):
+        raise ValueError('Invalid official release tag')
+    url = 'https://api.github.com/repos/' + repository + '/releases/tags/' + urllib.parse.quote(tag, safe='')
+    headers = {'User-Agent': 'EgoistLagom-build'}
+    token = os.environ.get('SHIELD_BUILD_GITHUB_TOKEN')
+    if token:
+        if any(ord(c) < 33 or ord(c) > 126 for c in token):
+            raise ValueError('Invalid build GitHub token header')
+        headers['Authorization'] = 'Bearer ' + token
+    request = urllib.request.Request(url, headers=headers)
+    # A dedicated opener never forwards the API Authorization header on redirects.
+    opener = urllib.request.build_opener(RejectReleaseRedirect())
+    with opener.open(request, timeout=30) as response:
+        metadata = response.read(2 * 1024 * 1024 + 1)
+    if len(metadata) > 2 * 1024 * 1024:
+        raise ValueError('Official release metadata exceeds byte limit')
+    return json.loads(metadata)
 
 
 def main():
@@ -34,12 +67,7 @@ def main():
         binary = 'file' in pin
         target = root / filename
         if not args.offline:
-            req = urllib.request.Request('https://api.github.com/repos/' + pin['repository'] + '/releases/tags/' + pin['tag'], headers={'User-Agent': 'EgoistLagom-build'})
-            with urllib.request.urlopen(req, timeout=30) as response:
-                metadata = response.read(2 * 1024 * 1024 + 1)
-            if len(metadata) > 2 * 1024 * 1024:
-                raise ValueError('Official release metadata exceeds byte limit')
-            release = json.loads(metadata)
+            release = read_release_metadata(pin)
             assets = [asset for asset in release.get('assets', []) if asset.get('name') == filename]
             if release.get('tag_name') != pin['tag'] or release.get('draft') or release.get('prerelease') or len(assets) != 1 or assets[0].get('browser_download_url') != pin['url']:
                 raise ValueError('Official release differs from the pinned component descriptor')
