@@ -392,6 +392,58 @@ function Invoke-VpnNonceProbe {
     if(-not $released){if(-not $child.Process.HasExited){$child.Process.Kill();[void]$child.Process.WaitForExit(5000)};$child.Process.Dispose()}
   }
 }
+function Assert-VpnFixtureHeldIdentity {
+  $held=$script:VpnFixtureChild.Process;$identity=$script:VpnFixtureIdentity
+  if(-not $held -or $held.SafeHandle.IsInvalid -or $held.HasExited -or $held.Id -ne $identity.processId -or $held.MainModule.FileName -ine $identity.executable -or $held.StartTime.ToUniversalTime().ToString('o') -cne $identity.createdUtc){throw 'Owned SOCKS fixture held path/birth changed.'}
+  $listeners=@(Get-NetTCPConnection -LocalPort $script:VpnFixtureProof.port -State Listen -ErrorAction Stop)
+  if($listeners.Count -ne 1 -or $listeners[0].LocalAddress -cne '127.0.0.1' -or [int]$listeners[0].OwningProcess -ne $held.Id){throw 'Owned SOCKS fixture listener changed.'}
+  return $identity
+}
+function Set-VpnFixtureAvailability {
+  param([ValidateSet('pause','resume')][string]$Operation)
+  [void](Assert-VpnFixtureHeldIdentity)
+  $script:VpnFixtureControlId++
+  $id=$script:VpnFixtureControlId;$temporary=$script:VpnFixtureControl+'.'+$id+'.tmp'
+  Assert-NativeOrdinaryPath -Path $script:VpnWork
+  if(Test-Path -LiteralPath $temporary){throw 'Owned fixture control temporary already exists.'}
+  $request=[ordered]@{id=$id;operation=$Operation;nonce=$script:VpnFixtureNonce;instance=$script:VpnFixtureProof.instance;processId=$script:VpnFixtureIdentity.processId;port=[int]$script:VpnFixtureProof.port}
+  [IO.File]::WriteAllText($temporary,($request|ConvertTo-Json -Compress),[Text.UTF8Encoding]::new($false))
+  [IO.File]::Move($temporary,$script:VpnFixtureControl,$true)
+  $reply=Wait-VpnCondition -Label ('owned SOCKS '+$Operation+' acknowledgement') -TimeoutSeconds 6 -Condition {
+    [void](Assert-VpnFixtureHeldIdentity)
+    if(Test-Path -LiteralPath $script:VpnFixtureAck){Assert-NativeOrdinaryPath -Path $script:VpnFixtureAck -Leaf;$bytes=[IO.File]::ReadAllBytes($script:VpnFixtureAck);if($bytes.Length -gt 2048){throw 'Oversized own fixture acknowledgement.'};$value=[Text.Encoding]::UTF8.GetString($bytes)|ConvertFrom-Json;if($value.id -eq $id){return $value}}
+  }
+  $expectedMode=if($Operation -ceq 'pause'){'paused'}else{'available'}
+  if($reply.ok -ne $true -or $reply.mode -cne $expectedMode -or $reply.epoch -ne $id -or $reply.processId -ne $script:VpnFixtureIdentity.processId -or $reply.instance -cne $script:VpnFixtureProof.instance -or $reply.port -ne $script:VpnFixtureProof.port -or $reply.externalDial -ne $false){throw 'Owned SOCKS control acknowledgement is mismatched or refused.'}
+  Add-VpnEvidence ('own-upstream-'+$Operation) $reply
+  return $reply
+}
+function Invoke-VpnPausedNonceProbe {
+  param($Generation,[string]$Label,[int]$Epoch)
+  [void](Assert-VpnFixtureHeldIdentity)
+  $nonce=[Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(24)).ToLowerInvariant()
+  $file=Join-Path $script:VpnWork ($Label+'.probe.json')
+  $child=Start-VpnOwnedChild -Executable $script:VpnProbe.executable -Arguments @('--probe',$nonce,$script:VpnFixtureProof.instance,$file) -Label $Label -DotnetRoot $script:VpnProbe.dotnetRoot
+  $retired=$false
+  try{
+  $identity=[ordered]@{processId=$child.Process.Id;executable=$child.Process.MainModule.FileName;createdUtc=$child.Process.StartTime.ToUniversalTime().ToString('o')}
+  if($identity.executable -ine $script:VpnProbe.executable){throw 'Negative probe is not the pinned own child.'}
+  try{$result=Stop-VpnOwnedChild $child -TimeoutSeconds 15 -AllowNonzero}finally{$retired=$true}
+  if($result.exitCode -ne 1 -or (Test-Path -LiteralPath $file)){throw 'Controlled upstream outage was not an actual failed nonce probe.'}
+  $failure=$result.stderr|ConvertFrom-Json
+  if($failure.ok -ne $false -or $failure.processId -ne $identity.processId -or $failure.nonce -cne $nonce -or $failure.targetAddress -cne '198.18.0.254' -or $failure.elapsedMs -ge 12000){throw 'Negative nonce proof was mismatched or exhausted its operation deadline.'}
+  $events=Wait-VpnCondition -Label 'actual own peer refusal event' -TimeoutSeconds 6 -Condition {$rows=@(Get-Content -LiteralPath $script:VpnFixtureEvents | Where-Object {$_} | ForEach-Object {$_|ConvertFrom-Json} | Where-Object {$_.kind -in @('nonce-served','nonce-refused') -and $_.nonce -ceq $nonce});if($rows.Count){return ,$rows}}
+  if($events.Count -ne 1 -or $events[0].kind -cne 'nonce-refused' -or $events[0].fixtureInstance -cne $script:VpnFixtureProof.instance -or $events[0].epoch -ne $Epoch -or $events[0].peerAddress -cne '127.0.0.1'){throw 'Owned peer did not refuse this exact fresh nonce under the paused generation.'}
+  [void](Assert-VpnFixtureHeldIdentity);$fresh=Assert-VpnLiveGeneration
+  if($fresh.runtime.processId -ne $Generation.runtime.processId -or $fresh.runtime.createdUtc -cne $Generation.runtime.createdUtc -or $fresh.scm.process.processId -ne $Generation.scm.process.processId -or $fresh.scm.process.createdUtc -cne $Generation.scm.process.createdUtc){throw 'Controlled peer outage unexpectedly replaced the production VPN generation.'}
+  Add-VpnEvidence ('actual-tun-owned-peer-refusal:'+ $Label) ([ordered]@{ownProbe=$identity;failure=$failure;fixtureEvent=$events[0];runtime=$fresh.runtime;transportOnly=$true;uiEgressHealthClaim=$false})
+  }finally{if(-not $retired){try{if(-not $child.Process.HasExited -and $child.Process.MainModule.FileName -ieq $script:VpnProbe.executable){$child.Process.Kill();[void]$child.Process.WaitForExit(5000)}}catch{[Console]::Error.WriteLine('Owned negative probe retirement failed: '+$_.Exception.Message)}finally{$child.Process.Dispose()}}}
+}
+function Assert-VpnOffAfterUpstreamReturn {
+  $watch=[Diagnostics.Stopwatch]::StartNew();$observations=0
+  while($watch.Elapsed.TotalSeconds -lt 45){Test-VpnWatchdog;[void](Assert-VpnFixtureHeldIdentity);[void](Assert-VpnStopped);$observations++;Start-Sleep -Milliseconds 2000}
+  Add-VpnEvidence 'actual-manual-off-survives-own-upstream-return' ([ordered]@{observedSeconds=$watch.Elapsed.TotalSeconds;observations=$observations;final=(Assert-VpnStopped);uiWatchdogClaim=$false})
+}
 function Assert-VpnStopped {
   $rows=@(Get-NativeProductServices | Where-Object {$_.Name -ceq 'EgoistShieldVpn'})
   if($rows.Count -ne 1 -or $rows[0].PathName.Trim().Trim('"') -ine $script:VpnWrapper -or $rows[0].State -ne 'Stopped' -or $rows[0].StartMode -ne 'Disabled' -or [int]$rows[0].ProcessId -ne 0){throw 'The real VPN service is not Stopped + Disabled with zero native PID.'}
@@ -597,9 +649,11 @@ function Invoke-VpnNativeAcceptance {
     Add-VpnEvidence 'frozen-harmless-plain-tcp-probe-build' $script:VpnProbe
     $script:VpnFixtureEvents=Join-Path $script:VpnWork 'socks-events.ndjson';$script:VpnFixtureStop=Join-Path $script:VpnWork 'socks-stop.txt';$fixtureReceipt=Join-Path $script:VpnWork 'socks-fixture.json'
     $script:VpnFixtureNonce=[Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(24)).ToLowerInvariant()
+    $script:VpnFixtureControl=Join-Path $script:VpnWork 'socks-control.json';$script:VpnFixtureAck=Join-Path $script:VpnWork 'socks-control-ack.json';$script:VpnFixtureControlId=0
     $fixtureOptions=Join-Path $script:VpnWork 'socks-fixture.options.json'
-    [IO.File]::WriteAllText($fixtureOptions,([ordered]@{workRoot=$script:VpnWork;receiptPath=$fixtureReceipt;eventsPath=$script:VpnFixtureEvents;stopPath=$script:VpnFixtureStop;stopNonce=$script:VpnFixtureNonce;leaseSeconds=900}|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText($fixtureOptions,([ordered]@{workRoot=$script:VpnWork;receiptPath=$fixtureReceipt;eventsPath=$script:VpnFixtureEvents;stopPath=$script:VpnFixtureStop;stopNonce=$script:VpnFixtureNonce;controlPath=$script:VpnFixtureControl;ackPath=$script:VpnFixtureAck;leaseSeconds=900}|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
     $script:VpnFixtureChild=Start-VpnOwnedChild -Executable $script:VpnNode -Arguments @((Join-Path $script:VpnTestsRoot 'windows-vpn-production-acceptance.mjs'),'Fixture',$fixtureOptions) -Label 'nonce-socks-fixture'
+    $script:VpnFixtureIdentity=[ordered]@{processId=$script:VpnFixtureChild.Process.Id;executable=$script:VpnFixtureChild.Process.MainModule.FileName;createdUtc=$script:VpnFixtureChild.Process.StartTime.ToUniversalTime().ToString('o')}
     $script:VpnFixtureProof=Wait-VpnCondition -Label 'real own loopback SOCKS fixture' -TimeoutSeconds 15 -Condition {if(Test-Path -LiteralPath $fixtureReceipt){return [IO.File]::ReadAllText($fixtureReceipt)|ConvertFrom-Json}}
     $fixtureListener=@(Get-NetTCPConnection -LocalPort $script:VpnFixtureProof.port -State Listen -ErrorAction Stop)
     if($script:VpnFixtureProof.processId -ne $script:VpnFixtureChild.Process.Id -or $script:VpnFixtureProof.listenAddress -cne '127.0.0.1' -or $script:VpnFixtureProof.externalDial -or $fixtureListener.Count -ne 1 -or $fixtureListener[0].LocalAddress -cne '127.0.0.1' -or [int]$fixtureListener[0].OwningProcess -ne $script:VpnFixtureChild.Process.Id){throw 'The real loopback fixture listener has no owned-child socket proof.'}
@@ -637,6 +691,10 @@ function Invoke-VpnNativeAcceptance {
     Add-VpnEvidence 'actual-protected-immutable-snapshot-and-private-acl' ([ordered]@{configSha256=$connection.configSha256;nodeId=$connection.nodeId;servicePrivate=(Assert-VpnPrivateTree (Join-Path $script:VpnProductRoot 'Service\Vpn'));runtimePrivate=(Assert-VpnPrivateTree (Join-Path $script:VpnProductRoot 'Runtime\Vpn'))})
     Add-VpnEvidence 'actual-installed-automatic-localsystem-tun-generation' ([ordered]@{generation=$generation;recoveryPolicy=(Get-NativeRecoveryPolicy 'EgoistShieldVpn');activeRoutes=(Get-VpnAllRoutes)})
     Invoke-VpnNonceProbe -Generation $generation -Label 'gui-open-vpn-probe'
+    $paused=Set-VpnFixtureAvailability -Operation pause
+    Invoke-VpnPausedNonceProbe -Generation $generation -Label 'own-upstream-outage' -Epoch $paused.epoch
+    [void](Set-VpnFixtureAvailability -Operation resume)
+    Invoke-VpnNonceProbe -Generation $generation -Label 'own-upstream-return'
     [void](Assert-VpnPhysicalNetwork $script:VpnBaseline 'active TUN');Add-VpnEvidence 'actual-dns-https-control-with-active-tun' (Invoke-VpnControlCanary 'active-tun')
     Close-VpnElevatedGui
     $closedGeneration=Assert-VpnLiveGeneration
@@ -646,12 +704,15 @@ function Invoke-VpnNativeAcceptance {
     Assert-NativeNoGui
     Invoke-VpnNonceProbe -Generation $recovered -Label 'recovered-gui-closed-vpn-probe'
     Add-VpnEvidence 'actual-dns-https-control-after-native-recovery' (Invoke-VpnControlCanary 'after-recovery')
+    [void](Set-VpnFixtureAvailability -Operation pause)
     Start-VpnElevatedGui -Operation 'OffAndRemove'
     Invoke-VpnNavigation 'VPN'
     Invoke-VpnUiElement (Find-VpnUiElement -Name 'VPN без приложения (TUN)') 'normal elevated GUI background VPN OFF'
     $stopped=Wait-VpnCondition -Label 'actual normal production OFF Stopped Disabled no endpoints/interfaces' -TimeoutSeconds 75 -Condition {Assert-VpnStopped}
     $tunStoppedAt=[DateTimeOffset]::UtcNow
     Add-VpnEvidence 'actual-normal-gui-off-disabled-intent-no-endpoint-tun-runtime' $stopped
+    [void](Set-VpnFixtureAvailability -Operation resume)
+    Assert-VpnOffAfterUpstreamReturn
     $after=Get-NativeNetworkFingerprint;$afterRoutes=Get-VpnAllRoutes
     if(($after|ConvertTo-Json -Depth 10 -Compress) -cne ($script:VpnBaseline|ConvertTo-Json -Depth 10 -Compress) -or ($afterRoutes|ConvertTo-Json -Depth 10 -Compress) -cne ($script:VpnBaselineRoutes|ConvertTo-Json -Depth 10 -Compress)){throw 'Actual network DNS/default/all routes/proxy/IPv6 did not restore after normal VPN OFF.'}
     Add-VpnEvidence 'actual-complete-network-restored-after-ui-off' ([ordered]@{fingerprint=$after;routes=$afterRoutes;control=(Invoke-VpnControlCanary 'after-off')})

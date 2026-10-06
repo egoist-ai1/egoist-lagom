@@ -1,0 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {promisify} from 'node:util';
+import {execFile} from 'node:child_process';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const run=promisify(execFile);
+const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+test('build bootstrap preserves exact child failures, bounded diagnostics and timeout evidence', {timeout:35000}, async t=>{
+ const base=process.env.LAGOM_TEST_TEMP;
+ assert.ok(base&&path.isAbsolute(base),'Set task-owned LAGOM_TEST_TEMP');
+ const temp=await fs.mkdtemp(path.join(base,'build-child-diagnostics-'));
+ t.after(()=>fs.rm(temp,{recursive:true,force:true}));
+ const {stdout,stderr}=await run(process.env.SHIELD_PYTHON||'python',[path.join(root,'tests/build-input-diagnostics.py'),path.join(root,'scripts/bootstrap-build-inputs.py'),path.join(temp,'fixture')],{env:{...process.env,PYTHONIOENCODING:'utf-8',PYTHONDONTWRITEBYTECODE:'1'},windowsHide:true,timeout:30000,maxBuffer:128*1024});
+ assert.equal(stderr.trim(),'');const report=JSON.parse(stdout);
+ assert.equal(report.actualProductionFunction,true);assert.equal(report.cases,7);assert.equal(report.passed.length,7);assert.equal(report.reports,7);
+ assert.equal(report.networkOperations,0);assert.equal(report.productOperations,0);assert.equal(report.environmentDumped,false);
+ const source=await fs.readFile(path.join(root,'scripts/bootstrap-build-inputs.py'),'utf8');
+ for(const stage of ['components','wintun','electron'])assert.ok(source.includes("], '"+stage+"')"),stage+' must use actual observed child runner');
+ for(const pin of ['97c2f6207176f68e1b63f5052b530a055ee60c15407448052ef4af5dbd478ce8'])assert.ok(source.includes(pin));
+ assert.ok(source.includes("raise subprocess.CalledProcessError(result.returncode, arguments)"));
+});

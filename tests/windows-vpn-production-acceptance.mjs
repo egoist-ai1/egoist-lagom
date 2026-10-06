@@ -175,7 +175,7 @@ function socketReader(socket) {
 // model. Only this synthetic destination receives the per-request nonce.
 export async function startNonceSocksFixture({ onEvent = () => {}, instance = randomBytes(24).toString('hex') } = {}) {
   assert.match(instance, /^[a-f0-9]{48}$/);
-  const sockets = new Set(); let served = 0;
+  const sockets = new Set(); let served = 0, mode = 'available', epoch = 0, lastControlId = 0;
   const server = createServer(socket => {
     if (sockets.size >= 16) { socket.destroy(); return; }
     sockets.add(socket); socket.on('close', () => sockets.delete(socket));
@@ -198,7 +198,13 @@ export async function startNonceSocksFixture({ onEvent = () => {}, instance = ra
       socket.write(Buffer.from([5, 0, 0, 1, 127, 0, 0, 1, 0, 0]));
       const headers = await reader.headers(), match = /^GET \/nonce\/([a-f0-9]{48}) HTTP\/1\.1\r\n/.exec(headers);
       if (!match || !headers.includes(`\r\nHost: ${syntheticHost}:${syntheticPort}\r\n`)) throw new Error('Invalid nonce HTTP request.');
-      const nonce = match[1], body = JSON.stringify({ nonce, fixtureInstance: instance });
+      const nonce = match[1];
+      if (mode === 'paused') {
+        onEvent({ kind: 'nonce-refused', nonce, fixtureInstance: instance, epoch, target, port,
+          peerAddress: socket.remoteAddress, peerPort: socket.remotePort, reason: 'owned-upstream-paused' });
+        socket.destroy(); return;
+      }
+      const body = JSON.stringify({ nonce, fixtureInstance: instance });
       const response = `HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: keep-alive\r\n\r\n${body}`;
       socket.write(response); served++;
       onEvent({ kind: 'nonce-served', nonce, fixtureInstance: instance, target, port, peerAddress: socket.remoteAddress, peerPort: socket.remotePort,
@@ -207,6 +213,22 @@ export async function startNonceSocksFixture({ onEvent = () => {}, instance = ra
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen({ host: '127.0.0.1', port: 0, exclusive: true }, resolve); });
   return { port: server.address().port, instance, get served() { return served; },
+    get mode() { return mode; }, get epoch() { return epoch; },
+    // Only own accepted sockets are retired. The listener/PID/instance stay held.
+    control(request, expectedNonce) {
+      const keys = ['id', 'operation', 'nonce', 'instance', 'processId', 'port'];
+      const valid = request && typeof request === 'object' && !Array.isArray(request) &&
+        Object.keys(request).length === keys.length && keys.every(key => Object.hasOwn(request, key)) &&
+        Number.isSafeInteger(request.id) && request.id === lastControlId + 1 && request.id <= 64 &&
+        ['pause', 'resume'].includes(request.operation) && request.nonce === expectedNonce &&
+        /^[a-f0-9]{48}$/.test(expectedNonce) && request.instance === instance &&
+        request.processId === process.pid && request.port === server.address().port;
+      if (!valid) return { ok: false, id: request?.id ?? null, reason: 'fixture-control-refused' };
+      lastControlId = request.id; mode = request.operation === 'pause' ? 'paused' : 'available'; epoch++;
+      if (mode === 'paused') for (const socket of sockets) socket.destroy();
+      return { ok: true, id: request.id, mode, epoch, processId: process.pid, instance,
+        port: server.address().port, externalDial: false };
+    },
     async close() { for (const socket of sockets) socket.destroy(); await new Promise(resolve => server.close(resolve)); } };
 }
 
@@ -214,26 +236,34 @@ async function fixtureMain(optionsPath) {
   assert.ok(path.isAbsolute(optionsPath));
   const optionsBytes = await fs.readFile(optionsPath); assert.ok(optionsBytes.length <= 16384);
   const options = JSON.parse(optionsBytes);
-  for (const field of ['workRoot', 'receiptPath', 'eventsPath', 'stopPath']) {
+  for (const field of ['workRoot', 'receiptPath', 'eventsPath', 'stopPath', 'controlPath', 'ackPath']) {
     assert.ok(path.isAbsolute(options[field])); if (field !== 'workRoot') assert.ok(path.resolve(options[field]).startsWith(path.resolve(options.workRoot) + path.sep));
   }
   assert.ok(path.resolve(optionsPath).startsWith(path.resolve(options.workRoot) + path.sep));
   assert.match(options.stopNonce, /^[a-f0-9]{48}$/); assert.ok(Number.isInteger(options.leaseSeconds) && options.leaseSeconds >= 10 && options.leaseSeconds <= 1200);
   assert.equal((await fs.stat(options.workRoot)).isDirectory(), true);
-  const events = [], eventsFile = await fs.open(options.eventsPath, 'wx');
+  const events = [], eventsFile = await fs.open(options.eventsPath, 'wx'); let eventWrites = Promise.resolve();
   const fixture = await startNonceSocksFixture({ onEvent: event => { const row = { ...event, at: new Date().toISOString() }; events.push(row);
-    void eventsFile.appendFile(JSON.stringify(row) + '\n').catch(() => {}); } });
+    eventWrites = eventWrites.then(() => eventsFile.appendFile(JSON.stringify(row) + '\n')); } });
   const receipt = { schemaVersion: 1, kind: 'actual-loopback-socks-nonce-fixture', processId: process.pid, instance: fixture.instance,
     listenAddress: '127.0.0.1', port: fixture.port, fixedTarget: syntheticHost, fixedTargetPort: syntheticPort, externalDial: false,
     stopNonce: options.stopNonce, at: new Date().toISOString(), sourceSha256: digest(await fs.readFile(fileURLToPath(import.meta.url))) };
   await fs.writeFile(options.receiptPath, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' });
-  const deadline = Date.now() + options.leaseSeconds * 1000;
-  while (Date.now() < deadline) {
+  const deadline = Date.now() + options.leaseSeconds * 1000; let lastControl = '';
+  try { while (Date.now() < deadline) {
+    const control = await fs.readFile(options.controlPath).catch(error => { if (error.code !== 'ENOENT') throw error; return null; });
+    if (control && digest(control) !== lastControl) {
+      assert.ok(control.length <= 2048); assert.equal((await fs.lstat(options.controlPath)).isSymbolicLink(), false);
+      lastControl = digest(control);
+      const reply = fixture.control(JSON.parse(control.toString('utf8')), options.stopNonce);
+      const temporary = options.ackPath + '.tmp';
+      await fs.writeFile(temporary, JSON.stringify(reply) + '\n', { flag: 'wx' });
+      await fs.rename(temporary, options.ackPath);
+    }
     const stop = await fs.readFile(options.stopPath, 'utf8').catch(error => { if (error.code !== 'ENOENT') throw error; return ''; });
     if (stop === 'stop:' + options.stopNonce) break;
     await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  await fixture.close(); await eventsFile.close();
+  } } finally { await fixture.close(); try { await eventWrites; } finally { await eventsFile.close(); } }
   await fs.writeFile(options.receiptPath, JSON.stringify({ ...receipt, stoppedAt: new Date().toISOString(), served: fixture.served,
     noRemainingSockets: true, events: events.length }, null, 2) + '\n');
 }

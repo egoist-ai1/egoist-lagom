@@ -479,12 +479,15 @@ function Invoke-NativeElevatedGui {
     ([Windows.Automation.InvokePattern]$navigation.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
     $wrapper=Join-Path $script:DataRoot 'Runtime\TelegramProxy\service-wrapper\egoistshield-telegram-proxy-service.exe'
     $before=Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running
+    $portFixtureBefore=Get-NativeTelegramPortFixtureState
+    [void](Assert-NativeTelegramEndpoint -Port $portFixtureBefore.port)
     $stop=Wait-NativeCondition -Condition {& $findButton 'Остановить'} -Label 'Elevated GUI actual stop control' -TimeoutSeconds 60
     ([Windows.Automation.InvokePattern]$stop.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
     $stopped=Wait-NativeCondition -Condition {
       $row=@(Get-NativeProductServices | Where-Object {$_.Name -eq 'EgoistShieldTelegramProxy'})
       if($row.Count -eq 1 -and $row[0].PathName.Trim().Trim('"') -ieq $wrapper -and $row[0].State -eq 'Stopped' -and [int]$row[0].ProcessId -eq 0){return $row[0]}
     } -Label 'Real SCM Telegram stop through elevated GUI/Core IPC' -TimeoutSeconds 90
+    Invoke-NativeTelegramOccupiedPort -FindButton $findButton -Process $child -Root $root -BeforeState $portFixtureBefore
     $start=Wait-NativeCondition -Condition {& $findButton 'Запустить'} -Label 'Elevated GUI actual start control' -TimeoutSeconds 60
     ([Windows.Automation.InvokePattern]$start.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
     $after=Wait-NativeCondition -Condition {Assert-NativeService -Name 'EgoistShieldTelegramProxy' -Executable $wrapper -Running} -Label 'Real SCM Telegram start through elevated GUI/Core IPC' -TimeoutSeconds 90
@@ -492,6 +495,11 @@ function Invoke-NativeElevatedGui {
     $completion=Wait-NativeTelegramGuiCompletion -FindButton $findButton -Process $child -Root $root -Label 'Elevated GUI'
     $configuration=Get-Content -LiteralPath (Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json') -Raw | ConvertFrom-Json
     $endpoint=Assert-NativeTelegramEndpoint -Port ([int]$configuration.port)
+    $portFixtureAfter=Get-NativeTelegramPortFixtureState
+    if($portFixtureAfter.configurationSha256 -cne $portFixtureBefore.configurationSha256 -or $portFixtureAfter.settingsSha256 -cne $portFixtureBefore.settingsSha256 -or $portFixtureAfter.port -ne $portFixtureBefore.port -or $portFixtureAfter.host -cne $portFixtureBefore.host){throw 'TG normal recovery changed retained configuration/settings or its endpoint.'}
+    $script:Receipt.telegramOccupiedPort.recovered=[ordered]@{ready=$true;ownership=if($portFixtureAfter.host -ceq '127.0.0.1'){$endpoint.nativeSnapshot.ownership}else{$endpoint.nativeSnapshot.ipv6Ownership};ipv4Ownership=$endpoint.nativeSnapshot.ownership;ipv6Ownership=$endpoint.nativeSnapshot.ipv6Ownership;port=$portFixtureAfter.port;host=$portFixtureAfter.host;configurationSha256=$portFixtureAfter.configurationSha256;settingsSha256=$portFixtureAfter.settingsSha256;serviceProcessId=$after.process.processId;remoteConnectivityVerified=$false}
+    $script:Receipt.telegramOccupiedPort.ok=$true;$script:Receipt.telegramOccupiedPort.result='passed-conflict-refusal-and-normal-recovery'
+    $script:Receipt.checks+=[ordered]@{name='actual-telegram-occupied-loopback-port-refusal-preserves-own-listener-and-recovers';ok=$true};Save-NativeReceipt
     $core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
     $workers=@(Get-NativeCimSnapshot Win32_Process -Filter "Name = 'EgoistShield.Worker.exe'" | Where-Object {$_.ExecutablePath -ieq (Join-Path $script:InstallRoot 'EgoistShield.Worker.exe') -and [int]$_.ParentProcessId -eq [int]$core.scm.ProcessId})
     if($workers.Count -ne 1){throw 'Elevated GUI IPC did not use one exact protected Core worker.'}
@@ -717,6 +725,153 @@ function Assert-NativeTelegramEndpoint {
     throw $primary
   }
 }
+# Additive native acceptance draft: only invoked inside the already guarded isolated GUI flow.
+function Get-NativeTelegramPortFixtureHash {
+  param([byte[]]$Bytes)
+  $algorithm=[Security.Cryptography.SHA256]::Create()
+  try{return ([BitConverter]::ToString($algorithm.ComputeHash($Bytes))).Replace('-','').ToLowerInvariant()}finally{$algorithm.Dispose()}
+}
+function ConvertTo-NativeTelegramPortFixtureState {
+  param([byte[]]$ConfigurationBytes,[byte[]]$ProfileBytes)
+  if($ConfigurationBytes.Length -lt 2 -or $ConfigurationBytes.Length -gt 65536 -or $ProfileBytes.Length -lt 2 -or $ProfileBytes.Length -gt 2097152){throw 'TG port fixture state exceeds its bounded read.'}
+  $encoding=[Text.UTF8Encoding]::new($false,$true)
+  $configOffset=if($ConfigurationBytes.Length -ge 3 -and $ConfigurationBytes[0] -eq 239 -and $ConfigurationBytes[1] -eq 187 -and $ConfigurationBytes[2] -eq 191){3}else{0}
+  $profileOffset=if($ProfileBytes.Length -ge 3 -and $ProfileBytes[0] -eq 239 -and $ProfileBytes[1] -eq 187 -and $ProfileBytes[2] -eq 191){3}else{0}
+  $config=$encoding.GetString($ConfigurationBytes,$configOffset,$ConfigurationBytes.Length-$configOffset) | ConvertFrom-Json
+  $profile=$encoding.GetString($ProfileBytes,$profileOffset,$ProfileBytes.Length-$profileOffset) | ConvertFrom-Json
+  if(($config.port -isnot [int] -and $config.port -isnot [long]) -or $config.port -lt 1024 -or $config.port -gt 65535 -or $config.host -cnotin @('127.0.0.1','::1') -or $profile.settings -isnot [pscustomobject]){throw 'TG port fixture requires confirmed loopback configuration and settings.'}
+  $settings=[ordered]@{}
+  foreach($property in @($profile.settings.PSObject.Properties | Sort-Object Name)){$settings[$property.Name]=$property.Value}
+  $settingsBytes=$encoding.GetBytes(($settings | ConvertTo-Json -Depth 16 -Compress))
+  if($settingsBytes.Length -gt 65536){throw 'TG port fixture settings exceed their fingerprint bound.'}
+  return [ordered]@{port=[int]$config.port;host=[string]$config.host;configurationSha256=(Get-NativeTelegramPortFixtureHash $ConfigurationBytes);settingsSha256=(Get-NativeTelegramPortFixtureHash $settingsBytes);privateContentIncluded=$false}
+}
+function Get-NativeTelegramPortFixtureState {
+  $config=Join-Path $script:DataRoot 'Runtime\TelegramProxy\config.json'
+  $profile=Join-Path (Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Egoist Shield') 'egoistshield-state.json'
+  Assert-NativeOrdinaryPath -Path $config -Leaf
+  [void](Assert-NativeAdministratorOwned $config)
+  Assert-NativeOrdinaryPath -Path $profile -Leaf
+  return ConvertTo-NativeTelegramPortFixtureState -ConfigurationBytes ([IO.File]::ReadAllBytes($config)) -ProfileBytes ([IO.File]::ReadAllBytes($profile))
+}
+function New-NativeTelegramOccupiedPortActor {
+  param([ValidateRange(1024,65535)][int]$Port,[ValidateSet('127.0.0.1','::1')][string]$HostAddress)
+  $listener=$null;$process=$null
+  try{
+    $process=[Diagnostics.Process]::GetCurrentProcess();$handle=$process.Handle
+    if($handle -eq [IntPtr]::Zero){throw 'Own TG port fixture process handle unavailable.'}
+    $listener=[Net.Sockets.TcpListener]::new([Net.IPAddress]::Parse($HostAddress),$Port)
+    $listener.ExclusiveAddressUse=$true
+    # .NET 10 reapplies socket options in Server getter; retain before binding.
+    $socket=$listener.Server
+    if($HostAddress -ceq '::1'){$socket.DualMode=$false}
+    $listener.Start(4)
+    $actor=[pscustomobject]@{listener=$listener;socket=$socket;socketHandle=$socket.Handle;process=$process;heldHandle=$handle;processId=$process.Id;createdUtc=$process.StartTime.ToUniversalTime().ToString('o');executable=$process.MainModule.FileName;port=$Port;host=$HostAddress;released=$false}
+    [void](Get-NativeTelegramOccupiedPortActorIdentity -Actor $actor)
+    return $actor
+  }catch{if($listener){$listener.Stop()};if($process){$process.Dispose()};throw}
+}
+function Get-NativeTelegramOccupiedPortActorIdentity {
+  param($Actor)
+  $Actor.process.Refresh()
+  if($Actor.released -or $Actor.process.HasExited -or $Actor.processId -ne $PID -or $Actor.process.Id -ne $Actor.processId -or $Actor.heldHandle -eq [IntPtr]::Zero -or $Actor.process.Handle -ne $Actor.heldHandle -or $Actor.process.MainModule.FileName -ine $Actor.executable -or $Actor.process.StartTime.ToUniversalTime().ToString('o') -cne $Actor.createdUtc -or $Actor.socketHandle -eq [IntPtr]::Zero -or $Actor.socket.Handle -ne $Actor.socketHandle -or -not $Actor.socket.IsBound){throw 'Own TG occupied-port actor identity changed.'}
+  $endpoint=$Actor.socket.LocalEndPoint
+  if($endpoint.Port -ne $Actor.port -or $endpoint.Address.ToString() -cne $Actor.host -or -not [Net.IPAddress]::IsLoopback($endpoint.Address)){throw 'Own TG occupied-port actor endpoint changed.'}
+  return [ordered]@{processId=$Actor.processId;createdUtc=$Actor.createdUtc;executable=$Actor.executable;processHandleHeld=$true;port=$Actor.port;host=$Actor.host;listenerHeld=$true}
+}
+function Stop-NativeTelegramOccupiedPortActor {
+  param($Actor)
+  # Releases only the retained socket/process observation handle; never stops another process or service.
+  if($Actor){try{$Actor.listener.Stop();$Actor.released=$true}finally{$Actor.process.Dispose()}}
+}
+function Assert-NativeTelegramOccupiedPortSnapshot {
+  param($Value,[ValidateRange(1024,65535)][int]$Port,[ValidateSet('127.0.0.1','::1')][string]$HostAddress,[ValidateSet('missing','foreign')][string]$Expected,$ActorIdentity)
+  if($Value.schemaVersion -ne 2 -or $Value.operation -cne 'telegram-listener-snapshot' -or $Value.serviceName -cne 'EgoistShieldTelegramProxy' -or $Value.port -ne $Port -or $Value.snapshotAvailable -isnot [bool] -or -not $Value.snapshotAvailable -or $Value.stable -isnot [bool] -or -not $Value.stable -or $Value.serviceState -cne 'Stopped' -or $Value.serviceProcessId -ne 0 -or $Value.managedProcessId -ne $null -or $Value.rootProcessPathVerified -isnot [bool] -or $Value.rootProcessPathVerified -or $Value.rootProcessCreatedAt -ne $null -or $Value.remoteConnectivityVerified -isnot [bool] -or $Value.remoteConnectivityVerified){throw 'TG conflict snapshot lacks stopped stable production identity.'}
+  $snapshot=$Value.snapshot
+  if(-not $snapshot -or $snapshot.stable -isnot [bool] -or -not $snapshot.stable -or $snapshot.serviceState -cne 'Stopped' -or $snapshot.serviceProcessId -ne 0 -or $Value.ownership -cne $Value.ipv4.state -or $Value.ipv6Ownership -cne $Value.ipv6.state){throw 'TG conflict snapshot contradicts SCM/family identity.'}
+  $rows=@($snapshot.processes);$listeners=@($snapshot.listeners)
+  if($rows.Count -gt 128 -or $listeners.Count -gt 128){throw 'TG conflict snapshot exceeds its row bound.'}
+  $byId=@{}
+  foreach($row in $rows){
+    if(($row.processId -isnot [int] -and $row.processId -isnot [long]) -or $row.processId -lt 1 -or $row.processId -gt [int]::MaxValue -or $byId.ContainsKey([int]$row.processId)){throw 'TG conflict snapshot process rows are malformed or duplicated.'}
+    $byId[[int]$row.processId]=$row
+  }
+  if($Expected -ceq 'missing'){
+    if($listeners.Count -ne 0 -or $Value.ipv4.state -cne 'missing' -or $Value.ipv6.state -cne 'missing'){throw 'TG OFF did not release the actual port.'}
+    return [ordered]@{state='missing';serviceStopped=$true;ready=$false;port=$Port}
+  }
+  if(-not $ActorIdentity -or $ActorIdentity.processHandleHeld -ne $true -or $ActorIdentity.listenerHeld -ne $true -or $ActorIdentity.port -ne $Port -or $ActorIdentity.host -cne $HostAddress -or $ActorIdentity.processId -lt 1 -or -not [IO.Path]::IsPathRooted([string]$ActorIdentity.executable)){throw 'TG conflict requires retained own actor identity.'}
+  $family=if($HostAddress -ceq '127.0.0.1'){$Value.ipv4}else{$Value.ipv6}
+  $other=if($HostAddress -ceq '127.0.0.1'){$Value.ipv6}else{$Value.ipv4}
+  if($family.state -cne 'foreign' -or $other.state -cne 'missing' -or $family.ownerPid -ne $ActorIdentity.processId -or $family.rootPid -ne $null -or $family.rootCreatedAt -ne $null -or $listeners.Count -ne 1){throw 'TG conflict was not the sole retained foreign loopback listener.'}
+  $listener=$listeners[0]
+  if($listener.localPort -ne $Port -or $listener.localAddress -cne $HostAddress -or $listener.owningProcess -ne $ActorIdentity.processId){throw 'TG conflict listener does not belong to the retained own actor.'}
+  $row=$byId[[int]$ActorIdentity.processId]
+  if(-not $row -or $row.executablePath -ine $ActorIdentity.executable -or $family.ownerName -ine [IO.Path]::GetFileName([string]$ActorIdentity.executable) -or -not $row.createdAt -or -not $family.ownerCreatedAt){throw 'TG conflict owner path/birth proof unavailable.'}
+  $birth=ConvertTo-NativeTelegramUtcInstant $row.createdAt
+  if($birth -ne (ConvertTo-NativeTelegramUtcInstant $family.ownerCreatedAt) -or [Math]::Abs(($birth-(ConvertTo-NativeTelegramUtcInstant $ActorIdentity.createdUtc)).Ticks) -ge 10){throw 'TG conflict retained owner birth changed.'}
+  return [ordered]@{state='foreign';serviceStopped=$true;ready=$false;port=$Port;host=$HostAddress;owner=$ActorIdentity;soleListenerVerified=$true}
+}
+function ConvertTo-NativeTelegramConflictGuiObservation {
+  param([object[]]$TextRows,[int]$Port,[string]$HostAddress,[int]$GuiProcessId)
+  if($TextRows.Count -gt 512){throw 'TG conflict GUI observation exceeds its text bound.'}
+  $visible=@($TextRows | Where-Object {-not $_.offscreen})
+  $title=@($visible | Where-Object {$_.name -ceq 'Действие не выполнено'})
+  $reasonPattern='^Порт Telegram Proxy '+[Regex]::Escape($HostAddress)+':'+$Port+' занят '
+  $reason=@($visible | Where-Object {[string]$_.name -cmatch $reasonPattern})
+  $proxy=@($visible | Where-Object {$_.name -ceq 'Прокси'})
+  $notReady=@($visible | Where-Object {$_.name -ceq 'не запущен'})
+  $ready=@($visible | Where-Object {$_.name -ceq 'работает'})
+  if($ready.Count -gt 0){throw 'TG GUI claims ready while its actual port is occupied.'}
+  if($title.Count -ne 1 -or $reason.Count -ne 1 -or $proxy.Count -ne 1 -or $notReady.Count -ne 1){return $null}
+  return [ordered]@{processId=$GuiProcessId;errorTitle='Действие не выполнено';configuredPortConflictVisible=$true;proxyLabel='не запущен';ready=$false;privateTextIncluded=$false}
+}
+function Get-NativeTelegramConflictGuiObservation {
+  param($Root,$Process,[int]$Port,[string]$HostAddress)
+  $Process.Refresh()
+  if($Process.HasExited -or $Root.Current.ProcessId -ne $Process.Id){throw 'TG conflict observation lost the exact GUI identity.'}
+  $condition=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Text)
+  $elements=$Root.FindAll([Windows.Automation.TreeScope]::Descendants,$condition)
+  if($elements.Count -gt 512){throw 'TG conflict GUI text collection exceeds its bound.'}
+  $rows=@(foreach($element in $elements){[pscustomobject]@{name=[string]$element.Current.Name;offscreen=[bool]$element.Current.IsOffscreen}})
+  return ConvertTo-NativeTelegramConflictGuiObservation -TextRows $rows -Port $Port -HostAddress $HostAddress -GuiProcessId $Process.Id
+}
+function Invoke-NativeTelegramOccupiedPort {
+  param([scriptblock]$FindButton,$Process,$Root,$BeforeState)
+  $port=[int]$BeforeState.port;$hostAddress=[string]$BeforeState.host;$actor=$null
+  $result=[ordered]@{ok=$false;result='running';port=$port;host=$hostAddress;before=$BeforeState;actor=$null;beforeAttempt=$null;afterAttempt=$null;gui=$null;configurationPreserved=$false;settingsPreserved=$false;releasedOwnListener=$false;recovered=$null;remoteConnectivityVerified=$false}
+  $script:Receipt.telegramOccupiedPort=$result;Save-NativeReceipt
+  try{
+    $empty=Read-NativeTelegramEndpointSnapshot -Port $port -TimeoutMilliseconds 30000
+    [void](Assert-NativeTelegramOccupiedPortSnapshot -Value $empty -Port $port -HostAddress $hostAddress -Expected missing)
+    Add-NativeMutation -Kind 'owned-loopback-occupied-port-fixture' -Target ($hostAddress+':'+$port) -Purpose 'Hold only the isolated test runner socket; genuine GUI/Core start must refuse the foreign listener.'
+    $actor=New-NativeTelegramOccupiedPortActor -Port $port -HostAddress $hostAddress
+    $result.actor=Get-NativeTelegramOccupiedPortActorIdentity -Actor $actor
+    $snapshot=Read-NativeTelegramEndpointSnapshot -Port $port -TimeoutMilliseconds 30000
+    $result.beforeAttempt=Assert-NativeTelegramOccupiedPortSnapshot -Value $snapshot -Port $port -HostAddress $hostAddress -Expected foreign -ActorIdentity (Get-NativeTelegramOccupiedPortActorIdentity -Actor $actor)
+    $start=Wait-NativeCondition -Condition {& $FindButton 'Запустить'} -Label 'TG occupied port actual start control' -TimeoutSeconds 60
+    if(Get-NativeTelegramGuiVisibleError -Root $Root){throw 'TG occupied-port attempt began with an earlier GUI failure.'}
+    ([Windows.Automation.InvokePattern]$start.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
+    $result.gui=Wait-NativeCondition -Condition {Get-NativeTelegramConflictGuiObservation -Root $Root -Process $Process -Port $port -HostAddress $hostAddress} -Label 'TG actual occupied port refusal and honest unready GUI' -TimeoutSeconds 45 -StopOnError
+    $snapshot=Read-NativeTelegramEndpointSnapshot -Port $port -TimeoutMilliseconds 30000
+    $result.afterAttempt=Assert-NativeTelegramOccupiedPortSnapshot -Value $snapshot -Port $port -HostAddress $hostAddress -Expected foreign -ActorIdentity (Get-NativeTelegramOccupiedPortActorIdentity -Actor $actor)
+    $current=Get-NativeTelegramPortFixtureState
+    if($current.configurationSha256 -cne $BeforeState.configurationSha256 -or $current.settingsSha256 -cne $BeforeState.settingsSha256){throw 'TG conflict attempt changed retained configuration/settings.'}
+    $result.configurationPreserved=$true;$result.settingsPreserved=$true
+    $dismiss=Wait-NativeCondition -Condition {
+      if(-not (Get-NativeTelegramGuiVisibleError -Root $Root)){return [pscustomobject]@{control=$null;alreadyGone=$true}}
+      $button=& $FindButton 'Закрыть уведомление'
+      if($button){return [pscustomobject]@{control=$button;alreadyGone=$false}}
+    } -Label 'TG conflict genuine notification dismiss or observed expiry' -TimeoutSeconds 15
+    if($dismiss.control){([Windows.Automation.InvokePattern]$dismiss.control.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()}
+    $result.result='conflict-confirmed-awaiting-normal-recovery';Save-NativeReceipt
+  }catch{$result.result='failed';$result.error=$_.Exception.Message;throw}
+  finally{
+    if($actor){Stop-NativeTelegramOccupiedPortActor -Actor $actor;$result.releasedOwnListener=$true}
+    Save-NativeReceipt
+  }
+}
+
 function Get-NativeTelegramGuiVisibleError {
   param($Root)
   $title='Действие не выполнено'
