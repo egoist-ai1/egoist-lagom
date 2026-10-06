@@ -90,11 +90,11 @@ for (const major of [5, 7]) {
     assert.equal(Number(receipt.powershellVersion.split('.')[0]), major, 'Explicit executable ran the wrong PowerShell edition');
     assert.equal(receipt.edition, major === 5 ? 'Desktop' : 'Core');
     assert.equal(receipt.parserErrors, 0);
-    assert.equal(receipt.caseCount, 30);
-    assert.equal(receipt.passed, 30);
+    assert.equal(receipt.caseCount, 43);
+    assert.equal(receipt.passed, 43);
     assert.equal(receipt.passedAll, true);
-    assert.equal(receipt.checks.length, 30);
-    assert.equal(new Set(receipt.checks.map(check => check.name)).size, 30);
+    assert.equal(receipt.checks.length, 43);
+    assert.equal(new Set(receipt.checks.map(check => check.name)).size, 43);
     for (const check of receipt.checks) assert.equal(check.passed, true, check.name);
     assert.ok(receipt.checks.some(check => check.name === 'actual production readiness guard rejects foreign ancestry'));
     assert.ok(receipt.checks.some(check => check.name === 'OFF missing phase refuses a foreign listener before own actor bind'));
@@ -124,7 +124,7 @@ for (const major of [5, 7]) {
       assert.equal(actor.productionCoreSnapshotExecuted, false);
     }
     assert.equal(receipt.limitations.length, 3);
-    t.diagnostic(JSON.stringify({ powershellMajor: major, passedCases: 30, importedFunctions: 9,
+    t.diagnostic(JSON.stringify({ powershellMajor: major, passedCases: 43, importedFunctions: 9,
       harnessSha256: receipt.harnessSha256, ownActorFamilies: ['127.0.0.1', '::1'],
       nativeAcceptanceExecuted: false, nativeServiceActions: 0, privateDataRead: 0, receiptPath }));
   });

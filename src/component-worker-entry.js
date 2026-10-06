@@ -43,6 +43,10 @@ function compactWorkerNativeQueryDiagnostic(value) {
   for (const key of ['elapsedMs', 'timeoutMs', 'stdoutBytes', 'stderrBytes']) {
     if (value[key] === null || Number.isSafeInteger(value[key]) && value[key] >= 0) result[key] = value[key];
   }
+  const identityStages = ['script-start', 'utility-import-ready', 'cim-import-ready', 'service-query-ready', 'process-query-ready', 'process-query-skipped', 'serialization-ready'];
+  if (value.timeoutMs === 8000 && identityStages.includes(value.identityStage) && Number.isSafeInteger(value.identityStageElapsedMs) && value.identityStageElapsedMs >= 0 && value.identityStageElapsedMs <= 8000) {
+    result.identityStage = value.identityStage; result.identityStageElapsedMs = value.identityStageElapsedMs;
+  }
   return result;
 }
 function replyWorker(request) {

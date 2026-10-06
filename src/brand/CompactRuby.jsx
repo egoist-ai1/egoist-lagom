@@ -394,7 +394,7 @@ function RubyStorageNotice({storage,onRetry,onDiagnostics,compact=false}){
     onRetry?.();
   };
   return <aside className={'ruby-storage-notice'+(compact?' compact':'')} aria-label="Состояние локальных данных">
-    <div role="status" aria-live="polite"><strong>{title}</strong><p>{compact?'Изменения приостановлены.':corrupt?'Исходные файлы сохранены. Изменения заблокированы до подтверждённого восстановления.':'Можно просматривать последние подтверждённые данные. Изменения приостановлены; фоновые службы продолжают работать.'}</p>{checked&&<small>Проверка <time dateTime={storage.checkedAt}>{checked}</time>{storage.systemCode?' · '+storage.systemCode:''}</small>}</div>
+    <div role="status" aria-live="polite"><strong>{title}</strong><p>{compact?'Изменения приостановлены.':corrupt?'Исходные файлы сохранены. Изменения заблокированы до подтверждённого восстановления.':'Можно просматривать последние подтверждённые данные. Изменения приостановлены; уже запущенные фоновые службы продолжают работать.'}</p>{checked&&<small>Проверка <time dateTime={storage.checkedAt}>{checked}</time>{storage.systemCode?' · '+storage.systemCode:''}</small>}</div>
     <div className="ruby-storage-actions"><button type="button" className="btn-secondary compact" ref={retryButton} aria-disabled={!!storage.retrying} aria-busy={!!storage.retrying} onBlur={()=>{manualRetryFocus.current=false;}} onClick={retry}>{storage.retrying?'Проверяем…':'Повторить'}</button>{onDiagnostics&&<button type="button" className="btn-secondary compact" onClick={onDiagnostics}>Диагностика</button>}</div>
   </aside>;
 }

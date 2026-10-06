@@ -2097,17 +2097,27 @@ var ZapretManager = class {
 	}
 	async readDnsProtectionServiceIdentity() {
 		const wrapperPath = this.getServiceWrapperPaths().wrapperPath;
+		const nativeModuleRoot = path.join(path.dirname(resolveWindowsExecutable("powershell.exe")), "Modules");
 		const script = [
 			"$ErrorActionPreference='Stop'",
+			"$nativeIdentityStageClock=[System.Diagnostics.Stopwatch]::StartNew()",
+			"[Console]::Error.WriteLine((\"egoist-native-identity|script-start|\"+$nativeIdentityStageClock.ElapsedMilliseconds))",
+			"$PSModuleAutoLoadingPreference='None'",
+			"Import-Module -Name " + psQuote(path.join(nativeModuleRoot, "Microsoft.PowerShell.Utility", "Microsoft.PowerShell.Utility.psd1")) + " -ErrorAction Stop",
+			"[Console]::Error.WriteLine((\"egoist-native-identity|utility-import-ready|\"+$nativeIdentityStageClock.ElapsedMilliseconds))",
+			"Import-Module -Name " + psQuote(path.join(nativeModuleRoot, "CimCmdlets", "CimCmdlets.psd1")) + " -ErrorAction Stop",
+			"[Console]::Error.WriteLine((\"egoist-native-identity|cim-import-ready|\"+$nativeIdentityStageClock.ElapsedMilliseconds))",
 			"$s=Get-CimInstance Win32_Service -Filter " + psQuote("Name='" + SERVICE_NAME + "'"),
+			"[Console]::Error.WriteLine((\"egoist-native-identity|service-query-ready|\"+$nativeIdentityStageClock.ElapsedMilliseconds))",
 			"if (!$s) { throw 'Owned Zapret service missing' }",
 			"if ([string]$s.PathName.Trim('\"') -ne " + psQuote(wrapperPath) + ") { throw 'Owned Zapret service image mismatch' }",
 			"$birth=$null",
-			"if ([int]$s.ProcessId -gt 0) { $p=Get-CimInstance Win32_Process -Filter ('ProcessId='+$s.ProcessId); if (!$p -or [string]$p.ExecutablePath -ne " + psQuote(wrapperPath) + ") { throw 'Owned Zapret wrapper identity unavailable' }; $birth=$p.CreationDate.ToUniversalTime().ToString('o') }",
-			"[pscustomobject]@{state=[string]$s.State;pid=[int]$s.ProcessId;birth=$birth;image=[string]$s.PathName.Trim('\"')}|ConvertTo-Json -Compress"
+			"if ([int]$s.ProcessId -gt 0) { $p=Get-CimInstance Win32_Process -Filter ('ProcessId='+$s.ProcessId); [Console]::Error.WriteLine((\"egoist-native-identity|process-query-ready|\"+$nativeIdentityStageClock.ElapsedMilliseconds)); if (!$p -or [string]$p.ExecutablePath -ne " + psQuote(wrapperPath) + ") { throw 'Owned Zapret wrapper identity unavailable' }; $birth=$p.CreationDate.ToUniversalTime().ToString('o') } else { [Console]::Error.WriteLine((\"egoist-native-identity|process-query-skipped|\"+$nativeIdentityStageClock.ElapsedMilliseconds)) }",
+			"[pscustomobject]@{state=[string]$s.State;pid=[int]$s.ProcessId;birth=$birth;image=[string]$s.PathName.Trim('\"')}|ConvertTo-Json -Compress",
+			"[Console]::Error.WriteLine((\"egoist-native-identity|serialization-ready|\"+$nativeIdentityStageClock.ElapsedMilliseconds))"
 		].join("; ");
 		let value;
-		try { value = JSON.parse((await this.execPowerShell(script, 8e3)).trim()); }
+		try { value = JSON.parse((await this.execPowerShell(script, 8e3, true)).trim()); }
 		catch (error) {
 			const diagnostic = error?.powerShellDiagnostic ?? Object.freeze({ kind: error instanceof SyntaxError ? "invalid-json" : "invalid-response" });
 			const failure = new Error("Не удалось подтвердить личность службы Zapret перед изоляцией DNS.", { cause: error });
@@ -3156,7 +3166,7 @@ var ZapretManager = class {
 			timeout: 1e4
 		});
 	}
-	async execPowerShell(command, timeoutMs = 8e3) {
+	async execPowerShell(command, timeoutMs = 8e3, captureIdentityStage = false) {
 		const startedAt = performance.now();
 		let pending;
 		try {
@@ -3172,6 +3182,26 @@ var ZapretManager = class {
 			const { stdout } = await pending;
 			return stdout;
 		} catch (error) {
+			function parseNativeIdentityQueryStage(stderr, timeoutMs) {
+				if (timeoutMs !== 8000 || !(typeof stderr === "string" || Buffer.isBuffer(stderr))) return null;
+				const bytes = Buffer.isBuffer(stderr) ? stderr : Buffer.from(stderr, "utf8");
+				if (bytes.length > 4096) return null;
+				const text = bytes.toString("utf8");
+				const order = { "script-start": 0, "utility-import-ready": 1, "cim-import-ready": 2, "service-query-ready": 3, "process-query-ready": 4, "process-query-skipped": 4, "serialization-ready": 5 };
+				let last = null, lastOrder = -1, stopped = false, count = 0;
+				for (const line of text.split(/\r?\n/)) {
+					if (!line) continue;
+					if (!line.startsWith("egoist-native-identity|")) { stopped = true; continue; }
+					if (stopped) return null;
+					const match = /^egoist-native-identity\|([a-z-]+)\|(0|[1-9][0-9]{0,3})$/.exec(line);
+					if (!match || !Object.hasOwn(order, match[1])) return null;
+					const currentOrder = order[match[1]], elapsed = Number(match[2]);
+					if (++count > 6 || currentOrder !== lastOrder + 1 || elapsed > timeoutMs || last && elapsed < last.identityStageElapsedMs) return null;
+					last = { identityStage: match[1], identityStageElapsedMs: elapsed }; lastOrder = currentOrder;
+				}
+				return last;
+			}
+			const identityStage = captureIdentityStage ? parseNativeIdentityQueryStage(error?.stderr, timeoutMs) : null;
 			const knownCodes = ["ENOENT", "EACCES", "EPERM", "EINVAL", "EAGAIN", "ENOMEM", "ENOTDIR", "EISDIR", "ENOSYS", "UNKNOWN", "ERR_CHILD_PROCESS_STDIO_MAXBUFFER"];
 			const code = Number.isInteger(error?.code) && error.code >= -2147483648 && error.code <= 4294967295 ? error.code : knownCodes.includes(error?.code) ? error.code : "unknown";
 			const killed = error?.killed === true;
@@ -3187,7 +3217,8 @@ var ZapretManager = class {
 				timeoutMs: Number.isSafeInteger(timeoutMs) && timeoutMs >= 0 ? timeoutMs : null,
 				pid: Number.isInteger(childPid) && childPid > 0 && childPid <= 4294967295 ? childPid : null,
 				stdoutBytes: outputBytes(error?.stdout),
-				stderrBytes: outputBytes(error?.stderr)
+				stderrBytes: outputBytes(error?.stderr),
+				...(identityStage ?? {})
 			});
 			// Keep native cause in process; the worker/Core message contains no command or captured text.
 			const failure = new Error(`PowerShell failed: ${Object.entries(diagnostic).map(([key, value]) => `${key}=${value}`).join(", ")}`, { cause: error });

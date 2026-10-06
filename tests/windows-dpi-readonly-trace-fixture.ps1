@@ -19,7 +19,15 @@ function Parse-Library([string]$Path) {
   Require (@($errors).Count -eq 0) 'library-parse-error'
   return $ast
 }
-function Load-InertLibrary([string]$Path,[bool]$Trace,$Ast) {
+function Load-InertLibrary([string]$Path,[bool]$Trace,$Ast,[bool]$ForbidDiscovery=$false) {
+  if($ForbidDiscovery){
+    # Simulate unavailable command discovery in this function scope only.
+    # The actual LibraryOnly bootstrap must preserve parameters independently.
+    function Get-Variable {throw 'bootstrap-command-discovery-forbidden:Get-Variable'}
+    function Set-Variable {throw 'bootstrap-command-discovery-forbidden:Set-Variable'}
+    function Remove-Variable {throw 'bootstrap-command-discovery-forbidden:Remove-Variable'}
+    function Join-Path {throw 'bootstrap-command-discovery-forbidden:Join-Path'}
+  }
   $savedError=[Console]::Error;$savedOutput=[Console]::Out
   $errorCapture=[IO.StringWriter]::new();$outputCapture=[IO.StringWriter]::new()
   $gateProbeArguments=@{LibraryOnly=$true}
@@ -35,7 +43,7 @@ function Load-InertLibrary([string]$Path,[bool]$Trace,$Ast) {
     Require ($pipelineOutput.Count -eq 0 -and $outputCapture.ToString() -ceq '') 'library-stdout-changed'
     foreach($gateProbeProperty in $gateProbeSentinels.Keys){
       if($gateProbeDeclared -contains $gateProbeProperty){
-        Require ((Get-Variable -Name $gateProbeProperty -ValueOnly) -ceq $gateProbeSentinels[$gateProbeProperty]) ('library-parameter-not-preserved-'+$gateProbeProperty)
+        Require (($ExecutionContext.SessionState.PSVariable.GetValue($gateProbeProperty)) -ceq $gateProbeSentinels[$gateProbeProperty]) ('library-parameter-not-preserved-'+$gateProbeProperty)
       }
     }
     Require ([bool]$LibraryOnly -and [bool]$TraceReadonlyBootstrap -eq $Trace) 'library-switch-parameters-not-preserved'
@@ -89,6 +97,13 @@ try{
       Require ($gate.Clauses.Count -eq 1 -and $gate.Clauses[0].Item1.Extent.Text -ceq '$LibraryOnly -and $TraceReadonlyBootstrap') 'trace-not-restricted-to-explicit-LibraryOnly'
     }
     $rows+=@{name=$library.kind+'-trace-gated-by-both-switches';passed=$true}
+    if($library.kind -ceq 'dpi'){
+      Require ((Load-InertLibrary $library.path $false $ast $true) -ceq '') 'bootstrap-default-needs-command-discovery'
+      $rows+=@{name='dpi-default-preserves-params-with-command-discovery-unavailable';passed=$true}
+      $guardedTrace=Load-InertLibrary $library.path $true $ast $true
+      Require (@($guardedTrace -split '\r?\n' | Where-Object{$_}).Count -eq 7) 'bootstrap-trace-needs-command-discovery'
+      $rows+=@{name='dpi-trace-preserves-params-with-command-discovery-unavailable';passed=$true}
+    }
   }
   $phase='actual-inert-query'
   . $DpiLibraryPath -LibraryOnly

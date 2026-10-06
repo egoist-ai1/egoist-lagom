@@ -68,11 +68,37 @@ Invoke-ProbeCase 'actual production readiness guard rejects foreign ancestry' {
  $service=[pscustomobject]@{process=[pscustomobject]@{processId=100;createdUtc=$v.rootProcessCreatedAt}}
  Assert-ProbeRefusal {Get-NativeTelegramSnapshotState -Value $v -Port 49123 -Service $service} 'not a verified SCM descendant'
 }
-$uiRows=@([pscustomobject]@{name='Действие не выполнено';offscreen=$false},[pscustomobject]@{name='Порт Telegram Proxy 127.0.0.1:49123 занят own-powershell.exe. Выберите свободный порт.';offscreen=$false},[pscustomobject]@{name='Прокси';offscreen=$false},[pscustomobject]@{name='не запущен';offscreen=$false})
-Invoke-ProbeCase 'actual renderer text contract accepts visible configured port conflict plus unready label' { $result=ConvertTo-NativeTelegramConflictGuiObservation -TextRows $uiRows -Port 49123 -HostAddress '127.0.0.1' -GuiProcessId 942;Assert-Probe ($null -ne $result -and -not $result.ready -and -not $result.privateTextIncluded) 'UI conflict evidence invalid' }
-Invoke-ProbeCase 'GUI ready claim is rejected during actual occupied port phase' { $rows=@($uiRows)+@([pscustomobject]@{name='работает';offscreen=$false});Assert-ProbeRefusal {ConvertTo-NativeTelegramConflictGuiObservation -TextRows $rows -Port 49123 -HostAddress '127.0.0.1' -GuiProcessId 942} 'claims ready' }
-Invoke-ProbeCase 'hidden stale error is not confirmation' { $rows=Copy-Probe $uiRows;$rows[0].offscreen=$true;Assert-Probe ($null -eq (ConvertTo-NativeTelegramConflictGuiObservation -TextRows $rows -Port 49123 -HostAddress '127.0.0.1' -GuiProcessId 942)) 'Hidden error admitted' }
-Invoke-ProbeCase 'another port error is not confirmation' { Assert-Probe ($null -eq (ConvertTo-NativeTelegramConflictGuiObservation -TextRows $uiRows -Port 49124 -HostAddress '127.0.0.1' -GuiProcessId 942)) 'Wrong port error admitted' }
+$uiRows=@([pscustomobject]@{name='Действие не выполнено';offscreen=$false},[pscustomobject]@{name='Порт Telegram Proxy 127.0.0.1:49123 занят pwsh.exe (PID 731). Выберите свободный порт в настройках и обновите подключение Telegram.';offscreen=$false},[pscustomobject]@{name='Прокси';offscreen=$false},[pscustomobject]@{name='не запущен';offscreen=$false})
+Invoke-ProbeCase 'actual renderer text contract accepts visible configured port conflict plus unready label' { $result=ConvertTo-NativeTelegramConflictGuiObservation -TextRows $uiRows -Port 49123 -HostAddress '127.0.0.1' -GuiProcessId 942 -ExpectedOwnerProcessId 731;Assert-Probe ($null -ne $result -and -not $result.ready -and -not $result.privateTextIncluded) 'UI conflict evidence invalid' }
+Invoke-ProbeCase 'GUI ready claim is rejected during actual occupied port phase' { $rows=@($uiRows)+@([pscustomobject]@{name='работает';offscreen=$false});Assert-ProbeRefusal {ConvertTo-NativeTelegramConflictGuiObservation -TextRows $rows -Port 49123 -HostAddress '127.0.0.1' -GuiProcessId 942 -ExpectedOwnerProcessId 731} 'claims ready' }
+Invoke-ProbeCase 'hidden stale error is not confirmation' { $rows=Copy-Probe $uiRows;$rows[0].offscreen=$true;Assert-Probe ($null -eq (ConvertTo-NativeTelegramConflictGuiObservation -TextRows $rows -Port 49123 -HostAddress '127.0.0.1' -GuiProcessId 942 -ExpectedOwnerProcessId 731)) 'Hidden error admitted' }
+Invoke-ProbeCase 'another port error is not confirmation' { Assert-Probe ($null -eq (ConvertTo-NativeTelegramConflictGuiObservation -TextRows $uiRows -Port 49124 -HostAddress '127.0.0.1' -GuiProcessId 942 -ExpectedOwnerProcessId 731)) 'Wrong port error admitted' }
+$ipcPrefix="Error invoking remote method 'telegram-proxy:start': CoreServiceRequestError: "
+Invoke-ProbeCase 'actual Electron start CoreServiceRequestError envelope is accepted with exact actor PID' {
+ $rows=Copy-Probe $uiRows;$rows[1].name=$ipcPrefix+$rows[1].name
+ $result=ConvertTo-NativeTelegramConflictGuiObservation -TextRows $rows -Port 49123 -HostAddress '127.0.0.1' -GuiProcessId 942 -ExpectedOwnerProcessId 731
+ Assert-Probe ($null -ne $result -and -not $result.ready) 'Actual Electron envelope not observed'
+}
+Invoke-ProbeCase 'renderer-truncated Electron conflict advice keeps exact endpoint and PID' {
+ $rows=Copy-Probe $uiRows;$rows[1].name=$ipcPrefix+$rows[1].name;$rows[1].name=$rows[1].name.Substring(0,177)+'...'
+ Assert-Probe ($null -ne (ConvertTo-NativeTelegramConflictGuiObservation -TextRows $rows -Port 49123 -HostAddress '127.0.0.1' -GuiProcessId 942 -ExpectedOwnerProcessId 731)) 'Actual renderer truncation not observed'
+}
+foreach($case in @(
+ @{name='another actor PID is not confirmation';edit={param($rows) $rows[1].name=$rows[1].name.Replace('(PID 731)','(PID 732)')}},
+ @{name='actor PID prefix is not the exact actor';edit={param($rows) $rows[1].name=$rows[1].name.Replace('(PID 731)','(PID 7310)')}},
+ @{name='another IPC operation is not confirmation';edit={param($rows) $rows[1].name=$ipcPrefix.Replace('telegram-proxy:start','telegram-proxy:stop')+$rows[1].name}},
+ @{name='another IPC error class is not confirmation';edit={param($rows) $rows[1].name=$ipcPrefix.Replace('CoreServiceRequestError','TypeError')+$rows[1].name}},
+ @{name='unrelated APP-ACTION prefix is not confirmation';edit={param($rows) $rows[1].name='[activity] APP-ACTION: '+$ipcPrefix+$rows[1].name}},
+ @{name='embedded IPC envelope is not confirmation';edit={param($rows) $rows[1].name='Earlier error: '+$ipcPrefix+$rows[1].name}},
+ @{name='multiline error is not confirmation';edit={param($rows) $rows[1].name=$ipcPrefix+$rows[1].name+[Environment]::NewLine+'APP-ACTION unrelated'}},
+ @{name='another host conflict is not confirmation';edit={param($rows) $rows[1].name=$rows[1].name.Replace('127.0.0.1','127.0.0.2')}},
+ @{name='conflict without actor PID is not confirmation';edit={param($rows) $rows[1].name=$rows[1].name.Replace(' (PID 731)','')}},
+ @{name='unrelated suffix is not confirmation';edit={param($rows) $rows[1].name=$rows[1].name.Replace('Выберите свободный порт в настройках и обновите подключение Telegram.','APP-ACTION unrelated')}},
+ @{name='hidden conflict reason is not confirmation';edit={param($rows) $rows[1].offscreen=$true}}
+)){
+ $currentCase=$case
+ Invoke-ProbeCase $currentCase.name { $rows=Copy-Probe $uiRows;& $currentCase.edit $rows;Assert-Probe ($null -eq (ConvertTo-NativeTelegramConflictGuiObservation -TextRows $rows -Port 49123 -HostAddress '127.0.0.1' -GuiProcessId 942 -ExpectedOwnerProcessId 731)) 'Unrelated/stale conflict text admitted' }
+}
 $encoding=[Text.UTF8Encoding]::new($false)
 $config=$encoding.GetBytes('{"host":"127.0.0.1","port":49123,"secret":"fictional-test-only"}')
 $profile=$encoding.GetBytes('{"settings":{"autoConnect":false,"allowTelemetry":false,"theme":"mono"},"stateRevision":17}')
@@ -119,6 +145,6 @@ foreach($hostAddress in @('127.0.0.1','::1')){
  }
 }
 Assert-Probe ($script:OwnActorObservations.Count -eq 2) 'Own socket observations were not retained'
-Assert-Probe ($script:Checks.Count -eq 30 -and $imported.Count -eq 9) 'Expected 30 source-bound cases and 9 imported functions'
+Assert-Probe ($script:Checks.Count -eq 43 -and $imported.Count -eq 9) 'Expected 43 source-bound cases and 9 imported functions'
 Assert-Probe ((Get-FileHash -LiteralPath $HarnessPath -Algorithm SHA256).Hash.ToLowerInvariant() -ceq $harnessSha256) 'Production harness changed during local fixture checks'
-[ordered]@{schemaVersion=1;powershellVersion=$PSVersionTable.PSVersion.ToString();edition=$PSVersionTable.PSEdition;harnessSha256=$harnessSha256;parserErrors=0;caseCount=30;passedAll=$true;passed=$script:Checks.Count;checks=$script:Checks;importedFunctions=$imported;ownActorObservations=$script:OwnActorObservations;harnessEntrypointExecuted=$false;nativeAcceptanceExecuted=$false;productionCoreSnapshotExecuted=$false;nativeServiceActions=0;privateDataRead=0;scm=0;registry=0;taskScheduler=0;uac=0;setup=0;gui=0;foreground=0;globalKeys=0;clipboard=0;sourceWrites=0;limitations=@('Snapshot and UI contract records are in-memory inert fixtures, not actual Core/UIA observations.','Actual socket probes use only fresh ephemeral loopback ports and the current retained test process; they do not inspect or control installed components.','Full production harness entrypoint and its Core/UIA/private-read functions were never invoked.')} | ConvertTo-Json -Depth 14
+[ordered]@{schemaVersion=1;powershellVersion=$PSVersionTable.PSVersion.ToString();edition=$PSVersionTable.PSEdition;harnessSha256=$harnessSha256;parserErrors=0;caseCount=43;passedAll=$true;passed=$script:Checks.Count;checks=$script:Checks;importedFunctions=$imported;ownActorObservations=$script:OwnActorObservations;harnessEntrypointExecuted=$false;nativeAcceptanceExecuted=$false;productionCoreSnapshotExecuted=$false;nativeServiceActions=0;privateDataRead=0;scm=0;registry=0;taskScheduler=0;uac=0;setup=0;gui=0;foreground=0;globalKeys=0;clipboard=0;sourceWrites=0;limitations=@('Snapshot and UI contract records are in-memory inert fixtures, not actual Core/UIA observations.','Actual socket probes use only fresh ephemeral loopback ports and the current retained test process; they do not inspect or control installed components.','Full production harness entrypoint and its Core/UIA/private-read functions were never invoked.')} | ConvertTo-Json -Depth 14

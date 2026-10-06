@@ -16,12 +16,12 @@ $ErrorActionPreference='Stop'
 # Diagnostic entry is restricted to explicit LibraryOnly final-readback children.
 if($LibraryOnly -and $TraceReadonlyBootstrap){$dpiReadonlyBootstrapClock=[Diagnostics.Stopwatch]::StartNew();[Console]::Error.WriteLine('readonly-library|dpi|bootstrap-start|0')}
 # Keep caller arguments: the shared library has its own parameter block.
-$parameters=@{};foreach($name in @('Mode','IntegrityManifestPath','CandidateAssetsDirectory','ExpectedSourceCommit','EvidenceDirectory','LibraryOnly','TraceReadonlyBootstrap')){$parameters[$name]=Get-Variable -Name $name -ValueOnly}
+$parameters=@{Mode=$Mode;IntegrityManifestPath=$IntegrityManifestPath;CandidateAssetsDirectory=$CandidateAssetsDirectory;ExpectedSourceCommit=$ExpectedSourceCommit;EvidenceDirectory=$EvidenceDirectory;LibraryOnly=$LibraryOnly;TraceReadonlyBootstrap=$TraceReadonlyBootstrap}
 if($LibraryOnly -and $TraceReadonlyBootstrap){[Console]::Error.WriteLine('readonly-library|dpi|parameters-captured|'+$dpiReadonlyBootstrapClock.ElapsedMilliseconds)}
-. (Join-Path $PSScriptRoot 'windows-production-acceptance.ps1') -LibraryOnly -TraceReadonlyBootstrap:($LibraryOnly -and $TraceReadonlyBootstrap)
+. ([IO.Path]::Combine($PSScriptRoot,'windows-production-acceptance.ps1')) -LibraryOnly -TraceReadonlyBootstrap:($LibraryOnly -and $TraceReadonlyBootstrap)
 if($LibraryOnly -and $TraceReadonlyBootstrap){[Console]::Error.WriteLine('readonly-library|dpi|shared-library-ready|'+$dpiReadonlyBootstrapClock.ElapsedMilliseconds)}
-foreach($name in $parameters.Keys){Set-Variable -Name $name -Value $parameters[$name]}
-Remove-Variable parameters
+foreach($name in $parameters.Keys){$ExecutionContext.SessionState.PSVariable.Set($name,$parameters[$name])}
+$ExecutionContext.SessionState.PSVariable.Remove('parameters')
 if($LibraryOnly -and $TraceReadonlyBootstrap){[Console]::Error.WriteLine('readonly-library|dpi|parameters-restored|'+$dpiReadonlyBootstrapClock.ElapsedMilliseconds)}
 
 function Initialize-DpiNativeTypes {

@@ -819,12 +819,22 @@ function Assert-NativeTelegramOccupiedPortSnapshot {
   return [ordered]@{state='foreign';serviceStopped=$true;ready=$false;port=$Port;host=$HostAddress;owner=$ActorIdentity;soleListenerVerified=$true}
 }
 function ConvertTo-NativeTelegramConflictGuiObservation {
-  param([object[]]$TextRows,[int]$Port,[string]$HostAddress,[int]$GuiProcessId)
+  param([object[]]$TextRows,[int]$Port,[string]$HostAddress,[int]$GuiProcessId,[Parameter(Mandatory=$true)][ValidateRange(1,2147483647)][int]$ExpectedOwnerProcessId)
   if($TextRows.Count -gt 512){throw 'TG conflict GUI observation exceeds its text bound.'}
   $visible=@($TextRows | Where-Object {-not $_.offscreen})
   $title=@($visible | Where-Object {$_.name -ceq 'Действие не выполнено'})
-  $reasonPattern='^Порт Telegram Proxy '+[Regex]::Escape($HostAddress)+':'+$Port+' занят '
-  $reason=@($visible | Where-Object {[string]$_.name -cmatch $reasonPattern})
+  $ipcPrefix="Error invoking remote method 'telegram-proxy:start': CoreServiceRequestError: "
+  $reasonPattern='^Порт Telegram Proxy '+[Regex]::Escape($HostAddress)+':'+$Port+' занят [^()\r\n]+ \(PID '+$ExpectedOwnerProcessId+'\)\.(?<advice>[^\r\n]*)$'
+  $advice=' Выберите свободный порт в настройках и обновите подключение Telegram.'
+  $reason=@($visible | Where-Object {
+    $text=[string]$_.name
+    if($text -cmatch '[\r\n]'){return $false}
+    if($text.StartsWith($ipcPrefix,[StringComparison]::Ordinal)){$text=$text.Substring($ipcPrefix.Length)}
+    if($text -cnotmatch $reasonPattern){return $false}
+    $tail=[string]$Matches.advice
+    # um() keeps this IPC envelope and may truncate only the renderer detail.
+    return $tail -ceq $advice -or ($tail.EndsWith('...',[StringComparison]::Ordinal) -and $tail.Length -gt 3 -and $advice.StartsWith($tail.Substring(0,$tail.Length-3),[StringComparison]::Ordinal))
+  })
   $proxy=@($visible | Where-Object {$_.name -ceq 'Прокси'})
   $notReady=@($visible | Where-Object {$_.name -ceq 'не запущен'})
   $ready=@($visible | Where-Object {$_.name -ceq 'работает'})
@@ -833,14 +843,22 @@ function ConvertTo-NativeTelegramConflictGuiObservation {
   return [ordered]@{processId=$GuiProcessId;errorTitle='Действие не выполнено';configuredPortConflictVisible=$true;proxyLabel='не запущен';ready=$false;privateTextIncluded=$false}
 }
 function Get-NativeTelegramConflictGuiObservation {
-  param($Root,$Process,[int]$Port,[string]$HostAddress)
+  param($Root,$Process,[int]$Port,[string]$HostAddress,[Parameter(Mandatory=$true)][ValidateRange(1,2147483647)][int]$ExpectedOwnerProcessId)
   $Process.Refresh()
   if($Process.HasExited -or $Root.Current.ProcessId -ne $Process.Id){throw 'TG conflict observation lost the exact GUI identity.'}
   $condition=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Text)
   $elements=$Root.FindAll([Windows.Automation.TreeScope]::Descendants,$condition)
   if($elements.Count -gt 512){throw 'TG conflict GUI text collection exceeds its bound.'}
   $rows=@(foreach($element in $elements){[pscustomobject]@{name=[string]$element.Current.Name;offscreen=[bool]$element.Current.IsOffscreen}})
-  return ConvertTo-NativeTelegramConflictGuiObservation -TextRows $rows -Port $Port -HostAddress $HostAddress -GuiProcessId $Process.Id
+  $visible=@($rows | Where-Object {-not $_.offscreen})
+  $last=[ordered]@{observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');processId=$Process.Id;textRows=$rows.Count;visibleTextRows=$visible.Count;failureTitleCount=@($visible | Where-Object {$_.name -ceq 'Действие не выполнено'}).Count;proxyLabelCount=@($visible | Where-Object {$_.name -ceq 'Прокси'}).Count;unreadyLabelCount=@($visible | Where-Object {$_.name -ceq 'не запущен'}).Count;readyLabelCount=@($visible | Where-Object {$_.name -ceq 'работает'}).Count;knownStartErrorEnvelopeCount=@($visible | Where-Object {$_.name.StartsWith("Error invoking remote method 'telegram-proxy:start': CoreServiceRequestError: ",[StringComparison]::Ordinal)}).Count;matcherOutcome='checking';configuredConflictMatched=$false;privateTextIncluded=$false}
+  $script:Receipt.telegramOccupiedPort.lastGuiObservation=$last
+  try{
+    $observation=ConvertTo-NativeTelegramConflictGuiObservation -TextRows $rows -Port $Port -HostAddress $HostAddress -GuiProcessId $Process.Id -ExpectedOwnerProcessId $ExpectedOwnerProcessId
+    $last.configuredConflictMatched=$null -ne $observation
+    $last.matcherOutcome=if($observation){'matched'}else{'incomplete'}
+    return $observation
+  }catch{$last.matcherOutcome='rejected';throw}
 }
 function Invoke-NativeTelegramOccupiedPort {
   param([scriptblock]$FindButton,$Process,$Root,$BeforeState)
@@ -858,7 +876,7 @@ function Invoke-NativeTelegramOccupiedPort {
     $start=Wait-NativeCondition -Condition {& $FindButton 'Запустить'} -Label 'TG occupied port actual start control' -TimeoutSeconds 60
     if(Get-NativeTelegramGuiVisibleError -Root $Root){throw 'TG occupied-port attempt began with an earlier GUI failure.'}
     ([Windows.Automation.InvokePattern]$start.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()
-    $result.gui=Wait-NativeCondition -Condition {Get-NativeTelegramConflictGuiObservation -Root $Root -Process $Process -Port $port -HostAddress $hostAddress} -Label 'TG actual occupied port refusal and honest unready GUI' -TimeoutSeconds 45 -StopOnError
+    $result.gui=Wait-NativeCondition -Condition {Get-NativeTelegramConflictGuiObservation -Root $Root -Process $Process -Port $port -HostAddress $hostAddress -ExpectedOwnerProcessId $result.actor.processId} -Label 'TG actual occupied port refusal and honest unready GUI' -TimeoutSeconds 45 -StopOnError
     $snapshot=Read-NativeTelegramEndpointSnapshot -Port $port -TimeoutMilliseconds 30000
     $result.afterAttempt=Assert-NativeTelegramOccupiedPortSnapshot -Value $snapshot -Port $port -HostAddress $hostAddress -Expected foreign -ActorIdentity (Get-NativeTelegramOccupiedPortActorIdentity -Actor $actor)
     $current=Get-NativeTelegramPortFixtureState
