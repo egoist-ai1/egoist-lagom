@@ -11,6 +11,10 @@ on:
         description: Diagnose restricted image creation and isolated Electron manifests without installing the product
         type: boolean
         default: false
+      competitor_research:
+        description: Observe official competitors in a separate disposable Windows runner
+        type: boolean
+        default: false
       package_candidate:
         description: Build and upload an unsigned Windows candidate after checks
         type: boolean
@@ -449,6 +453,7 @@ jobs:
           & $opensslPath version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "LAGOM_TEST_TEMP=$testWork" >> $env:GITHUB_ENV
+          "LAGOM_TRUST_TEST_WORK=$testWork" >> $env:GITHUB_ENV
           "LAGOM_TEST_POWERSHELL=$(Join-Path $PSHOME 'pwsh.exe')" >> $env:GITHUB_ENV
           "LAGOM_DNS_TEST_WORK=$testWork" >> $env:GITHUB_ENV
           "LAGOM_DNS_TEST_OPENSSL=$opensslPath" >> $env:GITHUB_ENV
@@ -555,6 +560,8 @@ jobs:
     needs: test
     runs-on: windows-latest
     timeout-minutes: 90
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
     permissions:
       contents: read
     env:
@@ -693,12 +700,6 @@ jobs:
           if ($actualHash -ne $integrity.installer.sha256 -or (Get-Item -LiteralPath $installer).Length -ne $integrity.installer.bytes) { throw 'Candidate installer changed during tests' }
           $actualSourcesHash = (Get-FileHash -LiteralPath $nativeSourcesPath -Algorithm SHA256).Hash
           if ($actualSourcesHash -ne $integrity.nativeSources.sha256 -or (Get-Item -LiteralPath $nativeSourcesPath).Length -ne $integrity.nativeSources.bytes) { throw 'Native source companion does not match package integrity after tests' }
-      - name: Install and exercise the candidate on the disposable runner
-        if: ${{ inputs.native_acceptance }}
-        shell: pwsh
-        run: |
-          ./tests/windows-production-acceptance.ps1 -IntegrityManifestPath (Join-Path $env:GITHUB_WORKSPACE 'dist/package-integrity.json') -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:SHIELD_EVIDENCE_DIR 'native')
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Upload unsigned candidate only
         uses: actions/upload-artifact@v4
         with:
@@ -719,6 +720,71 @@ jobs:
           retention-days: 7
           if-no-files-found: error
           path: ${{ runner.temp }}/lagom-candidate/evidence
+
+  candidate-native:
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.sandbox_image_diagnostic && inputs.package_candidate && inputs.native_acceptance }}
+    needs: candidate
+    runs-on: windows-latest
+    timeout-minutes: 185
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DOTNET_MULTILEVEL_LOOKUP: '0'
+      DOTNET_ADD_GLOBAL_TOOLS_TO_PATH: '0'
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - name: Checkout exact candidate sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Read exact native SDK and source identity
+        id: sdk
+        run: |
+          $head=(git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $head -cne $env:GITHUB_SHA) { throw 'Native harness checkout differs from immutable candidate source.' }
+          $sdk=(Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($sdk -notmatch '^\d+\.\d+\.\d+$') { throw 'Exact native SDK required.' }
+          "version=$sdk" >> $env:GITHUB_OUTPUT
+          "DOTNET_INSTALL_DIR=$(Join-Path $env:RUNNER_TEMP 'lagom-native-dotnet')" >> $env:GITHUB_ENV
+      - name: Use Node.js 24 for native receipt helpers
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Use exact native harness SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ steps.sdk.outputs.version }}
+      - name: Install locked receipt helper dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --fund=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "SHIELD_DOTNET=$(Join-Path $env:DOTNET_INSTALL_DIR 'dotnet.exe')" >> $env:GITHUB_ENV
+      - name: Download exactly tested candidate from this run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: lagom-unsigned-candidate-${{ needs.candidate.outputs.version }}-${{ github.sha }}
+          path: dist
+      - name: Upgrade original 3.8.0, recover, reinstall, soak and uninstall
+        run: |
+          $baselineInstaller=Join-Path $env:RUNNER_TEMP 'original-EgoistShield-Setup-3.8.0.exe'
+          if(Test-Path -LiteralPath $baselineInstaller){throw 'Baseline download target must be new.'}
+          Invoke-WebRequest -Uri 'https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe' -OutFile $baselineInstaller -TimeoutSec 300
+          if((Get-Item -LiteralPath $baselineInstaller).Length -ne 277603619 -or (Get-FileHash -LiteralPath $baselineInstaller -Algorithm SHA256).Hash -ine '771ba1adcfd4c24fcbee89c2e84d714099491ac97e9b4a6ba523031a03d27d81'){throw 'Original published 3.8.0 baseline hash/size mismatch.'}
+          ./tests/windows-production-acceptance.ps1 -IntegrityManifestPath (Join-Path $env:GITHUB_WORKSPACE 'dist/package-integrity.json') -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:RUNNER_TEMP 'lagom-native-reliability/evidence') -SoakMinutes 120 -UpgradeBaselineInstaller $baselineInstaller
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preserve actual native acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: lagom-native-reliability-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: ${{ runner.temp }}/lagom-native-reliability/evidence
 
   signed-candidate:
     if: ${{ github.event_name == 'workflow_dispatch' && !inputs.sandbox_image_diagnostic && inputs.signed_legacy_release_id != '' }}
@@ -939,3 +1005,33 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
           path: ${{ runner.temp }}/lagom-signed-legacy-${{ matrix.old_version }}/evidence
+
+  competitor-observation:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.competitor_research }}
+    runs-on: windows-2025
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout exact dispatched source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Observe official packages on the isolated runner
+        env:
+          RESEARCH_PRODUCT: both
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./tests/windows-competitor-comparison.ps1 -Product $env:RESEARCH_PRODUCT -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:RUNNER_TEMP 'lagom-competitor-evidence')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preserve actual observations and screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reliability-competitor-observation-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/lagom-competitor-evidence/*.json
+            ${{ runner.temp }}/lagom-competitor-evidence/*.png
