@@ -11,6 +11,33 @@ const hosted = {
   GITHUB_SHA: 'a'.repeat(40),
 };
 
+test('actual native source preserves Unicode through the Windows PowerShell ANSI reader', {
+  skip: process.platform !== 'win32',
+}, () => {
+  const file = path.resolve('tests/windows-production-acceptance.ps1').replaceAll("'", "''");
+  const body = "$ErrorActionPreference='Stop';" +
+    "$bytes=[IO.File]::ReadAllBytes('" + file + "');" +
+    "$ansi=[Text.Encoding]::GetEncoding(1252);" +
+    "$stream=[IO.MemoryStream]::new($bytes,$false);$reader=[IO.StreamReader]::new($stream,$ansi,$true);" +
+    "try{$text=$reader.ReadToEnd()}finally{$reader.Dispose()};" +
+    "$tokens=$null;$errors=$null;$ast=[Management.Automation.Language.Parser]::ParseInput($text,[ref]$tokens,[ref]$errors);" +
+    "$expected=-join(@(0x41e,0x441,0x442,0x430,0x43d,0x43e,0x432,0x438,0x442,0x44c)|ForEach-Object {[char]$_});" +
+    "$controls=@($ast.FindAll({param($n)$n -is [Management.Automation.Language.StringConstantExpressionAst] -and $n.Value -ceq $expected},$true));" +
+    "$withoutBom=[byte[]]$bytes[3..($bytes.Length-1)];$broken=$ansi.GetString($withoutBom);" +
+    "$badTokens=$null;$badErrors=$null;[void][Management.Automation.Language.Parser]::ParseInput($broken,[ref]$badTokens,[ref]$badErrors);" +
+    "@{sourceParseErrors=@($errors).Count;unicodeControlPreserved=($controls.Count -gt 0);ansiFallbackChangesText=($broken -cne $text);ansiFallbackParseErrors=@($badErrors).Count}|ConvertTo-Json -Compress";
+  const shell = path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const child = spawnSync(shell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand',
+    Buffer.from(body, 'utf16le').toString('base64')],
+    { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+  assert.equal(child.status, 0, child.stdout + '\n' + child.stderr);
+  const result = JSON.parse(child.stdout);
+  assert.equal(result.sourceParseErrors, 0);
+  assert.equal(result.unicodeControlPreserved, true);
+  assert.equal(result.ansiFallbackChangesText, true);
+  assert.ok(result.ansiFallbackParseErrors > 0, 'The observed no-BOM ANSI failure must remain discriminating.');
+});
+
 test('native acceptance refuses missing or mismatched hosted runner identities', () => {
   assert.deepEqual(acceptanceEnvironmentErrors(hosted), []);
   for (const key of Object.keys(hosted)) {

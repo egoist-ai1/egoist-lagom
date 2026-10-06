@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
   [ValidateSet('Run','GuardOnly')][string]$Mode='Run',
   [string]$IntegrityManifestPath='',
