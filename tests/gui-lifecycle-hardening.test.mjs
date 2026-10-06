@@ -536,3 +536,41 @@ test('an older queued manual stop cannot tear down a newer verified manual conne
     assert.equal(f.context.reconnectSupervisor.snapshot().armed, true);
   } finally { f.dispose(); }
 });
+
+// These use the registered production handlers and the real supervisor. The
+// coordinator controls admission; the runtime remains an inert fixture.
+test('an older queued watchdog reconnect cannot restart a completed manual stop', async () => {
+  const f = vpnHandlerFixture();
+  try {
+    const supervisor = f.context.reconnectSupervisor;
+    supervisor.recordConnectionResult({ connected: true, egressVerified: true });
+    const reconnect = supervisor.runReconnect(supervisor.generation);
+    assert.equal(f.pendingSlots.length, 1);
+    assert.equal(f.pendingSlots[0].intent.action, 'reconnect');
+    const stopping = f.handlers.get('vpn:disconnect')();
+    await f.release(1); await stopping;
+    const callsAfterStop = [...f.calls];
+    await f.release(0); await reconnect;
+    assert.deepEqual(f.calls, callsAfterStop, 'cancelled watchdog intent must never change the completed stop');
+    assert.equal((await f.context.ctx.runtimeManager.status()).connected, false);
+    assert.equal(supervisor.snapshot().armed, false);
+  } finally { f.dispose(); }
+});
+
+test('a queued watchdog reconnect cannot start after profile storage becomes unavailable', async () => {
+  const f = vpnHandlerFixture();
+  let writable = true;
+  f.context.ctx.stateStore.getSnapshot = () => ({ storage: { writable } });
+  try {
+    const supervisor = f.context.reconnectSupervisor;
+    supervisor.recordConnectionResult({ connected: true, egressVerified: true });
+    const reconnect = supervisor.runReconnect(supervisor.generation);
+    assert.equal(f.pendingSlots.length, 1);
+    writable = false;
+    await f.release(0); await reconnect;
+    assert.deepEqual(f.calls, [], 'storage must still permit mutation after asynchronous admission');
+    assert.equal((await f.context.ctx.runtimeManager.status()).connected, false);
+    assert.equal(supervisor.retryTimer, null);
+    assert.equal(supervisor.attemptInFlight, false);
+  } finally { f.dispose(); }
+});

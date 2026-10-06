@@ -4,6 +4,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import test from 'node:test';
 import { loadRecovered } from './load-recovered.mjs';
+import { extractRendererCallback } from './renderer-fixture-helper.mjs';
 
 function fixture(openPath) {
   const handlers = new Map(), calls = [];
@@ -53,21 +54,19 @@ test('log-folder keeps successful IPC response compatible', async () => {
 function actualRendererAction() {
   const renderer = fs.readFileSync('src/recovered/renderer.js', 'utf8');
   assert.ok(/e2\(`open-log-folder`,\s*\(\) => Z\(`logs.openFolder`,\s*window\.egoistAPI\?\.logs\?\.openFolder\),\s*`Папка логов открыта`\)/.test(renderer), 'actual Settings button must use runAction with the logs IPC');
-  const start = renderer.indexOf('let S2 = O.useCallback(async');
-  const end = renderer.indexOf('}, [y2]);', start);
-  assert.ok(start >= 0 && end > start, 'actual runAction closure must be located');
+  const action = extractRendererCallback(renderer, 'S2');
   const helpersStart = renderer.indexOf('function Z(e2, t2, ...n2)');
   const helpersEnd = renderer.indexOf('function dm(', helpersStart);
   const activities = [], tones = [], warnings = [];
   let state = { busy: null, busyActions: [] };
   const context = vm.createContext({
-    Error, Date, console: { warn: value => warnings.push(value) },
+    Error, Date, n2:{storage:{status:'ready',writable:true}}, console: { warn: value => warnings.push(value) },
     O: { useCallback: callback => callback }, If: value => value, Lf: (a, b) => a === b,
     f2: { current: new Map() }, updateRevision: { current: 0 }, readGeneration: { current: 0 }, d2: { current: 0 },
     Zf: {}, s2: value => activities.push(value), r2: update => { state = update(state); },
     l2: () => {}, p2: { current: true }, tp: tone => tones.push(tone), Rf: () => false, y2: async () => {},
   });
-  vm.runInContext(`${renderer.slice(helpersStart, helpersEnd)}\n${renderer.slice(start, end + '}, [y2]);'.length)}\nglobalThis.runAction = S2;`, context);
+  vm.runInContext(`${renderer.slice(helpersStart, helpersEnd)}\nglobalThis.runAction = ${action};`, context);
   return { runAction: context.runAction, activities, tones, warnings, get state() { return state; } };
 }
 

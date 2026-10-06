@@ -27,13 +27,37 @@ $start.UseShellExecute=$false; $start.CreateNoWindow=$true
 $child=[Diagnostics.Process]::Start($start)
 $cases=[Collections.Generic.List[object]]::new()
 $ownKills=0
+$identityAdmissions=[Collections.Generic.List[object]]::new()
+function Get-FixtureIdentityObservation {
+  param([string]$Name, [Diagnostics.Process]$Retained, [object]$Record)
+  # Observations never authorize cleanup or replace the strict guard below.
+  $observed=[ordered]@{fixture=$Name; recordPresent=($null -ne $Record); retainedPid=$null; observedPid=$null; recordPath=$null; expectedPath=$exe; pathMatch=$false; retainedBirthUtc=$null; observedBirthUtc=$null; birthDeltaMilliseconds=$null; retainedHandleAvailable=$null; retainedHasExited=$null; diagnosticError=$null}
+  try {
+    $observed.retainedPid=[int]$Retained.Id
+    $observed.retainedHandleAvailable=($Retained.Handle -ne [IntPtr]::Zero)
+    $observed.retainedHasExited=[bool]$Retained.HasExited
+    $birthUtc=$Retained.StartTime.ToUniversalTime()
+    $observed.retainedBirthUtc=$birthUtc.ToString('o')
+    if($Record){
+      $observed.observedPid=[int]$Record.ProcessId
+      $observed.recordPath=[string]$Record.ExecutablePath
+      $observed.pathMatch=[string]::Equals($Record.ExecutablePath,$exe,[StringComparison]::OrdinalIgnoreCase)
+      $observedBirth=([DateTime]$Record.CreationDate).ToUniversalTime()
+      $observed.observedBirthUtc=$observedBirth.ToString('o')
+      $observed.birthDeltaMilliseconds=[Math]::Abs(($observedBirth-$birthUtc).TotalMilliseconds)
+    }
+  } catch {$observed.diagnosticError=$_.Exception.GetType().FullName}
+  return [pscustomobject]$observed
+}
 try {
   # Opening the retained handle precedes every candidate operation.
   [void]$child.Handle
   $id=[int]$child.Id
   $birth=$child.StartTime.ToUniversalTime()
   $record=Get-CimInstance Win32_Process -Filter "ProcessId=$id" -OperationTimeoutSec 3 -ErrorAction Stop
-  if(-not $record -or -not [string]::Equals($record.ExecutablePath,$exe,[StringComparison]::OrdinalIgnoreCase) -or [Math]::Abs((([DateTime]$record.CreationDate).ToUniversalTime()-$birth).TotalMilliseconds) -ge 1) {throw 'Owned fixture identity unavailable.'}
+  $admission=Get-FixtureIdentityObservation -Name 'owned-child' -Retained $child -Record $record
+  $identityAdmissions.Add($admission)
+  if(-not $record -or -not [string]::Equals($record.ExecutablePath,$exe,[StringComparison]::OrdinalIgnoreCase) -or [Math]::Abs((([DateTime]$record.CreationDate).ToUniversalTime()-$birth).TotalMilliseconds) -ge 1) {throw ('Owned fixture identity unavailable. '+($admission | ConvertTo-Json -Compress))}
   $predicate={param($candidate) [string]::Equals($candidate,$exe,[StringComparison]::OrdinalIgnoreCase)}.GetNewClosure()
   $wrongBirth=[pscustomobject]@{ProcessId=$id; ExecutablePath=$exe; CreationDate=$birth.AddSeconds(-2)}
   $refused=$false
@@ -62,7 +86,9 @@ try {
   [void]$raceChild.Handle
   $raceId=[int]$raceChild.Id
   $raceRecord=Get-CimInstance Win32_Process -Filter "ProcessId=$raceId" -OperationTimeoutSec 3 -ErrorAction Stop
-  if (-not $raceRecord -or -not [string]::Equals($raceRecord.ExecutablePath,$exe,[StringComparison]::OrdinalIgnoreCase) -or [Math]::Abs((([DateTime]$raceRecord.CreationDate).ToUniversalTime()-$raceChild.StartTime.ToUniversalTime()).TotalMilliseconds) -ge 1) {throw 'Race fixture identity unavailable.'}
+  $admission=Get-FixtureIdentityObservation -Name 'race-child' -Retained $raceChild -Record $raceRecord
+  $identityAdmissions.Add($admission)
+  if (-not $raceRecord -or -not [string]::Equals($raceRecord.ExecutablePath,$exe,[StringComparison]::OrdinalIgnoreCase) -or [Math]::Abs((([DateTime]$raceRecord.CreationDate).ToUniversalTime()-$raceChild.StartTime.ToUniversalTime()).TotalMilliseconds) -ge 1) {throw ('Race fixture identity unavailable. '+($admission | ConvertTo-Json -Compress))}
   $raceState=[pscustomobject]@{calls=0; testRetirements=0}
   $racePredicate={param($candidate)
     $raceState.calls++
@@ -78,7 +104,7 @@ try {
 $sha=[Security.Cryptography.SHA256]::Create()
 try{$sourceHash=([BitConverter]::ToString($sha.ComputeHash($sourceBytes))).Replace('-','').ToLowerInvariant()}finally{$sha.Dispose()}
 $failed=@($cases | Where-Object {-not $_.passed}).Count
-$receipt=[pscustomobject]@{schemaVersion=1; productionSourceSha256=$sourceHash; powerShellVersion=$PSVersionTable.PSVersion.ToString(); cases=@($cases); caseCount=$cases.Count; failed=$failed; ownedFixtureProcessKills=$ownKills; raceFixtureRetirements=$raceState.testRetirements; unrelatedProcessKills=0; scmMutations=0; registryMutations=0; networkMutations=0; cleanupComplete=$true}
+$receipt=[pscustomobject]@{schemaVersion=1; identityAdmissions=@($identityAdmissions); productionSourceSha256=$sourceHash; powerShellVersion=$PSVersionTable.PSVersion.ToString(); cases=@($cases); caseCount=$cases.Count; failed=$failed; ownedFixtureProcessKills=$ownKills; raceFixtureRetirements=$raceState.testRetirements; unrelatedProcessKills=0; scmMutations=0; registryMutations=0; networkMutations=0; cleanupComplete=$true}
 $json=$receipt | ConvertTo-Json -Depth 6
 [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($ReceiptPath)) | Out-Null
 [IO.File]::WriteAllText($ReceiptPath,$json,[Text.UTF8Encoding]::new($false))

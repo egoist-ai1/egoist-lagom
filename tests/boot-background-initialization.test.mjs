@@ -32,7 +32,7 @@ function fixture(config = {}) {
   const context = vm.createContext({
     Promise, pendingBootRecovery: new Set(config.pending ? [config.pending.promise] : []),
     reconnectSupervisor: { generation: 7 }, mainWindow: window, isQuitting: false,
-    globalStateStore: { get: () => state },
+    globalStateStore: { get: () => state, getSnapshot: () => ({storage:{writable:config.storageWritable !== false}}) },
     isGravitylessLoopbackDnsRequest: value => value === '127.0.0.1',
     globalSystemDohManager: { async recover() { calls.doh++; return { verified: true }; } },
     globalGravitylessDnsManager: null,
@@ -158,4 +158,16 @@ test('a missing startup window cannot register background features or DNS recove
 test('accepted recovery with autoConnect disabled still registers the independent watchdog', options, async () => {
   const f = fixture(); f.state.settings.autoConnect = false; await f.run();
   assertIntent(f); assertIndependent(f, []);
+});
+
+test('unconfirmed storage cannot apply DNS defaults, auto-connect or watchdog preferences', options, async () => {
+  const f=fixture({storageWritable:false});await f.run();assertNoneStarted(f);assert.deepEqual(f.calls.intents,[]);
+});
+test('storage denial during pending boot admission prevents delayed native recovery', options, async () => {
+  const admission=deferred(),config={admission},f=fixture(config);const pending=f.run();await turn();
+  config.storageWritable=false;admission.resolve();await pending;assertNoneStarted(f);
+});
+test('a confirmed storage retry enables actual boot initialization without recreating the window', options, async () => {
+  const config={storageWritable:false},f=fixture(config);await f.run();assertNoneStarted(f);
+  config.storageWritable=true;await f.run();assertIntent(f);assert.equal(f.calls.doh,1);assertIndependent(f);
 });

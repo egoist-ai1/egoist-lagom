@@ -93,6 +93,14 @@ var StateStore = class {
 	installationPath;
 	activationMarkerPath;
 	state = structuredClone(DEFAULT_STATE);
+	hasConfirmedState = false;
+	storageSequence = 0;
+	confirmedDisk = null;
+	loadPromise = null;
+	loadInProgress = false;
+	recoveryCopy = null;
+	preservedCorruptFingerprint = null;
+	storage = { status: "loading", writable: false, hasConfirmedState: false, source: "none", checkedAt: null, error: "STATE_STORAGE_UNAVAILABLE", systemCode: null, recoveryCopy: null };
 	/** Очередь атомарных read-modify-write мутаций. */
 	mutationQueue = Promise.resolve();
 	/**
@@ -109,57 +117,221 @@ var StateStore = class {
 		this.installationPath = installationPath;
 		this.activationMarkerPath = path.join(baseDir, "installation-activation.json");
 	}
-	async load() {
-		try {
-			this.state = await this.readStateFile(this.filePath);
-			this.revision = this.state.stateRevision;
-		} catch (primaryError) {
-			try {
-				this.state = await this.readStateFile(this.backupPath);
-				this.revision = this.state.stateRevision;
-				logger.warn("[state-store] Primary state is unreadable; recovered from backup.", primaryError);
-				await this.save();
-			} catch (backupError) {
-				this.state = structuredClone(DEFAULT_STATE);
-				this.revision = 0;
-				const primaryMissing = primaryError?.code === "ENOENT";
-				const backupMissing = backupError?.code === "ENOENT";
-				if (primaryMissing && backupMissing) {
-					logger.info("[state-store] Initializing a new state profile.");
-					await this.save();
-				} else logger.warn("[state-store] State is unreadable; falling back to defaults.", {
-					primaryError,
-					backupError
-				});
-			}
-		}
-		const displayStateBeforeSanitize = JSON.stringify({
-			nodes: this.state.nodes,
-			subscriptions: this.state.subscriptions
-		});
-		this.state = sanitizeState(this.state);
-		const displayTextChanged = displayStateBeforeSanitize !== JSON.stringify({
-			nodes: this.state.nodes,
-			subscriptions: this.state.subscriptions
-		});
-		const migration = await this.migrateLegacyState(this.state);
-		if (migration.changed) this.state = sanitizeState(migration.state);
-		if (migration.changed || displayTextChanged) {
-			await this.save();
-			logger.info(migration.changed ? "[state-store] Migrated legacy EgoistShield VPN subscriptions/nodes into current state." : "[state-store] Repaired persisted display text encoding.");
-		}
-		await this.applyInstallationDefaults();
-		await this.reconcileOwnedSystemDohPreferences();
-		return this.get();
+	getStorageStatus() {
+		// Valid bytes are readable during activation; public readiness waits for its whole transaction.
+		const storage = this.loadInProgress && this.storage.writable
+			? { ...this.storage, status: "loading", writable: false, error: "STATE_STORAGE_UNAVAILABLE" }
+			: this.storage;
+		return structuredClone(storage);
 	}
-	async applyInstallationDefaults() {
+	getSnapshot() {
+		return { state: this.hasConfirmedState ? this.get() : null, storage: this.getStorageStatus() };
+	}
+	storageError(code = this.storage.error || "STATE_STORAGE_UNAVAILABLE") {
+		const error = new Error(code);
+		error.code = code;
+		return error;
+	}
+	assertStorageWritable() {
+		if (!this.storage.writable) throw this.storageError();
+	}
+	setStorage(status, source, systemCode = null) {
+		this.storage = {
+			status, sequence: ++this.storageSequence, writable: status === "ready", hasConfirmedState: this.hasConfirmedState,
+			source, checkedAt: new Date().toISOString(),
+			error: status === "ready" ? null : status === "corrupt" ? "STATE_STORAGE_CORRUPT" : "STATE_STORAGE_UNAVAILABLE",
+			systemCode: typeof systemCode === "string" ? systemCode : null,
+			recoveryCopy: this.recoveryCopy
+		};
+		try { this.onStorageChange?.(this.getStorageStatus()); } catch (error) { logger.warn("[state-store] Storage observer failed.", error); }
+	}
+	publishConfirmed(state, source) {
+		this.state = sanitizeState(state);
+		this.revision = state.stateRevision;
+		this.hasConfirmedState = true;
+		this.confirmedDisk = JSON.stringify(state);
+		this.setStorage("ready", source);
+	}
+	async load() {
+		if (this.loadPromise) return this.loadPromise;
+		this.loadInProgress = true;
+		this.setStorage("loading", this.hasConfirmedState ? "memory" : "none");
+		// The whole activation occupies one queue entry. Public mutations and native admission
+		// cannot interleave between verified profile bytes and installation/DNS activation.
+		const activate = async () => {
+			await this.loadProfile();
+			if (this.storage.writable) {
+				// These writes already own the queue; calling the public updater here would deadlock.
+				const commit = mutate => this.commitMutation(current => sanitizeState(mutate(current)));
+				try {
+					await this.applyInstallationDefaults(commit);
+					await this.reconcileOwnedSystemDohPreferences(commit);
+				} catch (error) {
+					this.setStorage("unavailable", this.storage.source, error?.code);
+					logger.warn("[state-store] Profile activation is unavailable; saved data retained.", error);
+				}
+			}
+			return this.get();
+		};
+		const run = this.mutationQueue.then(activate, activate);
+		this.loadPromise = run.finally(() => {
+			this.loadInProgress = false;
+			this.loadPromise = null;
+			this.setStorage(this.storage.status, this.storage.source, this.storage.systemCode);
+		});
+		this.mutationQueue = this.loadPromise.then(() => void 0, () => void 0);
+		return this.loadPromise;
+	}
+	async retryLoad() {
+		await this.load();
+		return this.getSnapshot();
+	}
+	async readCandidate(filePath) {
+		let raw;
+		try { raw = await promises.readFile(filePath); }
+		catch (error) { return { kind: error?.code === "ENOENT" ? "missing" : "unavailable", error }; }
+		const fingerprint = typeof raw === "string" ? raw : raw.toString("base64");
+		try {
+			const state = this.parseStateContents(raw);
+			return { kind: "valid", state, raw, fingerprint, signature: JSON.stringify(state) };
+		} catch (error) { return { kind: "corrupt", raw, fingerprint, error }; }
+	}
+	async loadProfile() {
+		const primary = await this.readCandidate(this.filePath);
+		if (primary.kind === "valid") {
+			this.publishConfirmed(primary.state, "primary");
+			const repaired = { ...this.state, legacyMigrationVersion: 1 };
+			// A current profile is authoritative. Mark that decision atomically, without merging legacy data.
+			if (JSON.stringify(repaired) !== JSON.stringify(primary.state)) {
+				try { await this.commitLoadedState(repaired, primary, "primary"); }
+				catch (error) { this.setStorage("unavailable", "primary", error?.code); }
+			}
+			return;
+		}
+		const backup = await this.readCandidate(this.backupPath);
+		if (backup.kind === "valid") {
+			if (!this.hasConfirmedState) {
+				this.state = sanitizeState(backup.state);
+				this.revision = backup.state.stateRevision;
+				this.hasConfirmedState = true;
+			}
+			// A lock/ACL error never authorizes overwriting the primary.
+			if (primary.kind === "unavailable") {
+				this.setStorage("unavailable", this.confirmedDisk ? "memory" : "backup", primary.error?.code);
+				return;
+			}
+			try {
+				if (primary.kind === "corrupt") await this.preserveCorruptPrimary(primary);
+				await this.commitLoadedState({ ...sanitizeState(backup.state), legacyMigrationVersion: 1 }, primary, "backup", false);
+				logger.warn("[state-store] Restored verified backup; original corrupt bytes retained.");
+			} catch (error) {
+				this.setStorage("unavailable", this.confirmedDisk ? "memory" : "backup", error?.code);
+			}
+			return;
+		}
+		if (primary.kind === "missing" && backup.kind === "missing") {
+			if (this.hasConfirmedState) {
+				this.setStorage("unavailable", "memory", "ENOENT");
+				return;
+			}
+			try {
+				const migration = await this.migrateLegacyState(structuredClone(DEFAULT_STATE), { strict: true });
+				await this.commitLoadedState({ ...sanitizeState(migration.state), legacyMigrationVersion: 1 }, primary, migration.changed ? "legacy" : "new", false);
+			} catch (error) {
+				this.setStorage(error instanceof SyntaxError || error instanceof TypeError ? "corrupt" : "unavailable", "none", error?.code);
+			}
+			return;
+		}
+		const unavailable = [primary, backup].find(candidate => candidate.kind === "unavailable");
+		this.setStorage(unavailable ? "unavailable" : "corrupt", this.hasConfirmedState ? "memory" : "none", unavailable?.error?.code);
+		logger.warn("[state-store] Saved profile unavailable; writes and preference side effects are blocked.");
+	}
+	async preserveCorruptPrimary(candidate) {
+		if (this.preservedCorruptFingerprint === candidate.fingerprint) return;
+		const file = this.filePath + ".corrupt-" + randomUUID();
+		const handle = await promises.open(file, "wx");
+		try { await handle.writeFile(candidate.raw); await handle.sync(); }
+		finally { await handle.close(); }
+		this.preservedCorruptFingerprint = candidate.fingerprint;
+		this.recoveryCopy = path.basename(file);
+	}
+	async commitLoadedState(state, expectedPrimary, source, preserveBackup = true) {
+		const next = { ...state, stateRevision: Math.max(this.revision, state.stateRevision) + 1 };
+		if (!Number.isSafeInteger(next.stateRevision)) throw new Error("State revision limit reached");
+		await this.writeStateFile(JSON.stringify(next, null, 2), { expectedPrimary, preserveBackup });
+		this.publishConfirmed(next, source);
+	}
+	async checkStorageWritable() {
+		const run = this.mutationQueue.then(() => this.probeStorageWritable(), () => this.probeStorageWritable());
+		this.mutationQueue = run.then(() => void 0, () => void 0);
+		await run;
+	}
+	async withWritableState(effect) {
+		// A native preference effect shares the commit queue without rewriting data/revision.
+		// The callback must not enqueue another StateStore mutation of its own.
+		const apply = async () => {
+			await this.probeStorageWritable();
+			return await effect(this.get());
+		};
+		const run = this.mutationQueue.then(apply, apply);
+		this.mutationQueue = run.then(() => void 0, () => void 0);
+		return await run;
+	}
+	async probeStorageWritable() {
+		const primary = await this.verifyWritableState();
+		const probes = [];
+		try {
+			// Admission for native actions checks real payload/backup writes, without replacing either file.
+			for (const destination of [this.filePath, this.backupPath]) {
+				const probe = await this.stageFile(destination, primary.raw);
+				probes.push(probe);
+				const readback = await this.readCandidate(probe);
+				if (readback.kind !== "valid" || readback.fingerprint !== primary.fingerprint) {
+					throw readback.error ?? Object.assign(new Error("Storage probe readback failed"), { code: "EIO" });
+				}
+			}
+			await this.assertExpectedPrimary(primary);
+			// A failed cleanup is a failed probe too; do not leave an admission result behind it.
+			for (const probe of probes) await promises.rm(probe, { force: true });
+		} catch (error) {
+			if (error?.code === "STATE_REVISION_CONFLICT") {
+				await this.verifyWritableState();
+				throw error;
+			}
+			this.setStorage(error?.code === "STATE_STORAGE_CORRUPT" ? "corrupt" : "unavailable", "memory", error?.code);
+			throw this.storageError();
+		} finally {
+			for (const probe of probes) await promises.rm(probe, { force: true }).catch(() => void 0);
+		}
+	}
+	async verifyWritableState() {
+		this.assertStorageWritable();
+		const primary = await this.readCandidate(this.filePath);
+		if (primary.kind !== "valid") {
+			this.setStorage(primary.kind === "corrupt" ? "corrupt" : "unavailable", this.hasConfirmedState ? "memory" : "none", primary.error?.code);
+			throw this.storageError();
+		}
+		if (primary.signature !== this.confirmedDisk) {
+			this.publishConfirmed(primary.state, "primary");
+			throw this.storageError("STATE_REVISION_CONFLICT");
+		}
+		return primary;
+	}
+	async assertExpectedPrimary(expected) {
+		const actual = await this.readCandidate(this.filePath);
+		if (actual.kind === expected.kind && (actual.kind === "missing" || actual.fingerprint === expected.fingerprint)) return;
+		if (actual.kind === "unavailable") throw this.storageError("STATE_STORAGE_UNAVAILABLE");
+		if (actual.kind === "corrupt" && expected.kind !== "corrupt") throw this.storageError("STATE_STORAGE_CORRUPT");
+		throw this.storageError("STATE_REVISION_CONFLICT");
+	}
+	async applyInstallationDefaults(commit = mutate => this.update(mutate)) {
 		if (!this.installationPath) return;
 		const installation = JSON.parse(await promises.readFile(this.installationPath, "utf8"));
 		if (typeof installation.id !== "string" || !/^[a-f0-9-]{36}$/i.test(installation.id)) throw new Error("Invalid installation identity.");
 		let previous;
 		try { previous = JSON.parse(await promises.readFile(this.activationMarkerPath, "utf8")); } catch { previous = null; }
 		if (previous?.id === installation.id) return;
-		await this.update((current) => {
+		await commit((current) => {
 			const preferredUrl = this.validSystemDohPreferenceUrl(current.settings.systemDohUrl);
 			return {
 				...current,
@@ -186,7 +358,7 @@ var StateStore = class {
 			&& !String(settings.customDnsUrl ?? "").trim()
 			&& normalizeSystemDohUrl(settings.systemDohUrl, "") === DEFAULT_STATE.settings.systemDohUrl;
 	}
-	async reconcileOwnedSystemDohPreferences() {
+	async reconcileOwnedSystemDohPreferences(commit = mutate => this.update(mutate)) {
 		if (typeof this.readOwnedSystemDohStatus !== "function" || !this.canRestoreOwnedSystemDohPreference(this.get().settings)) return false;
 		let status;
 		try { status = await this.readOwnedSystemDohStatus(); }
@@ -204,7 +376,7 @@ var StateStore = class {
 		const url = this.validSystemDohPreferenceUrl(status.currentUrl);
 		if (!ownedHealthy || !url) return false;
 		let restored = false;
-		await this.update((current) => {
+		await commit((current) => {
 			if (!this.canRestoreOwnedSystemDohPreference(current.settings)) return current;
 			restored = true;
 			return {
@@ -311,7 +483,7 @@ var StateStore = class {
 				conflict: false,
 				revision: this.revision,
 				state: this.get(),
-				error: "STATE_WRITE_FAILED"
+				error: ["STATE_STORAGE_UNAVAILABLE", "STATE_STORAGE_CORRUPT"].includes(error?.code) ? error.code : "STATE_WRITE_FAILED"
 			};
 		}
 	}
@@ -334,7 +506,7 @@ var StateStore = class {
 			return { ok: true, conflict: false, revision: state.stateRevision, state };
 		} catch (error) {
 			const conflict = error?.code === "STATE_REVISION_CONFLICT";
-			const known = ["STATE_REVISION_REQUIRED", "STATE_RULES_INVALID", "STATE_REVISION_CONFLICT"].includes(error?.code);
+			const known = ["STATE_REVISION_REQUIRED", "STATE_RULES_INVALID", "STATE_REVISION_CONFLICT", "STATE_STORAGE_UNAVAILABLE", "STATE_STORAGE_CORRUPT"].includes(error?.code);
 			if (!known) logger.error("[state-store] rules patch failed; in-memory state kept unchanged:", error);
 			return { ok: false, conflict, revision: this.revision, state: this.get(), error: known ? error.code : "STATE_WRITE_FAILED" };
 		}
@@ -353,6 +525,7 @@ var StateStore = class {
 		return this.get();
 	}
 	async commitMutation(mutate, { expectedRevision, beforeCommit, rollback } = {}) {
+		const expectedPrimary = await this.verifyWritableState();
 		if (expectedRevision !== void 0 && expectedRevision !== this.revision) {
 			const error = new Error("STATE_REVISION_CONFLICT");
 			error.code = "STATE_REVISION_CONFLICT";
@@ -360,20 +533,26 @@ var StateStore = class {
 		}
 		if (this.revision >= Number.MAX_SAFE_INTEGER) throw new Error("State revision limit reached");
 		const previous = this.state;
-		const next = { ...mutate(structuredClone(this.state)), stateRevision: this.revision + 1 };
+		const next = { ...mutate(structuredClone(this.state)), legacyMigrationVersion: 1, stateRevision: this.revision + 1 };
 		const serialized = JSON.stringify(next, null, 2);
+		let sideEffectsAttempted = false;
 		try {
-			if (beforeCommit) await beforeCommit(structuredClone(next), structuredClone(previous));
-			await this.writeStateFile(serialized);
+			await this.writeStateFile(serialized, {
+				expectedPrimary,
+				beforeCommit: beforeCommit ? async () => {
+					sideEffectsAttempted = true;
+					await beforeCommit(structuredClone(next), structuredClone(previous));
+				} : null
+			});
 		} catch (error) {
-			if (rollback) try { await rollback(structuredClone(previous)); } catch (rollbackError) {
+			if (sideEffectsAttempted && rollback) try { await rollback(structuredClone(previous)); } catch (rollbackError) {
 				logger.error("[state-store] Failed to restore settings side effects:", rollbackError);
 			}
 			this.state = previous;
+			this.setStorage(error?.code === "STATE_STORAGE_CORRUPT" ? "corrupt" : "unavailable", "memory", error?.code);
 			throw error;
 		}
-		this.state = next;
-		this.revision += 1;
+		this.publishConfirmed(next, "primary");
 	}
 	async findLegacySubscriptionFallback(url) {
 		const legacy = await this.readLegacyState();
@@ -413,37 +592,55 @@ var StateStore = class {
 	* каталога переименование могло не дожить до перезагрузки после сбоя
 	* питания, и файл состояния исчез бы целиком.
 	*/
-	async writeStateFile(serialized) {
-		const dir = path.dirname(this.filePath);
-		const tempPath = `${this.filePath}.${process.pid}.${randomUUID()}.tmp`;
-		await promises.mkdir(dir, { recursive: true });
+	async stageFile(destination, bytes) {
+		const tempPath = `${destination}.${process.pid}.${randomUUID()}.tmp`;
 		try {
-			// Do not replace a good recovery copy with the unreadable primary.
-			await this.readStateFile(this.filePath);
-			await promises.copyFile(this.filePath, this.backupPath);
-		} catch {}
-		try {
-			const handle = await promises.open(tempPath, "w");
-			try {
-				await handle.writeFile(serialized, "utf8");
-				await handle.sync();
-			} finally {
-				await handle.close();
-			}
-			await promises.rename(tempPath, this.filePath);
-			const dirHandle = await promises.open(dir, "r").catch(() => null);
-			if (dirHandle) {
-				await dirHandle.sync().catch(() => void 0);
-				await dirHandle.close().catch(() => void 0);
-			}
+			const handle = await promises.open(tempPath, "wx");
+			try { await handle.writeFile(bytes); await handle.sync(); }
+			finally { await handle.close(); }
+			return tempPath;
 		} catch (error) {
 			await promises.rm(tempPath, { force: true }).catch(() => void 0);
 			throw error;
 		}
 	}
+	async writeStateFile(serialized, { expectedPrimary, preserveBackup = true, beforeCommit } = {}) {
+		const dir = path.dirname(this.filePath);
+		await promises.mkdir(dir, { recursive: true });
+		let tempPath = null, backupTemp = null;
+		try {
+			if (expectedPrimary) await this.assertExpectedPrimary(expectedPrimary);
+			// Prove payload writes and backup replacement before any preference side effects.
+			tempPath = await this.stageFile(this.filePath, serialized);
+			if (preserveBackup && expectedPrimary?.kind === "valid") {
+				// The verified bytes are immutable; re-reading a changing primary can corrupt the backup.
+				backupTemp = await this.stageFile(this.backupPath, expectedPrimary.raw);
+				await this.assertExpectedPrimary(expectedPrimary);
+				await promises.rename(backupTemp, this.backupPath);
+				backupTemp = null;
+			}
+			if (expectedPrimary) await this.assertExpectedPrimary(expectedPrimary);
+			if (beforeCommit) await beforeCommit();
+			if (expectedPrimary) await this.assertExpectedPrimary(expectedPrimary);
+			await promises.rename(tempPath, this.filePath);
+			tempPath = null;
+			const dirHandle = await promises.open(dir, "r").catch(() => null);
+			if (dirHandle) {
+				await dirHandle.sync().catch(() => void 0);
+				await dirHandle.close().catch(() => void 0);
+			}
+		} finally {
+			if (tempPath) await promises.rm(tempPath, { force: true }).catch(() => void 0);
+			if (backupTemp) await promises.rm(backupTemp, { force: true }).catch(() => void 0);
+		}
+	}
 	async readStateFile(filePath) {
-		const raw = (await promises.readFile(filePath, "utf8")).replace(/^\uFEFF/, "");
-		const parsed = JSON.parse(raw);
+		return this.parseStateContents(await promises.readFile(filePath));
+	}
+	parseStateContents(bytes) {
+		const text = typeof bytes === "string" ? bytes : bytes.toString("utf8");
+		if (typeof bytes !== "string" && !Buffer.from(text, "utf8").equals(bytes)) throw new TypeError("Invalid saved UTF-8");
+		const parsed = JSON.parse(text.replace(/^\uFEFF/, ""));
 		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new TypeError("Invalid saved state object");
 		if (parsed.stateRevision !== void 0 && (!Number.isSafeInteger(parsed.stateRevision) || parsed.stateRevision < 0)) throw new TypeError("Invalid saved state revision");
 		if (parsed.settings !== void 0 && (!parsed.settings || typeof parsed.settings !== "object" || Array.isArray(parsed.settings))) throw new TypeError("Invalid saved settings");
@@ -463,18 +660,19 @@ var StateStore = class {
 		}
 		return state;
 	}
-	async readLegacyState() {
+	async readLegacyState({ strict = false } = {}) {
 		const currentDir = path.resolve(path.dirname(this.filePath));
 		const legacyPath = path.join(path.dirname(currentDir), "EgoistShield", "egoistshield-state.json");
 		if (path.resolve(legacyPath).toLowerCase() === path.resolve(this.filePath).toLowerCase()) return null;
 		try {
 			return sanitizeState(await this.readStateFile(legacyPath));
-		} catch {
+		} catch (error) {
+			if (strict && error?.code !== "ENOENT") throw error;
 			return null;
 		}
 	}
-	async migrateLegacyState(current) {
-		const legacy = await this.readLegacyState();
+	async migrateLegacyState(current, options) {
+		const legacy = await this.readLegacyState(options);
 		if (!legacy) return {
 			state: current,
 			changed: false

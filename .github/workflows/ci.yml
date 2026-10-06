@@ -658,6 +658,10 @@ jobs:
           $installer = Join-Path $env:GITHUB_WORKSPACE $integrity.installer.path
           $actualHash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
           if ($actualHash -ne $integrity.installer.sha256 -or (Get-Item -LiteralPath $installer).Length -ne $integrity.installer.bytes) { throw 'Candidate installer does not match package integrity' }
+          $runtimeManifest=Join-Path $env:GITHUB_WORKSPACE "out/EgoistShield-$($integrity.version)-win-x64/resources/runtime/manifest.json"
+          $runtimeEntry=@($integrity.payload | Where-Object { $_.path -ceq 'resources/runtime/manifest.json' })
+          if($runtimeEntry.Count -ne 1 -or (Get-FileHash -LiteralPath $runtimeManifest -Algorithm SHA256).Hash -ine $runtimeEntry[0].sha256 -or (Get-Item -LiteralPath $runtimeManifest).Length -ne $runtimeEntry[0].bytes){throw 'Runtime sidecar must equal the immutable installed payload.'}
+          Copy-Item -LiteralPath $runtimeManifest -Destination 'dist/candidate-runtime-manifest.json'
       - name: Test the packaged candidate and actual DNS runtime
         run: |
           $testWork = Join-Path $env:LAGOM_CANDIDATE_WORK 'tests'
@@ -712,6 +716,7 @@ jobs:
             dist/Egoist-Lagom-${{ steps.metadata.outputs.version }}-native-sources.zip
             dist/Egoist-Lagom-${{ steps.metadata.outputs.version }}-native-sources.zip.sha256
             dist/package-integrity.json
+            dist/candidate-runtime-manifest.json
       - name: Upload candidate build evidence
         if: ${{ always() && steps.prepare.outcome == 'success' }}
         uses: actions/upload-artifact@v4
@@ -785,6 +790,52 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
           path: ${{ runner.temp }}/lagom-native-reliability/evidence
+
+  candidate-dpi:
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.sandbox_image_diagnostic && inputs.package_candidate && inputs.native_acceptance }}
+    needs: candidate
+    runs-on: windows-2025
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout exact candidate DPI sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Verify source identity
+        run: |
+          $head=(git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $head -cne $env:GITHUB_SHA) { throw 'DPI harness checkout differs from immutable candidate source.' }
+      - name: Use Node.js 24 for fixture and receipt helpers
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked receipt helper dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --fund=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Download exactly tested candidate from this run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: lagom-unsigned-candidate-${{ needs.candidate.outputs.version }}-${{ github.sha }}
+          path: dist
+      - name: Clean install, twenty bounded production DPI pairs, remove and uninstall
+        run: |
+          ./tests/windows-dpi-native-acceptance.ps1 -Mode Run -IntegrityManifestPath (Join-Path $env:GITHUB_WORKSPACE 'dist/package-integrity.json') -CandidateAssetsDirectory (Join-Path $env:GITHUB_WORKSPACE 'dist') -ExpectedSourceCommit $env:GITHUB_SHA -EvidenceDirectory (Join-Path $env:RUNNER_TEMP 'lagom-dpi-native/evidence')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preserve actual DPI native evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: lagom-native-dpi-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: ${{ runner.temp }}/lagom-dpi-native/evidence
 
   signed-candidate:
     if: ${{ github.event_name == 'workflow_dispatch' && !inputs.sandbox_image_diagnostic && inputs.signed_legacy_release_id != '' }}

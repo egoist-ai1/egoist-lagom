@@ -1,6 +1,20 @@
 //#region src/electron/ipc/trusted-ipc.ts
 var policy = null;
 var ipcGuardInstalled = false;
+// Fail closed for new channels: only inspection, navigation and cancellation bypass the storage barrier.
+var storageReadChannels = new Set([
+	"state:get", "state:get-snapshot", "state:retry-load", "app:is-admin", "app:get-version", "app:is-first-run",
+	"usage:get-history", "health:get-report", "diagnostics:export-bundle", "network:inspect", "network:diagnose", "network:verify",
+	"vpn:status", "vpn:service-status", "vpn:diagnose", "vpn:route-probe", "vpn:dns-leak-test", "vpn:ping-active-proxy", "vpn:get-my-ip", "vpn:speedtest", "vpn:speedtest-cancel",
+	"system:geoip", "system:pick-file", "system:list-processes", "system:get-app-icon", "system:read-clipboard", "system:write-clipboard",
+	"system:dns-controller-status", "system:dns-diagnostics", "system-doh:status", "shield:status", "shield:cancel",
+	"window:minimize", "window:toggle-maximize", "window:is-maximized", "window:close", "window:set-widget-mode",
+	"logs:get-recent", "logs:get-runtime-summary", "logs:get-path", "logs:open-folder",
+	"telegram-proxy:status", "telegram-proxy:open-link", "telegram-proxy:open-logs", "telegram-proxy:tail-logs",
+	"zapret:status", "zapret:list-profiles", "zapret:dry-run-profile", "zapret:get-user-lists", "zapret:diagnostics", "zapret:cancel-auto-select",
+	"runtime:check-updates", "telegram-proxy:check-updates", "zapret:check-updates"
+]);
+var storageCommitChannels = new Set(["state:set", "state:patch-settings", "state:patch-rules"]);
 function normalizePathForCompare(value) {
 	return path.resolve(value).toLowerCase();
 }
@@ -46,6 +60,7 @@ function installIpcMainGuard(ipcMain) {
 	const originalHandle = ipcMain.handle.bind(ipcMain);
 	ipcMain.handle = ((channel, listener) => originalHandle(channel, async (event, ...args) => {
 		assertTrustedIpcEvent(event);
+		if (!storageReadChannels.has(channel) && !storageCommitChannels.has(channel)) await policy?.assertMutationAllowed?.();
 		return listener(event, ...args);
 	}));
 	ipcGuardInstalled = true;

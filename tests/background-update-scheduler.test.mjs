@@ -142,3 +142,15 @@ test('signed update floor blocks an unsupported source version before installati
   const result=await updater.checkInternal();
   assert.equal(result.phase,'blocked');assert.equal(result.failureCode,'migration-required');assert.equal(result.retryable,false);
 });
+
+test('automatic installation cannot bypass a failed native storage admission',async()=>{
+  let installs=0,probes=0;
+  const {context,warnings}=scheduler({
+    globalStateStore:{getSnapshot:()=>({storage:{writable:true}}),get:()=>({settings:{autoUpdate:true}}),
+      async checkStorageWritable(){probes++;throw Object.assign(new Error('Read-only disk'),{code:'STATE_STORAGE_UNAVAILABLE'});}},
+    desktopUpdater:{installPromise:null,async check(){return {ok:true,phase:'available',latestVersion:'3.8.1'};},
+      async checkAndInstall(){installs++;return {ok:true};}}
+  });
+  await context.runBackgroundUpdateCheck();assert.equal(probes,1);assert.equal(installs,0);
+  assert.ok(warnings.length>0);assert.equal(context.backgroundUpdateInFlight,false);
+});

@@ -245,36 +245,82 @@ test('actual Core automatic DNS snapshot uses connected physical API identities 
   }
 });
 
-test('actual DNS heartbeat serializes2000writes with PS5/PS7 readers and preserves fail-closed lease controls', { skip: process.platform !== 'win32' }, () => {
+function heartbeatFixtureInputs() {
   const base = process.env.LAGOM_TEST_TEMP;
   assert.ok(base && path.isAbsolute(base), 'Set private task-owned LAGOM_TEST_TEMP.');
   assert.ok(fs.statSync(base).isDirectory());
-  const work = fs.mkdtempSync(path.join(base, 'dns-heartbeat-regression-'));
   const fixture = path.resolve('tests/windows-dns-native-heartbeat.ps1');
   const source = path.resolve('tests/windows-dns-native-acceptance.ps1');
-  const winPS5 = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const winPS5 = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe');
   const ps7 = process.env.LAGOM_TEST_POWERSHELL7 || 'pwsh.exe';
-  // Resolve the configured PS7 executable before passing it to identity-checked own children.
   const located = run(['-Command', '[Diagnostics.Process]::GetCurrentProcess().MainModule.FileName'], 15000, ps7);
   assert.equal(located.status, 0, [located.error?.code, located.signal, located.stdout, located.stderr].filter(Boolean).join('\n'));
   const fixedPS7 = located.stdout.trim();
   assert.ok(path.isAbsolute(fixedPS7) && fs.statSync(fixedPS7).isFile());
-  const output = path.join(work, 'heartbeat-controls.json');
-  const result = run(['-File', fixture, '-Source', source, '-WorkRoot', work,
-    '-WinPS5', winPS5, '-Pwsh', fixedPS7, '-Output', output], 60000, fixedPS7);
-  assert.equal(result.status, 0, [result.error?.code, result.signal, result.stdout, result.stderr].filter(Boolean).join('\n'));
-  const proof = JSON.parse(fs.readFileSync(output, 'utf8'));
-  assert.equal(proof.success, true); assert.equal(proof.caseCount, 16);
-  assert.equal(proof.cases.every(row => row.passed), true);
-  assert.equal(proof.nativeActions, 0); assert.equal(proof.edition, 'Core');
-  assert.equal(proof.writer.writerComplete, true); assert.equal(proof.writer.writes, 2000);
-  assert.equal(proof.reader5.edition, 'Desktop'); assert.equal(Number(proof.reader5.version.split('.')[0]), 5);
-  assert.ok(proof.reader5.reads >= 200 && proof.readerDriver.reads >= 200);
-  assert.deepEqual(proof.reader5.bad, {}); assert.deepEqual(proof.readerDriver.bad, {});
-  assert.equal(proof.children.length, 5);
-  assert.equal(proof.children.every(row => row.exited && row.exit === 0 && !row.forcedRetired && row.stderrLength === 0), true);
-  assert.equal(proof.legacySharingHResult, -2147024864);
-  assert.ok(proof.lockTimeoutReadMs >= 450 && proof.lockTimeoutReadMs < 1000);
-  assert.ok(proof.lockTimeoutWriteMs >= 450 && proof.lockTimeoutWriteMs < 1000);
-  assert.equal(proof.writer.heartbeatSHA256, createHash('sha256').update(fs.readFileSync(path.join(work, 'heartbeat.txt'))).digest('hex').toUpperCase());
+  return { base, fixture, source, winPS5, fixedPS7 };
+}
+
+test('actual DNS heartbeat serializes2000writes with PS5/PS7 readers and preserves fail-closed lease controls', { skip: process.platform !== 'win32' }, () => {
+  const { base, fixture, source, winPS5, fixedPS7 } = heartbeatFixtureInputs();
+  for (const driver of [{ executable: fixedPS7, edition: 'Core' }, { executable: winPS5, edition: 'Desktop' }]) {
+    const work = fs.mkdtempSync(path.join(base, 'dns-heartbeat-regression [' + driver.edition + ']-'));
+    const output = path.join(work, 'heartbeat-controls.json');
+    // Equivalent absolute slash forms must resolve before comparing the native image.
+    const result = run(['-File', fixture, '-Source', source, '-WorkRoot', work,
+      '-WinPS5', winPS5.replaceAll(path.sep, '/'), '-Pwsh', fixedPS7.replaceAll(path.sep, '/'), '-Output', output], 60000, driver.executable);
+    assert.equal(result.status, 0, [result.error?.code, result.signal, result.stdout, result.stderr].filter(Boolean).join('\n'));
+    const proof = JSON.parse(fs.readFileSync(output, 'utf8'));
+    assert.equal(proof.success, true); assert.equal(proof.caseCount, 17);
+    assert.equal(proof.cases.every(row => row.passed), true);
+    assert.equal(proof.nativeActions, 0); assert.equal(proof.edition, driver.edition);
+    assert.equal(proof.fixtureSHA256, createHash('sha256').update(fs.readFileSync(fixture)).digest('hex').toUpperCase());
+    assert.equal(proof.sourceSHA256, createHash('sha256').update(fs.readFileSync(source)).digest('hex').toUpperCase());
+    assert.deepEqual(proof.identityFailures, []); assert.deepEqual(proof.retirementFailures, []);
+    assert.deepEqual(proof.identityControls.map(row => row.status), ['verified', 'image-mismatch', 'birth-mismatch', 'invalid-handle', 'query-error', 'exited']);
+    const queryError = proof.identityControls.find(row => row.phase === 'control-query-error');
+    assert.equal(queryError.nativeErrorCode, 6); assert.match(queryError.errorClass, /Win32Exception$/); assert.ok(Number.isInteger(queryError.hresult));
+    assert.equal(proof.writer.writerComplete, true); assert.equal(proof.writer.writes, 2000);
+    assert.equal(proof.reader5.edition, 'Desktop'); assert.equal(Number(proof.reader5.version.split('.')[0]), 5);
+    assert.ok(proof.reader5.reads >= 200 && proof.readerDriver.reads >= 200);
+    assert.deepEqual(proof.reader5.bad, {}); assert.deepEqual(proof.readerDriver.bad, {});
+    assert.equal(proof.children.length, 6);
+    for (const child of proof.children) {
+      assert.equal(child.exited && child.exit === 0 && !child.forcedRetired && child.stderrLength === 0, true);
+      assert.equal(child.identityMethod, 'QueryFullProcessImageNameW/held-handle');
+      assert.ok(path.isAbsolute(child.image) && child.image.toLowerCase() === child.expectedImage.toLowerCase());
+      assert.ok(Number.isFinite(Date.parse(child.birthUtc)));
+    }
+    assert.equal(proof.legacySharingHResult, -2147024864);
+    assert.ok(proof.lockTimeoutReadMs >= 450 && proof.lockTimeoutReadMs < 1000);
+    assert.ok(proof.lockTimeoutWriteMs >= 450 && proof.lockTimeoutWriteMs < 1000);
+    assert.equal(proof.writer.heartbeatSHA256, createHash('sha256').update(fs.readFileSync(path.join(work, 'heartbeat.txt'))).digest('hex').toUpperCase());
+  }
+});
+
+test('actual DNS heartbeat retains primary driver failure and retires its verified task-owned child', { skip: process.platform !== 'win32' }, () => {
+  const { base, fixture, source, winPS5, fixedPS7 } = heartbeatFixtureInputs();
+  const original = fs.readFileSync(fixture, 'utf8');
+  const admission = " Assert-OwnChildIdentity $c 'admission' 2000";
+  assert.equal(original.split(admission).length, 2, 'Exact own admission injection site required.');
+  for (const driver of [{ executable: fixedPS7, edition: 'Core' }, { executable: winPS5, edition: 'Desktop' }]) {
+    const work = fs.mkdtempSync(path.join(base, 'dns-heartbeat-failure [' + driver.edition + ']-'));
+    const failingFixture = path.join(work, 'controlled-own-failure.ps1');
+    fs.writeFileSync(failingFixture, original.replace(admission, admission + String.fromCharCode(10) + " throw 'Controlled post-admission failure.'"));
+    const output = path.join(work, 'heartbeat-failure-controls.json');
+    const result = run(['-File', failingFixture, '-Source', source, '-WorkRoot', work,
+      '-WinPS5', winPS5, '-Pwsh', fixedPS7, '-Output', output], 30000, driver.executable);
+    assert.equal(result.status, 1, [result.error?.code, result.signal, result.stdout, result.stderr].filter(Boolean).join('\n'));
+    assert.match(result.stderr, /Controlled post-admission failure/);
+    const proof = JSON.parse(fs.readFileSync(output, 'utf8'));
+    assert.equal(proof.success, false); assert.equal(proof.nativeActions, 0); assert.equal(proof.edition, driver.edition);
+    assert.match(proof.errorMessage, /Controlled post-admission failure/);
+    assert.equal(proof.fixtureSHA256, createHash('sha256').update(fs.readFileSync(failingFixture)).digest('hex').toUpperCase());
+    assert.deepEqual(proof.identityFailures, []); assert.deepEqual(proof.retirementFailures, []);
+    assert.equal(proof.caseCount, 2); assert.equal(proof.children.length, 1);
+    const child = proof.children[0];
+    assert.equal(child.mode, 'Hold'); assert.equal(child.exited, true); assert.equal(child.forcedRetired, true);
+    assert.equal(typeof child.exit, 'number'); assert.equal(child.identityMethod, 'QueryFullProcessImageNameW/held-handle');
+    assert.equal(child.image.toLowerCase(), child.expectedImage.toLowerCase());
+    assert.ok(Number.isFinite(Date.parse(child.birthUtc)));
+  }
 });

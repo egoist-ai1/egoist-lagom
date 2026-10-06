@@ -24,6 +24,9 @@ electron.contextBridge.exposeInMainWorld("egoistAPI", {
 	},
 	state: {
 		get: () => electron.ipcRenderer.invoke("state:get"),
+		getSnapshot: () => electron.ipcRenderer.invoke("state:get-snapshot"),
+		retryLoad: () => electron.ipcRenderer.invoke("state:retry-load"),
+		onStorageChange: callback => subscribeToChannel("state:storage-changed", callback),
 		set: (next) => electron.ipcRenderer.invoke("state:set", next),
 		patchSettings: (patch, expectedRevision) => electron.ipcRenderer.invoke("state:patch-settings", { patch, expectedRevision }),
 		patchRules: (patch, expectedRevision) => electron.ipcRenderer.invoke("state:patch-rules", { patch, expectedRevision })

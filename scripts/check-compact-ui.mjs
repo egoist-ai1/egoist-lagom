@@ -9,11 +9,12 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 const evidenceArg=process.argv[2];
 if(!evidenceArg || !path.isAbsolute(evidenceArg))throw new Error('Supply an absolute task-scoped evidence directory as the first argument');
 const evidence=path.resolve(evidenceArg);
+const selectedChecks=process.env.LAGOM_UI_CHECKS?.split(',').filter(Boolean);
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const packageVersion=JSON.parse(await fs.readFile(path.join(project,'package.json'),'utf8')).version;
 const buildDir=process.env.EGOIST_UI_BUILD_DIR||path.join(project,'.vite');
 if(!path.isAbsolute(buildDir))throw new Error('EGOIST_UI_BUILD_DIR must be absolute');
-const builtMain=await fs.readFile(path.join(buildDir,'build/main.js'),'utf8');
+const builtMain=await fs.readFile(path.join(buildDir,'build/main-internal.js'),'utf8');
 const buildDate=builtMain.match(/EGOIST_SHIELD_BUILD_DATE = "([^"]+)"/)?.[1];
 assert.ok(buildDate,'Built app date is missing');
 const build=path.join(buildDir,'renderer/main_window');
@@ -48,9 +49,10 @@ let browser;
 function installFixture(){
   localStorage.setItem('egoist_widget_mode','false');
   const clone=v=>structuredClone(v);
-  const data=window.compactLab={calls:[],reads:{},listeners:{},state:{settings:{autoStart:false,minimizeToTray:false,autoConnect:false,reconnectOnDrop:true,notifications:true,sendSubscriptionHwid:false,autoUpdate:true,soundNotifications:false},nodes:[{id:'fixture-node',name:'QA server',server:'192.0.2.2',port:443,protocol:'vless'}],subscriptions:[],activeNodeId:'fixture-node'},vpn:{connected:false,running:false},doh:{running:false,nativeManaged:true,serviceInstalled:false,serviceRunning:false},zapret:{serviceRunning:false,standaloneRunning:false,currentProfile:'general'},userLists:{generalDomains:['existing.example.test'],includedCidrs:[],excludedDomains:[],excludedCidrs:[]},telegram:{running:false,serviceRunning:false,serviceInstalled:true,config:{host:'127.0.0.1',port:1443,secret:'0123456789abcdef0123456789abcdef',dcIp:[],verbose:false,bufKb:256,poolSize:8,logMaxMb:5,checkUpdates:true}}};
+  const data=window.compactLab={calls:[],reads:{},listeners:{},state:{stateRevision:0,settings:{routeMode:"global",dnsMode:"auto",useTunMode:false,customDnsUrl:"",autoStart:false,minimizeToTray:false,autoConnect:false,reconnectOnDrop:true,notifications:true,sendSubscriptionHwid:false,autoUpdate:true,soundNotifications:false},nodes:[{id:'fixture-node',name:'QA server',server:'192.0.2.2',port:443,protocol:'vless'}],subscriptions:[],activeNodeId:'fixture-node'},vpn:{connected:false,running:false},doh:{running:false,nativeManaged:true,serviceInstalled:false,serviceRunning:false},zapret:{serviceRunning:false,standaloneRunning:false,currentProfile:'general'},userLists:{generalDomains:['existing.example.test'],includedCidrs:[],excludedDomains:[],excludedCidrs:[]},telegram:{running:false,serviceRunning:false,serviceInstalled:true,config:{host:'127.0.0.1',port:1443,secret:'0123456789abcdef0123456789abcdef',dcIp:[],verbose:false,bufKb:256,poolSize:8,logMaxMb:5,checkUpdates:true}}};
   const read=(name,fn)=>async(...args)=>{data.reads[name]=(data.reads[name]??0)+1;return clone(fn(...args))};
   const action=(name,fn=()=>({ok:true}))=>async(...args)=>{data.calls.push({name,args:clone(args)});return clone(fn(...args))};
+  data.storage={status:'ready',writable:true,checkedAt:new Date().toISOString(),error:null};
   const noop=()=>()=>{};
   const listen=name=>callback=>{data.listeners[name]=callback;return()=>{if(data.listeners[name]===callback)delete data.listeners[name]}};
   const checkUpdate=async()=>{
@@ -60,15 +62,23 @@ function installFixture(){
     return {ok:false,phase:'blocked',latestVersion:'3.7.1',message:'QA fixture: release verification required'};
   };
   window.egoistAPI={
-    state:{get:read('state.get',()=>data.state),set:action('state.set',next=>data.state=clone(next))},
+    shield:{status:read('shield.status',()=>({running:false,busy:false,dnsRunning:false,telegramRunning:false})),onProgress:noop},
+    state:{
+      get:read('state.get',()=>data.state),
+      getSnapshot:read('state.get',()=>({state:data.state,storage:data.storage})),
+      retryLoad:read('state.retryLoad',()=>{if(data.retryAvailable)data.storage={status:'ready',writable:true,checkedAt:new Date().toISOString(),error:null};return {state:data.state,storage:data.storage}}),
+      onStorageChange:listen('storageChange'),
+      set:action('state.set',next=>data.state=clone(next)),
+      patchSettings:action('state.patchSettings',(patch,revision)=>{if(revision!==data.state.stateRevision)return {ok:false,conflict:true,state:data.state,error:'STATE_REVISION_CONFLICT'};data.state.settings={...data.state.settings,...patch};data.state.stateRevision++;return {ok:true,state:data.state}})
+    },
     app:{isAdmin:async()=>true,getVersion:async()=>({version:window.__qaVersion,buildDate:window.__qaBuildDate}),isFirstRun:async()=>false},
-    vpn:{status:read('vpn.status',()=>data.vpn),onFallback:noop},
+    vpn:{serviceStatus:read('vpn.serviceStatus',()=>({available:true,serviceInstalled:false,serviceState:'not-installed',backgroundEnabled:false,running:false})),status:read('vpn.status',()=>data.vpn),onFallback:noop},
     system:{dnsControllerStatus:read('dns.status',()=>({mode:'system-default'})),systemDohStatus:read('doh.status',()=>data.doh),dnsDiagnostics:read('dns.diagnostics',()=>({targets:[],summary:{total:0,okCount:0}})),getMyIp:async()=>({ip:'192.0.2.1',country:'QA',provider:'Fixture'}),pingActiveProxy:async()=>20,ping:async()=>20,setDnsServers:action('system.setDnsServers'),resetDnsServers:action('system.resetDnsServers'),internetFix:action('system.internetFix'),onSpeedtestProgress:noop,cancelSpeedtest:action('system.cancelSpeedtest')},
     zapret:{status:read('zapret.status',()=>data.zapret),listProfiles:async()=>JSON.parse(localStorage.getItem('qa-zapret-profiles')||'null')??[{name:'general'}],getUserLists:read('zapret.getUserLists',()=>data.userLists),saveUserLists:action('zapret.saveUserLists',lists=>{data.userLists=clone(lists);return {ok:true}}),onAutoSelectProgress:noop},
-    telegramProxy:{status:read('telegram.status',()=>data.telegram),tailLogs:async()=>[],saveConfig:action('telegramProxy.saveConfig',config=>{data.telegram.config=clone(config);return {ok:true}}),start:action('telegramProxy.start',()=>{data.telegram.running=true;return {ok:true}})},
+    telegramProxy:{status:read('telegram.status',()=>data.telegram),tailLogs:async()=>[],saveConfig:action('telegramProxy.saveConfig',config=>{data.telegram.config={...clone(config),dcIp:typeof config.dcIp==='string'?config.dcIp.split(/\r?\n/).filter(Boolean):clone(config.dcIp)};return {...clone(data.telegram),ok:true}}),start:action('telegramProxy.start',()=>{data.telegram.running=true;return {ok:true}})},
     health:{getReport:async()=>({})},network:{inspect:async()=>({})},logs:{getRuntimeSummary:async()=>[]},
     updater:{getLastResult:async()=>null,check:checkUpdate,checkAndInstall:action('updater.checkAndInstall',()=>({ok:true,phase:'up-to-date',currentVersion:window.__qaVersion,latestVersion:window.__qaVersion,message:'Установлена последняя доступная версия.'})),setAuto:action('updater.setAuto',enabled=>{data.state.settings.autoUpdate=enabled;return {ok:true,enabled}}),onUpdateAvailable:listen('updateAvailable'),onDownloadProgress:listen('downloadProgress'),onUpdateDownloaded:noop,onUpdateNotAvailable:listen('updateNotAvailable'),onUpdateError:listen('updateError')},
-    traffic:{onUpdate:noop},autoConnect:{onAutoConnect:noop},
+    diagnostics:{exportBundle:action("diagnostics.exportBundle")},traffic:{onUpdate:noop},autoConnect:{onAutoConnect:noop},
 
   };
 }
@@ -92,6 +102,7 @@ async function dialogKeyboard(page,dialog,opener){
   await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});await expectFocused(opener);
 }
 async function check(id,screen,fn,viewport={width:1440,height:940}){
+  if(selectedChecks&&!selectedChecks.includes(id))return;
   const context=await browser.newContext({viewport,deviceScaleFactor:2,reducedMotion:'reduce',serviceWorkers:'block'});
   await context.route('**/*',route=>{
     const url=new URL(route.request().url());
@@ -127,29 +138,29 @@ async function check(id,screen,fn,viewport={width:1440,height:940}){
 try{
   browser=await chromium.launch({headless:true,...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{})});
   report.browserVersion=browser.version();
-  const preferences=[['autoStart','Запускать при старте Windows',false],['minimizeToTray','Сворачивать в трей',false],['autoConnect','Автоподключение маршрута',false],['reconnectOnDrop','Переподключаться при обрыве',true],['notifications','Показывать уведомления',true],['sendSubscriptionHwid','Передавать HWID провайдеру подписки',false],['autoUpdate','Автообновление приложения и компонентов',true]];
+  const preferences=[['autoStart','Запуск при входе в Windows',false],['minimizeToTray','Сворачивать в трей',false],['autoConnect','Автоподключение',false],['reconnectOnDrop','Переподключаться при обрыве',true],['notifications','Показывать уведомления',true],['sendSubscriptionHwid','Передавать ID устройства',false],['autoUpdate','Автообновление',true]];
   for(const [key,label,initial] of preferences)await check(`setting-${key}`,'settings',async page=>{
     const control=page.getByRole('switch',{name:label,exact:true});
     assert.equal(await control.getAttribute('aria-checked'),String(initial));
     const before=await page.evaluate(()=>structuredClone(compactLab.state));
     await control.click();await page.waitForFunction(([k,v])=>compactLab.state.settings[k]===v,[key,!initial]);await waitIdle(page);
     const writes=await calls(page);assert.equal(writes.length,1,'Exactly one persistence call');
-    assert.equal(writes[0].name,key==='autoUpdate'?'updater.setAuto':'state.set');
+    assert.equal(writes[0].name,key==='autoUpdate'?'updater.setAuto':'state.patchSettings');
     if(key==='autoUpdate')assert.deepEqual(writes[0].args,[false]);
-    else assert.deepEqual(writes[0].args,[{...before,settings:{...before.settings,[key]:!initial}}]);
+    else assert.deepEqual(writes[0].args,[{[key]:!initial},before.stateRevision]);
     await page.getByRole('button',{name:'Обзор',exact:true}).click();
     await page.getByRole('button',{name:'Настройки',exact:true}).click();
     const persisted=key==='autoStart'?page.getByRole('switch',{name:label,exact:true}):control;
     await persisted.waitFor();assert.equal(await persisted.getAttribute('aria-checked'),String(!initial));
   });
-  await check('startup-autoConnect-dependency','settings',async page=>{
-    await page.getByRole('switch',{name:'Автоподключение маршрута',exact:true}).click();
-    const startup=page.getByRole('switch',{name:'Фоновый запуск при старте Windows',exact:true});await startup.waitFor();await waitIdle(page);
-    assert.equal(await startup.getAttribute('aria-checked'),'true');assert.equal(await startup.getAttribute('aria-disabled'),'true');
-    const before=await calls(page);await startup.focus();await page.keyboard.press('Space');await page.keyboard.press('Enter');
-    assert.deepEqual(await calls(page),before);assert.equal(await page.evaluate(()=>compactLab.state.settings.autoStart),false);
-    await page.getByRole('switch',{name:'Автоподключение маршрута',exact:true}).click();
-    const restored=page.getByRole('switch',{name:'Запускать при старте Windows',exact:true});await restored.waitFor();assert.equal(await restored.getAttribute('aria-checked'),'false');
+  await check('startup-autoConnect-independent-intent','settings',async page=>{
+    await page.getByRole('switch',{name:'Автоподключение',exact:true}).click();await waitIdle(page);
+    const startup=page.getByRole('switch',{name:'Запуск при входе в Windows',exact:true});
+    assert.equal(await startup.getAttribute('aria-checked'),'false');
+    assert.equal(await startup.isEnabled(),true);
+    assert.equal(await page.evaluate(()=>compactLab.state.settings.autoStart),false);
+    await page.getByRole('switch',{name:'Автоподключение',exact:true}).click();await waitIdle(page);
+    assert.equal(await startup.getAttribute('aria-checked'),'false');
   });
   await check('help-focus-ref-and-keyboard','settings',async (page,result)=>{
     const control=page.getByRole('switch',{name:'Сворачивать в трей',exact:true});
@@ -165,11 +176,11 @@ try{
     assert.equal(await help.getAttribute('aria-expanded'),'false');result.escapeKeepsFocus=true;
     await control.focus();await help.focus();await hint.waitFor();
     await page.keyboard.press('Tab');await hint.waitFor({state:'hidden'});assert.equal(await help.getAttribute('aria-expanded'),'false');
-    await help.focus();await page.keyboard.press('Enter');assert.equal(await help.getAttribute('aria-expanded'),'false');
+    await help.focus();await page.keyboard.press('Enter');assert.equal(await help.getAttribute('aria-expanded'),'true');
     await page.keyboard.press('Enter');assert.equal(await help.getAttribute('aria-expanded'),'true');assert.deepEqual(await calls(page),[]);
   });
   await check('privacy-help-narrow-viewport','settings',async (page,result)=>{
-    const help=page.getByRole('button',{name:'Пояснение: Передавать HWID провайдеру подписки',exact:true});
+    const help=page.getByRole('button',{name:'Пояснение: Передавать ID устройства',exact:true});
     await help.scrollIntoViewIfNeeded();await help.focus();
     const hint=page.locator('.toggle-setting-hint.visible');await hint.waitFor();
     assert.equal(await hint.textContent(),'Идентификатор устройства уходит с запросом подписки.');
@@ -221,17 +232,17 @@ try{
   await check('dashboard-service-running-is-not-runtime-ready','dashboard',async page=>{
     await page.evaluate(()=>{compactLab.zapret={serviceRunning:true,standaloneRunning:false,runtimeReady:false,serviceReady:false,currentProfile:'general',lastError:'Worker unavailable'};Object.assign(compactLab.telegram,{serviceRunning:true,running:true,runtimeReady:false,listenerReady:false,lastError:'Listener unavailable'})});
     await refresh(page);
-    await page.waitForFunction(()=>document.querySelectorAll('.ruby-component-copy p[title]').length===3&&Array.from(document.querySelectorAll('.ruby-component-copy p')).filter(el=>el.textContent==='Служба не готова').length===2);
-    for(const name of ['Профили','Telegram'])assert.equal(await page.getByRole('switch',{name,exact:true}).getAttribute('aria-checked'),'false');
+    await page.waitForFunction(()=>Array.from(document.querySelectorAll('.ruby-component-status')).filter(el=>el.textContent==='Ошибка').length===2);
+    for(const name of ['Запрет','Telegram'])assert.equal(await page.getByRole('switch',{name,exact:true}).getAttribute('aria-checked'),'false');
     await page.getByRole('button',{name:'Telegram',exact:true}).click();
-    await page.getByRole('button',{name:'Запустить',exact:true}).waitFor();
-    assert.equal(await page.getByRole('button',{name:'Остановить',exact:true}).count(),0);
+    await page.getByRole('button',{name:'Перепроверить конфигурацию',exact:true}).waitFor();
+    assert.equal(await page.getByRole('button',{name:'Остановить',exact:true}).count(),1);
     await page.getByText('установлена, прокси не готов',{exact:true}).waitFor();
     assert.deepEqual(await calls(page),[]);
   });
   await check('dns-presets-and-confirmed-apply','dns',async page=>{
     for(const [name,primary,secondary] of [['Cloudflare','1.1.1.1','1.0.0.1'],['Google DNS','8.8.8.8','8.8.4.4'],['Quad9','9.9.9.9','149.112.112.112'],['AdGuard','94.140.14.14','94.140.15.15']]){
-      await page.getByRole('button',{name:new RegExp('^'+name)}).click();assert.equal(await page.getByLabel('Основной DNS',{exact:true}).inputValue(),primary);assert.equal(await page.getByLabel('Дополнительный DNS',{exact:true}).inputValue(),secondary);
+      await page.getByRole('button',{name:new RegExp('^'+name)}).click();assert.equal(await page.getByLabel('Основной DNS · IPv4/IPv6',{exact:true}).inputValue(),primary);assert.equal(await page.getByLabel('Дополнительный DNS · IPv4/IPv6',{exact:true}).inputValue(),secondary);
     }
     assert.deepEqual(await calls(page),[]);
     await page.getByRole('button',{name:'Установить',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Установить DNS',exact:true});await dialog.waitFor();assert.deepEqual(await calls(page),[]);
@@ -381,6 +392,47 @@ try{
       assert.deepEqual(result.controls.filter(item=>!item.insideViewport||!item.receivesPointer),[],`All ${kind} dialog actions must be reachable by scrolling at ${suffix}`);
     },viewport);
   }
+  for(const [id,viewport,motion] of [
+    ['storage-readonly',{width:1060,height:720},'reduce'],
+    ['storage-readonly-narrow',{width:550,height:740},'reduce'],
+    ['storage-readonly-zoom',{width:550,height:370},'reduce'],
+    ['storage-readonly-motion',{width:1060,height:720},'no-preference']
+  ])await check(id,'settings',async(page,result)=>{
+    await page.emulateMedia({reducedMotion:motion});
+    await page.evaluate(()=>{compactLab.storage={status:'unavailable',writable:false,error:'STATE_STORAGE_UNAVAILABLE',systemCode:'EACCES',checkedAt:new Date().toISOString()};compactLab.listeners.storageChange(compactLab.storage)});
+    const notice=page.getByRole('complementary',{name:'Состояние локальных данных'});
+    await notice.waitFor();await page.getByRole('switch',{name:'Запуск при входе в Windows',exact:true}).waitFor();
+    assert.equal(await page.getByRole('switch',{name:'Запуск при входе в Windows',exact:true}).isDisabled(),true);
+    for(const name of ['Обзор','Соединение','DNS','Профили','Telegram','Настройки']){
+      await page.getByRole('button',{name,exact:true}).click();await notice.waitFor();
+      assert.equal(await page.locator('.ruby-storage-surface').getAttribute('disabled'),'');
+    }
+    assert.equal(await notice.getByRole('button',{name:'Повторить',exact:true}).isEnabled(),true);
+    await notice.getByRole('button',{name:'Диагностика',exact:true}).click();
+    await page.waitForFunction(()=>compactLab.calls.some(c=>c.name==='diagnostics.exportBundle'));
+    const geometry=await notice.evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth}));
+    assert.ok(geometry.scroll<=geometry.client+1);
+    assert.equal((await calls(page)).filter(c=>c.name!=='diagnostics.exportBundle').length,0);
+    await page.screenshot({path:path.join(evidence,id+'-before.png')});
+    await page.evaluate(()=>compactLab.retryAvailable=true);
+    await notice.getByRole('button',{name:'Повторить',exact:true}).click();await notice.waitFor({state:'hidden'});
+    assert.equal(await page.getByRole('switch',{name:'Запуск при входе в Windows',exact:true}).isEnabled(),true);
+    assert.equal(await page.evaluate(()=>compactLab.state.nodes[0].id),'fixture-node');
+    result.motion=motion;result.storageRetries=await page.evaluate(()=>compactLab.reads['state.retryLoad']);
+  },viewport);
+  await check('storage-mini-shield-readonly','settings',async(page,result)=>{
+    await page.evaluate(()=>{compactLab.storage={status:'corrupt',writable:false,error:'STATE_STORAGE_CORRUPT',checkedAt:new Date().toISOString()};compactLab.listeners.storageChange(compactLab.storage)});
+    await page.getByRole('button',{name:'Перейти в мини-щит',exact:true}).click();
+    await page.locator('.shield-widget-window').waitFor();
+    const notice=page.getByRole('complementary',{name:'Состояние локальных данных'});await notice.waitFor();
+    assert.equal(await page.locator('.shield-interactive-trigger').isDisabled(),true);
+    assert.equal(await page.locator('.shield-settings-open-btn').isEnabled(),true);
+    assert.equal(await notice.getByRole('button',{name:'Повторить',exact:true}).isEnabled(),true);
+    result.layout=await notice.evaluate(el=>{const box=el.getBoundingClientRect(),hero=document.querySelector('.shield-widget-hero').getBoundingClientRect();return {bottom:box.bottom,heroTop:hero.top,height:box.height,scroll:el.scrollHeight,client:el.clientHeight}});
+    assert.ok(result.layout.bottom<=result.layout.heroTop+1,'Storage notice must not overlap the shield');
+    assert.ok(result.layout.scroll<=result.layout.client+1,'Storage notice includes all text and actions');
+    assert.deepEqual(await calls(page),[]);
+  },{width:350,height:430});
   assert.deepEqual(report.blockedRequests,[],'Renderer attempted requests outside the local fixture server');
 }catch(error){report.fatal=error.stack??String(error)}
 finally{
@@ -389,7 +441,7 @@ finally{
   for(const entry of manifest){const data=await fs.readFile(path.join(build,entry.name.slice(1))).catch(()=>null);if(!data||hash(data)!==entry.sha256)current.push(entry.name)}
   report.buildChangedDuringRun=current;
   report.finishedAt=new Date().toISOString();
-  report.passed=!report.fatal&&report.checks.length===31&&report.checks.every(c=>c.status==='passed')&&current.length===0;
+  report.passed=!report.fatal&&report.checks.length===(selectedChecks?.length??36)&&report.checks.every(c=>c.status==='passed')&&current.length===0;
   await fs.writeFile(path.join(evidence,'compact-ui-report.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify({passed:report.passed,checks:report.checks.length,failed:report.checks.filter(c=>c.status!=='passed').map(c=>c.id),buildChanged:current,evidence}));
   if(!report.passed)process.exitCode=1;

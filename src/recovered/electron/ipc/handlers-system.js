@@ -746,6 +746,8 @@ function registerSystemHandlers({ window, stateStore, runtimeManager, gravityles
 	ipcMain.handle("state:get", async () => {
 		return stateStore.get();
 	});
+	ipcMain.handle("state:get-snapshot", async () => stateStore.getSnapshot());
+	ipcMain.handle("state:retry-load", async () => stateStore.retryLoad());
 	ipcMain.handle("state:set", async (_event, rawState) => {
 		const state = PersistedStateSchema.parse(rawState);
 		const persisted = await stateStore.set(state, state.stateRevision, settingsCommitHooks);

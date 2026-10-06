@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import { loadRecovered } from './load-recovered.mjs';
+import { extractRendererCallback } from './renderer-fixture-helper.mjs';
 import { ShieldConnectionController } from '../src/shield-connection-controller.js';
 
 const source = fs.readFileSync('src/recovered/renderer.js', 'utf8');
@@ -70,10 +71,8 @@ test('actual renderer action preserves previous history while pending, cancelled
   const ui = renderer();
   let state = { zapretAutoSelect: selection(), busyActions: [] };
   ui.Yf(state.zapretAutoSelect);
-  Object.assign(ui, { If: value => value, Lf: () => false, f2: { current: new Map() }, d2: { current: 0 }, readGeneration: { current: 0 }, updateRevision: { current: 0 }, Zf: {}, s2() {}, l2() {}, r2: updater => { state = updater(state); }, om: () => false, Rf: () => false, Q: ui.Q, p2: { current: false }, cm: () => ({}), y2: async () => {}, sm: () => 'failure' });
-  const start = source.indexOf('let S2 = O.useCallback(async (e3, t3, n3) => {');
-  const end = source.indexOf('}, [y2]);', start);
-  vm.runInContext('globalThis.runAction = ' + source.slice(start + 'let S2 = O.useCallback('.length, end + 1), ui);
+  Object.assign(ui, { n2:{storage:{status:'ready',writable:true}}, If: value => value, Lf: () => false, f2: { current: new Map() }, d2: { current: 0 }, readGeneration: { current: 0 }, updateRevision: { current: 0 }, Zf: {}, s2() {}, l2() {}, r2: updater => { state = updater(state); }, om: () => false, Rf: () => false, Q: ui.Q, p2: { current: false }, cm: () => ({}), y2: async () => {}, sm: () => 'failure' });
+  vm.runInContext('globalThis.runAction = ' + extractRendererCallback(source, 'S2'), ui);
   let finish;
   const pending = ui.runAction('zapret-auto', () => new Promise(resolve => { finish = resolve; }), 'done');
   assert.equal(state.zapretAutoSelect.bestProfile, 'ALT11');

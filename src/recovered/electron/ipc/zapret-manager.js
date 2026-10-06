@@ -846,6 +846,7 @@ var ZapretManager = class {
 	lastError = null;
 	suspendedByVpnMode = "none";
 	suspendedProfileDuringVpn = null;
+	vpnSuspensionPhase = "none";
 	statusCache = null;
 	statusInFlight = null;
 	statusGeneration = 0;
@@ -921,7 +922,14 @@ var ZapretManager = class {
 			kind: "service",
 			name
 		}));
-		const suspension = buildZapretSuspensionState(this.suspendedByVpnMode, this.suspendedProfileDuringVpn);
+		const suspension = {
+			...buildZapretSuspensionState(this.suspendedByVpnMode, this.suspendedProfileDuringVpn),
+			active: this.suspendedByVpnMode !== "none" && this.vpnSuspensionPhase === "verified",
+			verified: this.vpnSuspensionPhase === "verified",
+			phase: this.vpnSuspensionPhase,
+			restorationRequired: this.suspendedByVpnMode !== "none"
+		};
+		if (suspension.restorationRequired && !suspension.verified) suspension.visibleLabel = "Приостановка Zapret не подтверждена";
 		if (!standaloneRunning && standaloneState) await this.clearStandaloneState();
 		return {
 			available: true,
@@ -949,7 +957,7 @@ var ZapretManager = class {
 			conflictMatrix: findZapretConflicts(conflictItems),
 			suspension,
 			recoveryPlan: buildZapretRecoveryPlan({
-				suspendedByVpn: suspension.active,
+				suspendedByVpn: suspension.restorationRequired,
 				serviceInstalled: service.installed,
 				serviceRunning: service.running,
 				standaloneRunning,
@@ -1951,21 +1959,38 @@ var ZapretManager = class {
 		await this.stopOwnedWinwsProcesses();
 	}
 	async prepareForVpn(suspendDuringVpn) {
-		if (!suspendDuringVpn || this.suspendedByVpnMode !== "none") return;
+		if (!suspendDuringVpn) return;
+		// The saved mode/profile is restoration intent, not proof that DPI stopped.
+		// Even a previously verified suspension must inspect a Core/external restart.
+		if (this.suspendedByVpnMode !== "none") this.vpnSuspensionPhase = "pending";
+		this.invalidateStatusCache();
 		const service = await this.queryService(SERVICE_NAME);
-		if (service.installed && service.state === "UNKNOWN") throw new Error("Не удалось проверить службу Zapret перед переключением на VPN.");
-		if (service.running || service.state === "START_PENDING" || service.state === "STOP_PENDING") {
+		if (service.installed && (!service.state || service.state === "UNKNOWN")) throw new Error("Не удалось проверить службу Zapret перед переключением на VPN.");
+		if (service.running || service.installed && service.state !== "STOPPED") {
+			if (this.suspendedByVpnMode === "standalone") throw new Error("Служба Zapret изменилась во время приостановки standalone-профиля. Восстановите исходный режим перед переключением на VPN.");
+			const profile = this.suspendedProfileDuringVpn ?? await this.readServiceProfile();
+			if (typeof profile !== "string" || !profile.trim()) throw new Error("Не удалось подтвердить профиль службы Zapret перед приостановкой для VPN.");
 			this.suspendedByVpnMode = "service";
-			this.suspendedProfileDuringVpn = await this.readServiceProfile();
+			this.suspendedProfileDuringVpn = profile;
+			this.vpnSuspensionPhase = "pending";
 			await this.stopServiceInternal(false);
+			this.vpnSuspensionPhase = "verified";
+			this.invalidateStatusCache();
 			return;
 		}
-		const standaloneStatus = await this.status();
+		const standaloneStatus = await this.status({ force: true });
 		if (standaloneStatus.standaloneRunning) {
-			this.suspendedByVpnMode = "standalone";
-			this.suspendedProfileDuringVpn = standaloneStatus.standaloneProfile ?? standaloneStatus.currentProfile;
+			if (this.suspendedByVpnMode === "none") {
+				const profile = standaloneStatus.standaloneProfile ?? standaloneStatus.currentProfile;
+				if (typeof profile !== "string" || !profile.trim()) throw new Error("Не удалось подтвердить standalone-профиль Zapret перед приостановкой для VPN.");
+				this.suspendedByVpnMode = "standalone";
+				this.suspendedProfileDuringVpn = profile;
+			}
+			this.vpnSuspensionPhase = "pending";
 			await this.stopStandaloneInternal(false);
 		}
+		if (this.suspendedByVpnMode !== "none") this.vpnSuspensionPhase = "verified";
+		this.invalidateStatusCache();
 	}
 	async restoreAfterVpnIfNeeded(suspendDuringVpn, preferredProfile = DEFAULT_PROFILE_NAME, { skipIdleStatus = false } = {}) {
 		if (!suspendDuringVpn || this.suspendedByVpnMode === "none") {
@@ -1990,6 +2015,7 @@ var ZapretManager = class {
 	clearVpnSuspension() {
 		this.suspendedByVpnMode = "none";
 		this.suspendedProfileDuringVpn = null;
+		this.vpnSuspensionPhase = "none";
 	}
 	async stopServiceInternal(clearVpnSuspension) {
 		const service = await this.queryService(SERVICE_NAME);

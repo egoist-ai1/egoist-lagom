@@ -33,6 +33,7 @@ const rendererSeed = await fs.access('recovery/official-code/.vite/renderer').th
 await fs.cp(rendererSeed, '.vite/renderer', { recursive: true });
 await fs.copyFile('src/recovered/renderer.css', '.vite/renderer/main_window/assets/index-Bxx3j0wf.css');
 let rendererSource = await fs.readFile('src/recovered/renderer.js', 'utf8');
+const storageRecoverySource = (await fs.readFile('src/state-storage-recovery.js', 'utf8')).replace('export function createStorageRecovery', 'function createStorageRecovery');
 const glyphs = {};
 for (const name of (await fs.readdir('src/brand/icons')).filter(name => name.endsWith('.svg'))) {
   const svg = await fs.readFile(`src/brand/icons/${name}`, 'utf8');
@@ -56,7 +57,7 @@ for (const name of ['sp','cp','lp','ap']) {
   if(start<0||end<0)throw new Error(`Recovered renderer boundary missing: ${name}`);
   rendererSource=rendererSource.slice(0,start)+rendererSource.slice(end+1);
 }
-rendererSource=rendererSource.replace('function op(',compactRuby+'\nfunction op(');
+rendererSource=rendererSource.replace('function op(',storageRecoverySource+'\n'+compactRuby+'\nfunction op(');
 const legacyIconStart = rendererSource.indexOf('J = (e2, t2) => {');
 const legacyIconEnd = rendererSource.indexOf('}, Y = J(', legacyIconStart);
 if (legacyIconStart < 0 || legacyIconEnd < 0) throw new Error('Recovered icon factory boundary missing');

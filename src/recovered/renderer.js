@@ -10698,7 +10698,7 @@ function tp(e2) {
   }
 }
 function np() {
-  let [e2, t2] = O.useState(() => rp()), [n2, r2] = O.useState({ state: null, isAdmin: null, vpn: null, vpnService: null, dns: null, dnsCheck: null, systemDoh: null, zapret: null, zapretProfiles: [], zapretAutoSelect: Jf(), zapretProgress: null, telegram: null, health: null, network: null, myIp: null, runtimeLogs: [], trafficSeries: [], diagnosticsExport: null, traffic: { rx: 0, tx: 0 }, trafficSampleReceived: false, speedtest: null, speedProgress: null, routeProbe: null, update: null, busy: null, busyActions: [] }), [i2, a2] = O.useState(null), [o2, s2] = O.useState(null), [c2, l2] = O.useState(false), u2 = O.useCallback(() => {
+  let [e2, t2] = O.useState(() => rp()), [n2, r2] = O.useState({ state: null, isAdmin: null, vpn: null, vpnService: null, dns: null, dnsCheck: null, systemDoh: null, zapret: null, zapretProfiles: [], zapretAutoSelect: Jf(), zapretProgress: null, telegram: null, health: null, network: null, myIp: null, runtimeLogs: [], trafficSeries: [], diagnosticsExport: null, traffic: { rx: 0, tx: 0 }, trafficSampleReceived: false, storage: {status:"loading",writable:false}, speedtest: null, speedProgress: null, routeProbe: null, update: null, busy: null, busyActions: [] }), [i2, a2] = O.useState(null), [o2, s2] = O.useState(null), [c2, l2] = O.useState(false), u2 = O.useCallback(() => {
     l2(false), window.egoistAPI?.system?.cancelSpeedtest?.().catch(() => void 0);
   }, []), d2 = O.useRef(0), f2 = O.useRef(/* @__PURE__ */ new Map()), p2 = O.useRef(false), m2 = O.useRef(false), h2 = O.useRef(false), g2 = n2.busy ? `active` : `idle`, _2 = O.useRef(null), updateRevision = O.useRef(0), readGeneration = O.useRef(0), telegramReadSequence = O.useRef(0), rendererMounted = O.useRef(true), telegramForegroundReads = O.useRef(0);
   O.useEffect(() => {
@@ -10720,6 +10720,30 @@ function np() {
     }, e3);
     return () => window.clearTimeout(r3);
   }, [o2?.id, o2?.startedAt, o2?.tone]);
+  const storageController = O.useMemo(() => createStorageRecovery({
+    read: async () => {
+      const api = window.egoistAPI?.state;
+      if (api?.getSnapshot) return api.getSnapshot();
+      // Compatibility for an older preload; shipping builds provide the atomic API.
+      const state = await Z("state.get", api?.get);
+      return {state,storage:{status:"ready",writable:true,checkedAt:new Date().toISOString()}};
+    },
+    retry: () => Z("state.retryLoad", window.egoistAPI?.state?.retryLoad),
+    onSnapshot: snapshot => {
+      if (!rendererMounted.current) return;
+      r2(previous => {
+        const incoming = snapshot.state;
+        const state = incoming && (!previous.state || (incoming.stateRevision ?? 0) >= (previous.state.stateRevision ?? 0)) ? incoming : previous.state;
+        return {...previous, state, storage:snapshot.storage};
+      });
+    }
+  }), []);
+  O.useEffect(() => {
+    const off = window.egoistAPI?.state?.onStorageChange?.(storage => {storageController.observe(storage);void storageController.read();});
+    return () => { off?.(); storageController.dispose(); };
+  }, [storageController]);
+  const readStorageState = O.useCallback(async () => (await storageController.read())?.state, [storageController]);
+  const retryStorage = O.useCallback(() => storageController.retry(), [storageController]);
   let readTelegramStatus = O.useCallback((generation, attemptedAt) => {
     if (!rendererMounted.current) return Promise.reject(Error(`Окно Telegram закрыто.`));
     const sequence = ++telegramReadSequence.current;
@@ -10746,7 +10770,7 @@ function np() {
   let v2 = O.useCallback(async () => {
     if (!rendererMounted.current) return;
     const generation = ++readGeneration.current, attemptedAt = Date.now();
-    let e3 = window.egoistAPI, telegramRead = readTelegramStatus(generation, attemptedAt), t3 = await rubyReadStatuses([e3?.state?.get?.(), e3?.app?.isAdmin?.(), e3?.vpn?.status?.(), e3?.system?.dnsControllerStatus?.(), e3?.system?.systemDohStatus?.(), e3?.zapret?.status?.(), e3?.zapret?.listProfiles?.(), telegramRead, e3?.health?.getReport?.(), e3?.network?.inspect?.(), e3?.system?.getMyIp?.(), e3?.logs?.getRuntimeSummary?.(40), e3?.telegramProxy?.tailLogs?.(40), e3?.vpn?.serviceStatus?.()]);
+    let e3 = window.egoistAPI, telegramRead = readTelegramStatus(generation, attemptedAt), t3 = await rubyReadStatuses([readStorageState(), e3?.app?.isAdmin?.(), e3?.vpn?.status?.(), e3?.system?.dnsControllerStatus?.(), e3?.system?.systemDohStatus?.(), e3?.zapret?.status?.(), e3?.zapret?.listProfiles?.(), telegramRead, e3?.health?.getReport?.(), e3?.network?.inspect?.(), e3?.system?.getMyIp?.(), e3?.logs?.getRuntimeSummary?.(40), e3?.telegramProxy?.tailLogs?.(40), e3?.vpn?.serviceStatus?.()]);
     if (!rendererMounted.current || generation !== readGeneration.current) return;
     r2((previous) => {
       if (!rendererMounted.current || generation !== readGeneration.current) return previous;
@@ -10761,10 +10785,10 @@ function np() {
         health:im(t3[8]) ?? previous.health, network:im(t3[9]) ?? previous.network,
         myIp:im(t3[10]) ?? previous.myIp, runtimeLogs:[...am(im(t3[11]),`RUNTIME`),...am(im(t3[12]),`TG`)] };
     });
-  }, [readTelegramStatus]), y2 = O.useCallback(async () => {
+  }, [readTelegramStatus, readStorageState]), y2 = O.useCallback(async () => {
     if (!rendererMounted.current) return;
     const generation = ++readGeneration.current, attemptedAt = Date.now();
-    let e3 = window.egoistAPI, telegramRead = readTelegramStatus(generation, attemptedAt), t3 = await rubyReadStatuses([e3?.state?.get?.(),e3?.vpn?.status?.(),e3?.system?.dnsControllerStatus?.(),e3?.system?.systemDohStatus?.(),e3?.zapret?.status?.(),telegramRead,e3?.vpn?.serviceStatus?.()]);
+    let e3 = window.egoistAPI, telegramRead = readTelegramStatus(generation, attemptedAt), t3 = await rubyReadStatuses([readStorageState(),e3?.vpn?.status?.(),e3?.system?.dnsControllerStatus?.(),e3?.system?.systemDohStatus?.(),e3?.zapret?.status?.(),telegramRead,e3?.vpn?.serviceStatus?.()]);
     if (!rendererMounted.current || generation !== readGeneration.current) return;
     r2((previous) => {
       if (!rendererMounted.current || generation !== readGeneration.current) return previous;
@@ -10775,7 +10799,7 @@ function np() {
         systemDoh:rubyObserveStatus(t3[3],previous.systemDoh,generation,attemptedAt),zapret:rubyObserveStatus(t3[4],previous.zapret,generation,attemptedAt),
         zapretAutoSelect:zapretHistoryResult(im(t3[4])?.autoSelectHistory,previous.zapretAutoSelect) };
     });
-  }, [readTelegramStatus]);
+  }, [readTelegramStatus, readStorageState]);
   O.useEffect(() => {
     let e3 = true, t3 = async (t4 = false) => {
       if (!(!e3 || !rendererMounted.current || document.hidden || h2.current || f2.current.has(`telegram-sidecar`) || telegramForegroundReads.current > 0)) {
@@ -10835,6 +10859,10 @@ function np() {
     return () => e3?.();
   }, []);
   let S2 = O.useCallback(async (e3, t3, n3) => {
+    if (n2.storage?.writable === false && !["dns-check","route-probe","speedtest","admin-check","diagnostics-export","update-check"].includes(e3)) {
+      s2({id:e3,tone:"warn",title:"Только просмотр",detail:"Сначала восстановите чтение настроек. Фоновые службы продолжают работать.",startedAt:Date.now()});
+      return false;
+    }
     let i3 = If(e3);
     if ([...f2.current.keys()].some((e4) => Lf(i3, e4))) return false;
     const updateRequest = e3 === `update-check` ? ++updateRevision.current : null;
@@ -10878,7 +10906,7 @@ function np() {
         return { ...t4, busyActions: n4, busy: t4.busy === e3 ? n4.at(-1) ?? null : t4.busy };
       });
     }
-  }, [y2]);
+  }, [y2, n2.storage?.writable]);
   O.useEffect(() => {
     let e3 = window.egoistAPI?.autoConnect?.onAutoConnect?.(() => {
       S2(`vpn-auto-connect`, () => Z(`vpn.connect`, window.egoistAPI?.vpn?.connect), `Автоподключение запущено`);
@@ -10940,7 +10968,7 @@ function np() {
     a2({ title: e3, body: t3, actionLabel: n3, onConfirm: r3, tone: `warning` });
   }, []);
   const closeDialog = O.useCallback(() => a2(null), []);
-  return (0, V.jsxs)(ap, { activeScreen: e2, activity: o2, onAppInfo: O.useCallback(() => {
+  return (0, V.jsxs)(ap, { activeScreen: e2, activity: o2, onRetryStorage: retryStorage, onAppInfo: O.useCallback(() => {
     (async () => {
       let e3 = await window.egoistAPI?.app?.getVersion?.().catch(() => null), t3 = e3?.version ?? Qf, n3 = e3?.buildDate ?? $f, r3 = ep[0], i3 = (r3?.[2] ?? []).slice(0, 4).map((e4) => `• ${e4}`).join(`
 `);

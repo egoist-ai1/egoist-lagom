@@ -82,7 +82,7 @@ function rubyShieldErrorSummary(failure) {
   if (message.length <= 140 && !/Error invoking|invalid_type|Uncaught|stack|elapsedMs|reason=/i.test(message)) return message;
   return 'Не удалось завершить действие. Подробности — в настройках.';
 }
-function ShieldWidget({ snapshot, onOpenSettings }) {
+function ShieldWidget({ snapshot, onOpenSettings, onRetryStorage }) {
   const api = window.egoistAPI;
   const [connection, setConnection] = O.useState(null);
   const [actionError, setActionError] = O.useState('');
@@ -183,6 +183,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
   }, [preferencesOpen]);
 
   function updatePreference(component, enabled) {
+    if (snapshot?.storage?.writable === false) return;
     try {
       localStorage.setItem(component === 'dns' ? 'shield_dns_on_connect' : 'shield_telegram_on_connect', String(enabled));
       (component === 'dns' ? setDnsEnabled : setTelegramEnabled)(enabled);
@@ -204,7 +205,8 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
   const tgBusy = localAction === 'telegram';
   const statusKnown = connection !== null && typeof connection.running === 'boolean';
   const stateError = statusError || connection?.statusError;
-  const unavailable = !statusKnown || !!stateError;
+  const storageBlocked = snapshot?.storage?.writable === false;
+  const unavailable = storageBlocked || !statusKnown || !!stateError;
   const running = statusKnown && !stateError ? connection.running : null;
   const dnsRunning = !stateError ? rubyShieldObservedState(connection, 'dnsRunning') : null;
   const telegramRunning = !stateError ? rubyShieldObservedState(connection, 'telegramRunning') : null;
@@ -326,7 +328,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
   }
 
   return (
-    <div className="shield-widget-container" data-phase={phase} data-error={!!failure} ref={surface}>
+    <div className="shield-widget-container" data-storage-blocked={storageBlocked} data-phase={phase} data-error={!!failure} ref={surface}>
       <header className="shield-widget-header">
         <div className="shield-widget-brand">
           <span>egoist<span className="shield-brand-separator"> / </span><b>lagom</b></span>
@@ -341,6 +343,7 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
         </div>
       </header>
 
+      <RubyStorageNotice storage={snapshot.storage} compact onRetry={onRetryStorage} onDiagnostics={onOpenSettings}/>
       <section className="shield-widget-hero" aria-label="Управление защитой">
         <button
           className="shield-interactive-trigger"
@@ -407,8 +410,8 @@ function ShieldWidget({ snapshot, onOpenSettings }) {
         {preferencesOpen && <div id={preferencesId} role="group" aria-label="Компоненты при следующем подключении" style={{ position:'absolute', bottom:'calc(100% + 4px)', left:0, right:0, zIndex:5, boxSizing:'border-box', maxHeight:'calc(100vh - 100px)', overflowY:'auto', padding:10, border:'1px solid #52525b', borderRadius:8, background:'#141416', color:'#f4f4f5', boxShadow:'0 6px 20px #0008' }}>
           <p style={{ margin:'0 0 6px' }}>Выбор для следующего подключения</p>
           <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 16px' }}>
-            <label><input type="checkbox" aria-label="DNS при подключении" checked={dnsEnabled} onChange={event => updatePreference('dns', event.target.checked)} /> DNS</label>
-            <label><input type="checkbox" aria-label="Telegram при подключении" checked={telegramEnabled} onChange={event => updatePreference('telegram', event.target.checked)} /> Telegram</label>
+            <label><input type="checkbox" disabled={storageBlocked} aria-label="DNS при подключении" checked={dnsEnabled} onChange={event => updatePreference('dns', event.target.checked)} /> DNS</label>
+            <label><input type="checkbox" disabled={storageBlocked} aria-label="Telegram при подключении" checked={telegramEnabled} onChange={event => updatePreference('telegram', event.target.checked)} /> Telegram</label>
           </div>
           {preferencesError && <p role="alert" style={{ margin:'6px 0 0' }}>{preferencesError}</p>}
         </div>}

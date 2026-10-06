@@ -80,6 +80,17 @@ function cancelDeferredStartupTimers() {
 	deferredStartupTimers.clear();
 }
 var backgroundUpdateInFlight = false;
+function stateStorageReady() {
+	return globalStateStore?.getSnapshot?.().storage.writable !== false;
+}
+async function assertStateStorageForMutation(effect) {
+	if (!globalStateStore) throw new Error("STATE_STORAGE_UNAVAILABLE");
+	if (effect && globalStateStore.withWritableState) return await globalStateStore.withWritableState(effect);
+	if (globalStateStore.checkStorageWritable) await globalStateStore.checkStorageWritable();
+	else if (!stateStorageReady()) throw new Error("STATE_STORAGE_UNAVAILABLE");
+	if (effect) return await effect(globalStateStore.get());
+}
+
 var backgroundUpdateFailures = 0;
 var autoUpdatePreferenceGeneration = 0;
 async function canInstallDesktopUpdate() {
@@ -131,6 +142,8 @@ async function runBackgroundUpdateCheck() {
 				return;
 			}
 			if (!autoUpdateEnabled || isQuitting) return;
+			await assertStateStorageForMutation();
+			if (!autoUpdateEnabled || isQuitting || preferenceGeneration !== autoUpdatePreferenceGeneration) return;
 			if (Notification.isSupported() && globalStateStore?.get()?.settings?.notifications !== false) new Notification({
 				title: "Egoist Lagom: обновление",
 				body: `Доверенная версия ${result.latestVersion} загружается и будет установлена с сохранением сетевых настроек.`,
@@ -177,6 +190,7 @@ ipcMain.handle("updater:check", async (event) => {
 });
 ipcMain.handle("updater:check-and-install", async (event) => {
 	assertTrustedIpcEvent(event);
+	await assertStateStorageForMutation();
 	const result = toPublicUpdateResult(await desktopUpdater.checkAndInstall());
 	emitUpdateResult(result);
 	if (result.phase === "restarting") scheduleDeferredStartup(() => {
@@ -214,6 +228,7 @@ ipcMain.handle("updater:last-result", async (event) => {
 });
 ipcMain.handle("updater:set-auto", async (event, enabled) => {
 	assertTrustedIpcEvent(event);
+	if (globalStateStore?.getSnapshot?.().storage.writable === false) throw new Error("STATE_STORAGE_UNAVAILABLE");
 	if (typeof enabled !== "boolean") throw new TypeError("enabled must be boolean");
 	const previous = autoUpdateEnabled;
 	autoUpdateEnabled = enabled;
@@ -809,6 +824,7 @@ async function inspectOwnedLoopbackDnsHealth() {
 }
 async function restoreDnsIfLocalResolverIsDown() {
 	try {
+		if (globalStateStore?.getSnapshot?.().storage.writable === false) return false;
 		// The selected private resolver remains the DNS foundation even while
 		// its service recovers. Automatic recovery must not select router DNS.
 		if (globalStateStore?.get().settings.systemDohEnabled) return false;
@@ -828,7 +844,7 @@ async function restoreDnsIfLocalResolverIsDown() {
 	}
 }
 async function runDnsWatchdog() {
-	if (dnsWatchdogInFlight || !globalStateStore) return;
+	if (dnsWatchdogInFlight || !globalStateStore || globalStateStore.getSnapshot?.().storage.writable === false) return;
 	const settings = globalStateStore.get().settings;
 	if (!(settings.systemDohEnabled || isGravitylessLoopbackDnsRequest(String(settings.systemDnsServers ?? "")))) {
 		dnsWatchdogConsecutiveFailures = 0;
@@ -870,10 +886,28 @@ function stopDnsWatchdog() {
 	dnsWatchdogTimer = null;
 	dnsWatchdogConsecutiveFailures = 0;
 }
+async function applyConfirmedStartupPreferences(productionRuntime) {
+	if (!stateStorageReady()) return;
+	try {
+		if (productionRuntime) await assertStateStorageForMutation(async confirmed => {
+			if (!stateStorageReady()) return;
+			// Keep this effect in the StateStore queue: a later manual setting commit wins.
+			await syncWindowsLoginItemSettings({ app, settings: confirmed.settings });
+			if (!stateStorageReady()) return;
+			const removed = await cleanupOwnedLegacyWindowsStartupTasks({ app });
+			if (removed.length) logger.info("[boot] Removed verified duplicate startup tasks.");
+		});
+		if (!stateStorageReady()) return;
+		applyLoggerSettings(globalStateStore.get().settings);
+	} catch (error) { logger.warn("[system] Failed to apply confirmed startup settings:", error); }
+	if (!stateStorageReady()) return;
+	autoUpdateEnabled = globalStateStore.get().settings.autoUpdate;
+	if (autoUpdateEnabled && !backgroundUpdateInFlight && app.isPackaged) scheduleNextUpdateCheck(1e4);
+}
 async function recoverBackgroundFeaturesAfterRendererLoad(loadedState) {
 	const startupGeneration = globalThis.reconnectSupervisor?.generation;
 	const startupWindow = mainWindow;
-	const canInitialize = () => !isQuitting && !!startupWindow && mainWindow === startupWindow && !startupWindow.isDestroyed();
+	const canInitialize = () => globalStateStore?.getSnapshot?.().storage.writable !== false && !isQuitting && !!startupWindow && mainWindow === startupWindow && !startupWindow.isDestroyed();
 	await Promise.allSettled([...pendingBootRecovery]);
 	if (!canInitialize()) return;
 	logger.info("[boot] background recovery:start");
@@ -949,7 +983,7 @@ async function scheduleAutoConnectWhenNetworkReady(activeNodeId, startupGenerati
 	const startupWindow = mainWindow;
 	const current = () => {
 		const state = globalStateStore?.get();
-		return Date.now() < deadline && !isQuitting && mainWindow === startupWindow && !!startupWindow && !startupWindow.isDestroyed() &&
+		return globalStateStore?.getSnapshot?.().storage.writable !== false && Date.now() < deadline && !isQuitting && mainWindow === startupWindow && !!startupWindow && !startupWindow.isDestroyed() &&
 			state?.settings.autoConnect === true && state.activeNodeId === activeNodeId &&
 			globalThis.reconnectSupervisor?.generation === startupGeneration;
 	};
@@ -1000,7 +1034,8 @@ async function createMainWindow() {
 	logger.info(`[boot] paths preload=${preload}, renderer=${rendererFile}, icon=${iconPath ?? "none"}, minimized=${minimizedLaunch}`);
 	configureTrustedIpcPolicy({
 		devServerUrl: void 0,
-		packagedRendererRoot: path.dirname(rendererFile)
+		packagedRendererRoot: path.dirname(rendererFile),
+		assertMutationAllowed: assertStateStorageForMutation
 	});
 	installIpcMainGuard(ipcMain);
 	logger.info("[boot] ipc security guards installed");
@@ -1107,25 +1142,35 @@ async function createMainWindow() {
 	if (!globalTelegramProxyManager) globalTelegramProxyManager = useComponentService(new TelegramProxyManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "TelegramProxy"), coreService), "TelegramProxy", coreService);
 	if (!globalVpnServiceManager) globalVpnServiceManager = useComponentService(new VpnServiceManager(process.resourcesPath, app.getAppPath(), USER_DATA_DIR, resolveProtectedComponentRoot(protectedRuntimeRoot, "Vpn")), "Vpn", coreService);
 	globalRuntimeManager.attachBackgroundService(globalVpnServiceManager);
-	if (productionRuntime) await reconcileOwnedSystemStateBeforeUi();
+	await stateStore.load();
+	if (productionRuntime && stateStorageReady()) await reconcileOwnedSystemStateBeforeUi();
 	logger.info("[boot] registering IPC handlers");
 	globalNetworkCombinatorManager = await registerIpcHandlers(mainWindow, stateStore, globalRuntimeManager, globalGravitylessDnsManager, globalSystemDohManager, globalZapretManager, globalTelegramProxyManager, () => pendingBootRecovery.size === 0, callback => { globalStartupAutoConnect = callback; });
 	logger.info("[boot] IPC handlers registered");
 	logger.info("[boot] loading persisted state");
 	const loadedState = stateStore.get();
 	logger.info("[boot] persisted state loaded");
-	try {
-		if (productionRuntime) await syncWindowsLoginItemSettings({
-			app,
-			settings: loadedState.settings
-		});
-		const removedLegacyTasks = productionRuntime ? await cleanupOwnedLegacyWindowsStartupTasks({ app }) : [];
-		if (removedLegacyTasks.length > 0) logger.info(`[boot] Removed legacy duplicate startup tasks: ${removedLegacyTasks.join(", ")}`);
-		applyLoggerSettings(loadedState.settings);
-	} catch (error) {
-		logger.warn("[system] Failed to apply persisted settings on startup:", error);
-	}
-	autoUpdateEnabled = loadedState.settings.autoUpdate;
+	autoUpdateEnabled = false;
+	await applyConfirmedStartupPreferences(productionRuntime);
+	let storageWasWritable = stateStorageReady();
+	let storageActivationReady = false;
+	stateStore.onStorageChange = storage => {
+		mainWindow?.webContents?.send("state:storage-changed", storage);
+		const recovered = !storageWasWritable && storage.writable;
+		storageWasWritable = storage.writable;
+		if (!storage.writable) {
+			autoUpdateEnabled = false;
+			autoUpdatePreferenceGeneration += 1;
+			if (updateCheckInterval) clearTimeout(updateCheckInterval);
+			updateCheckInterval = null;
+			stopDnsWatchdog();
+		} else if (recovered && storageActivationReady) {
+			Promise.resolve().then(async () => {
+				await applyConfirmedStartupPreferences(productionRuntime);
+				if (productionRuntime && stateStorageReady()) await recoverBackgroundFeaturesAfterRendererLoad(stateStore.get());
+			}).catch(error => logger.warn("[boot] Confirmed profile recovery deferred:", error));
+		}
+	};
 	logger.info(`[updater] Persisted auto-update = ${autoUpdateEnabled}`);
 	const recoveryWindow = mainWindow;
 	const rendererRecovery = new RendererRecoveryController({
@@ -1175,7 +1220,8 @@ async function createMainWindow() {
 		if (windowStateTimer) clearTimeout(windowStateTimer);
 		mainWindow = null;
 	});
-	if (productionRuntime) recoverBackgroundFeaturesAfterRendererLoad(loadedState).catch((error) => {
+	storageActivationReady = true;
+	if (productionRuntime && stateStorageReady()) recoverBackgroundFeaturesAfterRendererLoad(loadedState).catch((error) => {
 		logger.error("[boot] background recovery failed:", error);
 	});
 	logger.info("[boot] createMainWindow:complete");

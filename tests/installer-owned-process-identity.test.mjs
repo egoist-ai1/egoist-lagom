@@ -17,6 +17,16 @@ test('installer terminates only its captured owned process identity', { skip: pr
   const receipt = JSON.parse(stdout);
   assert.equal(receipt.failed, 0);
   assert.equal(receipt.caseCount, 6);
+  assert.deepEqual(receipt.identityAdmissions.map(value => value.fixture), ['owned-child', 'race-child']);
+  for (const identity of receipt.identityAdmissions) {
+    assert.equal(identity.recordPresent, true);
+    assert.equal(identity.observedPid, identity.retainedPid);
+    assert.equal(identity.pathMatch, true);
+    assert.equal(identity.retainedHandleAvailable, true);
+    assert.equal(identity.retainedHasExited, false);
+    assert.equal(identity.diagnosticError, null);
+    assert.ok(identity.birthDeltaMilliseconds >= 0 && identity.birthDeltaMilliseconds < 1);
+  }
   assert.equal(receipt.ownedFixtureProcessKills, 1);
   assert.equal(receipt.raceFixtureRetirements, 1);
   for (const field of ['unrelatedProcessKills', 'scmMutations', 'registryMutations', 'networkMutations']) assert.equal(receipt[field], 0);

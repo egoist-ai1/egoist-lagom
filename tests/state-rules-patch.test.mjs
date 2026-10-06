@@ -127,7 +127,7 @@ test('rules acknowledge only after the real disk commit, with previous memory/di
   assert.deepEqual(JSON.parse(await fs.readFile(store.filePath, 'utf8')), plain(result.state));
 });
 
-test('actual NTFS rename failure returns write failure and keeps memory/revision; repaired destination accepts retry', async t => {
+test('actual NTFS unreadable destination blocks writes and keeps memory/revision; confirmed reload accepts retry', async t => {
   const { root, store, invoke, calls } = await fixture(t);
   const before = plain(store.get()), saved = path.join(root, 'saved-primary.json');
   await fs.rename(store.filePath, saved);
@@ -135,13 +135,14 @@ test('actual NTFS rename failure returns write failure and keeps memory/revision
   const result = await patch(invoke, { domainRules: [domain('must-not-publish')] }, before.stateRevision);
   assert.equal(result.ok, false);
   assert.equal(result.conflict, false);
-  assert.equal(result.error, 'STATE_WRITE_FAILED');
+  assert.equal(result.error, 'STATE_STORAGE_UNAVAILABLE');
   assert.deepEqual(plain(store.get()), before);
   assert.equal(store.getRevision(), before.stateRevision);
   assert.deepEqual(JSON.parse(await fs.readFile(saved, 'utf8')), before);
   assert.deepEqual(calls, { login: 0, logSettings: 0, runtime: 0 });
   await fs.rmdir(store.filePath);
   await fs.rename(saved, store.filePath);
+  await store.retryLoad();
   const retry = await patch(invoke, { domainRules: [domain('retry')] }, before.stateRevision);
   assert.equal(retry.ok, true);
   assert.deepEqual(JSON.parse(await fs.readFile(store.filePath, 'utf8')), plain(retry.state));

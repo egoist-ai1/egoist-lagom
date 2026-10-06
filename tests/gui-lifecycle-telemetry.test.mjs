@@ -135,7 +135,7 @@ function lifecycleFixture(trayMode) {
   };
   vm.runInContext(coordinator.slice(0, coordinator.indexOf('async function runShutdownSteps')) +
     slice(main, 'app.on("before-quit"', '\nvar activeSingboxReq') +
-    slice(main, '\tmainWindow.on("close"', '\n\tif (productionRuntime) recoverBackgroundFeatures') +
+    slice(main, '\tmainWindow.on("close"', '\n\tstorageActivationReady = true;') +
     slice(main, 'app.on("will-quit"', '\n//#endregion'), context);
   return {app, window, context, events, scheduled, records: f.records};
 }

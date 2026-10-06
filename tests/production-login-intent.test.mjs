@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import path from 'node:path';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import os from 'node:os';
+import {randomUUID} from 'node:crypto';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import { loadRecovered } from './load-recovered.mjs';
@@ -30,12 +32,6 @@ function actualHooks(f) {
   assert.ok(start >= 0 && end > start, 'actual settings transaction hooks must be present');
   return vm.runInNewContext(source.slice(start, end) + '\nsettingsCommitHooks;', { app: f.app,
     syncWindowsLoginItemSettings: options => login.syncWindowsLoginItemSettings({ ...options, execute: f.execute, executablePath, platform: 'win32' }) });
-}
-function actualCommit() {
-  const source = fs.readFileSync('src/recovered/electron/ipc/state-store.js', 'utf8');
-  const start = source.indexOf('\tasync commitMutation('), end = source.indexOf('\tasync findLegacySubscriptionFallback', start);
-  assert.ok(start >= 0 && end > start);
-  return vm.runInNewContext('({' + source.slice(start, end) + '})', { structuredClone, logger: { error() {} } }).commitMutation;
 }
 
 test('Windows GUI startup follows only explicit autoStart, independently of autoConnect', () => {
@@ -84,14 +80,22 @@ test('foreign task rejection and invalid readback never remove the legacy regist
   await assert.rejects(sync(f, { autoStart: true }), /verification failed/);
   assert.equal(f.runWrites.length, 0);
 });
-test('actual StateStore write failure rolls back the task side effect and keeps the saved preference', async () => {
-  const f = fixture(), hooks = actualHooks(f);
-  const previous = { settings: { autoStart: false }, stateRevision: 0 };
-  const store = { state: previous, revision: 0, writeStateFile: async () => { throw new Error('disk unavailable'); } };
-  await assert.rejects(actualCommit().call(store, state => ({ ...state, settings: { autoStart: true } }), hooks), /disk unavailable/);
-  assert.equal(f.enabled, false);
-  assert.equal(f.calls.length, 2);
-  assert.deepEqual(f.calls.map(call => call.args[call.args.indexOf('-Enabled') + 1]), ['true', 'false']);
-  assert.equal(store.state, previous);
-  assert.equal(store.revision, 0);
+test('real StateStore primary commit failure rolls back the task side effect and preserves preference', async t => {
+  const root=await fs.promises.mkdtemp(path.join(os.tmpdir(),'lagom-login-state-'));
+  t.after(()=>fs.promises.rm(root,{recursive:true,force:true}));
+  let deny=false,store;
+  const adapter={...fs.promises,async rename(from,to){
+    if(deny&&to===store.filePath)throw Object.assign(new Error('disk unavailable'),{code:'ENOSPC'});
+    return fs.promises.rename(from,to);
+  }};
+  const {StateStore}=loadRecovered('electron/ipc/state-store',{promises:adapter,path,process,randomUUID,
+    logger:{info(){},warn(){},error(){}},normalizePersistedDisplayText:s=>s,
+    normalizeCustomDnsUrl:v=>v||'',normalizeSystemDohUrl:v=>v||'',normalizeSystemDohLocalAddress:v=>v||''},['StateStore']);
+  store=new StateStore(root);await store.load();
+  const f=fixture(),previous=JSON.stringify(store.get()),revision=store.getRevision();
+  deny=true;const result=await store.patchSettings({autoStart:true},revision,actualHooks(f));
+  assert.equal(result.ok,false);assert.equal(f.enabled,false);
+  assert.deepEqual(f.calls.map(call=>call.args[call.args.indexOf('-Enabled')+1]),['true','false']);
+  assert.equal(JSON.stringify(store.get()),previous);assert.equal(store.getRevision(),revision);
+  assert.equal(JSON.stringify(JSON.parse(await fs.promises.readFile(store.filePath,'utf8'))),previous);
 });

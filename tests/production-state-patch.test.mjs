@@ -132,7 +132,7 @@ test('R02: node select, favorite, rename and deletion use fresh state while unre
   }
 });
 
-test('R02: failed disk write rolls back login item inside the serialized mutation', async t => {
+test('R02: failed prepared disk write blocks login item and requires confirmed reload', async t => {
   const { root, store } = await fixture(t);
   const loginStates = [];
   const { invoke } = handlers(store, root, ({ settings }) => loginStates.push(settings.autoStart));
@@ -150,11 +150,15 @@ test('R02: failed disk write rolls back login item inside the serialized mutatio
   assert.equal(failed.ok, false);
   assert.equal(failed.conflict, false);
   assert.equal(failed.error, 'STATE_WRITE_FAILED');
-  assert.equal(succeeded.ok, true);
+  assert.equal(succeeded.ok, false, 'queued writes remain blocked until confirmed re-reading');
+  assert.equal(succeeded.error, 'STATE_STORAGE_UNAVAILABLE');
+  await store.retryLoad();
+  const retried = await invoke('state:patch-settings', {patch:{notifications:false}, expectedRevision:before.stateRevision});
+  assert.equal(retried.ok, true);
   assert.equal(store.get().settings.autoStart, false);
   assert.equal(store.get().settings.notifications, false);
-  assert.equal(succeeded.state.settings.notifications, false);
-  assert.deepEqual(loginStates, [true, false]);
+  assert.equal(retried.state.settings.notifications, false);
+  assert.deepEqual(loginStates, [], "staging failed before any login change");
   assert.equal(store.get().stateRevision, before.stateRevision + 1);
 });
 

@@ -5,6 +5,8 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { isIP } from 'node:net';
 import { z } from 'zod';
+import { createStorageRecovery } from '../src/state-storage-recovery.js';
+import { extractRendererCallback } from './renderer-fixture-helper.mjs';
 
 // This is a source-extracted UI/IPC fixture. It never starts the app or native services.
 const baseline = process.env.LAGOM_TELEGRAM_UI_SOURCE_DIR;
@@ -17,10 +19,10 @@ const config = () => ({host:'127.0.0.1',port:1443,secret:'0123456789abcdef012345
 const deferred = () => {let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject};};
 const flush = () => new Promise(resolve=>setImmediate(resolve));
 function extract(source,name){const start=source.indexOf(`function ${name}(`),end=source.indexOf('\n}',start)+2;assert.ok(start>=0&&end>start,name);return source.slice(start,end)}
-function callback(name,endMarker){const marker=`${name} = O.useCallback(`,start=renderer.indexOf(marker),end=renderer.indexOf(endMarker,start);assert.ok(start>=0&&end>start,name);return renderer.slice(start+marker.length,end+1)}
+const callback = name => extractRendererCallback(renderer, name);
 function harness(options={}){
   let native={config:config(),serviceInstalled:false,serviceRunning:false,running:false,runtimeReady:false,listenerReady:false};
-  let snapshot={telegram:options.initialTelegram??null,state:null,busy:null,busyActions:[],zapretProfiles:[],runtimeLogs:[]};
+  let snapshot={telegram:options.initialTelegram??null,state:null,storage:{status:'ready',writable:true},busy:null,busyActions:[],zapretProfiles:[],runtimeLogs:[]};
   const calls={status:0,save:[],managerSave:0,install:0,start:0,stop:0,remove:0,open:0,activity:[],pending:[],refreshes:0};
   const schema=vm.createContext({z,isIP,URL});vm.runInContext(schemaSource+'\n;globalThis.schema=TelegramProxyConfigSchema;',schema);
   const actualManager=vm.createContext({isIP});for(const name of ['isLoopbackHost','normalizeDirectDcEndpoints','validateTelegramProxyConfig'])vm.runInContext(extract(managerSource,name),actualManager);
@@ -33,25 +35,31 @@ function harness(options={}){
   const handlerContext=vm.createContext({ipcMain:{handle:(key,value)=>handlers.set(key,value)},TelegramProxyConfigSchema:schema.schema,manager});
   vm.runInContext(handlersSource+'\n;registerTelegramProxyHandlers({telegramProxyManager:manager});',handlerContext);
   const invoke=(channel,...args)=>Promise.resolve().then(()=>handlers.get(channel)({},...args));
-  const api={state:{get:async()=>({nodes:[],stateRevision:1})},app:{isAdmin:async()=>true},vpn:{status:async()=>({connected:false}),serviceStatus:async()=>({serviceState:'not-installed'})},
+  const confirmedState=()=>({nodes:[],stateRevision:1});
+  const confirmedSnapshot=async()=>({state:confirmedState(),storage:{status:'ready',writable:true,checkedAt:new Date().toISOString()}});
+  const api={state:{get:async()=>confirmedState(),getSnapshot:confirmedSnapshot,retryLoad:confirmedSnapshot},app:{isAdmin:async()=>true},vpn:{status:async()=>({connected:false}),serviceStatus:async()=>({serviceState:'not-installed'})},
     system:{dnsControllerStatus:async()=>({running:false}),systemDohStatus:async()=>({running:false}),getMyIp:()=>options.ip?.promise??Promise.resolve({ip:'198.51.100.1'})},
     zapret:{status:()=>options.zapret?.promise??Promise.resolve({serviceRunning:false}),listProfiles:async()=>[]},
     telegramProxy:{status:()=>invoke('telegram-proxy:status'),saveConfig:draft=>{calls.save.push(structuredClone(draft));return invoke('telegram-proxy:save-config',draft)},installService:()=>invoke('telegram-proxy:install-service'),start:()=>invoke('telegram-proxy:start'),stop:()=>invoke('telegram-proxy:stop'),removeService:()=>invoke('telegram-proxy:remove-service'),openLink:()=>invoke('telegram-proxy:open-link'),tailLogs:async()=>[]},
     health:{getReport:async()=>({})},network:{inspect:async()=>({})},logs:{getRuntimeSummary:async()=>[]}};
   const hooks=[];let hookIndex=0,changed=false;const effects=[];
-  const context=vm.createContext({window:{egoistAPI:api},URL,Date,Error,console:{warn(){}},O:{useMemo:fn=>fn(),useCallback:fn=>fn,
+  const context=vm.createContext({window:{egoistAPI:api},URL,Date,Error,createStorageRecovery,setTimeout,clearTimeout,console:{warn(){}},O:{useMemo:fn=>fn(),useCallback:fn=>fn,
     useState(initial){const index=hookIndex++;if(!(index in hooks))hooks[index]=typeof initial==='function'?initial():initial;return [hooks[index],value=>{const next=typeof value==='function'?value(hooks[index]):value;if(next!==hooks[index])changed=true;hooks[index]=next}]},
     useRef(initial){const index=hookIndex++;if(!(index in hooks))hooks[index]={current:initial};return hooks[index]},useEffect:fn=>effects.push(fn)},
     V:{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})},readGeneration:{current:0},telegramReadSequence:{current:0},rendererMounted:{current:true},telegramForegroundReads:{current:0},h2:{current:false},_2:{current:null},Mf:1000,jf:1000,Nf:1000,updateRevision:{current:0},f2:{current:new Map()},d2:{current:0},p2:{current:false},Zf:{},
-    r2:updater=>{snapshot=updater(snapshot)},s2:value=>calls.activity.push(value),l2(){},zapretHistoryResult:(_next,previous)=>previous??null});
+    r2:updater=>{snapshot=updater(snapshot)},get n2(){return snapshot},s2:value=>calls.activity.push(value),l2(){},zapretHistoryResult:(_next,previous)=>previous??null});
   for(const name of ['im','am','Z','om','sm','cm','lm','um','Q','$','Dm','Om','Em','If','Lf','Rf'])vm.runInContext(extract(renderer,name),context);
   vm.runInContext(widget.slice(0,widget.indexOf('function ShieldWidget(')),context);
   const bf=renderer.match(/Bf = (\{ host:.*?checkUpdates: true \})/);assert.ok(bf);vm.runInContext(`globalThis.Bf=${bf[1]};`,context);
   if(renderer.includes('let readTelegramStatus =')){
-    vm.runInContext('globalThis.readTelegramStatus='+callback('readTelegramStatus','}, []), refreshTelegram =')+';globalThis.refreshTelegram='+callback('refreshTelegram','}, [readTelegramStatus]);')+';',context);
+    vm.runInContext('globalThis.readTelegramStatus='+callback('readTelegramStatus')+';globalThis.refreshTelegram='+callback('refreshTelegram')+';',context);
   }else context.refreshTelegram=async()=>{const value=await api.telegramProxy.status();return value};
-  const dependency=renderer.includes('let readTelegramStatus =')?'[readTelegramStatus]':'[]';
-  vm.runInContext('globalThis.v2='+callback('v2',`}, ${dependency}), y2 =`)+';globalThis.y2='+callback('y2',`}, ${dependency});`)+';globalThis.runAction='+callback('S2','}, [y2]);')+';',context);
+  if(renderer.includes('const storageController = O.useMemo(')){
+    const start=renderer.indexOf('const storageController = O.useMemo('),end=renderer.indexOf('  O.useEffect(',start);
+    assert.ok(end>start,'Actual storage controller setup exists');
+    vm.runInContext(renderer.slice(start,end)+'\nglobalThis.readStorageState='+callback('readStorageState')+';',context);
+  }
+  vm.runInContext('globalThis.v2='+callback('v2')+';globalThis.y2='+callback('y2')+';globalThis.runAction='+callback('S2')+';',context);
   const quick=context.y2;context.y2=async()=>{calls.refreshes++;return quick()};
   context.document={hidden:false,addEventListener(){},removeEventListener(){}};context.window.setInterval=()=>1;context.window.clearInterval=()=>{};
   const pollStart=renderer.indexOf('let e3 = true, t3 = async (t4 = false) => {'),pollEnd=renderer.indexOf('}, [v2, y2, g2])',pollStart);assert.ok(pollStart>=0&&pollEnd>pollStart);vm.runInContext('globalThis.mountPoll=()=>{'+renderer.slice(pollStart,pollEnd)+'};',context);

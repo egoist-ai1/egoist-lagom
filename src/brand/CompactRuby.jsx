@@ -371,7 +371,17 @@ function ShieldServerPicker({nodes,activeId,onClose,onManage,onSelect}){
   return <div className="ruby-modal-layer" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><section className="ruby-modal" ref={dialog} role="dialog" aria-modal="true" aria-label="Выберите сервер"><header><div><h2>Выберите сервер</h2><p>Выбор сохраняется для следующего подключения</p></div><button className="ruby-close" aria-label="Закрыть выбор сервера" onClick={onClose}><RubyIcon name="close" size={18}/></button></header><label className="ruby-server-search"><span>Найти сервер</span><input className="input" type="search" value={query} onChange={event=>{setQuery(event.target.value);setPage(0)}} placeholder="Название, страна или адрес"/></label><div className="ruby-server-list">{slice.rows.length?slice.rows.map(node=><button key={node.id} aria-pressed={node.id===activeId} onClick={()=>onSelect(node)}><RubyIcon name="vpn"/><span>{Kd(node.name??node.remark??node.id)}<small>{node.protocol?.toUpperCase()??'Сервис'}{node.country?' · '+node.country:''}</small></span><RubyIcon name={node.id===activeId?'check':'arrow-right'} size={18}/></button>):<p className="ruby-list-empty">Нет серверов по этому запросу.</p>}</div><RubyServerPages slice={slice} onChange={setPage}/><button className="btn-secondary" onClick={onManage}>Управление серверами и подписками<RubyIcon name="arrow-right" size={16}/></button></section></div>;
 }
 
-function ap({ activeScreen, activity, children, onAppInfo, onDismissActivity, onNavigate, snapshot }) {
+function RubyStorageNotice({storage,onRetry,onDiagnostics,compact=false}){
+  if(!storage||storage.writable)return null;
+  const corrupt=storage.error==='STATE_STORAGE_CORRUPT';
+  const title=corrupt?'Файл настроек повреждён':storage.status==='loading'?'Проверяем настройки':'Настройки недоступны';
+  const checked=storage.checkedAt?new Date(storage.checkedAt).toLocaleTimeString('ru-RU'):null;
+  return <aside className={'ruby-storage-notice'+(compact?' compact':'')} aria-label="Состояние локальных данных">
+    <div role="status" aria-live="polite"><strong>{title}</strong><p>{compact?'Изменения приостановлены.':corrupt?'Исходные файлы сохранены. Изменения заблокированы до подтверждённого восстановления.':'Можно просматривать последние подтверждённые данные. Изменения приостановлены; фоновые службы продолжают работать.'}</p>{checked&&<small>Проверка <time dateTime={storage.checkedAt}>{checked}</time>{storage.systemCode?' · '+storage.systemCode:''}</small>}</div>
+    <div className="ruby-storage-actions"><button type="button" className="btn-secondary compact" disabled={storage.retrying} aria-busy={!!storage.retrying} onClick={onRetry}>{storage.retrying?'Проверяем…':'Повторить'}</button>{onDiagnostics&&<button type="button" className="btn-secondary compact" onClick={onDiagnostics}>Диагностика</button>}</div>
+  </aside>;
+}
+function ap({ activeScreen, activity, children, onAppInfo, onDismissActivity, onNavigate, snapshot, onRetryStorage }) {
   const [widgetMode, setWidgetMode] = O.useState(true);
   const [reducedMotion, setReducedMotion] = O.useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
@@ -400,6 +410,7 @@ function ap({ activeScreen, activity, children, onAppInfo, onDismissActivity, on
       <Tl reducedMotion="user" skipAnimations={reducedMotion}><main className="shield-widget-window">
         <ShieldWidget
           snapshot={snapshot}
+          onRetryStorage={onRetryStorage}
           onOpenSettings={() => {
             onNavigate?.('settings');
             setWidgetMode(false);
@@ -414,7 +425,7 @@ function ap({ activeScreen, activity, children, onAppInfo, onDismissActivity, on
       {O.createElement(sp, {activeScreen, onAppInfo, onNavigate, snapshot, onSwitchToWidget: () => {
         setWidgetMode(true);
       }})}
-      <section className="workspace"><RubyReadNotice snapshot={snapshot} activeScreen={activeScreen}/>{children}<div className="ruby-activity-region">{O.createElement(op, {activity: activeScreen === 'settings' && (activity?.id === 'vpn-network-settings' || activity?.id?.startsWith('vpn-rule-')) || activeScreen === 'dashboard' && activity?.id === 'speedtest' ? null : activity, onDismiss: onDismissActivity})}</div></section>
+      <section className="workspace"><RubyStorageNotice storage={snapshot.storage} onRetry={onRetryStorage} onDiagnostics={()=>{onNavigate('settings');window.egoistAPI?.diagnostics?.exportBundle?.().catch(error=>console.warn('Diagnostics:',error));}}/><RubyReadNotice snapshot={snapshot} activeScreen={activeScreen}/><fieldset className="ruby-storage-surface" disabled={snapshot.storage?.writable===false} aria-label={snapshot.storage?.writable===false?'Только просмотр: изменения приостановлены':undefined}>{children}</fieldset><div className="ruby-activity-region">{O.createElement(op, {activity: activeScreen === 'settings' && (activity?.id === 'vpn-network-settings' || activity?.id?.startsWith('vpn-rule-')) || activeScreen === 'dashboard' && activity?.id === 'speedtest' ? null : activity, onDismiss: onDismissActivity})}</div></section>
     </main></Tl>
   );
 }

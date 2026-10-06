@@ -845,10 +845,16 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 			]
 		}, operation) : operation();
 	};
+	const reconnectEnabled = () => stateStore.getSnapshot?.().storage.writable !== false && stateStore.get().settings.reconnectOnDrop !== false && runtimeManager.backgroundModeActive !== true;
 	const reconnectSupervisor = new VpnReconnectSupervisor({
-		readEnabled: () => stateStore.get().settings.reconnectOnDrop !== false && runtimeManager.backgroundModeActive !== true,
+		readEnabled: reconnectEnabled,
 		getStatus: () => runtimeManager.status(),
-		reconnect: () => connectVpn(void 0, "watchdog"),
+		reconnect: () => {
+			// Cancellation and storage availability must survive coordinator admission
+			// and asynchronous DPI preparation, before the runtime is started.
+			const generation = reconnectSupervisor.generation;
+			return connectVpn(void 0, "watchdog", () => reconnectSupervisor.generation === generation && reconnectEnabled());
+		},
 		log: (level, message) => logger[level](message)
 	});
 	reconnectSupervisor.start();
@@ -856,7 +862,7 @@ function registerVpnHandlers({ stateStore, runtimeManager, zapretManager, networ
 	onStartupAutoConnectReady?.(async (nodeId, generation, isStartupCurrent) => {
 		const current = () => {
 			const state = stateStore.get();
-			return reconnectSupervisor.generation === generation && state.settings.autoConnect === true && state.activeNodeId === nodeId && isStartupCurrent();
+			return stateStore.getSnapshot?.().storage.writable !== false && reconnectSupervisor.generation === generation && state.settings.autoConnect === true && state.activeNodeId === nodeId && isStartupCurrent();
 		};
 		if (!current()) return { cancelled: true, connected: false };
 		const classifyStartup = result => {

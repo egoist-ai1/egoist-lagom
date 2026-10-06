@@ -80,7 +80,7 @@ test('enabled background updater installs an available trusted release and resta
     toPublicUpdateResult: value => value,
     emitUpdateResult: result => calls.push(result.phase),
     Notification: { isSupported: () => false },
-    globalStateStore: null,
+    globalStateStore: {get:()=>({settings:{notifications:false}}),getSnapshot:()=>({storage:{status:'ready',writable:true}}),async checkStorageWritable(){calls.push('storage');}},
     scheduleDeferredStartup: callback => { calls.push('scheduled'); callback(); },
     app: { isPackaged: true, quit: () => calls.push('quit') },
     logger: { warn() {}, info() {} },
@@ -88,7 +88,7 @@ test('enabled background updater installs an available trusted release and resta
   });
   vm.runInContext(`${source.slice(start, end)}\nglobalThis.check = runBackgroundUpdateCheck;`, context);
   await context.check();
-  assert.deepEqual(calls, ['check', 'available', 'install', 'restarting', 'scheduled', 'quit']);
+  assert.deepEqual(calls, ['check', 'available', 'storage', 'install', 'restarting', 'scheduled', 'quit']);
   assert.equal(context.isQuitting, true);
 });
 

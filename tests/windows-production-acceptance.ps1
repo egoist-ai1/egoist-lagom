@@ -1,9 +1,11 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
   [ValidateSet('Run','GuardOnly')][string]$Mode='Run',
   [string]$IntegrityManifestPath='',
   [string]$EvidenceDirectory='',
   [ValidatePattern('^$|^[a-f0-9]{40}$')][string]$ExpectedSourceCommit='',
+  [ValidateRange(0,120)][int]$SoakMinutes=0,
+  [string]$UpgradeBaselineInstaller='',
   [switch]$LibraryOnly
 )
 Set-StrictMode -Version 2.0
@@ -869,10 +871,125 @@ function Stop-NativeVerifiedCoreForRecovery {
   }finally{$target.Dispose()}
 }
 
+function Measure-NativeIdleCore {
+  param([ValidateSet('baseline-3.8.0','candidate')][string]$Label)
+  Assert-NativeNoGui
+  $others=@(Get-NativeProductServices | Where-Object { $_.Name -ne 'EgoistShieldCore' -and $_.State -eq 'Running' })
+  if($others.Count){throw 'Idle Core comparison requires the same Core-only condition.'}
+  $samples=@();$priorCpu=$null;$firstBirth=$null;$watch=[Diagnostics.Stopwatch]::StartNew()
+  for($i=0;$i -lt 12;$i++){
+    Assert-NativeNoGui
+    $service=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
+    $identity=$service.process
+    $held=Get-Process -Id ([int]$identity.processId) -ErrorAction Stop
+    try{
+      $handle=$held.Handle
+      $birth=$held.StartTime.ToUniversalTime()
+      if($handle -eq [IntPtr]::Zero -or $held.Path -ine $identity.executable -or [Math]::Abs(($birth-[DateTimeOffset]::Parse([string]$identity.createdUtc).UtcDateTime).Ticks) -gt 10){throw 'Paired resource sample path/birth changed.'}
+      $key=[string]$held.Id+'|'+$birth.ToString('o')
+      if($firstBirth -and $key -cne $firstBirth){throw 'Core restarted during the bounded idle comparison.'}
+      $firstBirth=$key;$cpu=[double]$held.TotalProcessorTime.TotalSeconds
+      $delta=if($null -eq $priorCpu){$null}else{$cpu-$priorCpu};$priorCpu=$cpu
+      $samples+=[ordered]@{index=$i;utc=[DateTimeOffset]::UtcNow.ToString('o');elapsedSeconds=[Math]::Round($watch.Elapsed.TotalSeconds,3);processId=$held.Id;birthUtc=$birth.ToString('o');cpuTotalSeconds=$cpu;cpuDeltaSeconds=$delta;workingSetBytes=$held.WorkingSet64;privateMemoryBytes=$held.PrivateMemorySize64;handles=$held.HandleCount;threads=$held.Threads.Count}
+    }finally{$held.Dispose()}
+    if($i -lt 11){Start-Sleep -Seconds 5}
+  }
+  $measurement=[ordered]@{kind='actual-installed-idle-Core-only';label=$Label;sampleCount=12;intervalSeconds=5;actualGuiRunning=$false;otherProductServicesRunning=$false;coreImageSha256=(Get-FileHash -LiteralPath $script:Core -Algorithm SHA256).Hash;hostOs=[Environment]::OSVersion.VersionString;samples=$samples;limits='Sequential idle samples on the same disposable VM; descendants, GUI startup, network throughput and long-term memory growth excluded.'}
+  if(-not $script:Receipt.Contains('pairedCoreResources')){$script:Receipt.pairedCoreResources=@()}
+  $script:Receipt.pairedCoreResources+=$measurement
+  Save-NativeReceipt
+}
+
+function Initialize-NativeUpgradeBaseline {
+  param([string]$Installer)
+  if(-not $Installer){return}
+  $baseline=Assert-NativePathWithin -Path $Installer -Root $env:RUNNER_TEMP
+  Assert-NativeOrdinaryPath -Path $baseline -Leaf
+  $pin=[ordered]@{version='3.8.0';releaseId=401228861;assetId=608894669;bytes=277603619;sha256='771ba1adcfd4c24fcbee89c2e84d714099491ac97e9b4a6ba523031a03d27d81';origin='https://github.com/egoist-ai1/egoist-lagom/releases/download/v3.8.0/EgoistShield-Setup-3.8.0.exe';originEvidence='GitHub release asset HTTPS metadata and immutable SHA-256; no published Ed25519 manifest exists for this baseline.'}
+  if((Get-Item -LiteralPath $baseline).Length -ne $pin.bytes -or (Get-FileHash -LiteralPath $baseline -Algorithm SHA256).Hash -ine $pin.sha256){throw 'Upgrade baseline differs from the exact official 3.8.0 artifact.'}
+  Add-NativeMutation -Kind 'official-3.8.0-clean-install' -Target $script:InstallRoot -Purpose 'Authenticate original published artifact by exact asset ID/size/SHA and test a genuine 3.8.0 to candidate installer upgrade.'
+  $result=Invoke-NativeBounded -Executable $baseline -Arguments @('/S') -Label 'baseline-3.8.0-clean-install' -TimeoutSeconds 600
+  $version=[Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $script:InstallRoot 'EgoistShield.exe')).ProductVersion
+  if($version -notin @('3.8.0','3.8.0.0')){throw 'Installed baseline is not actual 3.8.0.'}
+  Assert-NativeNoGui;Assert-NativeNetworkPreserved 'original-3.8.0-install'
+  Measure-NativeIdleCore -Label 'baseline-3.8.0'
+  $userRoot=Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Egoist Shield'
+  if(-not (Test-Path -LiteralPath $userRoot)){New-Item -ItemType Directory -Path $userRoot | Out-Null}
+  Assert-NativeOrdinaryPath $userRoot
+  $profile=Join-Path $userRoot 'egoistshield-state.json'
+  $data=[ordered]@{stateRevision=9;legacyMigrationVersion=1;nodes=@([ordered]@{id='synthetic-upgrade-node';name='Upgrade fixture';protocol='vless';server='upgrade.example.invalid';port=443;uri='vless://11111111-1111-4111-8111-111111111111@upgrade.example.invalid:443';metadata=@{id='11111111-1111-4111-8111-111111111111'}});activeNodeId='synthetic-upgrade-node';subscriptions=@([ordered]@{id='synthetic-upgrade-subscription';name='Local upgrade fixture';url='https://upgrade.example.invalid/never-requested';enabled=$false;lastUpdated=$null});processRules=@();domainRules=@();usageHistory=@();settings=[ordered]@{autoStart=$false;autoConnect=$false;autoUpdate=$false;systemDohEnabled=$false;systemDnsServers='';customDnsUrl='';allowTelemetry=$false;allowExternalGeoLookups=$false;privacyConsentVersion=1}}
+  $bytes=[Text.UTF8Encoding]::new($false).GetBytes(($data|ConvertTo-Json -Depth 12))
+  foreach($file in @($profile,($profile+'.bak'))){if(Test-Path -LiteralPath $file){throw 'Fresh baseline unexpectedly contains a profile; refuse synthetic overwrite.'};[IO.File]::WriteAllBytes($file,$bytes)}
+  $script:Receipt.upgradeBaseline=[ordered]@{artifact=$pin;actualInstalledVersion=$version;installerMilliseconds=$result.elapsedMilliseconds;primary=$profile;primarySha256=(Get-FileHash -LiteralPath $profile -Algorithm SHA256).Hash;backupSha256=(Get-FileHash -LiteralPath ($profile+'.bak') -Algorithm SHA256).Hash;syntheticOnly=$true;profileReadbacks=@();originalProfileBytesPreserved=$false;releaseManifestSignatureNotClaimed=$true}
+  Save-NativeReceipt
+}
+function Assert-NativeUpgradeProfile {
+  param([string]$Phase)
+  if(-not $script:Receipt.Contains('upgradeBaseline')){return}
+  $profile=$script:Receipt.upgradeBaseline.primary
+  $saved=Get-Content -LiteralPath $profile -Raw | ConvertFrom-Json
+  if(@($saved.nodes).Count -ne 1 -or $saved.nodes[0].id -cne 'synthetic-upgrade-node' -or $saved.activeNodeId -cne 'synthetic-upgrade-node' -or @($saved.subscriptions).Count -ne 1 -or $saved.subscriptions[0].id -cne 'synthetic-upgrade-subscription' -or $saved.settings.allowTelemetry -ne $false -or $saved.settings.autoConnect -ne $false){throw 'Actual upgrade or GUI activation changed saved synthetic profiles/intents.'}
+  $current=(Get-FileHash -LiteralPath $profile -Algorithm SHA256).Hash
+  $script:Receipt.upgradeBaseline.profileReadbacks+=[ordered]@{phase=$Phase;sha256=$current;identicalBytes=($current -ceq $script:Receipt.upgradeBaseline.primarySha256);nodesPreserved=$true;subscriptionsPreserved=$true}
+  if($Phase -eq 'after-installer'){
+    if($current -cne $script:Receipt.upgradeBaseline.primarySha256 -or (Get-FileHash -LiteralPath ($profile+'.bak') -Algorithm SHA256).Hash -cne $script:Receipt.upgradeBaseline.backupSha256){throw 'The candidate installer changed original primary/backup bytes.'}
+    $script:Receipt.upgradeBaseline.originalProfileBytesPreserved=$true
+  }
+  Save-NativeReceipt
+}
+
+function Invoke-NativeAutonomousSoak {
+  param([int]$Minutes,[int]$TelegramPort)
+  if($Minutes -eq 0){return}
+  Assert-NativeNoGui
+  $watch=[Diagnostics.Stopwatch]::StartNew()
+  $duration=$Minutes*60
+  $samples=[Collections.Generic.List[object]]::new()
+  $cpuByBirth=@{}
+  $script:Receipt.autonomousSoak=[ordered]@{kind='actual-Core-and-Telegram-without-GUI';requestedMinutes=$Minutes;startedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');sampleIntervalSeconds=30;result='running';samples=@();otherModulesSoakVerified=$false;longerUptimeClaim=$false}
+  Save-NativeReceipt
+  try{
+    do{
+      Assert-NativeNoGui
+      $core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running
+      $telegram=Assert-NativeTelegramEndpoint -Port $TelegramPort
+      $observations=@()
+      foreach($service in @($core,$telegram.service)){
+        if(-not $service){continue}
+        $identity=$service.process
+        if(-not $identity -or [int]$identity.processId -le 0){throw 'Soak service process identity is unavailable.'}
+        $held=Get-Process -Id ([int]$identity.processId) -ErrorAction Stop
+        try{
+          # Resource counters belong to the same path/birth already accepted by the SCM gate.
+          if($held.Path -ine [string]$identity.executable -or [Math]::Abs(($held.StartTime.ToUniversalTime()-[DateTimeOffset]::Parse([string]$identity.createdUtc).UtcDateTime).Ticks) -gt 10){throw 'Soak resource identity changed during inspection.'}
+          $birthKey=[string]$held.Id+'|'+[string]$identity.createdUtc
+          $cpu=[double]$held.TotalProcessorTime.TotalSeconds
+          $delta=if($cpuByBirth.ContainsKey($birthKey)){$cpu-[double]$cpuByBirth[$birthKey]}else{$null}
+          $cpuByBirth[$birthKey]=$cpu
+          $observations+=[ordered]@{processId=$held.Id;createdUtc=$identity.createdUtc;path=$held.Path;cpuTotalSeconds=$cpu;cpuDeltaSeconds=$delta;workingSetBytes=$held.WorkingSet64;privateMemoryBytes=$held.PrivateMemorySize64;handles=$held.HandleCount;threads=$held.Threads.Count}
+        }finally{$held.Dispose()}
+      }
+      $samples.Add([ordered]@{observedAtUtc=[DateTimeOffset]::UtcNow.ToString('o');elapsedSeconds=[Math]::Round($watch.Elapsed.TotalSeconds,3);coreProcessId=$core.process.processId;telegramReady=$true;resources=$observations})
+      $script:Receipt.autonomousSoak.samples=$samples.ToArray()
+      Save-NativeReceipt
+      $remaining=$duration-$watch.Elapsed.TotalSeconds
+      if($remaining -gt 0){Start-Sleep -Milliseconds ([int]([Math]::Min(30,$remaining)*1000))}
+    }while($watch.Elapsed.TotalSeconds -lt $duration)
+    Assert-NativeNoGui;Assert-NativeNetworkPreserved 'autonomous-soak'
+    $script:Receipt.autonomousSoak.result='passed'
+    $script:Receipt.autonomousSoak.elapsedSeconds=[Math]::Round($watch.Elapsed.TotalSeconds,3)
+    $script:Receipt.autonomousSoak.finishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+    $script:Receipt.checks+=[ordered]@{name='actual-autonomous-Core-Telegram-soak';ok=$true;minutes=$Minutes;elapsedSeconds=$script:Receipt.autonomousSoak.elapsedSeconds;sampleCount=$samples.Count;DNSandDPI=$false;months=$false}
+    Save-NativeReceipt
+  }catch{
+    $script:Receipt.autonomousSoak.result='failed';$script:Receipt.autonomousSoak.elapsedSeconds=[Math]::Round($watch.Elapsed.TotalSeconds,3);Save-NativeReceipt;throw
+  }
+}
+
 function Assert-NativeCleanStart {
   if(@(Get-NativeProductServices).Count -ne 0){throw 'Existing product/shared-name services make clean acceptance unsafe.'}
   if(@(Get-NativeProductTasks).Count -ne 0){throw 'Existing product Tasks make clean acceptance unsafe.'}
-  foreach($target in @($script:InstallRoot,$script:DataRoot,$script:InstallerDataRoot,(Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Egoist Shield'),(Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'EgoistShield'))){if(Test-Path -LiteralPath $target){throw "Existing product directory makes acceptance unsafe: $target"}}
+  foreach($target in @($script:InstallRoot,$script:DataRoot,$script:InstallerDataRoot,(Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Egoist Lagom'),(Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Egoist Shield'),(Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'EgoistShield'))){if(Test-Path -LiteralPath $target){throw "Existing product directory makes acceptance unsafe: $target"}}
   if(@(Get-NativeCimSnapshot Win32_Process | Where-Object {$_.Name -match '^Egoist(?:Shield|Lagom)'}).Count -ne 0){throw 'Existing product processes make acceptance unsafe.'}
   foreach($path in @('SOFTWARE\EgoistShield','SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EgoistShield')){
     $key=[Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($path)
@@ -998,9 +1115,13 @@ function Invoke-NativeAcceptance {
   };Save-NativeReceipt
   $uninstalled=$false;$primaryError=$null
   try{
-    Add-NativeMutation -Kind 'setup-clean-install' -Target $script:InstallRoot -Purpose 'Actual generated candidate silent installation.'
+    Initialize-NativeUpgradeBaseline -Installer $UpgradeBaselineInstaller
+    $mutationKind=if($UpgradeBaselineInstaller){'official-3.8.0-to-candidate-upgrade'}else{'setup-clean-install'}
+    Add-NativeMutation -Kind $mutationKind -Target $script:InstallRoot -Purpose 'Actual generated candidate silent installation or original-version upgrade.'
     $install=Invoke-NativeBounded -Executable $script:Installer -Arguments @('/S') -Label 'clean-install' -TimeoutSeconds 600
-    $script:Receipt.checks+=[ordered]@{name='actual-generated-setup-clean-install';ok=$true;milliseconds=$install.elapsedMilliseconds}
+    $installKind=if($UpgradeBaselineInstaller){'actual-original-3.8.0-to-candidate-installer-upgrade'}else{'actual-generated-setup-clean-install'}
+    $script:Receipt.checks+=[ordered]@{name=$installKind;ok=$true;milliseconds=$install.elapsedMilliseconds}
+    Assert-NativeUpgradeProfile 'after-installer'
     $acls=@();foreach($relative in @('','EgoistShield.exe','EgoistShield.Worker.exe','resources','resources\app.asar','resources\component-worker.cjs','resources\worker-host-integrity.json','resources\core-service\win-x64\EgoistShield.Service.exe')){$acls+=Assert-NativeAdministratorOwned (Join-Path $script:InstallRoot $relative) -InstallationPath};$script:Receipt.acls=$acls
     $options=[ordered]@{installRoot=$script:InstallRoot;integrity=$script:ManifestPath;sourceCommit=$script:SourceCommit;version=$script:Version;output=(Join-Path $script:Work 'installed-payload.json')}
     $optionsPath=Join-Path $script:Work 'installed-payload.options.json';$options | ConvertTo-Json | Set-Content -LiteralPath $optionsPath -Encoding utf8
@@ -1009,7 +1130,9 @@ function Invoke-NativeAcceptance {
     $script:Receipt.checks+=[ordered]@{name='actual-installed-payload-fuses-asar-worker-inventory-acls-and-administrator-gui-manifest';ok=$true;receipt='installed-payload.json'}
     $script:Receipt.core=Assert-NativeService -Name 'EgoistShieldCore' -Executable $script:Core -Running;$script:Receipt.corePolicy=Get-NativeRecoveryPolicy 'EgoistShieldCore'
     Assert-NativeNoGui;Assert-NativeNetworkPreserved 'clean-install'
+    if($UpgradeBaselineInstaller){Measure-NativeIdleCore -Label 'candidate'}
     $gui=Invoke-NativeGui -Action 'provision-telegram' -Label 'gui-provision';Assert-NativeNoGui
+    Assert-NativeUpgradeProfile 'after-first-GUI'
     $port=[int]$gui.installResult.portConflict.port
     $script:Receipt.telegramWithoutGui=Assert-NativeTelegramEndpoint -Port $port;$script:Receipt.telegramPolicy=Get-NativeRecoveryPolicy 'EgoistShieldTelegramProxy'
     $script:Receipt.checks+=[ordered]@{name='actual-production-gui-ipc-telegram-persists-after-gui-quit';ok=$true};Assert-NativeNetworkPreserved 'gui-close'
@@ -1029,12 +1152,14 @@ function Invoke-NativeAcceptance {
     $script:Receipt.telegramAfterReinstall=Assert-NativeTelegramEndpoint -Port $port
     if((Get-FileHash -LiteralPath $script:Receipt.inactiveVpnFixture.path -Algorithm SHA256).Hash -cne $script:Receipt.inactiveVpnFixture.sha256){throw 'Actual upgrade changed private inactive VPN filesystem fixture.'}
     Assert-NativePrivateState 'after-private-state-preservation'
+    Assert-NativeUpgradeProfile 'after-protected-reinstall'
     $script:Receipt.elevationMigration=Assert-NativeGuiElevation -MigrationExpected
     Assert-NativeNoGui;Assert-NativeNetworkPreserved 'protected-reinstall'
     [void](Invoke-NativeGui -Action 'check-telegram' -Label 'gui-after-reinstall');Assert-NativeNoGui
     $script:Receipt.checks+=[ordered]@{name='actual-protected-reinstall-with-recovery-services-and-system-task-registration-roundtrip';ok=$true;actualReboot=$false}
     [void](Invoke-NativeGuiStartupOperation -Operation Sync -Enabled false -Label 'gui-startup-disable' -ExpectedEnabled $false)
     $script:Receipt.checks+=[ordered]@{name='actual-packaged-gui-startup-highest-interactive-enable-suspend-restore-disable';ok=$true;actualLogonExecuted=$false;actualSettingsToggleInvoked=$false};Save-NativeReceipt
+    Invoke-NativeAutonomousSoak -Minutes $SoakMinutes -TelegramPort $port
     $uninstaller=Join-Path $script:InstallRoot 'Uninstall Egoist Shield.exe'
     [void](Assert-NativeAdministratorOwned $uninstaller -InstallationPath)
     Add-NativeMutation -Kind 'owned-uninstall' -Target $script:InstallRoot -Purpose 'Actual candidate uninstall and owned cleanup.'

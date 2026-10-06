@@ -1,6 +1,6 @@
 //#region src/electron/ipc/handlers.ts
 async function registerIpcHandlers(window, stateStore, runtimeManager, gravitylessDnsManager, systemDohManager, zapretManager, telegramProxyManager, isNetworkReady = () => true, onStartupAutoConnectReady) {
-	await stateStore.load();
+	if (stateStore.getSnapshot?.().storage.status === "loading" || !stateStore.getSnapshot) await stateStore.load();
 	const ctx = {
 		window,
 		stateStore,

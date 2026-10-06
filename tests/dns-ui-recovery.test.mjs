@@ -4,17 +4,20 @@ import fs from 'node:fs/promises';
 import vm from 'node:vm';
 import { pathToFileURL } from 'node:url';
 import { transform } from 'esbuild';
+import { extractTopLevelFunction } from './renderer-fixture-helper.mjs';
 
 const { ShieldConnectionController } = await import(process.env.LAGOM_SHIELD_CONTROLLER_TEST_SOURCE ? pathToFileURL(process.env.LAGOM_SHIELD_CONTROLLER_TEST_SOURCE).href : new URL('../src/shield-connection-controller.js', import.meta.url));
 const filename = process.env.LAGOM_DNS_UI_TEST_SOURCE;
 let source = await fs.readFile(filename || new URL('../src/brand/ShieldWidget.jsx', import.meta.url), 'utf8');
+const noticeSource = source.includes('function RubyStorageNotice(') ? source : await fs.readFile(new URL('../src/brand/CompactRuby.jsx', import.meta.url), 'utf8');
 if (filename && source.includes('const ShieldSpeedPanel=')) {
   const start = source.indexOf('function rubyStatusKnown(') >= 0 ? source.indexOf('function rubyStatusKnown(') : source.indexOf('function rubyTelegramReady(');
   const end = source.indexOf('const ShieldSpeedPanel=', start);
   assert.ok(start >= 0 && end > start, 'Installed production widget boundary exists');
   source = source.slice(start, end);
 }
-const { code } = await transform(source + '\nglobalThis.component = ShieldWidget;', {
+const notice = source.includes('RubyStorageNotice') && !source.includes('function RubyStorageNotice(') ? extractTopLevelFunction(noticeSource, 'RubyStorageNotice') + '\n' : '';
+const { code } = await transform(notice + source + '\nglobalThis.component = ShieldWidget;', {
   loader: 'jsx', jsxFactory: 'O.createElement', jsxFragment: 'O.Fragment', charset: 'utf8',
 });
 
@@ -45,7 +48,7 @@ function mount({ initial = {}, snapshotSettings = {}, system = {}, preferences =
     setTimeout:(callback,delay)=>{const id=++nextTimer;timers.set(id,{callback,delay});return id;}, clearTimeout:id=>timers.delete(id),
   });
   vm.runInContext(code,context);
-  const render=()=>{cursor=0;tree=context.component({snapshot:{state:{settings:{systemDohEnabled:true,systemDohUrl:'https://resolver.example/dns-query',...snapshotSettings}}},onOpenSettings(){}}); return tree;};
+  const render=()=>{cursor=0;tree=context.component({snapshot:{storage:{status:'ready',writable:true},state:{settings:{systemDohEnabled:true,systemDohUrl:'https://resolver.example/dns-query',...snapshotSettings}}},onOpenSettings(){}}); return tree;};
   const descendants=value=> !value||typeof value!=='object'?[]:[value,...(value.props?.children??[]).flat(Infinity).flatMap(descendants)];
   const find=predicate=>descendants(tree).find(predicate);
   render(); for(const callback of effects.splice(0)) {const cleanup=callback();if(typeof cleanup==='function')effects.push(cleanup);}
