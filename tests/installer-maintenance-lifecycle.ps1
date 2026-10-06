@@ -267,6 +267,7 @@ try {
   $realWrite=(Get-Command Write-JsonAtomic -CommandType Function).ScriptBlock
   $workerFn=$leaseAst.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Invoke-WorkerMode'},$true)
   . ([scriptblock]::Create($workerFn.Extent.Text.Replace('Global\EgoistShield.DeferredReinstall',$mutexName)))
+  Load-Functions 'scripts\invoke-final-silent-reinstall.ps1' @('Get-PreservedZapretProfile')
   $script:writeFault=$false;$script:workerRecoveryCalls=0;$script:watchdogLaunches=0
   function Test-IsAdministrator { return $true }
   function Assert-SupportedServiceFramework {}
@@ -277,7 +278,7 @@ try {
   function Backup-UserActivationState {param($Stage) return @()}
   function Backup-CriticalDnsState {param($Stage) return @()}
   function Get-InstalledIdentity { return 'fixture' }
-  function Get-ItemProperty {param($LiteralPath,$Name,$ErrorAction) return [pscustomobject]@{EgoistShieldProfile=''}}
+  function Get-ItemProperty {param($LiteralPath,$Name,$ErrorAction) return $null} # A normal Core-only installation has no DPI registry property.
   function Invoke-RobocopyDirectory {param($Source,$Destination)}
   function Write-Heartbeat {param($Stage,$Phase,$InstallerPid)}
   function Get-NativePowerShellPath { return 'unused-powershell.exe' }

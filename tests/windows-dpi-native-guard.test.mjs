@@ -111,6 +111,7 @@ test('PS7 C# compiles without DLL/driver open; owned child identity, deadline an
     '$script:DpiClock=[Diagnostics.Stopwatch]::StartNew();$script:DpiBudget=30',
     '$parentModulePath=$env:PSModulePath',
     '$parentPathExt=$env:PATHEXT',
+    '$parentSystemDrive=$env:SystemDrive',
     '$child=Start-DpiChild ' + quoted(process.execPath) + ' @(' + quoted(helper) + ",'Fixture') 'own guard fixture'",
     '$cases=@()',
     'try {',
@@ -118,6 +119,7 @@ test('PS7 C# compiles without DLL/driver open; owned child identity, deadline an
     'if($ready.processId -ne $child.process.Id){throw "Own readiness identity mismatch"}',
     "if($child.process.StartInfo.Environment['PSModulePath'] -ine [IO.Path]::GetFullPath([IO.Path]::Combine([Environment]::GetFolderPath('Windows'),'System32/WindowsPowerShell/v1.0/Modules')) -or $env:PSModulePath -cne $parentModulePath){throw 'Actual generic child WindowsPS module isolation missing or parent changed'};$cases+='child-only-native-module-path'",
     "if($child.process.StartInfo.Environment['PATHEXT'] -cne '.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC' -or $env:PATHEXT -cne $parentPathExt){throw 'Generic child PATHEXT missing or parent changed'};$cases+='child-only-native-extension-discovery'",
+    "if($child.process.StartInfo.Environment['SystemDrive'] -cne [IO.Path]::GetPathRoot([Environment]::GetFolderPath('Windows')).TrimEnd('\\') -or $env:SystemDrive -cne $parentSystemDrive){throw 'Generic child SystemDrive not derived from native Windows root or parent changed'}",
     '[void](Assert-DpiHeldProcess $child);$cases+="held-path-and-birth"',
     '$born=$child.birthTicks;$child.birthTicks--;$denied=$false;try{[void](Assert-DpiHeldProcess $child)}catch{$denied=$true};$child.birthTicks=$born;if(-not $denied){throw "Wrong birth admitted"};$cases+="wrong-birth-denied"',
     '$image=$child.executable;$child.executable="C:\\foreign\\node.exe";$denied=$false;try{[void](Assert-DpiHeldProcess $child)}catch{$denied=$true};$child.executable=$image;if(-not $denied){throw "Foreign image admitted"};$cases+="wrong-image-denied"',
@@ -130,7 +132,7 @@ test('PS7 C# compiles without DLL/driver open; owned child identity, deadline an
     '$worker=Start-DpiChild ' + quoted(process.execPath) + " @($actorPath) 'own sealed-env fixture' -Worker",
     'try{',
     '$ready=Read-DpiLine $worker 8;if($ready.processId -ne $worker.process.Id){throw "Own sealed fixture identity mismatch"}',
-    "$actual=$worker.process.StartInfo.Environment;if($actual.ContainsKey('PSModulePath') -or $actual.Count -ne 8 -or $actual['ELECTRON_RUN_AS_NODE'] -cne '1' -or $actual['NODE_ENV'] -cne 'production' -or $worker.process.StartInfo.ArgumentList.Count -ne 1 -or $worker.process.StartInfo.ArgumentList[0] -ine $actorPath -or $env:PSModulePath -cne $parentModulePath){throw 'Sealed production Worker environment/argv changed'}",
+    "$actual=$worker.process.StartInfo.Environment;$expectedKeys=@('ELECTRON_RUN_AS_NODE','NODE_ENV','ProgramData','SystemRoot','PATH','COMSPEC','TEMP','TMP');if($actual.ContainsKey('PSModulePath') -or $actual.ContainsKey('SystemDrive') -or $actual.Count -ne 8 -or @($expectedKeys|Where-Object{-not $actual.ContainsKey($_)}).Count -or $actual['ELECTRON_RUN_AS_NODE'] -cne '1' -or $actual['NODE_ENV'] -cne 'production' -or $worker.process.StartInfo.ArgumentList.Count -ne 1 -or $worker.process.StartInfo.ArgumentList[0] -ine $actorPath -or $env:PSModulePath -cne $parentModulePath -or $env:SystemDrive -cne $parentSystemDrive){throw 'Sealed production Worker environment/argv changed'}",
     '$cases+="sealed-worker-environment-unchanged"',
     '}finally{Stop-DpiOwnedChild $worker}',
     '[ordered]@{ok=$true;nativeActions=0;cases=$cases;driverOpenInvoked=$false;dllLoaded=$false} | ConvertTo-Json -Compress',
@@ -228,6 +230,113 @@ test('actual readonly PS5 child reproduces executable pipeline refusal without s
     t.diagnostic(`${entry.case}: readiness=${entry.startupMilliseconds}ms, operation=${entry.operationMilliseconds}ms, retired=${entry.totalMilliseconds}ms`);
   }
 });
+test('actual dot-sourced GUI startup suspension and resume require Windows-derived generic child SystemDrive', { skip: process.platform !== 'win32', timeout: 120000 }, t => {
+  const body = String.raw`param([Parameter(Mandatory=$true)][string]$HelperSource)
+$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue'
+[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)
+[Console]::Out.WriteLine('{"stage":"ready","processId":'+$PID+'}')
+if([Console]::In.ReadLine() -cne 'probe-own-helper'){throw 'Own helper start handshake refused'}
+Import-Module Microsoft.PowerShell.Management -ErrorAction Stop
+Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
+. $HelperSource
+$script:TestPathAttempts=0;$script:ForbiddenAdapterCalls=0
+# The real helper must never inspect installed receipts or enter OS actors.
+# Only its canonical root resolution and actual Suspend/Resume control flow run.
+function Test-Path {param([string]$LiteralPath,$PathType);$script:TestPathAttempts++;return $false}
+function Invoke-GuiStartupLease {param($Operation);$script:ForbiddenAdapterCalls++;throw 'Forbidden live GUI lease'}
+function Invoke-GuiStartupScheduler {param($Action,$Context);$script:ForbiddenAdapterCalls++;throw 'Forbidden live scheduler'}
+function Get-CimInstance {$script:ForbiddenAdapterCalls++;throw 'Forbidden live CIM'}
+function Get-Service {$script:ForbiddenAdapterCalls++;throw 'Forbidden live SCM'}
+function New-Object {param($ComObject);$script:ForbiddenAdapterCalls++;throw 'Forbidden live COM/OS object'}
+$common=[Environment]::GetFolderPath([Environment+SpecialFolder]::CommonApplicationData)
+$rows=@()
+foreach($operation in @('Suspend-OwnedGuiLoginStartup','Resume-OwnedGuiLoginStartup')){
+ try{& $operation;$rows+=@([ordered]@{operation=$operation;ok=$true})}
+ catch{$rows+=@([ordered]@{operation=$operation;ok=$false;errorId=$_.FullyQualifiedErrorId;line=$_.InvocationInfo.ScriptLineNumber;sourceFile=[IO.Path]::GetFileName($_.InvocationInfo.ScriptName)})}
+}
+[ordered]@{stage='result';processId=$PID;version=$PSVersionTable.PSVersion.Major;systemDrive=$env:SystemDrive;programData=$env:ProgramData;commonData=$common;ownFileRootNonempty=[bool]$PSScriptRoot;actualHelperBound=((Get-Command Get-GuiStartupDataRoot).ScriptBlock.File -ceq $HelperSource);rows=$rows;inertPathAttempts=$script:TestPathAttempts;forbiddenAdapterCalls=$script:ForbiddenAdapterCalls}|ConvertTo-Json -Depth 6 -Compress
+if([Console]::In.ReadLine() -cne 'retire-own-helper'){throw 'Own helper retirement handshake refused'}
+`;
+  const code = String.raw`$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue'
+. ${quoted(script)} -LibraryOnly
+Initialize-DpiNativeTypes
+$script:Work=${quoted(ownTemp)};$env:GITHUB_WORKSPACE=${quoted(root)}
+New-Item -ItemType Directory -Path $script:Work -Force|Out-Null
+$childPath=Join-Path $script:Work 'own-gui-root-probe.ps1'
+[IO.File]::WriteAllText($childPath,[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(${quoted(Buffer.from(body, 'utf8').toString('base64'))})),[Text.UTF8Encoding]::new($true))
+$helperPath=${quoted(path.join(root, 'src/installer/gui-login-startup.ps1'))}
+$windows=[Environment]::GetFolderPath('Windows');$expectedDrive=[IO.Path]::GetPathRoot($windows).TrimEnd('\')
+$ps5=[IO.Path]::Combine($windows,'System32','WindowsPowerShell','v1.0','powershell.exe')
+$parentDrive=$env:SystemDrive;$parentModulePath=$env:PSModulePath
+$script:DpiClock=[Diagnostics.Stopwatch]::StartNew();$script:DpiBudget=95
+function Invoke-OwnHelperRootCase {param([string]$Case)
+ $owner=$null;$caught=$null;$retirement=$null;$drain=$null;$result=$null;$clock=[Diagnostics.Stopwatch]::StartNew();$phase='launch'
+ $timing=[ordered]@{case=$Case;startupSeconds=30;operationSeconds=10;retirementConfirmed=$false}
+ try{
+  $owner=Start-DpiChild $ps5 @('-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$childPath,'-HelperSource',$helperPath) ('own-gui-root-'+$Case)
+  $timing.drivePresentAtCreation=$owner.process.StartInfo.Environment.ContainsKey('SystemDrive');$timing.driveAtCreation=$owner.process.StartInfo.Environment['SystemDrive']
+  $phase='readiness';$ready=Read-DpiLine $owner 30;$timing.readyMilliseconds=$clock.ElapsedMilliseconds
+  if($ready.stage -cne 'ready' -or $ready.processId -ne $owner.processId){throw 'Own helper ready identity differs'}
+  [void](Assert-DpiHeldProcess $owner);$phase='operation';$operation=[Diagnostics.Stopwatch]::StartNew();$owner.process.StandardInput.WriteLine('probe-own-helper');$owner.process.StandardInput.Flush()
+  $result=Read-DpiLine $owner 10;$timing.operationMilliseconds=$operation.ElapsedMilliseconds
+  if($result.stage -cne 'result' -or $result.processId -ne $owner.processId -or $result.version -ne 5){throw 'Own helper result identity differs'}
+  [void](Assert-DpiHeldProcess $owner);$phase='retirement';$owner.process.StandardInput.WriteLine('retire-own-helper');$owner.process.StandardInput.Flush();$drain=$owner.process.StandardOutput.ReadToEndAsync()
+ }catch{$caught=$_}
+ finally{
+  if($owner){
+   try{Stop-DpiOwnedChild $owner;$timing.retirementConfirmed=$true}catch{$retirement=$_}
+   foreach($stream in @(@{name='stdout';task=$drain},@{name='stderr';task=$owner.stderr})){
+    $complete=$false;try{if($stream.task -and -not $stream.task.IsCompleted){[void]$stream.task.Wait(1000)};if($stream.task -and $stream.task.Status -eq [Threading.Tasks.TaskStatus]::RanToCompletion){$complete=$true;$text=$stream.task.GetAwaiter().GetResult();if($stream.name -eq 'stderr'){$timing.stderrEmpty=(-not $text)}}}catch{}
+    $timing[$stream.name+'Drained']=$complete
+   }
+  }
+  $timing.phase=$phase;$timing.totalMilliseconds=$clock.ElapsedMilliseconds
+  if($caught){$timing.errorId=$caught.FullyQualifiedErrorId};if($retirement){$timing.retirementErrorId=$retirement.FullyQualifiedErrorId}
+  if($caught -or $retirement){[Console]::Error.WriteLine(('Own helper stage failure: '+($timing|ConvertTo-Json -Compress)))}
+ }
+ if($caught){throw $caught};if($retirement){throw $retirement}
+ if(-not $timing.stdoutDrained -or -not $timing.stderrDrained -or -not $timing.stderrEmpty){throw 'Own helper output not drained cleanly'}
+ return [ordered]@{timing=$timing;result=$result}
+}
+$originalHook=(Get-Command Set-NativeWindowsPowerShellChildEnvironment -CommandType Function).ScriptBlock
+function Set-NativeWindowsPowerShellChildEnvironment {param($StartInfo);& $originalHook -StartInfo $StartInfo;[void]$StartInfo.Environment.Remove('SystemDrive')}
+try{$negative=Invoke-OwnHelperRootCase 'missing-SystemDrive'}finally{Set-Item -LiteralPath Function:Set-NativeWindowsPowerShellChildEnvironment -Value $originalHook}
+$positive=Invoke-OwnHelperRootCase 'actual-generic-SystemDrive'
+if($env:SystemDrive -cne $parentDrive -or $env:PSModulePath -cne $parentModulePath){throw 'Parent environment changed'}
+[ordered]@{expectedDrive=$expectedDrive;parentEnvironmentUnchanged=$true;nativeHostMutations=0;cases=@($negative,$positive)}|ConvertTo-Json -Depth 9 -Compress
+`;
+  const receipt = JSON.parse(runPowerShell(code, { timeout: 110000, sanitizedError: true }).trim());
+  assert.equal(receipt.parentEnvironmentUnchanged, true);
+  assert.equal(receipt.nativeHostMutations, 0);
+  assert.equal(receipt.cases.length, 2);
+  for (const entry of receipt.cases) {
+    assert.equal(entry.timing.retirementConfirmed, true);
+    assert.equal(entry.timing.stdoutDrained, true);
+    assert.equal(entry.timing.stderrDrained, true);
+    assert.equal(entry.timing.stderrEmpty, true);
+    assert.equal(entry.result.actualHelperBound, true);
+    assert.equal(entry.result.ownFileRootNonempty, true);
+    assert.equal(entry.result.forbiddenAdapterCalls, 0);
+    assert.deepEqual(entry.result.rows.map(row => row.operation), ['Suspend-OwnedGuiLoginStartup', 'Resume-OwnedGuiLoginStartup']);
+    t.diagnostic(`${entry.timing.case}: readiness=${entry.timing.readyMilliseconds}ms, operation=${entry.timing.operationMilliseconds}ms, retired=${entry.timing.totalMilliseconds}ms`);
+  }
+  const [negative, positive] = receipt.cases;
+  assert.equal(negative.timing.drivePresentAtCreation, false);
+  assert.equal(negative.result.commonData, '');
+  for (const row of negative.result.rows) {
+    assert.equal(row.ok, false);
+    assert.equal(row.errorId, 'ParameterArgumentValidationErrorEmptyStringNotAllowed,Microsoft.PowerShell.Commands.JoinPathCommand');
+    assert.equal(row.line, 19);
+    assert.equal(row.sourceFile, 'gui-login-startup.ps1');
+  }
+  assert.equal(positive.timing.drivePresentAtCreation, true, 'Actual generic child must supply SystemDrive before PS5 starts');
+  assert.equal(positive.timing.driveAtCreation, receipt.expectedDrive);
+  assert.equal(positive.result.systemDrive, receipt.expectedDrive);
+  assert.equal(positive.result.commonData, positive.result.programData);
+  assert.ok(positive.result.commonData && positive.result.inertPathAttempts > 0);
+  assert.ok(positive.result.rows.every(row => row.ok === true), 'Same production Suspend/Resume must pass with inert leaf adapters');
+});
+
 test('native entry refuses unsupported environment before file/native action; pure supported-host contract is explicit', { skip: process.platform !== 'win32' }, () => {
   const code = [
     "$ErrorActionPreference='Stop'",

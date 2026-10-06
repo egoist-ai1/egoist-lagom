@@ -1,4 +1,4 @@
-# Driver-backed acceptance is restricted to a fresh disposable GitHub Windows VM.
+﻿# Driver-backed acceptance is restricted to a fresh disposable GitHub Windows VM.
 # This script never opens a NETWORK capture handle. Only the unchanged production
 # Worker may start winws; our REFLECT handle is SNIFF | RECV_ONLY | NO_INSTALL.
 [CmdletBinding()]
@@ -194,7 +194,11 @@ function Start-DpiChild {
   # WindowsPS5 uses PATHEXT to recognize .exe in pipelines (including NSIS helpers).
   $info.Environment['PATHEXT']='.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC'
   $info.Environment['TEMP']=$script:Work;$info.Environment['TMP']=$script:Work
-  if(-not $Worker){Set-NativeWindowsPowerShellChildEnvironment -StartInfo $info}
+  if(-not $Worker){
+    # WindowsPS5 known-folder resolution needs SystemDrive even when ProgramData exists.
+    $info.Environment['SystemDrive']=[IO.Path]::GetPathRoot($windows).TrimEnd('\')
+    Set-NativeWindowsPowerShellChildEnvironment -StartInfo $info
+  }
   if($Worker){
     # Exact existing production ComponentWorker.cs launch contract; GUI fuses untouched.
     $info.Environment.Clear()

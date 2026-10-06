@@ -896,6 +896,36 @@ function Restore-InstalledIdentity {
   [IO.File]::WriteAllText($path, $text + "`n", [Text.UTF8Encoding]::new($false))
 }
 
+function Get-PreservedZapretProfile {
+  param([object[]]$Records)
+  # Optional DPI is absent on a normal Core-only installation. The caller has
+  # already verified every captured SCM registration before reaching this read.
+  $dpi = @($Records | Where-Object { [string]$_.name -ieq 'EgoistShieldZapret' })
+  if ($dpi.Count -eq 0) { return '' }
+  if ($dpi.Count -ne 1) { throw 'Preserved Zapret service snapshot is ambiguous.' }
+  $path = 'Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\EgoistShieldZapret'
+  $keys = @(Get-Item -LiteralPath $path -ErrorAction Stop)
+  if ($keys.Count -ne 1 -or $null -eq $keys[0]) { throw 'Preserved Zapret registry identity is unverified.' }
+  $key = $keys[0]
+  try {
+    if ([string]$key.Name -ine 'HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\EgoistShieldZapret') {
+      throw 'Preserved Zapret registry identity differs.'
+    }
+    if ($key.GetValueNames() -notcontains 'EgoistShieldProfile') { return '' }
+    $beforeKind = $key.GetValueKind('EgoistShieldProfile')
+    $value = $key.GetValue('EgoistShieldProfile', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+    $afterKind = $key.GetValueKind('EgoistShieldProfile')
+    if ($beforeKind -ne [Microsoft.Win32.RegistryValueKind]::String -or
+        $afterKind -ne [Microsoft.Win32.RegistryValueKind]::String -or $value -isnot [string]) {
+      throw 'Preserved Zapret profile metadata is invalid or changed during reading.'
+    }
+    if ($value.Length -gt 0 -and ([string]::IsNullOrWhiteSpace($value) -or $value.Length -gt 80 -or $value -notmatch '\A[A-Za-z0-9 ()_-]{1,80}\z')) {
+      throw 'Preserved Zapret profile name is invalid.'
+    }
+    return $value
+  } finally { $key.Close() }
+}
+
 function Reconcile-PreservedZapretProfile {
   param([object]$State)
   $preservedProfile = [string]$State.zapretProfile
@@ -2793,7 +2823,7 @@ function Invoke-WorkerMode {
     $state.criticalDns = @(Backup-CriticalDnsState -Stage $StageDirectory)
     if ($previousWait -gt 0) { Assert-PreviousReinstallRestored -State $state }
     $state.installationId = Get-InstalledIdentity
-    $state.zapretProfile = [string](Get-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\EgoistShieldZapret" -Name EgoistShieldProfile -ErrorAction SilentlyContinue).EgoistShieldProfile
+    $state.zapretProfile = Get-PreservedZapretProfile -Records $state.services
     Invoke-RobocopyDirectory -Source $script:RuntimeRoot -Destination (Join-Path $StageDirectory "runtime-backup")
     Write-JsonAtomic -Path $statePath -Value $state
     $deadline = [DateTime]::UtcNow.AddSeconds([int]$state.watchdogTimeoutSeconds).ToString("o")
