@@ -1147,7 +1147,7 @@ function Restore-PreservedState {
         Protect-InstallerStageTree -Stage $privateDestination
       }
     }
-    $excluded = if ($PreserveSystemDohRuntime) { @(Join-Path $runtimeBackup 'SystemDoH') } else { @() }
+    $excluded = @(if ($PreserveSystemDohRuntime) { Join-Path $runtimeBackup 'SystemDoH' })
     Invoke-RobocopyDirectory -Source $runtimeBackup -Destination $script:RuntimeRoot -ExcludeDirectories $excluded
   }
   foreach ($record in @($State.userState)) {

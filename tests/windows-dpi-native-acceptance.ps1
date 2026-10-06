@@ -690,7 +690,7 @@ function Invoke-DpiAcceptance {
     $acceptanceProfile=Assert-NativePathWithin (Join-Path $script:DpiRoot ('core\'+$script:DpiProfileName+'.bat')) $script:DpiRoot
     if(Test-Path -LiteralPath $acceptanceProfile){throw 'Acceptance profile must be new.'}
     [IO.File]::WriteAllText($acceptanceProfile,[string]$script:DpiScope.profile,[Text.UTF8Encoding]::new($false))
-    [void](Assert-NativeAdministratorOwned $acceptanceProfile -InstallationPath)
+    [void](Assert-NativeAdministratorOwned $acceptanceProfile)
     $script:DpiSeals+=Open-DpiFileLease $acceptanceProfile
     foreach($entry in $component[0].files){
       $relative=([string]$entry.path).Substring(7)
