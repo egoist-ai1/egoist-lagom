@@ -401,3 +401,65 @@ test('actual installer receipt preserves UTF-8 messages across repeated JSON wri
     assert.deepEqual(JSON.parse(child.stdout),{events:4,unicodePreserved:true,liveMutations:0});
   } finally { await fs.rm(directory,{recursive:true,force:true}); }
 });
+
+test('native child environment repairs real Windows PowerShell ACL autoload without changing its parent', {
+  skip: process.platform !== 'win32' || !process.env.LAGOM_TEST_POWERSHELL || !process.env.LAGOM_TEST_TEMP,
+}, async () => {
+  const directory = await fs.mkdtemp(path.join(process.env.LAGOM_TEST_TEMP, 'native-module-resolution-'));
+  const quote = value => value.replaceAll("'", "''");
+  const nativeShell = path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const aclBody = "$ErrorActionPreference='Stop';try{$acl=Get-Acl -LiteralPath $env:LAGOM_ACL_PROBE;@{ok=$true;modulePath=(Get-Command Get-Acl).Module.Path;edition=$PSVersionTable.PSEdition;ownerPresent=([string]$acl.Owner).Length -gt 0}|ConvertTo-Json -Compress;exit 0}catch{@{ok=$false;errorId=$_.FullyQualifiedErrorId}|ConvertTo-Json -Compress;exit 1}";
+  const encoded = Buffer.from(aclBody, 'utf16le').toString('base64');
+  const command = `
+    $ErrorActionPreference='Stop';
+    if($PSVersionTable.PSEdition -cne 'Core'){throw 'Regression requires the actual modern parent environment'};
+    . '${quote(path.resolve('tests/windows-production-acceptance.ps1'))}' -LibraryOnly;
+    $script:Work='${quote(directory)}';
+    $env:LAGOM_ACL_PROBE=$script:Work;
+    $nativeModules=Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::Windows)) 'System32\\WindowsPowerShell\\v1.0\\Modules';
+    $env:PSModulePath=(Join-Path $PSHOME 'Modules')+';'+$nativeModules;
+    $parentBefore=$env:PSModulePath;
+    $badInfo=[Diagnostics.ProcessStartInfo]::new();$badInfo.FileName='${quote(nativeShell)}';$badInfo.UseShellExecute=$false;$badInfo.CreateNoWindow=$true;$badInfo.RedirectStandardOutput=$true;$badInfo.RedirectStandardError=$true;
+    foreach($argument in @('-NoProfile','-NonInteractive','-EncodedCommand','${encoded}')){$badInfo.ArgumentList.Add($argument)};
+    $bad=[Diagnostics.Process]::new();$bad.StartInfo=$badInfo;
+    try{
+      if(-not $bad.Start()){throw 'Baseline child did not start'};
+      $badOut=$bad.StandardOutput.ReadToEndAsync();$badErr=$bad.StandardError.ReadToEndAsync();
+      if(-not $bad.WaitForExit(15000)){$bad.Kill();throw 'Baseline child timed out'};
+      $baseline=$badOut.GetAwaiter().GetResult()|ConvertFrom-Json;
+      if($bad.ExitCode -eq 0 -or $baseline.ok -or $baseline.errorId -cne 'CouldNotAutoloadMatchingModule'){throw 'Actual inherited modern module failure was not reproduced'};
+    }finally{$bad.Dispose()};
+    $fixed=Invoke-NativeBounded -Executable '${quote(nativeShell)}' -Arguments @('-NoProfile','-NonInteractive','-EncodedCommand','${encoded}') -Label 'native-acl-resolution' -TimeoutSeconds 15;
+    $actual=$fixed.stdout|ConvertFrom-Json;
+    $expected=Join-Path $nativeModules 'Microsoft.PowerShell.Security\\Microsoft.PowerShell.Security.psd1';
+    if(-not $actual.ok -or -not $actual.ownerPresent -or $actual.edition -cne 'Desktop' -or $actual.modulePath -ine $expected){throw 'Native ACL check was weakened or loaded the wrong module'};
+    if($env:PSModulePath -cne $parentBefore){throw 'Child environment preparation changed the parent'};
+    @{baselineError=$baseline.errorId;nativeAclSucceeded=$true;parentPreserved=$true;systemMutations=0;privateProfilesRead=$false}|ConvertTo-Json -Compress
+  `;
+  try {
+    const result = spawnSync(process.env.LAGOM_TEST_POWERSHELL, ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand',
+      Buffer.from(command, 'utf16le').toString('base64')], { encoding: 'utf8', windowsHide: true, timeout: 45000 });
+    assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { baselineError: 'CouldNotAutoloadMatchingModule', nativeAclSucceeded: true,
+      parentPreserved: true, systemMutations: 0, privateProfilesRead: false });
+  } finally {
+    assert.equal(path.dirname(directory), path.resolve(process.env.LAGOM_TEST_TEMP));
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('native child environment helper remains callable from Windows PowerShell 5', { skip: process.platform !== 'win32' }, () => {
+  const shell = path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const source = path.resolve('tests/windows-production-acceptance.ps1').replaceAll("'", "''");
+  const body = `$ErrorActionPreference='Stop';. '${source}' -LibraryOnly;
+    $parentBefore=$env:PSModulePath;$info=[Diagnostics.ProcessStartInfo]::new();
+    $info.EnvironmentVariables['PSModulePath']='foreign';
+    Set-NativeWindowsPowerShellChildEnvironment -StartInfo $info;
+    $expected=Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::Windows)) 'System32\\WindowsPowerShell\\v1.0\\Modules';
+    if($info.EnvironmentVariables['PSModulePath'] -cne $expected -or $env:PSModulePath -cne $parentBefore){throw 'Native child environment contract failed'};
+    @{childOnly=$true;edition=$PSVersionTable.PSEdition;systemMutations=0}|ConvertTo-Json -Compress`;
+  const result = spawnSync(shell, ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(body, 'utf16le').toString('base64')],
+    { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+  assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), { childOnly: true, edition: 'Desktop', systemMutations: 0 });
+});

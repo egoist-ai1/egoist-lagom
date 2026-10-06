@@ -192,6 +192,7 @@ function Start-DpiChild {
   $info.Environment['PATH']=(Join-Path $windows 'System32')+';'+$windows
   $info.Environment['COMSPEC']=Join-Path $windows 'System32\cmd.exe'
   $info.Environment['TEMP']=$script:Work;$info.Environment['TMP']=$script:Work
+  if(-not $Worker){Set-NativeWindowsPowerShellChildEnvironment -StartInfo $info}
   if($Worker){
     # Exact existing production ComponentWorker.cs launch contract; GUI fuses untouched.
     $info.Environment.Clear()
@@ -305,6 +306,78 @@ function Get-DpiDrivers {
   return @(Get-CimInstance -ClassName Win32_SystemDriver -OperationTimeoutSec 10 -ErrorAction Stop |
     Where-Object {$_.Name -match '(?i)windivert' -or $_.PathName -match '(?i)windivert'} |
     Select-Object Name,State,PathName,StartMode)
+}
+function Save-DpiInstallerDiagnostics {
+  param([ValidateSet('before-retirement','after-retirement')][string]$Stage)
+  if(-not $script:DpiReceipt.Contains('installerDiagnosticsReadbacks')){$script:DpiReceipt.installerDiagnosticsReadbacks=@()}
+  $records=@()
+  try{
+    $records=@(Copy-NativeInstallerDiagnostics)
+    foreach($record in $records){
+      if($record.status -ne 'captured'){continue}
+      try{
+        # Keep both phase snapshots when ordinary uninstall removes its journal.
+        $source=Assert-NativePathWithin (Join-Path $script:Work $record.name) $script:Work
+        Assert-NativeOrdinaryPath $source -Leaf
+        $record.file=$Stage+'.'+$record.name
+        $destination=Assert-NativePathWithin (Join-Path $script:Work $record.file) $script:Work
+        Copy-Item -LiteralPath $source -Destination $destination -ErrorAction Stop
+        $record.sha256=(Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+      }catch{$record.status='stage-copy-unavailable';$record.error=$_.Exception.Message}
+    }
+  }catch{$records=@([ordered]@{status='unavailable';error=$_.Exception.Message;errorType=$_.Exception.GetType().FullName})}
+  $script:DpiReceipt.installerDiagnosticsReadbacks+=@([ordered]@{stage=$Stage;atUtc=[DateTimeOffset]::UtcNow.ToString('o');files=$records})
+}
+function Invoke-DpiReadonlySnapshot {
+  param([ValidateSet('services','tasks','drivers','winws','network')][string]$Name,[int]$Seconds)
+  $query=switch($Name){
+    'services' {'@(Get-NativeProductServices)'}
+    'tasks' {'@(Get-NativeProductTasks)'}
+    'drivers' {'@(Get-DpiDrivers)'}
+    'winws' {'@(Get-DpiGlobalWinws | Select-Object ProcessId,ParentProcessId,CreationDate,ExecutablePath)'}
+    'network' {'Get-NativeNetworkFingerprint'}
+  }
+  # Read the actual controllers in an owned child, so even a stuck readonly
+  # Get-Net*/ScheduledTask call cannot hold the acceptance finalizer indefinitely.
+  # Partial installation is never permission to execute an unverified Core binary.
+  $source=Join-Path $PSScriptRoot 'windows-dpi-native-acceptance.ps1'
+  $commands=@(
+    '$ErrorActionPreference=''Stop''',
+    ('. '''+$source.Replace("'","''")+''' -LibraryOnly'),
+    ('$value='+$query),
+    ('ConvertTo-Json -InputObject ([ordered]@{schemaVersion=1;kind=''readonly-final-state'';name='''+$Name+''';value=$value}) -Depth 16 -Compress')
+  )
+  $encoded=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes(($commands -join [Environment]::NewLine)))
+  $powershell=Join-Path ([Environment]::GetFolderPath('Windows')) 'System32\WindowsPowerShell\v1.0\powershell.exe'
+  $text=Invoke-DpiTool $powershell @('-NoLogo','-NoProfile','-NonInteractive','-OutputFormat','Text','-ExecutionPolicy','Bypass','-EncodedCommand',$encoded) ('final-readonly-'+$Name) $Seconds
+  $snapshot=$text | ConvertFrom-Json
+  if($snapshot.schemaVersion -ne 1 -or $snapshot.kind -cne 'readonly-final-state' -or $snapshot.name -cne $Name -or $null -eq $snapshot.value){throw "Invalid final readonly snapshot: $Name"}
+  return ,$snapshot.value
+}
+function Save-DpiFinalStateReadbacks {
+  $state=[ordered]@{};$failures=@()
+  foreach($entry in @(@{name='services';seconds=70},@{name='tasks';seconds=20},@{name='drivers';seconds=15},@{name='winws';seconds=15},@{name='network';seconds=20})){
+    try{
+      $value=Invoke-DpiReadonlySnapshot $entry.name $entry.seconds
+      $record=[ordered]@{status='observed';atUtc=[DateTimeOffset]::UtcNow.ToString('o');value=$value}
+      if($entry.name -eq 'network'){
+        $record.preserved=($value | ConvertTo-Json -Depth 12 -Compress) -ceq ($script:DpiReceipt.beforeNetwork | ConvertTo-Json -Depth 12 -Compress)
+        if(-not $record.preserved){$failures+='Final DNS/default routes/proxy/IPv6 differs from the observed clean baseline; no repair issued.'}
+      }
+      $state[$entry.name]=$record
+    }catch{
+      $state[$entry.name]=[ordered]@{status='unavailable';error=$_.Exception.Message;errorType=$_.Exception.GetType().FullName}
+      $failures+=('Final readonly '+$entry.name+' unavailable: '+$_.Exception.Message)
+    }
+  }
+  if($state.services.status -eq 'observed'){
+    $core=@($state.services.value | Where-Object {$_.Name -ceq 'EgoistShieldCore'})
+    $state.core=[ordered]@{status=$(if($core.Count){'present'}else{'absent'});source='readonly-SCM';expectedExecutable=$script:Core;services=$core;binaryExecuted=$false}
+  }else{$state.core=[ordered]@{status='unknown';source='readonly-SCM';expectedExecutable=$script:Core;binaryExecuted=$false;error=$state.services.error}}
+  # SCM metadata is evidence of presence/state, not public Core identity coverage.
+  $script:DpiReceipt.finalStateReadbacks=$state
+  if($state.drivers.status -eq 'observed'){$script:DpiReceipt.finalDrivers=@($state.drivers.value)}else{$script:DpiReceipt.finalDriverReadbackError=$state.drivers.error}
+  return $failures
 }
 function Get-DpiWinws {
   $text=Invoke-DpiTool $script:Core @('--winws-process-snapshot') 'authoritative-winws-snapshot' 15
@@ -640,6 +713,8 @@ function Invoke-DpiAcceptance {
   finally{
     # Reserve 8 minutes after the admission clock for owned retirement and ordinary uninstall.
     $script:DpiBudget=2160
+    try{Save-DpiInstallerDiagnostics 'before-retirement'}catch{$retirementErrors+=('Initial installer diagnostics unavailable: '+$_.Exception.Message)}
+    try{
     if($primaryError -and $installed){try{Invoke-DpiEmergencyStop}catch{$retirementErrors+=$_.Exception.Message}}
     if($on){foreach($owner in @($on.runtime,$on.wrapper)){$owner.process.Dispose()}}
     foreach($child in @($script:DpiWorker,$script:DpiFixture)){try{Stop-DpiOwnedChild $child}catch{$retirementErrors+=$_.Exception.Message}}
@@ -662,17 +737,32 @@ function Invoke-DpiAcceptance {
         $script:DpiReceipt.actualUninstallCompleted=$true
       }catch{$retirementErrors+=$_.Exception.Message}
     }
+    }catch{$retirementErrors+=('Owned retirement failed: '+$_.Exception.Message)}
+    finally{
+    try{Save-DpiInstallerDiagnostics 'after-retirement'}catch{$retirementErrors+=('Final installer diagnostics unavailable: '+$_.Exception.Message)}
+    try{$retirementErrors+=@(Save-DpiFinalStateReadbacks)}catch{$retirementErrors+=('Final readonly evidence unavailable: '+$_.Exception.Message)}
     $script:DpiReceipt.retirementErrors=$retirementErrors
     $script:DpiReceipt.finishedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
     $script:DpiReceipt.elapsedSeconds=[Math]::Round($script:DpiClock.Elapsed.TotalSeconds,3)
     if(-not $primaryError -and $retirementErrors.Count -eq 0 -and $script:DpiReceipt.completedPairs -eq 20 -and $script:DpiReceipt.observedDriverOpen -eq 20 -and $script:DpiReceipt.observedDriverClose -eq 20 -and $script:DpiReceipt.actualRemoveCompleted -and $script:DpiReceipt.actualUninstallCompleted){$script:DpiReceipt.result='passed-20-bounded-production-DPI-pairs'}else{$script:DpiReceipt.result='failed'}
-    try{$script:DpiReceipt.finalDrivers=@(Get-DpiDrivers)}catch{$script:DpiReceipt.finalDriverReadbackError=$_.Exception.Message}
-    Save-DpiReceipt
-    foreach($file in @(Get-ChildItem -LiteralPath $script:Work -File)){
-      $destination=Join-Path $script:Evidence $file.Name
-      if($destination -ine $file.FullName){Copy-Item -LiteralPath $file.FullName -Destination $destination -Force}
+    try{
+      Save-DpiReceipt
+      foreach($file in @(Get-ChildItem -LiteralPath $script:Work -File)){
+        $destination=Join-Path $script:Evidence $file.Name
+        if($destination -ine $file.FullName){try{Copy-Item -LiteralPath $file.FullName -Destination $destination -Force -ErrorAction Stop}catch{$retirementErrors+=('Evidence file unavailable ('+$file.Name+'): '+$_.Exception.Message)}}
+      }
+    }catch{
+      $retirementErrors+=('Final evidence export failed: '+$_.Exception.Message)
+      $script:DpiReceipt.retirementErrors=$retirementErrors;$script:DpiReceipt.result='failed'
+      try{Save-DpiReceipt}catch{Write-Warning ('Receipt write unavailable: '+$_.Exception.Message)}
+    }finally{
+      foreach($lease in @($installerLease,$manifestLease)){try{$lease.stream.Dispose()}catch{$retirementErrors+=('Candidate lease release failed: '+$_.Exception.Message)}}
     }
-    $installerLease.stream.Dispose();$manifestLease.stream.Dispose()
+    if($retirementErrors.Count -ne @($script:DpiReceipt.retirementErrors).Count){
+      $script:DpiReceipt.retirementErrors=$retirementErrors;$script:DpiReceipt.result='failed'
+      try{Save-DpiReceipt;Copy-Item -LiteralPath $script:DpiReceiptPath -Destination (Join-Path $script:Evidence ([IO.Path]::GetFileName($script:DpiReceiptPath))) -Force -ErrorAction Stop}catch{Write-Warning ('Final receipt export unavailable: '+$_.Exception.Message)}
+    }
+    }
   }
   if($primaryError){throw $primaryError}
   if($script:DpiReceipt.result -ne 'passed-20-bounded-production-DPI-pairs'){throw ('DPI acceptance did not complete: '+($retirementErrors -join '; '))}

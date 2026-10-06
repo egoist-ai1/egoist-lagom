@@ -15,6 +15,13 @@ const workDir = 'C:\\ProgramData\\EgoistShield\\Runtime\\Zapret';
 const quoted = value => "'" + value.replaceAll("'", "''") + "'";
 const scoped = compileDpiScope(createDpiScope(49191), workDir, root);
 
+test('WindowsPS5 dot-source inputs retain BOM for non-ASCII source', () => {
+  for (const file of [script, path.join(root, 'tests/windows-production-acceptance.ps1')]) {
+    const bytes = fs.readFileSync(file);
+    if (bytes.some(byte => byte >= 128)) assert.deepEqual([...bytes.subarray(0, 3)], [0xef, 0xbb, 0xbf], file);
+  }
+});
+
 test('actual production compiler preserves the single held-port raw kernel scope', () => {
   assert.equal(scoped.argv.filter(argument => argument.startsWith('--wf-raw=')).length, 1);
   assert.equal(scoped.argv.find(argument => argument.startsWith('--wf-raw=')), '--wf-raw=' + scoped.kernel);
@@ -82,7 +89,7 @@ test('actual own fixture holds its port, verifies 20 nonces and retires after st
 const powershell = process.env.LAGOM_TEST_POWERSHELL7 || 'pwsh.exe';
 const ownTemp = process.env.LAGOM_TEST_TEMP || path.join(process.env.RUNNER_TEMP || os.tmpdir(), 'lagom-dpi-guard-' + process.pid);
 function runPowerShell(code) {
-  return execFileSync(powershell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(code, 'utf16le').toString('base64')], {
+  return execFileSync(powershell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-EncodedCommand', Buffer.from(code, 'utf16le').toString('base64')], {
     cwd: root, windowsHide: true, timeout: 30000, encoding: 'utf8',
     env: { ...process.env, GITHUB_ACTIONS: 'false', LAGOM_TEST_TEMP: ownTemp },
   });
@@ -95,23 +102,34 @@ test('PS7 C# compiles without DLL/driver open; owned child identity, deadline an
     'Initialize-DpiNativeTypes',
     '$script:Work=' + quoted(ownTemp) + ';$env:GITHUB_WORKSPACE=' + quoted(root),
     '$script:DpiClock=[Diagnostics.Stopwatch]::StartNew();$script:DpiBudget=30',
+    '$parentModulePath=$env:PSModulePath',
     '$child=Start-DpiChild ' + quoted(process.execPath) + ' @(' + quoted(helper) + ",'Fixture') 'own guard fixture'",
     '$cases=@()',
     'try {',
     '$ready=Read-DpiLine $child 8',
     'if($ready.processId -ne $child.process.Id){throw "Own readiness identity mismatch"}',
+    "if($child.process.StartInfo.Environment['PSModulePath'] -ine [IO.Path]::GetFullPath([IO.Path]::Combine([Environment]::GetFolderPath('Windows'),'System32/WindowsPowerShell/v1.0/Modules')) -or $env:PSModulePath -cne $parentModulePath){throw 'Actual generic child WindowsPS module isolation missing or parent changed'};$cases+='child-only-native-module-path'",
     '[void](Assert-DpiHeldProcess $child);$cases+="held-path-and-birth"',
     '$born=$child.birthTicks;$child.birthTicks--;$denied=$false;try{[void](Assert-DpiHeldProcess $child)}catch{$denied=$true};$child.birthTicks=$born;if(-not $denied){throw "Wrong birth admitted"};$cases+="wrong-birth-denied"',
     '$image=$child.executable;$child.executable="C:\\foreign\\node.exe";$denied=$false;try{[void](Assert-DpiHeldProcess $child)}catch{$denied=$true};$child.executable=$image;if(-not $denied){throw "Foreign image admitted"};$cases+="wrong-image-denied"',
     '$script:DpiBudget=0;$denied=$false;try{Assert-DpiDeadline}catch{$denied=$true};$script:DpiBudget=30;if(-not $denied){throw "Expired admission accepted"};$cases+="deadline-denied"',
     '}finally{Stop-DpiOwnedChild $child}',
     '$cases+="actual-owned-retirement"',
+    "$script:InstallRoot=Join-Path $script:Work 'sealed-worker-fixture';$script:DataRoot=Join-Path $script:Work 'sealed-worker-data';$actorPath=Join-Path $script:InstallRoot 'resources/component-worker.cjs'",
+    'New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($actorPath)) -Force | Out-Null',
+    "[IO.File]::WriteAllText($actorPath,'process.stdout.write(JSON.stringify({processId:process.pid})+String.fromCharCode(10));process.stdin.resume();process.stdin.on(\"end\",()=>process.exit(0));')",
+    '$worker=Start-DpiChild ' + quoted(process.execPath) + " @($actorPath) 'own sealed-env fixture' -Worker",
+    'try{',
+    '$ready=Read-DpiLine $worker 8;if($ready.processId -ne $worker.process.Id){throw "Own sealed fixture identity mismatch"}',
+    "$actual=$worker.process.StartInfo.Environment;if($actual.ContainsKey('PSModulePath') -or $actual.Count -ne 8 -or $actual['ELECTRON_RUN_AS_NODE'] -cne '1' -or $actual['NODE_ENV'] -cne 'production' -or $worker.process.StartInfo.ArgumentList.Count -ne 1 -or $worker.process.StartInfo.ArgumentList[0] -ine $actorPath -or $env:PSModulePath -cne $parentModulePath){throw 'Sealed production Worker environment/argv changed'}",
+    '$cases+="sealed-worker-environment-unchanged"',
+    '}finally{Stop-DpiOwnedChild $worker}',
     '[ordered]@{ok=$true;nativeActions=0;cases=$cases;driverOpenInvoked=$false;dllLoaded=$false} | ConvertTo-Json -Compress',
   ].join('\n');
   const receipt = JSON.parse(runPowerShell(code).trim());
   assert.equal(receipt.ok, true);
   assert.equal(receipt.nativeActions, 0);
-  assert.equal(receipt.cases.length, 5);
+  assert.equal(receipt.cases.length, 7);
 });
 test('native entry refuses unsupported environment before file/native action; pure supported-host contract is explicit', { skip: process.platform !== 'win32' }, () => {
   const code = [
@@ -126,4 +144,63 @@ test('native entry refuses unsupported environment before file/native action; pu
     '[ordered]@{ok=$true;nativeActions=0;fileMutations=0} | ConvertTo-Json -Compress',
   ].join('\n');
   assert.deepEqual(JSON.parse(runPowerShell(code).trim()), { ok: true, nativeActions: 0, fileMutations: 0 });
+});
+
+test('actual finally preserves Setup failure and collects installer diagnostics plus readonly final state', { skip: process.platform !== 'win32', timeout: 40000 }, () => {
+  const code = [
+    "$ErrorActionPreference='Stop'",
+    '. ' + quoted(script) + ' -LibraryOnly',
+    '$script:Work=Join-Path ' + quoted(ownTemp) + " 'failed-install-finally';$script:DataRoot=Join-Path $script:Work 'data';$script:Evidence=Join-Path $script:Work 'evidence'",
+    "New-Item -ItemType Directory -Path $script:Work,$script:Evidence,(Join-Path $script:DataRoot 'installer'),(Join-Path $script:DataRoot 'Service') -Force | Out-Null",
+    "[IO.File]::WriteAllText((Join-Path $script:DataRoot 'installer/upgrade-journal.json'),'{\"phase\":\"PreInstall\",\"stage\":\"phase-failed\",\"exitCode\":54}')",
+    "[IO.File]::WriteAllText((Join-Path $script:DataRoot 'Service/service.log'),'own Core diagnostic fixture')",
+    "$script:DpiReceiptPath=Join-Path $script:Work 'windows-dpi-native-acceptance.json';$script:InstallRoot=Join-Path $script:Work 'partial';$script:Core=Join-Path $script:InstallRoot 'resources/core-service/win-x64/EgoistShield.Service.exe'",
+    "$script:DpiReceipt=[ordered]@{beforeNetwork=[ordered]@{dns=@('own-baseline')};nativeActions=1;completedPairs=0;observedDriverOpen=0;observedDriverClose=0;actualRemoveCompleted=$false;actualUninstallCompleted=$false;actualCleanInstallCompleted=$false;emergencyCleanupErrors=@();boundaries=[ordered]@{corePublicIdentitySnapshot=$false};result='failed'}",
+    "$script:DpiWorker=$null;$script:DpiFixture=$null;$script:DpiFilter=$null;$script:DpiSeals=@();$script:DpiClock=[Diagnostics.Stopwatch]::StartNew();$script:DpiBudget=2160;$script:FinalReadbackCalls=@()",
+    'function Invoke-DpiTool { param($Executable,$Arguments,$Label,$Seconds,$InputText)',
+    "  if($Label -notmatch '^final-readonly-'){throw ('Unexpected actor/mutation: '+$Label)}",
+    '  $encoded=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($Arguments[-1]))',
+    "  if($encoded -match '(?:start|stop|install|remove)Service|Reset-|Set-Dns|sc\.exe|--winws-process-snapshot'){throw 'Mutating or unverified Core command in readback'}",
+    "  $expected=@{'final-readonly-services'='Get-NativeProductServices';'final-readonly-tasks'='Get-NativeProductTasks';'final-readonly-drivers'='Get-DpiDrivers';'final-readonly-winws'='Get-DpiGlobalWinws';'final-readonly-network'='Get-NativeNetworkFingerprint'}",
+    "  if(-not $encoded.Contains($expected[$Label]) -or $Executable -ine (Join-Path ([Environment]::GetFolderPath('Windows')) 'System32/WindowsPowerShell/v1.0/powershell.exe')){throw 'Actual readonly source/controller or PS5 path changed'}",
+    '  $script:FinalReadbackCalls+=@([ordered]@{label=$Label;seconds=$Seconds;executable=$Executable;code=$encoded})',
+    '  switch($Label){',
+    "    'final-readonly-services' {return ([ordered]@{schemaVersion=1;kind='readonly-final-state';name='services';value=@([ordered]@{Name='EgoistShieldCore';State='Running';StartMode='Auto';StartName='LocalSystem';PathName=$script:Core;ProcessId=1544})}|ConvertTo-Json -Depth 6 -Compress)}",
+    "    'final-readonly-network' {return ([ordered]@{schemaVersion=1;kind='readonly-final-state';name='network';value=[ordered]@{dns=@('own-baseline')}}|ConvertTo-Json -Compress)}",
+    "    default {return ([ordered]@{schemaVersion=1;kind='readonly-final-state';name=$Label.Substring('final-readonly-'.Length);value=@()}|ConvertTo-Json -Compress)}",
+    '  }',
+    '}',
+    "function Stop-DpiOwnedChild {param($Owner);if($Owner){throw 'Unexpected live child'}};function Invoke-DpiEmergencyStop {throw 'Unexpected broad repair'};function Get-DpiDrivers {throw 'Unbounded OS query escaped readback'}",
+    "$installed=$false;$on=$null;$xmlSeal=$null;$productSeals=@();$retirementErrors=@();$acceptanceProfile=Join-Path $script:Work 'own-acceptance.profile';$installerLease=[pscustomobject]@{stream=[IO.MemoryStream]::new()};$manifestLease=[pscustomobject]@{stream=[IO.MemoryStream]::new()}",
+    "try{throw 'Child failed (41): actual-clean-candidate-install; '}catch{$primaryError=$_};$script:DpiReceipt.error=$primaryError.Exception.Message",
+    '$tokens=$null;$parseErrors=$null;$ast=[Management.Automation.Language.Parser]::ParseFile(' + quoted(script) + ',[ref]$tokens,[ref]$parseErrors)',
+    "if($parseErrors.Count){throw 'DPI parse error'}",
+    "$entry=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -ceq 'Invoke-DpiAcceptance'},$false)",
+    "$try=$entry.Body.Find({param($node) $node -is [Management.Automation.Language.TryStatementAst] -and $node.Finally -and $node.Finally.Extent.Text -match '[$]installed -and'},$true)",
+    'if(-not $try){throw "Actual acceptance finally missing"};$body=$try.Finally.Extent.Text;. ([scriptblock]::Create($body.Substring(1,$body.Length-2)))',
+    "$saved=Get-Content -LiteralPath $script:DpiReceiptPath -Raw|ConvertFrom-Json;if($saved.error -cne 'Child failed (41): actual-clean-candidate-install; ' -or $saved.result -cne 'failed' -or $saved.nativeActions -ne 1){throw 'Primary failure/admission count changed'}",
+    "if($saved.finalStateReadbacks.services.status -cne 'observed' -or $saved.finalStateReadbacks.core.status -cne 'present' -or $saved.finalStateReadbacks.network.preserved -ne $true){throw 'Final SCM/Core/network readbacks missing'}",
+    "if($saved.boundaries.corePublicIdentitySnapshot -ne $false){throw 'SCM metadata counted as public Core identity coverage'}",
+    "if($script:FinalReadbackCalls.Count -ne 5 -or @($script:FinalReadbackCalls|Where-Object{$_.seconds -gt 70}).Count){throw 'Independent readbacks/bounds changed'}",
+    "if(@($saved.installerDiagnosticsReadbacks).Count -ne 2){throw 'Before/after diagnostics missing'}",
+    "foreach($stage in @('before-retirement','after-retirement')){$journal=Join-Path $script:Evidence ($stage+'.installer-upgrade-journal.jsonl');if(-not [IO.File]::Exists($journal) -or [IO.File]::ReadAllText($journal) -notmatch 'PreInstall'){throw 'Phase diagnostic not exported'}}",
+    '[ordered]@{ok=$true;nativeActions=1;readbacks=$script:FinalReadbackCalls.Count;primaryErrorPreserved=$true;liveNativeQueries=0}|ConvertTo-Json -Compress',
+  ].join('\n');
+  assert.deepEqual(JSON.parse(runPowerShell(code).trim()), { ok: true, nativeActions: 1, readbacks: 5, primaryErrorPreserved: true, liveNativeQueries: 0 });
+});
+
+test('final readbacks distinguish unavailable from absent and continue after independent failures', { skip: process.platform !== 'win32' }, () => {
+  const code = [
+    "$ErrorActionPreference='Stop'",
+    '. ' + quoted(script) + ' -LibraryOnly',
+    "$script:DpiReceipt=[ordered]@{beforeNetwork=[ordered]@{dns=@('before')};boundaries=[ordered]@{corePublicIdentitySnapshot=$false};nativeActions=0};$script:Core='C:\\own-fixture\\Core.exe';$script:Readbacks=@()",
+    'function Invoke-DpiTool {param($Executable,$Arguments,$Label,$Seconds,$InputText);$script:Readbacks+=$Label;',
+    "if($Label -in @('final-readonly-services','final-readonly-network')){throw ('own unavailable '+$Label)};return ([ordered]@{schemaVersion=1;kind='readonly-final-state';name=$Label.Substring('final-readonly-'.Length);value=@()}|ConvertTo-Json -Compress)}",
+    '$failures=@(Save-DpiFinalStateReadbacks)',
+    "if($script:Readbacks.Count -ne 5 -or $failures.Count -ne 2){throw 'Independent readback failed to continue'}",
+    "$state=$script:DpiReceipt.finalStateReadbacks;if($state.services.status -cne 'unavailable' -or $state.core.status -cne 'unknown' -or $state.network.status -cne 'unavailable' -or $state.drivers.status -cne 'observed' -or @($state.drivers.value).Count -ne 0){throw 'Unavailable confused with absent'}",
+    'if($script:DpiReceipt.nativeActions -ne 0 -or $script:DpiReceipt.boundaries.corePublicIdentitySnapshot -ne $false){throw "Readback claimed actor coverage or native mutation"}',
+    '[ordered]@{ok=$true;readbacks=$script:Readbacks.Count;unavailable=$failures.Count;nativeActions=0}|ConvertTo-Json -Compress',
+  ].join('\n');
+  assert.deepEqual(JSON.parse(runPowerShell(code).trim()), { ok: true, readbacks: 5, unavailable: 2, nativeActions: 0 });
 });

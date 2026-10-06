@@ -168,11 +168,21 @@ function Add-NativeMutation {
   param([string]$Kind,[string]$Target,[string]$Purpose)
   $script:Receipt.mutations+=[ordered]@{atUtc=[DateTimeOffset]::UtcNow.ToString('o');kind=$Kind;target=$Target;purpose=$Purpose};Save-NativeReceipt
 }
+function Set-NativeWindowsPowerShellChildEnvironment {
+  param([Parameter(Mandatory=$true)][Diagnostics.ProcessStartInfo]$StartInfo)
+  # NSIS and native helpers launch Windows PowerShell 5, which cannot load
+  # PowerShell 7 Security/Management modules inherited from the CI parent.
+  # Scope the native module path to the owned child; retain real ACL checks.
+  $windows=[Environment]::GetFolderPath([Environment+SpecialFolder]::Windows)
+  if([string]::IsNullOrWhiteSpace($windows)){throw 'Native Windows module root is unavailable.'}
+  $StartInfo.EnvironmentVariables['PSModulePath']=[IO.Path]::Combine($windows,'System32\WindowsPowerShell\v1.0\Modules')
+}
 function Invoke-NativeBounded {
   param([string]$Executable,[string[]]$Arguments,[string]$Label,[int]$TimeoutSeconds=300,[string]$WorkingDirectory='')
   Assert-NativeOrdinaryPath -Path $Executable -Leaf
   $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$Executable;$info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.RedirectStandardOutput=$true;$info.RedirectStandardError=$true
   if($WorkingDirectory){$info.WorkingDirectory=Assert-NativePathWithin $WorkingDirectory $script:Work;Assert-NativeOrdinaryPath $info.WorkingDirectory}
+  Set-NativeWindowsPowerShellChildEnvironment -StartInfo $info
   $info.Environment['DOTNET_ADD_GLOBAL_TOOLS_TO_PATH']='0'
   foreach($argument in $Arguments){$info.ArgumentList.Add([string]$argument)}
   $child=[Diagnostics.Process]::new();$child.StartInfo=$info;$watch=[Diagnostics.Stopwatch]::StartNew()
