@@ -88,11 +88,18 @@ test('actual own fixture holds its port, verifies 20 nonces and retires after st
 
 const powershell = process.env.LAGOM_TEST_POWERSHELL7 || 'pwsh.exe';
 const ownTemp = process.env.LAGOM_TEST_TEMP || path.join(process.env.RUNNER_TEMP || os.tmpdir(), 'lagom-dpi-guard-' + process.pid);
-function runPowerShell(code) {
-  return execFileSync(powershell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-EncodedCommand', Buffer.from(code, 'utf16le').toString('base64')], {
-    cwd: root, windowsHide: true, timeout: 30000, encoding: 'utf8',
-    env: { ...process.env, GITHUB_ACTIONS: 'false', LAGOM_TEST_TEMP: ownTemp },
-  });
+function runPowerShell(code, { timeout = 30000, sanitizedError = false } = {}) {
+  try {
+    return execFileSync(powershell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-EncodedCommand', Buffer.from(code, 'utf16le').toString('base64')], {
+      cwd: root, windowsHide: true, timeout, encoding: 'utf8',
+      env: { ...process.env, GITHUB_ACTIONS: 'false', LAGOM_TEST_TEMP: ownTemp },
+    });
+  } catch (error) {
+    if (!sanitizedError) throw error;
+    // execFileSync's default error includes the complete EncodedCommand. This
+    // test emits stage-only diagnostics, not executable source or whoami data.
+    throw new Error(`Owned PS5 guard failed (status=${error.status}, signal=${error.signal}):\n${String(error.stdout || '').slice(0, 8000)}\n${String(error.stderr || '').slice(0, 8000)}`);
+  }
 }
 test('PS7 C# compiles without DLL/driver open; owned child identity, deadline and retirement guards discriminate', { skip: process.platform !== 'win32', timeout: 40000 }, () => {
   fs.mkdirSync(ownTemp, { recursive: true });
@@ -134,16 +141,28 @@ test('PS7 C# compiles without DLL/driver open; owned child identity, deadline an
   assert.equal(receipt.cases.length, 8);
 });
 
-test('actual readonly PS5 child reproduces executable pipeline refusal without startup PATHEXT', { skip: process.platform !== 'win32', timeout: 40000 }, () => {
+test('actual readonly PS5 child reproduces executable pipeline refusal without startup PATHEXT', { skip: process.platform !== 'win32', timeout: 120000 }, t => {
   const body = [
     "$ErrorActionPreference='Stop';$rows=@()",
+    "$clock=[Diagnostics.Stopwatch]::StartNew();[Console]::Error.WriteLine('ps5-guard-stage|session-start|'+$clock.ElapsedMilliseconds)",
+    // Session readiness includes the only serializer used below. No readonly
+    // pipeline starts until the parent has verified the held child identity.
+    "Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop;[Console]::Error.WriteLine('ps5-guard-stage|session-ready|'+$clock.ElapsedMilliseconds)",
+    "[Console]::Out.WriteLine('{\"stage\":\"ready\",\"processId\":'+$PID+',\"version\":'+$PSVersionTable.PSVersion.Major+'}')",
+    "if([Console]::In.ReadLine() -cne 'run-own-readonly'){throw 'Own PS5 start handshake refused'}",
+    "[Console]::Error.WriteLine('ps5-guard-stage|commands-start|'+$clock.ElapsedMilliseconds)",
     "foreach($leaf in @('whoami.exe','where.exe')){",
-    "  $file=Join-Path ([Environment]::GetFolderPath('Windows')) ('System32/'+$leaf)",
+    "  $file=[IO.Path]::Combine([Environment]::GetFolderPath('Windows'),'System32',$leaf)",
     "  [string[]]$arguments=if($leaf -eq 'whoami.exe'){@('/user')}else{@('/Q','whoami.exe')}",
     '  try{$output=@(& $file @arguments 2>&1|ForEach-Object{"$_"});$rows+=@([ordered]@{leaf=$leaf;ok=$true;exitCode=$LASTEXITCODE})}',
     '  catch{$rows+=@([ordered]@{leaf=$leaf;ok=$false;errorId=$_.FullyQualifiedErrorId})}',
     '}',
-    '[ordered]@{version=$PSVersionTable.PSVersion.Major;pathext=$env:PATHEXT;rows=$rows}|ConvertTo-Json -Depth 5 -Compress',
+    "[Console]::Error.WriteLine('ps5-guard-stage|commands-finished|'+$clock.ElapsedMilliseconds)",
+    "[ordered]@{stage='result';processId=$PID;version=$PSVersionTable.PSVersion.Major;pathext=$env:PATHEXT;rows=$rows}|ConvertTo-Json -Depth 5 -Compress",
+    // Keep the process alive while the parent consumes the result and proves
+    // ownership again; buffered stdout cannot replace a live identity check.
+    "if([Console]::In.ReadLine() -cne 'retire-own-readonly'){throw 'Own PS5 retirement handshake refused'}",
+    "[Console]::Error.WriteLine('ps5-guard-stage|retirement-accepted|'+$clock.ElapsedMilliseconds)",
   ].join('\n');
   const encoded = Buffer.from(body, 'utf16le').toString('base64');
   const code = [
@@ -151,18 +170,63 @@ test('actual readonly PS5 child reproduces executable pipeline refusal without s
     '. ' + quoted(script) + ' -LibraryOnly',
     'Initialize-DpiNativeTypes',
     '$script:Work=' + quoted(ownTemp) + ';$env:GITHUB_WORKSPACE=' + quoted(root),
-    '$script:DpiClock=[Diagnostics.Stopwatch]::StartNew();$script:DpiBudget=30;$parentPathExt=$env:PATHEXT',
+    '$script:DpiClock=[Diagnostics.Stopwatch]::StartNew();$script:DpiBudget=95;$parentPathExt=$env:PATHEXT',
     "$ps5=Join-Path ([Environment]::GetFolderPath('Windows')) 'System32/WindowsPowerShell/v1.0/powershell.exe'",
     '$arguments=@("-NoLogo","-NoProfile","-NonInteractive","-OutputFormat","Text","-EncodedCommand",' + quoted(encoded) + ')',
+    'function Invoke-OwnPS5RecognitionCase {param([string]$Case,[bool]$Missing)',
+    "  $owner=$null;$caught=$null;$retirement=$null;$drain=$null;$result=$null;$clock=[Diagnostics.Stopwatch]::StartNew();$phase='launch'",
+    "  $diagnostic=[ordered]@{case=$Case;startupSeconds=30;operationSeconds=10;stages=@();retirementConfirmed=$false}",
+    '  try{',
+    "    $owner=Start-DpiChild $ps5 $arguments ('own-readonly-'+$Case)",
+    '    $diagnostic.processId=$owner.processId;$diagnostic.birthTicks=$owner.birthTicks',
+    "    if($Missing){if($owner.process.StartInfo.Environment.ContainsKey('PATHEXT')){throw 'Missing PATHEXT was not absent at child creation'}}elseif($owner.process.StartInfo.Environment['PATHEXT'] -cne '.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC'){throw 'Canonical PATHEXT was not supplied at child creation'}",
+    "    $phase='readiness';$ready=Read-DpiLine $owner 30;$diagnostic.startupMilliseconds=$clock.ElapsedMilliseconds",
+    "    if($ready.stage -cne 'ready' -or $ready.processId -ne $owner.processId -or $ready.version -ne 5){throw 'Own PS5 ready identity/schema differs'}",
+    '    [void](Assert-DpiHeldProcess $owner)',
+    "    $phase='operation';$operation=[Diagnostics.Stopwatch]::StartNew();$owner.process.StandardInput.WriteLine('run-own-readonly');$owner.process.StandardInput.Flush()",
+    '    $result=Read-DpiLine $owner 10;$diagnostic.operationMilliseconds=$operation.ElapsedMilliseconds',
+    "    if($result.stage -cne 'result' -or $result.processId -ne $owner.processId -or $result.version -ne 5 -or @($result.rows).Count -ne 2){throw 'Own PS5 result identity/schema differs'}",
+    '    [void](Assert-DpiHeldProcess $owner)',
+    "    $phase='retirement';$owner.process.StandardInput.WriteLine('retire-own-readonly');$owner.process.StandardInput.Flush()",
+    '    $drain=$owner.process.StandardOutput.ReadToEndAsync()',
+    '  }catch{$caught=$_}',
+    '  finally{',
+    '    if($owner){',
+    '      try{Stop-DpiOwnedChild $owner;$diagnostic.retirementConfirmed=$true}catch{$retirement=$_}',
+    '      foreach($stream in @(@{name="stdout";task=$drain},@{name="stderr";task=$owner.stderr})){',
+    '        $complete=$false;try{if($stream.task -and -not $stream.task.IsCompleted){[void]$stream.task.Wait(1000)};if($stream.task -and $stream.task.Status -eq [Threading.Tasks.TaskStatus]::RanToCompletion){$complete=$true;$text=$stream.task.GetAwaiter().GetResult();if($stream.name -eq "stderr"){$diagnostic.stages=@($text -split "`r?`n"|Where-Object{$_ -cmatch "^ps5-guard-stage[|][a-z-]+[|][0-9]+$"})}}}catch{}',
+    '        $diagnostic[$stream.name+"Drained"]=$complete',
+    '      }',
+    '    }',
+    '    $diagnostic.phase=$phase;$diagnostic.totalMilliseconds=$clock.ElapsedMilliseconds',
+    '    if($caught){$diagnostic.errorId=$caught.FullyQualifiedErrorId;$diagnostic.errorType=$caught.Exception.GetType().FullName}',
+    '    if($retirement){$diagnostic.retirementErrorId=$retirement.FullyQualifiedErrorId;$diagnostic.retirementErrorType=$retirement.Exception.GetType().FullName}',
+    '    if($caught -or $retirement){[Console]::Error.WriteLine(("Own PS5 stage failure: "+($diagnostic|ConvertTo-Json -Depth 5 -Compress)))}',
+    '  }',
+    '  if($caught){throw $caught};if($retirement){throw $retirement}',
+    "  if(-not $diagnostic.stdoutDrained -or -not $diagnostic.stderrDrained){throw 'Own PS5 streams were not drained after retirement'}",
+    '  return [ordered]@{observation=$result;timing=$diagnostic}',
+    '}',
     "$negativeEnvironment=${function:Set-NativeWindowsPowerShellChildEnvironment};function Set-NativeWindowsPowerShellChildEnvironment {param($StartInfo);& $negativeEnvironment -StartInfo $StartInfo;[void]$StartInfo.Environment.Remove('PATHEXT')}",
-    "$negative=(Invoke-DpiTool $ps5 $arguments 'own-readonly-missing-PATHEXT' 10)|ConvertFrom-Json",
-    'Set-Item -LiteralPath Function:Set-NativeWindowsPowerShellChildEnvironment -Value $negativeEnvironment',
-    "$positive=(Invoke-DpiTool $ps5 $arguments 'own-readonly-canonical-PATHEXT' 10)|ConvertFrom-Json",
-    "if(@($negative.rows|Where-Object{$_.ok -ne $false -or $_.errorId -cne 'CantActivateDocumentInPipeline'}).Count -ne 0){throw 'Missing startup PATHEXT did not reproduce exact document error'}",
-    "if(@($positive.rows|Where-Object{$_.ok -ne $true -or $_.exitCode -ne 0}).Count -ne 0 -or $env:PATHEXT -cne $parentPathExt){throw 'Generic child executable recognition failed or parent env changed'}",
-    '[ordered]@{ok=$true;negativeFailures=@($negative.rows).Count;positiveExits=@($positive.rows).Count;parentEnvPreserved=$true;nativeMutations=0}|ConvertTo-Json -Compress',
+    "try{$negative=Invoke-OwnPS5RecognitionCase 'missing-PATHEXT' $true}finally{Set-Item -LiteralPath Function:Set-NativeWindowsPowerShellChildEnvironment -Value $negativeEnvironment}",
+    "$positive=Invoke-OwnPS5RecognitionCase 'canonical-PATHEXT' $false",
+    "if(@($negative.observation.rows|Where-Object{$_.ok -ne $false -or $_.errorId -cne 'CantActivateDocumentInPipeline'}).Count -ne 0){throw 'Missing startup PATHEXT did not reproduce exact document error'}",
+    "if(@($positive.observation.rows|Where-Object{$_.ok -ne $true -or $_.exitCode -ne 0}).Count -ne 0 -or $env:PATHEXT -cne $parentPathExt){throw 'Generic child executable recognition failed or parent env changed'}",
+    '[ordered]@{ok=$true;negativeFailures=@($negative.observation.rows).Count;positiveExits=@($positive.observation.rows).Count;parentEnvPreserved=$true;nativeMutations=0;cases=@($negative.timing,$positive.timing)}|ConvertTo-Json -Depth 6 -Compress',
   ].join('\n');
-  assert.deepEqual(JSON.parse(runPowerShell(code).trim()), { ok: true, negativeFailures: 2, positiveExits: 2, parentEnvPreserved: true, nativeMutations: 0 });
+  const { cases, ...receipt } = JSON.parse(runPowerShell(code, { timeout: 110000, sanitizedError: true }).trim());
+  assert.deepEqual(receipt, { ok: true, negativeFailures: 2, positiveExits: 2, parentEnvPreserved: true, nativeMutations: 0 });
+  assert.equal(cases.length, 2);
+  for (const entry of cases) {
+    assert.equal(entry.startupSeconds, 30);
+    assert.equal(entry.operationSeconds, 10);
+    assert.equal(entry.retirementConfirmed, true);
+    assert.equal(entry.stdoutDrained, true);
+    assert.equal(entry.stderrDrained, true);
+    assert.ok(entry.processId > 0 && entry.birthTicks > 0);
+    assert.ok(entry.stages.some(stage => stage.startsWith('ps5-guard-stage|commands-start|')));
+    t.diagnostic(`${entry.case}: readiness=${entry.startupMilliseconds}ms, operation=${entry.operationMilliseconds}ms, retired=${entry.totalMilliseconds}ms`);
+  }
 });
 test('native entry refuses unsupported environment before file/native action; pure supported-host contract is explicit', { skip: process.platform !== 'win32' }, () => {
   const code = [
