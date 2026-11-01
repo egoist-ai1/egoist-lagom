@@ -16,7 +16,7 @@
     "electron-log": "5.4.4",
     "undici": "7.29.1",
     "yaml": "2.8.3",
-    "zod": "3.25.76"
+    "zod": "4.6.6"
   },
   "type": "module",
   "private": true,
